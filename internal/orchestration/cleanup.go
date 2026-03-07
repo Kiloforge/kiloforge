@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"crelay/internal/core/domain"
 	"crelay/internal/state"
 )
 
@@ -21,7 +22,7 @@ type PoolReturner interface {
 
 // CleanupOpts configures the merge and cleanup sequence.
 type CleanupOpts struct {
-	Tracking    *PRTracking
+	Tracking    *domain.PRTracking
 	Store       *state.Store
 	Merger      Merger
 	PoolReturn  PoolReturner

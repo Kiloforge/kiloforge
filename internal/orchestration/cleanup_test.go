@@ -54,7 +54,7 @@ func TestMergeAndCleanup_FullFlow(t *testing.T) {
 		},
 	}
 
-	tracking := &PRTracking{
+	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
 		ProjectSlug:      "myapp",
@@ -125,7 +125,7 @@ func TestMergeAndCleanup_DefaultMergeMethod(t *testing.T) {
 	store := &state.Store{}
 
 	opts := CleanupOpts{
-		Tracking:   &PRTracking{PRNumber: 1, ProjectSlug: "app"},
+		Tracking:   &domain.PRTracking{PRNumber: 1, ProjectSlug: "app"},
 		Store:      store,
 		Merger:     merger,
 		PoolReturn: nil,

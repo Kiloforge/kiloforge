@@ -352,7 +352,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	// Create PR tracking.
 	projectDir := filepath.Join(dir, "projects", "myapp")
 	os.MkdirAll(projectDir, 0o755)
-	tracking := &orchestration.PRTracking{
+	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
 		ProjectSlug:      "myapp",
@@ -361,7 +361,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	tracking.Save(projectDir)
+	orchestration.SavePRTracking(tracking, projectDir)
 
 	// Send approved review.
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
@@ -423,7 +423,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 
 	projectDir := filepath.Join(dir, "projects", "myapp")
 	os.MkdirAll(projectDir, 0o755)
-	tracking := &orchestration.PRTracking{
+	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
 		ProjectSlug:      "myapp",
@@ -432,7 +432,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	tracking.Save(projectDir)
+	orchestration.SavePRTracking(tracking, projectDir)
 
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
 		"action":     "submitted",
@@ -487,7 +487,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 
 	projectDir := filepath.Join(dir, "projects", "myapp")
 	os.MkdirAll(projectDir, 0o755)
-	tracking := &orchestration.PRTracking{
+	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
 		ProjectSlug:      "myapp",
@@ -497,7 +497,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	tracking.Save(projectDir)
+	orchestration.SavePRTracking(tracking, projectDir)
 
 	postWebhook(t, srv, "pull_request_review", map[string]any{
 		"action":     "submitted",
@@ -542,7 +542,7 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 
 	projectDir := filepath.Join(dir, "projects", "myapp")
 	os.MkdirAll(projectDir, 0o755)
-	tracking := &orchestration.PRTracking{
+	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
 		ProjectSlug:      "myapp",
@@ -551,7 +551,7 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "changes-requested",
 	}
-	tracking.Save(projectDir)
+	orchestration.SavePRTracking(tracking, projectDir)
 
 	postWebhook(t, srv, "pull_request", map[string]any{
 		"action":     "synchronize",

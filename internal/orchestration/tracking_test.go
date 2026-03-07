@@ -3,6 +3,8 @@ package orchestration
 import (
 	"path/filepath"
 	"testing"
+
+	"crelay/internal/core/domain"
 )
 
 func TestPRTracking_SaveLoad_RoundTrip(t *testing.T) {
@@ -10,7 +12,7 @@ func TestPRTracking_SaveLoad_RoundTrip(t *testing.T) {
 
 	dir := t.TempDir()
 
-	original := &PRTracking{
+	original := &domain.PRTracking{
 		PRNumber:         42,
 		TrackID:          "test-track_20260101Z",
 		ProjectSlug:      "myproject",
@@ -23,7 +25,7 @@ func TestPRTracking_SaveLoad_RoundTrip(t *testing.T) {
 		Status:           "review",
 	}
 
-	if err := original.Save(dir); err != nil {
+	if err := SavePRTracking(original, dir); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
 
