@@ -1,3 +1,8 @@
+// This file is only used when dist/ has been populated by `make build-frontend`.
+// For dev/test builds without frontend assets, embed_dev.go provides a stub.
+
+//go:build embed_frontend
+
 package dashboard
 
 import (

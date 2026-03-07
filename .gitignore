@@ -2,9 +2,8 @@
 /.build/
 /bin/
 
-# Frontend build output (populated by `make build-frontend`)
-backend/internal/adapter/dashboard/dist/*
-!backend/internal/adapter/dashboard/dist/.gitkeep
+# Frontend build output (populated by `make build-frontend`, embedded with -tags=embed_frontend)
+backend/internal/adapter/dashboard/dist/
 
 # Node
 node_modules/

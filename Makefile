@@ -10,7 +10,7 @@ build-frontend:
 
 build-backend:
 	@mkdir -p $(BIN_DIR)
-	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/crelay
+	cd backend && go build -buildvcs=false -tags=embed_frontend -o ../$(BINARY) ./cmd/crelay
 
 dev:
 	@trap 'kill 0' INT TERM; \
@@ -19,36 +19,25 @@ dev:
 	wait
 
 test:
-	@mkdir -p backend/internal/adapter/dashboard/dist
-	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race ./...
 
 test-smoke:
-	@mkdir -p backend/internal/adapter/dashboard/dist
-	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
 
 test-integration:
-	@mkdir -p backend/internal/adapter/dashboard/dist
-	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race -tags=integration ./...
 
 test-all:
-	@mkdir -p backend/internal/adapter/dashboard/dist
-	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race -tags=integration ./...
 
 test-coverage:
-	@mkdir -p backend/internal/adapter/dashboard/dist
-	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race -coverprofile=coverage.out ./...
 	cd backend && go tool cover -func=coverage.out
 	@echo "HTML report: go tool cover -html=backend/coverage.out"
 
 clean:
 	rm -rf $(BIN_DIR)
-	rm -rf backend/internal/adapter/dashboard/dist/*
-	touch backend/internal/adapter/dashboard/dist/.gitkeep
+	rm -rf backend/internal/adapter/dashboard/dist
 
 lint:
 	cd backend && golangci-lint run ./...
