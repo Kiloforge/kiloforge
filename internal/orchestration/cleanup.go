@@ -63,11 +63,13 @@ func MergeAndCleanup(ctx context.Context, opts CleanupOpts) error {
 		}
 	}
 
-	// 5. Update agent state.
+	// 5. Terminate agent processes (best effort) and update state.
 	if t.DeveloperAgentID != "" {
+		_ = opts.Store.HaltAgent(t.DeveloperAgentID) // SIGINT
 		opts.Store.UpdateStatus(t.DeveloperAgentID, "completed")
 	}
 	if t.ReviewerAgentID != "" {
+		_ = opts.Store.HaltAgent(t.ReviewerAgentID) // SIGINT
 		opts.Store.UpdateStatus(t.ReviewerAgentID, "completed")
 	}
 	if opts.DataDir != "" {

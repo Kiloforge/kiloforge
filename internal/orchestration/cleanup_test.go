@@ -106,9 +106,35 @@ func TestMergeAndCleanup_FullFlow(t *testing.T) {
 	if dev.Status != "completed" {
 		t.Errorf("developer status: want %q, got %q", "completed", dev.Status)
 	}
+	rev, _ := store.FindAgent("rev-456")
+	if rev.Status != "completed" {
+		t.Errorf("reviewer status: want %q, got %q", "completed", rev.Status)
+	}
 
 	// Verify tracking status.
 	if tracking.Status != "merged" {
 		t.Errorf("tracking status: want %q, got %q", "merged", tracking.Status)
+	}
+}
+
+func TestMergeAndCleanup_DefaultMergeMethod(t *testing.T) {
+	t.Parallel()
+
+	merger := &mockMerger{}
+	store := &state.Store{}
+
+	opts := CleanupOpts{
+		Tracking:   &PRTracking{PRNumber: 1, ProjectSlug: "app"},
+		Store:      store,
+		Merger:     merger,
+		PoolReturn: nil,
+	}
+
+	err := MergeAndCleanup(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("MergeAndCleanup: %v", err)
+	}
+	if merger.mergeMethod != "merge" {
+		t.Errorf("default merge method: want %q, got %q", "merge", merger.mergeMethod)
 	}
 }
