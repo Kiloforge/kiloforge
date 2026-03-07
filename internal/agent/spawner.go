@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
-	"crelay/internal/state"
 
 	"github.com/google/uuid"
 )
@@ -19,10 +19,10 @@ import (
 // Spawner manages Claude agent lifecycle.
 type Spawner struct {
 	cfg   *config.Config
-	store *state.Store
+	store *jsonfile.AgentStore
 }
 
-func NewSpawner(cfg *config.Config, store *state.Store) *Spawner {
+func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore) *Spawner {
 	return &Spawner{cfg: cfg, store: store}
 }
 
@@ -81,7 +81,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	info.PID = cmd.Process.Pid
 	s.store.AddAgent(info)
-	if err := s.store.Save(s.cfg.DataDir); err != nil {
+	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
@@ -98,7 +98,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		} else {
 			s.store.UpdateStatus(agentID, "completed")
 		}
-		_ = s.store.Save(s.cfg.DataDir)
+		_ = s.store.Save()
 	}()
 
 	return &info, nil
@@ -172,7 +172,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 
 	info.PID = cmd.Process.Pid
 	s.store.AddAgent(info)
-	if err := s.store.Save(s.cfg.DataDir); err != nil {
+	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
@@ -189,7 +189,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		} else {
 			s.store.UpdateStatus(agentID, "completed")
 		}
-		_ = s.store.Save(s.cfg.DataDir)
+		_ = s.store.Save()
 	}()
 
 	return &info, nil

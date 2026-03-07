@@ -6,8 +6,8 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/config"
-	"crelay/internal/state"
 
 	"github.com/spf13/cobra"
 )
@@ -30,12 +30,12 @@ func runAgents(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
 	}
 
-	store, err := state.Load(cfg.DataDir)
+	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load state: %w", err)
 	}
 
-	agents := store.Agents
+	agents := store.AgentList
 
 	if flagAgentsJSON {
 		enc := json.NewEncoder(os.Stdout)

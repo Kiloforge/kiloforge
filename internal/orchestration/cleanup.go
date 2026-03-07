@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
-	"crelay/internal/state"
 )
 
 // CleanupOpts configures the merge and cleanup sequence.
 type CleanupOpts struct {
 	Tracking    *domain.PRTracking
-	Store       *state.Store
+	Store       *jsonfile.AgentStore
 	Merger      port.Merger
 	PoolReturn  port.PoolReturner
 	DataDir     string
@@ -62,9 +62,7 @@ func MergeAndCleanup(ctx context.Context, opts CleanupOpts) error {
 		_ = opts.Store.HaltAgent(t.ReviewerAgentID) // SIGINT
 		opts.Store.UpdateStatus(t.ReviewerAgentID, "completed")
 	}
-	if opts.DataDir != "" {
-		_ = opts.Store.Save(opts.DataDir)
-	}
+	_ = opts.Store.Save()
 
 	// 6. Update tracking status.
 	t.Status = "merged"

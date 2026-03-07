@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/config"
-	"crelay/internal/state"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ func runAttach(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	store, err := state.Load(cfg.DataDir)
+	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load state: %w", err)
 	}
@@ -61,7 +61,7 @@ func runAttach(cmd *cobra.Command, args []string) error {
 			fmt.Println("You may need to stop it manually before resuming.")
 		} else {
 			store.UpdateStatus(agentID, "halted")
-			if err := store.Save(cfg.DataDir); err != nil {
+			if err := store.Save(); err != nil {
 				fmt.Printf("Warning: could not save state: %v\n", err)
 			}
 			fmt.Println("Agent halted. You can now resume it with the command above.")

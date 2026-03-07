@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/core/domain"
-	"crelay/internal/state"
 )
 
 type mockMerger struct {
@@ -47,8 +47,8 @@ func TestMergeAndCleanup_FullFlow(t *testing.T) {
 	merger := &mockMerger{}
 	poolRet := &mockPoolReturner{}
 
-	store := &state.Store{
-		Agents: []domain.AgentInfo{
+	store := &jsonfile.AgentStore{
+		AgentList: []domain.AgentInfo{
 			{ID: "dev-123", Role: "developer", Ref: "my-track", Status: "running", PID: 0, SessionID: "dev-sess"},
 			{ID: "rev-456", Role: "reviewer", Ref: "PR #5", Status: "completed", SessionID: "rev-sess"},
 		},
@@ -122,7 +122,7 @@ func TestMergeAndCleanup_DefaultMergeMethod(t *testing.T) {
 	t.Parallel()
 
 	merger := &mockMerger{}
-	store := &state.Store{}
+	store := &jsonfile.AgentStore{}
 
 	opts := CleanupOpts{
 		Tracking:   &domain.PRTracking{PRNumber: 1, ProjectSlug: "app"},

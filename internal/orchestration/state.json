@@ -1,0 +1,28 @@
+{
+  "agents": [
+    {
+      "id": "dev-123",
+      "role": "developer",
+      "ref": "my-track",
+      "status": "completed",
+      "session_id": "dev-sess",
+      "pid": 0,
+      "worktree_dir": "",
+      "log_file": "",
+      "started_at": "0001-01-01T00:00:00Z",
+      "updated_at": "2026-03-07T23:38:48.054012+09:00"
+    },
+    {
+      "id": "rev-456",
+      "role": "reviewer",
+      "ref": "PR #5",
+      "status": "completed",
+      "session_id": "rev-sess",
+      "pid": 0,
+      "worktree_dir": "",
+      "log_file": "",
+      "started_at": "0001-01-01T00:00:00Z",
+      "updated_at": "2026-03-07T23:38:48.054012+09:00"
+    }
+  ]
+}

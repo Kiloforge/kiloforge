@@ -18,14 +18,13 @@ import (
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/state"
 )
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg       *config.Config
 	registry  *jsonfile.ProjectStore
-	store     *state.Store
+	store     *jsonfile.AgentStore
 	client    *gitea.Client
 	spawner   port.AgentSpawner
 	prService *service.PRService
@@ -35,9 +34,9 @@ type Server struct {
 
 // NewServer creates a relay server with multi-project routing via the registry.
 func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int) *Server {
-	store, err := state.Load(cfg.DataDir)
+	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 	if err != nil {
-		store = &state.Store{}
+		store = &jsonfile.AgentStore{}
 	}
 	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
 	if cfg.APIToken != "" {
@@ -58,9 +57,9 @@ func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int) *S
 
 // newTestableServer creates a server with a custom spawner and client for testing.
 func newTestableServer(cfg *config.Config, registry *jsonfile.ProjectStore, spawner port.AgentSpawner, client *gitea.Client) *Server {
-	store, _ := state.Load(cfg.DataDir)
+	store, _ := jsonfile.LoadAgentStore(cfg.DataDir)
 	if store == nil {
-		store = &state.Store{}
+		store = &jsonfile.AgentStore{}
 	}
 	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
 	return &Server{
@@ -278,7 +277,7 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 	}
 
 	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking := s.prService.CreateTracking(prNumber, branchRef, slug, s.store.Agents, 3)
+	tracking := s.prService.CreateTracking(prNumber, branchRef, slug, s.store.AgentList, 3)
 
 	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		s.logger.Printf("[%s] Error creating project dir: %v", slug, err)
@@ -292,7 +291,7 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 	// Update developer agent status.
 	if tracking.DeveloperAgentID != "" {
 		s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review")
-		if err := s.store.Save(s.cfg.DataDir); err != nil {
+		if err := s.store.Save(); err != nil {
 			s.logger.Printf("[%s] Error saving state: %v", slug, err)
 		}
 	}
@@ -336,7 +335,7 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 	}
 
 	s.store.AddAgent(*info)
-	if err := s.store.Save(s.cfg.DataDir); err != nil {
+	if err := s.store.Save(); err != nil {
 		s.logger.Printf("[%s] Error saving state: %v", slug, err)
 	}
 
@@ -452,7 +451,7 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 			return
 		}
 		s.store.UpdateStatus(tracking.DeveloperAgentID, "running")
-		_ = s.store.Save(s.cfg.DataDir)
+		_ = s.store.Save()
 	}
 }
 
@@ -468,7 +467,7 @@ func (s *Server) escalatePR(slug string, tracking *domain.PRTracking, projectDir
 		_ = s.store.HaltAgent(tracking.ReviewerAgentID)
 		s.store.UpdateStatus(tracking.ReviewerAgentID, "stopped")
 	}
-	_ = s.store.Save(s.cfg.DataDir)
+	_ = s.store.Save()
 
 	tracking.Status = "escalated"
 	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
@@ -487,7 +486,7 @@ func (s *Server) handlePRSynchronize(slug string, prNumber int) {
 	// Mark developer as waiting-review and spawn new reviewer.
 	if tracking.DeveloperAgentID != "" {
 		s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review")
-		_ = s.store.Save(s.cfg.DataDir)
+		_ = s.store.Save()
 	}
 
 	tracking.Status = "waiting-review"

@@ -14,8 +14,7 @@ import (
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/state"
-
+	
 	"github.com/spf13/cobra"
 )
 
@@ -112,7 +111,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	// Spawn developer agent.
-	store, err := state.Load(cfg.DataDir)
+	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load state: %w", err)
 	}
