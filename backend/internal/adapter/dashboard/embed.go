@@ -1,8 +1,3 @@
-// This file is only used when dist/ has been populated by `make build-frontend`.
-// For dev/test builds without frontend assets, embed_dev.go provides a stub.
-
-//go:build embed_frontend
-
 package dashboard
 
 import (
@@ -12,7 +7,7 @@ import (
 	"strings"
 )
 
-//go:embed all:dist
+//go:embed dist/*
 var embeddedFiles embed.FS
 
 var staticFS, _ = fs.Sub(embeddedFiles, "dist")

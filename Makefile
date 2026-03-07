@@ -2,42 +2,51 @@
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/crelay
+DIST_DIR := backend/internal/adapter/dashboard/dist
+
+# Ensure dist/ has at least a placeholder so //go:embed dist/* succeeds.
+# Only creates if dist/ is empty or missing — never overwrites real assets.
+ensure-dist:
+	@if [ ! -f $(DIST_DIR)/index.html ]; then \
+		mkdir -p $(DIST_DIR) && \
+		echo '<!DOCTYPE html><html><body><p>Frontend not built. Run <code>make build</code>.</p></body></html>' > $(DIST_DIR)/index.html; \
+	fi
 
 build: build-frontend build-backend
 
 build-frontend:
 	cd frontend && npm ci && npm run build
 
-build-backend:
+build-backend: ensure-dist
 	@mkdir -p $(BIN_DIR)
-	cd backend && go build -buildvcs=false -tags=embed_frontend -o ../$(BINARY) ./cmd/crelay
+	cd backend && go build -o ../$(BINARY) ./cmd/crelay
 
-dev:
+dev: ensure-dist
 	@trap 'kill 0' INT TERM; \
-	cd backend && go run -buildvcs=false ./cmd/crelay up & \
+	cd backend && go run ./cmd/crelay up & \
 	cd frontend && npm run dev & \
 	wait
 
-test:
-	cd backend && go test -buildvcs=false -race ./...
+test: ensure-dist
+	cd backend && go test -race ./...
 
-test-smoke:
-	cd backend && go test -buildvcs=false -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
+test-smoke: ensure-dist
+	cd backend && go test -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
 
-test-integration:
-	cd backend && go test -buildvcs=false -race -tags=integration ./...
+test-integration: ensure-dist
+	cd backend && go test -race -tags=integration ./...
 
-test-all:
-	cd backend && go test -buildvcs=false -race -tags=integration ./...
+test-all: ensure-dist
+	cd backend && go test -race -tags=integration ./...
 
-test-coverage:
-	cd backend && go test -buildvcs=false -race -coverprofile=coverage.out ./...
+test-coverage: ensure-dist
+	cd backend && go test -race -coverprofile=coverage.out ./...
 	cd backend && go tool cover -func=coverage.out
 	@echo "HTML report: go tool cover -html=backend/coverage.out"
 
 clean:
 	rm -rf $(BIN_DIR)
-	rm -rf backend/internal/adapter/dashboard/dist
+	rm -rf $(DIST_DIR)
 
 lint:
 	cd backend && golangci-lint run ./...
