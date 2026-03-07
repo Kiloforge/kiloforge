@@ -1,0 +1,517 @@
+openapi: "3.0.3"
+info:
+  title: Crelay API
+  description: Conductor Relay server API for agent management, quota tracking, lock coordination, and system status.
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      tags: [System]
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /-/api/agents:
+    get:
+      operationId: listAgents
+      summary: List all agents
+      tags: [Agents]
+      responses:
+        "200":
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/agents/{id}:
+    get:
+      operationId: getAgent
+      summary: Get agent by ID or ID prefix
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID or ID prefix
+      responses:
+        "200":
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "400":
+          description: Missing agent ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/agents/{id}/log:
+    get:
+      operationId: getAgentLog
+      summary: Get recent log lines for an agent
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID or ID prefix
+        - name: lines
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+          description: Number of tail lines to return
+      responses:
+        "200":
+          description: Agent log output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentLog"
+        "400":
+          description: Missing agent ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Agent or log file not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/quota:
+    get:
+      operationId: getQuota
+      summary: Get quota and cost usage
+      tags: [Quota]
+      responses:
+        "200":
+          description: Quota usage information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotaInfo"
+
+  /-/api/tracks:
+    get:
+      operationId: listTracks
+      summary: List conductor tracks
+      tags: [Tracks]
+      responses:
+        "200":
+          description: List of tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/status:
+    get:
+      operationId: getStatus
+      summary: Get system status overview
+      tags: [System]
+      responses:
+        "200":
+          description: System status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusInfo"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/locks:
+    get:
+      operationId: listLocks
+      summary: List all active locks
+      tags: [Locks]
+      responses:
+        "200":
+          description: List of active locks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LockInfo"
+
+  /-/api/locks/{scope}/acquire:
+    post:
+      operationId: acquireLock
+      summary: Acquire a scoped lock
+      tags: [Locks]
+      parameters:
+        - name: scope
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Lock scope name (e.g. "merge")
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LockAcquireRequest"
+      responses:
+        "200":
+          description: Lock acquired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockInfo"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Lock held by another holder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockConflictResponse"
+
+  /-/api/locks/{scope}/heartbeat:
+    post:
+      operationId: heartbeatLock
+      summary: Extend lock TTL
+      tags: [Locks]
+      parameters:
+        - name: scope
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Lock scope name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LockHeartbeatRequest"
+      responses:
+        "200":
+          description: Lock TTL extended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockInfo"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lock not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/locks/{scope}:
+    delete:
+      operationId: releaseLock
+      summary: Release a scoped lock
+      tags: [Locks]
+      parameters:
+        - name: scope
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Lock scope name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LockReleaseRequest"
+      responses:
+        "200":
+          description: Lock released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockReleasedResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lock not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    HealthResponse:
+      type: object
+      required: [status, projects]
+      properties:
+        status:
+          type: string
+          example: ok
+        projects:
+          type: integer
+
+    Agent:
+      type: object
+      required: [id, role, ref, status, pid, started_at, updated_at]
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum: [developer, reviewer]
+        ref:
+          type: string
+        status:
+          type: string
+          enum: [running, waiting, halted, stopped, completed, failed, suspended, suspending, force-killed, resume-failed, waiting-review]
+        session_id:
+          type: string
+        pid:
+          type: integer
+        worktree_dir:
+          type: string
+        log_file:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        suspended_at:
+          type: string
+          format: date-time
+        shutdown_reason:
+          type: string
+        uptime_seconds:
+          type: integer
+        cost_usd:
+          type: number
+          format: double
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+
+    AgentLog:
+      type: object
+      required: [agent_id, lines, total]
+      properties:
+        agent_id:
+          type: string
+        lines:
+          type: array
+          items:
+            type: string
+        total:
+          type: integer
+
+    QuotaInfo:
+      type: object
+      required: [total_cost_usd, rate_limited]
+      properties:
+        total_cost_usd:
+          type: number
+          format: double
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+        agent_count:
+          type: integer
+        rate_limited:
+          type: boolean
+        retry_after_seconds:
+          type: integer
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuotaAgentUsage"
+
+    QuotaAgentUsage:
+      type: object
+      required: [agent_id, cost_usd, input_tokens, output_tokens]
+      properties:
+        agent_id:
+          type: string
+        cost_usd:
+          type: number
+          format: double
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+
+    Track:
+      type: object
+      required: [id, title, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [complete, in-progress, pending]
+
+    StatusInfo:
+      type: object
+      required: [gitea_url, agent_counts, total_agents, sse_clients]
+      properties:
+        gitea_url:
+          type: string
+        agent_counts:
+          type: object
+          additionalProperties:
+            type: integer
+        total_agents:
+          type: integer
+        sse_clients:
+          type: integer
+        rate_limited:
+          type: boolean
+        total_cost_usd:
+          type: number
+          format: double
+
+    LockInfo:
+      type: object
+      required: [scope, holder, acquired_at, expires_at, ttl_remaining_seconds]
+      properties:
+        scope:
+          type: string
+        holder:
+          type: string
+        acquired_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        ttl_remaining_seconds:
+          type: number
+          format: double
+
+    LockAcquireRequest:
+      type: object
+      required: [holder]
+      properties:
+        holder:
+          type: string
+        ttl_seconds:
+          type: integer
+          default: 60
+        timeout_seconds:
+          type: integer
+          default: 0
+          description: "0 = non-blocking. >0 = server-side long-poll wait."
+
+    LockHeartbeatRequest:
+      type: object
+      required: [holder]
+      properties:
+        holder:
+          type: string
+        ttl_seconds:
+          type: integer
+          default: 60
+
+    LockReleaseRequest:
+      type: object
+      required: [holder]
+      properties:
+        holder:
+          type: string
+
+    LockConflictResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        current_holder:
+          type: string
+
+    LockReleasedResponse:
+      type: object
+      required: [released]
+      properties:
+        released:
+          type: boolean
