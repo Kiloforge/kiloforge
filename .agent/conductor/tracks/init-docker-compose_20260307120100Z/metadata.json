@@ -2,15 +2,15 @@
   "id": "init-docker-compose_20260307120100Z",
   "title": "Implement Init Command with Docker Compose and Global Gitea",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-07T12:01:00Z",
   "updated": "2026-03-07T12:01:00Z",
   "phases": {
     "total": 5,
-    "completed": 0
+    "completed": 5
   },
   "tasks": {
     "total": 16,
-    "completed": 0
+    "completed": 16
   }
 }

@@ -22,9 +22,9 @@ Build the compose CLI abstraction layer.
 - Tests: verify generated YAML is valid and contains expected fields
 
 ### Verification 1
-- [ ] `compose.Detect()` finds the correct CLI variant
-- [ ] `compose.GenerateComposeFile()` produces valid YAML
-- [ ] Unit tests pass
+- [x] `compose.Detect()` finds the correct CLI variant
+- [x] `compose.GenerateComposeFile()` produces valid YAML
+- [x] Unit tests pass
 
 ## Phase 2: Config Evolution
 
@@ -39,9 +39,9 @@ Split config into global-only schema.
 - Tests: verify config serialization/deserialization with new schema
 
 ### Verification 2
-- [ ] Config struct contains only global fields
-- [ ] Config saves and loads correctly
-- [ ] Project compiles with updated call sites
+- [x] Config struct contains only global fields
+- [x] Config saves and loads correctly
+- [x] Project compiles with updated call sites
 
 ## Phase 3: Rewrite Init Command
 
@@ -67,10 +67,10 @@ Replace the init flow with compose-based Gitea startup.
 - If Docker not available in CI, mark as integration test with build tag
 
 ### Verification 3
-- [ ] `crelay init` starts Gitea via docker-compose
-- [ ] Gitea web UI accessible at configured port
-- [ ] Running `crelay init` again is idempotent
-- [ ] No project-specific operations in init
+- [x] `crelay init` starts Gitea via docker-compose
+- [x] Gitea web UI accessible at configured port
+- [x] Running `crelay init` again is idempotent
+- [x] No project-specific operations in init
 
 ## Phase 4: Update Destroy and Status
 
@@ -89,9 +89,9 @@ Make destroy and status compose-aware.
 - Remove relay and agent status for now (will return with project context)
 
 ### Verification 4
-- [ ] `crelay destroy` tears down via compose
-- [ ] `crelay destroy --data` removes volumes and data
-- [ ] `crelay status` correctly reports Gitea state
+- [x] `crelay destroy` tears down via compose
+- [x] `crelay destroy --data` removes volumes and data
+- [x] `crelay status` correctly reports Gitea state
 
 ## Phase 5: README and Documentation
 
@@ -116,7 +116,7 @@ Make destroy and status compose-aware.
 - Keep the source files — just don't register the commands
 
 ### Verification 5
-- [ ] README accurately describes current behavior
-- [ ] `crelay --help` shows only working commands (init, status, destroy)
-- [ ] Docs are consistent with implementation
-- [ ] Project builds and all tests pass
+- [x] README accurately describes current behavior
+- [x] `crelay --help` shows only working commands (init, status, destroy)
+- [x] Docs are consistent with implementation
+- [x] Project builds and all tests pass
