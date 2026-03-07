@@ -12,6 +12,7 @@
 | [x] | relay-daemon_20260308200000Z | Relay Server Daemon Mode | 2026-03-08 | 2026-03-08 |
 | [ ] | openapi-codegen_20260308200001Z | OpenAPI Code Generation for Relay API | 2026-03-08 | 2026-03-08 |
 | [ ] | schema-first-guidance_20260308200002Z | Schema-First API Development Guidance and Standards | 2026-03-08 | 2026-03-08 |
+| [ ] | fix-route-conflict_20260308200100Z | Fix Route Pattern Conflict Panic on Startup | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

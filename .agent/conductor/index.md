@@ -52,6 +52,7 @@ Navigation hub for project context.
 - **relay-daemon_20260308200000Z** — Relay Server Daemon Mode
 - **openapi-codegen_20260308200001Z** — OpenAPI Code Generation for Relay API
 - **schema-first-guidance_20260308200002Z** — Schema-First API Development Guidance and Standards
+- **fix-route-conflict_20260308200100Z** — Fix Route Pattern Conflict Panic on Startup
 
 ## Getting Started
 

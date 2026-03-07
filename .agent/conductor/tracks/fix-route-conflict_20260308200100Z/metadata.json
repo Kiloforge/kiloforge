@@ -1,0 +1,16 @@
+{
+  "id": "fix-route-conflict_20260308200100Z",
+  "title": "Fix Route Pattern Conflict Panic on Startup",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-08T20:01:00Z",
+  "updated": "2026-03-08T20:01:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 5,
+    "completed": 0
+  }
+}
