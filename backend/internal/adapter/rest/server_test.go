@@ -218,7 +218,7 @@ func TestHealth_ReportsProjectCount(t *testing.T) {
 	h := NewAPIHandler(APIHandlerOpts{
 		Agents:   &stubAgentLister{},
 		LockMgr:  lock.New(""),
-		Projects: 1,
+		Projects: &stubProjectLister{projects: []domain.Project{{Slug: "test"}}},
 	})
 	strictHandler := gen.NewStrictHandler(h, nil)
 	mux := http.NewServeMux()
@@ -703,7 +703,7 @@ func TestNewServer_WithDashboard(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 3001, WithDashboard(nil, nil, "http://localhost:3000", dir))
+	srv := NewServer(cfg, reg, 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
 
 	if srv.dashboard == nil {
 		t.Fatal("expected dashboard to be set")

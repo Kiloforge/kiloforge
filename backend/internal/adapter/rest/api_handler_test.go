@@ -13,6 +13,13 @@ import (
 	"crelay/internal/core/domain"
 )
 
+// stubProjectLister implements ProjectLister for testing.
+type stubProjectLister struct {
+	projects []domain.Project
+}
+
+func (s *stubProjectLister) List() []domain.Project { return s.projects }
+
 // stubAgentLister implements AgentLister for testing.
 type stubAgentLister struct {
 	agents []domain.AgentInfo
@@ -48,10 +55,9 @@ func newTestHandler(agents []domain.AgentInfo) *APIHandler {
 		Agents:     &stubAgentLister{agents: agents},
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
-		ProjectDir: "",
+		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "proj-1"}, {Slug: "proj-2"}}},
 		GiteaURL:   "http://localhost:3000",
 		SSEClients: func() int { return 0 },
-		Projects:   2,
 	})
 }
 

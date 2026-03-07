@@ -47,15 +47,22 @@ func (t *testQuotaReader) GetTotalUsage() agent.TotalUsage { return t.totalUsage
 func (t *testQuotaReader) IsRateLimited() bool             { return t.rateLimited }
 func (t *testQuotaReader) RetryAfter() time.Duration       { return t.retryAfter }
 
-func newTestServer(agents AgentLister, quota QuotaReader, projectDir string) *Server {
+// testProjectLister is an in-memory ProjectLister for tests.
+type testProjectLister struct {
+	projects []domain.Project
+}
+
+func (t *testProjectLister) List() []domain.Project { return t.projects }
+
+func newTestServer(agents AgentLister, quota QuotaReader, projects ProjectLister) *Server {
 	s := &Server{
-		port:       0,
-		agents:     agents,
-		quota:      quota,
-		giteaURL:   "http://localhost:3000",
-		projectDir: projectDir,
-		hub:        NewSSEHub(),
-		mux:        http.NewServeMux(),
+		port:     0,
+		agents:   agents,
+		quota:    quota,
+		giteaURL: "http://localhost:3000",
+		projects: projects,
+		hub:      NewSSEHub(),
+		mux:      http.NewServeMux(),
 	}
 	s.routes()
 	return s
@@ -63,7 +70,7 @@ func newTestServer(agents AgentLister, quota QuotaReader, projectDir string) *Se
 
 func TestHandleAgents_Empty(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
+	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/agents", nil)
 	w := httptest.NewRecorder()
@@ -92,7 +99,7 @@ func TestHandleAgents_WithAgents(t *testing.T) {
 			"dev-1": {AgentID: "dev-1", TotalCostUSD: 0.42, InputTokens: 1000, OutputTokens: 500},
 		},
 	}
-	s := newTestServer(agents, quota, t.TempDir())
+	s := newTestServer(agents, quota, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/agents", nil)
 	w := httptest.NewRecorder()
@@ -116,7 +123,7 @@ func TestHandleAgents_WithAgents(t *testing.T) {
 
 func TestHandleAgent_NotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
+	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/agents/nonexistent", nil)
 	w := httptest.NewRecorder()
@@ -134,7 +141,7 @@ func TestHandleAgent_Found(t *testing.T) {
 			{ID: "dev-1", Role: "developer", Status: "running"},
 		},
 	}
-	s := newTestServer(agents, nil, t.TempDir())
+	s := newTestServer(agents, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/agents/dev-1", nil)
 	w := httptest.NewRecorder()
@@ -152,7 +159,7 @@ func TestHandleAgent_Found(t *testing.T) {
 
 func TestHandleQuota_NoTracker(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
+	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/quota", nil)
 	w := httptest.NewRecorder()
@@ -175,7 +182,7 @@ func TestHandleQuota_RateLimited(t *testing.T) {
 		rateLimited: true,
 		retryAfter:  30 * time.Second,
 	}
-	s := newTestServer(&testAgentLister{}, quota, t.TempDir())
+	s := newTestServer(&testAgentLister{}, quota, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/quota", nil)
 	w := httptest.NewRecorder()
@@ -208,7 +215,10 @@ func TestHandleTracks(t *testing.T) {
 | [ ] | track-2 | Second Track | 2026-03-02 | 2026-03-02 |
 `), 0o644)
 
-	s := newTestServer(&testAgentLister{}, nil, dir)
+	projects := &testProjectLister{
+		projects: []domain.Project{{Slug: "test-proj", ProjectDir: dir}},
+	}
+	s := newTestServer(&testAgentLister{}, nil, projects)
 
 	req := httptest.NewRequest("GET", "/-/api/tracks", nil)
 	w := httptest.NewRecorder()
@@ -228,18 +238,53 @@ func TestHandleTracks(t *testing.T) {
 	if result[1]["status"] != "pending" {
 		t.Errorf("second track status = %v, want pending", result[1]["status"])
 	}
+	if result[0]["project"] != "test-proj" {
+		t.Errorf("first track project = %v, want test-proj", result[0]["project"])
+	}
 }
 
-func TestHandleTracks_NoFile(t *testing.T) {
+func TestHandleTracks_NoProjects(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
+	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/tracks", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want 500", w.Code)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	var result []any
+	json.Unmarshal(w.Body.Bytes(), &result)
+	if len(result) != 0 {
+		t.Errorf("expected empty array, got %d items", len(result))
+	}
+}
+
+func TestHandleProjects(t *testing.T) {
+	t.Parallel()
+	projects := &testProjectLister{
+		projects: []domain.Project{
+			{Slug: "app1", RepoName: "app1", Active: true, OriginRemote: "git@github.com:user/app1.git"},
+			{Slug: "app2", RepoName: "app2", Active: true},
+		},
+	}
+	s := newTestServer(&testAgentLister{}, nil, projects)
+
+	req := httptest.NewRequest("GET", "/-/api/projects", nil)
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	var result []map[string]any
+	json.Unmarshal(w.Body.Bytes(), &result)
+	if len(result) != 2 {
+		t.Fatalf("expected 2 projects, got %d", len(result))
+	}
+	if result[0]["slug"] != "app1" {
+		t.Errorf("first project slug = %v, want app1", result[0]["slug"])
 	}
 }
 
@@ -255,7 +300,7 @@ func TestHandleStatus(t *testing.T) {
 	quota := &testQuotaReader{
 		totalUsage: agent.TotalUsage{TotalCostUSD: 0.75},
 	}
-	s := newTestServer(agents, quota, t.TempDir())
+	s := newTestServer(agents, quota, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/status", nil)
 	w := httptest.NewRecorder()
@@ -285,7 +330,7 @@ func TestHandleAgentLog_NoLogFile(t *testing.T) {
 			{ID: "dev-1", Status: "running"},
 		},
 	}
-	s := newTestServer(agents, nil, t.TempDir())
+	s := newTestServer(agents, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/agents/dev-1/log", nil)
 	w := httptest.NewRecorder()
@@ -307,7 +352,7 @@ func TestHandleAgentLog_WithLines(t *testing.T) {
 			{ID: "dev-1", Status: "running", LogFile: logFile},
 		},
 	}
-	s := newTestServer(agents, nil, t.TempDir())
+	s := newTestServer(agents, nil, &testProjectLister{})
 
 	req := httptest.NewRequest("GET", "/-/api/agents/dev-1/log?lines=3", nil)
 	w := httptest.NewRecorder()
@@ -373,7 +418,7 @@ func TestRegisterRoutes_MountsOnExternalMux(t *testing.T) {
 		totalUsage: agent.TotalUsage{TotalCostUSD: 0.50},
 	}
 
-	s := New(0, agents, quota, "http://localhost:3000", t.TempDir())
+	s := New(0, agents, quota, "http://localhost:3000", &testProjectLister{})
 
 	externalMux := http.NewServeMux()
 	s.RegisterRoutes(externalMux)
