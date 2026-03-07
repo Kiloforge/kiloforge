@@ -52,7 +52,8 @@ func (m *Manager) waitReady(ctx context.Context) error {
 // Returns a Client configured with the token.
 func (m *Manager) Configure(ctx context.Context) (*Client, error) {
 	// Create admin user via compose exec (ignore error if already exists).
-	_, _ = m.runner.Exec(ctx, m.cfg.DataDir, "gitea",
+	// Gitea refuses to run CLI commands as root — run as the "git" user.
+	_, _ = m.runner.Exec(ctx, m.cfg.DataDir, "gitea", "git",
 		"gitea", "admin", "user", "create",
 		"--username", config.GiteaAdminUser,
 		"--password", config.GiteaAdminPass,

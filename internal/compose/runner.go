@@ -87,9 +87,14 @@ func (r *Runner) Ps(ctx context.Context, composeDir string) (string, error) {
 	return out.String(), err
 }
 
-// Exec runs a command inside a service container.
-func (r *Runner) Exec(ctx context.Context, composeDir string, service string, cmdArgs ...string) ([]byte, error) {
-	args := append([]string{"exec", "-T", service}, cmdArgs...)
+// Exec runs a command inside a service container as the specified user.
+func (r *Runner) Exec(ctx context.Context, composeDir string, service string, user string, cmdArgs ...string) ([]byte, error) {
+	args := []string{"exec", "-T"}
+	if user != "" {
+		args = append(args, "-u", user)
+	}
+	args = append(args, service)
+	args = append(args, cmdArgs...)
 	cmd := r.command(ctx, composeDir, args...)
 	return cmd.CombinedOutput()
 }
