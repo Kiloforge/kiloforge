@@ -3,18 +3,30 @@ package relay
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"crelay/internal/config"
+	"crelay/internal/orchestration"
 	"crelay/internal/project"
+	"crelay/internal/state"
 )
 
 func newTestServer() *Server {
+	return newTestServerWithDir("")
+}
+
+func newTestServerWithDir(dataDir string) *Server {
+	if dataDir == "" {
+		dataDir = "/tmp/crelay-test-" + fmt.Sprintf("%d", os.Getpid())
+	}
 	cfg := &config.Config{
 		GiteaPort:      3000,
-		DataDir:        "/tmp/test",
+		DataDir:        dataDir,
 		GiteaAdminUser: "conductor",
 	}
 	reg := &project.Registry{
@@ -226,5 +238,56 @@ func TestHandleWebhook_MethodNotAllowed(t *testing.T) {
 
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("expected 405, got %d", rec.Code)
+	}
+}
+
+func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	srv := newTestServerWithDir(dir)
+
+	// Add a developer agent to state so the tracking can find it.
+	srv.store.AddAgent(state.AgentInfo{
+		ID:        "dev-agent-123",
+		Role:      "developer",
+		Ref:       "my-track_20260101Z",
+		Status:    "running",
+		SessionID: "dev-session-456",
+	})
+
+	rec := postWebhook(t, srv, "pull_request", map[string]any{
+		"action":     "opened",
+		"repository": map[string]any{"name": "myapp"},
+		"pull_request": map[string]any{
+			"number": float64(5),
+			"title":  "feat: my track",
+			"head": map[string]any{
+				"ref": "my-track_20260101Z",
+			},
+		},
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	// Verify tracking record created.
+	projectDir := filepath.Join(dir, "projects", "myapp")
+	tracking, err := orchestration.LoadPRTracking(projectDir)
+	if err != nil {
+		t.Fatalf("LoadPRTracking: %v", err)
+	}
+	if tracking.PRNumber != 5 {
+		t.Errorf("PRNumber: want 5, got %d", tracking.PRNumber)
+	}
+	if tracking.TrackID != "my-track_20260101Z" {
+		t.Errorf("TrackID: want %q, got %q", "my-track_20260101Z", tracking.TrackID)
+	}
+	if tracking.DeveloperAgentID != "dev-agent-123" {
+		t.Errorf("DeveloperAgentID: want %q, got %q", "dev-agent-123", tracking.DeveloperAgentID)
+	}
+	if tracking.Status != "waiting-review" {
+		t.Errorf("Status: want %q, got %q", "waiting-review", tracking.Status)
 	}
 }

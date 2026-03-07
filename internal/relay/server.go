@@ -6,24 +6,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"crelay/internal/config"
+	"crelay/internal/orchestration"
 	"crelay/internal/project"
+	"crelay/internal/state"
 )
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg      *config.Config
 	registry *project.Registry
+	store    *state.Store
 	logger   *log.Logger
 	port     int
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
 func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server {
+	store, err := state.Load(cfg.DataDir)
+	if err != nil {
+		store = &state.Store{}
+	}
 	return &Server{
 		cfg:      cfg,
 		registry: registry,
+		store:    store,
 		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
 		port:     port,
 	}
@@ -175,6 +185,7 @@ func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 	switch action {
 	case "opened", "reopened":
 		s.logger.Printf("[%s] PR #%d opened: %q", slug, prNumber, prTitle)
+		s.createPRTracking(slug, prNumber, pr)
 	case "closed":
 		merged, _ := pr["merged"].(bool)
 		if merged {
@@ -187,6 +198,58 @@ func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 	default:
 		s.logger.Printf("[%s] PR #%d %s: %q", slug, prNumber, action, prTitle)
 	}
+}
+
+func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) {
+	// Extract track ID from branch name (head ref).
+	head, _ := pr["head"].(map[string]any)
+	if head == nil {
+		return
+	}
+	branchRef, _ := head["ref"].(string)
+	if branchRef == "" {
+		return
+	}
+
+	// Find developer agent by track ID (branch ref).
+	var devAgentID, devSession string
+	for _, a := range s.store.Agents {
+		if a.Role == "developer" && a.Ref == branchRef {
+			devAgentID = a.ID
+			devSession = a.SessionID
+			break
+		}
+	}
+
+	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
+	tracking := &orchestration.PRTracking{
+		PRNumber:         prNumber,
+		TrackID:          branchRef,
+		ProjectSlug:      slug,
+		DeveloperAgentID: devAgentID,
+		DeveloperSession: devSession,
+		MaxReviewCycles:  5,
+		Status:           "waiting-review",
+	}
+
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		s.logger.Printf("[%s] Error creating project dir: %v", slug, err)
+		return
+	}
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+		return
+	}
+
+	// Update developer agent status.
+	if devAgentID != "" {
+		s.store.UpdateStatus(devAgentID, "waiting-review")
+		if err := s.store.Save(s.cfg.DataDir); err != nil {
+			s.logger.Printf("[%s] Error saving state: %v", slug, err)
+		}
+	}
+
+	s.logger.Printf("[%s] PR #%d tracking created (track: %s)", slug, prNumber, branchRef)
 }
 
 func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
