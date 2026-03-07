@@ -18,7 +18,8 @@ type Config struct {
 	GiteaImage      string `json:"gitea_image,omitempty"`
 	GiteaAdminUser  string `json:"gitea_admin_user,omitempty"`
 	GiteaAdminPass  string `json:"gitea_admin_pass,omitempty"`
-	GiteaAdminEmail string `json:"gitea_admin_email,omitempty"`
+	GiteaAdminEmail    string  `json:"gitea_admin_email,omitempty"`
+	MaxSessionCostUSD  float64 `json:"max_session_cost_usd,omitempty"`
 }
 
 func (c *Config) GiteaURL() string {

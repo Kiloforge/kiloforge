@@ -29,9 +29,34 @@ func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore, tracker *QuotaTr
 	return &Spawner{cfg: cfg, store: store, tracker: tracker}
 }
 
+// checkQuota returns an error if the tracker indicates rate limiting or budget exceeded.
+func (s *Spawner) checkQuota() error {
+	if s.tracker == nil {
+		return nil
+	}
+	if s.tracker.IsRateLimited() {
+		ra := s.tracker.RetryAfter()
+		return fmt.Errorf("rate limited — retry after %s", ra.Round(time.Second))
+	}
+	if s.cfg.MaxSessionCostUSD > 0 {
+		total := s.tracker.GetTotalUsage()
+		if total.TotalCostUSD >= s.cfg.MaxSessionCostUSD {
+			return fmt.Errorf("budget exceeded ($%.2f / $%.2f) — increase max_session_cost_usd or wait", total.TotalCostUSD, s.cfg.MaxSessionCostUSD)
+		}
+		if total.TotalCostUSD >= s.cfg.MaxSessionCostUSD*0.8 {
+			fmt.Fprintf(os.Stderr, "warning: approaching budget limit ($%.2f / $%.2f)\n", total.TotalCostUSD, s.cfg.MaxSessionCostUSD)
+		}
+	}
+	return nil
+}
+
 // SpawnReviewer launches a Claude agent to review a PR.
 // The projectDir parameter specifies the working directory for the agent.
 func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error) {
+	if err := s.checkQuota(); err != nil {
+		return nil, fmt.Errorf("spawn blocked: %w", err)
+	}
+
 	agentID := uuid.New().String()
 	sessionID := uuid.New().String()
 	logDir := filepath.Join(s.cfg.DataDir, "logs")
@@ -103,6 +128,10 @@ type SpawnDeveloperOpts struct {
 
 // SpawnDeveloper launches a Claude agent to implement a track.
 func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*domain.AgentInfo, error) {
+	if err := s.checkQuota(); err != nil {
+		return nil, fmt.Errorf("spawn blocked: %w", err)
+	}
+
 	agentID := uuid.New().String()
 	sessionID := uuid.New().String()
 
