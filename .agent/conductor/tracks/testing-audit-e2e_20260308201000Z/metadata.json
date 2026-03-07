@@ -1,0 +1,16 @@
+{
+  "id": "testing-audit-e2e_20260308201000Z",
+  "title": "Testing Audit — Integration, E2E, and Smoke Tests",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-08T20:10:00Z",
+  "updated": "2026-03-08T20:10:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 13,
+    "completed": 0
+  }
+}

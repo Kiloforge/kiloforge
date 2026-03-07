@@ -13,6 +13,7 @@
 | [ ] | openapi-codegen_20260308200001Z | OpenAPI Code Generation for Relay API | 2026-03-08 | 2026-03-08 |
 | [x] | schema-first-guidance_20260308200002Z | Schema-First API Development Guidance and Standards | 2026-03-08 | 2026-03-08 |
 | [x] | fix-route-conflict_20260308200100Z | Fix Route Pattern Conflict Panic on Startup | 2026-03-08 | 2026-03-08 |
+| [ ] | testing-audit-e2e_20260308201000Z | Testing Audit — Integration, E2E, and Smoke Tests | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
