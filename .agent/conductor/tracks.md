@@ -2,7 +2,7 @@
 
 | Status | Track ID | Title | Created | Updated |
 | ------ | -------- | ----- | ------- | ------- |
-| [ ] | impl-gitea-issue-api_20260308170000Z | Extend Gitea Client with Issue, Label, and Project Board APIs | 2026-03-08 | 2026-03-08 |
+| [x] | impl-gitea-issue-api_20260308170000Z | Extend Gitea Client with Issue, Label, and Project Board APIs | 2026-03-08 | 2026-03-08 |
 | [ ] | impl-track-board-sync_20260308170001Z | Track-to-Gitea Board Sync Service | 2026-03-08 | 2026-03-08 |
 | [ ] | impl-board-webhook-sync_20260308170002Z | Webhook-Driven Board State Synchronization | 2026-03-08 | 2026-03-08 |
 
