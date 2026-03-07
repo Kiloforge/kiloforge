@@ -42,6 +42,9 @@ Navigation hub for project context.
 - **impl-lock-service_20260308150000Z** — HTTP-Based Scoped Lock Service in Relay Server
 - **impl-conductor-lock-migration_20260308150001Z** — Migrate Conductor Skills to Use crelay Lock API
 - **impl-unified-server_20260308160000Z** — Unified Server with Reverse Proxy to Gitea
+- **impl-gitea-issue-api_20260308170000Z** — Extend Gitea Client with Issue, Label, and Project Board APIs
+- **impl-track-board-sync_20260308170001Z** — Track-to-Gitea Board Sync Service
+- **impl-board-webhook-sync_20260308170002Z** — Webhook-Driven Board State Synchronization
 
 ## Getting Started
 
