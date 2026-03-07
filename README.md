@@ -37,8 +37,7 @@ make build
 crelay init
 
 # Register your project
-cd ~/dev/my-project
-crelay add .
+crelay add git@github.com:user/my-project.git
 
 # List registered projects
 crelay projects
@@ -105,15 +104,15 @@ Compose:     /Users/you/.crelay/docker-compose.yml
 
 ### `crelay add`
 
-Register a project with the Gitea server.
+Clone a remote repo and register it with the Gitea server.
 
 ```bash
-crelay add [repo-path]    # defaults to current directory
-crelay add . --name myapp # override project slug
-crelay add . --origin git@github.com:user/repo.git  # override origin
+crelay add git@github.com:user/repo.git          # SSH URL
+crelay add https://github.com/user/repo.git      # HTTPS URL
+crelay add git@github.com:user/repo.git --name x  # override slug
 ```
 
-Creates a Gitea repo, adds a `gitea` remote, pushes the main branch, and registers a webhook. The project's origin remote URL is captured for future bridging support.
+Clones the remote into `~/.crelay/repos/<slug>/`, creates a Gitea repo, adds a `gitea` remote, pushes the main branch, and registers a webhook.
 
 ### `crelay projects`
 
@@ -181,6 +180,8 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 ├── config.json           # Global configuration
 ├── projects.json         # Project registry
 ├── docker-compose.yml    # Generated compose file
+├── repos/                # Cloned project repositories
+│   └── <slug>/
 ├── projects/             # Per-project data
 │   └── <slug>/
 │       └── logs/
@@ -189,7 +190,7 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 
 ## Origin Bridging
 
-When you register a project with `crelay add`, the origin remote URL is captured and stored. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
+When you register a project with `crelay add <remote-url>`, the remote URL is stored as the origin. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
 
 ## Development
 

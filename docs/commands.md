@@ -137,39 +137,37 @@ $ crelay destroy
 
 ## `crelay add`
 
-Register a project with the Gitea server.
+Clone a remote repo and register it with the Gitea server.
 
 **Synopsis:**
 ```bash
-crelay add [repo-path] [--name SLUG] [--origin URL]
+crelay add <remote-url> [--name SLUG]
 ```
 
 **What it does (in order):**
-1. Resolves the repo path (defaults to current directory)
-2. Verifies the path is a git repository
+1. Validates the argument is a remote URL (SSH or HTTPS)
+2. Derives a project slug from the URL (last path component, minus `.git`)
 3. Loads global config and verifies Gitea is running
-4. Derives a project slug from the directory basename (or `--name`)
-5. Detects the `origin` git remote URL (or uses `--origin`)
-6. Creates a repository in Gitea via API
-7. Adds a `gitea` git remote to the project
-8. Pushes the main branch to Gitea
-9. Registers a webhook for relay events
-10. Creates project data directory (`~/.crelay/projects/<slug>/logs/`)
-11. Saves the project to `~/.crelay/projects.json`
+4. Clones the remote into `~/.crelay/repos/<slug>/`
+5. Creates a repository in Gitea via API
+6. Adds a `gitea` git remote to the cloned repo
+7. Pushes the main branch to Gitea
+8. Registers a webhook for relay events
+9. Creates project data directory (`~/.crelay/projects/<slug>/logs/`)
+10. Saves the project to `~/.crelay/projects.json`
 
 **Flags:**
 
 | Flag | Description |
 |------|-------------|
-| `--name` | Override the project slug (defaults to directory basename) |
-| `--origin` | Override the origin remote URL (defaults to auto-detected from git) |
+| `--name` | Override the project slug (defaults to repo name from URL) |
 
 **Idempotent:** Re-adding an already-registered project prints the existing registration and exits.
 
 **Example:**
 ```
-$ cd ~/dev/my-project
-$ crelay add .
+$ crelay add git@github.com:you/my-project.git
+==> Cloning git@github.com:you/my-project.git...
 ==> Creating Gitea repo 'my-project'...
 ==> Adding gitea remote...
     Remote: http://localhost:3000/conductor/my-project.git
@@ -177,7 +175,7 @@ $ crelay add .
 ==> Registering webhook...
 
 Project 'my-project' registered!
-  Path:   /Users/you/dev/my-project
+  Path:   /Users/you/.crelay/repos/my-project
   Gitea:  http://localhost:3000/conductor/my-project
   Origin: git@github.com:you/my-project.git
 
