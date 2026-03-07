@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test clean gen-api verify-codegen
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-smoke test-all clean gen-api verify-codegen
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/crelay
@@ -22,6 +22,13 @@ test:
 	@mkdir -p backend/internal/adapter/dashboard/dist
 	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race ./...
+
+test-coverage:
+	@mkdir -p backend/internal/adapter/dashboard/dist
+	@touch backend/internal/adapter/dashboard/dist/.gitkeep
+	cd backend && go test -buildvcs=false -race -coverprofile=coverage.out ./...
+	cd backend && go tool cover -func=coverage.out
+	@echo "HTML report: go tool cover -html=backend/coverage.out"
 
 clean:
 	rm -rf $(BIN_DIR)
