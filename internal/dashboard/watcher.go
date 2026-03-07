@@ -80,7 +80,7 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 }
 
 func agentToJSON(a domain.AgentInfo) map[string]any {
-	return map[string]any{
+	m := map[string]any{
 		"id":           a.ID,
 		"role":         a.Role,
 		"ref":          a.Ref,
@@ -92,4 +92,11 @@ func agentToJSON(a domain.AgentInfo) map[string]any {
 		"started_at":   a.StartedAt,
 		"updated_at":   a.UpdatedAt,
 	}
+	if a.SuspendedAt != nil {
+		m["suspended_at"] = a.SuspendedAt
+	}
+	if a.ShutdownReason != "" {
+		m["shutdown_reason"] = a.ShutdownReason
+	}
+	return m
 }

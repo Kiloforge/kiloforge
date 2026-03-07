@@ -1,7 +1,7 @@
 (function() {
   "use strict";
 
-  var state = { agents: [], quota: null, tracks: [] };
+  var state = { agents: [], quota: null, tracks: [], giteaURL: "" };
 
   // DOM refs
   var agentGrid = document.getElementById("agent-grid");
@@ -46,6 +46,15 @@
     }
     totalAgents.textContent = String(state.agents.length);
     agentGrid.innerHTML = state.agents.map(function(a) {
+      var refHTML = '';
+      if (a.ref) {
+        var prMatch = a.ref.match(/^PR #(\d+)$/);
+        if (prMatch && state.giteaURL) {
+          refHTML = '<span>ref: <a href="' + esc(state.giteaURL) + '/-/pulls/' + prMatch[1] + '" target="_blank" rel="noopener">' + esc(a.ref) + '</a></span>';
+        } else {
+          refHTML = '<span>ref: ' + esc(a.ref) + '</span>';
+        }
+      }
       return '<div class="agent-card">' +
         '<div class="agent-header">' +
           '<span class="agent-id">' + esc(a.id) + '</span>' +
@@ -56,7 +65,7 @@
           (a.cost_usd ? '<span style="font-size:12px;color:var(--text-dim)">' + formatCost(a.cost_usd) + '</span>' : '') +
         '</div>' +
         '<div class="agent-meta">' +
-          (a.ref ? '<span>ref: ' + esc(a.ref) + '</span>' : '') +
+          refHTML +
           (a.uptime_seconds ? '<span>uptime: ' + formatUptime(a.uptime_seconds) + '</span>' : '') +
           (a.pid ? '<span>PID: ' + a.pid + '</span>' : '') +
         '</div>' +
@@ -125,6 +134,7 @@
     });
     fetchJSON("/api/status", function(data) {
       if (data && data.gitea_url) {
+        state.giteaURL = data.gitea_url;
         var link = document.getElementById("gitea-link");
         link.href = data.gitea_url;
       }
