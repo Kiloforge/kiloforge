@@ -74,6 +74,16 @@ func (r *Registry) Add(p Project) error {
 	return nil
 }
 
+// FindByRepoName looks up a project by its Gitea repo name.
+func (r *Registry) FindByRepoName(repoName string) (Project, bool) {
+	for _, p := range r.Projects {
+		if p.RepoName == repoName {
+			return p, true
+		}
+	}
+	return Project{}, false
+}
+
 // FindByDir looks up a project by its project directory path.
 func (r *Registry) FindByDir(dir string) (Project, bool) {
 	for _, p := range r.Projects {

@@ -121,6 +121,8 @@ func (c *Client) CreateWebhook(ctx context.Context, repoName string, relayPort i
 			"secret":       "",
 		},
 		"events": []string{
+			"issues",
+			"issue_comment",
 			"pull_request",
 			"pull_request_review",
 			"pull_request_comment",

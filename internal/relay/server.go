@@ -7,46 +7,33 @@ import (
 	"log"
 	"net/http"
 
-	"crelay/internal/agent"
 	"crelay/internal/config"
-	"crelay/internal/gitea"
-	"crelay/internal/state"
+	"crelay/internal/project"
 )
 
-// Server handles incoming webhooks and manages agents.
+// Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg      *config.Config
-	client   *gitea.Client
-	spawner  *agent.Spawner
-	store    *state.Store
+	registry *project.Registry
 	logger   *log.Logger
 	port     int
-	repoName string
 }
 
-// NewServer creates a relay server. Port and repoName are provided explicitly
-// since they are project-specific and no longer part of global config.
-func NewServer(cfg *config.Config, client *gitea.Client, port int, repoName string) *Server {
-	store, err := state.Load(cfg.DataDir)
-	if err != nil {
-		store = &state.Store{}
-	}
+// NewServer creates a relay server with multi-project routing via the registry.
+func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server {
 	return &Server{
 		cfg:      cfg,
-		client:   client,
-		spawner:  agent.NewSpawner(cfg, store),
-		store:    store,
+		registry: registry,
 		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
 		port:     port,
-		repoName: repoName,
 	}
 }
 
+// Run starts the HTTP server and blocks until the context is cancelled.
 func (s *Server) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", s.handleWebhook)
 	mux.HandleFunc("/health", s.handleHealth)
-	mux.HandleFunc("/api/agents", s.handleAgents)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.port),
@@ -66,12 +53,10 @@ func (s *Server) Run(ctx context.Context) error {
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-}
-
-func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(s.store.Agents)
+	json.NewEncoder(w).Encode(map[string]any{
+		"status":   "ok",
+		"projects": len(s.registry.Projects),
+	})
 }
 
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +66,6 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event := r.Header.Get("X-Gitea-Event")
-	s.logger.Printf("Received webhook: %s", event)
 
 	var payload map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -90,22 +74,95 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	proj, ok := s.resolveProject(payload)
+	if !ok {
+		s.logger.Printf("Ignoring event from unknown repo")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "ignored"})
+		return
+	}
+
+	slug := proj.Slug
+
 	switch event {
+	case "issues":
+		s.handleIssues(slug, payload)
+	case "issue_comment":
+		s.handleIssueComment(slug, payload)
 	case "pull_request":
-		s.handlePullRequest(r.Context(), payload)
+		s.handlePullRequest(slug, payload)
 	case "pull_request_review":
-		s.handlePullRequestReview(r.Context(), payload)
+		s.handlePullRequestReview(slug, payload)
 	case "pull_request_comment":
-		s.handlePullRequestComment(r.Context(), payload)
+		s.handlePullRequestComment(slug, payload)
+	case "push":
+		s.handlePush(slug, payload)
 	default:
-		s.logger.Printf("Unhandled event type: %s", event)
+		s.logger.Printf("[%s] Unhandled event: %s", slug, event)
 	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "received"})
 }
 
-func (s *Server) handlePullRequest(ctx context.Context, payload map[string]any) {
+func (s *Server) resolveProject(payload map[string]any) (project.Project, bool) {
+	repo, ok := payload["repository"].(map[string]any)
+	if !ok {
+		return project.Project{}, false
+	}
+	repoName, _ := repo["name"].(string)
+	if repoName == "" {
+		return project.Project{}, false
+	}
+	return s.registry.FindByRepoName(repoName)
+}
+
+func (s *Server) handleIssues(slug string, payload map[string]any) {
+	action, _ := payload["action"].(string)
+	issue, _ := payload["issue"].(map[string]any)
+	if issue == nil {
+		return
+	}
+
+	number := int(issue["number"].(float64))
+	title, _ := issue["title"].(string)
+
+	switch action {
+	case "opened":
+		s.logger.Printf("[%s] Issue #%d created: %q", slug, number, title)
+	case "edited":
+		s.logger.Printf("[%s] Issue #%d edited: %q", slug, number, title)
+	case "closed":
+		s.logger.Printf("[%s] Issue #%d closed: %q", slug, number, title)
+	case "label_updated":
+		s.logger.Printf("[%s] Issue #%d labels updated: %q", slug, number, title)
+	case "assigned":
+		s.logger.Printf("[%s] Issue #%d assigned: %q", slug, number, title)
+	default:
+		s.logger.Printf("[%s] Issue #%d %s: %q", slug, number, action, title)
+	}
+}
+
+func (s *Server) handleIssueComment(slug string, payload map[string]any) {
+	action, _ := payload["action"].(string)
+	comment, _ := payload["comment"].(map[string]any)
+	issue, _ := payload["issue"].(map[string]any)
+	if comment == nil || issue == nil {
+		return
+	}
+
+	number := int(issue["number"].(float64))
+	body, _ := comment["body"].(string)
+	if len(body) > 60 {
+		body = body[:60] + "..."
+	}
+
+	if action == "created" {
+		s.logger.Printf("[%s] Issue #%d comment: %s", slug, number, body)
+	}
+}
+
+func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 	action, _ := payload["action"].(string)
 	pr, _ := payload["pull_request"].(map[string]any)
 	if pr == nil {
@@ -117,27 +174,22 @@ func (s *Server) handlePullRequest(ctx context.Context, payload map[string]any) 
 
 	switch action {
 	case "opened", "reopened":
-		s.logger.Printf("PR #%d opened: %s — spawning reviewer", prNumber, prTitle)
-		prURL := fmt.Sprintf("%s/%s/%s/pulls/%d",
-			s.client.BaseURL(), s.cfg.GiteaAdminUser, s.repoName, prNumber)
-
-		info, err := s.spawner.SpawnReviewer(ctx, prNumber, prURL)
-		if err != nil {
-			s.logger.Printf("Error spawning reviewer: %v", err)
-			return
+		s.logger.Printf("[%s] PR #%d opened: %q", slug, prNumber, prTitle)
+	case "closed":
+		merged, _ := pr["merged"].(bool)
+		if merged {
+			s.logger.Printf("[%s] PR #%d merged: %q", slug, prNumber, prTitle)
+		} else {
+			s.logger.Printf("[%s] PR #%d closed: %q", slug, prNumber, prTitle)
 		}
-		s.logger.Printf("Reviewer spawned: %s (session: %s)", info.ID[:8], info.SessionID[:8])
-
 	case "synchronize":
-		s.logger.Printf("PR #%d updated — new commits pushed", prNumber)
-
+		s.logger.Printf("[%s] PR #%d updated — new commits pushed", slug, prNumber)
 	default:
-		s.logger.Printf("PR action: %s (no handler)", action)
+		s.logger.Printf("[%s] PR #%d %s: %q", slug, prNumber, action, prTitle)
 	}
 }
 
-func (s *Server) handlePullRequestReview(ctx context.Context, payload map[string]any) {
-	action, _ := payload["action"].(string)
+func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 	review, _ := payload["review"].(map[string]any)
 	pr, _ := payload["pull_request"].(map[string]any)
 	if review == nil || pr == nil {
@@ -147,24 +199,34 @@ func (s *Server) handlePullRequestReview(ctx context.Context, payload map[string
 	prNumber := int(pr["number"].(float64))
 	reviewState, _ := review["state"].(string)
 
-	s.logger.Printf("PR #%d review %s: %s", prNumber, action, reviewState)
-
-	prRef := fmt.Sprintf("PR #%d", prNumber)
-	for _, a := range s.store.Agents {
-		if a.Role == "developer" && a.Ref == prRef && a.Status == "waiting" {
-			s.logger.Printf("Developer agent %s is waiting for review — would send feedback", a.ID[:8])
-			break
-		}
-	}
+	s.logger.Printf("[%s] PR #%d review %s", slug, prNumber, reviewState)
 }
 
-func (s *Server) handlePullRequestComment(ctx context.Context, payload map[string]any) {
+func (s *Server) handlePullRequestComment(slug string, payload map[string]any) {
 	action, _ := payload["action"].(string)
 	comment, _ := payload["comment"].(map[string]any)
+	pr, _ := payload["pull_request"].(map[string]any)
 	if comment == nil {
 		return
 	}
 
 	body, _ := comment["body"].(string)
-	s.logger.Printf("PR comment %s: %.60s", action, body)
+	if len(body) > 60 {
+		body = body[:60] + "..."
+	}
+
+	prNumber := 0
+	if pr != nil {
+		prNumber = int(pr["number"].(float64))
+	}
+
+	if action == "created" {
+		s.logger.Printf("[%s] PR #%d comment: %s", slug, prNumber, body)
+	}
+}
+
+func (s *Server) handlePush(slug string, payload map[string]any) {
+	ref, _ := payload["ref"].(string)
+	commits, _ := payload["commits"].([]any)
+	s.logger.Printf("[%s] Push to %s — %d commit(s)", slug, ref, len(commits))
 }
