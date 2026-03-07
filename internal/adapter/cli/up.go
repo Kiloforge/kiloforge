@@ -9,7 +9,6 @@ import (
 	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/compose"
 	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/dashboard"
 	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/rest"
@@ -74,7 +73,8 @@ func runUp(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 	}
 
-	// Start dashboard if enabled.
+	// Build server options.
+	var opts []rest.ServerOption
 	if cfg.IsDashboardEnabled() && !flagNoDashboard {
 		store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 		if err != nil {
@@ -83,21 +83,16 @@ func runUp(cmd *cobra.Command, args []string) error {
 			tracker := agent.NewQuotaTracker(cfg.DataDir)
 			_ = tracker.Load()
 			projectDir, _ := os.Getwd()
-			dashSrv := dashboard.New(cfg.DashboardPort, store, tracker, cfg.GiteaURL(), projectDir)
-			go func() {
-				if err := dashSrv.Run(ctx); err != nil && ctx.Err() == nil {
-					fmt.Fprintf(os.Stderr, "dashboard error: %v\n", err)
-				}
-			}()
-			fmt.Printf("==> Dashboard at http://localhost:%d\n", cfg.DashboardPort)
+			opts = append(opts, rest.WithDashboard(store, tracker, cfg.GiteaURL(), projectDir))
+			fmt.Printf("==> Dashboard at http://localhost:%d\n", cfg.RelayPort)
 		}
 	}
 
-	// Start relay server (blocking).
-	fmt.Printf("==> Starting relay on :%d (%d project(s))...\n", cfg.RelayPort, len(projects))
-	fmt.Println("    Press Ctrl+C to stop the relay.")
+	// Start unified server (blocking).
+	fmt.Printf("==> Starting server on :%d (%d project(s))...\n", cfg.RelayPort, len(projects))
+	fmt.Println("    Press Ctrl+C to stop.")
 	fmt.Println()
 
-	srv := rest.NewServer(cfg, reg, cfg.RelayPort)
+	srv := rest.NewServer(cfg, reg, cfg.RelayPort, opts...)
 	return srv.Run(ctx)
 }
