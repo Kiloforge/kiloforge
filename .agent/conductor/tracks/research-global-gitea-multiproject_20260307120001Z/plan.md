@@ -30,20 +30,20 @@
 
 ## Phase 2: Workflow & Integration Research
 
-### Task 2.1: Design project onboarding flow
+### Task 2.1: Design project onboarding flow [x]
 - What happens when user runs `crelay add` in a project directory?
 - Steps: create repo in Gitea, add git remote, create webhook, register in config
 - Handle: project already registered, project dir moved, repo name conflicts
 - **Output:** Onboarding flow document
 
-### Task 2.2: Design webhook routing strategy
+### Task 2.2: Design webhook routing strategy [x]
 - Gitea webhook payload includes `repository.full_name` — can be used for routing
 - Option A: Single relay, routes by repo name to correct project context
 - Option B: Separate webhook URLs per project (e.g., `/webhook/{project}`)
 - Evaluate: simplicity, reliability, debuggability
 - **Output:** Routing strategy recommendation
 
-### Task 2.3: Design CLI command restructuring
+### Task 2.3: Design CLI command restructuring [x]
 - Current: init, status, agents, logs, attach, stop, destroy
 - Proposed additions: add, remove, list (projects)
 - Proposed changes: init becomes global-only, destroy gains project scope
@@ -51,9 +51,9 @@
 - **Output:** CLI command tree proposal
 
 ### Verification 2
-- [ ] Onboarding flow documented
-- [ ] Webhook routing strategy chosen
-- [ ] CLI restructuring proposed
+- [x] Onboarding flow documented
+- [x] Webhook routing strategy chosen
+- [x] CLI restructuring proposed
 
 ## Phase 3: Migration & Final Report
 
