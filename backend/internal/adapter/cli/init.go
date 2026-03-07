@@ -165,6 +165,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("Use 'crelay down' to stop.")
 
+	// Offer skills installation if configured and not yet installed.
+	offerSkillsInstall(cfg)
+
 	return nil
 }
 

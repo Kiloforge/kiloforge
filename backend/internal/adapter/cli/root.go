@@ -38,4 +38,5 @@ func init() {
 	rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(skillsCmd)
 }
