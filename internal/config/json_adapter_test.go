@@ -1,0 +1,92 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestJSONAdapter_ImplementsConfigProvider(t *testing.T) {
+	t.Parallel()
+	var _ ConfigProvider = (*JSONAdapter)(nil)
+}
+
+func TestJSONAdapter_SaveAndLoad(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	adapter := NewJSONAdapter(dir)
+
+	cfg := &Config{
+		GiteaPort:      4000,
+		DataDir:        dir,
+		APIToken:       "tok-abc",
+		ComposeFile:    filepath.Join(dir, "docker-compose.yml"),
+		ContainerName:  "custom-gitea",
+		GiteaAdminUser: "admin",
+	}
+
+	if err := adapter.Save(cfg); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	loaded, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if loaded.GiteaPort != 4000 {
+		t.Errorf("GiteaPort: want 4000, got %d", loaded.GiteaPort)
+	}
+	if loaded.APIToken != "tok-abc" {
+		t.Errorf("APIToken: want %q, got %q", "tok-abc", loaded.APIToken)
+	}
+	if loaded.ContainerName != "custom-gitea" {
+		t.Errorf("ContainerName: want %q, got %q", "custom-gitea", loaded.ContainerName)
+	}
+	if loaded.GiteaAdminUser != "admin" {
+		t.Errorf("GiteaAdminUser: want %q, got %q", "admin", loaded.GiteaAdminUser)
+	}
+}
+
+func TestJSONAdapter_MissingFile_ReturnsZeroConfig(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	adapter := NewJSONAdapter(dir)
+
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load should not error on missing file: %v", err)
+	}
+
+	if cfg.GiteaPort != 0 {
+		t.Errorf("GiteaPort: want 0, got %d", cfg.GiteaPort)
+	}
+	if cfg.DataDir != "" {
+		t.Errorf("DataDir: want empty, got %q", cfg.DataDir)
+	}
+}
+
+func TestJSONAdapter_PartialFile(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	data := []byte(`{"gitea_port":5000}`)
+	if err := os.WriteFile(filepath.Join(dir, ConfigFileName), data, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	adapter := NewJSONAdapter(dir)
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if cfg.GiteaPort != 5000 {
+		t.Errorf("GiteaPort: want 5000, got %d", cfg.GiteaPort)
+	}
+	if cfg.DataDir != "" {
+		t.Errorf("DataDir: want empty, got %q", cfg.DataDir)
+	}
+}
