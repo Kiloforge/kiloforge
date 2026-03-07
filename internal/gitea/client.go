@@ -131,6 +131,21 @@ func (c *Client) CreateWebhook(ctx context.Context, repoName string, relayPort i
 	return err
 }
 
+// CheckVersion calls the Gitea version API to verify the server is running.
+func (c *Client) CheckVersion(ctx context.Context) (string, error) {
+	data, err := c.do(ctx, "GET", "/api/v1/version", nil)
+	if err != nil {
+		return "", err
+	}
+	var result struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return "", err
+	}
+	return result.Version, nil
+}
+
 // GetPR fetches a pull request by number.
 func (c *Client) GetPR(ctx context.Context, repoName string, prNumber int) (map[string]any, error) {
 	data, err := c.do(ctx, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", c.username, repoName, prNumber), nil)

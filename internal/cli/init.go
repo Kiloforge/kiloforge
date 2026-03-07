@@ -7,51 +7,37 @@ import (
 	"os/signal"
 	"path/filepath"
 
+	"crelay/internal/compose"
 	"crelay/internal/config"
 	"crelay/internal/gitea"
-	"crelay/internal/relay"
 
 	"github.com/spf13/cobra"
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize Gitea and start the relay server",
-	Long: `Starts a local Gitea instance via Docker, configures it with an admin user
-and API token, creates a repo mirroring the current project, registers webhooks,
-and starts the relay server to manage Claude agents.
+	Short: "Initialize the global Gitea server via Docker Compose",
+	Long: `Starts a local Gitea instance via Docker Compose, configures it with an admin
+user and API token, and saves the global configuration.
 
-This is the one command to get everything running.`,
+This sets up the shared Gitea server. Project registration will be handled
+separately by 'crelay add' (coming soon).`,
 	RunE: runInit,
 }
 
 var (
 	flagGiteaPort int
-	flagRelayPort int
-	flagRepoName  string
 	flagDataDir   string
 )
 
 func init() {
 	initCmd.Flags().IntVar(&flagGiteaPort, "gitea-port", 3000, "Port for Gitea web UI")
-	initCmd.Flags().IntVar(&flagRelayPort, "relay-port", 3001, "Port for the relay webhook server")
-	initCmd.Flags().StringVar(&flagRepoName, "repo", "", "Repository name (defaults to current directory name)")
 	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.crelay)")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-
-	// Resolve working directory (the project we're setting up for).
-	projectDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	if flagRepoName == "" {
-		flagRepoName = filepath.Base(projectDir)
-	}
 
 	if flagDataDir == "" {
 		home, err := os.UserHomeDir()
@@ -62,62 +48,77 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg := &config.Config{
-		GiteaPort:  flagGiteaPort,
-		RelayPort:  flagRelayPort,
-		RepoName:   flagRepoName,
-		ProjectDir: projectDir,
-		DataDir:    flagDataDir,
+		GiteaPort: flagGiteaPort,
+		DataDir:   flagDataDir,
 	}
 
-	// Ensure data directory exists.
+	// Check idempotency: if Gitea is already running, report and exit.
+	if existingCfg, err := config.LoadFrom(flagDataDir); err == nil {
+		client := gitea.NewClient(existingCfg.GiteaURL(), config.GiteaAdminUser, config.GiteaAdminPass)
+		if _, err := client.CheckVersion(ctx); err == nil {
+			fmt.Println("Gitea is already running.")
+			fmt.Printf("  URL:  %s\n", existingCfg.GiteaURL())
+			fmt.Printf("  Data: %s\n", existingCfg.DataDir)
+			return nil
+		}
+	}
+
+	// Step 1: Detect docker compose CLI.
+	fmt.Println("==> Detecting Docker Compose...")
+	runner, err := compose.Detect()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("    Found: %s\n", runner.Version())
+
+	// Step 2: Create data directory.
 	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
 		return fmt.Errorf("create data directory: %w", err)
 	}
 
-	// Step 1: Start Gitea.
+	// Step 3: Generate docker-compose.yml.
+	fmt.Println("==> Generating docker-compose.yml...")
+	composeData, err := compose.GenerateComposeFile(compose.ComposeConfig{
+		GiteaPort: cfg.GiteaPort,
+		DataDir:   cfg.DataDir,
+	})
+	if err != nil {
+		return fmt.Errorf("generate compose file: %w", err)
+	}
+	composeFilePath := filepath.Join(cfg.DataDir, compose.ComposeFileName)
+	if err := os.WriteFile(composeFilePath, composeData, 0o644); err != nil {
+		return fmt.Errorf("write compose file: %w", err)
+	}
+	cfg.ComposeFile = composeFilePath
+
+	// Step 4: Start Gitea via compose.
 	fmt.Println("==> Starting Gitea...")
-	giteaManager := gitea.NewManager(cfg)
-	if err := giteaManager.Start(ctx); err != nil {
+	manager := gitea.NewManager(cfg, runner)
+	if err := manager.Start(ctx); err != nil {
 		return fmt.Errorf("start gitea: %w", err)
 	}
-	fmt.Printf("    Gitea running at http://localhost:%d\n", cfg.GiteaPort)
+	fmt.Printf("    Gitea running at %s\n", cfg.GiteaURL())
 
-	// Step 2: Configure Gitea (admin user, token, repo).
+	// Step 5: Configure admin user and token.
 	fmt.Println("==> Configuring Gitea...")
-	giteaClient, err := giteaManager.Configure(ctx)
-	if err != nil {
+	if _, err := manager.Configure(ctx); err != nil {
 		return fmt.Errorf("configure gitea: %w", err)
 	}
 	fmt.Printf("    Admin user: %s\n", config.GiteaAdminUser)
-	fmt.Printf("    Repository: %s/%s\n", config.GiteaAdminUser, cfg.RepoName)
 
-	// Step 3: Add git remote and push.
-	fmt.Println("==> Configuring git remote...")
-	if err := giteaManager.SetupGitRemote(ctx, cfg); err != nil {
-		return fmt.Errorf("setup git remote: %w", err)
-	}
-	fmt.Printf("    Remote 'gitea' added\n")
-
-	// Step 4: Register webhooks.
-	fmt.Println("==> Registering webhooks...")
-	if err := giteaClient.CreateWebhook(ctx, cfg.RepoName, cfg.RelayPort); err != nil {
-		return fmt.Errorf("create webhook: %w", err)
-	}
-	fmt.Printf("    Webhook → http://host.docker.internal:%d/webhook\n", cfg.RelayPort)
-
-	// Step 5: Save config for other commands.
+	// Step 6: Save config.
 	if err := cfg.Save(); err != nil {
 		return fmt.Errorf("save config: %w", err)
 	}
 
-	// Step 6: Start relay server (blocking).
-	fmt.Println("==> Starting relay server...")
-	fmt.Printf("    Listening on http://localhost:%d\n", cfg.RelayPort)
 	fmt.Println()
-	fmt.Println("Ready. Gitea webhooks will spawn Claude agents automatically.")
-	fmt.Println("Press Ctrl+C to stop the relay (Gitea will keep running).")
+	fmt.Println("Gitea is ready!")
+	fmt.Printf("  Web UI:     %s\n", cfg.GiteaURL())
+	fmt.Printf("  Admin:      %s / %s\n", config.GiteaAdminUser, config.GiteaAdminPass)
+	fmt.Printf("  Data:       %s\n", cfg.DataDir)
+	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()
+	fmt.Println("Next: use 'crelay add' to register a project (coming soon).")
 
-	srv := relay.NewServer(cfg, giteaClient)
-	return srv.Run(ctx)
+	return nil
 }

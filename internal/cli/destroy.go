@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"context"
 	"fmt"
-	"os/exec"
+	"os"
+	"os/signal"
 
+	"crelay/internal/compose"
 	"crelay/internal/config"
 
 	"github.com/spf13/cobra"
@@ -11,9 +14,9 @@ import (
 
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
-	Short: "Stop and remove the Gitea container and relay data",
-	Long: `Stops the Gitea Docker container, removes it, and optionally
-cleans up the data directory. The git remote 'gitea' is also removed.`,
+	Short: "Stop and remove the Gitea server",
+	Long: `Tears down the Gitea Docker Compose stack. With --data, also removes
+volumes and the data directory.`,
 	RunE: runDestroy,
 }
 
@@ -24,24 +27,33 @@ func init() {
 }
 
 func runDestroy(cmd *cobra.Command, args []string) error {
-	fmt.Println("==> Stopping Gitea container...")
-	_ = exec.Command("docker", "stop", config.ContainerName).Run()
-	_ = exec.Command("docker", "rm", config.ContainerName).Run()
-	fmt.Println("    Container removed.")
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
-	fmt.Println("==> Removing git remote 'gitea'...")
-	_ = exec.Command("git", "remote", "remove", "gitea").Run()
-	fmt.Println("    Remote removed.")
-
-	if flagDestroyData {
-		cfg, err := config.Load()
-		if err == nil {
-			fmt.Printf("==> Removing data directory %s...\n", cfg.DataDir)
-			_ = exec.Command("rm", "-rf", cfg.DataDir).Run()
-			fmt.Println("    Data removed.")
-		}
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
 	}
 
-	fmt.Println("Done. Gitea and relay have been torn down.")
+	runner, err := compose.Detect()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("==> Stopping Gitea...")
+	if err := runner.Down(ctx, cfg.DataDir, flagDestroyData); err != nil {
+		return fmt.Errorf("compose down: %w", err)
+	}
+	fmt.Println("    Gitea stopped and removed.")
+
+	if flagDestroyData {
+		fmt.Printf("==> Removing data directory %s...\n", cfg.DataDir)
+		if err := os.RemoveAll(cfg.DataDir); err != nil {
+			return fmt.Errorf("remove data dir: %w", err)
+		}
+		fmt.Println("    Data removed.")
+	}
+
+	fmt.Println("Done.")
 	return nil
 }

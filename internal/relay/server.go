@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"crelay/internal/agent"
 	"crelay/internal/config"
@@ -16,24 +15,30 @@ import (
 
 // Server handles incoming webhooks and manages agents.
 type Server struct {
-	cfg     *config.Config
-	client  *gitea.Client
-	spawner *agent.Spawner
-	store   *state.Store
-	logger  *log.Logger
+	cfg      *config.Config
+	client   *gitea.Client
+	spawner  *agent.Spawner
+	store    *state.Store
+	logger   *log.Logger
+	port     int
+	repoName string
 }
 
-func NewServer(cfg *config.Config, client *gitea.Client) *Server {
+// NewServer creates a relay server. Port and repoName are provided explicitly
+// since they are project-specific and no longer part of global config.
+func NewServer(cfg *config.Config, client *gitea.Client, port int, repoName string) *Server {
 	store, err := state.Load(cfg.DataDir)
 	if err != nil {
 		store = &state.Store{}
 	}
 	return &Server{
-		cfg:     cfg,
-		client:  client,
-		spawner: agent.NewSpawner(cfg, store),
-		store:   store,
-		logger:  log.New(log.Writer(), "[relay] ", log.LstdFlags),
+		cfg:      cfg,
+		client:   client,
+		spawner:  agent.NewSpawner(cfg, store),
+		store:    store,
+		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
+		port:     port,
+		repoName: repoName,
 	}
 }
 
@@ -44,7 +49,7 @@ func (s *Server) Run(ctx context.Context) error {
 	mux.HandleFunc("/api/agents", s.handleAgents)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.cfg.RelayPort),
+		Addr:    fmt.Sprintf(":%d", s.port),
 		Handler: mux,
 	}
 
@@ -112,10 +117,9 @@ func (s *Server) handlePullRequest(ctx context.Context, payload map[string]any) 
 
 	switch action {
 	case "opened", "reopened":
-		// A new PR was created — spawn a reviewer.
 		s.logger.Printf("PR #%d opened: %s — spawning reviewer", prNumber, prTitle)
 		prURL := fmt.Sprintf("%s/%s/%s/pulls/%d",
-			s.client.BaseURL(), config.GiteaAdminUser, s.cfg.RepoName, prNumber)
+			s.client.BaseURL(), config.GiteaAdminUser, s.repoName, prNumber)
 
 		info, err := s.spawner.SpawnReviewer(ctx, prNumber, prURL)
 		if err != nil {
@@ -125,7 +129,6 @@ func (s *Server) handlePullRequest(ctx context.Context, payload map[string]any) 
 		s.logger.Printf("Reviewer spawned: %s (session: %s)", info.ID[:8], info.SessionID[:8])
 
 	case "synchronize":
-		// PR was updated (new commits pushed) — could re-trigger reviewer.
 		s.logger.Printf("PR #%d updated — new commits pushed", prNumber)
 
 	default:
@@ -146,13 +149,10 @@ func (s *Server) handlePullRequestReview(ctx context.Context, payload map[string
 
 	s.logger.Printf("PR #%d review %s: %s", prNumber, action, reviewState)
 
-	// Find the developer agent for this PR and notify it.
-	prRef := "PR #" + strconv.Itoa(prNumber)
+	prRef := fmt.Sprintf("PR #%d", prNumber)
 	for _, a := range s.store.Agents {
 		if a.Role == "developer" && a.Ref == prRef && a.Status == "waiting" {
 			s.logger.Printf("Developer agent %s is waiting for review — would send feedback", a.ID[:8])
-			// In a PTY-based implementation, we would write to the agent's stdin here.
-			// With stream-json, the developer needs to be resumed manually.
 			break
 		}
 	}

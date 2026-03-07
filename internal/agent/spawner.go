@@ -26,6 +26,7 @@ func NewSpawner(cfg *config.Config, store *state.Store) *Spawner {
 }
 
 // SpawnReviewer launches a Claude agent to review a PR.
+// The projectDir parameter specifies the working directory for the agent.
 func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*state.AgentInfo, error) {
 	agentID := uuid.New().String()
 	sessionID := uuid.New().String()
@@ -38,13 +39,16 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	prompt := fmt.Sprintf("/conductor-reviewer %s", prURL)
 
+	// Use current working directory as project dir (will be improved with 'crelay add').
+	projectDir, _ := os.Getwd()
+
 	info := state.AgentInfo{
 		ID:          agentID,
 		Role:        "reviewer",
 		Ref:         fmt.Sprintf("PR #%d", prNumber),
 		Status:      "running",
 		SessionID:   sessionID,
-		WorktreeDir: s.cfg.ProjectDir,
+		WorktreeDir: projectDir,
 		LogFile:     logFile,
 		StartedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -55,9 +59,8 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		"--session-id", sessionID,
 		"--output-format", "stream-json",
 	)
-	cmd.Dir = s.cfg.ProjectDir
+	cmd.Dir = projectDir
 
-	// Capture output to log file.
 	lf, err := os.Create(logFile)
 	if err != nil {
 		return nil, fmt.Errorf("create log file: %w", err)
@@ -81,16 +84,14 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
-	// Stream output to log file in background.
 	go func() {
 		defer lf.Close()
 		scanner := bufio.NewScanner(stdout)
-		scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1MB buffer for large JSON lines.
+		scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
 		for scanner.Scan() {
 			fmt.Fprintln(lf, scanner.Text())
 		}
 
-		// Wait for process to finish.
 		if err := cmd.Wait(); err != nil {
 			s.store.UpdateStatus(agentID, "failed")
 		} else {
@@ -115,13 +116,15 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, trackID string, flags stri
 
 	prompt := fmt.Sprintf("/conductor-developer %s %s", trackID, flags)
 
+	projectDir, _ := os.Getwd()
+
 	info := state.AgentInfo{
 		ID:          agentID,
 		Role:        "developer",
 		Ref:         trackID,
 		Status:      "running",
 		SessionID:   sessionID,
-		WorktreeDir: s.cfg.ProjectDir,
+		WorktreeDir: projectDir,
 		LogFile:     logFile,
 		StartedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -132,7 +135,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, trackID string, flags stri
 		"--session-id", sessionID,
 		"--output-format", "stream-json",
 	)
-	cmd.Dir = s.cfg.ProjectDir
+	cmd.Dir = projectDir
 
 	lf, err := os.Create(logFile)
 	if err != nil {

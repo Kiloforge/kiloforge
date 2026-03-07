@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	ContainerName = "conductor-gitea"
-	GiteaImage    = "gitea/gitea:latest"
+	ContainerName  = "conductor-gitea"
+	GiteaImage     = "gitea/gitea:latest"
 	GiteaAdminUser = "conductor"
 	GiteaAdminPass = "conductor123"
 	GiteaAdminEmail = "conductor@local.dev"
@@ -17,12 +17,10 @@ const (
 )
 
 type Config struct {
-	GiteaPort  int    `json:"gitea_port"`
-	RelayPort  int    `json:"relay_port"`
-	RepoName   string `json:"repo_name"`
-	ProjectDir string `json:"project_dir"`
-	DataDir    string `json:"data_dir"`
-	APIToken   string `json:"api_token,omitempty"`
+	GiteaPort   int    `json:"gitea_port"`
+	DataDir     string `json:"data_dir"`
+	APIToken    string `json:"api_token,omitempty"`
+	ComposeFile string `json:"compose_file,omitempty"`
 }
 
 func (c *Config) GiteaURL() string {
