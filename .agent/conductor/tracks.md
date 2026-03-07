@@ -10,7 +10,7 @@
 | [x] | down-destroy-commands_20260307123000Z | Add 'up', 'down' Commands and Refactor 'destroy' | 2026-03-07 | 2026-03-07 |
 | [x] | relay-event-handling_20260307124000Z | Relay Event Handling for Issues and PRs with Multi-Project Routing | 2026-03-07 | 2026-03-07 |
 | [x] | init-ssh-and-auth_20260307125500Z | SSH Key Auto-Registration and Randomized Admin Password | 2026-03-07 | 2026-03-07 |
-| [ ] | worktree-pool_20260307125000Z | Worktree Pool Management | 2026-03-07 | 2026-03-07 |
+| [x] | worktree-pool_20260307125000Z | Worktree Pool Management | 2026-03-07 | 2026-03-07 |
 | [ ] | implement-command_20260307125001Z | 'crelay implement' Command — Spawn Developer Agent | 2026-03-07 | 2026-03-07 |
 | [ ] | review-cycle-relay_20260307125002Z | Developer-Reviewer Relay Cycle | 2026-03-07 | 2026-03-07 |
 | [ ] | merge-cleanup_20260307125003Z | PR Merge, Worktree Cleanup, and Agent Teardown | 2026-03-07 | 2026-03-07 |
