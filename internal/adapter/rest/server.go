@@ -11,17 +11,18 @@ import (
 	"path/filepath"
 	"time"
 
-	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/badge"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/dashboard"
+	"crelay/internal/adapter/gitea"
+	"crelay/internal/adapter/lock"
+	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/adapter/pool"
 	"crelay/internal/adapter/proxy"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/pool"
 )
 
 // ShutdownTimeout is how long to wait for agents to exit before force-killing.
@@ -156,6 +157,14 @@ func (s *Server) Run(ctx context.Context) error {
 	lockMgr.StartReaper(ctx)
 	lockHandler := lock.NewHandler(lockMgr)
 	lockHandler.RegisterRoutes(mux)
+
+	// Badge endpoints.
+	prLoader := func(slug string) (*domain.PRTracking, error) {
+		projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
+		return jsonfile.LoadPRTracking(projectDir)
+	}
+	badgeHandler := badge.NewHandler(s.store, prLoader)
+	badgeHandler.RegisterRoutes(mux)
 
 	// Mount dashboard routes if enabled.
 	if s.dashboard != nil {
