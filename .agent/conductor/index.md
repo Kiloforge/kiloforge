@@ -17,6 +17,7 @@ Navigation hub for project context.
 - **research-global-gitea-multiproject_20260307120001Z** — Research: Global Gitea Server for Multi-Project Coordination
 - **init-docker-compose_20260307120100Z** — Implement Init Command with Docker Compose and Global Gitea
 - **refactor-config-port-adapter_20260307121000Z** — Refactor Config to Port/Adapter Pattern with Layered Resolution
+- **add-project-command_20260307122000Z** — Implement 'crelay add' Command for Project Registration
 
 ## Getting Started
 

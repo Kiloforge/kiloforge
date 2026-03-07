@@ -1,0 +1,16 @@
+{
+  "id": "add-project-command_20260307122000Z",
+  "title": "Implement 'crelay add' Command for Project Registration",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-07T12:20:00Z",
+  "updated": "2026-03-07T12:20:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 15,
+    "completed": 0
+  }
+}
