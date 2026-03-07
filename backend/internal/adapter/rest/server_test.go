@@ -12,10 +12,12 @@ import (
 	"testing"
 
 	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/gitea"
+	"crelay/internal/adapter/lock"
+	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/adapter/rest/gen"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/persistence/jsonfile"
 )
 
 func newTestServer() *Server {
@@ -212,11 +214,19 @@ func TestHandleWebhook_Push(t *testing.T) {
 
 func TestHealth_ReportsProjectCount(t *testing.T) {
 	t.Parallel()
-	srv := newTestServer()
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		LockMgr:  lock.New(""),
+		Projects: 1,
+	})
+	strictHandler := gen.NewStrictHandler(h, nil)
+	mux := http.NewServeMux()
+	gen.HandlerFromMux(strictHandler, mux)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
-	srv.handleHealth(rec, req)
+	mux.ServeHTTP(rec, req)
 
 	var resp map[string]any
 	json.NewDecoder(rec.Body).Decode(&resp)

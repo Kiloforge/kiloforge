@@ -18,6 +18,7 @@ import (
 	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/lock"
 	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/adapter/rest/gen"
 	"crelay/internal/adapter/pool"
 	"crelay/internal/adapter/proxy"
 	"crelay/internal/core/domain"
@@ -35,6 +36,8 @@ type ServerOption func(*Server)
 func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL, projectDir string) ServerOption {
 	return func(s *Server) {
 		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projectDir)
+		s.quotaReader = quota
+		s._projectDir = projectDir
 	}
 }
 
@@ -77,17 +80,23 @@ func WithBoardSync(boardSvc *service.BoardService, boardStore service.BoardStore
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
-	cfg       *config.Config
-	registry  *jsonfile.ProjectStore
-	store     *jsonfile.AgentStore
-	client    *gitea.Client
-	spawner   port.AgentSpawner
-	prService *service.PRService
-	logger    *log.Logger
-	port       int
-	dashboard  *dashboard.Server
-	giteaProxy http.Handler
-	boardSync  *boardSyncer
+	cfg         *config.Config
+	registry    *jsonfile.ProjectStore
+	store       *jsonfile.AgentStore
+	client      *gitea.Client
+	spawner     port.AgentSpawner
+	prService   *service.PRService
+	logger      *log.Logger
+	port        int
+	dashboard   *dashboard.Server
+	giteaProxy  http.Handler
+	boardSync   *boardSyncer
+	quotaReader QuotaReader
+	_projectDir string
+}
+
+func (s *Server) projectDir() string {
+	return s._projectDir
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -167,16 +176,32 @@ func (d *defaultSpawner) ResumeDeveloper(ctx context.Context, sessionID, workDir
 // Run starts the HTTP server and blocks until the context is cancelled.
 func (s *Server) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/webhook", s.handleWebhook)
-	mux.HandleFunc("/health", s.handleHealth)
 
-	// Lock service.
+	// Manual routes: webhook is Gitea-defined, not our API spec.
+	mux.HandleFunc("/webhook", s.handleWebhook)
+
+	// Lock service (shared with generated API handler).
 	lockMgr := lock.New(s.cfg.DataDir)
 	lockMgr.StartReaper(ctx)
-	lockHandler := lock.NewHandler(lockMgr)
-	lockHandler.RegisterRoutes(mux)
 
-	// Badge endpoints.
+	// Wire generated OpenAPI routes (health, agents, quota, tracks, status, locks).
+	var sseClients func() int
+	if s.dashboard != nil {
+		sseClients = s.dashboard.SSEClientCount
+	}
+	apiHandler := NewAPIHandler(APIHandlerOpts{
+		Agents:     s.store,
+		Quota:      s.quotaReader,
+		LockMgr:    lockMgr,
+		ProjectDir: s.projectDir(),
+		GiteaURL:   s.cfg.GiteaURL(),
+		SSEClients: sseClients,
+		Projects:   len(s.registry.Projects),
+	})
+	strictHandler := gen.NewStrictHandler(apiHandler, nil)
+	gen.HandlerFromMux(strictHandler, mux)
+
+	// Badge endpoints (SVG, not JSON — stays manual).
 	prLoader := func(slug string) (*domain.PRTracking, error) {
 		projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
 		return jsonfile.LoadPRTracking(projectDir)
@@ -184,9 +209,9 @@ func (s *Server) Run(ctx context.Context) error {
 	badgeHandler := badge.NewHandler(s.store, prLoader)
 	badgeHandler.RegisterRoutes(mux)
 
-	// Mount dashboard routes if enabled.
+	// Mount dashboard non-API routes (SSE, HTML pages, SPA static).
 	if s.dashboard != nil {
-		s.dashboard.RegisterRoutes(mux)
+		s.dashboard.RegisterNonAPIRoutes(mux)
 		s.dashboard.StartWatcher(ctx)
 	}
 
@@ -227,13 +252,6 @@ func (s *Server) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
-		"status":   "ok",
-		"projects": len(s.registry.Projects),
-	})
-}
 
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

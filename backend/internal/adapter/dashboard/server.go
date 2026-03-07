@@ -91,6 +91,20 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /-/", http.StripPrefix("/-", spaFileServer(http.FS(staticFS))))
 }
 
+// RegisterNonAPIRoutes mounts only the non-API routes (SSE, HTML pages, SPA static).
+// Use this when the JSON API routes are served by the generated OpenAPI handler.
+func (s *Server) RegisterNonAPIRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /-/events", s.handleSSE)
+	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)
+	mux.HandleFunc("GET /-/pr/{slug}/{prNumber}", s.handlePRDetail)
+	mux.Handle("GET /-/", http.StripPrefix("/-", spaFileServer(http.FS(staticFS))))
+}
+
+// SSEClientCount returns the number of connected SSE clients.
+func (s *Server) SSEClientCount() int {
+	return s.hub.ClientCount()
+}
+
 func (s *Server) routes() {
 	s.RegisterRoutes(s.mux)
 }
