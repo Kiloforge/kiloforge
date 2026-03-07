@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"crelay/internal/config"
+	"crelay/internal/core/domain"
 	"crelay/internal/gitea"
 	"crelay/internal/project"
 
@@ -138,7 +139,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Register in projects.json.
-	p := project.Project{
+	p := domain.Project{
 		Slug:         slug,
 		RepoName:     slug,
 		ProjectDir:   cloneDir,

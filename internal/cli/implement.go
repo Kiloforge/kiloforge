@@ -10,6 +10,7 @@ import (
 
 	"crelay/internal/agent"
 	"crelay/internal/config"
+	"crelay/internal/core/domain"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
 	"crelay/internal/project"
@@ -151,11 +152,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func resolveProject(reg *project.Registry, slug string) (project.Project, error) {
+func resolveProject(reg *project.Registry, slug string) (domain.Project, error) {
 	if slug != "" {
 		proj, ok := reg.Get(slug)
 		if !ok {
-			return project.Project{}, fmt.Errorf("project %q not found — use 'crelay add' to register", slug)
+			return domain.Project{}, fmt.Errorf("project %q not found — use 'crelay add' to register", slug)
 		}
 		return proj, nil
 	}
@@ -163,17 +164,17 @@ func resolveProject(reg *project.Registry, slug string) (project.Project, error)
 	// Auto-detect from cwd.
 	cwd, err := os.Getwd()
 	if err != nil {
-		return project.Project{}, fmt.Errorf("get cwd: %w", err)
+		return domain.Project{}, fmt.Errorf("get cwd: %w", err)
 	}
 
 	proj, ok := reg.FindByDir(cwd)
 	if !ok {
-		return project.Project{}, fmt.Errorf("no project registered for %s — use 'crelay add' or --project flag", cwd)
+		return domain.Project{}, fmt.Errorf("no project registered for %s — use 'crelay add' or --project flag", cwd)
 	}
 	return proj, nil
 }
 
-func listTracks(proj project.Project) error {
+func listTracks(proj domain.Project) error {
 	tracks, err := orchestration.DiscoverTracks(proj.ProjectDir)
 	if err != nil {
 		return fmt.Errorf("discover tracks: %w", err)

@@ -14,6 +14,7 @@ import (
 	"crelay/internal/config"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
+	"crelay/internal/core/domain"
 	"crelay/internal/project"
 	"crelay/internal/state"
 )
@@ -33,7 +34,7 @@ func newTestServerWithDir(dataDir string) *Server {
 	}
 	reg := &project.Registry{
 		Version: 1,
-		Projects: map[string]project.Project{
+		Projects: map[string]domain.Project{
 			"myapp": {
 				Slug:     "myapp",
 				RepoName: "myapp",
@@ -52,7 +53,7 @@ func newTestServerWithSpawner(dataDir string, spawner AgentSpawner, giteaSrv *ht
 	}
 	reg := &project.Registry{
 		Version: 1,
-		Projects: map[string]project.Project{
+		Projects: map[string]domain.Project{
 			"myapp": {
 				Slug:     "myapp",
 				RepoName: "myapp",

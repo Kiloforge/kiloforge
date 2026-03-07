@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"crelay/internal/core/domain"
 )
 
 func TestRegistry_LoadEmpty(t *testing.T) {
@@ -29,11 +31,11 @@ func TestRegistry_SaveAndLoad(t *testing.T) {
 	dir := t.TempDir()
 	reg := &Registry{
 		Version:  1,
-		Projects: map[string]Project{},
+		Projects: map[string]domain.Project{},
 	}
 
 	now := time.Now().Truncate(time.Second)
-	p := Project{
+	p := domain.Project{
 		Slug:         "myproject",
 		RepoName:     "myproject",
 		ProjectDir:   "/home/user/myproject",
@@ -74,15 +76,15 @@ func TestRegistry_AddDuplicate(t *testing.T) {
 
 	reg := &Registry{
 		Version:  1,
-		Projects: map[string]Project{},
+		Projects: map[string]domain.Project{},
 	}
 
-	p := Project{Slug: "dup", RepoName: "dup", ProjectDir: "/a"}
+	p := domain.Project{Slug: "dup", RepoName: "dup", ProjectDir: "/a"}
 	if err := reg.Add(p); err != nil {
 		t.Fatalf("first add should succeed: %v", err)
 	}
 
-	err := reg.Add(Project{Slug: "dup", RepoName: "dup", ProjectDir: "/b"})
+	err := reg.Add(domain.Project{Slug: "dup", RepoName: "dup", ProjectDir: "/b"})
 	if err == nil {
 		t.Fatal("expected error on duplicate add")
 	}
@@ -93,10 +95,10 @@ func TestRegistry_FindByDir(t *testing.T) {
 
 	reg := &Registry{
 		Version:  1,
-		Projects: map[string]Project{},
+		Projects: map[string]domain.Project{},
 	}
-	_ = reg.Add(Project{Slug: "proj1", ProjectDir: "/home/user/proj1"})
-	_ = reg.Add(Project{Slug: "proj2", ProjectDir: "/home/user/proj2"})
+	_ = reg.Add(domain.Project{Slug: "proj1", ProjectDir: "/home/user/proj1"})
+	_ = reg.Add(domain.Project{Slug: "proj2", ProjectDir: "/home/user/proj2"})
 
 	got, ok := reg.FindByDir("/home/user/proj1")
 	if !ok {
@@ -117,10 +119,10 @@ func TestRegistry_List(t *testing.T) {
 
 	reg := &Registry{
 		Version:  1,
-		Projects: map[string]Project{},
+		Projects: map[string]domain.Project{},
 	}
-	_ = reg.Add(Project{Slug: "a", ProjectDir: "/a"})
-	_ = reg.Add(Project{Slug: "b", ProjectDir: "/b"})
+	_ = reg.Add(domain.Project{Slug: "a", ProjectDir: "/a"})
+	_ = reg.Add(domain.Project{Slug: "b", ProjectDir: "/b"})
 
 	list := reg.List()
 	if len(list) != 2 {

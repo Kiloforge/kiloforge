@@ -14,6 +14,7 @@ import (
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
+	"crelay/internal/core/domain"
 	"crelay/internal/project"
 	"crelay/internal/state"
 )
@@ -185,14 +186,14 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "received"})
 }
 
-func (s *Server) resolveProject(payload map[string]any) (project.Project, bool) {
+func (s *Server) resolveProject(payload map[string]any) (domain.Project, bool) {
 	repo, ok := payload["repository"].(map[string]any)
 	if !ok {
-		return project.Project{}, false
+		return domain.Project{}, false
 	}
 	repoName, _ := repo["name"].(string)
 	if repoName == "" {
-		return project.Project{}, false
+		return domain.Project{}, false
 	}
 	return s.registry.FindByRepoName(repoName)
 }
