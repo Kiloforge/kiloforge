@@ -13,6 +13,7 @@ import (
 )
 
 var _ port.GiteaClient = (*Client)(nil)
+var _ port.GiteaIssueClient = (*Client)(nil)
 var _ port.Merger = (*Client)(nil)
 
 // Client wraps the Gitea REST API.
