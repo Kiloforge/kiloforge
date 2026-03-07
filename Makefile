@@ -1,6 +1,6 @@
 .PHONY: build build-frontend build-backend dev test clean gen-api verify-codegen
 
-BIN_DIR := bin
+BIN_DIR := .build
 BINARY := $(BIN_DIR)/crelay
 
 build: build-frontend build-backend
