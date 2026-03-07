@@ -1,14 +1,16 @@
 # Getting Started
 
-This guide walks through setting up Conductor Relay for a project from scratch.
+This guide walks through setting up Conductor Relay.
 
 ## Prerequisites
 
 ### Required
 
-1. **Docker** — Gitea runs as a container
+1. **Docker with Docker Compose** — Gitea runs as a compose service
    ```bash
-   docker --version  # Must be installed and running
+   docker compose version  # v2 (Docker Desktop)
+   # OR
+   docker-compose version  # v1 (Colima/standalone)
    ```
 
 2. **Claude Code CLI** — The `claude` command must be in your PATH
@@ -21,7 +23,15 @@ This guide walks through setting up Conductor Relay for a project from scratch.
    go version
    ```
 
-4. **Git** — Your project must be a git repository
+### Colima Users
+
+If you're using Colima on macOS, install docker-compose separately:
+
+```bash
+brew install docker-compose
+```
+
+crelay auto-detects which compose variant is available (v2 first, v1 fallback).
 
 ### Optional
 
@@ -45,48 +55,33 @@ go install ./cmd/crelay/
 
 ## Setup
 
-### 1. Prepare Your Project
-
-Your project should have Conductor artifacts already set up. If not:
+### 1. Initialize the Global Gitea Server
 
 ```bash
-cd ~/dev/my-project
-claude -p "/conductor-setup"
-```
-
-This creates the `.agent/conductor/` directory with product definition, tech stack, workflow, and tracks.
-
-### 2. Initialize Conductor Relay
-
-From your project directory:
-
-```bash
-cd ~/dev/my-project
 crelay init
 ```
 
 You'll see output like:
 
 ```
+==> Detecting Docker Compose...
+    Found: 2.29.1
+==> Generating docker-compose.yml...
 ==> Starting Gitea...
     Gitea running at http://localhost:3000
 ==> Configuring Gitea...
     Admin user: conductor
-    Repository: conductor/my-project
-==> Configuring git remote...
-    Remote 'gitea' added
-==> Registering webhooks...
-    Webhook → http://host.docker.internal:3001/webhook
-==> Starting relay server...
-    Listening on http://localhost:3001
 
-Ready. Gitea webhooks will spawn Claude agents automatically.
-Press Ctrl+C to stop the relay (Gitea will keep running).
+Gitea is ready!
+  Web UI:     http://localhost:3000
+  Admin:      conductor / conductor123
+  Data:       /Users/you/.crelay
+  Compose:    /Users/you/.crelay/docker-compose.yml
+
+Next: use 'crelay add' to register a project (coming soon).
 ```
 
-### 3. Verify
-
-Open a new terminal:
+### 2. Verify
 
 ```bash
 # Check status
@@ -97,7 +92,7 @@ open http://localhost:3000
 # Login: conductor / conductor123
 ```
 
-### 4. Set Environment Variables
+### 3. Set Environment Variables
 
 For conductor skills to use Gitea automatically, set these in your shell or `.env`:
 
@@ -116,9 +111,9 @@ Or add to your project's `.claude/settings.json`:
 }
 ```
 
-## Usage Workflow
+## Usage
 
-### Automatic: Webhook-Driven
+### Conductor Developer Workflow
 
 1. **Generate tracks** (in your project):
    ```bash
@@ -130,21 +125,9 @@ Or add to your project's `.claude/settings.json`:
    claude --worktree developer-1 -p "/conductor-developer auth_20250307 --with-review --auto-merge"
    ```
 
-3. **Watch it work** — The developer implements the track, creates a PR. The relay automatically spawns a reviewer. Check progress:
-   ```bash
-   crelay agents
-   crelay logs <agent-id>
-   ```
+3. **Watch it work** — The developer implements the track and creates a PR.
 
-4. **Intervene if needed** — If an agent gets stuck or needs input:
-   ```bash
-   crelay attach <agent-id>
-   # Then run the printed resume command in your terminal
-   ```
-
-### Manual: Using Gitea Directly
-
-You can also interact with Gitea manually:
+### Manual Gitea Interaction
 
 ```bash
 # Browse the web UI
@@ -153,34 +136,13 @@ open http://localhost:3000
 # Use tea CLI (if installed)
 tea login add --name local --url http://localhost:3000 --token <your-token>
 tea pr list
-tea pr view 1
 ```
-
-## Multiple Developer Agents
-
-To run multiple developers in parallel:
-
-```bash
-# Terminal 1: Developer 1
-claude --worktree developer-1 -p "/conductor-developer track-1 --with-review"
-
-# Terminal 2: Developer 2
-claude --worktree developer-2 -p "/conductor-developer track-2 --with-review"
-
-# Terminal 3: Monitor
-crelay agents
-```
-
-Each developer works in an isolated worktree and creates separate PRs. The relay spawns a reviewer for each PR.
 
 ## Teardown
 
 ```bash
-# Stop relay: Ctrl+C in the init terminal
-
-# Remove everything
-crelay destroy        # stop container, remove git remote
-crelay destroy --data # also delete Gitea data and logs
+crelay destroy          # stop containers
+crelay destroy --data   # also delete Gitea data, logs, and config
 ```
 
 ## Troubleshooting
@@ -188,44 +150,22 @@ crelay destroy --data # also delete Gitea data and logs
 ### Gitea won't start
 
 ```bash
-# Check Docker
-docker ps -a | grep conductor-gitea
-docker logs conductor-gitea
+# Check Docker/compose
+docker compose -f ~/.crelay/docker-compose.yml ps
+docker compose -f ~/.crelay/docker-compose.yml logs
 
 # Retry
-docker rm -f conductor-gitea
+crelay destroy
 crelay init
-```
-
-### Webhook not firing
-
-```bash
-# Check relay is running
-curl http://localhost:3001/health
-
-# Check webhook config in Gitea UI
-open http://localhost:3000/conductor/my-project/settings/hooks
-
-# Check relay logs (in the init terminal)
-```
-
-### Agent won't start
-
-```bash
-# Verify claude is available
-which claude
-claude --version
-
-# Check agent logs
-crelay logs <agent-id>
-
-# Check state file
-cat ~/.crelay/state.json
 ```
 
 ### Port conflicts
 
 ```bash
-# Use different ports
-crelay init --gitea-port 3010 --relay-port 3011
+# Use a different port
+crelay init --gitea-port 3010
 ```
+
+### Colima: host.docker.internal not resolving
+
+The generated compose file includes `extra_hosts: ["host.docker.internal:host-gateway"]` which should handle this. If you still have issues, check that your Docker Engine is version 20.10+.
