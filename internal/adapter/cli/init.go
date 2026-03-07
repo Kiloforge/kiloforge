@@ -94,6 +94,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Generating docker-compose.yml...")
 	composeData, err := compose.GenerateComposeFile(compose.ComposeConfig{
 		GiteaPort: cfg.GiteaPort,
+		RelayPort: cfg.RelayPort,
 		DataDir:   cfg.DataDir,
 	})
 	if err != nil {

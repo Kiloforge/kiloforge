@@ -9,6 +9,7 @@ import (
 // ComposeConfig holds the values used to render the docker-compose.yml template.
 type ComposeConfig struct {
 	GiteaPort int
+	RelayPort int
 	DataDir   string
 }
 
@@ -24,7 +25,7 @@ const composeTemplate = `services:
       - gitea-data:/data
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:{{ .GiteaPort }}/
+      - GITEA__server__ROOT_URL=http://localhost:{{ .RelayPort }}/gitea/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true
