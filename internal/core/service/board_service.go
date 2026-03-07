@@ -312,6 +312,21 @@ func ColumnToStatus(column string) string {
 	}
 }
 
+// MoveCard moves a card to a different column on the Gitea board.
+func (s *BoardService) MoveCard(ctx context.Context, slug string, cardID, columnID int) error {
+	return s.gitea.MoveCard(ctx, cardID, columnID)
+}
+
+// CloseTrackIssue closes a Gitea issue for a track.
+func (s *BoardService) CloseTrackIssue(ctx context.Context, project domain.Project, issueNum int) error {
+	return s.gitea.UpdateIssue(ctx, project.RepoName, issueNum, "", "", "closed")
+}
+
+// ColumnKeyFromName normalizes a column name to a map key. Exported for use by board sync.
+func ColumnKeyFromName(name string) string {
+	return columnKey(name)
+}
+
 // columnKey normalizes a column name to a map key (lowercase, hyphens).
 func columnKey(name string) string {
 	switch name {
