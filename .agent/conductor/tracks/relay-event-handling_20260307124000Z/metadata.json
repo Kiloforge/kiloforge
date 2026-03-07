@@ -2,15 +2,15 @@
   "id": "relay-event-handling_20260307124000Z",
   "title": "Relay Event Handling for Issues and PRs with Multi-Project Routing",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-07T12:40:00Z",
   "updated": "2026-03-07T12:40:00Z",
   "phases": {
     "total": 3,
-    "completed": 0
+    "completed": 3
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }

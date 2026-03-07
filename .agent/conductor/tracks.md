@@ -8,6 +8,6 @@
 | [x] | refactor-config-port-adapter_20260307121000Z | Refactor Config to Port/Adapter Pattern with Layered Resolution | 2026-03-07 | 2026-03-07 |
 | [x] | add-project-command_20260307122000Z | Implement 'crelay add' Command for Project Registration | 2026-03-07 | 2026-03-07 |
 | [x] | down-destroy-commands_20260307123000Z | Add 'up', 'down' Commands and Refactor 'destroy' | 2026-03-07 | 2026-03-07 |
-| [ ] | relay-event-handling_20260307124000Z | Relay Event Handling for Issues and PRs with Multi-Project Routing | 2026-03-07 | 2026-03-07 |
+| [x] | relay-event-handling_20260307124000Z | Relay Event Handling for Issues and PRs with Multi-Project Routing | 2026-03-07 | 2026-03-07 |
 
 <!-- Tracks registered by /conductor-new-track -->
