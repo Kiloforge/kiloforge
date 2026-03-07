@@ -267,9 +267,10 @@ func (h *APIHandler) AcquireLock(ctx context.Context, req gen.AcquireLockRequest
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSec)*time.Second)
 		defer cancel()
 	} else {
+		// Create an already-cancelled context for truly non-blocking acquire.
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 1*time.Millisecond)
-		defer cancel()
+		ctx, cancel = context.WithCancel(ctx)
+		cancel() // cancel immediately — Acquire will return ErrTimeout at once if lock is held
 	}
 
 	l, err := h.lockMgr.Acquire(ctx, req.Scope, req.Body.Holder, ttl)

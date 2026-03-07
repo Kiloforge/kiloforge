@@ -105,6 +105,11 @@ func (h *Handler) handleAcquire(w http.ResponseWriter, r *http.Request) {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TimeoutSeconds)*time.Second)
 		defer cancel()
+	} else {
+		// Non-blocking: already-cancelled context so Acquire returns immediately.
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		cancel()
 	}
 
 	l, err := h.mgr.Acquire(ctx, scope, req.Holder, ttl)
