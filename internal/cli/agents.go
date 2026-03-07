@@ -49,10 +49,27 @@ func runAgents(cmd *cobra.Command, args []string) error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tROLE\tTRACK/PR\tSTATUS\tSESSION\tSTARTED")
+	fmt.Fprintln(w, "ID\tROLE\tTRACK/PR\tSTATUS\tSESSION\tSTARTED\tINFO")
 	for _, a := range agents {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID[:8], a.Role, a.Ref, a.Status, a.SessionID[:8], a.StartedAt.Format("15:04:05"))
+		info := agentStatusInfo(a.Status, a.ResumeError)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID[:8], a.Role, a.Ref, a.Status, a.SessionID[:8], a.StartedAt.Format("15:04:05"), info)
 	}
 	return w.Flush()
+}
+
+func agentStatusInfo(status, resumeErr string) string {
+	switch status {
+	case "resume-failed":
+		if resumeErr != "" {
+			return resumeErr
+		}
+		return "resume failed"
+	case "suspended":
+		return "will auto-resume on startup"
+	case "force-killed":
+		return "session may be corrupt"
+	default:
+		return ""
+	}
 }

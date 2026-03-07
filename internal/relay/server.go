@@ -9,8 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/agent"
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
@@ -18,6 +20,9 @@ import (
 	"crelay/internal/gitea"
 	"crelay/internal/pool"
 )
+
+// ShutdownTimeout is how long to wait for agents to exit before force-killing.
+const ShutdownTimeout = 10 * time.Second
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
@@ -120,6 +125,21 @@ func (s *Server) Run(ctx context.Context) error {
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		return err
 	}
+
+	// Graceful agent shutdown on relay stop.
+	running := s.store.AgentsByStatus("running", "waiting")
+	if len(running) > 0 {
+		s.logger.Printf("Shutting down %d agent(s)...", len(running))
+		sm := agent.NewShutdownManager(s.store)
+		result := sm.ShutdownAll(ShutdownTimeout)
+		if len(result.Suspended) > 0 {
+			s.logger.Printf("%d agent(s) suspended", len(result.Suspended))
+		}
+		if len(result.ForceKilled) > 0 {
+			s.logger.Printf("%d agent(s) force-killed", len(result.ForceKilled))
+		}
+	}
+
 	return nil
 }
 

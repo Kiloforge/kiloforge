@@ -11,4 +11,5 @@ type AgentStore interface {
 	UpdateStatus(idPrefix, status string)
 	HaltAgent(idPrefix string) error
 	Agents() []domain.AgentInfo
+	AgentsByStatus(statuses ...string) []domain.AgentInfo
 }
