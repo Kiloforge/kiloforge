@@ -19,6 +19,7 @@ Navigation hub for project context.
 - **refactor-config-port-adapter_20260307121000Z** — Refactor Config to Port/Adapter Pattern with Layered Resolution
 - **add-project-command_20260307122000Z** — Implement 'crelay add' Command for Project Registration
 - **down-destroy-commands_20260307123000Z** — Add 'up', 'down' Commands and Refactor 'destroy'
+- **relay-event-handling_20260307124000Z** — Relay Event Handling for Issues and PRs with Multi-Project Routing
 
 ## Getting Started
 
