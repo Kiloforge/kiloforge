@@ -1,0 +1,49 @@
+package cli
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+
+	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/agent"
+	"crelay/internal/config"
+	"crelay/internal/dashboard"
+
+	"github.com/spf13/cobra"
+)
+
+var dashboardCmd = &cobra.Command{
+	Use:   "dashboard",
+	Short: "Start the web dashboard (standalone)",
+	Long: `Starts the web dashboard server without starting Gitea or the relay.
+Useful when the relay is already running via 'crelay up' and you want
+to view the dashboard separately.`,
+	RunE: runDashboard,
+}
+
+func runDashboard(cmd *cobra.Command, args []string) error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	cfg, err := config.Resolve()
+	if err != nil {
+		return fmt.Errorf("not initialized — run 'crelay init' first")
+	}
+
+	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
+	if err != nil {
+		return fmt.Errorf("load agent store: %w", err)
+	}
+
+	tracker := agent.NewQuotaTracker(cfg.DataDir)
+	_ = tracker.Load()
+
+	projectDir, _ := os.Getwd()
+
+	srv := dashboard.New(cfg.DashboardPort, store, tracker, cfg.GiteaURL(), projectDir)
+	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.DashboardPort)
+	fmt.Println("Press Ctrl+C to stop.")
+	return srv.Run(ctx)
+}

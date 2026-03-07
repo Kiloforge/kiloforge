@@ -33,4 +33,5 @@ func init() {
 	rootCmd.AddCommand(attachCmd)
 	rootCmd.AddCommand(escalatedCmd)
 	rootCmd.AddCommand(costCmd)
+	rootCmd.AddCommand(dashboardCmd)
 }
