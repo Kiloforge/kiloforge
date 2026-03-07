@@ -8,6 +8,7 @@ import { useTracks } from "./hooks/useTracks";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
+import { SkillsBanner } from "./components/SkillsBanner";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import styles from "./App.module.css";
@@ -47,6 +48,7 @@ export default function App() {
 
   return (
     <>
+      <SkillsBanner />
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>crelay</h1>
