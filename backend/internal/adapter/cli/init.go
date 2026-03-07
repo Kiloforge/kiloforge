@@ -12,6 +12,7 @@ import (
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/pidfile"
+	"crelay/internal/adapter/prereq"
 
 	"github.com/spf13/cobra"
 )
@@ -42,6 +43,11 @@ func init() {
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
+	// Check prerequisites before anything else.
+	if errs := prereq.Check(); len(errs) > 0 {
+		return fmt.Errorf("%s", prereq.FormatErrors(errs))
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
