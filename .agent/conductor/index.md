@@ -34,6 +34,9 @@ Navigation hub for project context.
 - **test-coverage-alignment_20260307140002Z** — Test Coverage Alignment with Style Guide
 - **research-cc-quota-monitoring_20260307150000Z** — Research: Claude Code Quota Monitoring and Graceful Degradation
 - **research-graceful-shutdown-recovery_20260307150001Z** — Research: Graceful Agent Shutdown, Session Persistence, and Recovery
+- **impl-quota-tracker_20260307160000Z** — CC Stream-JSON Parser and Centralized Quota Tracker
+- **impl-quota-aware-agents_20260307160001Z** — Quota-Aware Agent Management and Cost Reporting
+- **impl-graceful-shutdown-recovery_20260307160002Z** — Graceful Agent Shutdown and Auto-Recovery on Restart
 
 ## Getting Started
 

@@ -20,5 +20,8 @@
 | [ ] | test-coverage-alignment_20260307140002Z | Test Coverage Alignment with Style Guide | 2026-03-07 | 2026-03-07 |
 | [x] | research-cc-quota-monitoring_20260307150000Z | Research: Claude Code Quota Monitoring and Graceful Degradation | 2026-03-07 | 2026-03-07 |
 | [x] | research-graceful-shutdown-recovery_20260307150001Z | Research: Graceful Agent Shutdown, Session Persistence, and Recovery | 2026-03-07 | 2026-03-07 |
+| [ ] | impl-quota-tracker_20260307160000Z | CC Stream-JSON Parser and Centralized Quota Tracker | 2026-03-07 | 2026-03-07 |
+| [ ] | impl-quota-aware-agents_20260307160001Z | Quota-Aware Agent Management and Cost Reporting | 2026-03-07 | 2026-03-07 |
+| [ ] | impl-graceful-shutdown-recovery_20260307160002Z | Graceful Agent Shutdown and Auto-Recovery on Restart | 2026-03-07 | 2026-03-07 |
 
 <!-- Tracks registered by /conductor-new-track -->

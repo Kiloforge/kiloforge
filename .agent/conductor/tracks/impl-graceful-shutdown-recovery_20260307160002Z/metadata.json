@@ -1,0 +1,16 @@
+{
+  "id": "impl-graceful-shutdown-recovery_20260307160002Z",
+  "title": "Graceful Agent Shutdown and Auto-Recovery on Restart",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-07T16:00:02Z",
+  "updated": "2026-03-07T16:00:02Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 13,
+    "completed": 0
+  }
+}
