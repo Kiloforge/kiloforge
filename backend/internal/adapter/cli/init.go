@@ -11,8 +11,7 @@ import (
 	"crelay/internal/adapter/compose"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest"
+	"crelay/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
 )
@@ -140,18 +139,27 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("Register a project with 'crelay add <path>'.")
 	fmt.Println()
 
-	// Start relay server (blocking).
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
-	if err != nil {
-		return fmt.Errorf("load project registry: %w", err)
+	// Start relay daemon.
+	pidMgr := pidfile.New(cfg.DataDir)
+	if running, pid, _ := pidMgr.IsRunning(); running {
+		fmt.Printf("Relay already running (PID %d)\n", pid)
+	} else {
+		fmt.Println("==> Starting relay daemon...")
+		pid, err := startDaemon(cfg.DataDir)
+		if err != nil {
+			fmt.Printf("    Warning: start relay daemon: %v\n", err)
+		} else {
+			fmt.Printf("    Relay daemon started (PID %d)\n", pid)
+		}
 	}
 
-	fmt.Printf("==> Starting relay on :%d...\n", cfg.RelayPort)
-	fmt.Println("    Press Ctrl+C to stop the relay.")
 	fmt.Println()
+	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
+	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
+	fmt.Println()
+	fmt.Println("Use 'crelay down' to stop.")
 
-	srv := rest.NewServer(cfg, reg, cfg.RelayPort)
-	return srv.Run(ctx)
+	return nil
 }
 
 func registerSSHKey(ctx context.Context, client *gitea.Client, customPath string) {

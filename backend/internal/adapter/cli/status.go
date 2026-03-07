@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/compose"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/gitea"
+	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
 )
@@ -27,6 +28,10 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
 	}
+
+	// Check relay daemon.
+	pidMgr := pidfile.New(cfg.DataDir)
+	relayRunning, relayPID, _ := pidMgr.IsRunning()
 
 	// Check Gitea via API.
 	giteaStatus := "stopped"
@@ -47,6 +52,13 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Conductor Relay Status")
 	fmt.Println("======================")
+
+	if relayRunning {
+		fmt.Printf("Relay:       running (PID %d) on :%d\n", relayPID, cfg.RelayPort)
+	} else {
+		fmt.Println("Relay:       stopped")
+	}
+
 	if giteaVersion != "" {
 		fmt.Printf("Gitea:       %s (v%s) — %s\n", giteaStatus, giteaVersion, cfg.GiteaURL())
 	} else {
@@ -55,7 +67,6 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Data:        %s\n", cfg.DataDir)
 	fmt.Printf("Compose:     %s\n", cfg.ComposeFile)
 	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
-	fmt.Printf("Gitea:       http://localhost:%d/\n", cfg.RelayPort)
 	if cfg.IsDashboardEnabled() {
 		fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
 	} else {
