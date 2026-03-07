@@ -323,12 +323,22 @@ func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
 	}
 }
 
-func TestReviewApproved_ResumesDeveloper(t *testing.T) {
+func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
 	spawner := &fakeSpawner{}
-	srv := newTestServerWithSpawner(dir, spawner, nil)
+
+	// Fake Gitea server to receive merge/comment/delete-branch calls.
+	var giteaCalls []string
+	giteaSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		giteaCalls = append(giteaCalls, r.Method+" "+r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id": 1}`))
+	}))
+	defer giteaSrv.Close()
+
+	srv := newTestServerWithSpawner(dir, spawner, giteaSrv)
 
 	// Set up developer agent.
 	srv.store.AddAgent(state.AgentInfo{
@@ -367,18 +377,32 @@ func TestReviewApproved_ResumesDeveloper(t *testing.T) {
 		t.Fatalf("expected 200, got %d", rec.Code)
 	}
 
-	// Developer should have been resumed.
-	if len(spawner.resumeCalls) != 1 {
-		t.Fatalf("expected 1 resume call, got %d", len(spawner.resumeCalls))
-	}
-	if spawner.resumeCalls[0].sessionID != "dev-session-456" {
-		t.Errorf("resumed wrong session: %q", spawner.resumeCalls[0].sessionID)
+	// Should NOT have resumed developer (merge+cleanup instead).
+	if len(spawner.resumeCalls) != 0 {
+		t.Errorf("expected 0 resume calls, got %d", len(spawner.resumeCalls))
 	}
 
-	// Tracking should be updated.
+	// Should have called merge API.
+	hasMerge := false
+	for _, call := range giteaCalls {
+		if call == "POST /api/v1/repos/conductor/myapp/pulls/5/merge" {
+			hasMerge = true
+		}
+	}
+	if !hasMerge {
+		t.Errorf("expected merge API call, got: %v", giteaCalls)
+	}
+
+	// Tracking should be merged.
 	updated, _ := orchestration.LoadPRTracking(projectDir)
-	if updated.Status != "approved" {
-		t.Errorf("status: want %q, got %q", "approved", updated.Status)
+	if updated.Status != "merged" {
+		t.Errorf("status: want %q, got %q", "merged", updated.Status)
+	}
+
+	// Developer agent should be completed.
+	dev, _ := srv.store.FindAgent("dev-agent-123")
+	if dev.Status != "completed" {
+		t.Errorf("developer status: want %q, got %q", "completed", dev.Status)
 	}
 }
 

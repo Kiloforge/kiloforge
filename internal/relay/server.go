@@ -13,6 +13,7 @@ import (
 	"crelay/internal/config"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
+	"crelay/internal/pool"
 	"crelay/internal/project"
 	"crelay/internal/state"
 )
@@ -396,26 +397,58 @@ func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 }
 
 func (s *Server) handleReviewApproved(slug string, tracking *orchestration.PRTracking, projectDir string) {
-	s.logger.Printf("[%s] PR #%d approved — resuming developer for merge", slug, tracking.PRNumber)
+	s.logger.Printf("[%s] PR #%d approved — merging and cleaning up", slug, tracking.PRNumber)
 
 	tracking.Status = "approved"
 	if err := tracking.Save(projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
-	// Resume developer agent.
-	if tracking.DeveloperSession != "" {
-		workDir := tracking.DeveloperWorkDir
-		if workDir == "" {
-			workDir = projectDir
-		}
-		if err := s.spawner.ResumeDeveloper(context.Background(), tracking.DeveloperSession, workDir); err != nil {
-			s.logger.Printf("[%s] Error resuming developer: %v", slug, err)
-			return
-		}
-		s.store.UpdateStatus(tracking.DeveloperAgentID, "running")
-		_ = s.store.Save(s.cfg.DataDir)
+	// Load pool for worktree return.
+	p, err := pool.Load(s.cfg.DataDir)
+	if err != nil {
+		s.logger.Printf("[%s] Error loading pool: %v", slug, err)
+		p = nil
 	}
+
+	var poolRet orchestration.PoolReturner
+	if p != nil {
+		poolRet = &poolReturnerAdapter{pool: p, dataDir: s.cfg.DataDir}
+	}
+
+	opts := orchestration.CleanupOpts{
+		Tracking:    tracking,
+		Store:       s.store,
+		Merger:      s.client,
+		PoolReturn:  poolRet,
+		DataDir:     s.cfg.DataDir,
+		MergeMethod: "merge",
+	}
+
+	if err := orchestration.MergeAndCleanup(context.Background(), opts); err != nil {
+		s.logger.Printf("[%s] Error in merge/cleanup: %v", slug, err)
+		return
+	}
+
+	// Save tracking.
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+
+	s.logger.Printf("[%s] PR #%d merged and cleaned up (track: %s)", slug, tracking.PRNumber, tracking.TrackID)
+}
+
+// poolReturnerAdapter wraps pool.Pool to implement orchestration.PoolReturner.
+type poolReturnerAdapter struct {
+	pool    *pool.Pool
+	dataDir string
+}
+
+func (a *poolReturnerAdapter) ReturnByTrackID(trackID string) error {
+	if err := a.pool.ReturnByTrackID(trackID); err != nil {
+		return err
+	}
+	return a.pool.Save(a.dataDir)
 }
 
 func (s *Server) handleReviewChangesRequested(slug string, tracking *orchestration.PRTracking, projectDir string) {

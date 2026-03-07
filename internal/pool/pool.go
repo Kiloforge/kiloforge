@@ -157,6 +157,25 @@ func (p *Pool) Return(w *Worktree) error {
 	return nil
 }
 
+// FindByTrackID returns the worktree assigned to the given track.
+func (p *Pool) FindByTrackID(trackID string) *Worktree {
+	for _, w := range p.Worktrees {
+		if w.TrackID == trackID {
+			return w
+		}
+	}
+	return nil
+}
+
+// ReturnByTrackID finds and returns the worktree assigned to the given track.
+func (p *Pool) ReturnByTrackID(trackID string) error {
+	w := p.FindByTrackID(trackID)
+	if w == nil {
+		return fmt.Errorf("no worktree found for track %s", trackID)
+	}
+	return p.Return(w)
+}
+
 // Status returns a sorted list of all worktree states.
 func (p *Pool) Status() []Worktree {
 	result := make([]Worktree, 0, len(p.Worktrees))
