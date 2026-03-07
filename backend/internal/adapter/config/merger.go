@@ -53,4 +53,13 @@ func overlay(dst, src *Config) {
 	if src.DashboardEnabled != nil {
 		dst.DashboardEnabled = src.DashboardEnabled
 	}
+	if src.SkillsRepo != "" {
+		dst.SkillsRepo = src.SkillsRepo
+	}
+	if src.SkillsVersion != "" {
+		dst.SkillsVersion = src.SkillsVersion
+	}
+	if src.AutoUpdateSkills != nil {
+		dst.AutoUpdateSkills = src.AutoUpdateSkills
+	}
 }

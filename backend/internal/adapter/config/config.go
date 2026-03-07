@@ -21,6 +21,9 @@ type Config struct {
 	GiteaAdminEmail    string  `json:"gitea_admin_email,omitempty"`
 	MaxSessionCostUSD  float64 `json:"max_session_cost_usd,omitempty"`
 	DashboardEnabled   *bool   `json:"dashboard_enabled,omitempty"`
+	SkillsRepo         string  `json:"skills_repo,omitempty"`
+	SkillsVersion      string  `json:"skills_version,omitempty"`
+	AutoUpdateSkills   *bool   `json:"auto_update_skills,omitempty"`
 }
 
 // IsDashboardEnabled returns whether the dashboard is enabled.
