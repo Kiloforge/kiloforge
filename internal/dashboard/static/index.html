@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>crelay dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>crelay</h1>
+      <span class="connection-badge" id="conn-status">connecting</span>
+    </div>
+    <div class="header-right">
+      <a id="gitea-link" href="#" target="_blank">Gitea</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="status-bar">
+      <div class="stat" id="stat-agents">
+        <span class="stat-label">Agents</span>
+        <span class="stat-value" id="total-agents">0</span>
+      </div>
+      <div class="stat" id="stat-cost">
+        <span class="stat-label">Total Cost</span>
+        <span class="stat-value" id="total-cost">$0.00</span>
+      </div>
+      <div class="stat" id="stat-rate">
+        <span class="stat-label">Rate Limit</span>
+        <span class="stat-value" id="rate-status">OK</span>
+      </div>
+      <div class="stat" id="stat-sse">
+        <span class="stat-label">SSE Clients</span>
+        <span class="stat-value" id="sse-clients">0</span>
+      </div>
+    </section>
+
+    <section class="panels">
+      <div class="panel" id="agents-panel">
+        <h2>Agents</h2>
+        <div class="agent-grid" id="agent-grid"></div>
+      </div>
+
+      <div class="panel" id="tracks-panel">
+        <h2>Tracks</h2>
+        <div class="track-list" id="track-list"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="log-panel" style="display:none;">
+      <div class="log-header">
+        <h2>Log: <span id="log-agent-id"></span></h2>
+        <button id="log-close">Close</button>
+      </div>
+      <pre class="log-viewer" id="log-viewer"></pre>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
