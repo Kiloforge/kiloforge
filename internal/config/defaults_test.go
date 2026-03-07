@@ -34,8 +34,8 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 	if cfg.GiteaAdminUser != "conductor" {
 		t.Errorf("GiteaAdminUser: want %q, got %q", "conductor", cfg.GiteaAdminUser)
 	}
-	if cfg.GiteaAdminPass != "conductor123" {
-		t.Errorf("GiteaAdminPass: want %q, got %q", "conductor123", cfg.GiteaAdminPass)
+	if cfg.GiteaAdminPass != "" {
+		t.Errorf("GiteaAdminPass: want empty (resolved elsewhere), got %q", cfg.GiteaAdminPass)
 	}
 	if cfg.GiteaAdminEmail != "conductor@local.dev" {
 		t.Errorf("GiteaAdminEmail: want %q, got %q", "conductor@local.dev", cfg.GiteaAdminEmail)

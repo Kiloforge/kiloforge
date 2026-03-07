@@ -21,7 +21,7 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 		ContainerName:   "conductor-gitea",
 		GiteaImage:      "gitea/gitea:latest",
 		GiteaAdminUser:  "conductor",
-		GiteaAdminPass:  "conductor123",
+		// GiteaAdminPass intentionally omitted — resolved via flag, saved config, or generated.
 		GiteaAdminEmail: "conductor@local.dev",
 	}, nil
 }
