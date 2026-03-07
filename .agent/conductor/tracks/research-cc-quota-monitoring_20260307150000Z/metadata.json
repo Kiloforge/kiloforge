@@ -1,0 +1,16 @@
+{
+  "id": "research-cc-quota-monitoring_20260307150000Z",
+  "title": "Research: Claude Code Quota Monitoring and Graceful Degradation",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-07T15:00:00Z",
+  "updated": "2026-03-07T15:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}

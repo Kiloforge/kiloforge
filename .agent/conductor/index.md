@@ -32,6 +32,8 @@ Navigation hub for project context.
 - **refactor-clean-arch_20260307140000Z** — Restructure Packages into Clean Architecture Layout
 - **refactor-domain-ports_20260307140001Z** — Extract Domain Types, Port Interfaces, and Service Layer
 - **test-coverage-alignment_20260307140002Z** — Test Coverage Alignment with Style Guide
+- **research-cc-quota-monitoring_20260307150000Z** — Research: Claude Code Quota Monitoring and Graceful Degradation
+- **research-graceful-shutdown-recovery_20260307150001Z** — Research: Graceful Agent Shutdown, Session Persistence, and Recovery
 
 ## Getting Started
 
