@@ -1,16 +1,16 @@
 # Command Reference
 
-## `conductor-relay init`
+## `crelay init`
 
 Initialize Gitea and start the relay server. This is the primary entry point — one command to start everything.
 
 **Synopsis:**
 ```bash
-conductor-relay init [--gitea-port PORT] [--relay-port PORT] [--repo NAME] [--data-dir PATH]
+crelay init [--gitea-port PORT] [--relay-port PORT] [--repo NAME] [--data-dir PATH]
 ```
 
 **What it does (in order):**
-1. Creates data directory (`~/.conductor-relay/`)
+1. Creates data directory (`~/.crelay/`)
 2. Starts Gitea Docker container (or restarts if stopped)
 3. Waits for Gitea to become healthy (up to 60s)
 4. Creates admin user `conductor` via `gitea admin user create`
@@ -19,7 +19,7 @@ conductor-relay init [--gitea-port PORT] [--relay-port PORT] [--repo NAME] [--da
 7. Adds `gitea` git remote to project
 8. Pushes `main` branch to Gitea
 9. Registers webhooks for PR events
-10. Saves configuration to `~/.conductor-relay/config.json`
+10. Saves configuration to `~/.crelay/config.json`
 11. Starts relay server (blocks until Ctrl+C)
 
 **Flags:**
@@ -29,19 +29,19 @@ conductor-relay init [--gitea-port PORT] [--relay-port PORT] [--repo NAME] [--da
 | `--gitea-port` | `3000` | Port for Gitea web UI and API |
 | `--relay-port` | `3001` | Port for webhook relay server |
 | `--repo` | Directory name | Repository name in Gitea |
-| `--data-dir` | `~/.conductor-relay` | Where to store config, state, logs, and Gitea data |
+| `--data-dir` | `~/.crelay` | Where to store config, state, logs, and Gitea data |
 
 **Idempotent:** Safe to run multiple times. Skips steps that are already done (container exists, user exists, repo exists).
 
 ---
 
-## `conductor-relay status`
+## `crelay status`
 
 Display the current status of all components.
 
 **Synopsis:**
 ```bash
-conductor-relay status
+crelay status
 ```
 
 **Output:**
@@ -52,7 +52,7 @@ Gitea:       running (http://localhost:3000)
 Relay:       running (http://localhost:3001)
 Project:     /Users/you/dev/my-project
 Repository:  conductor/my-project
-Data:        /Users/you/.conductor-relay
+Data:        /Users/you/.crelay
 Agents:      2 active
 ```
 
@@ -63,13 +63,13 @@ Agents:      2 active
 
 ---
 
-## `conductor-relay agents`
+## `crelay agents`
 
 List all tracked agents.
 
 **Synopsis:**
 ```bash
-conductor-relay agents [--json]
+crelay agents [--json]
 ```
 
 **Output (table):**
@@ -90,7 +90,7 @@ i9j0k1l2  reviewer   PR #3       completed m3n4o5p6  14:25:12
     "session_id": "e5f6g7h8-...",
     "pid": 12345,
     "worktree_dir": "/Users/you/dev/my-project",
-    "log_file": "/Users/you/.conductor-relay/logs/a1b2c3d4-....log",
+    "log_file": "/Users/you/.crelay/logs/a1b2c3d4-....log",
     "started_at": "2026-03-07T14:23:01Z",
     "updated_at": "2026-03-07T14:23:01Z"
   }
@@ -110,13 +110,13 @@ i9j0k1l2  reviewer   PR #3       completed m3n4o5p6  14:25:12
 
 ---
 
-## `conductor-relay logs <agent-id>`
+## `crelay logs <agent-id>`
 
 View log output from an agent.
 
 **Synopsis:**
 ```bash
-conductor-relay logs <agent-id> [-f]
+crelay logs <agent-id> [-f]
 ```
 
 **Arguments:**
@@ -132,13 +132,13 @@ conductor-relay logs <agent-id> [-f]
 
 ---
 
-## `conductor-relay attach <agent-id>`
+## `crelay attach <agent-id>`
 
 Halt a running agent and provide the command to resume it interactively.
 
 **Synopsis:**
 ```bash
-conductor-relay attach <agent-id>
+crelay attach <agent-id>
 ```
 
 **What it does:**
@@ -156,13 +156,13 @@ conductor-relay attach <agent-id>
 
 ---
 
-## `conductor-relay stop <agent-id>`
+## `crelay stop <agent-id>`
 
 Stop a running agent without providing resume instructions.
 
 **Synopsis:**
 ```bash
-conductor-relay stop <agent-id>
+crelay stop <agent-id>
 ```
 
 **What it does:**
@@ -174,13 +174,13 @@ conductor-relay stop <agent-id>
 
 ---
 
-## `conductor-relay destroy`
+## `crelay destroy`
 
 Tear down the Gitea instance and clean up.
 
 **Synopsis:**
 ```bash
-conductor-relay destroy [--data]
+crelay destroy [--data]
 ```
 
 **What it does:**
@@ -192,9 +192,9 @@ conductor-relay destroy [--data]
 
 | Flag | Description |
 |------|-------------|
-| `--data` | Also delete `~/.conductor-relay/` (config, state, logs, Gitea volumes) |
+| `--data` | Also delete `~/.crelay/` (config, state, logs, Gitea volumes) |
 
-**Note:** Running agents are NOT stopped by `destroy`. Stop them first with `conductor-relay stop`.
+**Note:** Running agents are NOT stopped by `destroy`. Stop them first with `crelay stop`.
 
 ---
 

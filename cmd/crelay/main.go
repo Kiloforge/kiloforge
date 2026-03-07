@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"conductor-relay/internal/cli"
+	"crelay/internal/cli"
 )
 
 func main() {

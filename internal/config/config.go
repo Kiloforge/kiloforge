@@ -42,7 +42,7 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	dataDir := filepath.Join(home, ".conductor-relay")
+	dataDir := filepath.Join(home, ".crelay")
 	return LoadFrom(dataDir)
 }
 

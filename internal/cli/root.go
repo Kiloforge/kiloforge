@@ -5,12 +5,12 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "conductor-relay",
+	Use:   "crelay",
 	Short: "Gitea + Claude agent relay for conductor workflows",
-	Long: `conductor-relay manages a local Gitea instance and relays webhooks
+	Long: `crelay manages a local Gitea instance and relays webhooks
 to spawn, monitor, and control Claude Code agents running conductor skills.
 
-Initialize with 'conductor-relay init' to start Gitea and the relay server.`,
+Initialize with 'crelay init' to start Gitea and the relay server.`,
 }
 
 func Execute() error {

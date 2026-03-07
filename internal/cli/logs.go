@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"conductor-relay/internal/config"
+	"crelay/internal/config"
 
 	"github.com/spf13/cobra"
 )

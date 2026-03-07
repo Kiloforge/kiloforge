@@ -16,7 +16,7 @@ This guide walks through setting up Conductor Relay for a project from scratch.
    claude --version
    ```
 
-3. **Go 1.21+** — To build conductor-relay
+3. **Go 1.21+** — To build crelay
    ```bash
    go version
    ```
@@ -34,13 +34,13 @@ This guide walks through setting up Conductor Relay for a project from scratch.
 
 ```bash
 # Clone and build
-cd ~/dev/conductor-relay
+cd ~/dev/crelay
 make build
 
 # Optionally install to PATH
-cp conductor-relay /usr/local/bin/
+cp crelay /usr/local/bin/
 # or
-go install ./cmd/conductor-relay/
+go install ./cmd/crelay/
 ```
 
 ## Setup
@@ -62,7 +62,7 @@ From your project directory:
 
 ```bash
 cd ~/dev/my-project
-conductor-relay init
+crelay init
 ```
 
 You'll see output like:
@@ -90,7 +90,7 @@ Open a new terminal:
 
 ```bash
 # Check status
-conductor-relay status
+crelay status
 
 # Visit Gitea web UI
 open http://localhost:3000
@@ -132,13 +132,13 @@ Or add to your project's `.claude/settings.json`:
 
 3. **Watch it work** — The developer implements the track, creates a PR. The relay automatically spawns a reviewer. Check progress:
    ```bash
-   conductor-relay agents
-   conductor-relay logs <agent-id>
+   crelay agents
+   crelay logs <agent-id>
    ```
 
 4. **Intervene if needed** — If an agent gets stuck or needs input:
    ```bash
-   conductor-relay attach <agent-id>
+   crelay attach <agent-id>
    # Then run the printed resume command in your terminal
    ```
 
@@ -168,7 +168,7 @@ claude --worktree developer-1 -p "/conductor-developer track-1 --with-review"
 claude --worktree developer-2 -p "/conductor-developer track-2 --with-review"
 
 # Terminal 3: Monitor
-conductor-relay agents
+crelay agents
 ```
 
 Each developer works in an isolated worktree and creates separate PRs. The relay spawns a reviewer for each PR.
@@ -179,8 +179,8 @@ Each developer works in an isolated worktree and creates separate PRs. The relay
 # Stop relay: Ctrl+C in the init terminal
 
 # Remove everything
-conductor-relay destroy        # stop container, remove git remote
-conductor-relay destroy --data # also delete Gitea data and logs
+crelay destroy        # stop container, remove git remote
+crelay destroy --data # also delete Gitea data and logs
 ```
 
 ## Troubleshooting
@@ -194,7 +194,7 @@ docker logs conductor-gitea
 
 # Retry
 docker rm -f conductor-gitea
-conductor-relay init
+crelay init
 ```
 
 ### Webhook not firing
@@ -217,15 +217,15 @@ which claude
 claude --version
 
 # Check agent logs
-conductor-relay logs <agent-id>
+crelay logs <agent-id>
 
 # Check state file
-cat ~/.conductor-relay/state.json
+cat ~/.crelay/state.json
 ```
 
 ### Port conflicts
 
 ```bash
 # Use different ports
-conductor-relay init --gitea-port 3010 --relay-port 3011
+crelay init --gitea-port 3010 --relay-port 3011
 ```

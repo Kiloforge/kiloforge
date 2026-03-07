@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"conductor-relay/internal/agent"
-	"conductor-relay/internal/config"
-	"conductor-relay/internal/gitea"
-	"conductor-relay/internal/state"
+	"crelay/internal/agent"
+	"crelay/internal/config"
+	"crelay/internal/gitea"
+	"crelay/internal/state"
 )
 
 // Server handles incoming webhooks and manages agents.

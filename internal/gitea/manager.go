@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"conductor-relay/internal/config"
+	"crelay/internal/config"
 )
 
 // Manager handles Docker lifecycle for Gitea.
@@ -92,7 +92,7 @@ func (m *Manager) Configure(ctx context.Context) (*Client, error) {
 	client := NewClient(m.cfg.GiteaURL(), config.GiteaAdminUser, config.GiteaAdminPass)
 
 	// Create API token.
-	token, err := client.CreateToken(ctx, "conductor-relay")
+	token, err := client.CreateToken(ctx, "crelay")
 	if err != nil {
 		// Token may already exist; try to use basic auth for remaining calls.
 		// We'll proceed with basic auth.

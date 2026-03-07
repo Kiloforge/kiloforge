@@ -29,7 +29,7 @@ make build
 cd ~/dev/my-project
 
 # Initialize everything
-conductor-relay init
+crelay init
 
 # That's it. Gitea is running, webhooks are registered, relay is listening.
 ```
@@ -45,64 +45,64 @@ This will:
 
 ## Commands
 
-### `conductor-relay init`
+### `crelay init`
 
 Start Gitea and the relay server. Run this from your project directory.
 
 ```bash
-conductor-relay init [flags]
+crelay init [flags]
 
 Flags:
   --gitea-port int   Port for Gitea web UI (default 3000)
   --relay-port int   Port for the relay server (default 3001)
   --repo string      Repository name (default: directory name)
-  --data-dir string  Persistent data directory (default ~/.conductor-relay)
+  --data-dir string  Persistent data directory (default ~/.crelay)
 ```
 
-### `conductor-relay status`
+### `crelay status`
 
 Show the status of Gitea, the relay server, and active agents.
 
 ```bash
-$ conductor-relay status
+$ crelay status
 Conductor Relay Status
 ======================
 Gitea:       running (http://localhost:3000)
 Relay:       running (http://localhost:3001)
 Project:     /Users/you/dev/my-project
 Repository:  conductor/my-project
-Data:        /Users/you/.conductor-relay
+Data:        /Users/you/.crelay
 Agents:      2 active
 ```
 
-### `conductor-relay agents`
+### `crelay agents`
 
 List all tracked agents (active and recent).
 
 ```bash
-$ conductor-relay agents
+$ crelay agents
 ID        ROLE       TRACK/PR    STATUS    SESSION   STARTED
 a1b2c3d4  developer  auth_track  running   e5f6g7h8  14:23:01
 i9j0k1l2  reviewer   PR #3       waiting   m3n4o5p6  14:25:12
 
-$ conductor-relay agents --json  # JSON output
+$ crelay agents --json  # JSON output
 ```
 
-### `conductor-relay logs <agent-id>`
+### `crelay logs <agent-id>`
 
 View an agent's log output. Supports prefix matching on the ID.
 
 ```bash
-$ conductor-relay logs a1b2c3d4
-$ conductor-relay logs a1b2 -f  # follow mode
+$ crelay logs a1b2c3d4
+$ crelay logs a1b2 -f  # follow mode
 ```
 
-### `conductor-relay attach <agent-id>`
+### `crelay attach <agent-id>`
 
 Halt a running agent and get the command to resume its Claude session interactively. Use this when you need to provide manual input or guidance.
 
 ```bash
-$ conductor-relay attach a1b2c3d4
+$ crelay attach a1b2c3d4
 Agent:     a1b2c3d4 (developer)
 Status:    running
 Session:   e5f6g7h8-...
@@ -115,23 +115,23 @@ After it stops, resume with:
 Agent halted. You can now resume it with the command above.
 ```
 
-### `conductor-relay stop <agent-id>`
+### `crelay stop <agent-id>`
 
 Gracefully stop an agent without attaching.
 
 ```bash
-$ conductor-relay stop a1b2c3d4
+$ crelay stop a1b2c3d4
 Agent a1b2c3d4 stopped.
 Resume with: claude --resume e5f6g7h8-...
 ```
 
-### `conductor-relay destroy`
+### `crelay destroy`
 
 Tear down Gitea and clean up.
 
 ```bash
-conductor-relay destroy          # stop container, remove remote
-conductor-relay destroy --data   # also delete persistent data
+crelay destroy          # stop container, remove remote
+crelay destroy --data   # also delete persistent data
 ```
 
 ## Architecture
@@ -197,10 +197,10 @@ conductor-relay destroy --data   # also delete persistent data
 ### Manual Intervention
 
 At any point you can:
-- **Check status**: `conductor-relay agents` to see what's running
-- **Read logs**: `conductor-relay logs <id>` to see what an agent is doing
-- **Take over**: `conductor-relay attach <id>` to halt and resume interactively
-- **Stop**: `conductor-relay stop <id>` to pause an agent
+- **Check status**: `crelay agents` to see what's running
+- **Read logs**: `crelay logs <id>` to see what an agent is doing
+- **Take over**: `crelay attach <id>` to halt and resume interactively
+- **Stop**: `crelay stop <id>` to pause an agent
 
 ## Configuration
 
@@ -215,10 +215,10 @@ The conductor skills respect these env vars (set automatically by the relay):
 
 ### Data Directory
 
-All persistent data lives in `~/.conductor-relay/` (configurable via `--data-dir`):
+All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 
 ```
-~/.conductor-relay/
+~/.crelay/
 ├── config.json       # Relay configuration
 ├── state.json        # Agent tracking state
 ├── logs/             # Agent log files (one per agent)

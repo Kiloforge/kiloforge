@@ -6,8 +6,8 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"conductor-relay/internal/config"
-	"conductor-relay/internal/state"
+	"crelay/internal/config"
+	"crelay/internal/state"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ func init() {
 func runAgents(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("load config: %w (have you run 'conductor-relay init'?)", err)
+		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
 	}
 
 	store, err := state.Load(cfg.DataDir)

@@ -70,7 +70,7 @@ Manages Claude Code process lifecycle:
 Each spawned agent:
 1. Gets a UUID-based agent ID and session ID
 2. Runs with `--output-format stream-json` for structured output
-3. Has stdout captured to a log file in `~/.conductor-relay/logs/`
+3. Has stdout captured to a log file in `~/.crelay/logs/`
 4. Is tracked in the state file with PID, session ID, status
 
 ### 6. State Store (`internal/state/state.go`)
@@ -87,7 +87,7 @@ Operations: Load, Save, AddAgent, FindAgent (prefix match), UpdateStatus, HaltAg
 
 ### 7. Config (`internal/config/config.go`)
 
-JSON configuration stored at `~/.conductor-relay/config.json`. Contains ports, paths, repo name, and API token.
+JSON configuration stored at `~/.crelay/config.json`. Contains ports, paths, repo name, and API token.
 
 ## Data Flow
 
@@ -131,8 +131,8 @@ Gitea fires pull_request_review webhook
     │
     ▼
 User checks status:
-  conductor-relay agents    → sees developer waiting, reviewer completed
-  conductor-relay attach <developer-id>  → halts developer, gets resume command
+  crelay agents    → sees developer waiting, reviewer completed
+  crelay attach <developer-id>  → halts developer, gets resume command
   claude --resume <session-id>  → takes over developer session interactively
 ```
 

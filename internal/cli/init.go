@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"conductor-relay/internal/config"
-	"conductor-relay/internal/gitea"
-	"conductor-relay/internal/relay"
+	"crelay/internal/config"
+	"crelay/internal/gitea"
+	"crelay/internal/relay"
 
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,7 @@ func init() {
 	initCmd.Flags().IntVar(&flagGiteaPort, "gitea-port", 3000, "Port for Gitea web UI")
 	initCmd.Flags().IntVar(&flagRelayPort, "relay-port", 3001, "Port for the relay webhook server")
 	initCmd.Flags().StringVar(&flagRepoName, "repo", "", "Repository name (defaults to current directory name)")
-	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.conductor-relay)")
+	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.crelay)")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("get home directory: %w", err)
 		}
-		flagDataDir = filepath.Join(home, ".conductor-relay")
+		flagDataDir = filepath.Join(home, ".crelay")
 	}
 
 	cfg := &config.Config{

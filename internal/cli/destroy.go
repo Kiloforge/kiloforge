@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"conductor-relay/internal/config"
+	"crelay/internal/config"
 
 	"github.com/spf13/cobra"
 )

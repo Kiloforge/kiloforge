@@ -1,5 +1,5 @@
 # Binary
-/conductor-relay
+/crelay
 /bin/
 
 # Go
@@ -22,5 +22,5 @@
 Thumbs.db
 
 # Conductor relay runtime
-.conductor-relay/
+.crelay/
 *.log

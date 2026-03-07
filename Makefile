@@ -1,7 +1,7 @@
 .PHONY: build run clean test
 
-BINARY := conductor-relay
-PKG := ./cmd/conductor-relay
+BINARY := crelay
+PKG := ./cmd/crelay
 
 build:
 	go build -o $(BINARY) $(PKG)

@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"conductor-relay/internal/config"
-	"conductor-relay/internal/state"
+	"crelay/internal/config"
+	"crelay/internal/state"
 
 	"github.com/spf13/cobra"
 )
