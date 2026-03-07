@@ -568,6 +568,92 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 	}
 }
 
+func TestHandleWebhook_BadRequestBody(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader([]byte("not json")))
+	req.Header.Set("X-Gitea-Event", "push")
+	rec := httptest.NewRecorder()
+	srv.handleWebhook(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rec.Code)
+	}
+
+	// Verify no internal details leaked in error response.
+	body := rec.Body.String()
+	if len(body) > 200 {
+		t.Errorf("error response too verbose, possible detail leak: %s", body[:200])
+	}
+}
+
+func TestHandleWebhook_UnhandledEvent(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+
+	rec := postWebhook(t, srv, "unknown_event_type", map[string]any{
+		"repository": map[string]any{"name": "myapp"},
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+func TestHandleWebhook_EmptyPayload(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader([]byte("{}")))
+	req.Header.Set("X-Gitea-Event", "push")
+	rec := httptest.NewRecorder()
+	srv.handleWebhook(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+func TestHandleWebhook_PRClosedMerged(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+
+	rec := postWebhook(t, srv, "pull_request", map[string]any{
+		"action": "closed",
+		"repository": map[string]any{"name": "myapp"},
+		"pull_request": map[string]any{
+			"number": float64(3),
+			"title":  "Feature PR",
+			"merged": true,
+		},
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+func TestHandleWebhook_PullRequestComment(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+
+	rec := postWebhook(t, srv, "pull_request_comment", map[string]any{
+		"action": "created",
+		"repository": map[string]any{"name": "myapp"},
+		"pull_request": map[string]any{
+			"number": float64(3),
+		},
+		"comment": map[string]any{
+			"body": "LGTM",
+		},
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
 // fakeSpawner records calls for testing.
 type fakeSpawner struct {
 	reviewerCalls []port.ReviewerOpts
