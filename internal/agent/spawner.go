@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,12 +19,14 @@ import (
 
 // Spawner manages Claude agent lifecycle.
 type Spawner struct {
-	cfg   *config.Config
-	store *jsonfile.AgentStore
+	cfg     *config.Config
+	store   *jsonfile.AgentStore
+	tracker *QuotaTracker
 }
 
-func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore) *Spawner {
-	return &Spawner{cfg: cfg, store: store}
+// NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
+func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore, tracker *QuotaTracker) *Spawner {
+	return &Spawner{cfg: cfg, store: store, tracker: tracker}
 }
 
 // SpawnReviewer launches a Claude agent to review a PR.
@@ -85,21 +88,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
-	go func() {
-		defer lf.Close()
-		scanner := bufio.NewScanner(stdout)
-		scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-		for scanner.Scan() {
-			fmt.Fprintln(lf, scanner.Text())
-		}
-
-		if err := cmd.Wait(); err != nil {
-			s.store.UpdateStatus(agentID, "failed")
-		} else {
-			s.store.UpdateStatus(agentID, "completed")
-		}
-		_ = s.store.Save()
-	}()
+	go s.monitorAgent(agentID, stdout, lf, cmd)
 
 	return &info, nil
 }
@@ -176,21 +165,36 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
-	go func() {
-		defer lf.Close()
-		scanner := bufio.NewScanner(stdout)
-		scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-		for scanner.Scan() {
-			fmt.Fprintln(lf, scanner.Text())
-		}
-
-		if err := cmd.Wait(); err != nil {
-			s.store.UpdateStatus(agentID, "failed")
-		} else {
-			s.store.UpdateStatus(agentID, "completed")
-		}
-		_ = s.store.Save()
-	}()
+	go s.monitorAgent(agentID, stdout, lf, cmd)
 
 	return &info, nil
+}
+
+// monitorAgent reads stdout from a CC process, logs each line, parses stream
+// events for the quota tracker, and updates agent status on completion.
+func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cmd *exec.Cmd) {
+	defer lf.Close()
+	scanner := bufio.NewScanner(stdout)
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Fprintln(lf, line)
+
+		if s.tracker != nil {
+			if ev, err := ParseStreamLine(line); err == nil {
+				s.tracker.RecordEvent(agentID, ev)
+			}
+		}
+	}
+
+	if err := cmd.Wait(); err != nil {
+		s.store.UpdateStatus(agentID, "failed")
+	} else {
+		s.store.UpdateStatus(agentID, "completed")
+	}
+	_ = s.store.Save()
+
+	if s.tracker != nil {
+		_ = s.tracker.Save()
+	}
 }

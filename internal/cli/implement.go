@@ -117,7 +117,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
-	spawner := agent.NewSpawner(cfg, store)
+	spawner := agent.NewSpawner(cfg, store, nil)
 	info, err := spawner.SpawnDeveloper(ctx, agent.SpawnDeveloperOpts{
 		TrackID:     trackID,
 		Flags:       "--auto-merge",
