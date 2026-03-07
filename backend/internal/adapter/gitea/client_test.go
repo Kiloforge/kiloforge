@@ -8,6 +8,48 @@ import (
 	"testing"
 )
 
+func TestNewClientWithToken_UsesTokenAuth(t *testing.T) {
+	t.Parallel()
+
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"version": "1.0"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClientWithToken(srv.URL, "admin", "mytoken123")
+	_, err := client.CheckVersion(context.Background())
+	if err != nil {
+		t.Fatalf("CheckVersion: %v", err)
+	}
+	if gotAuth != "token mytoken123" {
+		t.Errorf("Authorization header: want %q, got %q", "token mytoken123", gotAuth)
+	}
+}
+
+func TestNewClientWithToken_NoBasicAuth(t *testing.T) {
+	t.Parallel()
+
+	var gotBasicUser string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, _, ok := r.BasicAuth()
+		if ok {
+			gotBasicUser = user
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"version": "1.0"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClientWithToken(srv.URL, "admin", "mytoken123")
+	_, _ = client.CheckVersion(context.Background())
+	if gotBasicUser != "" {
+		t.Errorf("BasicAuth should not be set when token is used, got user %q", gotBasicUser)
+	}
+}
+
 func TestAddSSHKey_Success(t *testing.T) {
 	t.Parallel()
 

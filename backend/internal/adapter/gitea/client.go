@@ -34,6 +34,17 @@ func NewClient(baseURL, username, password string) *Client {
 	}
 }
 
+// NewClientWithToken creates a Client that authenticates with an API token.
+// Use this for all post-init operations where token auth is available.
+func NewClientWithToken(baseURL, username, token string) *Client {
+	return &Client{
+		baseURL:  baseURL,
+		username: username,
+		token:    token,
+		http:     &http.Client{},
+	}
+}
+
 func (c *Client) SetToken(token string) {
 	c.token = token
 }
