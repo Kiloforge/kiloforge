@@ -19,8 +19,9 @@ const composeTemplate = `services:
     restart: unless-stopped
     ports:
       - "{{ .GiteaPort }}:3000"
+      - "2222:22"
     volumes:
-      - "{{ .DataDir }}/gitea-data:/data"
+      - gitea-data:/data
     environment:
       - GITEA__security__INSTALL_LOCK=true
       - GITEA__server__ROOT_URL=http://localhost:{{ .GiteaPort }}/
@@ -36,6 +37,9 @@ const composeTemplate = `services:
       timeout: 3s
       retries: 12
       start_period: 10s
+
+volumes:
+  gitea-data:
 `
 
 // GenerateComposeFile renders the docker-compose.yml template with the given config.

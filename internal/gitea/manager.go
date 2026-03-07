@@ -3,6 +3,7 @@ package gitea
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"crelay/internal/compose"
@@ -40,9 +41,16 @@ func (m *Manager) waitReady(ctx context.Context) error {
 		case <-deadline:
 			return fmt.Errorf("gitea did not become ready within 60 seconds")
 		case <-tick.C:
-			client := NewClient(m.cfg.GiteaURL(), m.cfg.GiteaAdminUser, m.cfg.GiteaAdminPass)
-			if _, err := client.do(ctx, "GET", "/api/v1/version", nil); err == nil {
-				return nil
+			req, err := http.NewRequestWithContext(ctx, "GET", m.cfg.GiteaURL()+"/api/v1/version", nil)
+			if err != nil {
+				continue
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err == nil {
+				resp.Body.Close()
+				if resp.StatusCode == http.StatusOK {
+					return nil
+				}
 			}
 		}
 	}

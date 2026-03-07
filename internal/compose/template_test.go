@@ -25,7 +25,7 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 		"gitea/gitea:latest",
 		"conductor-gitea",
 		"3000:3000",
-		"/home/user/.crelay/gitea-data:/data",
+		"gitea-data:/data",
 		"GITEA__security__INSTALL_LOCK=true",
 		"GITEA__server__ROOT_URL=http://localhost:3000/",
 		"GITEA__database__DB_TYPE=sqlite3",
@@ -33,6 +33,7 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 		"GITEA__webhook__ALLOWED_HOST_LIST=*",
 		"host.docker.internal:host-gateway",
 		"healthcheck:",
+		"volumes:",
 	}
 
 	for _, check := range checks {
@@ -62,8 +63,5 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 	}
 	if !strings.Contains(content, "ROOT_URL=http://localhost:4000/") {
 		t.Error("expected ROOT_URL with port 4000")
-	}
-	if !strings.Contains(content, "/tmp/crelay/gitea-data:/data") {
-		t.Error("expected data dir /tmp/crelay/gitea-data")
 	}
 }
