@@ -350,22 +350,298 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 ## Testing
 
-- Table-driven tests for multiple cases.
-- Use standard `testing` package. `testify` assertions allowed if already in the dependency graph.
-- Test function names: `TestFunctionName_Scenario_ExpectedBehavior`.
-- Use `t.Helper()` in test helper functions.
-- Use `t.Parallel()` where safe.
-- Prefer in-memory adapter implementations as test doubles over mocking frameworks.
-- Interface-based design eliminates the need for mocking libraries.
+Every non-trivial package must have tests. Tests are first-class code — they document behavior, catch regressions, and guide design.
+
+### Principles
+
+- **Test every layer independently.** Domain, service, and adapter layers each have their own test suites.
+- **Test both happy paths and error paths.** Every function that can fail must have tests for its failure modes.
+- **Tests are documentation.** A reader should understand the behavior of a function by reading its tests.
+- **No mocking frameworks.** Use interface-based design with in-memory adapter implementations and targeted test doubles.
 
 ### Test Organization
 
 ```
-internal/core/service/orchestrator_test.go   — Unit tests with in-memory adapters
-internal/adapter/persistence/jsonfile/*_test.go — Adapter integration tests
-test/standalone/                              — Full-stack single-process tests
-test/e2e/                                     — Multi-instance integration tests
+internal/core/domain/*_test.go                — Pure logic, no I/O. Highest coverage.
+internal/core/service/*_test.go               — Business logic with in-memory adapters.
+internal/core/testutil/                       — Shared mocks and test helpers.
+internal/adapter/persistence/*_test.go        — Adapter integration tests.
+internal/adapter/rest/*_test.go               — HTTP handler tests with httptest.
+test/standalone/                              — Full-stack in-process integration tests.
+test/e2e/                                     — End-to-end tests against running services.
 ```
+
+### Build Tags for Test Separation
+
+Use build tags to separate test tiers that have different requirements:
+
+```go
+//go:build standalone
+
+// Package standalone contains integration tests that validate core workflows
+// against an in-process server.
+//
+// Run with: go test ./test/standalone/ -v -tags=standalone -timeout 2m
+package standalone
+```
+
+| Tag | Purpose | Dependencies |
+|-----|---------|-------------|
+| (none) | Unit tests, always run | None |
+| `standalone` | In-process integration tests | In-memory stores, embedded services |
+| `e2e` | End-to-end against running server | Running service at `CONTROL_PLANE_URL` |
+| `dockertest` | Tests requiring Docker daemon | Docker engine |
+
+### Table-Driven Tests
+
+The primary pattern for parametric testing. Use for any function with multiple input/output scenarios.
+
+```go
+func TestRepoNameFromURL(t *testing.T) {
+    t.Parallel()
+
+    tests := []struct {
+        name    string
+        url     string
+        want    string
+        wantErr bool
+    }{
+        {name: "ssh standard", url: "git@github.com:user/repo.git", want: "repo"},
+        {name: "https with suffix", url: "https://github.com/user/repo.git", want: "repo"},
+        {name: "https without suffix", url: "https://github.com/user/repo", want: "repo"},
+        {name: "ssh no suffix", url: "git@github.com:user/my-project", want: "my-project"},
+        {name: "empty url", url: "", wantErr: true},
+        {name: "just a word", url: "repo", wantErr: true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            t.Parallel()
+            got, err := repoNameFromURL(tt.url)
+            if (err != nil) != tt.wantErr {
+                t.Fatalf("repoNameFromURL(%q) error = %v, wantErr %v", tt.url, err, tt.wantErr)
+            }
+            if got != tt.want {
+                t.Errorf("repoNameFromURL(%q) = %q, want %q", tt.url, got, tt.want)
+            }
+        })
+    }
+}
+```
+
+### Test Naming
+
+```
+TestFunctionName                        — Basic behavior
+TestFunctionName_Scenario               — Specific scenario
+TestFunctionName_Scenario_Expected      — When scenario name alone is ambiguous
+```
+
+Examples:
+- `TestResolve_FlagsOverrideEnv`
+- `TestAddProject_DuplicateSlug_ReturnsError`
+- `TestClaimJob_SkipsPausedJobs`
+- `TestUpdateJob_StoreError_Returns500`
+
+### Test Doubles Strategy
+
+**Three levels of test doubles, from simplest to most capable:**
+
+#### 1. Stub implementations (for simple cases)
+
+Override specific methods by embedding a base mock:
+
+```go
+type errUpdateStore struct {
+    mockProjectStore // Embeds base with defaults
+}
+
+func (m *errUpdateStore) Add(ctx context.Context, p domain.Project) error {
+    return fmt.Errorf("db: connection refused")
+}
+```
+
+#### 2. In-memory adapter implementations (for stateful tests)
+
+Full implementations backed by maps. Reusable across test suites.
+
+```go
+// testutil/mocks.go
+
+type MockProjectStore struct {
+    Projects map[string]domain.Project
+}
+
+func (m *MockProjectStore) Get(ctx context.Context, slug string) (domain.Project, error) {
+    p, ok := m.Projects[slug]
+    if !ok {
+        return domain.Project{}, domain.ErrProjectNotFound
+    }
+    return p, nil
+}
+
+func (m *MockProjectStore) Add(ctx context.Context, p domain.Project) error {
+    if m.Projects == nil {
+        m.Projects = make(map[string]domain.Project)
+    }
+    if _, exists := m.Projects[p.Slug]; exists {
+        return domain.ErrProjectExists
+    }
+    m.Projects[p.Slug] = p
+    return nil
+}
+```
+
+#### 3. Shared testutil package (for cross-package test infrastructure)
+
+```go
+// internal/core/testutil/mocks.go
+
+// MockLogger is a silent logger for tests.
+type MockLogger struct{}
+
+func (l *MockLogger) Debug(msg string, kv ...interface{}) {}
+func (l *MockLogger) Info(msg string, kv ...interface{})  {}
+func (l *MockLogger) Warn(msg string, kv ...interface{})  {}
+func (l *MockLogger) Error(msg string, kv ...interface{}) {}
+func (l *MockLogger) With(kv ...interface{}) port.Logger  { return l }
+```
+
+### What Must Be Tested
+
+#### Domain layer (highest coverage)
+
+- All validation logic (every validation rule, both pass and fail)
+- Sentinel error conditions
+- State transitions and business rules
+- Authorization: `HasPermission()` for each role × activity combination
+- Value object parsing and formatting
+
+#### Service layer
+
+- Happy path for each operation
+- Error propagation from port dependencies
+- Business logic orchestration (e.g., "when dependency A fails, B should not run")
+- Edge cases: empty inputs, duplicate operations, concurrent access
+
+#### Adapter layer
+
+- Persistence: save/load round-trips, not-found cases, duplicate handling
+- HTTP handlers: correct status codes, request validation, error responses
+- HTTP handlers: error details must NOT leak to clients (no DB connection strings, stack traces)
+- External API clients: mock the HTTP server with `httptest.NewServer()`
+
+#### CLI layer
+
+- Argument and flag parsing
+- Error messages for invalid input
+
+### Error Path Testing
+
+Every function that returns an error must have tests for its error conditions. Test that:
+
+1. The correct sentinel error is returned (use `errors.Is()`)
+2. Error context is preserved (wrapped errors contain useful messages)
+3. Partial state is not left behind on failure
+4. HTTP handlers return correct status codes for domain errors
+
+```go
+func TestAddProject_DuplicateSlug_ReturnsError(t *testing.T) {
+    store := &testutil.MockProjectStore{
+        Projects: map[string]domain.Project{
+            "existing": {Slug: "existing"},
+        },
+    }
+    svc := service.NewProjectService(store)
+
+    err := svc.Add(ctx, domain.Project{Slug: "existing"})
+    if !errors.Is(err, domain.ErrProjectExists) {
+        t.Fatalf("expected ErrProjectExists, got: %v", err)
+    }
+}
+```
+
+### HTTP Handler Testing
+
+Use `httptest` for handler tests. Verify status codes, response bodies, and that internal errors are not leaked.
+
+```go
+func TestWebhook_InvalidEvent_Returns400(t *testing.T) {
+    srv := newTestServer(t)
+
+    req := httptest.NewRequest("POST", "/webhook", strings.NewReader("{}"))
+    req.Header.Set("X-Gitea-Event", "unknown_event")
+    rec := httptest.NewRecorder()
+
+    srv.ServeHTTP(rec, req)
+
+    if rec.Code != http.StatusOK {
+        t.Errorf("status = %d, want 200", rec.Code)
+    }
+}
+
+func TestWebhook_StoreError_DoesNotLeakDetails(t *testing.T) {
+    // Verify that internal error messages (DB paths, connection strings)
+    // are never exposed in HTTP responses.
+    srv := newTestServer(t, withFailingStore())
+
+    // ... make request ...
+
+    body := rec.Body.String()
+    for _, forbidden := range []string{"connection refused", "/var/run", "sqlite"} {
+        if strings.Contains(body, forbidden) {
+            t.Errorf("response leaked internal detail: %q", forbidden)
+        }
+    }
+}
+```
+
+### Async and Concurrent Testing
+
+For event-driven or goroutine-based code, use WaitGroup with timeout:
+
+```go
+func waitOrTimeout(t *testing.T, wg *sync.WaitGroup, timeout time.Duration) {
+    t.Helper()
+    done := make(chan struct{})
+    go func() {
+        wg.Wait()
+        close(done)
+    }()
+    select {
+    case <-done:
+    case <-time.After(timeout):
+        t.Fatal("timed out waiting for async operation")
+    }
+}
+```
+
+### Test Execution
+
+```bash
+# Unit tests (always)
+go test ./... -race -count=1
+
+# With coverage
+go test ./... -race -coverprofile=coverage.out
+go tool cover -func=coverage.out
+
+# Standalone integration
+go test ./test/standalone/ -v -tags=standalone -timeout 2m
+
+# E2E
+go test ./test/e2e/ -v -tags=e2e -timeout 5m
+```
+
+### General Rules
+
+- Use `t.Parallel()` for tests that don't share mutable state. Mark non-parallel tests with a comment explaining why.
+- Use `t.Helper()` in all test helper functions.
+- Use `t.TempDir()` for filesystem tests — automatic cleanup.
+- Use `t.Setenv()` for environment variable tests (incompatible with `t.Parallel()`).
+- Use `t.Context()` (Go 1.21+) for test-scoped context.
+- Verify interface compliance at compile time: `var _ port.ProjectStore = (*JSONProjectStore)(nil)`
+- Do not use `testify` unless it's already in the dependency graph. Standard `testing` is preferred.
 
 ## Dependencies
 
