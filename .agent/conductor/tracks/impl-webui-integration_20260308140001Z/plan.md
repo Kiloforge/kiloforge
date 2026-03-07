@@ -5,51 +5,51 @@
 ## Phase 1: Config and CLI Command (3 tasks)
 
 ### Task 1.1: Add dashboard config fields
-- [ ] Add `DashboardPort` (default: 3002) and `DashboardEnabled` (default: true) to config struct
-- [ ] Add defaults adapter, JSON adapter, env adapter entries
-- [ ] Support `CRELAY_DASHBOARD_PORT` and `CRELAY_DASHBOARD_ENABLED` env vars
-- [ ] Add `--dashboard-port` and `--no-dashboard` flags
+- [x] Add `DashboardPort` (default: 3002) and `DashboardEnabled` (default: true) to config struct
+- [x] Add defaults adapter, JSON adapter, env adapter entries
+- [x] Support `CRELAY_DASHBOARD_PORT` and `CRELAY_DASHBOARD_ENABLED` env vars
+- [x] Add `--dashboard-port` and `--no-dashboard` flags
 
 ### Task 1.2: Create `crelay dashboard` command
-- [ ] Create `internal/cli/dashboard.go`
-- [ ] Standalone command that starts only the dashboard server
-- [ ] Loads state and tracker from files, runs on configured port
-- [ ] Graceful shutdown on SIGINT
+- [x] Create `internal/cli/dashboard.go`
+- [x] Standalone command that starts only the dashboard server
+- [x] Loads state and tracker from files, runs on configured port
+- [x] Graceful shutdown on SIGINT
 
 ### Task 1.3: Write config and command tests
-- [ ] Test config resolution with new fields (defaults, env, flags)
-- [ ] Test dashboard command initialization
+- [x] Test config resolution with new fields (defaults, env, flags)
+- [x] Test dashboard command initialization
 
 ## Phase 2: Startup Integration (3 tasks)
 
 ### Task 2.1: Start dashboard alongside relay in `crelay up`
-- [ ] When `DashboardEnabled` is true, start dashboard server in goroutine
-- [ ] Pass shared store and tracker instances to dashboard
-- [ ] Both servers shut down on context cancellation
-- [ ] Print dashboard URL in startup output
+- [x] When `DashboardEnabled` is true, start dashboard server in goroutine
+- [x] Pass shared store and tracker instances to dashboard
+- [x] Both servers shut down on context cancellation
+- [x] Print dashboard URL in startup output
 
 ### Task 2.2: Update `crelay status` with dashboard info
-- [ ] Show dashboard URL when enabled
-- [ ] Show dashboard running/stopped status
+- [x] Show dashboard URL when enabled
+- [x] Show dashboard running/stopped status
 
 ### Task 2.3: Wire Gitea links in dashboard
-- [ ] Pass `GiteaURL` to dashboard server
-- [ ] Dashboard API includes Gitea PR URLs for each agent's PR
-- [ ] Dashboard API includes Gitea repo URLs for each project
-- [ ] Frontend renders clickable links to Gitea
+- [x] Pass `GiteaURL` to dashboard server
+- [x] Dashboard API includes Gitea PR URLs for each agent's PR
+- [x] Dashboard API includes Gitea repo URLs for each project
+- [x] Frontend renders clickable links to Gitea
 
 ## Phase 3: Verification (2 tasks)
 
 ### Task 3.1: Integration test
-- [ ] Start `crelay up` with dashboard enabled
-- [ ] Verify both relay and dashboard respond on their ports
-- [ ] Verify dashboard shows Gitea links
-- [ ] Verify `--no-dashboard` flag disables dashboard
+- [x] Start `crelay up` with dashboard enabled
+- [x] Verify both relay and dashboard respond on their ports
+- [x] Verify dashboard shows Gitea links
+- [x] Verify `--no-dashboard` flag disables dashboard
 
 ### Task 3.2: Full build and test
-- [ ] `go build ./...`
-- [ ] `go test -race ./...`
-- [ ] Verify no regressions
+- [x] `go build ./...`
+- [x] `go test -race ./...`
+- [x] Verify no regressions
 
 ---
 
