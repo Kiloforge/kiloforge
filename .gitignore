@@ -2,6 +2,13 @@
 /.build/
 /bin/
 
+# Frontend build output (populated by `make build-frontend`)
+backend/internal/adapter/dashboard/dist/*
+!backend/internal/adapter/dashboard/dist/.gitkeep
+
+# Node
+node_modules/
+
 # Go
 *.exe
 *.exe~
