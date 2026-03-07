@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -19,9 +18,13 @@ func NewHandler(mgr *Manager) *Handler {
 }
 
 // RegisterRoutes adds lock endpoints to the given mux.
+// Routes use explicit method prefixes to avoid conflicts with other catch-all
+// patterns (e.g. "GET /-/") on the same ServeMux.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/-/api/locks", h.handleList)
-	mux.HandleFunc("/-/api/locks/", h.handleLockAction)
+	mux.HandleFunc("GET /-/api/locks", h.handleList)
+	mux.HandleFunc("POST /-/api/locks/{scope}/acquire", h.handleAcquire)
+	mux.HandleFunc("POST /-/api/locks/{scope}/heartbeat", h.handleHeartbeat)
+	mux.HandleFunc("DELETE /-/api/locks/{scope}", h.handleRelease)
 }
 
 type acquireRequest struct {
@@ -67,11 +70,6 @@ func lockToResponse(l *Lock) lockResponse {
 }
 
 func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	locks := h.mgr.List()
 	resp := make([]lockResponse, 0, len(locks))
 	for i := range locks {
@@ -82,34 +80,8 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func (h *Handler) handleLockAction(w http.ResponseWriter, r *http.Request) {
-	// Parse: /-/api/locks/{scope}/acquire, /-/api/locks/{scope}/heartbeat, /-/api/locks/{scope}
-	path := strings.TrimPrefix(r.URL.Path, "/-/api/locks/")
-	parts := strings.SplitN(path, "/", 2)
-	if len(parts) == 0 || parts[0] == "" {
-		http.Error(w, "scope required", http.StatusBadRequest)
-		return
-	}
-
-	scope := parts[0]
-	action := ""
-	if len(parts) == 2 {
-		action = parts[1]
-	}
-
-	switch {
-	case r.Method == http.MethodPost && action == "acquire":
-		h.handleAcquire(w, r, scope)
-	case r.Method == http.MethodPost && action == "heartbeat":
-		h.handleHeartbeat(w, r, scope)
-	case r.Method == http.MethodDelete && action == "":
-		h.handleRelease(w, r, scope)
-	default:
-		http.Error(w, "not found", http.StatusNotFound)
-	}
-}
-
-func (h *Handler) handleAcquire(w http.ResponseWriter, r *http.Request, scope string) {
+func (h *Handler) handleAcquire(w http.ResponseWriter, r *http.Request) {
+	scope := r.PathValue("scope")
 	var req acquireRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid request body"})
@@ -156,7 +128,8 @@ func (h *Handler) handleAcquire(w http.ResponseWriter, r *http.Request, scope st
 	writeJSON(w, http.StatusOK, lockToResponse(l))
 }
 
-func (h *Handler) handleHeartbeat(w http.ResponseWriter, r *http.Request, scope string) {
+func (h *Handler) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
+	scope := r.PathValue("scope")
 	var req heartbeatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid request body"})
@@ -179,7 +152,8 @@ func (h *Handler) handleHeartbeat(w http.ResponseWriter, r *http.Request, scope 
 	writeJSON(w, http.StatusOK, lockToResponse(l))
 }
 
-func (h *Handler) handleRelease(w http.ResponseWriter, r *http.Request, scope string) {
+func (h *Handler) handleRelease(w http.ResponseWriter, r *http.Request) {
+	scope := r.PathValue("scope")
 	var req releaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid request body"})
