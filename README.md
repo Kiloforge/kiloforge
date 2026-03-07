@@ -18,8 +18,11 @@ Working with multiple AI agents across multiple projects demands infrastructure 
 
 - **Docker** with Docker Compose — either Docker Desktop (includes compose v2) or Docker Engine + `docker-compose` (v1, for Colima users)
 - **Claude Code CLI** — `claude` command available in PATH
-- **Go 1.24+** — to build (or use prebuilt binary)
-- **Node.js 18+** — for the frontend build
+
+### Building from Source
+
+- **Go 1.24+**
+- **Node.js 18+**
 
 ### Colima Users
 
