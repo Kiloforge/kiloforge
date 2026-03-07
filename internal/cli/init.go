@@ -71,9 +71,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("    Found: %s\n", runner.Version())
 
-	// Step 2: Create data directory.
-	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
-		return fmt.Errorf("create data directory: %w", err)
+	// Step 2: Create data directory and subdirectories.
+	for _, dir := range []string{cfg.DataDir, filepath.Join(cfg.DataDir, "gitea-data")} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create directory %s: %w", dir, err)
+		}
 	}
 
 	// Step 3: Generate docker-compose.yml.
