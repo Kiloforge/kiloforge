@@ -25,10 +25,12 @@ internal/
     compose/        — Docker Compose CLI abstraction.
     persistence/    — Data access implementations (JSON files, SQLite, etc.).
     cli/            — Cobra command definitions. Thin: parse args, call services.
-
-  agent/           — Claude agent spawning & lifecycle.
-  auth/            — SSH key detection, password generation.
-  pool/            — Git worktree pool management.
+    agent/          — Claude agent spawning & lifecycle.
+    auth/           — SSH key detection, password generation.
+    pool/           — Git worktree pool management.
+    config/         — Config resolution (defaults, JSON, env, flags).
+    lock/           — File locking for webhook concurrency.
+    dashboard/      — Web dashboard with SSE real-time updates.
 ```
 
 ### Dependency Rules
@@ -36,7 +38,7 @@ internal/
 1. **`domain/`** imports nothing from `internal/`. It defines entities, value objects, sentinel errors, and authorization primitives.
 2. **`port/`** imports only `domain/`. It defines interfaces that adapters implement.
 3. **`service/`** imports `domain/` and `port/`. It contains business logic and orchestrates operations through port interfaces.
-4. **Adapters** (`rest/`, `gitea/`, `persistence/`, `compose/`, `cli/`) import `domain/`, `port/`, and `service/`. They implement port interfaces and wire things together.
+4. **Adapters** (`rest/`, `gitea/`, `persistence/`, `compose/`, `cli/`, `agent/`, `auth/`, `pool/`, `config/`, `lock/`, `dashboard/`) import `domain/`, `port/`, and `service/`. They implement port interfaces and wire things together.
 5. **`cmd/`** imports adapters and services to wire the dependency graph.
 
 ### Why This Matters
