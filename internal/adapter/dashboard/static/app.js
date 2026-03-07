@@ -136,7 +136,7 @@
       if (data && data.gitea_url) {
         state.giteaURL = data.gitea_url;
         var link = document.getElementById("gitea-link");
-        link.href = data.gitea_url;
+        link.href = data.gitea_url + "/";
       }
     });
   }

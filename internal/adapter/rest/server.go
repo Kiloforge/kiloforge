@@ -15,6 +15,7 @@ import (
 	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/dashboard"
+	"crelay/internal/adapter/proxy"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
@@ -36,6 +37,13 @@ func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, gi
 	}
 }
 
+// WithGiteaProxy enables a reverse proxy to Gitea under /gitea/.
+func WithGiteaProxy(giteaURL string) ServerOption {
+	return func(s *Server) {
+		s.giteaProxy = proxy.NewGiteaProxy(giteaURL)
+	}
+}
+
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg       *config.Config
@@ -45,8 +53,9 @@ type Server struct {
 	spawner   port.AgentSpawner
 	prService *service.PRService
 	logger    *log.Logger
-	port      int
-	dashboard *dashboard.Server
+	port       int
+	dashboard  *dashboard.Server
+	giteaProxy http.Handler
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -139,6 +148,11 @@ func (s *Server) Run(ctx context.Context) error {
 	if s.dashboard != nil {
 		s.dashboard.RegisterRoutes(mux)
 		s.dashboard.StartWatcher(ctx)
+	}
+
+	// Mount Gitea reverse proxy if configured.
+	if s.giteaProxy != nil {
+		mux.Handle("/gitea/", http.StripPrefix("/gitea", s.giteaProxy))
 	}
 
 	srv := &http.Server{

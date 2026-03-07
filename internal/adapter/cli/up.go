@@ -74,7 +74,9 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build server options.
-	var opts []rest.ServerOption
+	opts := []rest.ServerOption{
+		rest.WithGiteaProxy(cfg.GiteaURL()),
+	}
 	if cfg.IsDashboardEnabled() && !flagNoDashboard {
 		store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 		if err != nil {
@@ -83,7 +85,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 			tracker := agent.NewQuotaTracker(cfg.DataDir)
 			_ = tracker.Load()
 			projectDir, _ := os.Getwd()
-			opts = append(opts, rest.WithDashboard(store, tracker, cfg.GiteaURL(), projectDir))
+			opts = append(opts, rest.WithDashboard(store, tracker, "/gitea", projectDir))
 			fmt.Printf("==> Dashboard at http://localhost:%d\n", cfg.RelayPort)
 		}
 	}

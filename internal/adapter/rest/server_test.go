@@ -708,3 +708,31 @@ func TestNewServer_WithoutDashboard(t *testing.T) {
 		t.Fatal("expected dashboard to be nil")
 	}
 }
+
+func TestNewServer_WithGiteaProxy(t *testing.T) {
+	t.Parallel()
+
+	// Create a fake Gitea backend.
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Backend-Path", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("gitea"))
+	}))
+	defer backend.Close()
+
+	dir := t.TempDir()
+	cfg := &config.Config{
+		GiteaPort:      3000,
+		DataDir:        dir,
+		GiteaAdminUser: "conductor",
+	}
+	reg := &jsonfile.ProjectStore{
+		Version:  1,
+		Projects: map[string]domain.Project{},
+	}
+	srv := NewServer(cfg, reg, 3001, WithGiteaProxy(backend.URL))
+
+	if srv.giteaProxy == nil {
+		t.Fatal("expected giteaProxy to be set")
+	}
+}
