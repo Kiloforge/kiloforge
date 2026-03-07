@@ -37,6 +37,8 @@ Navigation hub for project context.
 - **impl-quota-tracker_20260307160000Z** — CC Stream-JSON Parser and Centralized Quota Tracker
 - **impl-quota-aware-agents_20260307160001Z** — Quota-Aware Agent Management and Cost Reporting
 - **impl-graceful-shutdown-recovery_20260307160002Z** — Graceful Agent Shutdown and Auto-Recovery on Restart
+- **impl-webui-server_20260308140000Z** — Web UI Server with Real-Time Agent Monitoring
+- **impl-webui-integration_20260308140001Z** — Web UI CLI Integration and Gitea Links
 
 ## Getting Started
 

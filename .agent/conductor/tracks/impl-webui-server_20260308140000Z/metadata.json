@@ -1,0 +1,16 @@
+{
+  "id": "impl-webui-server_20260308140000Z",
+  "title": "Web UI Server with Real-Time Agent Monitoring",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T14:00:00Z",
+  "updated": "2026-03-08T14:00:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 14,
+    "completed": 0
+  }
+}

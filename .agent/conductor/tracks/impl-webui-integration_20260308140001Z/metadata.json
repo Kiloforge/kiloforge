@@ -1,0 +1,16 @@
+{
+  "id": "impl-webui-integration_20260308140001Z",
+  "title": "Web UI CLI Integration and Gitea Links",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T14:00:01Z",
+  "updated": "2026-03-08T14:00:01Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}
