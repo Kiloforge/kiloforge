@@ -57,18 +57,18 @@
 
 ## Phase 3: Migration & Final Report
 
-### Task 3.1: Design migration path
+### Task 3.1: Design migration path [x]
 - How does existing single-project crelay upgrade to multi-project?
 - Auto-detect old config format and migrate
 - Preserve existing Gitea data and agent state
 - **Output:** Migration strategy
 
-### Task 3.2: Write final research document
+### Task 3.2: Write final research document [x]
 - Compile all findings into `docs/research-global-gitea-multiproject.md`
 - Include: architecture, schemas, flows, CLI changes, migration, open questions
 - Highlight decisions that need user input
 - **Output:** Complete research document
 
 ### Verification 3
-- [ ] Migration path documented
-- [ ] Research document written and committed
+- [x] Migration path documented
+- [x] Research document written and committed
