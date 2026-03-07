@@ -25,7 +25,7 @@
 | [x] | impl-graceful-shutdown-recovery_20260307160002Z | Graceful Agent Shutdown and Auto-Recovery on Restart | 2026-03-07 | 2026-03-08 |
 | [x] | impl-webui-server_20260308140000Z | Web UI Server with Real-Time Agent Monitoring | 2026-03-08 | 2026-03-08 |
 | [ ] | impl-webui-integration_20260308140001Z | Web UI CLI Integration and Gitea Links | 2026-03-08 | 2026-03-08 |
-| [ ] | impl-lock-service_20260308150000Z | HTTP-Based Scoped Lock Service in Relay Server | 2026-03-08 | 2026-03-08 |
+| [x] | impl-lock-service_20260308150000Z | HTTP-Based Scoped Lock Service in Relay Server | 2026-03-08 | 2026-03-08 |
 | [ ] | impl-conductor-lock-migration_20260308150001Z | Migrate Conductor Skills to Use crelay Lock API | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->

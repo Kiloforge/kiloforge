@@ -2,15 +2,15 @@
   "id": "impl-lock-service_20260308150000Z",
   "title": "HTTP-Based Scoped Lock Service in Relay Server",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-08T15:00:00Z",
-  "updated": "2026-03-08T15:00:00Z",
+  "updated": "2026-03-08T00:30:00Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }
