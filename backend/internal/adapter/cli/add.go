@@ -37,10 +37,14 @@ Examples:
 	RunE: runAdd,
 }
 
-var flagAddName string
+var (
+	flagAddName   string
+	flagAddSSHKey string
+)
 
 func init() {
 	addCmd.Flags().StringVar(&flagAddName, "name", "", "Project slug (defaults to repo name from URL)")
+	addCmd.Flags().StringVar(&flagAddSSHKey, "ssh-key", "", "Path to SSH private key for this project's git operations")
 }
 
 func runAdd(cmd *cobra.Command, args []string) error {
@@ -54,13 +58,31 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not a remote URL: %s\n\nUsage: crelay add <remote-url>\nExample: crelay add git@github.com:user/repo.git", remoteURL)
 	}
 
-	// Derive slug from URL (or --name flag).
-	slug, err := repoNameFromURL(remoteURL)
+	// Derive repo name from URL.
+	repoName, err := repoNameFromURL(remoteURL)
 	if err != nil {
 		return fmt.Errorf("parse remote URL: %w", err)
 	}
+	// Slug defaults to repo name; --name overrides the slug only.
+	slug := repoName
 	if flagAddName != "" {
 		slug = flagAddName
+	}
+
+	// Resolve SSH key path if provided.
+	var sshKeyPath string
+	var sshEnv []string
+	if flagAddSSHKey != "" {
+		sshKeyPath, err = expandPath(flagAddSSHKey)
+		if err != nil {
+			return fmt.Errorf("resolve SSH key path: %w", err)
+		}
+		if _, err := os.Stat(sshKeyPath); err != nil {
+			return fmt.Errorf("SSH key not found: %s", sshKeyPath)
+		}
+		sshEnv = []string{
+			fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", sshKeyPath),
+		}
 	}
 
 	// Load global config, verify Gitea is initialized and running.
@@ -90,16 +112,16 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	cloneDir := filepath.Join(cfg.DataDir, "repos", slug)
 	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
 		fmt.Printf("==> Cloning %s...\n", remoteURL)
-		if err := cloneRepo(ctx, remoteURL, cloneDir); err != nil {
+		if err := cloneRepo(ctx, remoteURL, cloneDir, sshEnv); err != nil {
 			return fmt.Errorf("clone: %w", err)
 		}
 	} else {
 		fmt.Printf("==> Clone directory already exists: %s\n", cloneDir)
 	}
 
-	// Create Gitea repo.
-	fmt.Printf("==> Creating Gitea repo '%s'...\n", slug)
-	if err := client.CreateRepo(ctx, slug); err != nil {
+	// Create Gitea repo using the remote repo name (not the slug).
+	fmt.Printf("==> Creating Gitea repo '%s'...\n", repoName)
+	if err := client.CreateRepo(ctx, repoName); err != nil {
 		if !strings.Contains(err.Error(), "409") {
 			return fmt.Errorf("create repo: %w", err)
 		}
@@ -107,7 +129,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Add gitea remote to cloned repo.
-	giteaRemoteURL := fmt.Sprintf("%s/%s/%s.git", cfg.GiteaURL(), cfg.GiteaAdminUser, slug)
+	giteaRemoteURL := fmt.Sprintf("%s/%s/%s.git", cfg.GiteaURL(), cfg.GiteaAdminUser, repoName)
 	fmt.Println("==> Adding gitea remote...")
 	_ = exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "remove", "gitea").Run()
 	if err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "add", "gitea", giteaRemoteURL).Run(); err != nil {
@@ -124,9 +146,23 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("push to gitea: %w", err)
 	}
 
+	// Register SSH public key with Gitea if --ssh-key was given.
+	if sshKeyPath != "" {
+		pubKeyPath := sshKeyPath + ".pub"
+		if pubData, err := os.ReadFile(pubKeyPath); err == nil {
+			fmt.Println("==> Registering SSH public key with Gitea...")
+			keyTitle := fmt.Sprintf("crelay-%s", slug)
+			if err := client.AddSSHKey(ctx, keyTitle, strings.TrimSpace(string(pubData))); err != nil {
+				fmt.Printf("    Warning: SSH key registration failed: %v\n", err)
+			}
+		} else {
+			fmt.Printf("    Warning: public key not found at %s — skipping Gitea registration\n", pubKeyPath)
+		}
+	}
+
 	// Create webhook.
 	fmt.Println("==> Registering webhook...")
-	if err := client.CreateWebhook(ctx, slug, cfg.RelayPort); err != nil {
+	if err := client.CreateWebhook(ctx, repoName, cfg.RelayPort); err != nil {
 		fmt.Printf("    Warning: webhook creation failed: %v\n", err)
 		fmt.Println("    (Webhook can be added later when the relay server is configured)")
 	}
@@ -139,9 +175,10 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	// Register in projects.json.
 	p := domain.Project{
 		Slug:         slug,
-		RepoName:     slug,
+		RepoName:     repoName,
 		ProjectDir:   cloneDir,
 		OriginRemote: remoteURL,
+		SSHKeyPath:   sshKeyPath,
 		RegisteredAt: time.Now().Truncate(time.Second),
 		Active:       true,
 	}
@@ -160,13 +197,13 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		fmt.Printf("    Warning: board setup failed: %v\n", err)
 		fmt.Println("    (Board can be set up later with 'crelay board --setup')")
 	} else {
-		fmt.Printf("    Board: %s/%s/%s/projects\n", cfg.GiteaURL(), cfg.GiteaAdminUser, slug)
+		fmt.Printf("    Board: %s/%s/%s/projects\n", cfg.GiteaURL(), cfg.GiteaAdminUser, repoName)
 	}
 
 	fmt.Println()
 	fmt.Printf("Project '%s' registered!\n", slug)
 	fmt.Printf("  Path:   %s\n", cloneDir)
-	fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, slug)
+	fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, repoName)
 	fmt.Printf("  Origin: %s\n", remoteURL)
 	fmt.Println()
 	fmt.Println("View registered projects with 'crelay projects'.")
@@ -175,11 +212,27 @@ func runAdd(cmd *cobra.Command, args []string) error {
 }
 
 // cloneRepo clones a remote git repository into destDir.
-func cloneRepo(ctx context.Context, remoteURL, destDir string) error {
+// extraEnv is appended to the command's environment (e.g., GIT_SSH_COMMAND).
+func cloneRepo(ctx context.Context, remoteURL, destDir string, extraEnv []string) error {
 	cmd := exec.CommandContext(ctx, "git", "clone", remoteURL, destDir)
+	if len(extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), extraEnv...)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// expandPath expands a leading ~/ to the user's home directory.
+func expandPath(path string) (string, error) {
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(home, path[2:]), nil
+	}
+	return path, nil
 }
 
 // isRemoteURL returns true if the argument looks like a git remote URL

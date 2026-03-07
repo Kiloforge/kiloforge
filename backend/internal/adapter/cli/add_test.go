@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -75,6 +77,41 @@ func TestRepoNameFromURL(t *testing.T) {
 				t.Errorf("repoNameFromURL(%q) = %q, want %q", tt.rawURL, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestExpandPath(t *testing.T) {
+	home, _ := os.UserHomeDir()
+
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{"absolute path", "/tmp/key", "/tmp/key"},
+		{"tilde path", "~/.ssh/id_ed25519", home + "/.ssh/id_ed25519"},
+		{"relative path", "keys/mykey", "keys/mykey"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := expandPath(tt.path)
+			if err != nil {
+				t.Fatalf("expandPath(%q) error = %v", tt.path, err)
+			}
+			if got != tt.want {
+				t.Errorf("expandPath(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddCmd_SSHKeyFlagRegistered(t *testing.T) {
+	f := addCmd.Flags().Lookup("ssh-key")
+	if f == nil {
+		t.Fatal("--ssh-key flag not registered on addCmd")
+	}
+	if !strings.Contains(f.Usage, "SSH") {
+		t.Errorf("--ssh-key usage should mention SSH, got: %q", f.Usage)
 	}
 }
 
