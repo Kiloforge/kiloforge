@@ -12,6 +12,7 @@ import (
 
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
+	"crelay/internal/core/port"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
@@ -19,27 +20,13 @@ import (
 	"crelay/internal/state"
 )
 
-// AgentSpawner abstracts agent spawning and resume for testing.
-type AgentSpawner interface {
-	SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*domain.AgentInfo, error)
-	ResumeDeveloper(ctx context.Context, sessionID, workDir string) error
-}
-
-// ReviewerOpts configures reviewer agent spawning.
-type ReviewerOpts struct {
-	PRNumber int
-	PRURL    string
-	WorkDir  string
-	LogDir   string
-}
-
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg      *config.Config
 	registry *project.Registry
 	store    *state.Store
 	client   *gitea.Client
-	spawner  AgentSpawner
+	spawner  port.AgentSpawner
 	logger   *log.Logger
 	port     int
 }
@@ -66,7 +53,7 @@ func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server
 }
 
 // newTestableServer creates a server with a custom spawner and client for testing.
-func newTestableServer(cfg *config.Config, registry *project.Registry, spawner AgentSpawner, client *gitea.Client) *Server {
+func newTestableServer(cfg *config.Config, registry *project.Registry, spawner port.AgentSpawner, client *gitea.Client) *Server {
 	store, _ := state.Load(cfg.DataDir)
 	if store == nil {
 		store = &state.Store{}
@@ -82,10 +69,10 @@ func newTestableServer(cfg *config.Config, registry *project.Registry, spawner A
 	}
 }
 
-// defaultSpawner implements AgentSpawner using real claude commands.
+// defaultSpawner implements port.AgentSpawner using real claude commands.
 type defaultSpawner struct{}
 
-func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*domain.AgentInfo, error) {
+func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOpts) (*domain.AgentInfo, error) {
 	// In production, use agent.Spawner. For now, use exec directly.
 	cmd := exec.CommandContext(ctx, "claude",
 		"-p", fmt.Sprintf("/conductor-reviewer %s", opts.PRURL),
@@ -343,7 +330,7 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 		workDir = projectDir
 	}
 
-	info, err := s.spawner.SpawnReviewer(context.Background(), ReviewerOpts{
+	info, err := s.spawner.SpawnReviewer(context.Background(), port.ReviewerOpts{
 		PRNumber: prNumber,
 		PRURL:    prURL,
 		WorkDir:  workDir,
@@ -412,7 +399,7 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 		p = nil
 	}
 
-	var poolRet orchestration.PoolReturner
+	var poolRet port.PoolReturner
 	if p != nil {
 		poolRet = &poolReturnerAdapter{pool: p, dataDir: s.cfg.DataDir}
 	}
@@ -439,7 +426,7 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 	s.logger.Printf("[%s] PR #%d merged and cleaned up (track: %s)", slug, tracking.PRNumber, tracking.TrackID)
 }
 
-// poolReturnerAdapter wraps pool.Pool to implement orchestration.PoolReturner.
+// poolReturnerAdapter wraps pool.Pool to implement port.PoolReturner.
 type poolReturnerAdapter struct {
 	pool    *pool.Pool
 	dataDir string

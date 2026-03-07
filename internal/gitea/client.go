@@ -8,7 +8,12 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"crelay/internal/core/port"
 )
+
+var _ port.GiteaClient = (*Client)(nil)
+var _ port.Merger = (*Client)(nil)
 
 // Client wraps the Gitea REST API.
 type Client struct {

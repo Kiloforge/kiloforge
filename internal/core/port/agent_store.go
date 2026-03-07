@@ -1,0 +1,14 @@
+package port
+
+import "crelay/internal/core/domain"
+
+// AgentStore persists and retrieves tracked agent state.
+type AgentStore interface {
+	Load() error
+	Save() error
+	AddAgent(info domain.AgentInfo)
+	FindAgent(idPrefix string) (*domain.AgentInfo, error)
+	UpdateStatus(idPrefix, status string)
+	HaltAgent(idPrefix string) error
+	Agents() []domain.AgentInfo
+}

@@ -5,27 +5,16 @@ import (
 	"fmt"
 
 	"crelay/internal/core/domain"
+	"crelay/internal/core/port"
 	"crelay/internal/state"
 )
-
-// Merger abstracts Gitea API operations needed for merge cleanup.
-type Merger interface {
-	MergePR(ctx context.Context, repo string, prNum int, method string) error
-	CommentOnPR(ctx context.Context, repo string, prNum int, body string) error
-	DeleteBranch(ctx context.Context, repo, branch string) error
-}
-
-// PoolReturner abstracts returning a worktree to the pool.
-type PoolReturner interface {
-	ReturnByTrackID(trackID string) error
-}
 
 // CleanupOpts configures the merge and cleanup sequence.
 type CleanupOpts struct {
 	Tracking    *domain.PRTracking
 	Store       *state.Store
-	Merger      Merger
-	PoolReturn  PoolReturner
+	Merger      port.Merger
+	PoolReturn  port.PoolReturner
 	DataDir     string
 	MergeMethod string // "merge", "rebase", "squash"
 }

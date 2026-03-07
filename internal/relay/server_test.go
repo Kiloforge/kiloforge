@@ -13,6 +13,7 @@ import (
 
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
+	"crelay/internal/core/port"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/project"
@@ -44,7 +45,7 @@ func newTestServerWithDir(dataDir string) *Server {
 }
 
 // newTestServerWithSpawner creates a server with a fake spawner for testing review cycle.
-func newTestServerWithSpawner(dataDir string, spawner AgentSpawner, giteaSrv *httptest.Server) *Server {
+func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSrv *httptest.Server) *Server {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dataDir,
@@ -570,7 +571,7 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 
 // fakeSpawner records calls for testing.
 type fakeSpawner struct {
-	reviewerCalls []ReviewerOpts
+	reviewerCalls []port.ReviewerOpts
 	resumeCalls   []resumeCall
 }
 
@@ -579,7 +580,7 @@ type resumeCall struct {
 	workDir   string
 }
 
-func (f *fakeSpawner) SpawnReviewer(_ context.Context, opts ReviewerOpts) (*domain.AgentInfo, error) {
+func (f *fakeSpawner) SpawnReviewer(_ context.Context, opts port.ReviewerOpts) (*domain.AgentInfo, error) {
 	f.reviewerCalls = append(f.reviewerCalls, opts)
 	return &domain.AgentInfo{
 		ID:        "reviewer-fake",

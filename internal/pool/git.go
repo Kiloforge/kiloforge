@@ -2,7 +2,11 @@ package pool
 
 import (
 	"os/exec"
+
+	"crelay/internal/core/port"
 )
+
+var _ port.GitRunner = (*execGitRunner)(nil)
 
 // GitRunner abstracts git operations for testing.
 type GitRunner interface {
