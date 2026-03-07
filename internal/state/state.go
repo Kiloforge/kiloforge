@@ -8,27 +8,15 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"crelay/internal/core/domain"
 )
 
 const stateFile = "state.json"
 
-// AgentInfo tracks a spawned Claude agent.
-type AgentInfo struct {
-	ID          string    `json:"id"`
-	Role        string    `json:"role"`         // "developer", "reviewer"
-	Ref         string    `json:"ref"`          // track ID or PR number
-	Status      string    `json:"status"`       // "running", "waiting", "halted", "stopped", "completed", "failed"
-	SessionID   string    `json:"session_id"`
-	PID         int       `json:"pid"`
-	WorktreeDir string    `json:"worktree_dir"`
-	LogFile     string    `json:"log_file"`
-	StartedAt   time.Time `json:"started_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
 // Store holds all tracked agents.
 type Store struct {
-	Agents []AgentInfo `json:"agents"`
+	Agents []domain.AgentInfo `json:"agents"`
 }
 
 func Load(dataDir string) (*Store, error) {
@@ -55,11 +43,11 @@ func (s *Store) Save(dataDir string) error {
 	return os.WriteFile(filepath.Join(dataDir, stateFile), data, 0o644)
 }
 
-func (s *Store) AddAgent(agent AgentInfo) {
+func (s *Store) AddAgent(agent domain.AgentInfo) {
 	s.Agents = append(s.Agents, agent)
 }
 
-func (s *Store) FindAgent(idPrefix string) (*AgentInfo, error) {
+func (s *Store) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	for i := range s.Agents {
 		if s.Agents[i].ID == idPrefix || strings.HasPrefix(s.Agents[i].ID, idPrefix) {
 			return &s.Agents[i], nil

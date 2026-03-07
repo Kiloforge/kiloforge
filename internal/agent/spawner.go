@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"crelay/internal/config"
+	"crelay/internal/core/domain"
 	"crelay/internal/state"
 
 	"github.com/google/uuid"
@@ -27,7 +28,7 @@ func NewSpawner(cfg *config.Config, store *state.Store) *Spawner {
 
 // SpawnReviewer launches a Claude agent to review a PR.
 // The projectDir parameter specifies the working directory for the agent.
-func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*state.AgentInfo, error) {
+func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error) {
 	agentID := uuid.New().String()
 	sessionID := uuid.New().String()
 	logDir := filepath.Join(s.cfg.DataDir, "logs")
@@ -42,7 +43,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	// Use current working directory as project dir (will be improved with 'crelay add').
 	projectDir, _ := os.Getwd()
 
-	info := state.AgentInfo{
+	info := domain.AgentInfo{
 		ID:          agentID,
 		Role:        "reviewer",
 		Ref:         fmt.Sprintf("PR #%d", prNumber),
@@ -112,7 +113,7 @@ type SpawnDeveloperOpts struct {
 }
 
 // SpawnDeveloper launches a Claude agent to implement a track.
-func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*state.AgentInfo, error) {
+func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*domain.AgentInfo, error) {
 	agentID := uuid.New().String()
 	sessionID := uuid.New().String()
 
@@ -133,7 +134,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		workDir, _ = os.Getwd()
 	}
 
-	info := state.AgentInfo{
+	info := domain.AgentInfo{
 		ID:          agentID,
 		Role:        "developer",
 		Ref:         opts.TrackID,

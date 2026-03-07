@@ -11,17 +11,17 @@ import (
 	"path/filepath"
 
 	"crelay/internal/config"
+	"crelay/internal/core/domain"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
-	"crelay/internal/core/domain"
 	"crelay/internal/project"
 	"crelay/internal/state"
 )
 
 // AgentSpawner abstracts agent spawning and resume for testing.
 type AgentSpawner interface {
-	SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*state.AgentInfo, error)
+	SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*domain.AgentInfo, error)
 	ResumeDeveloper(ctx context.Context, sessionID, workDir string) error
 }
 
@@ -85,7 +85,7 @@ func newTestableServer(cfg *config.Config, registry *project.Registry, spawner A
 // defaultSpawner implements AgentSpawner using real claude commands.
 type defaultSpawner struct{}
 
-func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*state.AgentInfo, error) {
+func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*domain.AgentInfo, error) {
 	// In production, use agent.Spawner. For now, use exec directly.
 	cmd := exec.CommandContext(ctx, "claude",
 		"-p", fmt.Sprintf("/conductor-reviewer %s", opts.PRURL),
@@ -95,7 +95,7 @@ func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts ReviewerOpts) (
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start reviewer: %w", err)
 	}
-	return &state.AgentInfo{
+	return &domain.AgentInfo{
 		ID:     fmt.Sprintf("reviewer-%d", cmd.Process.Pid),
 		Role:   "reviewer",
 		Ref:    fmt.Sprintf("PR #%d", opts.PRNumber),

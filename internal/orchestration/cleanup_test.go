@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"crelay/internal/core/domain"
 	"crelay/internal/state"
 )
 
@@ -47,7 +48,7 @@ func TestMergeAndCleanup_FullFlow(t *testing.T) {
 	poolRet := &mockPoolReturner{}
 
 	store := &state.Store{
-		Agents: []state.AgentInfo{
+		Agents: []domain.AgentInfo{
 			{ID: "dev-123", Role: "developer", Ref: "my-track", Status: "running", PID: 0, SessionID: "dev-sess"},
 			{ID: "rev-456", Role: "reviewer", Ref: "PR #5", Status: "completed", SessionID: "rev-sess"},
 		},
