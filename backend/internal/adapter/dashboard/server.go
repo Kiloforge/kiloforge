@@ -88,7 +88,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /-/events", s.handleSSE)
 	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)
 	mux.HandleFunc("GET /-/pr/{slug}/{prNumber}", s.handlePRDetail)
-	mux.Handle("GET /-/", http.StripPrefix("/-", http.FileServer(http.FS(staticFS))))
+	mux.Handle("GET /-/", http.StripPrefix("/-", spaFileServer(http.FS(staticFS))))
 }
 
 func (s *Server) routes() {
