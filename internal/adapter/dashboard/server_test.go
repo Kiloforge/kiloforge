@@ -361,3 +361,39 @@ func TestSSEHub_Unsubscribe(t *testing.T) {
 		t.Errorf("client count = %d, want 0", hub.ClientCount())
 	}
 }
+
+func TestRegisterRoutes_MountsOnExternalMux(t *testing.T) {
+	t.Parallel()
+	agents := &testAgentLister{
+		agents: []domain.AgentInfo{
+			{ID: "dev-1", Role: "developer", Status: "running"},
+		},
+	}
+	quota := &testQuotaReader{
+		totalUsage: agent.TotalUsage{TotalCostUSD: 0.50},
+	}
+
+	s := New(0, agents, quota, "http://localhost:3000", t.TempDir())
+
+	externalMux := http.NewServeMux()
+	s.RegisterRoutes(externalMux)
+
+	// All dashboard routes should work on the external mux.
+	routes := []struct {
+		path string
+		code int
+	}{
+		{"/api/agents", http.StatusOK},
+		{"/api/quota", http.StatusOK},
+		{"/api/status", http.StatusOK},
+	}
+
+	for _, r := range routes {
+		req := httptest.NewRequest("GET", r.path, nil)
+		w := httptest.NewRecorder()
+		externalMux.ServeHTTP(w, req)
+		if w.Code != r.code {
+			t.Errorf("%s: status = %d, want %d", r.path, w.Code, r.code)
+		}
+	}
+}

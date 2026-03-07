@@ -13,6 +13,11 @@ type watcherState struct {
 	totalCost   float64
 }
 
+// StartWatcher launches the background state watcher goroutine.
+func (s *Server) StartWatcher(ctx context.Context) {
+	go s.watchState(ctx)
+}
+
 func (s *Server) watchState(ctx context.Context) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()

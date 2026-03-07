@@ -76,13 +76,19 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 }
 
+// RegisterRoutes mounts all dashboard routes onto the given mux.
+// This allows the relay server to host dashboard routes on its own mux.
+func (s *Server) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/agents", s.handleAgents)
+	mux.HandleFunc("GET /api/agents/{id}", s.handleAgent)
+	mux.HandleFunc("GET /api/agents/{id}/log", s.handleAgentLog)
+	mux.HandleFunc("GET /api/quota", s.handleQuota)
+	mux.HandleFunc("GET /api/tracks", s.handleTracks)
+	mux.HandleFunc("GET /api/status", s.handleStatus)
+	mux.HandleFunc("GET /events", s.handleSSE)
+	mux.Handle("GET /", http.FileServer(http.FS(staticFS)))
+}
+
 func (s *Server) routes() {
-	s.mux.HandleFunc("GET /api/agents", s.handleAgents)
-	s.mux.HandleFunc("GET /api/agents/{id}", s.handleAgent)
-	s.mux.HandleFunc("GET /api/agents/{id}/log", s.handleAgentLog)
-	s.mux.HandleFunc("GET /api/quota", s.handleQuota)
-	s.mux.HandleFunc("GET /api/tracks", s.handleTracks)
-	s.mux.HandleFunc("GET /api/status", s.handleStatus)
-	s.mux.HandleFunc("GET /events", s.handleSSE)
-	s.mux.Handle("GET /", http.FileServer(http.FS(staticFS)))
+	s.RegisterRoutes(s.mux)
 }
