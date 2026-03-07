@@ -7,7 +7,7 @@ import (
 )
 
 // NewGiteaProxy creates a reverse proxy handler that forwards requests to Gitea.
-// Use with http.StripPrefix("/gitea", proxy) to strip the path prefix before forwarding.
+// Mounted as catch-all at "/" so Gitea's UI and assets load without path rewriting.
 func NewGiteaProxy(targetURL string) http.Handler {
 	target, err := url.Parse(targetURL)
 	if err != nil {

@@ -28,7 +28,7 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 		"3000:3000",
 		"gitea-data:/data",
 		"GITEA__security__INSTALL_LOCK=true",
-		"GITEA__server__ROOT_URL=http://localhost:3001/gitea/",
+		"GITEA__server__ROOT_URL=http://localhost:3001/",
 		"GITEA__database__DB_TYPE=sqlite3",
 		"GITEA__service__DISABLE_REGISTRATION=true",
 		"GITEA__webhook__ALLOWED_HOST_LIST=*",
@@ -63,7 +63,7 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 	if !strings.Contains(content, "4000:3000") {
 		t.Error("expected port mapping 4000:3000")
 	}
-	if !strings.Contains(content, "ROOT_URL=http://localhost:5000/gitea/") {
-		t.Error("expected ROOT_URL with relay port 5000 and /gitea/ sub-path")
+	if !strings.Contains(content, "ROOT_URL=http://localhost:5000/") {
+		t.Error("expected ROOT_URL with relay port 5000")
 	}
 }

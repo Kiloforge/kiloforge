@@ -25,7 +25,7 @@ const composeTemplate = `services:
       - gitea-data:/data
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:{{ .RelayPort }}/gitea/
+      - GITEA__server__ROOT_URL=http://localhost:{{ .RelayPort }}/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true
