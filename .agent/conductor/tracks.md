@@ -14,5 +14,6 @@
 | [ ] | implement-command_20260307125001Z | 'crelay implement' Command — Spawn Developer Agent | 2026-03-07 | 2026-03-07 |
 | [ ] | review-cycle-relay_20260307125002Z | Developer-Reviewer Relay Cycle | 2026-03-07 | 2026-03-07 |
 | [ ] | merge-cleanup_20260307125003Z | PR Merge, Worktree Cleanup, and Agent Teardown | 2026-03-07 | 2026-03-07 |
+| [ ] | fix-add-remote-url_20260307130000Z | Fix 'crelay add' to Accept Remote URLs | 2026-03-07 | 2026-03-07 |
 
 <!-- Tracks registered by /conductor-new-track -->

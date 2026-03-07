@@ -25,6 +25,7 @@ Navigation hub for project context.
 - **implement-command_20260307125001Z** — 'crelay implement' Command — Spawn Developer Agent
 - **review-cycle-relay_20260307125002Z** — Developer-Reviewer Relay Cycle
 - **merge-cleanup_20260307125003Z** — PR Merge, Worktree Cleanup, and Agent Teardown
+- **fix-add-remote-url_20260307130000Z** — Fix 'crelay add' to Accept Remote URLs
 
 ## Getting Started
 
