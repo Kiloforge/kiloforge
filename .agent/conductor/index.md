@@ -18,6 +18,7 @@ Navigation hub for project context.
 - **init-docker-compose_20260307120100Z** — Implement Init Command with Docker Compose and Global Gitea
 - **refactor-config-port-adapter_20260307121000Z** — Refactor Config to Port/Adapter Pattern with Layered Resolution
 - **add-project-command_20260307122000Z** — Implement 'crelay add' Command for Project Registration
+- **down-destroy-commands_20260307123000Z** — Add 'up', 'down' Commands and Refactor 'destroy'
 
 ## Getting Started
 
