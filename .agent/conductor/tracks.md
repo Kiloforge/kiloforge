@@ -18,7 +18,7 @@
 | [x] | build-embed-guidance_20260308210001Z | Build and Embed Pattern Guidance | 2026-03-08 | 2026-03-08 |
 | [x] | readme-prerequisites_20260308210002Z | Update README Prerequisites to Docker + Claude Code | 2026-03-08 | 2026-03-08 |
 | [x] | add-local-ssh-identity_20260308220000Z | Add Command SSH Identity and Repo Name Improvements | 2026-03-08 | 2026-03-08 |
-| [ ] | project-scoped-dashboard_20260308220001Z | Project-Scoped Dashboard Tracks | 2026-03-08 | 2026-03-08 |
+| [x] | project-scoped-dashboard_20260308220001Z | Project-Scoped Dashboard Tracks | 2026-03-08 | 2026-03-08 |
 | [x] | origin-sync-command_20260308220002Z | Origin Sync Command | 2026-03-08 | 2026-03-08 |
 | [x] | prereq-check-init_20260308230000Z | Prerequisite Check During Init | 2026-03-08 | 2026-03-08 |
 | [ ] | skill-install-update_20260308231000Z | Conductor Skill Installation and Auto-Update | 2026-03-08 | 2026-03-08 |
