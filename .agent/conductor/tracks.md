@@ -7,6 +7,6 @@
 | [x] | init-docker-compose_20260307120100Z | Implement Init Command with Docker Compose and Global Gitea | 2026-03-07 | 2026-03-07 |
 | [x] | refactor-config-port-adapter_20260307121000Z | Refactor Config to Port/Adapter Pattern with Layered Resolution | 2026-03-07 | 2026-03-07 |
 | [ ] | add-project-command_20260307122000Z | Implement 'crelay add' Command for Project Registration | 2026-03-07 | 2026-03-07 |
-| [ ] | down-destroy-commands_20260307123000Z | Add 'up', 'down' Commands and Refactor 'destroy' | 2026-03-07 | 2026-03-07 |
+| [x] | down-destroy-commands_20260307123000Z | Add 'up', 'down' Commands and Refactor 'destroy' | 2026-03-07 | 2026-03-07 |
 
 <!-- Tracks registered by /conductor-new-track -->
