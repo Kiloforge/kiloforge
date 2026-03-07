@@ -1,10 +1,7 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 )
 
 const (
@@ -28,30 +25,41 @@ func (c *Config) GiteaURL() string {
 }
 
 func (c *Config) Save() error {
-	data, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(c.DataDir, ConfigFileName), data, 0o644)
+	return NewJSONAdapter(c.DataDir).Save(c)
 }
 
+// Resolve chains config providers: defaults → JSON file → env → extra providers.
+// Extra providers (typically a FlagsAdapter) have the highest priority.
+func Resolve(extra ...ConfigProvider) (*Config, error) {
+	// First pass: resolve data dir from all sources so we know where the JSON file is.
+	defaults := &DefaultsAdapter{}
+	env := &EnvAdapter{}
+
+	preProviders := []ConfigProvider{defaults, env}
+	preProviders = append(preProviders, extra...)
+	preCfg, err := Merge(preProviders...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build the full chain with the JSON adapter using the resolved data dir.
+	providers := []ConfigProvider{
+		defaults,
+		NewJSONAdapter(preCfg.DataDir),
+		env,
+	}
+	providers = append(providers, extra...)
+
+	return Merge(providers...)
+}
+
+// Load resolves config using the default chain (defaults → JSON → env).
+// Retained for backward compatibility.
 func Load() (*Config, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	dataDir := filepath.Join(home, ".crelay")
-	return LoadFrom(dataDir)
+	return Resolve()
 }
 
+// LoadFrom resolves config using a specific data directory for the JSON file.
 func LoadFrom(dataDir string) (*Config, error) {
-	data, err := os.ReadFile(filepath.Join(dataDir, ConfigFileName))
-	if err != nil {
-		return nil, err
-	}
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
+	return Resolve(NewFlagsAdapter(WithDataDir(dataDir)))
 }
