@@ -1,0 +1,16 @@
+{
+  "id": "live-status-badges_20260308190000Z",
+  "title": "Universal Live Agent Status Badges",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T19:00:00Z",
+  "updated": "2026-03-08T19:00:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 14,
+    "completed": 0
+  }
+}

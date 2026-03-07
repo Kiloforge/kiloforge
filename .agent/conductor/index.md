@@ -48,6 +48,7 @@ Navigation hub for project context.
 - **board-agent-lifecycle_20260308180000Z** — Board-Driven Agent Lifecycle Control
 - **monorepo-restructure_20260308180001Z** — Restructure as Monorepo with Backend/Frontend Split
 - **react-dashboard_20260308180002Z** — React Dashboard for Real-Time Agent Monitoring
+- **live-status-badges_20260308190000Z** — Universal Live Agent Status Badges
 
 ## Getting Started
 
