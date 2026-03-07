@@ -122,6 +122,44 @@ List registered projects.
 crelay projects
 ```
 
+### `crelay implement`
+
+Approve a conductor track and spawn a developer agent in a pooled worktree.
+
+```bash
+crelay implement <track-id>            # spawn developer for track
+crelay implement --list                # list available tracks
+crelay implement --project myapp <id>  # specify project explicitly
+```
+
+The command acquires a worktree from the pool, prepares it (reset to main, create implementation branch), and spawns a Claude Code agent running `/conductor-developer <track-id>`. Agent state is recorded for monitoring with `crelay agents`, `crelay logs`, `crelay stop`, and `crelay attach`.
+
+### `crelay agents`
+
+List active and recent agents.
+
+```bash
+crelay agents          # table output
+crelay agents --json   # JSON output
+```
+
+### `crelay logs <agent-id>`
+
+View logs for an agent. Supports prefix matching on the agent ID.
+
+```bash
+crelay logs abc12345
+crelay logs abc12345 -f   # follow mode
+```
+
+### `crelay stop <agent-id>`
+
+Send SIGINT to stop a running agent. The session is preserved for later resume.
+
+### `crelay attach <agent-id>`
+
+Print the command to resume an agent's Claude session interactively. If the agent is running, it is halted first.
+
 ### `crelay pool`
 
 Show worktree pool status. Displays idle and in-use worktrees for developer agents.
@@ -187,12 +225,15 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 ~/.crelay/
 ├── config.json           # Global configuration
 ├── projects.json         # Project registry
+├── pool.json             # Worktree pool state
+├── state.json            # Agent state (running/completed agents)
 ├── docker-compose.yml    # Generated compose file
 ├── repos/                # Cloned project repositories
 │   └── <slug>/
 ├── projects/             # Per-project data
 │   └── <slug>/
-│       └── logs/
+│       ├── logs/             # Agent log files
+│       └── pr-tracking.json  # PR-to-agent tracking
 └── gitea-data/           # Gitea Docker volume (repos, DB)
 ```
 
