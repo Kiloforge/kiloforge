@@ -19,7 +19,7 @@
 | [x] | readme-prerequisites_20260308210002Z | Update README Prerequisites to Docker + Claude Code | 2026-03-08 | 2026-03-08 |
 | [x] | add-local-ssh-identity_20260308220000Z | Add Command SSH Identity and Repo Name Improvements | 2026-03-08 | 2026-03-08 |
 | [ ] | project-scoped-dashboard_20260308220001Z | Project-Scoped Dashboard Tracks | 2026-03-08 | 2026-03-08 |
-| [ ] | origin-sync-command_20260308220002Z | Origin Sync Command | 2026-03-08 | 2026-03-08 |
+| [x] | origin-sync-command_20260308220002Z | Origin Sync Command | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

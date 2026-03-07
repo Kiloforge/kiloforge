@@ -2,15 +2,15 @@
   "id": "origin-sync-command_20260308220002Z",
   "title": "Origin Sync Command",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-08T22:00:02Z",
   "updated": "2026-03-08T22:00:02Z",
   "phases": {
     "total": 3,
-    "completed": 0
+    "completed": 3
   },
   "tasks": {
     "total": 8,
-    "completed": 0
+    "completed": 8
   }
 }
