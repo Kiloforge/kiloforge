@@ -10,6 +10,8 @@ import (
 	"crelay/internal/compose"
 	"crelay/internal/config"
 	"crelay/internal/gitea"
+	"crelay/internal/project"
+	"crelay/internal/relay"
 
 	"github.com/spf13/cobra"
 )
@@ -118,8 +120,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Data:       %s\n", cfg.DataDir)
 	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()
-	fmt.Println("Stop with 'crelay down', restart with 'crelay up'.")
 	fmt.Println("Register a project with 'crelay add <path>'.")
+	fmt.Println()
 
-	return nil
+	// Start relay server (blocking).
+	reg, err := project.LoadRegistry(cfg.DataDir)
+	if err != nil {
+		return fmt.Errorf("load project registry: %w", err)
+	}
+
+	fmt.Printf("==> Starting relay on :%d...\n", cfg.RelayPort)
+	fmt.Println("    Press Ctrl+C to stop the relay.")
+	fmt.Println()
+
+	srv := relay.NewServer(cfg, reg, cfg.RelayPort)
+	return srv.Run(ctx)
 }

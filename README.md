@@ -70,7 +70,7 @@ Flags:
 
 ### `crelay up`
 
-Start the Gitea server (daily use).
+Start Gitea and the webhook relay server (daily use). The relay runs in the foreground — press Ctrl+C to stop it. Gitea stays running via Docker Compose.
 
 ```bash
 crelay up
@@ -129,25 +129,42 @@ crelay destroy --force  # skip confirmation
 ## Architecture
 
 ```
-crelay init
+crelay init / crelay up
     │
-    ├─ Detect compose CLI (v2 plugin or v1 standalone)
-    ├─ Generate docker-compose.yml in ~/.crelay/
-    ├─ docker compose up -d (Gitea service)
-    ├─ Wait for Gitea health check
-    ├─ Create admin user via compose exec
-    ├─ Create API token via REST API
-    └─ Save global config
+    ├─ Docker Compose: start Gitea (localhost:3000)
+    ├─ Webhook relay server (localhost:3001, foreground)
+    │   ├─ Receives events from all registered projects
+    │   ├─ Routes by repository name → project registry
+    │   └─ Handles: issues, issue_comment, pull_request,
+    │              pull_request_review, pull_request_comment, push
+    │
+    └─ crelay add: register project → Gitea repo + webhook
 
-┌──────────────────────────────────────────────────────────┐
-│  Gitea (Docker Compose)                 localhost:3000    │
-│                                                          │
-│  • Hosts git repos for multiple projects                 │
-│  • Manages PRs and reviews                               │
-│  • Sends webhooks on events                              │
-│  • Persistent data in ~/.crelay/gitea-data               │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Gitea (Docker Compose)                    localhost:3000    │
+│  • Hosts git repos for multiple projects                    │
+│  • Manages PRs and reviews                                  │
+│  • Sends webhooks to relay on events                        │
+└────────────────────────┬────────────────────────────────────┘
+                         │ webhooks
+┌────────────────────────▼────────────────────────────────────┐
+│  Relay Server                              localhost:3001    │
+│  • Multi-project event routing                              │
+│  • Structured logging per project                           │
+│  • Health: GET /health                                      │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+## Supported Events
+
+| Event | Actions |
+|-------|---------|
+| `issues` | opened, edited, closed, label_updated, assigned |
+| `issue_comment` | created |
+| `pull_request` | opened, reopened, closed, merged, synchronize |
+| `pull_request_review` | submitted |
+| `pull_request_comment` | created |
+| `push` | (all) |
 
 ## Data Directory
 

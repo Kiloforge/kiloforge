@@ -56,7 +56,7 @@ Compose:     /Users/you/.crelay/docker-compose.yml
 
 ## `crelay up`
 
-Start the Gitea server (daily use).
+Start Gitea and the webhook relay server (daily use).
 
 **Synopsis:**
 ```bash
@@ -65,12 +65,17 @@ crelay up
 
 **What it does:**
 1. Loads saved config — errors if not initialized
-2. Checks if Gitea is already running (no-op if so)
-3. Runs `docker compose up -d` to start the stack
-4. Waits for Gitea to become healthy
-5. Prints the Gitea URL
+2. Starts Gitea via Docker Compose (if not already running)
+3. Loads the project registry
+4. Starts the webhook relay server on the relay port (default 3001)
+5. Relay runs in the foreground — press Ctrl+C to stop
 
 **Requires:** `crelay init` must have been run first.
+
+**Relay behavior:**
+- Routes webhook events from Gitea to the correct project via `repository.name`
+- Handles: issues, issue_comment, pull_request, pull_request_review, pull_request_comment, push
+- Logs structured output per project: `[relay] [project-slug] event: details`
 
 ---
 
