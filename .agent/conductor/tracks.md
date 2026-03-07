@@ -16,7 +16,7 @@
 | [x] | testing-audit-e2e_20260308201000Z | Testing Audit — Integration, E2E, and Smoke Tests | 2026-03-08 | 2026-03-08 |
 | [x] | remove-password-persistence_20260308210000Z | Remove Password from Config Persistence | 2026-03-08 | 2026-03-08 |
 | [x] | build-embed-guidance_20260308210001Z | Build and Embed Pattern Guidance | 2026-03-08 | 2026-03-08 |
-| [ ] | readme-prerequisites_20260308210002Z | Update README Prerequisites to Docker + Claude Code | 2026-03-08 | 2026-03-08 |
+| [x] | readme-prerequisites_20260308210002Z | Update README Prerequisites to Docker + Claude Code | 2026-03-08 | 2026-03-08 |
 | [ ] | add-local-ssh-identity_20260308220000Z | Add Command SSH Identity and Repo Name Improvements | 2026-03-08 | 2026-03-08 |
 | [ ] | project-scoped-dashboard_20260308220001Z | Project-Scoped Dashboard Tracks | 2026-03-08 | 2026-03-08 |
 | [ ] | origin-sync-command_20260308220002Z | Origin Sync Command | 2026-03-08 | 2026-03-08 |
