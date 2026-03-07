@@ -2,15 +2,15 @@
   "id": "board-agent-lifecycle_20260308180000Z",
   "title": "Board-Driven Agent Lifecycle Control",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-08T18:00:00Z",
-  "updated": "2026-03-08T18:00:00Z",
+  "updated": "2026-03-08T20:00:00Z",
   "phases": {
     "total": 5,
-    "completed": 0
+    "completed": 5
   },
   "tasks": {
     "total": 16,
-    "completed": 0
+    "completed": 16
   }
 }
