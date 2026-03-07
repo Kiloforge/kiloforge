@@ -1,4 +1,4 @@
-package relay
+package rest
 
 import (
 	"bytes"
@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
-	"crelay/internal/gitea"
+	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
 )
 

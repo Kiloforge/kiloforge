@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 	"crelay/internal/core/domain"
 
 	"github.com/google/uuid"

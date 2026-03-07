@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"crelay/internal/agent"
-	"crelay/internal/config"
+	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/service"
-	"crelay/internal/pool"
+	"crelay/internal/adapter/pool"
 	"crelay/internal/adapter/persistence/jsonfile"
 	
 	"github.com/spf13/cobra"

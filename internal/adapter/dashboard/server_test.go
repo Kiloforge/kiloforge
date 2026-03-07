@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/agent"
+	"crelay/internal/adapter/agent"
 	"crelay/internal/core/domain"
 )
 

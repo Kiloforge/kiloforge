@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

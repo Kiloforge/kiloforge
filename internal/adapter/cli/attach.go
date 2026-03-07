@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

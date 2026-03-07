@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/agent"
-	"crelay/internal/config"
+	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

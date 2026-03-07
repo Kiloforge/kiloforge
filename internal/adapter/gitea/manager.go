@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"crelay/internal/compose"
-	"crelay/internal/config"
+	"crelay/internal/adapter/compose"
+	"crelay/internal/adapter/config"
 )
 
 // Manager handles Gitea lifecycle via docker compose.

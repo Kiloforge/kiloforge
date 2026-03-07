@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"crelay/internal/cli"
+	"crelay/internal/adapter/cli"
 )
 
 func main() {

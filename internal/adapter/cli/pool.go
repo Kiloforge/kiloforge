@@ -5,8 +5,8 @@ import (
 	"text/tabwriter"
 	"os"
 
-	"crelay/internal/config"
-	"crelay/internal/pool"
+	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/pool"
 
 	"github.com/spf13/cobra"
 )

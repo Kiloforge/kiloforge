@@ -6,10 +6,10 @@ import (
 	"os"
 	"os/signal"
 
+	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/dashboard"
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/agent"
-	"crelay/internal/config"
-	"crelay/internal/dashboard"
 
 	"github.com/spf13/cobra"
 )

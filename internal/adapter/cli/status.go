@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/agent"
-	"crelay/internal/compose"
-	"crelay/internal/config"
-	"crelay/internal/gitea"
+	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/compose"
+	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/gitea"
 
 	"github.com/spf13/cobra"
 )

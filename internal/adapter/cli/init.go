@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"crelay/internal/auth"
-	"crelay/internal/compose"
-	"crelay/internal/config"
-	"crelay/internal/gitea"
+	"crelay/internal/adapter/auth"
+	"crelay/internal/adapter/compose"
+	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/relay"
+	"crelay/internal/adapter/rest"
 
 	"github.com/spf13/cobra"
 )
@@ -149,7 +149,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("    Press Ctrl+C to stop the relay.")
 	fmt.Println()
 
-	srv := relay.NewServer(cfg, reg, cfg.RelayPort)
+	srv := rest.NewServer(cfg, reg, cfg.RelayPort)
 	return srv.Run(ctx)
 }
 

@@ -1,4 +1,4 @@
-package relay
+package rest
 
 import (
 	"context"
@@ -12,14 +12,14 @@ import (
 	"time"
 
 	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/agent"
-	"crelay/internal/config"
+	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
-	"crelay/internal/gitea"
-	"crelay/internal/lock"
-	"crelay/internal/pool"
+	"crelay/internal/adapter/gitea"
+	"crelay/internal/adapter/lock"
+	"crelay/internal/adapter/pool"
 )
 
 // ShutdownTimeout is how long to wait for agents to exit before force-killing.

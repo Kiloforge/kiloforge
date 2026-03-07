@@ -5,7 +5,7 @@ import (
 	"text/tabwriter"
 	"os"
 
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"

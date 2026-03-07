@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 	"crelay/internal/core/domain"
-	"crelay/internal/gitea"
+	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"

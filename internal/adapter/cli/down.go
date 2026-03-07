@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 
-	"crelay/internal/compose"
-	"crelay/internal/config"
-	"crelay/internal/gitea"
+	"crelay/internal/adapter/compose"
+	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/gitea"
 
 	"github.com/spf13/cobra"
 )

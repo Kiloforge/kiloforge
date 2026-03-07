@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"crelay/internal/config"
+	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"
