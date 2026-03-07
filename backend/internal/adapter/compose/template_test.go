@@ -67,3 +67,31 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 		t.Error("expected ROOT_URL with relay port 5000")
 	}
 }
+
+// TestGenerateComposeFile_RootURLHasNoSubPath verifies ROOT_URL is at the
+// root path ("/"), not a sub-path like "/gitea/". Gitea generates all asset
+// and login URLs based on ROOT_URL, so a mismatch causes 404s.
+func TestGenerateComposeFile_RootURLHasNoSubPath(t *testing.T) {
+	t.Parallel()
+
+	cfg := ComposeConfig{
+		GiteaPort: 3000,
+		RelayPort: 3001,
+		DataDir:   "/home/user/.crelay",
+	}
+
+	data, err := GenerateComposeFile(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	content := string(data)
+
+	// ROOT_URL must end with just "/" — no sub-path like "/gitea/".
+	if strings.Contains(content, "ROOT_URL=http://localhost:3001/gitea/") {
+		t.Error("ROOT_URL must not have /gitea/ sub-path — Gitea is the catch-all proxy at /")
+	}
+	if !strings.Contains(content, "ROOT_URL=http://localhost:3001/\n") {
+		t.Error("ROOT_URL should be http://localhost:PORT/ with no sub-path")
+	}
+}
