@@ -100,6 +100,20 @@ func (s *AgentStore) UpdateStatus(idPrefix, status string) {
 	}
 }
 
+// AgentsByStatus returns agents matching any of the given statuses.
+func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
+	var result []domain.AgentInfo
+	for _, a := range s.AgentList {
+		for _, st := range statuses {
+			if a.Status == st {
+				result = append(result, a)
+				break
+			}
+		}
+	}
+	return result
+}
+
 // HaltAgent sends SIGINT to the agent process.
 func (s *AgentStore) HaltAgent(idPrefix string) error {
 	agent, err := s.FindAgent(idPrefix)

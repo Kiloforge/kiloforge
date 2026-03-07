@@ -89,6 +89,21 @@ func (m *MockAgentStore) Agents() []domain.AgentInfo {
 	return out
 }
 
+func (m *MockAgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var result []domain.AgentInfo
+	for _, a := range m.AgentData {
+		for _, st := range statuses {
+			if a.Status == st {
+				result = append(result, a)
+				break
+			}
+		}
+	}
+	return result
+}
+
 // MockAgentSpawner records spawn/resume calls.
 type MockAgentSpawner struct {
 	mu            sync.Mutex
