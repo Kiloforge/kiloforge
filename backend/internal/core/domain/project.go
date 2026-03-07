@@ -1,6 +1,11 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+)
 
 // ProjectStatus represents the state of a registered project.
 type ProjectStatus string
@@ -16,6 +21,24 @@ type Project struct {
 	RepoName     string    `json:"repo_name"`
 	ProjectDir   string    `json:"project_dir"`
 	OriginRemote string    `json:"origin_remote,omitempty"`
+	SSHKeyPath   string    `json:"ssh_key_path,omitempty"`
 	RegisteredAt time.Time `json:"registered_at"`
 	Active       bool      `json:"active"`
+}
+
+// GitSSHEnv returns environment variables for git commands to use the
+// project's configured SSH key. Returns nil if no SSH key is configured.
+func (p Project) GitSSHEnv() []string {
+	if p.SSHKeyPath == "" {
+		return nil
+	}
+	path := p.SSHKeyPath
+	if strings.HasPrefix(path, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			path = home + path[1:]
+		}
+	}
+	return []string{
+		fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", path),
+	}
 }
