@@ -11,7 +11,7 @@ import (
 	"crelay/internal/agent"
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
-	"crelay/internal/orchestration"
+	"crelay/internal/core/service"
 	"crelay/internal/pool"
 	"crelay/internal/adapter/persistence/jsonfile"
 	
@@ -71,12 +71,12 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	trackID := args[0]
 
 	// Validate track is pending.
-	tracks, err := orchestration.DiscoverTracks(proj.ProjectDir)
+	tracks, err := service.DiscoverTracks(proj.ProjectDir)
 	if err != nil {
 		return fmt.Errorf("discover tracks: %w", err)
 	}
 
-	var found *orchestration.TrackEntry
+	var found *service.TrackEntry
 	for i := range tracks {
 		if tracks[i].ID == trackID {
 			found = &tracks[i]
@@ -86,10 +86,10 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	if found == nil {
 		return fmt.Errorf("track %q not found in project %q", trackID, proj.Slug)
 	}
-	if found.Status == orchestration.StatusComplete {
+	if found.Status == service.StatusComplete {
 		return fmt.Errorf("track %q is already complete", trackID)
 	}
-	if found.Status == orchestration.StatusInProgress {
+	if found.Status == service.StatusInProgress {
 		return fmt.Errorf("track %q is already in progress", trackID)
 	}
 
@@ -174,12 +174,12 @@ func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, er
 }
 
 func listTracks(proj domain.Project) error {
-	tracks, err := orchestration.DiscoverTracks(proj.ProjectDir)
+	tracks, err := service.DiscoverTracks(proj.ProjectDir)
 	if err != nil {
 		return fmt.Errorf("discover tracks: %w", err)
 	}
 
-	pending := orchestration.FilterByStatus(tracks, orchestration.StatusPending)
+	pending := service.FilterByStatus(tracks, service.StatusPending)
 	if len(pending) == 0 {
 		fmt.Printf("No pending tracks for project %q.\n", proj.Slug)
 		return nil

@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"crelay/internal/core/domain"
+	"crelay/internal/core/port"
 )
+
+var _ port.AgentStore = (*AgentStore)(nil)
 
 const stateFile = "state.json"
 
@@ -36,6 +39,25 @@ func LoadAgentStore(dataDir string) (*AgentStore, error) {
 	}
 	store.dataDir = dataDir
 	return &store, nil
+}
+
+// Load re-reads the agent store from disk.
+func (s *AgentStore) Load() error {
+	path := filepath.Join(s.dataDir, stateFile)
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		s.AgentList = nil
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var loaded AgentStore
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		return err
+	}
+	s.AgentList = loaded.AgentList
+	return nil
 }
 
 // Save writes the agent store to disk.

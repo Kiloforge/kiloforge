@@ -15,7 +15,6 @@ import (
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/gitea"
-	"crelay/internal/orchestration"
 	"crelay/internal/adapter/persistence/jsonfile"
 )
 
@@ -304,7 +303,7 @@ func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
 
 	// Verify tracking record created.
 	projectDir := filepath.Join(dir, "projects", "myapp")
-	tracking, err := orchestration.LoadPRTracking(projectDir)
+	tracking, err := jsonfile.LoadPRTracking(projectDir)
 	if err != nil {
 		t.Fatalf("LoadPRTracking: %v", err)
 	}
@@ -362,7 +361,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	orchestration.SavePRTracking(tracking, projectDir)
+	jsonfile.SavePRTracking(tracking, projectDir)
 
 	// Send approved review.
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
@@ -395,7 +394,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	}
 
 	// Tracking should be merged.
-	updated, _ := orchestration.LoadPRTracking(projectDir)
+	updated, _ := jsonfile.LoadPRTracking(projectDir)
 	if updated.Status != "merged" {
 		t.Errorf("status: want %q, got %q", "merged", updated.Status)
 	}
@@ -433,7 +432,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	orchestration.SavePRTracking(tracking, projectDir)
+	jsonfile.SavePRTracking(tracking, projectDir)
 
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
 		"action":     "submitted",
@@ -452,7 +451,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 		t.Fatalf("expected 1 resume, got %d", len(spawner.resumeCalls))
 	}
 
-	updated, _ := orchestration.LoadPRTracking(projectDir)
+	updated, _ := jsonfile.LoadPRTracking(projectDir)
 	if updated.ReviewCycleCount != 1 {
 		t.Errorf("ReviewCycleCount: want 1, got %d", updated.ReviewCycleCount)
 	}
@@ -498,7 +497,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	orchestration.SavePRTracking(tracking, projectDir)
+	jsonfile.SavePRTracking(tracking, projectDir)
 
 	postWebhook(t, srv, "pull_request_review", map[string]any{
 		"action":     "submitted",
@@ -520,7 +519,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 	}
 
 	// Tracking should be escalated.
-	updated, _ := orchestration.LoadPRTracking(projectDir)
+	updated, _ := jsonfile.LoadPRTracking(projectDir)
 	if updated.Status != "escalated" {
 		t.Errorf("status: want %q, got %q", "escalated", updated.Status)
 	}
@@ -552,7 +551,7 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "changes-requested",
 	}
-	orchestration.SavePRTracking(tracking, projectDir)
+	jsonfile.SavePRTracking(tracking, projectDir)
 
 	postWebhook(t, srv, "pull_request", map[string]any{
 		"action":     "synchronize",

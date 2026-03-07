@@ -10,14 +10,13 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
 	"crelay/internal/gitea"
-	"crelay/internal/orchestration"
 	"crelay/internal/pool"
-	"crelay/internal/adapter/persistence/jsonfile"
 )
 
 // Server handles incoming webhooks from registered projects.
@@ -283,7 +282,7 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 		s.logger.Printf("[%s] Error creating project dir: %v", slug, err)
 		return
 	}
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 		return
 	}
@@ -301,7 +300,7 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 
 func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking, err := orchestration.LoadPRTracking(projectDir)
+	tracking, err := jsonfile.LoadPRTracking(projectDir)
 	if err != nil {
 		s.logger.Printf("[%s] Cannot load PR tracking for reviewer spawn: %v", slug, err)
 		return
@@ -330,7 +329,7 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 	tracking.ReviewerAgentID = info.ID
 	tracking.ReviewerSession = info.SessionID
 	tracking.Status = "in-review"
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -355,7 +354,7 @@ func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 	s.logger.Printf("[%s] PR #%d review %s", slug, prNumber, reviewState)
 
 	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking, err := orchestration.LoadPRTracking(projectDir)
+	tracking, err := jsonfile.LoadPRTracking(projectDir)
 	if err != nil {
 		s.logger.Printf("[%s] Cannot load PR tracking for review handling: %v", slug, err)
 		return
@@ -373,7 +372,7 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 	s.logger.Printf("[%s] PR #%d approved — merging and cleaning up", slug, tracking.PRNumber)
 
 	tracking.Status = "approved"
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -389,22 +388,21 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 		poolRet = &poolReturnerAdapter{pool: p, dataDir: s.cfg.DataDir}
 	}
 
-	opts := orchestration.CleanupOpts{
+	opts := service.CleanupOpts{
 		Tracking:    tracking,
-		Store:       s.store,
+		AgentStore:  s.store,
 		Merger:      s.client,
 		PoolReturn:  poolRet,
-		DataDir:     s.cfg.DataDir,
 		MergeMethod: "merge",
 	}
 
-	if err := orchestration.MergeAndCleanup(context.Background(), opts); err != nil {
+	if err := service.MergeAndCleanup(context.Background(), opts); err != nil {
 		s.logger.Printf("[%s] Error in merge/cleanup: %v", slug, err)
 		return
 	}
 
 	// Save tracking.
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -436,7 +434,7 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 
 	s.logger.Printf("[%s] PR #%d changes requested (cycle %d/%d) — resuming developer",
 		slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -470,14 +468,14 @@ func (s *Server) escalatePR(slug string, tracking *domain.PRTracking, projectDir
 	_ = s.store.Save()
 
 	tracking.Status = "escalated"
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 }
 
 func (s *Server) handlePRSynchronize(slug string, prNumber int) {
 	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking, err := orchestration.LoadPRTracking(projectDir)
+	tracking, err := jsonfile.LoadPRTracking(projectDir)
 	if err != nil {
 		s.logger.Printf("[%s] Cannot load PR tracking for synchronize: %v", slug, err)
 		return
@@ -490,7 +488,7 @@ func (s *Server) handlePRSynchronize(slug string, prNumber int) {
 	}
 
 	tracking.Status = "waiting-review"
-	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
+	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 

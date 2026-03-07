@@ -2,7 +2,10 @@ package service
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -43,6 +46,17 @@ func FilterByStatus(tracks []TrackEntry, status string) []TrackEntry {
 		}
 	}
 	return result
+}
+
+// DiscoverTracks reads .agent/conductor/tracks.md from projectDir and parses track entries.
+func DiscoverTracks(projectDir string) ([]TrackEntry, error) {
+	path := filepath.Join(projectDir, ".agent", "conductor", "tracks.md")
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open tracks.md: %w", err)
+	}
+	defer f.Close()
+	return ParseTracks(f)
 }
 
 func parseTrackLine(line string) (TrackEntry, bool) {

@@ -7,7 +7,6 @@ import (
 	"text/tabwriter"
 
 	"crelay/internal/config"
-	"crelay/internal/orchestration"
 	"crelay/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"
@@ -42,7 +41,7 @@ func runEscalated(cmd *cobra.Command, args []string) error {
 
 	for _, proj := range reg.List() {
 		projectDir := filepath.Join(cfg.DataDir, "projects", proj.Slug)
-		tracking, err := orchestration.LoadPRTracking(projectDir)
+		tracking, err := jsonfile.LoadPRTracking(projectDir)
 		if err != nil {
 			continue
 		}
