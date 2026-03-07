@@ -26,4 +26,9 @@ func init() {
 	rootCmd.AddCommand(projectsCmd)
 	rootCmd.AddCommand(destroyCmd)
 	rootCmd.AddCommand(poolCmd)
+	rootCmd.AddCommand(implementCmd)
+	rootCmd.AddCommand(agentsCmd)
+	rootCmd.AddCommand(logsCmd)
+	rootCmd.AddCommand(stopCmd)
+	rootCmd.AddCommand(attachCmd)
 }
