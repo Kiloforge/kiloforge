@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // Client wraps the Gitea REST API.
@@ -146,6 +147,24 @@ func (c *Client) CheckVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return result.Version, nil
+}
+
+// AddSSHKey registers an SSH public key for the authenticated user.
+// Returns nil on success or if the key already exists (HTTP 422).
+func (c *Client) AddSSHKey(ctx context.Context, title, pubKey string) error {
+	payload := map[string]any{
+		"title": title,
+		"key":   pubKey,
+	}
+	_, err := c.do(ctx, "POST", "/api/v1/user/keys", payload)
+	if err != nil && isAlreadyExists(err) {
+		return nil
+	}
+	return err
+}
+
+func isAlreadyExists(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "422")
 }
 
 // GetPR fetches a pull request by number.

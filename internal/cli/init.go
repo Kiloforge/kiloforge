@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"path/filepath"
 
+	"crelay/internal/auth"
 	"crelay/internal/compose"
 	"crelay/internal/config"
 	"crelay/internal/gitea"
@@ -30,11 +31,15 @@ to restart. Project registration is handled by 'crelay add'.`,
 var (
 	flagGiteaPort int
 	flagDataDir   string
+	flagAdminPass string
+	flagSSHKey    string
 )
 
 func init() {
 	initCmd.Flags().IntVar(&flagGiteaPort, "gitea-port", 3000, "Port for Gitea web UI")
 	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.crelay)")
+	initCmd.Flags().StringVar(&flagAdminPass, "admin-pass", "", "Admin password (default: generated random)")
+	initCmd.Flags().StringVar(&flagSSHKey, "ssh-key", "", "Path to SSH public key (default: auto-detect)")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -48,10 +53,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("gitea-port") {
 		flagOpts = append(flagOpts, config.WithGiteaPort(flagGiteaPort))
 	}
+	if cmd.Flags().Changed("admin-pass") {
+		flagOpts = append(flagOpts, config.WithGiteaAdminPass(flagAdminPass))
+	}
 
 	cfg, err := config.Resolve(config.NewFlagsAdapter(flagOpts...))
 	if err != nil {
 		return fmt.Errorf("resolve config: %w", err)
+	}
+
+	// Resolve admin password: flag > saved config > generate random.
+	if cfg.GiteaAdminPass == "" {
+		cfg.GiteaAdminPass = auth.GeneratePassword(20)
+		fmt.Printf("==> Generated admin password\n")
 	}
 
 	// Check idempotency: if Gitea is already running, report and exit.
@@ -103,10 +117,14 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Step 5: Configure admin user and token.
 	fmt.Println("==> Configuring Gitea...")
-	if _, err := manager.Configure(ctx); err != nil {
+	client, err = manager.Configure(ctx)
+	if err != nil {
 		return fmt.Errorf("configure gitea: %w", err)
 	}
 	fmt.Printf("    Admin user: %s\n", cfg.GiteaAdminUser)
+
+	// Step 5b: Register SSH key.
+	registerSSHKey(ctx, client, flagSSHKey)
 
 	// Step 6: Save config.
 	if err := cfg.Save(); err != nil {
@@ -135,4 +153,37 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	srv := relay.NewServer(cfg, reg, cfg.RelayPort)
 	return srv.Run(ctx)
+}
+
+func registerSSHKey(ctx context.Context, client *gitea.Client, customPath string) {
+	var keyPath, keyContent string
+	var err error
+
+	if customPath != "" {
+		data, readErr := os.ReadFile(customPath)
+		if readErr != nil {
+			fmt.Printf("    Warning: cannot read SSH key %s: %v\n", customPath, readErr)
+			return
+		}
+		keyPath = customPath
+		keyContent = string(data)
+	} else {
+		home, homeErr := os.UserHomeDir()
+		if homeErr != nil {
+			fmt.Printf("    Warning: cannot detect home directory: %v\n", homeErr)
+			return
+		}
+		keyPath, keyContent, err = auth.DetectSSHKey(filepath.Join(home, ".ssh"))
+		if err != nil {
+			fmt.Printf("    Warning: no SSH key found — git-over-SSH won't be available\n")
+			return
+		}
+	}
+
+	fmt.Printf("==> Registering SSH key (%s)...\n", keyPath)
+	if err := client.AddSSHKey(ctx, "crelay-auto", keyContent); err != nil {
+		fmt.Printf("    Warning: SSH key registration failed: %v\n", err)
+		return
+	}
+	fmt.Printf("    SSH key registered\n")
 }
