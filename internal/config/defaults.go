@@ -23,5 +23,6 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 		GiteaAdminUser:  "conductor",
 		// GiteaAdminPass intentionally omitted — resolved via flag, saved config, or generated.
 		GiteaAdminEmail: "conductor@local.dev",
+		DashboardPort:   3002,
 	}, nil
 }

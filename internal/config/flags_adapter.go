@@ -13,6 +13,8 @@ func WithGiteaImage(v string) FlagOption    { return func(c *Config) { c.GiteaIm
 func WithGiteaAdminUser(v string) FlagOption  { return func(c *Config) { c.GiteaAdminUser = v } }
 func WithGiteaAdminPass(v string) FlagOption  { return func(c *Config) { c.GiteaAdminPass = v } }
 func WithGiteaAdminEmail(v string) FlagOption { return func(c *Config) { c.GiteaAdminEmail = v } }
+func WithDashboardPort(v int) FlagOption      { return func(c *Config) { c.DashboardPort = v } }
+func WithDashboardEnabled(v bool) FlagOption   { return func(c *Config) { c.DashboardEnabled = &v } }
 
 // FlagsAdapter provides config values from explicitly set CLI flags.
 type FlagsAdapter struct {

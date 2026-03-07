@@ -51,6 +51,30 @@ func TestConfig_GiteaURL(t *testing.T) {
 	}
 }
 
+func TestConfig_IsDashboardEnabled(t *testing.T) {
+	t.Parallel()
+
+	// nil means enabled (default).
+	cfg := &Config{}
+	if !cfg.IsDashboardEnabled() {
+		t.Error("nil DashboardEnabled should return true")
+	}
+
+	// Explicit true.
+	tr := true
+	cfg.DashboardEnabled = &tr
+	if !cfg.IsDashboardEnabled() {
+		t.Error("true DashboardEnabled should return true")
+	}
+
+	// Explicit false.
+	f := false
+	cfg.DashboardEnabled = &f
+	if cfg.IsDashboardEnabled() {
+		t.Error("false DashboardEnabled should return false")
+	}
+}
+
 func TestConfig_NoProjectFields(t *testing.T) {
 	t.Parallel()
 

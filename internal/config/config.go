@@ -20,6 +20,17 @@ type Config struct {
 	GiteaAdminPass  string `json:"gitea_admin_pass,omitempty"`
 	GiteaAdminEmail    string  `json:"gitea_admin_email,omitempty"`
 	MaxSessionCostUSD  float64 `json:"max_session_cost_usd,omitempty"`
+	DashboardPort      int     `json:"dashboard_port,omitempty"`
+	DashboardEnabled   *bool   `json:"dashboard_enabled,omitempty"`
+}
+
+// IsDashboardEnabled returns whether the dashboard is enabled.
+// Defaults to true when DashboardEnabled is nil.
+func (c *Config) IsDashboardEnabled() bool {
+	if c.DashboardEnabled == nil {
+		return true
+	}
+	return *c.DashboardEnabled
 }
 
 func (c *Config) GiteaURL() string {
