@@ -669,3 +669,48 @@ go test ./test/e2e/ -v -tags=e2e -timeout 5m
 - Use parameterized queries. Never interpolate user input into SQL strings.
 - Use migrations for schema changes.
 - Keep queries in the persistence adapter layer, never in domain or service.
+
+## API Design: Schema-First Workflow
+
+All HTTP endpoints and event-driven interfaces follow a **schema-first** approach. The schema is the source of truth — code is generated from it, never written by hand.
+
+### When to Use OpenAPI vs AsyncAPI
+
+| Protocol | Schema | Use Case |
+|----------|--------|----------|
+| REST/HTTP request-response | OpenAPI 3.1 | All `/-/api/*` endpoints, `/health` |
+| Server-Sent Events (SSE) | AsyncAPI 3.0 | `/-/events` channel |
+| Webhook payloads (consumed) | AsyncAPI 3.0 | Gitea webhook events at `/webhook` |
+| Future WebSocket | AsyncAPI 3.0 | Bidirectional agent communication |
+
+### Adding a New REST Endpoint
+
+1. **Update the OpenAPI schema** (`backend/api/openapi.yaml`) — add path, request/response schemas
+2. **Regenerate code** — `make gen-api` produces `*.gen.go` files
+3. **Implement the generated interface** — write the handler method on your server struct
+4. **Write tests** — test the handler using `httptest`
+5. **Verify** — `make verify-codegen` ensures generated code matches schema
+
+### Adding a New Event/Message Type
+
+1. **Update the AsyncAPI schema** (`backend/api/asyncapi.yaml`) — add channel, message, and payload schema
+2. **Implement the handler** — write Go code matching the documented schema
+3. **Write tests** — test event serialization and handling
+
+### Non-Standard Responses
+
+Some endpoints return non-JSON content (SVG badges, SSE streams). These are handled alongside generated code:
+
+- **SVG badge endpoints**: Documented in OpenAPI with `content: image/svg+xml` response type. Handler implementation is manual since code generators don't produce SVG renderers.
+- **SSE endpoints**: Documented in AsyncAPI as channels. Handler implementation is manual — uses `text/event-stream` content type with chunked transfer encoding.
+- **Webhook ingestion**: Documented in AsyncAPI as consumed channels. Payload parsing is manual since Gitea defines the types.
+
+### Code Generation Conventions
+
+- Generated files use `.gen.go` suffix — **never edit these files manually**
+- Generation config lives in `backend/api/cfg.yaml`
+- Run `make gen-api` after any schema change
+- CI runs `make verify-codegen` to ensure generated code is up to date
+- The `oapi-codegen` strict server mode generates an interface; adapters implement it
+- Keep hand-written handler code in separate files from generated code
+- **Always prefer strict typing** — use `oapi-codegen` strict server mode to generate typed interfaces. Avoid `interface{}` or `any` in generated models. Use typed enums, typed IDs, and strongly-typed request/response structs. If the generator produces loose types, tighten the schema constraints rather than accepting `any`
