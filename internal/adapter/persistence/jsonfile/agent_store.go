@@ -102,13 +102,14 @@ func (s *AgentStore) UpdateStatus(idPrefix, status string) {
 
 // AgentsByStatus returns agents matching any of the given statuses.
 func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
+	set := make(map[string]bool, len(statuses))
+	for _, st := range statuses {
+		set[st] = true
+	}
 	var result []domain.AgentInfo
 	for _, a := range s.AgentList {
-		for _, st := range statuses {
-			if a.Status == st {
-				result = append(result, a)
-				break
-			}
+		if set[a.Status] {
+			result = append(result, a)
 		}
 	}
 	return result

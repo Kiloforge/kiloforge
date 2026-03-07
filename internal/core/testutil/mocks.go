@@ -92,13 +92,14 @@ func (m *MockAgentStore) Agents() []domain.AgentInfo {
 func (m *MockAgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	set := make(map[string]bool, len(statuses))
+	for _, st := range statuses {
+		set[st] = true
+	}
 	var result []domain.AgentInfo
 	for _, a := range m.AgentData {
-		for _, st := range statuses {
-			if a.Status == st {
-				result = append(result, a)
-				break
-			}
+		if set[a.Status] {
+			result = append(result, a)
 		}
 	}
 	return result
