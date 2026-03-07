@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	"crelay/internal/compose"
 	"crelay/internal/config"
@@ -14,16 +16,17 @@ import (
 
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
-	Short: "Stop and remove the Gitea server",
-	Long: `Tears down the Gitea Docker Compose stack. With --data, also removes
-volumes and the data directory.`,
+	Short: "Permanently destroy all crelay data",
+	Long: `Removes the Gitea Docker Compose stack, volumes, and the entire data directory.
+
+This action cannot be undone. You will be prompted to confirm unless --force is used.`,
 	RunE: runDestroy,
 }
 
-var flagDestroyData bool
+var flagDestroyForce bool
 
 func init() {
-	destroyCmd.Flags().BoolVar(&flagDestroyData, "data", false, "Also delete persistent data (volumes, logs, state)")
+	destroyCmd.Flags().BoolVar(&flagDestroyForce, "force", false, "Skip confirmation prompt")
 }
 
 func runDestroy(cmd *cobra.Command, args []string) error {
@@ -32,28 +35,43 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
+		fmt.Println("Nothing to destroy — crelay is not initialized.")
+		return nil
 	}
 
-	runner, err := compose.Detect()
-	if err != nil {
-		return err
-	}
+	if !flagDestroyForce {
+		fmt.Println()
+		fmt.Println("  WARNING: This will permanently delete:")
+		fmt.Println("    - Gitea server and all repositories")
+		fmt.Println("    - All project registrations")
+		fmt.Println("    - All agent state and logs")
+		fmt.Printf("    - Data directory: %s\n", cfg.DataDir)
+		fmt.Println()
+		fmt.Println("  This action cannot be undone.")
+		fmt.Println()
+		fmt.Print("  Type \"yes\" to confirm: ")
 
-	fmt.Println("==> Stopping Gitea...")
-	if err := runner.Down(ctx, cfg.DataDir, flagDestroyData); err != nil {
-		return fmt.Errorf("compose down: %w", err)
-	}
-	fmt.Println("    Gitea stopped and removed.")
-
-	if flagDestroyData {
-		fmt.Printf("==> Removing data directory %s...\n", cfg.DataDir)
-		if err := os.RemoveAll(cfg.DataDir); err != nil {
-			return fmt.Errorf("remove data dir: %w", err)
+		scanner := bufio.NewScanner(os.Stdin)
+		if !scanner.Scan() || strings.TrimSpace(scanner.Text()) != "yes" {
+			fmt.Println("Aborted.")
+			return nil
 		}
-		fmt.Println("    Data removed.")
 	}
 
-	fmt.Println("Done.")
+	// Try to bring down compose stack with volumes.
+	runner, err := compose.Detect()
+	if err == nil {
+		fmt.Println("==> Removing Gitea containers and volumes...")
+		if err := runner.Down(ctx, cfg.DataDir, true); err != nil {
+			fmt.Printf("    Warning: compose down failed: %v\n", err)
+		}
+	}
+
+	fmt.Printf("==> Removing data directory %s...\n", cfg.DataDir)
+	if err := os.RemoveAll(cfg.DataDir); err != nil {
+		return fmt.Errorf("remove data dir: %w", err)
+	}
+
+	fmt.Println("Done. All crelay data has been destroyed.")
 	return nil
 }
