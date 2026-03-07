@@ -86,6 +86,8 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/tracks", s.handleTracks)
 	mux.HandleFunc("GET /api/status", s.handleStatus)
 	mux.HandleFunc("GET /events", s.handleSSE)
+	mux.HandleFunc("GET /tracks/{trackId}", s.handleTrackDetail)
+	mux.HandleFunc("GET /pr/{slug}/{prNumber}", s.handlePRDetail)
 	mux.Handle("GET /", http.FileServer(http.FS(staticFS)))
 }
 
