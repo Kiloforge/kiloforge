@@ -13,6 +13,7 @@ import (
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
+	"crelay/internal/core/service"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
@@ -22,13 +23,14 @@ import (
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
-	cfg      *config.Config
-	registry *project.Registry
-	store    *state.Store
-	client   *gitea.Client
-	spawner  port.AgentSpawner
-	logger   *log.Logger
-	port     int
+	cfg       *config.Config
+	registry  *project.Registry
+	store     *state.Store
+	client    *gitea.Client
+	spawner   port.AgentSpawner
+	prService *service.PRService
+	logger    *log.Logger
+	port      int
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -41,14 +43,16 @@ func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server
 	if cfg.APIToken != "" {
 		client.SetToken(cfg.APIToken)
 	}
+	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
 	return &Server{
-		cfg:      cfg,
-		registry: registry,
-		store:    store,
-		client:   client,
-		spawner:  &defaultSpawner{},
-		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
-		port:     port,
+		cfg:       cfg,
+		registry:  registry,
+		store:     store,
+		client:    client,
+		spawner:   &defaultSpawner{},
+		prService: service.NewPRService(client, &defaultSpawner{}, logger),
+		logger:    logger,
+		port:      port,
 	}
 }
 
@@ -58,14 +62,16 @@ func newTestableServer(cfg *config.Config, registry *project.Registry, spawner p
 	if store == nil {
 		store = &state.Store{}
 	}
+	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
 	return &Server{
-		cfg:      cfg,
-		registry: registry,
-		store:    store,
-		client:   client,
-		spawner:  spawner,
-		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
-		port:     3001,
+		cfg:       cfg,
+		registry:  registry,
+		store:     store,
+		client:    client,
+		spawner:   spawner,
+		prService: service.NewPRService(client, spawner, logger),
+		logger:    logger,
+		port:      3001,
 	}
 }
 
@@ -271,28 +277,8 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 		return
 	}
 
-	// Find developer agent by track ID (branch ref).
-	var devAgentID, devSession, devWorkDir string
-	for _, a := range s.store.Agents {
-		if a.Role == "developer" && a.Ref == branchRef {
-			devAgentID = a.ID
-			devSession = a.SessionID
-			devWorkDir = a.WorktreeDir
-			break
-		}
-	}
-
 	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking := &domain.PRTracking{
-		PRNumber:         prNumber,
-		TrackID:          branchRef,
-		ProjectSlug:      slug,
-		DeveloperAgentID: devAgentID,
-		DeveloperSession: devSession,
-		DeveloperWorkDir: devWorkDir,
-		MaxReviewCycles:  3,
-		Status:           "waiting-review",
-	}
+	tracking := s.prService.CreateTracking(prNumber, branchRef, slug, s.store.Agents, 3)
 
 	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		s.logger.Printf("[%s] Error creating project dir: %v", slug, err)
@@ -304,8 +290,8 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 	}
 
 	// Update developer agent status.
-	if devAgentID != "" {
-		s.store.UpdateStatus(devAgentID, "waiting-review")
+	if tracking.DeveloperAgentID != "" {
+		s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review")
 		if err := s.store.Save(s.cfg.DataDir); err != nil {
 			s.logger.Printf("[%s] Error saving state: %v", slug, err)
 		}
@@ -440,9 +426,9 @@ func (a *poolReturnerAdapter) ReturnByTrackID(trackID string) error {
 }
 
 func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTracking, projectDir string) {
-	tracking.ReviewCycleCount++
+	resumeDev := s.prService.HandleChangesRequested(tracking)
 
-	if tracking.ReviewCycleCount >= tracking.MaxReviewCycles {
+	if !resumeDev {
 		s.logger.Printf("[%s] PR #%d review cycle limit reached (%d/%d) — escalating",
 			slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
 		s.escalatePR(slug, tracking, projectDir)
@@ -451,8 +437,6 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 
 	s.logger.Printf("[%s] PR #%d changes requested (cycle %d/%d) — resuming developer",
 		slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
-
-	tracking.Status = "changes-requested"
 	if err := orchestration.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
@@ -473,18 +457,7 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 }
 
 func (s *Server) escalatePR(slug string, tracking *domain.PRTracking, projectDir string) {
-	ctx := context.Background()
-
-	// Label PR.
-	if err := s.client.AddLabel(ctx, slug, tracking.PRNumber, "needs-human-review"); err != nil {
-		s.logger.Printf("[%s] Error adding label: %v", slug, err)
-	}
-
-	// Post comment.
-	comment := fmt.Sprintf("Review cycle limit reached (%d). Human review required.", tracking.MaxReviewCycles)
-	if err := s.client.CommentOnPR(ctx, slug, tracking.PRNumber, comment); err != nil {
-		s.logger.Printf("[%s] Error posting escalation comment: %v", slug, err)
-	}
+	s.prService.Escalate(context.Background(), tracking, s.client)
 
 	// Stop agents.
 	if tracking.DeveloperAgentID != "" {
