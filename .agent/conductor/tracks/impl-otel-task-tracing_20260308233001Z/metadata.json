@@ -1,0 +1,16 @@
+{
+  "id": "impl-otel-task-tracing_20260308233001Z",
+  "title": "OpenTelemetry Task-Level Tracing and Token Metrics",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T23:30:01Z",
+  "updated": "2026-03-08T23:30:01Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 14,
+    "completed": 0
+  }
+}

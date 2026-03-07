@@ -62,6 +62,8 @@ Navigation hub for project context.
 - **origin-sync-command_20260308220002Z** — Origin Sync Command
 - **prereq-check-init_20260308230000Z** — Prerequisite Check During Init
 - **skill-install-update_20260308231000Z** — Conductor Skill Installation and Auto-Update
+- **research-otel-task-tracing_20260308233000Z** — Research: OpenTelemetry for Task-Level Tracing and Token Metrics
+- **impl-otel-task-tracing_20260308233001Z** — OpenTelemetry Task-Level Tracing and Token Metrics
 
 ## Getting Started
 
