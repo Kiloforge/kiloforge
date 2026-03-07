@@ -1,0 +1,16 @@
+{
+  "id": "test-coverage-alignment_20260307140002Z",
+  "title": "Test Coverage Alignment with Style Guide",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-07T14:00:02Z",
+  "updated": "2026-03-07T14:00:02Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 10,
+    "completed": 0
+  }
+}

@@ -27,6 +27,12 @@ Navigation hub for project context.
 - **merge-cleanup_20260307125003Z** — PR Merge, Worktree Cleanup, and Agent Teardown
 - **fix-add-remote-url_20260307130000Z** — Fix 'crelay add' to Accept Remote URLs
 
+## Pending Tracks
+
+- **refactor-clean-arch_20260307140000Z** — Restructure Packages into Clean Architecture Layout
+- **refactor-domain-ports_20260307140001Z** — Extract Domain Types, Port Interfaces, and Service Layer
+- **test-coverage-alignment_20260307140002Z** — Test Coverage Alignment with Style Guide
+
 ## Getting Started
 
 Run `/conductor-track-generator` to generate tracks from a prompt, or `/conductor-new-track` to create a single track manually.
