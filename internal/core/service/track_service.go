@@ -13,6 +13,8 @@ const (
 	StatusComplete   = "complete"
 	StatusPending    = "pending"
 	StatusInProgress = "in-progress"
+	StatusApproved   = "approved"
+	StatusInReview   = "in-review"
 )
 
 // TrackEntry represents a parsed track from tracks.md.
@@ -82,6 +84,10 @@ func parseTrackLine(line string) (TrackEntry, bool) {
 		status = StatusPending
 	case "[~]":
 		status = StatusInProgress
+	case "[!]":
+		status = StatusApproved
+	case "[r]":
+		status = StatusInReview
 	default:
 		return TrackEntry{}, false
 	}
