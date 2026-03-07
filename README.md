@@ -48,7 +48,7 @@ This will:
 1. Detect your Docker Compose CLI variant (v2 or v1)
 2. Generate a `docker-compose.yml` in `~/.crelay/`
 3. Start a Gitea instance at `http://localhost:3000`
-4. Create an admin user (`conductor` / `conductor123`)
+4. Create an admin user (`conductor` / random password)
 5. Generate an API token and save config
 6. Register your project: create Gitea repo, add remote, push code
 
@@ -62,9 +62,15 @@ One-time setup: start the global Gitea server via Docker Compose.
 crelay init [flags]
 
 Flags:
-  --gitea-port int   Port for Gitea web UI (default 3000)
-  --data-dir string  Persistent data directory (default ~/.crelay)
+  --gitea-port int    Port for Gitea web UI (default 3000)
+  --data-dir string   Persistent data directory (default ~/.crelay)
+  --admin-pass string Admin password (default: generated random)
+  --ssh-key string    Path to SSH public key (default: auto-detect)
 ```
+
+On first init, a random admin password is generated and saved to `config.json`. Subsequent runs reuse the saved password. Use `--admin-pass` to override.
+
+Your SSH public key is auto-detected from `~/.ssh/` (tries `id_ed25519.pub`, `id_rsa.pub`, `id_ecdsa.pub`) and registered with the Gitea admin user. Use `--ssh-key` to specify a custom path. Missing SSH keys produce a warning but do not prevent initialization.
 
 **Idempotent:** Running again when Gitea is already running prints the status and exits.
 
