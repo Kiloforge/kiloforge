@@ -193,6 +193,109 @@ func (f *fakeGitRunner) DeleteBranch(branch string) error {
 	return nil
 }
 
+func TestPrepare(t *testing.T) {
+	runner := &fakeGitRunner{}
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:   "worker-1",
+				Path:   "/tmp/project/worker-1",
+				Branch: "worker-1",
+				Status: StatusInUse,
+			},
+		},
+		ProjectRoot: "/tmp/project",
+		gitRunner:   runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	if err := p.Prepare(w, "auth_20260307"); err != nil {
+		t.Fatalf("Prepare: %v", err)
+	}
+
+	if w.TrackID != "auth_20260307" {
+		t.Errorf("TrackID = %q, want %q", w.TrackID, "auth_20260307")
+	}
+
+	// Verify git commands were called.
+	if len(runner.calls) < 3 {
+		t.Fatalf("expected at least 3 git calls, got %d", len(runner.calls))
+	}
+	// Should: checkout pool branch, reset --hard main, create impl branch
+	if runner.calls[0][0] != "checkout" {
+		t.Errorf("first call should be checkout, got %v", runner.calls[0])
+	}
+	if runner.calls[1][0] != "reset" {
+		t.Errorf("second call should be reset, got %v", runner.calls[1])
+	}
+	if runner.calls[2][0] != "checkout" && runner.calls[2][1] != "-b" {
+		t.Errorf("third call should be checkout -b, got %v", runner.calls[2])
+	}
+}
+
+func TestReturn(t *testing.T) {
+	runner := &fakeGitRunner{}
+	now := time.Now()
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:       "worker-1",
+				Path:       "/tmp/project/worker-1",
+				Branch:     "worker-1",
+				Status:     StatusInUse,
+				TrackID:    "auth_20260307",
+				AgentID:    "uuid-123",
+				AcquiredAt: &now,
+			},
+		},
+		ProjectRoot: "/tmp/project",
+		gitRunner:   runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	if err := p.Return(w); err != nil {
+		t.Fatalf("Return: %v", err)
+	}
+
+	if w.Status != StatusIdle {
+		t.Errorf("status = %q, want %q", w.Status, StatusIdle)
+	}
+	if w.TrackID != "" {
+		t.Errorf("TrackID should be empty, got %q", w.TrackID)
+	}
+	if w.AgentID != "" {
+		t.Errorf("AgentID should be empty, got %q", w.AgentID)
+	}
+	if w.AcquiredAt != nil {
+		t.Error("AcquiredAt should be nil")
+	}
+}
+
+func TestStatus(t *testing.T) {
+	now := time.Now()
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {Name: "worker-1", Status: StatusIdle},
+			"worker-2": {Name: "worker-2", Status: StatusInUse, TrackID: "track-1", AcquiredAt: &now},
+		},
+	}
+
+	statuses := p.Status()
+	if len(statuses) != 2 {
+		t.Fatalf("Status count = %d, want 2", len(statuses))
+	}
+	// Should be sorted by name.
+	if statuses[0].Name != "worker-1" {
+		t.Errorf("first = %q, want worker-1", statuses[0].Name)
+	}
+	if statuses[1].Name != "worker-2" {
+		t.Errorf("second = %q, want worker-2", statuses[1].Name)
+	}
+}
+
 func timePtr(t time.Time) *time.Time {
 	return &t
 }

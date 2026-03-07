@@ -106,6 +106,66 @@ func (p *Pool) Acquire() (*Worktree, error) {
 	return w, nil
 }
 
+// Prepare resets a worktree to main and creates an implementation branch for the given track.
+func (p *Pool) Prepare(w *Worktree, trackID string) error {
+	g := p.git()
+
+	// Checkout the pool branch.
+	if err := g.CheckoutBranch(w.Path, w.Branch); err != nil {
+		return fmt.Errorf("checkout pool branch %s: %w", w.Branch, err)
+	}
+
+	// Reset to main.
+	if err := g.ResetHardMain(w.Path); err != nil {
+		return fmt.Errorf("reset to main: %w", err)
+	}
+
+	// Create implementation branch.
+	if err := g.CreateBranch(w.Path, trackID); err != nil {
+		return fmt.Errorf("create branch %s: %w", trackID, err)
+	}
+
+	w.TrackID = trackID
+	return nil
+}
+
+// Return resets a worktree to idle state, cleaning up the implementation branch.
+func (p *Pool) Return(w *Worktree) error {
+	g := p.git()
+
+	trackID := w.TrackID
+
+	// Checkout the pool branch.
+	if err := g.CheckoutBranch(w.Path, w.Branch); err != nil {
+		return fmt.Errorf("checkout pool branch %s: %w", w.Branch, err)
+	}
+
+	// Reset to main.
+	if err := g.ResetHardMain(w.Path); err != nil {
+		return fmt.Errorf("reset to main: %w", err)
+	}
+
+	// Delete implementation branch if it existed.
+	if trackID != "" {
+		_ = g.DeleteBranch(trackID) // best effort
+	}
+
+	w.Status = StatusIdle
+	w.TrackID = ""
+	w.AgentID = ""
+	w.AcquiredAt = nil
+	return nil
+}
+
+// Status returns a sorted list of all worktree states.
+func (p *Pool) Status() []Worktree {
+	result := make([]Worktree, 0, len(p.Worktrees))
+	for _, name := range sortedKeys(p.Worktrees) {
+		result = append(result, *p.Worktrees[name])
+	}
+	return result
+}
+
 // Save writes pool state to the data directory.
 func (p *Pool) Save(dataDir string) error {
 	data, err := json.MarshalIndent(p, "", "  ")
