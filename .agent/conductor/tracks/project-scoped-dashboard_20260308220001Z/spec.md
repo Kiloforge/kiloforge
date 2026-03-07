@@ -33,6 +33,12 @@ The dashboard currently gets its `projectDir` from `os.Getwd()` in `serve.go:85`
 - [ ] After `crelay add <remote>`, dashboard shows that project's tracks (if any)
 - [ ] Multiple registered projects each show their own tracks
 - [ ] The `/-/api/tracks` endpoint response includes project slug per track
+- [ ] The `/-/api/projects` endpoint returns list of registered projects
+- [ ] Frontend uses React Router with URL-based state for navigation
+- [ ] `/-/` shows overview (agents, stats) with projects list
+- [ ] `/-/projects/:slug` shows a project's tracks with status
+- [ ] Browser back/forward navigation works correctly
+- [ ] URLs are shareable — navigating directly to `/-/projects/myapp` works (SPA fallback already handled by backend)
 - [ ] Frontend displays a Projects section; each project shows its tracks with status
 - [ ] `os.Getwd()` is no longer used for track discovery
 
@@ -58,9 +64,16 @@ None (but benefits from add-local-ssh-identity_20260308220000Z being done first 
 
 **Frontend changes:**
 
-1. Add `project` field to track type
-2. Dashboard layout: top-level shows a "Projects" section listing all registered projects. Each project expands to show its track states (pending, in-progress, complete counts + track list). This is the primary navigation — projects first, tracks within.
-3. Handle empty state (no projects → "No projects registered — run `crelay add <remote>`" message)
+1. Add `react-router-dom` dependency
+2. Set up `BrowserRouter` with `basename="/-/"` in `main.tsx`
+3. Routes:
+   - `/` — Overview page: agents, stats, projects list with track summary counts
+   - `/projects/:slug` — Project detail: full track list with status for that project
+4. Add `project` field to track type
+5. Add `/-/api/projects` fetch hook for the projects list
+6. Dashboard layout: overview shows a "Projects" section listing all registered projects with track counts. Clicking a project navigates to `/projects/:slug` showing full track details.
+7. Handle empty state (no projects → "No projects registered — run `crelay add <remote>`" message)
+8. SPA fallback already handled by backend's `spaFileServer` — direct URL navigation works out of the box
 
 **API response change:**
 ```json
