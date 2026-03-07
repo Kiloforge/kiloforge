@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -67,6 +68,60 @@ func TestJSONAdapter_MissingFile_ReturnsZeroConfig(t *testing.T) {
 		t.Errorf("DataDir: want empty, got %q", cfg.DataDir)
 	}
 }
+
+func TestJSONAdapter_EmptyPasswordOmitted(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	adapter := NewJSONAdapter(dir)
+
+	cfg := &Config{
+		GiteaPort:      3000,
+		DataDir:        dir,
+		APIToken:       "tok-abc",
+		GiteaAdminUser: "conductor",
+		GiteaAdminPass: "", // cleared after init
+	}
+
+	if err := adapter.Save(cfg); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	// Read the raw JSON and verify gitea_admin_pass is absent.
+	data, err := os.ReadFile(filepath.Join(dir, ConfigFileName))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if strings.Contains(string(data), "gitea_admin_pass") {
+		t.Errorf("config.json should not contain gitea_admin_pass when empty, got:\n%s", data)
+	}
+}
+
+func TestJSONAdapter_OldConfigWithPassword_LoadsGracefully(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	// Simulate an old config that still has the password field.
+	data := []byte(`{"gitea_port":3000,"api_token":"tok-abc","gitea_admin_user":"conductor","gitea_admin_pass":"old-secret"}`)
+	if err := os.WriteFile(filepath.Join(dir, ConfigFileName), data, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	adapter := NewJSONAdapter(dir)
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	// The password field loads fine (backward compat) but won't be used post-init.
+	if cfg.GiteaAdminPass != "old-secret" {
+		t.Errorf("GiteaAdminPass: want %q, got %q", "old-secret", cfg.GiteaAdminPass)
+	}
+	if cfg.APIToken != "tok-abc" {
+		t.Errorf("APIToken: want %q, got %q", "tok-abc", cfg.APIToken)
+	}
+}
+
 
 func TestJSONAdapter_PartialFile(t *testing.T) {
 	t.Parallel()
