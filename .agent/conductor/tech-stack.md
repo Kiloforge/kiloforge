@@ -23,7 +23,10 @@
 
 ## Frontend
 
-None. CLI only. Human interactions beyond the CLI are coordinated via the Gitea web interface.
+- **React 19** — UI framework
+- **Vite 7** — Build tool and dev server
+- **TypeScript 5.9** — Type safety
+- Frontend lives in `frontend/`, builds to `backend/internal/adapter/dashboard/dist/` for Go embed
 
 ## Infrastructure
 

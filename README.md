@@ -18,7 +18,8 @@ Working with multiple AI agents across multiple projects demands infrastructure 
 
 - **Docker** with Docker Compose — either Docker Desktop (includes compose v2) or Docker Engine + `docker-compose` (v1, for Colima users)
 - **Claude Code CLI** — `claude` command available in PATH
-- **Go 1.21+** — to build (or use prebuilt binary)
+- **Go 1.24+** — to build (or use prebuilt binary)
+- **Node.js 18+** — for the frontend build
 
 ### Colima Users
 
@@ -264,18 +265,43 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 
 When you register a project with `crelay add <remote-url>`, the remote URL is stored as the origin. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
 
+## Project Structure
+
+```
+crelay/
+├── backend/          # Go backend (module: crelay)
+│   ├── cmd/crelay/   # CLI entrypoint
+│   ├── internal/     # Clean architecture (adapter/, core/)
+│   ├── go.mod
+│   └── go.sum
+├── frontend/         # React/Vite/TypeScript dashboard
+│   ├── src/
+│   ├── vite.config.ts
+│   └── package.json
+├── go.work           # Go workspace (IDE support)
+└── Makefile          # Build orchestration
+```
+
 ## Development
 
 ```bash
-# Build
+# Build everything (frontend + backend) into a single binary
 make build
 
-# Run tests
+# Development mode: backend + Vite dev server with hot reload
+make dev
+
+# Run Go tests
 make test
 
-# Lint
+# Lint both Go and TypeScript
 make lint
+
+# Clean build artifacts
+make clean
 ```
+
+The `make dev` target starts the Go backend on port 3001 and the Vite dev server on port 5173. The Vite dev server proxies API calls to the backend, so you can develop the frontend with hot reload while hitting real backend endpoints.
 
 ## License
 
