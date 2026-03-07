@@ -10,6 +10,7 @@ import (
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
+	"crelay/internal/core/testutil"
 )
 
 // mockBoardGitea implements port.BoardGiteaClient for board sync tests.
@@ -349,4 +350,354 @@ func TestBoardSync_NoTrackIssue_Noop(t *testing.T) {
 	if len(gitea.movedCards) != 0 {
 		t.Errorf("expected no card moves for unknown issue, got %d", len(gitea.movedCards))
 	}
+}
+
+// --- Lifecycle integration tests ---
+
+func newTestBoardSyncerWithLifecycle(
+	gitea *mockBoardGitea,
+	bstore *mockBoardStore,
+	agentStore *testutil.MockAgentStore,
+	spawner *testutil.MockAgentSpawner,
+	pool *testutil.MockPoolReturner,
+) (*boardSyncer, *[]string) {
+	bs := newTestBoardSyncer(gitea, bstore)
+	var poolReturner port.PoolReturner
+	if pool != nil {
+		poolReturner = pool
+	}
+	lifecycle := service.NewLifecycleService(agentStore, spawner, poolReturner, &testutil.MockLogger{})
+	bs.lifecycle = lifecycle
+
+	var comments []string
+	bs.commentFn = func(_ context.Context, _ string, _ int, body string) {
+		comments = append(comments, body)
+	}
+	return bs, &comments
+}
+
+func TestBoardSync_BackwardMove_HaltsDeveloper(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{
+			"suggested":   10,
+			"approved":    11,
+			"in_progress": 12,
+		},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_progress",
+	}
+
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+
+	bs, comments := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, nil)
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{
+			map[string]any{"name": "status:approved"},
+		},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+
+	agent, _ := agentStore.FindAgent("dev-1")
+	if agent.Status != "halted" {
+		t.Errorf("agent status = %q, want halted", agent.Status)
+	}
+	if len(*comments) == 0 {
+		t.Error("expected comment to be posted")
+	}
+}
+
+func TestBoardSync_BackwardMove_InReview_HaltsBoth(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{
+			"approved":    11,
+			"in_progress": 12,
+			"in_review":   13,
+		},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_review",
+	}
+
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+			{ID: "rev-1", Ref: "PR #5", Status: "running", StartedAt: time.Now()},
+		},
+	}
+
+	prTracking := &domain.PRTracking{TrackID: "track-1", ReviewerAgentID: "rev-1"}
+	bs, _ := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, nil)
+	bs.prLoader = func(_ string) (*domain.PRTracking, error) {
+		return prTracking, nil
+	}
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{
+			map[string]any{"name": "status:approved"},
+		},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+
+	dev, _ := agentStore.FindAgent("dev-1")
+	if dev.Status != "halted" {
+		t.Errorf("developer status = %q, want halted", dev.Status)
+	}
+	rev, _ := agentStore.FindAgent("rev-1")
+	if rev.Status != "halted" {
+		t.Errorf("reviewer status = %q, want halted", rev.Status)
+	}
+}
+
+func TestBoardSync_BackwardMove_AlreadyHalted(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"approved": 11, "in_progress": 12},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_progress",
+	}
+
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "halted", StartedAt: time.Now()},
+		},
+	}
+
+	bs, _ := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, nil)
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{map[string]any{"name": "status:approved"}},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+
+	agent, _ := agentStore.FindAgent("dev-1")
+	if agent.Status != "halted" {
+		t.Errorf("status = %q, want halted (unchanged)", agent.Status)
+	}
+}
+
+func TestBoardSync_BackwardMove_NoAgent(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"approved": 11, "in_progress": 12},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_progress",
+	}
+
+	agentStore := &testutil.MockAgentStore{}
+	bs, _ := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, nil)
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{map[string]any{"name": "status:approved"}},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+}
+
+func TestBoardSync_ForwardMove_ResumesDeveloper(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"approved": 11, "in_progress": 12},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "approved",
+	}
+
+	workDir := t.TempDir()
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "halted", SessionID: "sess-1", WorktreeDir: workDir, StartedAt: time.Now()},
+		},
+	}
+	spawner := &testutil.MockAgentSpawner{}
+	bs, comments := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, spawner, nil)
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{map[string]any{"name": "status:in-progress"}},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+
+	agent, _ := agentStore.FindAgent("dev-1")
+	if agent.Status != "running" {
+		t.Errorf("agent status = %q, want running", agent.Status)
+	}
+	if len(spawner.ResumeCalls) != 1 {
+		t.Errorf("expected 1 resume call, got %d", len(spawner.ResumeCalls))
+	}
+	if len(*comments) == 0 {
+		t.Error("expected resume comment")
+	}
+}
+
+func TestBoardSync_ForwardMove_ResumeFailed(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"approved": 11, "in_progress": 12},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "approved",
+	}
+
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "halted", SessionID: "", StartedAt: time.Now()},
+		},
+	}
+	bs, comments := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, nil)
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{map[string]any{"name": "status:in-progress"}},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+
+	agent, _ := agentStore.FindAgent("dev-1")
+	if agent.Status != "resume-failed" {
+		t.Errorf("agent status = %q, want resume-failed", agent.Status)
+	}
+	if len(*comments) == 0 {
+		t.Error("expected failure comment")
+	}
+}
+
+func TestBoardSync_IssueClosed_Rejection(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"in_progress": 12, "completed": 14},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_progress",
+	}
+
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	pool := &testutil.MockPoolReturner{}
+	bs, comments := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, pool)
+
+	bs.handleIssueClosed(context.Background(), "myapp", map[string]any{"number": float64(42)})
+
+	agent, _ := agentStore.FindAgent("dev-1")
+	if agent.Status != "stopped" {
+		t.Errorf("agent status = %q, want stopped", agent.Status)
+	}
+	if len(pool.Calls) != 1 || pool.Calls[0] != "track-1" {
+		t.Errorf("pool calls = %v, want [track-1]", pool.Calls)
+	}
+	if len(*comments) == 0 {
+		t.Error("expected rejection comment")
+	}
+}
+
+func TestBoardSync_RejectedLabel(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"in_progress": 12},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_progress",
+	}
+
+	agentStore := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	pool := &testutil.MockPoolReturner{}
+	bs, comments := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, pool)
+
+	var closedIssues []int
+	bs.updateIssueFn = func(_ context.Context, _ string, issueNum int, _ string) {
+		closedIssues = append(closedIssues, issueNum)
+	}
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{
+			map[string]any{"name": "rejected"},
+			map[string]any{"name": "status:in-progress"},
+		},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
+
+	agent, _ := agentStore.FindAgent("dev-1")
+	if agent.Status != "stopped" {
+		t.Errorf("agent status = %q, want stopped", agent.Status)
+	}
+	if len(closedIssues) != 1 || closedIssues[0] != 42 {
+		t.Errorf("closed issues = %v, want [42]", closedIssues)
+	}
+	if len(*comments) == 0 {
+		t.Error("expected rejection comment")
+	}
+}
+
+func TestBoardSync_RejectedLabel_NoAgent(t *testing.T) {
+	t.Parallel()
+
+	gitea := &mockBoardGitea{}
+	bstore := newMockBoardStore()
+	bstore.config = &domain.BoardConfig{
+		ProjectBoardID: 1,
+		Columns: map[string]int{"in_progress": 12},
+	}
+	bstore.trackIssues["track-1"] = domain.TrackIssue{
+		TrackID: "track-1", IssueNumber: 42, CardID: 50, Column: "in_progress",
+	}
+
+	agentStore := &testutil.MockAgentStore{}
+	bs, _ := newTestBoardSyncerWithLifecycle(gitea, bstore, agentStore, &testutil.MockAgentSpawner{}, nil)
+
+	issue := map[string]any{
+		"number": float64(42),
+		"labels": []any{map[string]any{"name": "rejected"}},
+	}
+	bs.handleLabelUpdated(context.Background(), "myapp", issue)
 }

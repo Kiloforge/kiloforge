@@ -48,12 +48,30 @@ func WithGiteaProxy(giteaURL string) ServerOption {
 // WithBoardSync enables webhook-driven board state synchronization.
 func WithBoardSync(boardSvc *service.BoardService, boardStore service.BoardStore) ServerOption {
 	return func(s *Server) {
-		s.boardSync = &boardSyncer{
+		var poolRet port.PoolReturner
+		if p, err := pool.Load(s.cfg.DataDir); err == nil && p != nil {
+			poolRet = &poolReturnerAdapter{pool: p, dataDir: s.cfg.DataDir}
+		}
+		lifecycle := service.NewLifecycleService(s.store, s.spawner, poolRet, s.logger)
+
+		bs := &boardSyncer{
 			svc:       boardSvc,
 			store:     boardStore,
+			lifecycle: lifecycle,
 			adminUser: s.cfg.GiteaAdminUser,
 			logger:    s.logger,
 		}
+		bs.commentFn = func(ctx context.Context, slug string, issueNum int, body string) {
+			_ = s.client.CommentOnPR(ctx, slug, issueNum, body)
+		}
+		bs.prLoader = func(slug string) (*domain.PRTracking, error) {
+			projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
+			return jsonfile.LoadPRTracking(projectDir)
+		}
+		bs.updateIssueFn = func(ctx context.Context, slug string, issueNum int, state string) {
+			_ = s.client.UpdateIssue(ctx, slug, issueNum, "", "", state)
+		}
+		s.boardSync = bs
 	}
 }
 

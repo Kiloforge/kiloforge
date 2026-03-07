@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -14,8 +15,16 @@ import (
 type boardSyncer struct {
 	svc       *service.BoardService
 	store     service.BoardStore
+	lifecycle *service.LifecycleService
 	adminUser string
 	logger    *log.Logger
+
+	// commentFn posts a comment on a Gitea issue. Set by the server after init.
+	commentFn func(ctx context.Context, slug string, issueNum int, body string)
+	// prLoader loads PR tracking for a project slug.
+	prLoader func(slug string) (*domain.PRTracking, error)
+	// updateIssueFn closes a Gitea issue. Set by the server after init.
+	updateIssueFn func(ctx context.Context, slug string, issueNum int, state string)
 }
 
 // isSelfTriggered checks if the webhook event was triggered by the admin user (our bot).
@@ -30,35 +39,132 @@ func (b *boardSyncer) isSelfTriggered(payload map[string]any) bool {
 }
 
 // handleLabelUpdated processes issue label changes to move cards to the matching column.
+// It also detects backward/forward transitions and triggers agent lifecycle actions.
 func (b *boardSyncer) handleLabelUpdated(ctx context.Context, slug string, issue map[string]any) {
 	issueNum := int(issue["number"].(float64))
 
 	// Extract labels from the issue.
 	labels, _ := issue["labels"].([]any)
 	var statusLabel string
+	var hasRejected bool
 	for _, l := range labels {
 		lm, _ := l.(map[string]any)
 		if lm == nil {
 			continue
 		}
 		name, _ := lm["name"].(string)
+		if name == "rejected" {
+			hasRejected = true
+		}
 		if strings.HasPrefix(name, "status:") {
 			statusLabel = strings.TrimPrefix(name, "status:")
-			break
 		}
 	}
+
+	// Handle rejected label.
+	if hasRejected {
+		b.handleRejectedLabel(ctx, slug, issueNum)
+		return
+	}
+
 	if statusLabel == "" {
 		return
 	}
 
 	targetCol := service.StatusToColumn(statusLabel)
+	targetKey := service.ColumnKeyFromName(targetCol)
+
+	// Detect column transition direction.
+	ti := b.findTrackIssueByNumber(slug, issueNum)
+	if ti != nil && b.lifecycle != nil {
+		fromCol := ti.Column
+		var prTracking *domain.PRTracking
+		if b.prLoader != nil {
+			prTracking, _ = b.prLoader(slug)
+			if prTracking != nil && prTracking.TrackID != ti.TrackID {
+				prTracking = nil
+			}
+		}
+
+		if service.IsBackwardMove(fromCol, targetKey) {
+			b.lifecycle.HandleBackwardMove(ctx, ti.TrackID, fromCol, targetKey, prTracking)
+			if b.commentFn != nil {
+				b.commentFn(ctx, slug, issueNum, fmt.Sprintf("Agent halted — track moved back to %s", targetCol))
+			}
+			b.logger.Printf("[%s] Board: issue #%d backward %s → %s, agent halted", slug, issueNum, fromCol, targetKey)
+		} else if service.IsForwardMove(fromCol, targetKey) {
+			resumed, reason := b.lifecycle.HandleRepromotion(ctx, ti.TrackID, targetKey, prTracking)
+			if resumed {
+				if b.commentFn != nil {
+					b.commentFn(ctx, slug, issueNum, "Developer agent resumed — implementation continuing")
+				}
+				b.logger.Printf("[%s] Board: issue #%d re-promoted to %s, agent resumed", slug, issueNum, targetKey)
+			} else if reason != "" && reason != "no agent found for track" && reason != "no action for column "+targetKey {
+				if b.commentFn != nil {
+					b.commentFn(ctx, slug, issueNum, fmt.Sprintf("Could not resume agent: %s. Use `crelay implement` to restart.", reason))
+				}
+				b.logger.Printf("[%s] Board: issue #%d re-promoted to %s, resume failed: %s", slug, issueNum, targetKey, reason)
+			}
+		}
+	}
+
 	b.moveCardByIssue(ctx, slug, issueNum, targetCol)
 }
 
 // handleIssueClosed moves the card to the Completed column.
+// If there's no merged PR for this track, it's treated as a rejection.
 func (b *boardSyncer) handleIssueClosed(ctx context.Context, slug string, issue map[string]any) {
 	issueNum := int(issue["number"].(float64))
+
+	if b.lifecycle != nil {
+		ti := b.findTrackIssueByNumber(slug, issueNum)
+		if ti != nil {
+			var prTracking *domain.PRTracking
+			if b.prLoader != nil {
+				prTracking, _ = b.prLoader(slug)
+				if prTracking != nil && prTracking.TrackID != ti.TrackID {
+					prTracking = nil
+				}
+			}
+			if prTracking == nil || prTracking.Status != "merged" {
+				b.lifecycle.HandleRejection(ctx, ti.TrackID, prTracking)
+				if b.commentFn != nil {
+					b.commentFn(ctx, slug, issueNum, "Track rejected — agent terminated, worktree returned to pool")
+				}
+				b.logger.Printf("[%s] Board: issue #%d closed without merge, agent terminated", slug, issueNum)
+			}
+		}
+	}
+
 	b.moveCardByIssue(ctx, slug, issueNum, "Completed")
+}
+
+// handleRejectedLabel terminates the agent and closes the issue when the rejected label is applied.
+func (b *boardSyncer) handleRejectedLabel(ctx context.Context, slug string, issueNum int) {
+	ti := b.findTrackIssueByNumber(slug, issueNum)
+	if ti == nil {
+		return
+	}
+
+	if b.lifecycle != nil {
+		var prTracking *domain.PRTracking
+		if b.prLoader != nil {
+			prTracking, _ = b.prLoader(slug)
+			if prTracking != nil && prTracking.TrackID != ti.TrackID {
+				prTracking = nil
+			}
+		}
+		b.lifecycle.HandleRejection(ctx, ti.TrackID, prTracking)
+	}
+
+	if b.updateIssueFn != nil {
+		b.updateIssueFn(ctx, slug, issueNum, "closed")
+	}
+
+	if b.commentFn != nil {
+		b.commentFn(ctx, slug, issueNum, "Track rejected — agent terminated, worktree returned to pool")
+	}
+	b.logger.Printf("[%s] Board: issue #%d rejected label applied, agent terminated", slug, issueNum)
 }
 
 // handleIssueAssigned moves the card to In Progress if currently in Suggested/Approved.
