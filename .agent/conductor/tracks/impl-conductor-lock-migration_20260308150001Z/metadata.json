@@ -1,0 +1,16 @@
+{
+  "id": "impl-conductor-lock-migration_20260308150001Z",
+  "title": "Migrate Conductor Skills to Use crelay Lock API",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-08T15:00:01Z",
+  "updated": "2026-03-08T15:00:01Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 9,
+    "completed": 0
+  }
+}

@@ -39,6 +39,8 @@ Navigation hub for project context.
 - **impl-graceful-shutdown-recovery_20260307160002Z** — Graceful Agent Shutdown and Auto-Recovery on Restart
 - **impl-webui-server_20260308140000Z** — Web UI Server with Real-Time Agent Monitoring
 - **impl-webui-integration_20260308140001Z** — Web UI CLI Integration and Gitea Links
+- **impl-lock-service_20260308150000Z** — HTTP-Based Scoped Lock Service in Relay Server
+- **impl-conductor-lock-migration_20260308150001Z** — Migrate Conductor Skills to Use crelay Lock API
 
 ## Getting Started
 
