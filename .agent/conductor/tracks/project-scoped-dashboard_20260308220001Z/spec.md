@@ -56,11 +56,12 @@ None (but benefits from add-local-ssh-identity_20260308220000Z being done first 
 
 **Backend changes:**
 
-1. Replace `projectDir string` on dashboard Server with `projects *jsonfile.ProjectStore` (or a `ProjectLister` interface)
-2. `handleTracks()` iterates `projects.List()`, calls `DiscoverTracks(p.ProjectDir)` for each, annotates results with project slug
-3. Update `rest.WithDashboard()` signature to accept project store instead of projectDir
-4. Update `serve.go` to pass the already-loaded `reg` (project store) to the dashboard
-5. Update OpenAPI spec if the tracks response shape changes (add `project` field to track schema)
+1. **Schema-first: update OpenAPI spec** — add `GET /-/api/projects` endpoint, add `project` field to `Track` schema, add `project` query param to `listTracks`. All new endpoints MUST be defined in `openapi.yaml` first and implemented via the generated strict handler (`api_handler.go`), per schema-first guidelines.
+2. **Remove duplicate hand-rolled API handlers** — `dashboard/handlers.go` has hand-written `handleAgents`, `handleTracks`, `handleQuota`, `handleStatus` that duplicate the OpenAPI-generated handlers. The `RegisterRoutes()` method mounts all of these. When the unified server uses `RegisterNonAPIRoutes()`, the generated handlers take precedence, but the duplicates should be removed to avoid confusion. Keep only `RegisterNonAPIRoutes()` (SSE, HTML pages, SPA static) — all JSON API routes go through OpenAPI codegen.
+3. Replace `projectDir string` on dashboard Server with `projects ProjectLister` interface
+4. Update `ListTracks` in `api_handler.go` to iterate registered projects via `ProjectLister`, annotate tracks with project slug
+5. Add `ListProjects` to `api_handler.go` via generated interface
+6. Update `serve.go` to pass the already-loaded `reg` (project store) instead of `os.Getwd()`
 
 **Frontend changes:**
 

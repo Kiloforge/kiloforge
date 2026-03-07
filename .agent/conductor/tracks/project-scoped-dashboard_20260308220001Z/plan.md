@@ -1,42 +1,49 @@
 # Implementation Plan: Project-Scoped Dashboard Tracks
 
-## Phase 1: Backend — Replace projectDir with ProjectStore (6 tasks)
+## Phase 1: OpenAPI Schema Updates (3 tasks)
 
-### Task 1.1: Define ProjectLister interface
+### Task 1.1: Add Project schema and projects endpoint to OpenAPI spec
+- **File:** `backend/api/openapi.yaml`
+- Add `Project` schema: slug, repo_name, origin_remote, active, registered_at
+- Add `GET /-/api/projects` endpoint returning `Project[]`
+- Add `project` query param to `GET /-/api/tracks` for filtering by project slug
+- Add `project` field to `Track` schema (required)
+
+### Task 1.2: Regenerate server and client code
+- Run `make gen-api`
+- Verify new `ListProjects` and updated `ListTracks` appear in generated interface
+
+### Task 1.3: Define ProjectLister interface and update dashboard Server
 - **File:** `backend/internal/adapter/dashboard/server.go`
-- Add interface: `ProjectLister` with `List() []domain.Project` method
+- Add `ProjectLister` interface with `List() []domain.Project`
 - Replace `projectDir string` field with `projects ProjectLister`
+- Update `New()` constructor signature
 
-### Task 1.2: Update dashboard constructor and WithDashboard option
-- **File:** `backend/internal/adapter/dashboard/server.go`
-- Change `New()` to accept `ProjectLister` instead of `projectDir string`
-- **File:** `backend/internal/adapter/rest/server.go`
-- Update `WithDashboard()` option to accept `ProjectLister`
+## Phase 2: Backend — Implement Generated Handlers (4 tasks)
 
-### Task 1.3: Add projects API endpoint
-- **File:** `backend/api/openapi.yaml`
-- Add `GET /-/api/projects` endpoint returning list of registered projects (slug, repo name, origin remote, active status)
+### Task 2.1: Implement ListProjects in api_handler.go
+- **File:** `backend/internal/adapter/rest/api_handler.go`
+- Add `Projects ProjectLister` to `APIHandlerOpts`
+- Implement `ListProjects()` — return projects from store
+
+### Task 2.2: Update ListTracks in api_handler.go
+- **File:** `backend/internal/adapter/rest/api_handler.go`
+- Iterate `Projects.List()`, call `service.DiscoverTracks(p.ProjectDir)` for each
+- Annotate each track with project slug
+- Support `?project=<slug>` query param filter
+- Return empty array when no projects registered
+
+### Task 2.3: Remove duplicate hand-rolled API handlers from dashboard
 - **File:** `backend/internal/adapter/dashboard/handlers.go`
-- Add `handleProjects()` that returns `s.projects.List()` as JSON
-- Register route in `RegisterNonAPIRoutes()` or via OpenAPI gen
+- Remove `handleAgents`, `handleAgent`, `handleAgentLog`, `handleQuota`, `handleTracks`, `handleStatus` — these duplicate the OpenAPI-generated handlers
+- Remove `RegisterRoutes()` method (only keep `RegisterNonAPIRoutes()`)
+- Keep only: SSE handler, HTML template handlers, SPA static, and helper functions used by watchers
 
-### Task 1.4: Update handleTracks to iterate projects
-- **File:** `backend/internal/adapter/dashboard/handlers.go`
-- `handleTracks()` calls `s.projects.List()`, discovers tracks from each project's `ProjectDir`
-- Annotate each track with the project slug
-- Return empty array when no projects are registered
-- Support optional `?project=<slug>` query param to filter by project
-
-### Task 1.5: Update serve.go to pass project store
+### Task 2.4: Update serve.go to pass project store
 - **File:** `backend/internal/adapter/cli/serve.go`
-- Pass the already-loaded `reg` (ProjectStore) to `WithDashboard()` instead of `os.Getwd()`
+- Pass `reg` (ProjectStore) to `WithDashboard()` and `APIHandlerOpts`
 - Remove `projectDir, _ := os.Getwd()` line
-
-### Task 1.6: Update API response schema
-- **File:** `backend/api/openapi.yaml`
-- Add `project` field to track schema
-- Add project list schema
-- Regenerate with `make gen-api`
+- Update `WithDashboard()` in rest/server.go to accept `ProjectLister`
 
 ## Phase 2: Backend — Tests (3 tasks)
 
