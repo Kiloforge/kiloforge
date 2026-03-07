@@ -89,6 +89,20 @@ func (m *MockAgentStore) Agents() []domain.AgentInfo {
 	return out
 }
 
+func (m *MockAgentStore) FindByRef(ref string) *domain.AgentInfo {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var best *domain.AgentInfo
+	for i := range m.AgentData {
+		if m.AgentData[i].Ref == ref {
+			if best == nil || m.AgentData[i].StartedAt.After(best.StartedAt) {
+				best = &m.AgentData[i]
+			}
+		}
+	}
+	return best
+}
+
 func (m *MockAgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	m.mu.Lock()
 	defer m.mu.Unlock()

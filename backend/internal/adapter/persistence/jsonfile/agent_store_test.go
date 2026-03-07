@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"crelay/internal/core/domain"
 )
@@ -165,5 +166,44 @@ func TestAgentStore_AgentsByStatus(t *testing.T) {
 	none := store.AgentsByStatus("nonexistent")
 	if len(none) != 0 {
 		t.Errorf("expected 0, got %d", len(none))
+	}
+}
+
+func TestAgentStore_FindByRef(t *testing.T) {
+	t.Parallel()
+
+	store, _ := LoadAgentStore(t.TempDir())
+	now := time.Now()
+
+	store.AddAgent(domain.AgentInfo{ID: "a1", Ref: "track-1", StartedAt: now.Add(-2 * time.Hour)})
+	store.AddAgent(domain.AgentInfo{ID: "a2", Ref: "track-1", StartedAt: now.Add(-1 * time.Hour)})
+	store.AddAgent(domain.AgentInfo{ID: "a3", Ref: "track-2", StartedAt: now})
+
+	tests := []struct {
+		name   string
+		ref    string
+		wantID string
+	}{
+		{"most recent match", "track-1", "a2"},
+		{"single match", "track-2", "a3"},
+		{"no match", "track-999", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := store.FindByRef(tt.ref)
+			if tt.wantID == "" {
+				if got != nil {
+					t.Errorf("expected nil, got %q", got.ID)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("expected agent, got nil")
+			}
+			if got.ID != tt.wantID {
+				t.Errorf("ID = %q, want %q", got.ID, tt.wantID)
+			}
+		})
 	}
 }

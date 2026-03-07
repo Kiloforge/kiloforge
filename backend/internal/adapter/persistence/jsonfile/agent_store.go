@@ -115,6 +115,19 @@ func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	return result
 }
 
+// FindByRef returns the most recent agent matching the given ref (e.g. track ID).
+func (s *AgentStore) FindByRef(ref string) *domain.AgentInfo {
+	var best *domain.AgentInfo
+	for i := range s.AgentList {
+		if s.AgentList[i].Ref == ref {
+			if best == nil || s.AgentList[i].StartedAt.After(best.StartedAt) {
+				best = &s.AgentList[i]
+			}
+		}
+	}
+	return best
+}
+
 // HaltAgent sends SIGINT to the agent process.
 func (s *AgentStore) HaltAgent(idPrefix string) error {
 	agent, err := s.FindAgent(idPrefix)

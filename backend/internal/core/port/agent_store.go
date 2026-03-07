@@ -8,6 +8,7 @@ type AgentStore interface {
 	Save() error
 	AddAgent(info domain.AgentInfo)
 	FindAgent(idPrefix string) (*domain.AgentInfo, error)
+	FindByRef(ref string) *domain.AgentInfo
 	UpdateStatus(idPrefix, status string)
 	HaltAgent(idPrefix string) error
 	Agents() []domain.AgentInfo
