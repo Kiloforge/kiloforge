@@ -116,8 +116,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load state: %w", err)
 	}
 
+	tracker := agent.NewQuotaTracker(cfg.DataDir)
+	_ = tracker.Load()
+
 	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
-	spawner := agent.NewSpawner(cfg, store, nil)
+	spawner := agent.NewSpawner(cfg, store, tracker)
 	info, err := spawner.SpawnDeveloper(ctx, agent.SpawnDeveloperOpts{
 		TrackID:     trackID,
 		Flags:       "--auto-merge",
