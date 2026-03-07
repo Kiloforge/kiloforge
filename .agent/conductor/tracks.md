@@ -9,6 +9,9 @@
 | [x] | monorepo-restructure_20260308180001Z | Restructure as Monorepo with Backend/Frontend Split | 2026-03-08 | 2026-03-08 |
 | [ ] | react-dashboard_20260308180002Z | React Dashboard for Real-Time Agent Monitoring | 2026-03-08 | 2026-03-08 |
 | [x] | live-status-badges_20260308190000Z | Universal Live Agent Status Badges | 2026-03-08 | 2026-03-08 |
+| [ ] | relay-daemon_20260308200000Z | Relay Server Daemon Mode | 2026-03-08 | 2026-03-08 |
+| [ ] | openapi-codegen_20260308200001Z | OpenAPI Code Generation for Relay API | 2026-03-08 | 2026-03-08 |
+| [ ] | schema-first-guidance_20260308200002Z | Schema-First API Development Guidance and Standards | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

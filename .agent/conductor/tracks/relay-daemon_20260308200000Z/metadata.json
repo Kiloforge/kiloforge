@@ -1,0 +1,16 @@
+{
+  "id": "relay-daemon_20260308200000Z",
+  "title": "Relay Server Daemon Mode",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T20:00:00Z",
+  "updated": "2026-03-08T20:00:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 15,
+    "completed": 0
+  }
+}

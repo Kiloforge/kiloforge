@@ -49,6 +49,9 @@ Navigation hub for project context.
 - **monorepo-restructure_20260308180001Z** — Restructure as Monorepo with Backend/Frontend Split
 - **react-dashboard_20260308180002Z** — React Dashboard for Real-Time Agent Monitoring
 - **live-status-badges_20260308190000Z** — Universal Live Agent Status Badges
+- **relay-daemon_20260308200000Z** — Relay Server Daemon Mode
+- **openapi-codegen_20260308200001Z** — OpenAPI Code Generation for Relay API
+- **schema-first-guidance_20260308200002Z** — Schema-First API Development Guidance and Standards
 
 ## Getting Started
 
