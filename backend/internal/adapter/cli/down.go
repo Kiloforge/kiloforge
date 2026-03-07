@@ -9,14 +9,15 @@ import (
 	"crelay/internal/adapter/compose"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/gitea"
+	"crelay/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
 )
 
 var downCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Stop the Gitea server",
-	Long:  `Stops the Gitea Docker Compose stack without removing containers or data.`,
+	Short: "Stop the relay daemon and Gitea server",
+	Long:  `Stops the relay daemon and the Gitea Docker Compose stack without removing containers or data.`,
 	RunE:  runDown,
 }
 
@@ -29,23 +30,35 @@ func runDown(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'crelay init' first")
 	}
 
-	// Check if already stopped.
+	// Stop relay daemon.
+	pidMgr := pidfile.New(cfg.DataDir)
+	if running, pid, _ := pidMgr.IsRunning(); running {
+		fmt.Printf("==> Stopping relay daemon (PID %d)...\n", pid)
+		if err := stopDaemon(cfg.DataDir); err != nil {
+			fmt.Printf("    Warning: stop relay: %v\n", err)
+		} else {
+			fmt.Println("    Relay stopped.")
+		}
+	} else {
+		fmt.Println("Relay is not running.")
+	}
+
+	// Stop Gitea.
 	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
 	if _, err := client.CheckVersion(ctx); err != nil {
 		fmt.Println("Gitea is not running.")
-		return nil
+	} else {
+		runner, err := compose.Detect()
+		if err != nil {
+			return err
+		}
+		fmt.Println("==> Stopping Gitea...")
+		if err := runner.Stop(ctx, cfg.DataDir); err != nil {
+			return fmt.Errorf("compose stop: %w", err)
+		}
+		fmt.Println("    Gitea stopped.")
 	}
 
-	runner, err := compose.Detect()
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("==> Stopping Gitea...")
-	if err := runner.Stop(ctx, cfg.DataDir); err != nil {
-		return fmt.Errorf("compose stop: %w", err)
-	}
-	fmt.Println("    Gitea stopped.")
 	fmt.Println()
 	fmt.Println("Restart with: crelay up")
 

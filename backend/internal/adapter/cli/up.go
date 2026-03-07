@@ -6,31 +6,21 @@ import (
 	"os"
 	"os/signal"
 
-	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/compose"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest"
-	"crelay/internal/core/service"
+	"crelay/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
 )
 
-var flagNoDashboard bool
-
-func init() {
-	upCmd.Flags().BoolVar(&flagNoDashboard, "no-dashboard", false, "Disable the web dashboard")
-}
-
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "Start the Gitea server and relay",
-	Long: `Starts the Gitea Docker Compose stack and runs the webhook relay server
-in the foreground. Requires 'crelay init' to have been run first.
+	Short: "Start the Gitea server and relay daemon",
+	Long: `Starts the Gitea Docker Compose stack and the relay server as a background
+daemon. Returns immediately after both are running.
 
-Press Ctrl+C to stop the relay. Gitea stays running via Docker Compose.
-Use 'crelay down' to stop Gitea.`,
+Use 'crelay down' to stop both Gitea and the relay.`,
 	RunE: runUp,
 }
 
@@ -61,51 +51,25 @@ func runUp(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Gitea already running at %s\n", cfg.GiteaURL())
 	}
 
-	// Load project registry.
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
-	if err != nil {
-		return fmt.Errorf("load project registry: %w", err)
-	}
-
-	projects := reg.List()
-	if len(projects) == 0 {
-		fmt.Println()
-		fmt.Println("No projects registered. Use 'crelay add <path>' to register a project.")
-		fmt.Println()
-	}
-
-	// Build server options.
-	opts := []rest.ServerOption{
-		rest.WithGiteaProxy(cfg.GiteaURL()),
-	}
-	if cfg.IsDashboardEnabled() && !flagNoDashboard {
-		store, err := jsonfile.LoadAgentStore(cfg.DataDir)
+	// Start relay daemon.
+	pidMgr := pidfile.New(cfg.DataDir)
+	if running, pid, _ := pidMgr.IsRunning(); running {
+		fmt.Printf("Relay already running (PID %d)\n", pid)
+	} else {
+		fmt.Println("==> Starting relay daemon...")
+		pid, err := startDaemon(cfg.DataDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: load agent store for dashboard: %v\n", err)
-		} else {
-			tracker := agent.NewQuotaTracker(cfg.DataDir)
-			_ = tracker.Load()
-			projectDir, _ := os.Getwd()
-			opts = append(opts, rest.WithDashboard(store, tracker, "/", projectDir))
-			fmt.Printf("==> Dashboard at http://localhost:%d/-/\n", cfg.RelayPort)
+			return fmt.Errorf("start relay daemon: %w", err)
 		}
+		fmt.Printf("    Relay daemon started (PID %d)\n", pid)
 	}
 
-	// Enable board sync.
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
-	boardClient := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-	if cfg.APIToken != "" {
-		boardClient.SetToken(cfg.APIToken)
-	}
-	boardSvc := service.NewBoardService(boardClient, boardStore)
-	opts = append(opts, rest.WithBoardSync(boardSvc, boardStore))
-
-	// Start unified server (blocking).
-	fmt.Printf("==> Gitea at http://localhost:%d/\n", cfg.RelayPort)
-	fmt.Printf("==> Starting server on :%d (%d project(s))...\n", cfg.RelayPort, len(projects))
-	fmt.Println("    Press Ctrl+C to stop.")
 	fmt.Println()
+	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
+	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
+	fmt.Printf("Gitea:       http://localhost:%d/\n", cfg.RelayPort)
+	fmt.Println()
+	fmt.Println("Use 'crelay down' to stop.")
 
-	srv := rest.NewServer(cfg, reg, cfg.RelayPort, opts...)
-	return srv.Run(ctx)
+	return nil
 }
