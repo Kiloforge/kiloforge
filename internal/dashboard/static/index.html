@@ -10,52 +10,56 @@
   <header>
     <div class="header-left">
       <h1>crelay</h1>
-      <span class="connection-badge" id="conn-status">connecting</span>
+      <span class="badge" id="conn-status">connecting</span>
     </div>
-    <div class="header-right">
-      <a id="gitea-link" href="#" target="_blank">Gitea</a>
-    </div>
+    <nav>
+      <a id="gitea-link" href="#" target="_blank" rel="noopener">Gitea</a>
+    </nav>
   </header>
 
   <main>
-    <section class="status-bar">
-      <div class="stat" id="stat-agents">
-        <span class="stat-label">Agents</span>
-        <span class="stat-value" id="total-agents">0</span>
+    <section class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Agents</div>
+        <div class="stat-value" id="total-agents">0</div>
       </div>
-      <div class="stat" id="stat-cost">
-        <span class="stat-label">Total Cost</span>
-        <span class="stat-value" id="total-cost">$0.00</span>
+      <div class="stat-card">
+        <div class="stat-label">Total Cost</div>
+        <div class="stat-value" id="total-cost">$0.00</div>
       </div>
-      <div class="stat" id="stat-rate">
-        <span class="stat-label">Rate Limit</span>
-        <span class="stat-value" id="rate-status">OK</span>
+      <div class="stat-card">
+        <div class="stat-label">Rate Limit</div>
+        <div class="stat-value" id="rate-status">OK</div>
       </div>
-      <div class="stat" id="stat-sse">
-        <span class="stat-label">SSE Clients</span>
-        <span class="stat-value" id="sse-clients">0</span>
-      </div>
-    </section>
-
-    <section class="panels">
-      <div class="panel" id="agents-panel">
-        <h2>Agents</h2>
-        <div class="agent-grid" id="agent-grid"></div>
-      </div>
-
-      <div class="panel" id="tracks-panel">
-        <h2>Tracks</h2>
-        <div class="track-list" id="track-list"></div>
+      <div class="stat-card">
+        <div class="stat-label">Tokens In / Out</div>
+        <div class="stat-value" id="token-counts">0 / 0</div>
       </div>
     </section>
 
-    <section class="panel" id="log-panel" style="display:none;">
-      <div class="log-header">
-        <h2>Log: <span id="log-agent-id"></span></h2>
-        <button id="log-close">Close</button>
+    <section class="panel">
+      <h2>Agents</h2>
+      <div class="agent-grid" id="agent-grid">
+        <p class="empty-state">No agents running</p>
       </div>
-      <pre class="log-viewer" id="log-viewer"></pre>
     </section>
+
+    <section class="panel">
+      <h2>Tracks</h2>
+      <div id="track-list">
+        <p class="empty-state">Loading tracks...</p>
+      </div>
+    </section>
+
+    <div class="modal" id="log-modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Log: <span id="log-agent-id"></span></h3>
+          <button class="btn-close" id="log-close">&times;</button>
+        </div>
+        <pre class="log-viewer" id="log-viewer"></pre>
+      </div>
+    </div>
   </main>
 
   <script src="app.js"></script>
