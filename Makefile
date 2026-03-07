@@ -19,6 +19,8 @@ dev:
 	wait
 
 test:
+	@mkdir -p backend/internal/adapter/dashboard/dist
+	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race ./...
 
 clean:
