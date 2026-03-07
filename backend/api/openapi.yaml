@@ -139,11 +139,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuotaInfo"
 
+  /-/api/projects:
+    get:
+      operationId: listProjects
+      summary: List registered projects
+      tags: [Projects]
+      responses:
+        "200":
+          description: List of registered projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+
   /-/api/tracks:
     get:
       operationId: listTracks
       summary: List conductor tracks
       tags: [Tracks]
+      parameters:
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter tracks by project slug
       responses:
         "200":
           description: List of tracks
@@ -419,6 +441,19 @@ components:
         output_tokens:
           type: integer
 
+    Project:
+      type: object
+      required: [slug, repo_name, active]
+      properties:
+        slug:
+          type: string
+        repo_name:
+          type: string
+        origin_remote:
+          type: string
+        active:
+          type: boolean
+
     Track:
       type: object
       required: [id, title, status]
@@ -430,6 +465,8 @@ components:
         status:
           type: string
           enum: [complete, in-progress, pending]
+        project:
+          type: string
 
     StatusInfo:
       type: object

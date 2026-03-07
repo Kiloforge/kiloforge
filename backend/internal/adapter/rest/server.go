@@ -33,11 +33,11 @@ const ShutdownTimeout = 10 * time.Second
 type ServerOption func(*Server)
 
 // WithDashboard enables dashboard routes on the unified server.
-func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL, projectDir string) ServerOption {
+func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
 	return func(s *Server) {
-		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projectDir)
+		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projects)
 		s.quotaReader = quota
-		s._projectDir = projectDir
+		s._projects = projects
 	}
 }
 
@@ -92,11 +92,7 @@ type Server struct {
 	giteaProxy  http.Handler
 	boardSync   *boardSyncer
 	quotaReader QuotaReader
-	_projectDir string
-}
-
-func (s *Server) projectDir() string {
-	return s._projectDir
+	_projects   dashboard.ProjectLister
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -190,10 +186,9 @@ func (s *Server) Run(ctx context.Context) error {
 		Agents:     s.store,
 		Quota:      s.quotaReader,
 		LockMgr:    lockMgr,
-		ProjectDir: s.projectDir(),
+		Projects:   s._projects,
 		GiteaURL:   s.cfg.GiteaURL(),
 		SSEClients: sseClients,
-		Projects:   len(s.registry.Projects),
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

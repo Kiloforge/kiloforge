@@ -25,27 +25,32 @@ type QuotaReader interface {
 	RetryAfter() time.Duration
 }
 
+// ProjectLister provides read access to registered projects.
+type ProjectLister interface {
+	List() []domain.Project
+}
+
 // Server serves the web dashboard on a dedicated HTTP port.
 type Server struct {
-	port       int
-	agents     AgentLister
-	quota      QuotaReader
-	giteaURL   string
-	projectDir string
-	hub        *SSEHub
-	mux        *http.ServeMux
+	port     int
+	agents   AgentLister
+	quota    QuotaReader
+	giteaURL string
+	projects ProjectLister
+	hub      *SSEHub
+	mux      *http.ServeMux
 }
 
 // New creates a dashboard server.
-func New(port int, agents AgentLister, quota QuotaReader, giteaURL, projectDir string) *Server {
+func New(port int, agents AgentLister, quota QuotaReader, giteaURL string, projects ProjectLister) *Server {
 	s := &Server{
-		port:       port,
-		agents:     agents,
-		quota:      quota,
-		giteaURL:   giteaURL,
-		projectDir: projectDir,
-		hub:        NewSSEHub(),
-		mux:        http.NewServeMux(),
+		port:     port,
+		agents:   agents,
+		quota:    quota,
+		giteaURL: giteaURL,
+		projects: projects,
+		hub:      NewSSEHub(),
+		mux:      http.NewServeMux(),
 	}
 	s.routes()
 	return s
@@ -84,6 +89,7 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /-/api/agents/{id}/log", s.handleAgentLog)
 	mux.HandleFunc("GET /-/api/quota", s.handleQuota)
 	mux.HandleFunc("GET /-/api/tracks", s.handleTracks)
+	mux.HandleFunc("GET /-/api/projects", s.handleProjects)
 	mux.HandleFunc("GET /-/api/status", s.handleStatus)
 	mux.HandleFunc("GET /-/events", s.handleSSE)
 	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)

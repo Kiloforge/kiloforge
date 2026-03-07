@@ -219,18 +219,44 @@ func (s *Server) handleQuota(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, s.quotaResponse())
 }
 
-func (s *Server) handleTracks(w http.ResponseWriter, _ *http.Request) {
-	tracks, err := service.DiscoverTracks(s.projectDir)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read tracks")
+func (s *Server) handleTracks(w http.ResponseWriter, r *http.Request) {
+	projectFilter := r.URL.Query().Get("project")
+	result := make([]map[string]string, 0)
+	if s.projects != nil {
+		for _, p := range s.projects.List() {
+			if projectFilter != "" && p.Slug != projectFilter {
+				continue
+			}
+			tracks, err := service.DiscoverTracks(p.ProjectDir)
+			if err != nil {
+				continue
+			}
+			for _, t := range tracks {
+				result = append(result, map[string]string{
+					"id":      t.ID,
+					"title":   t.Title,
+					"status":  t.Status,
+					"project": p.Slug,
+				})
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) handleProjects(w http.ResponseWriter, _ *http.Request) {
+	if s.projects == nil {
+		writeJSON(w, http.StatusOK, []any{})
 		return
 	}
-	result := make([]map[string]string, 0, len(tracks))
-	for _, t := range tracks {
-		result = append(result, map[string]string{
-			"id":     t.ID,
-			"title":  t.Title,
-			"status": t.Status,
+	projects := s.projects.List()
+	result := make([]map[string]any, 0, len(projects))
+	for _, p := range projects {
+		result = append(result, map[string]any{
+			"slug":          p.Slug,
+			"repo_name":     p.RepoName,
+			"origin_remote": p.OriginRemote,
+			"active":        p.Active,
 		})
 	}
 	writeJSON(w, http.StatusOK, result)

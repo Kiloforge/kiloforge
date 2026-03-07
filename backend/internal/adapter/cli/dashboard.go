@@ -40,9 +40,12 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	tracker := agent.NewQuotaTracker(cfg.DataDir)
 	_ = tracker.Load()
 
-	projectDir, _ := os.Getwd()
+	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	if err != nil {
+		return fmt.Errorf("load project store: %w", err)
+	}
 
-	srv := dashboard.New(cfg.RelayPort, store, tracker, cfg.GiteaURL(), projectDir)
+	srv := dashboard.New(cfg.RelayPort, store, tracker, cfg.GiteaURL(), reg)
 	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.RelayPort)
 	fmt.Println("Press Ctrl+C to stop.")
 	return srv.Run(ctx)

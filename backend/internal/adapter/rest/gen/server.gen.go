@@ -184,6 +184,14 @@ type LockReleasedResponse struct {
 	Released bool `json:"released"`
 }
 
+// Project defines model for Project.
+type Project struct {
+	Active       bool    `json:"active"`
+	OriginRemote *string `json:"origin_remote,omitempty"`
+	RepoName     string  `json:"repo_name"`
+	Slug         string  `json:"slug"`
+}
+
 // QuotaAgentUsage defines model for QuotaAgentUsage.
 type QuotaAgentUsage struct {
 	AgentId      string  `json:"agent_id"`
@@ -215,9 +223,10 @@ type StatusInfo struct {
 
 // Track defines model for Track.
 type Track struct {
-	Id     string      `json:"id"`
-	Status TrackStatus `json:"status"`
-	Title  string      `json:"title"`
+	Id      string      `json:"id"`
+	Project *string     `json:"project,omitempty"`
+	Status  TrackStatus `json:"status"`
+	Title   string      `json:"title"`
 }
 
 // TrackStatus defines model for Track.Status.
@@ -227,6 +236,12 @@ type TrackStatus string
 type GetAgentLogParams struct {
 	// Lines Number of tail lines to return
 	Lines *int `form:"lines,omitempty" json:"lines,omitempty"`
+}
+
+// ListTracksParams defines parameters for ListTracks.
+type ListTracksParams struct {
+	// Project Filter tracks by project slug
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
 // ReleaseLockJSONRequestBody defines body for ReleaseLock for application/json ContentType.
@@ -261,6 +276,9 @@ type ServerInterface interface {
 	// Extend lock TTL
 	// (POST /-/api/locks/{scope}/heartbeat)
 	HeartbeatLock(w http.ResponseWriter, r *http.Request, scope string)
+	// List registered projects
+	// (GET /-/api/projects)
+	ListProjects(w http.ResponseWriter, r *http.Request)
 	// Get quota and cost usage
 	// (GET /-/api/quota)
 	GetQuota(w http.ResponseWriter, r *http.Request)
@@ -269,7 +287,7 @@ type ServerInterface interface {
 	GetStatus(w http.ResponseWriter, r *http.Request)
 	// List conductor tracks
 	// (GET /-/api/tracks)
-	ListTracks(w http.ResponseWriter, r *http.Request)
+	ListTracks(w http.ResponseWriter, r *http.Request, params ListTracksParams)
 	// Health check
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -448,6 +466,20 @@ func (siw *ServerInterfaceWrapper) HeartbeatLock(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListProjects operation middleware
+func (siw *ServerInterfaceWrapper) ListProjects(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjects(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetQuota operation middleware
 func (siw *ServerInterfaceWrapper) GetQuota(w http.ResponseWriter, r *http.Request) {
 
@@ -479,8 +511,21 @@ func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Requ
 // ListTracks operation middleware
 func (siw *ServerInterfaceWrapper) ListTracks(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTracksParams
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListTracks(w, r)
+		siw.Handler.ListTracks(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -631,6 +676,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/-/api/locks/{scope}", wrapper.ReleaseLock)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/acquire", wrapper.AcquireLock)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/heartbeat", wrapper.HeartbeatLock)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/projects", wrapper.ListProjects)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/quota", wrapper.GetQuota)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/status", wrapper.GetStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/tracks", wrapper.ListTracks)
@@ -877,6 +923,22 @@ func (response HeartbeatLock404JSONResponse) VisitHeartbeatLockResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListProjectsRequestObject struct {
+}
+
+type ListProjectsResponseObject interface {
+	VisitListProjectsResponse(w http.ResponseWriter) error
+}
+
+type ListProjects200JSONResponse []Project
+
+func (response ListProjects200JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetQuotaRequestObject struct {
 }
 
@@ -919,6 +981,7 @@ func (response GetStatus500JSONResponse) VisitGetStatusResponse(w http.ResponseW
 }
 
 type ListTracksRequestObject struct {
+	Params ListTracksParams
 }
 
 type ListTracksResponseObject interface {
@@ -982,6 +1045,9 @@ type StrictServerInterface interface {
 	// Extend lock TTL
 	// (POST /-/api/locks/{scope}/heartbeat)
 	HeartbeatLock(ctx context.Context, request HeartbeatLockRequestObject) (HeartbeatLockResponseObject, error)
+	// List registered projects
+	// (GET /-/api/projects)
+	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
 	// Get quota and cost usage
 	// (GET /-/api/quota)
 	GetQuota(ctx context.Context, request GetQuotaRequestObject) (GetQuotaResponseObject, error)
@@ -1225,6 +1291,30 @@ func (sh *strictHandler) HeartbeatLock(w http.ResponseWriter, r *http.Request, s
 	}
 }
 
+// ListProjects operation middleware
+func (sh *strictHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
+	var request ListProjectsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjects(ctx, request.(ListProjectsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjects")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectsResponseObject); ok {
+		if err := validResponse.VisitListProjectsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetQuota operation middleware
 func (sh *strictHandler) GetQuota(w http.ResponseWriter, r *http.Request) {
 	var request GetQuotaRequestObject
@@ -1274,8 +1364,10 @@ func (sh *strictHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListTracks operation middleware
-func (sh *strictHandler) ListTracks(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListTracks(w http.ResponseWriter, r *http.Request, params ListTracksParams) {
 	var request ListTracksRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListTracks(ctx, request.(ListTracksRequestObject))

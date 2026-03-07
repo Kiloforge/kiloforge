@@ -116,6 +116,9 @@ type ClientInterface interface {
 
 	HeartbeatLock(ctx context.Context, scope string, body HeartbeatLockJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListProjects request
+	ListProjects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetQuota request
 	GetQuota(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -123,7 +126,7 @@ type ClientInterface interface {
 	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTracks request
-	ListTracks(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListTracks(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -249,6 +252,18 @@ func (c *Client) HeartbeatLock(ctx context.Context, scope string, body Heartbeat
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListProjects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetQuota(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetQuotaRequest(c.Server)
 	if err != nil {
@@ -273,8 +288,8 @@ func (c *Client) GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListTracks(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTracksRequest(c.Server)
+func (c *Client) ListTracks(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTracksRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -582,6 +597,33 @@ func NewHeartbeatLockRequestWithBody(server string, scope string, contentType st
 	return req, nil
 }
 
+// NewListProjectsRequest generates requests for ListProjects
+func NewListProjectsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/projects")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetQuotaRequest generates requests for GetQuota
 func NewGetQuotaRequest(server string) (*http.Request, error) {
 	var err error
@@ -637,7 +679,7 @@ func NewGetStatusRequest(server string) (*http.Request, error) {
 }
 
 // NewListTracksRequest generates requests for ListTracks
-func NewListTracksRequest(server string) (*http.Request, error) {
+func NewListTracksRequest(server string, params *ListTracksParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -653,6 +695,28 @@ func NewListTracksRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Project != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project", *params.Project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -760,6 +824,9 @@ type ClientWithResponsesInterface interface {
 
 	HeartbeatLockWithResponse(ctx context.Context, scope string, body HeartbeatLockJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatLockResponse, error)
 
+	// ListProjectsWithResponse request
+	ListProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
+
 	// GetQuotaWithResponse request
 	GetQuotaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQuotaResponse, error)
 
@@ -767,7 +834,7 @@ type ClientWithResponsesInterface interface {
 	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
 
 	// ListTracksWithResponse request
-	ListTracksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTracksResponse, error)
+	ListTracksWithResponse(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*ListTracksResponse, error)
 
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
@@ -934,6 +1001,28 @@ func (r HeartbeatLockResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r HeartbeatLockResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListProjectsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Project
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1117,6 +1206,15 @@ func (c *ClientWithResponses) HeartbeatLockWithResponse(ctx context.Context, sco
 	return ParseHeartbeatLockResponse(rsp)
 }
 
+// ListProjectsWithResponse request returning *ListProjectsResponse
+func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error) {
+	rsp, err := c.ListProjects(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectsResponse(rsp)
+}
+
 // GetQuotaWithResponse request returning *GetQuotaResponse
 func (c *ClientWithResponses) GetQuotaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQuotaResponse, error) {
 	rsp, err := c.GetQuota(ctx, reqEditors...)
@@ -1136,8 +1234,8 @@ func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, reqEdit
 }
 
 // ListTracksWithResponse request returning *ListTracksResponse
-func (c *ClientWithResponses) ListTracksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTracksResponse, error) {
-	rsp, err := c.ListTracks(ctx, reqEditors...)
+func (c *ClientWithResponses) ListTracksWithResponse(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*ListTracksResponse, error) {
+	rsp, err := c.ListTracks(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1420,6 +1518,32 @@ func ParseHeartbeatLockResponse(rsp *http.Response) (*HeartbeatLockResponse, err
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListProjectsResponse parses an HTTP response from a ListProjectsWithResponse call
+func ParseListProjectsResponse(rsp *http.Response) (*ListProjectsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Project
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

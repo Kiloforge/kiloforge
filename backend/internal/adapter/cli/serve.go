@@ -82,8 +82,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if storeErr == nil {
 			tracker := agent.NewQuotaTracker(cfg.DataDir)
 			_ = tracker.Load()
-			projectDir, _ := os.Getwd()
-			opts = append(opts, rest.WithDashboard(store, tracker, "/", projectDir))
+			opts = append(opts, rest.WithDashboard(store, tracker, "/", reg))
 		}
 	}
 

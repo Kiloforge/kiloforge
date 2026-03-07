@@ -28,16 +28,20 @@ type QuotaReader interface {
 	RetryAfter() time.Duration
 }
 
+// ProjectLister provides read access to registered projects for API handlers.
+type ProjectLister interface {
+	List() []domain.Project
+}
+
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
 	agents     AgentLister
 	quota      QuotaReader
 	lockMgr    *lock.Manager
-	projectDir string
+	projects   ProjectLister
 	giteaURL   string
 	sseClients func() int
-	projects   int
 }
 
 // APIHandlerOpts configures the API handler.
@@ -45,10 +49,9 @@ type APIHandlerOpts struct {
 	Agents     AgentLister
 	Quota      QuotaReader
 	LockMgr    *lock.Manager
-	ProjectDir string
+	Projects   ProjectLister
 	GiteaURL   string
 	SSEClients func() int
-	Projects   int
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -57,10 +60,9 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		agents:     opts.Agents,
 		quota:      opts.Quota,
 		lockMgr:    opts.LockMgr,
-		projectDir: opts.ProjectDir,
+		projects:   opts.Projects,
 		giteaURL:   opts.GiteaURL,
 		sseClients: opts.SSEClients,
-		projects:   opts.Projects,
 	}
 }
 
@@ -69,9 +71,13 @@ var _ gen.StrictServerInterface = (*APIHandler)(nil)
 
 // GetHealth implements gen.StrictServerInterface.
 func (h *APIHandler) GetHealth(_ context.Context, _ gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
+	projectCount := 0
+	if h.projects != nil {
+		projectCount = len(h.projects.List())
+	}
 	return gen.GetHealth200JSONResponse{
 		Status:   "ok",
-		Projects: h.projects,
+		Projects: projectCount,
 	}, nil
 }
 
@@ -184,19 +190,53 @@ func (h *APIHandler) GetQuota(_ context.Context, _ gen.GetQuotaRequestObject) (g
 	return gen.GetQuota200JSONResponse(resp), nil
 }
 
-// ListTracks implements gen.StrictServerInterface.
-func (h *APIHandler) ListTracks(_ context.Context, _ gen.ListTracksRequestObject) (gen.ListTracksResponseObject, error) {
-	tracks, err := service.DiscoverTracks(h.projectDir)
-	if err != nil {
-		return gen.ListTracks500JSONResponse{Error: "failed to read tracks"}, nil
+// ListProjects implements gen.StrictServerInterface.
+func (h *APIHandler) ListProjects(_ context.Context, _ gen.ListProjectsRequestObject) (gen.ListProjectsResponseObject, error) {
+	if h.projects == nil {
+		return gen.ListProjects200JSONResponse{}, nil
 	}
-	result := make(gen.ListTracks200JSONResponse, 0, len(tracks))
-	for _, t := range tracks {
-		result = append(result, gen.Track{
-			Id:     t.ID,
-			Title:  t.Title,
-			Status: gen.TrackStatus(t.Status),
-		})
+	projects := h.projects.List()
+	result := make(gen.ListProjects200JSONResponse, 0, len(projects))
+	for _, p := range projects {
+		proj := gen.Project{
+			Slug:     p.Slug,
+			RepoName: p.RepoName,
+			Active:   p.Active,
+		}
+		if p.OriginRemote != "" {
+			proj.OriginRemote = &p.OriginRemote
+		}
+		result = append(result, proj)
+	}
+	return result, nil
+}
+
+// ListTracks implements gen.StrictServerInterface.
+func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObject) (gen.ListTracksResponseObject, error) {
+	if h.projects == nil {
+		return gen.ListTracks200JSONResponse{}, nil
+	}
+	projects := h.projects.List()
+	var result gen.ListTracks200JSONResponse
+	for _, p := range projects {
+		if req.Params.Project != nil && *req.Params.Project != p.Slug {
+			continue
+		}
+		tracks, err := service.DiscoverTracks(p.ProjectDir)
+		if err != nil {
+			continue
+		}
+		for _, t := range tracks {
+			result = append(result, gen.Track{
+				Id:      t.ID,
+				Title:   t.Title,
+				Status:  gen.TrackStatus(t.Status),
+				Project: &p.Slug,
+			})
+		}
+	}
+	if result == nil {
+		result = gen.ListTracks200JSONResponse{}
 	}
 	return result, nil
 }
