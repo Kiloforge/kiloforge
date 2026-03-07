@@ -122,6 +122,14 @@ List registered projects.
 crelay projects
 ```
 
+### `crelay pool`
+
+Show worktree pool status. Displays idle and in-use worktrees for developer agents.
+
+```bash
+crelay pool
+```
+
 ### `crelay destroy`
 
 Permanently destroy all crelay data (requires confirmation).

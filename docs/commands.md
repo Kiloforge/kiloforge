@@ -201,6 +201,28 @@ my-project  /Users/you/dev/my-project git@github.com:you/my-project.git   2026-0
 
 ---
 
+## `crelay pool`
+
+Show worktree pool status.
+
+**Synopsis:**
+```bash
+crelay pool
+```
+
+**Output:**
+```
+Worktree Pool (2/3)
+
+NAME       STATUS  TRACK           AGENT      ACQUIRED
+worker-1   idle    -               -          -
+worker-2   in-use  auth_20260307   uuid-123   2026-03-07 12:00:00
+```
+
+Worktrees are created automatically by `crelay implement` when needed. The pool manages reusable git worktrees for developer agents, avoiding the overhead of creating and destroying worktrees per task.
+
+---
+
 ## Coming Soon
 
 The following commands are planned for future releases:
