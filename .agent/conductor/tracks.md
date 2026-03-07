@@ -21,6 +21,7 @@
 | [ ] | project-scoped-dashboard_20260308220001Z | Project-Scoped Dashboard Tracks | 2026-03-08 | 2026-03-08 |
 | [x] | origin-sync-command_20260308220002Z | Origin Sync Command | 2026-03-08 | 2026-03-08 |
 | [x] | prereq-check-init_20260308230000Z | Prerequisite Check During Init | 2026-03-08 | 2026-03-08 |
+| [ ] | skill-install-update_20260308231000Z | Conductor Skill Installation and Auto-Update | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

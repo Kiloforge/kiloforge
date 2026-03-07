@@ -61,6 +61,7 @@ Navigation hub for project context.
 - **project-scoped-dashboard_20260308220001Z** — Project-Scoped Dashboard Tracks
 - **origin-sync-command_20260308220002Z** — Origin Sync Command
 - **prereq-check-init_20260308230000Z** — Prerequisite Check During Init
+- **skill-install-update_20260308231000Z** — Conductor Skill Installation and Auto-Update
 
 ## Getting Started
 

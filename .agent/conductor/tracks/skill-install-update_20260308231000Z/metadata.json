@@ -1,0 +1,16 @@
+{
+  "id": "skill-install-update_20260308231000Z",
+  "title": "Conductor Skill Installation and Auto-Update",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T23:10:00Z",
+  "updated": "2026-03-08T23:10:00Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 16,
+    "completed": 0
+  }
+}
