@@ -91,6 +91,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// Start unified server (blocking).
+	fmt.Printf("==> Gitea proxy at http://localhost:%d/gitea/\n", cfg.RelayPort)
 	fmt.Printf("==> Starting server on :%d (%d project(s))...\n", cfg.RelayPort, len(projects))
 	fmt.Println("    Press Ctrl+C to stop.")
 	fmt.Println()
