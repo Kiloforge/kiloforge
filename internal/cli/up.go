@@ -6,14 +6,22 @@ import (
 	"os"
 	"os/signal"
 
+	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/agent"
 	"crelay/internal/compose"
 	"crelay/internal/config"
+	"crelay/internal/dashboard"
 	"crelay/internal/gitea"
-	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/relay"
 
 	"github.com/spf13/cobra"
 )
+
+var flagNoDashboard bool
+
+func init() {
+	upCmd.Flags().BoolVar(&flagNoDashboard, "no-dashboard", false, "Disable the web dashboard")
+}
 
 var upCmd = &cobra.Command{
 	Use:   "up",
@@ -64,6 +72,25 @@ func runUp(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 		fmt.Println("No projects registered. Use 'crelay add <path>' to register a project.")
 		fmt.Println()
+	}
+
+	// Start dashboard if enabled.
+	if cfg.IsDashboardEnabled() && !flagNoDashboard {
+		store, err := jsonfile.LoadAgentStore(cfg.DataDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: load agent store for dashboard: %v\n", err)
+		} else {
+			tracker := agent.NewQuotaTracker(cfg.DataDir)
+			_ = tracker.Load()
+			projectDir, _ := os.Getwd()
+			dashSrv := dashboard.New(cfg.DashboardPort, store, tracker, cfg.GiteaURL(), projectDir)
+			go func() {
+				if err := dashSrv.Run(ctx); err != nil && ctx.Err() == nil {
+					fmt.Fprintf(os.Stderr, "dashboard error: %v\n", err)
+				}
+			}()
+			fmt.Printf("==> Dashboard at http://localhost:%d\n", cfg.DashboardPort)
+		}
 	}
 
 	// Start relay server (blocking).
