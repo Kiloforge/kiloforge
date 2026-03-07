@@ -54,6 +54,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("Data:        %s\n", cfg.DataDir)
 	fmt.Printf("Compose:     %s\n", cfg.ComposeFile)
+	if cfg.IsDashboardEnabled() {
+		fmt.Printf("Dashboard:   http://localhost:%d\n", cfg.DashboardPort)
+	} else {
+		fmt.Println("Dashboard:   disabled")
+	}
 
 	// Load quota tracker data.
 	tracker := agent.NewQuotaTracker(cfg.DataDir)
