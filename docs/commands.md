@@ -54,30 +54,85 @@ Compose:     /Users/you/.crelay/docker-compose.yml
 
 ---
 
-## `crelay destroy`
+## `crelay up`
 
-Tear down the Gitea Docker Compose stack.
+Start the Gitea server (daily use).
 
 **Synopsis:**
 ```bash
-crelay destroy [--data]
+crelay up
 ```
 
 **What it does:**
-1. Runs `docker compose down` to stop and remove containers
-2. With `--data`: also runs with `--volumes` and removes the data directory
+1. Loads saved config — errors if not initialized
+2. Checks if Gitea is already running (no-op if so)
+3. Runs `docker compose up -d` to start the stack
+4. Waits for Gitea to become healthy
+5. Prints the Gitea URL
+
+**Requires:** `crelay init` must have been run first.
+
+---
+
+## `crelay down`
+
+Stop the Gitea server without removing data (daily use).
+
+**Synopsis:**
+```bash
+crelay down
+```
+
+**What it does:**
+1. Loads saved config — errors if not initialized
+2. Checks if Gitea is running (no-op if already stopped)
+3. Runs `docker compose stop` to stop containers without removing them
+
+**Non-destructive:** Containers and data are preserved. Restart with `crelay up`.
+
+---
+
+## `crelay destroy`
+
+Permanently destroy all crelay data.
+
+**Synopsis:**
+```bash
+crelay destroy [--force]
+```
+
+**What it does:**
+1. Prints a critical warning listing everything that will be deleted
+2. Requires typing "yes" to confirm (use `--force` to skip)
+3. Runs `docker compose down --volumes` to remove containers and volumes
+4. Removes the entire data directory (`~/.crelay/`)
 
 **Flags:**
 
 | Flag | Description |
 |------|-------------|
-| `--data` | Also delete `~/.crelay/` (config, state, logs, Gitea volumes) |
+| `--force` | Skip the confirmation prompt |
+
+**Example:**
+```
+$ crelay destroy
+
+  WARNING: This will permanently delete:
+    - Gitea server and all repositories
+    - All project registrations
+    - All agent state and logs
+    - Data directory: /Users/you/.crelay
+
+  This action cannot be undone.
+
+  Type "yes" to confirm:
+```
 
 ---
 
 ## Coming Soon
 
-The following commands are temporarily disabled and will return with the `crelay add` feature:
+The following commands are planned for future releases:
 
 - **`crelay add`** — Register a project with the global Gitea server
 - **`crelay agents`** — List active and recent agents

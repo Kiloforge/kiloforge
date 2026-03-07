@@ -78,7 +78,8 @@ Gitea is ready!
   Data:       /Users/you/.crelay
   Compose:    /Users/you/.crelay/docker-compose.yml
 
-Next: use 'crelay add' to register a project (coming soon).
+Stop with 'crelay down', restart with 'crelay up'.
+Register a project with 'crelay add' (coming soon).
 ```
 
 ### 2. Verify
@@ -138,11 +139,18 @@ tea login add --name local --url http://localhost:3000 --token <your-token>
 tea pr list
 ```
 
+## Daily Use
+
+```bash
+crelay down    # stop Gitea (keeps data)
+crelay up      # start Gitea again
+```
+
 ## Teardown
 
 ```bash
-crelay destroy          # stop containers
-crelay destroy --data   # also delete Gitea data, logs, and config
+crelay destroy          # permanently delete everything (requires confirmation)
+crelay destroy --force  # skip confirmation prompt
 ```
 
 ## Troubleshooting
@@ -155,7 +163,7 @@ docker compose -f ~/.crelay/docker-compose.yml ps
 docker compose -f ~/.crelay/docker-compose.yml logs
 
 # Retry
-crelay destroy
+crelay destroy --force
 crelay init
 ```
 

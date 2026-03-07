@@ -50,7 +50,7 @@ This will:
 
 ### `crelay init`
 
-Start the global Gitea server via Docker Compose.
+One-time setup: start the global Gitea server via Docker Compose.
 
 ```bash
 crelay init [flags]
@@ -61,6 +61,22 @@ Flags:
 ```
 
 **Idempotent:** Running again when Gitea is already running prints the status and exits.
+
+### `crelay up`
+
+Start the Gitea server (daily use).
+
+```bash
+crelay up
+```
+
+### `crelay down`
+
+Stop the Gitea server without removing data (daily use).
+
+```bash
+crelay down
+```
 
 ### `crelay status`
 
@@ -77,11 +93,11 @@ Compose:     /Users/you/.crelay/docker-compose.yml
 
 ### `crelay destroy`
 
-Tear down Gitea via Docker Compose.
+Permanently destroy all crelay data (requires confirmation).
 
 ```bash
-crelay destroy          # stop and remove containers
-crelay destroy --data   # also remove volumes and data directory
+crelay destroy          # prompts for confirmation
+crelay destroy --force  # skip confirmation
 ```
 
 ## Architecture
