@@ -103,28 +103,43 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	return &info, nil
 }
 
+// SpawnDeveloperOpts configures a developer agent spawn.
+type SpawnDeveloperOpts struct {
+	TrackID     string // conductor track ID
+	Flags       string // additional conductor-developer flags
+	WorktreeDir string // working directory (worktree path); defaults to cwd
+	LogDir      string // log directory; defaults to DataDir/logs
+}
+
 // SpawnDeveloper launches a Claude agent to implement a track.
-func (s *Spawner) SpawnDeveloper(ctx context.Context, trackID string, flags string) (*state.AgentInfo, error) {
+func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*state.AgentInfo, error) {
 	agentID := uuid.New().String()
 	sessionID := uuid.New().String()
-	logDir := filepath.Join(s.cfg.DataDir, "logs")
+
+	logDir := opts.LogDir
+	if logDir == "" {
+		logDir = filepath.Join(s.cfg.DataDir, "logs")
+	}
 	if err := os.MkdirAll(logDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create log dir: %w", err)
 	}
 
 	logFile := filepath.Join(logDir, agentID+".log")
 
-	prompt := fmt.Sprintf("/conductor-developer %s %s", trackID, flags)
+	prompt := fmt.Sprintf("/conductor-developer %s %s", opts.TrackID, opts.Flags)
 
-	projectDir, _ := os.Getwd()
+	workDir := opts.WorktreeDir
+	if workDir == "" {
+		workDir, _ = os.Getwd()
+	}
 
 	info := state.AgentInfo{
 		ID:          agentID,
 		Role:        "developer",
-		Ref:         trackID,
+		Ref:         opts.TrackID,
 		Status:      "running",
 		SessionID:   sessionID,
-		WorktreeDir: projectDir,
+		WorktreeDir: workDir,
 		LogFile:     logFile,
 		StartedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -135,7 +150,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, trackID string, flags stri
 		"--session-id", sessionID,
 		"--output-format", "stream-json",
 	)
-	cmd.Dir = projectDir
+	cmd.Dir = workDir
 
 	lf, err := os.Create(logFile)
 	if err != nil {
