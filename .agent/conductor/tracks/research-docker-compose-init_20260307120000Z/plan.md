@@ -49,18 +49,18 @@
 
 ## Phase 3: Impact Analysis & Recommendations
 
-### Task 3.1: Map changes needed in existing code
+### Task 3.1: Map changes needed in existing code [x]
 - `internal/gitea/manager.go` — Replace docker run/inspect/rm with compose up/down/ps
 - `internal/cli/init.go` — Update orchestration flow
 - `internal/cli/destroy.go` — Replace docker rm with compose down
 - `internal/cli/status.go` — Replace docker inspect with compose ps
 - **Output:** Change map with affected functions
 
-### Task 3.2: Write final research document
+### Task 3.2: Write final research document [x]
 - Compile all findings into `docs/research-docker-compose.md`
 - Include: recommendation, tradeoffs, proposed compose file, code change map, Colima notes
 - **Output:** Complete research document
 
 ### Verification 3
-- [ ] Impact analysis complete
-- [ ] Research document written and committed
+- [x] Impact analysis complete
+- [x] Research document written and committed
