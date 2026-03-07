@@ -125,6 +125,71 @@ func TestAddLabel(t *testing.T) {
 	}
 }
 
+func TestMergePR_Success(t *testing.T) {
+	t.Parallel()
+
+	var gotPayload map[string]any
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		json.NewDecoder(r.Body).Decode(&gotPayload)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	err := client.MergePR(context.Background(), "myapp", 3, "merge")
+	if err != nil {
+		t.Fatalf("MergePR: %v", err)
+	}
+	if gotPath != "/api/v1/repos/conductor/myapp/pulls/3/merge" {
+		t.Errorf("path: want /api/v1/repos/conductor/myapp/pulls/3/merge, got %s", gotPath)
+	}
+	if gotPayload["Do"] != "merge" {
+		t.Errorf("Do: want %q, got %v", "merge", gotPayload["Do"])
+	}
+}
+
+func TestMergePR_Conflict(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(`{"message": "merge conflict"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	err := client.MergePR(context.Background(), "myapp", 3, "merge")
+	if err == nil {
+		t.Fatal("expected error on merge conflict")
+	}
+}
+
+func TestDeleteBranch(t *testing.T) {
+	t.Parallel()
+
+	var gotPath, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	err := client.DeleteBranch(context.Background(), "myapp", "feature-branch")
+	if err != nil {
+		t.Fatalf("DeleteBranch: %v", err)
+	}
+	if gotMethod != "DELETE" {
+		t.Errorf("method: want DELETE, got %s", gotMethod)
+	}
+	if gotPath != "/api/v1/repos/conductor/myapp/branches/feature-branch" {
+		t.Errorf("path: want /api/v1/repos/conductor/myapp/branches/feature-branch, got %s", gotPath)
+	}
+}
+
 func TestGetPRReviews(t *testing.T) {
 	t.Parallel()
 

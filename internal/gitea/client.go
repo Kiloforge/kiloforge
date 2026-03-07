@@ -215,6 +215,22 @@ func (c *Client) AddLabel(ctx context.Context, repoName string, prNumber int, la
 	return err
 }
 
+// MergePR merges a pull request via the API.
+// Method can be "merge", "rebase", or "squash".
+func (c *Client) MergePR(ctx context.Context, repoName string, prNumber int, method string) error {
+	payload := map[string]any{
+		"Do": method,
+	}
+	_, err := c.do(ctx, "POST", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/merge", c.username, repoName, prNumber), payload)
+	return err
+}
+
+// DeleteBranch deletes a branch on the remote repository.
+func (c *Client) DeleteBranch(ctx context.Context, repoName, branch string) error {
+	_, err := c.do(ctx, "DELETE", fmt.Sprintf("/api/v1/repos/%s/%s/branches/%s", c.username, repoName, branch), nil)
+	return err
+}
+
 // GetPRReviews fetches all reviews for a PR.
 func (c *Client) GetPRReviews(ctx context.Context, repoName string, prNumber int) ([]map[string]any, error) {
 	data, err := c.do(ctx, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/reviews", c.username, repoName, prNumber), nil)
