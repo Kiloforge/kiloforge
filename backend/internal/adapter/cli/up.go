@@ -33,7 +33,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'crelay init' first")
 	}
 
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 
 	// Start Gitea if not running.
 	if _, err := client.CheckVersion(ctx); err != nil {

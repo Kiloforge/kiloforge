@@ -141,10 +141,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	// Move track card to In Progress on the board.
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-	if cfg.APIToken != "" {
-		client.SetToken(cfg.APIToken)
-	}
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
 	boardSvc := service.NewBoardService(client, boardStore)
 	boardCfg, _ := boardStore.GetBoardConfig(proj.Slug)

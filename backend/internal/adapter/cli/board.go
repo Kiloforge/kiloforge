@@ -61,10 +61,7 @@ func runBoard(cmd *cobra.Command, args []string) error {
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
 
 	if flagBoardSetup {
-		client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-		if cfg.APIToken != "" {
-			client.SetToken(cfg.APIToken)
-		}
+		client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 		boardSvc := service.NewBoardService(client, boardStore)
 		boardCfg, err := boardSvc.SetupBoard(ctx, project)
 		if err != nil {

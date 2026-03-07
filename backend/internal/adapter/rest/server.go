@@ -105,10 +105,7 @@ func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int, op
 	if err != nil {
 		store = &jsonfile.AgentStore{}
 	}
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-	if cfg.APIToken != "" {
-		client.SetToken(cfg.APIToken)
-	}
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
 	s := &Server{
 		cfg:       cfg,

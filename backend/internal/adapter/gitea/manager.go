@@ -80,5 +80,9 @@ func (m *Manager) Configure(ctx context.Context) (*Client, error) {
 		m.cfg.APIToken = token
 	}
 
+	// Clear password so it is not persisted to config.json (omitempty removes it).
+	// The password was only needed for admin user creation and token generation above.
+	m.cfg.GiteaAdminPass = ""
+
 	return client, nil
 }

@@ -36,7 +36,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	// Check Gitea via API.
 	giteaStatus := "stopped"
 	giteaVersion := ""
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	if v, err := client.CheckVersion(ctx); err == nil {
 		giteaStatus = "running"
 		giteaVersion = v

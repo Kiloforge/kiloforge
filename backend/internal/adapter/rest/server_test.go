@@ -63,9 +63,9 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 	}
 	var client *gitea.Client
 	if giteaSrv != nil {
-		client = gitea.NewClient(giteaSrv.URL, "conductor", "pass")
+		client = gitea.NewClientWithToken(giteaSrv.URL, "conductor", "test-token")
 	} else {
-		client = gitea.NewClient("http://localhost:3000", "conductor", "pass")
+		client = gitea.NewClientWithToken("http://localhost:3000", "conductor", "test-token")
 	}
 	return newTestableServer(cfg, reg, spawner, client)
 }

@@ -58,7 +58,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	defer pidMgr.Remove()
 
 	// Start Gitea if not running.
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	if _, err := client.CheckVersion(ctx); err != nil {
 		runner, detectErr := compose.Detect()
 		if detectErr == nil {
@@ -89,10 +89,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Enable board sync.
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
-	boardClient := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-	if cfg.APIToken != "" {
-		boardClient.SetToken(cfg.APIToken)
-	}
+	boardClient := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	boardSvc := service.NewBoardService(boardClient, boardStore)
 	opts = append(opts, rest.WithBoardSync(boardSvc, boardStore))
 

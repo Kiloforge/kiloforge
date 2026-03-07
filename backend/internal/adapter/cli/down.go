@@ -44,7 +44,7 @@ func runDown(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop Gitea.
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	if _, err := client.CheckVersion(ctx); err != nil {
 		fmt.Println("Gitea is not running.")
 	} else {

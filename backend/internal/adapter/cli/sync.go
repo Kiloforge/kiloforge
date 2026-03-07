@@ -56,10 +56,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project %q not found", flagSyncProject)
 	}
 
-	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-	if cfg.APIToken != "" {
-		client.SetToken(cfg.APIToken)
-	}
+	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
 	boardSvc := service.NewBoardService(client, boardStore)
