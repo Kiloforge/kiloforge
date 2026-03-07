@@ -60,6 +60,7 @@ Navigation hub for project context.
 - **add-local-ssh-identity_20260308220000Z** — Add Command SSH Identity and Repo Name Improvements
 - **project-scoped-dashboard_20260308220001Z** — Project-Scoped Dashboard Tracks
 - **origin-sync-command_20260308220002Z** — Origin Sync Command
+- **prereq-check-init_20260308230000Z** — Prerequisite Check During Init
 
 ## Getting Started
 
