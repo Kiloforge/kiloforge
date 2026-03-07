@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"crelay/internal/adapter/config"
-	"crelay/internal/core/domain"
 	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/core/domain"
+	"crelay/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -152,6 +153,17 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 	if err := reg.Save(); err != nil {
 		return fmt.Errorf("save registry: %w", err)
+	}
+
+	// Set up track board on Gitea.
+	fmt.Println("==> Setting up track board...")
+	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	boardSvc := service.NewBoardService(client, boardStore)
+	if _, err := boardSvc.SetupBoard(ctx, p); err != nil {
+		fmt.Printf("    Warning: board setup failed: %v\n", err)
+		fmt.Println("    (Board can be set up later with 'crelay board --setup')")
+	} else {
+		fmt.Printf("    Board: %s/%s/%s/projects\n", cfg.GiteaURL(), cfg.GiteaAdminUser, slug)
 	}
 
 	fmt.Println()
