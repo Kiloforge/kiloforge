@@ -13,7 +13,7 @@ import (
 	"crelay/internal/config"
 	"crelay/internal/core/domain"
 	"crelay/internal/gitea"
-	"crelay/internal/project"
+	"crelay/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"
 )
@@ -77,7 +77,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load registry and check for duplicate.
-	reg, err := project.LoadRegistry(cfg.DataDir)
+	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load project registry: %w", err)
 	}
@@ -134,7 +134,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create project data directory.
-	if err := project.EnsureProjectDir(cfg.DataDir, slug); err != nil {
+	if err := jsonfile.EnsureProjectDir(cfg.DataDir, slug); err != nil {
 		return fmt.Errorf("create project dir: %w", err)
 	}
 
@@ -150,7 +150,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	if err := reg.Add(p); err != nil {
 		return fmt.Errorf("register project: %w", err)
 	}
-	if err := reg.Save(cfg.DataDir); err != nil {
+	if err := reg.Save(); err != nil {
 		return fmt.Errorf("save registry: %w", err)
 	}
 

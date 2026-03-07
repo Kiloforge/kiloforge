@@ -16,7 +16,7 @@ import (
 	"crelay/internal/core/port"
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
-	"crelay/internal/project"
+	"crelay/internal/adapter/persistence/jsonfile"
 )
 
 func newTestServer() *Server {
@@ -32,7 +32,7 @@ func newTestServerWithDir(dataDir string) *Server {
 		DataDir:        dataDir,
 		GiteaAdminUser: "conductor",
 	}
-	reg := &project.Registry{
+	reg := &jsonfile.ProjectStore{
 		Version: 1,
 		Projects: map[string]domain.Project{
 			"myapp": {
@@ -51,7 +51,7 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 		DataDir:        dataDir,
 		GiteaAdminUser: "conductor",
 	}
-	reg := &project.Registry{
+	reg := &jsonfile.ProjectStore{
 		Version: 1,
 		Projects: map[string]domain.Project{
 			"myapp": {

@@ -8,7 +8,7 @@ import (
 
 	"crelay/internal/config"
 	"crelay/internal/orchestration"
-	"crelay/internal/project"
+	"crelay/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +26,7 @@ func runEscalated(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'crelay init' first")
 	}
 
-	reg, err := project.LoadRegistry(cfg.DataDir)
+	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load registry: %w", err)
 	}

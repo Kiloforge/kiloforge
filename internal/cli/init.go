@@ -11,7 +11,7 @@ import (
 	"crelay/internal/compose"
 	"crelay/internal/config"
 	"crelay/internal/gitea"
-	"crelay/internal/project"
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/relay"
 
 	"github.com/spf13/cobra"
@@ -140,7 +140,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	// Start relay server (blocking).
-	reg, err := project.LoadRegistry(cfg.DataDir)
+	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load project registry: %w", err)
 	}

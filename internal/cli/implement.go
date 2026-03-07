@@ -13,7 +13,7 @@ import (
 	"crelay/internal/core/domain"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
-	"crelay/internal/project"
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/state"
 
 	"github.com/spf13/cobra"
@@ -50,7 +50,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve project.
-	reg, err := project.LoadRegistry(cfg.DataDir)
+	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("load registry: %w", err)
 	}
@@ -152,7 +152,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func resolveProject(reg *project.Registry, slug string) (domain.Project, error) {
+func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, error) {
 	if slug != "" {
 		proj, ok := reg.Get(slug)
 		if !ok {

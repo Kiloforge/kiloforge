@@ -17,14 +17,14 @@ import (
 	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/pool"
-	"crelay/internal/project"
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/state"
 )
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg       *config.Config
-	registry  *project.Registry
+	registry  *jsonfile.ProjectStore
 	store     *state.Store
 	client    *gitea.Client
 	spawner   port.AgentSpawner
@@ -34,7 +34,7 @@ type Server struct {
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
-func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server {
+func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int) *Server {
 	store, err := state.Load(cfg.DataDir)
 	if err != nil {
 		store = &state.Store{}
@@ -57,7 +57,7 @@ func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server
 }
 
 // newTestableServer creates a server with a custom spawner and client for testing.
-func newTestableServer(cfg *config.Config, registry *project.Registry, spawner port.AgentSpawner, client *gitea.Client) *Server {
+func newTestableServer(cfg *config.Config, registry *jsonfile.ProjectStore, spawner port.AgentSpawner, client *gitea.Client) *Server {
 	store, _ := state.Load(cfg.DataDir)
 	if store == nil {
 		store = &state.Store{}

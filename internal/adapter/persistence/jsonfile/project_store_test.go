@@ -1,4 +1,4 @@
-package project
+package jsonfile
 
 import (
 	"os"
@@ -9,30 +9,27 @@ import (
 	"crelay/internal/core/domain"
 )
 
-func TestRegistry_LoadEmpty(t *testing.T) {
+func TestProjectStore_LoadEmpty(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	reg, err := LoadRegistry(dir)
+	store, err := LoadProjectStore(dir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if reg.Version != 1 {
-		t.Errorf("expected version 1, got %d", reg.Version)
+	if store.Version != 1 {
+		t.Errorf("expected version 1, got %d", store.Version)
 	}
-	if len(reg.Projects) != 0 {
-		t.Errorf("expected empty projects, got %d", len(reg.Projects))
+	if len(store.Projects) != 0 {
+		t.Errorf("expected empty projects, got %d", len(store.Projects))
 	}
 }
 
-func TestRegistry_SaveAndLoad(t *testing.T) {
+func TestProjectStore_SaveAndLoad(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	reg := &Registry{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
+	store, _ := LoadProjectStore(dir)
 
 	now := time.Now().Truncate(time.Second)
 	p := domain.Project{
@@ -43,15 +40,15 @@ func TestRegistry_SaveAndLoad(t *testing.T) {
 		RegisteredAt: now,
 		Active:       true,
 	}
-	if err := reg.Add(p); err != nil {
+	if err := store.Add(p); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if err := reg.Save(dir); err != nil {
+	if err := store.Save(); err != nil {
 		t.Fatalf("save error: %v", err)
 	}
 
-	loaded, err := LoadRegistry(dir)
+	loaded, err := LoadProjectStore(dir)
 	if err != nil {
 		t.Fatalf("load error: %v", err)
 	}
@@ -71,36 +68,30 @@ func TestRegistry_SaveAndLoad(t *testing.T) {
 	}
 }
 
-func TestRegistry_AddDuplicate(t *testing.T) {
+func TestProjectStore_AddDuplicate(t *testing.T) {
 	t.Parallel()
 
-	reg := &Registry{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
+	store, _ := LoadProjectStore(t.TempDir())
 
 	p := domain.Project{Slug: "dup", RepoName: "dup", ProjectDir: "/a"}
-	if err := reg.Add(p); err != nil {
+	if err := store.Add(p); err != nil {
 		t.Fatalf("first add should succeed: %v", err)
 	}
 
-	err := reg.Add(domain.Project{Slug: "dup", RepoName: "dup", ProjectDir: "/b"})
+	err := store.Add(domain.Project{Slug: "dup", RepoName: "dup", ProjectDir: "/b"})
 	if err == nil {
 		t.Fatal("expected error on duplicate add")
 	}
 }
 
-func TestRegistry_FindByDir(t *testing.T) {
+func TestProjectStore_FindByDir(t *testing.T) {
 	t.Parallel()
 
-	reg := &Registry{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
-	_ = reg.Add(domain.Project{Slug: "proj1", ProjectDir: "/home/user/proj1"})
-	_ = reg.Add(domain.Project{Slug: "proj2", ProjectDir: "/home/user/proj2"})
+	store, _ := LoadProjectStore(t.TempDir())
+	_ = store.Add(domain.Project{Slug: "proj1", ProjectDir: "/home/user/proj1"})
+	_ = store.Add(domain.Project{Slug: "proj2", ProjectDir: "/home/user/proj2"})
 
-	got, ok := reg.FindByDir("/home/user/proj1")
+	got, ok := store.FindByDir("/home/user/proj1")
 	if !ok {
 		t.Fatal("expected to find project by dir")
 	}
@@ -108,23 +99,20 @@ func TestRegistry_FindByDir(t *testing.T) {
 		t.Errorf("expected slug 'proj1', got %q", got.Slug)
 	}
 
-	_, ok = reg.FindByDir("/home/user/nope")
+	_, ok = store.FindByDir("/home/user/nope")
 	if ok {
 		t.Fatal("expected not to find project for unknown dir")
 	}
 }
 
-func TestRegistry_List(t *testing.T) {
+func TestProjectStore_List(t *testing.T) {
 	t.Parallel()
 
-	reg := &Registry{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
-	_ = reg.Add(domain.Project{Slug: "a", ProjectDir: "/a"})
-	_ = reg.Add(domain.Project{Slug: "b", ProjectDir: "/b"})
+	store, _ := LoadProjectStore(t.TempDir())
+	_ = store.Add(domain.Project{Slug: "a", ProjectDir: "/a"})
+	_ = store.Add(domain.Project{Slug: "b", ProjectDir: "/b"})
 
-	list := reg.List()
+	list := store.List()
 	if len(list) != 2 {
 		t.Fatalf("expected 2 projects, got %d", len(list))
 	}
