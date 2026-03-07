@@ -16,6 +16,7 @@ import (
 	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/pidfile"
 	"crelay/internal/adapter/rest"
+	"crelay/internal/adapter/skills"
 	"crelay/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -91,6 +92,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 	boardClient := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	boardSvc := service.NewBoardService(boardClient, boardStore)
 	opts = append(opts, rest.WithBoardSync(boardSvc, boardStore))
+
+	// Start auto-update checker if enabled.
+	if cfg.SkillsRepo != "" && cfg.AutoUpdateSkills != nil && *cfg.AutoUpdateSkills {
+		updater := skills.NewAutoUpdater(cfg.SkillsRepo, cfg.GetSkillsDir())
+		updater.Start(ctx)
+		log.Printf("[skills] Auto-update enabled for %s", cfg.SkillsRepo)
+	}
 
 	log.Printf("Relay server starting on :%d (PID %d)", cfg.RelayPort, os.Getpid())
 
