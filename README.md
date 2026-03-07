@@ -12,10 +12,11 @@ Working with multiple AI agents across multiple projects demands infrastructure 
 - **Session persistence** — gracefully shut down agents and auto-recover them on restart, with full session continuity
 - **Quota-aware** — track token usage and cost per agent/track, enforce budgets, and handle rate limits gracefully
 - **Extensible** — scoped lock service, webhook relay, and REST APIs that agents and tools can build on
-- **Full control** — everything runs on your machine, no external dependencies
+- **Full control** — everything runs on your machine; only requires Git, Docker, and Claude Code
 
 ## Prerequisites
 
+- **Git** — `git` command available in PATH
 - **Docker** with Docker Compose — either Docker Desktop (includes compose v2) or Docker Engine + `docker-compose` (v1, for Colima users)
 - **Claude Code CLI** — `claude` command available in PATH
 
