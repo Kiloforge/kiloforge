@@ -27,6 +27,6 @@
 | [x] | impl-webui-integration_20260308140001Z | Web UI CLI Integration and Gitea Links | 2026-03-08 | 2026-03-08 |
 | [x] | impl-lock-service_20260308150000Z | HTTP-Based Scoped Lock Service in Relay Server | 2026-03-08 | 2026-03-08 |
 | [x] | impl-conductor-lock-migration_20260308150001Z | Migrate Conductor Skills to Use crelay Lock API | 2026-03-08 | 2026-03-08 |
-| [ ] | impl-unified-server_20260308160000Z | Unified Server with Reverse Proxy to Gitea | 2026-03-08 | 2026-03-08 |
+| [x] | impl-unified-server_20260308160000Z | Unified Server with Reverse Proxy to Gitea | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
