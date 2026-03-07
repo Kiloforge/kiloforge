@@ -45,6 +45,9 @@ Navigation hub for project context.
 - **impl-gitea-issue-api_20260308170000Z** — Extend Gitea Client with Issue, Label, and Project Board APIs
 - **impl-track-board-sync_20260308170001Z** — Track-to-Gitea Board Sync Service
 - **impl-board-webhook-sync_20260308170002Z** — Webhook-Driven Board State Synchronization
+- **board-agent-lifecycle_20260308180000Z** — Board-Driven Agent Lifecycle Control
+- **monorepo-restructure_20260308180001Z** — Restructure as Monorepo with Backend/Frontend Split
+- **react-dashboard_20260308180002Z** — React Dashboard for Real-Time Agent Monitoring
 
 ## Getting Started
 

@@ -1,0 +1,16 @@
+{
+  "id": "monorepo-restructure_20260308180001Z",
+  "title": "Restructure as Monorepo with Backend/Frontend Split",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-08T18:00:01Z",
+  "updated": "2026-03-08T18:00:01Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 14,
+    "completed": 0
+  }
+}
