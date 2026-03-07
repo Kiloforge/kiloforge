@@ -41,6 +41,7 @@ Navigation hub for project context.
 - **impl-webui-integration_20260308140001Z** — Web UI CLI Integration and Gitea Links
 - **impl-lock-service_20260308150000Z** — HTTP-Based Scoped Lock Service in Relay Server
 - **impl-conductor-lock-migration_20260308150001Z** — Migrate Conductor Skills to Use crelay Lock API
+- **impl-unified-server_20260308160000Z** — Unified Server with Reverse Proxy to Gitea
 
 ## Getting Started
 

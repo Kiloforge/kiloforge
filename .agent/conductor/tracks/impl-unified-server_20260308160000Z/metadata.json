@@ -1,0 +1,16 @@
+{
+  "id": "impl-unified-server_20260308160000Z",
+  "title": "Unified Server with Reverse Proxy to Gitea",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-08T16:00:00Z",
+  "updated": "2026-03-08T16:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 10,
+    "completed": 0
+  }
+}
