@@ -15,6 +15,7 @@ Navigation hub for project context.
 
 - **research-docker-compose-init_20260307120000Z** — Research: Docker Compose for Init with v1/v2 CLI Compatibility
 - **research-global-gitea-multiproject_20260307120001Z** — Research: Global Gitea Server for Multi-Project Coordination
+- **init-docker-compose_20260307120100Z** — Implement Init Command with Docker Compose and Global Gitea
 
 ## Getting Started
 
