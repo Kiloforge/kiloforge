@@ -20,6 +20,11 @@ Navigation hub for project context.
 - **add-project-command_20260307122000Z** — Implement 'crelay add' Command for Project Registration
 - **down-destroy-commands_20260307123000Z** — Add 'up', 'down' Commands and Refactor 'destroy'
 - **relay-event-handling_20260307124000Z** — Relay Event Handling for Issues and PRs with Multi-Project Routing
+- **init-ssh-and-auth_20260307125500Z** — SSH Key Auto-Registration and Randomized Admin Password
+- **worktree-pool_20260307125000Z** — Worktree Pool Management
+- **implement-command_20260307125001Z** — 'crelay implement' Command — Spawn Developer Agent
+- **review-cycle-relay_20260307125002Z** — Developer-Reviewer Relay Cycle
+- **merge-cleanup_20260307125003Z** — PR Merge, Worktree Cleanup, and Agent Teardown
 
 ## Getting Started
 

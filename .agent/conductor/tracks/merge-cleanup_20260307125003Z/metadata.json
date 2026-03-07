@@ -1,0 +1,16 @@
+{
+  "id": "merge-cleanup_20260307125003Z",
+  "title": "PR Merge, Worktree Cleanup, and Agent Teardown",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-07T12:50:03Z",
+  "updated": "2026-03-07T12:50:03Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 10,
+    "completed": 0
+  }
+}
