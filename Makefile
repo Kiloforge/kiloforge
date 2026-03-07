@@ -23,6 +23,21 @@ test:
 	@touch backend/internal/adapter/dashboard/dist/.gitkeep
 	cd backend && go test -buildvcs=false -race ./...
 
+test-smoke:
+	@mkdir -p backend/internal/adapter/dashboard/dist
+	@touch backend/internal/adapter/dashboard/dist/.gitkeep
+	cd backend && go test -buildvcs=false -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
+
+test-integration:
+	@mkdir -p backend/internal/adapter/dashboard/dist
+	@touch backend/internal/adapter/dashboard/dist/.gitkeep
+	cd backend && go test -buildvcs=false -race -tags=integration ./...
+
+test-all:
+	@mkdir -p backend/internal/adapter/dashboard/dist
+	@touch backend/internal/adapter/dashboard/dist/.gitkeep
+	cd backend && go test -buildvcs=false -race -tags=integration ./...
+
 test-coverage:
 	@mkdir -p backend/internal/adapter/dashboard/dist
 	@touch backend/internal/adapter/dashboard/dist/.gitkeep
