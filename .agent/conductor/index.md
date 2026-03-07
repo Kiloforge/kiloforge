@@ -57,6 +57,9 @@ Navigation hub for project context.
 - **remove-password-persistence_20260308210000Z** — Remove Password from Config Persistence
 - **build-embed-guidance_20260308210001Z** — Build and Embed Pattern Guidance
 - **readme-prerequisites_20260308210002Z** — Update README Prerequisites to Docker + Claude Code
+- **add-local-ssh-identity_20260308220000Z** — Add Command SSH Identity and Repo Name Improvements
+- **project-scoped-dashboard_20260308220001Z** — Project-Scoped Dashboard Tracks
+- **origin-sync-command_20260308220002Z** — Origin Sync Command
 
 ## Getting Started
 
