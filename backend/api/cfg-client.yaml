@@ -1,0 +1,7 @@
+package: gen
+output: internal/adapter/rest/gen/client.gen.go
+generate:
+  client: true
+  models: false
+output-options:
+  skip-prune: true

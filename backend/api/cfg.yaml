@@ -1,0 +1,8 @@
+package: gen
+output: internal/adapter/rest/gen/server.gen.go
+generate:
+  std-http-server: true
+  strict-server: true
+  models: true
+output-options:
+  skip-prune: true

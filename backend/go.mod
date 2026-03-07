@@ -8,6 +8,9 @@ require (
 )
 
 require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.6.0 // indirect
+	github.com/oapi-codegen/runtime v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 )

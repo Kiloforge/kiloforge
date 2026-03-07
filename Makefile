@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test clean
+.PHONY: build build-frontend build-backend dev test clean gen-api verify-codegen
 
 BIN_DIR := bin
 BINARY := $(BIN_DIR)/crelay
@@ -29,3 +29,16 @@ clean:
 lint:
 	cd backend && golangci-lint run ./...
 	cd frontend && npm run lint
+
+gen-api:
+	cd backend && oapi-codegen -config api/cfg.yaml api/openapi.yaml
+	cd backend && oapi-codegen -config api/cfg-client.yaml api/openapi.yaml
+
+verify-codegen:
+	@cp backend/internal/adapter/rest/gen/server.gen.go /tmp/server.gen.go.bak
+	@cp backend/internal/adapter/rest/gen/client.gen.go /tmp/client.gen.go.bak
+	@cd backend && oapi-codegen -config api/cfg.yaml api/openapi.yaml
+	@cd backend && oapi-codegen -config api/cfg-client.yaml api/openapi.yaml
+	@diff backend/internal/adapter/rest/gen/server.gen.go /tmp/server.gen.go.bak >/dev/null 2>&1 || (cp /tmp/server.gen.go.bak backend/internal/adapter/rest/gen/server.gen.go && echo "server.gen.go is out of date — run 'make gen-api'" && exit 1)
+	@diff backend/internal/adapter/rest/gen/client.gen.go /tmp/client.gen.go.bak >/dev/null 2>&1 || (cp /tmp/client.gen.go.bak backend/internal/adapter/rest/gen/client.gen.go && echo "client.gen.go is out of date — run 'make gen-api'" && exit 1)
+	@echo "Generated code is up to date."
