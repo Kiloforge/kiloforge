@@ -14,7 +14,7 @@ func TestAllCommandsRegistered(t *testing.T) {
 		"init", "up", "down", "status", "add", "projects",
 		"destroy", "pool", "implement", "agents", "logs",
 		"stop", "attach", "escalated", "cost", "dashboard",
-		"board", "sync", "serve",
+		"board", "sync", "push", "serve",
 	}
 
 	registered := make(map[string]bool)

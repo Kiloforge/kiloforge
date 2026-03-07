@@ -36,5 +36,6 @@ func init() {
 	rootCmd.AddCommand(dashboardCmd)
 	rootCmd.AddCommand(boardCmd)
 	rootCmd.AddCommand(syncCmd)
+	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(serveCmd)
 }
