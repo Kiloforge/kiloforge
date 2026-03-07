@@ -1,23 +1,31 @@
-.PHONY: build run clean test
+.PHONY: build build-frontend build-backend dev test clean
 
-BUILD_DIR := .build
-BINARY := $(BUILD_DIR)/crelay
-PKG := ./cmd/crelay
-export GIT_WORK_TREE ?= $(shell git rev-parse --show-toplevel 2>/dev/null)
+BIN_DIR := bin
+BINARY := $(BIN_DIR)/crelay
 
-build:
-	@mkdir -p $(BUILD_DIR)
-	go build -o $(BINARY) $(PKG)
+build: build-frontend build-backend
 
-run: build
-	./$(BINARY)
+build-frontend:
+	cd frontend && npm ci && npm run build
 
-clean:
-	rm -rf $(BUILD_DIR)
-	go clean
+build-backend:
+	@mkdir -p $(BIN_DIR)
+	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/crelay
+
+dev:
+	@trap 'kill 0' INT TERM; \
+	cd backend && go run -buildvcs=false ./cmd/crelay up & \
+	cd frontend && npm run dev & \
+	wait
 
 test:
-	go test ./...
+	cd backend && go test -buildvcs=false -race ./...
+
+clean:
+	rm -rf $(BIN_DIR)
+	rm -rf backend/internal/adapter/dashboard/dist/*
+	touch backend/internal/adapter/dashboard/dist/.gitkeep
 
 lint:
-	golangci-lint run ./...
+	cd backend && golangci-lint run ./...
+	cd frontend && npm run lint
