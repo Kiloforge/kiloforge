@@ -19,6 +19,8 @@ func Execute() error {
 
 func init() {
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(upCmd)
+	rootCmd.AddCommand(downCmd)
 	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(destroyCmd)
 	// Project-specific commands (agents, logs, attach, stop) are disabled
