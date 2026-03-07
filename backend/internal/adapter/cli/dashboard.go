@@ -60,6 +60,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		Projects:   reg,
 		GiteaURL:   cfg.GiteaURL(),
 		SSEClients: srv.SSEClientCount,
+		Cfg:        cfg,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, srv.Mux())

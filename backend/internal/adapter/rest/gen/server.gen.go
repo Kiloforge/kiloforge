@@ -211,6 +211,40 @@ type QuotaInfo struct {
 	TotalCostUsd      float64            `json:"total_cost_usd"`
 }
 
+// SkillDetail defines model for SkillDetail.
+type SkillDetail struct {
+	ChangedFiles *[]string `json:"changed_files,omitempty"`
+	Modified     bool      `json:"modified"`
+	Name         string    `json:"name"`
+}
+
+// SkillUpdateConflict defines model for SkillUpdateConflict.
+type SkillUpdateConflict struct {
+	Error    string        `json:"error"`
+	Modified []SkillDetail `json:"modified"`
+}
+
+// SkillUpdateRequest defines model for SkillUpdateRequest.
+type SkillUpdateRequest struct {
+	Force *bool `json:"force,omitempty"`
+}
+
+// SkillUpdateResponse defines model for SkillUpdateResponse.
+type SkillUpdateResponse struct {
+	InstalledCount int       `json:"installed_count"`
+	Skills         *[]string `json:"skills,omitempty"`
+	Version        string    `json:"version"`
+}
+
+// SkillsStatus defines model for SkillsStatus.
+type SkillsStatus struct {
+	AvailableVersion *string       `json:"available_version,omitempty"`
+	InstalledVersion string        `json:"installed_version"`
+	Repo             *string       `json:"repo,omitempty"`
+	Skills           []SkillDetail `json:"skills"`
+	UpdateAvailable  bool          `json:"update_available"`
+}
+
 // StatusInfo defines model for StatusInfo.
 type StatusInfo struct {
 	AgentCounts  map[string]int `json:"agent_counts"`
@@ -253,6 +287,9 @@ type AcquireLockJSONRequestBody = LockAcquireRequest
 // HeartbeatLockJSONRequestBody defines body for HeartbeatLock for application/json ContentType.
 type HeartbeatLockJSONRequestBody = LockHeartbeatRequest
 
+// UpdateSkillsJSONRequestBody defines body for UpdateSkills for application/json ContentType.
+type UpdateSkillsJSONRequestBody = SkillUpdateRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// List all agents
@@ -282,6 +319,12 @@ type ServerInterface interface {
 	// Get quota and cost usage
 	// (GET /-/api/quota)
 	GetQuota(w http.ResponseWriter, r *http.Request)
+	// Get installed skills status
+	// (GET /-/api/skills)
+	GetSkillsStatus(w http.ResponseWriter, r *http.Request)
+	// Trigger skill update
+	// (POST /-/api/skills/update)
+	UpdateSkills(w http.ResponseWriter, r *http.Request)
 	// Get system status overview
 	// (GET /-/api/status)
 	GetStatus(w http.ResponseWriter, r *http.Request)
@@ -494,6 +537,34 @@ func (siw *ServerInterfaceWrapper) GetQuota(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// GetSkillsStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetSkillsStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSkillsStatus(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSkills operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSkills(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSkills(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -678,6 +749,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/heartbeat", wrapper.HeartbeatLock)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/projects", wrapper.ListProjects)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/quota", wrapper.GetQuota)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/skills", wrapper.GetSkillsStatus)
+	m.HandleFunc("POST "+options.BaseURL+"/-/api/skills/update", wrapper.UpdateSkills)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/status", wrapper.GetStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/tracks", wrapper.ListTracks)
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
@@ -955,6 +1028,75 @@ func (response GetQuota200JSONResponse) VisitGetQuotaResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetSkillsStatusRequestObject struct {
+}
+
+type GetSkillsStatusResponseObject interface {
+	VisitGetSkillsStatusResponse(w http.ResponseWriter) error
+}
+
+type GetSkillsStatus200JSONResponse SkillsStatus
+
+func (response GetSkillsStatus200JSONResponse) VisitGetSkillsStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSkillsStatus500JSONResponse ErrorResponse
+
+func (response GetSkillsStatus500JSONResponse) VisitGetSkillsStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSkillsRequestObject struct {
+	Body *UpdateSkillsJSONRequestBody
+}
+
+type UpdateSkillsResponseObject interface {
+	VisitUpdateSkillsResponse(w http.ResponseWriter) error
+}
+
+type UpdateSkills200JSONResponse SkillUpdateResponse
+
+func (response UpdateSkills200JSONResponse) VisitUpdateSkillsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSkills400JSONResponse ErrorResponse
+
+func (response UpdateSkills400JSONResponse) VisitUpdateSkillsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSkills409JSONResponse SkillUpdateConflict
+
+func (response UpdateSkills409JSONResponse) VisitUpdateSkillsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSkills500JSONResponse ErrorResponse
+
+func (response UpdateSkills500JSONResponse) VisitUpdateSkillsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetStatusRequestObject struct {
 }
 
@@ -1051,6 +1193,12 @@ type StrictServerInterface interface {
 	// Get quota and cost usage
 	// (GET /-/api/quota)
 	GetQuota(ctx context.Context, request GetQuotaRequestObject) (GetQuotaResponseObject, error)
+	// Get installed skills status
+	// (GET /-/api/skills)
+	GetSkillsStatus(ctx context.Context, request GetSkillsStatusRequestObject) (GetSkillsStatusResponseObject, error)
+	// Trigger skill update
+	// (POST /-/api/skills/update)
+	UpdateSkills(ctx context.Context, request UpdateSkillsRequestObject) (UpdateSkillsResponseObject, error)
 	// Get system status overview
 	// (GET /-/api/status)
 	GetStatus(ctx context.Context, request GetStatusRequestObject) (GetStatusResponseObject, error)
@@ -1332,6 +1480,61 @@ func (sh *strictHandler) GetQuota(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetQuotaResponseObject); ok {
 		if err := validResponse.VisitGetQuotaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSkillsStatus operation middleware
+func (sh *strictHandler) GetSkillsStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetSkillsStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSkillsStatus(ctx, request.(GetSkillsStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSkillsStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSkillsStatusResponseObject); ok {
+		if err := validResponse.VisitGetSkillsStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSkills operation middleware
+func (sh *strictHandler) UpdateSkills(w http.ResponseWriter, r *http.Request) {
+	var request UpdateSkillsRequestObject
+
+	var body UpdateSkillsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSkills(ctx, request.(UpdateSkillsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSkills")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSkillsResponseObject); ok {
+		if err := validResponse.VisitUpdateSkillsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

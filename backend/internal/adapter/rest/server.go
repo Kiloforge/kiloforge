@@ -189,6 +189,7 @@ func (s *Server) Run(ctx context.Context) error {
 		Projects:   s._projects,
 		GiteaURL:   s.cfg.GiteaURL(),
 		SSEClients: sseClients,
+		Cfg:        s.cfg,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

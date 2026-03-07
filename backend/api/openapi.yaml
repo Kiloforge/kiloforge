@@ -201,6 +201,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /-/api/skills:
+    get:
+      operationId: getSkillsStatus
+      summary: Get installed skills status
+      tags: [Skills]
+      responses:
+        "200":
+          description: Skills status information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillsStatus"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/skills/update:
+    post:
+      operationId: updateSkills
+      summary: Trigger skill update
+      tags: [Skills]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillUpdateRequest"
+      responses:
+        "200":
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillUpdateResponse"
+        "400":
+          description: Bad request (e.g. no repo configured)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Local modifications prevent update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillUpdateConflict"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /-/api/locks:
     get:
       operationId: listLocks
@@ -552,3 +608,64 @@ components:
       properties:
         released:
           type: boolean
+
+    SkillsStatus:
+      type: object
+      required: [installed_version, update_available, skills]
+      properties:
+        installed_version:
+          type: string
+        available_version:
+          type: string
+        update_available:
+          type: boolean
+        repo:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillDetail"
+
+    SkillDetail:
+      type: object
+      required: [name, modified]
+      properties:
+        name:
+          type: string
+        modified:
+          type: boolean
+        changed_files:
+          type: array
+          items:
+            type: string
+
+    SkillUpdateRequest:
+      type: object
+      properties:
+        force:
+          type: boolean
+          default: false
+
+    SkillUpdateResponse:
+      type: object
+      required: [version, installed_count]
+      properties:
+        version:
+          type: string
+        installed_count:
+          type: integer
+        skills:
+          type: array
+          items:
+            type: string
+
+    SkillUpdateConflict:
+      type: object
+      required: [error, modified]
+      properties:
+        error:
+          type: string
+        modified:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillDetail"

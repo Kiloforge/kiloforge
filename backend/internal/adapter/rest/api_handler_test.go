@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/lock"
 	"crelay/internal/adapter/rest/gen"
 	"crelay/internal/core/domain"
@@ -293,5 +294,75 @@ func TestGetStatus(t *testing.T) {
 	}
 	if r.AgentCounts["running"] != 2 {
 		t.Errorf("expected 2 running, got %d", r.AgentCounts["running"])
+	}
+}
+
+func TestGetSkillsStatus_NoRepo(t *testing.T) {
+	h := newTestHandler(nil)
+	resp, err := h.GetSkillsStatus(context.Background(), gen.GetSkillsStatusRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetSkillsStatus200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.InstalledVersion != "" {
+		t.Errorf("expected empty version, got %s", r.InstalledVersion)
+	}
+	if r.UpdateAvailable {
+		t.Error("expected update_available false")
+	}
+}
+
+func TestGetSkillsStatus_WithSkills(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create a skill directory with SKILL.md.
+	skillDir := filepath.Join(tmpDir, "test-skill")
+	os.MkdirAll(skillDir, 0o755)
+	os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Test Skill"), 0o644)
+
+	cfg := &config.Config{
+		SkillsRepo:    "owner/repo",
+		SkillsVersion: "v1.0.0",
+		SkillsDir:     tmpDir,
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{},
+		GiteaURL:   "http://localhost:3000",
+		SSEClients: func() int { return 0 },
+		Cfg:        cfg,
+	})
+
+	resp, err := h.GetSkillsStatus(context.Background(), gen.GetSkillsStatusRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetSkillsStatus200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.InstalledVersion != "v1.0.0" {
+		t.Errorf("expected v1.0.0, got %s", r.InstalledVersion)
+	}
+	if len(r.Skills) != 1 {
+		t.Fatalf("expected 1 skill, got %d", len(r.Skills))
+	}
+	if r.Skills[0].Name != "test-skill" {
+		t.Errorf("expected test-skill, got %s", r.Skills[0].Name)
+	}
+}
+
+func TestUpdateSkills_NoRepo(t *testing.T) {
+	h := newTestHandler(nil)
+	resp, err := h.UpdateSkills(context.Background(), gen.UpdateSkillsRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.UpdateSkills400JSONResponse); !ok {
+		t.Fatalf("expected 400, got %T", resp)
 	}
 }

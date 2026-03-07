@@ -3,12 +3,15 @@ package rest
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"os"
 	"time"
 
 	"crelay/internal/adapter/agent"
+	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/lock"
 	"crelay/internal/adapter/rest/gen"
+	"crelay/internal/adapter/skills"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/service"
 )
@@ -42,6 +45,7 @@ type APIHandler struct {
 	projects   ProjectLister
 	giteaURL   string
 	sseClients func() int
+	cfg        *config.Config
 }
 
 // APIHandlerOpts configures the API handler.
@@ -52,6 +56,7 @@ type APIHandlerOpts struct {
 	Projects   ProjectLister
 	GiteaURL   string
 	SSEClients func() int
+	Cfg        *config.Config
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -63,6 +68,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		projects:   opts.Projects,
 		giteaURL:   opts.GiteaURL,
 		sseClients: opts.SSEClients,
+		cfg:        opts.Cfg,
 	}
 }
 
@@ -417,6 +423,119 @@ func lockToGen(l *lock.Lock) gen.LockInfo {
 		ExpiresAt:           l.ExpiresAt,
 		TtlRemainingSeconds: remaining,
 	}
+}
+
+// GetSkillsStatus implements gen.StrictServerInterface.
+func (h *APIHandler) GetSkillsStatus(_ context.Context, _ gen.GetSkillsStatusRequestObject) (gen.GetSkillsStatusResponseObject, error) {
+	if h.cfg == nil || h.cfg.SkillsRepo == "" {
+		return gen.GetSkillsStatus200JSONResponse{
+			InstalledVersion: "",
+			UpdateAvailable:  false,
+			Skills:           []gen.SkillDetail{},
+		}, nil
+	}
+
+	skillsDir := h.cfg.GetSkillsDir()
+	manifest, _ := skills.LoadManifest()
+	installed := skills.ListInstalled(skillsDir, manifest)
+
+	resp := gen.SkillsStatus{
+		InstalledVersion: h.cfg.SkillsVersion,
+		UpdateAvailable:  false,
+		Repo:             &h.cfg.SkillsRepo,
+		Skills:           make([]gen.SkillDetail, 0, len(installed)),
+	}
+
+	for _, s := range installed {
+		detail := gen.SkillDetail{
+			Name:     s.Name,
+			Modified: s.Modified,
+		}
+		resp.Skills = append(resp.Skills, detail)
+	}
+
+	// Check for available update (non-blocking, best-effort).
+	gh := skills.NewGitHubClient()
+	rel, err := gh.LatestRelease(h.cfg.SkillsRepo)
+	if err == nil {
+		resp.AvailableVersion = &rel.TagName
+		if h.cfg.SkillsVersion == "" || skills.IsNewer(h.cfg.SkillsVersion, rel.TagName) {
+			resp.UpdateAvailable = true
+		}
+	}
+
+	return gen.GetSkillsStatus200JSONResponse(resp), nil
+}
+
+// UpdateSkills implements gen.StrictServerInterface.
+func (h *APIHandler) UpdateSkills(_ context.Context, req gen.UpdateSkillsRequestObject) (gen.UpdateSkillsResponseObject, error) {
+	if h.cfg == nil || h.cfg.SkillsRepo == "" {
+		return gen.UpdateSkills400JSONResponse{Error: "no skills repo configured"}, nil
+	}
+
+	force := req.Body != nil && req.Body.Force != nil && *req.Body.Force
+	skillsDir := h.cfg.GetSkillsDir()
+
+	// Check latest release.
+	gh := skills.NewGitHubClient()
+	rel, err := gh.LatestRelease(h.cfg.SkillsRepo)
+	if err != nil {
+		return gen.UpdateSkills500JSONResponse{Error: fmt.Sprintf("check for updates: %v", err)}, nil
+	}
+
+	if h.cfg.SkillsVersion != "" && !skills.IsNewer(h.cfg.SkillsVersion, rel.TagName) {
+		return gen.UpdateSkills200JSONResponse{
+			Version:        h.cfg.SkillsVersion,
+			InstalledCount: 0,
+		}, nil
+	}
+
+	// Check for modifications unless force.
+	if !force {
+		manifest, _ := skills.LoadManifest()
+		modified := skills.DetectModified(skillsDir, manifest)
+		if len(modified) > 0 {
+			details := make([]gen.SkillDetail, 0, len(modified))
+			for _, m := range modified {
+				details = append(details, gen.SkillDetail{
+					Name:         m.Name,
+					Modified:     true,
+					ChangedFiles: &m.Files,
+				})
+			}
+			return gen.UpdateSkills409JSONResponse{
+				Error:    fmt.Sprintf("%d skill(s) have local modifications", len(modified)),
+				Modified: details,
+			}, nil
+		}
+	}
+
+	// Install.
+	inst := skills.NewInstaller()
+	result, err := inst.Install(rel.TarballURL, skillsDir)
+	if err != nil {
+		return gen.UpdateSkills500JSONResponse{Error: fmt.Sprintf("install: %v", err)}, nil
+	}
+
+	// Update manifest.
+	checksums, _ := skills.ComputeChecksums(skillsDir)
+	newManifest := &skills.Manifest{Version: rel.TagName, Checksums: checksums}
+	_ = newManifest.Save()
+
+	// Update config.
+	h.cfg.SkillsVersion = rel.TagName
+	_ = h.cfg.Save()
+
+	names := make([]string, 0, len(result))
+	for _, s := range result {
+		names = append(names, s.Name)
+	}
+
+	return gen.UpdateSkills200JSONResponse{
+		Version:        rel.TagName,
+		InstalledCount: len(result),
+		Skills:         &names,
+	}, nil
 }
 
 func intPtr(v int) *int       { return &v }
