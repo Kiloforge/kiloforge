@@ -20,7 +20,6 @@ type Config struct {
 	GiteaAdminPass  string `json:"gitea_admin_pass,omitempty"`
 	GiteaAdminEmail    string  `json:"gitea_admin_email,omitempty"`
 	MaxSessionCostUSD  float64 `json:"max_session_cost_usd,omitempty"`
-	DashboardPort      int     `json:"dashboard_port,omitempty"`
 	DashboardEnabled   *bool   `json:"dashboard_enabled,omitempty"`
 }
 

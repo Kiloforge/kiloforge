@@ -50,9 +50,6 @@ func overlay(dst, src *Config) {
 	if src.MaxSessionCostUSD != 0 {
 		dst.MaxSessionCostUSD = src.MaxSessionCostUSD
 	}
-	if src.DashboardPort != 0 {
-		dst.DashboardPort = src.DashboardPort
-	}
 	if src.DashboardEnabled != nil {
 		dst.DashboardEnabled = src.DashboardEnabled
 	}

@@ -74,19 +74,6 @@ func TestEnvAdapter_UnsetVars_ReturnZero(t *testing.T) {
 	}
 }
 
-func TestEnvAdapter_DashboardPort(t *testing.T) {
-	t.Setenv("CRELAY_DASHBOARD_PORT", "4002")
-
-	adapter := &EnvAdapter{}
-	cfg, err := adapter.Load()
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if cfg.DashboardPort != 4002 {
-		t.Errorf("DashboardPort: want 4002, got %d", cfg.DashboardPort)
-	}
-}
-
 func TestEnvAdapter_DashboardEnabled(t *testing.T) {
 	t.Setenv("CRELAY_DASHBOARD_ENABLED", "false")
 

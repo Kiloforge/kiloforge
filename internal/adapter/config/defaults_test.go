@@ -40,9 +40,6 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 	if cfg.GiteaAdminEmail != "conductor@local.dev" {
 		t.Errorf("GiteaAdminEmail: want %q, got %q", "conductor@local.dev", cfg.GiteaAdminEmail)
 	}
-	if cfg.DashboardPort != 3002 {
-		t.Errorf("DashboardPort: want 3002, got %d", cfg.DashboardPort)
-	}
 	// DashboardEnabled defaults to nil (meaning enabled via IsDashboardEnabled()).
 	if cfg.DashboardEnabled != nil {
 		t.Errorf("DashboardEnabled: want nil, got %v", *cfg.DashboardEnabled)

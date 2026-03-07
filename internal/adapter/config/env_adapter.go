@@ -26,12 +26,6 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		}
 	}
 
-	if v := os.Getenv("CRELAY_DASHBOARD_PORT"); v != "" {
-		if port, err := strconv.Atoi(v); err == nil {
-			cfg.DashboardPort = port
-		}
-	}
-
 	if v := os.Getenv("CRELAY_DASHBOARD_ENABLED"); v != "" {
 		b, err := strconv.ParseBool(v)
 		if err == nil {
