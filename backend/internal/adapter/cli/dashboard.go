@@ -9,7 +9,10 @@ import (
 	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/dashboard"
+	"crelay/internal/adapter/lock"
 	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/adapter/rest"
+	"crelay/internal/adapter/rest/gen"
 
 	"github.com/spf13/cobra"
 )
@@ -46,6 +49,21 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	}
 
 	srv := dashboard.New(cfg.RelayPort, store, tracker, cfg.GiteaURL(), reg)
+
+	// Register OpenAPI generated API handlers on the dashboard mux.
+	lockMgr := lock.New(cfg.DataDir)
+	lockMgr.StartReaper(ctx)
+	apiHandler := rest.NewAPIHandler(rest.APIHandlerOpts{
+		Agents:     store,
+		Quota:      tracker,
+		LockMgr:    lockMgr,
+		Projects:   reg,
+		GiteaURL:   cfg.GiteaURL(),
+		SSEClients: srv.SSEClientCount,
+	})
+	strictHandler := gen.NewStrictHandler(apiHandler, nil)
+	gen.HandlerFromMux(strictHandler, srv.Mux())
+
 	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.RelayPort)
 	fmt.Println("Press Ctrl+C to stop.")
 	return srv.Run(ctx)

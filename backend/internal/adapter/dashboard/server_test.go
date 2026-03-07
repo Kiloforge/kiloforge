@@ -1,15 +1,11 @@
 package dashboard
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"crelay/internal/adapter/agent"
 	"crelay/internal/core/domain"
 )
 
@@ -18,8 +14,8 @@ type testAgentLister struct {
 	agents []domain.AgentInfo
 }
 
-func (t *testAgentLister) Agents() []domain.AgentInfo        { return t.agents }
-func (t *testAgentLister) Load() error                       { return nil }
+func (t *testAgentLister) Agents() []domain.AgentInfo { return t.agents }
+func (t *testAgentLister) Load() error                { return nil }
 func (t *testAgentLister) FindAgent(id string) (*domain.AgentInfo, error) {
 	for i := range t.agents {
 		if t.agents[i].ID == id {
@@ -29,348 +25,12 @@ func (t *testAgentLister) FindAgent(id string) (*domain.AgentInfo, error) {
 	return nil, domain.ErrAgentNotFound
 }
 
-// testQuotaReader is a test QuotaReader.
-type testQuotaReader struct {
-	agentUsage  map[string]*agent.AgentUsage
-	totalUsage  agent.TotalUsage
-	rateLimited bool
-	retryAfter  time.Duration
-}
-
-func (t *testQuotaReader) GetAgentUsage(id string) *agent.AgentUsage {
-	if t.agentUsage == nil {
-		return nil
-	}
-	return t.agentUsage[id]
-}
-func (t *testQuotaReader) GetTotalUsage() agent.TotalUsage { return t.totalUsage }
-func (t *testQuotaReader) IsRateLimited() bool             { return t.rateLimited }
-func (t *testQuotaReader) RetryAfter() time.Duration       { return t.retryAfter }
-
 // testProjectLister is an in-memory ProjectLister for tests.
 type testProjectLister struct {
 	projects []domain.Project
 }
 
 func (t *testProjectLister) List() []domain.Project { return t.projects }
-
-func newTestServer(agents AgentLister, quota QuotaReader, projects ProjectLister) *Server {
-	s := &Server{
-		port:     0,
-		agents:   agents,
-		quota:    quota,
-		giteaURL: "http://localhost:3000",
-		projects: projects,
-		hub:      NewSSEHub(),
-		mux:      http.NewServeMux(),
-	}
-	s.routes()
-	return s
-}
-
-func TestHandleAgents_Empty(t *testing.T) {
-	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/agents", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result []any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if len(result) != 0 {
-		t.Errorf("expected empty array, got %d items", len(result))
-	}
-}
-
-func TestHandleAgents_WithAgents(t *testing.T) {
-	t.Parallel()
-	agents := &testAgentLister{
-		agents: []domain.AgentInfo{
-			{ID: "dev-1", Role: "developer", Status: "running", StartedAt: time.Now().Add(-5 * time.Minute)},
-			{ID: "rev-1", Role: "reviewer", Status: "completed"},
-		},
-	}
-	quota := &testQuotaReader{
-		agentUsage: map[string]*agent.AgentUsage{
-			"dev-1": {AgentID: "dev-1", TotalCostUSD: 0.42, InputTokens: 1000, OutputTokens: 500},
-		},
-	}
-	s := newTestServer(agents, quota, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/agents", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result []map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if len(result) != 2 {
-		t.Fatalf("expected 2 agents, got %d", len(result))
-	}
-	if result[0]["id"] != "dev-1" {
-		t.Errorf("first agent id = %v, want dev-1", result[0]["id"])
-	}
-	if result[0]["cost_usd"] != 0.42 {
-		t.Errorf("cost_usd = %v, want 0.42", result[0]["cost_usd"])
-	}
-}
-
-func TestHandleAgent_NotFound(t *testing.T) {
-	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/agents/nonexistent", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("status = %d, want 404", w.Code)
-	}
-}
-
-func TestHandleAgent_Found(t *testing.T) {
-	t.Parallel()
-	agents := &testAgentLister{
-		agents: []domain.AgentInfo{
-			{ID: "dev-1", Role: "developer", Status: "running"},
-		},
-	}
-	s := newTestServer(agents, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/agents/dev-1", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if result["id"] != "dev-1" {
-		t.Errorf("id = %v, want dev-1", result["id"])
-	}
-}
-
-func TestHandleQuota_NoTracker(t *testing.T) {
-	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/quota", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if result["rate_limited"] != false {
-		t.Errorf("rate_limited = %v, want false", result["rate_limited"])
-	}
-}
-
-func TestHandleQuota_RateLimited(t *testing.T) {
-	t.Parallel()
-	quota := &testQuotaReader{
-		totalUsage:  agent.TotalUsage{TotalCostUSD: 1.50, InputTokens: 5000, OutputTokens: 2000, AgentCount: 2},
-		rateLimited: true,
-		retryAfter:  30 * time.Second,
-	}
-	s := newTestServer(&testAgentLister{}, quota, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/quota", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if result["rate_limited"] != true {
-		t.Errorf("rate_limited = %v, want true", result["rate_limited"])
-	}
-	if result["total_cost_usd"] != 1.5 {
-		t.Errorf("total_cost_usd = %v, want 1.5", result["total_cost_usd"])
-	}
-}
-
-func TestHandleTracks(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	// Create tracks.md in the expected location.
-	conductorDir := filepath.Join(dir, ".agent", "conductor")
-	os.MkdirAll(conductorDir, 0o755)
-	os.WriteFile(filepath.Join(conductorDir, "tracks.md"), []byte(`# Tracks
-
-| Status | Track ID | Title | Created | Updated |
-| ------ | -------- | ----- | ------- | ------- |
-| [x] | track-1 | First Track | 2026-03-01 | 2026-03-01 |
-| [ ] | track-2 | Second Track | 2026-03-02 | 2026-03-02 |
-`), 0o644)
-
-	projects := &testProjectLister{
-		projects: []domain.Project{{Slug: "test-proj", ProjectDir: dir}},
-	}
-	s := newTestServer(&testAgentLister{}, nil, projects)
-
-	req := httptest.NewRequest("GET", "/-/api/tracks", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result []map[string]string
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if len(result) != 2 {
-		t.Fatalf("expected 2 tracks, got %d", len(result))
-	}
-	if result[0]["status"] != "complete" {
-		t.Errorf("first track status = %v, want complete", result[0]["status"])
-	}
-	if result[1]["status"] != "pending" {
-		t.Errorf("second track status = %v, want pending", result[1]["status"])
-	}
-	if result[0]["project"] != "test-proj" {
-		t.Errorf("first track project = %v, want test-proj", result[0]["project"])
-	}
-}
-
-func TestHandleTracks_NoProjects(t *testing.T) {
-	t.Parallel()
-	s := newTestServer(&testAgentLister{}, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/tracks", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result []any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if len(result) != 0 {
-		t.Errorf("expected empty array, got %d items", len(result))
-	}
-}
-
-func TestHandleProjects(t *testing.T) {
-	t.Parallel()
-	projects := &testProjectLister{
-		projects: []domain.Project{
-			{Slug: "app1", RepoName: "app1", Active: true, OriginRemote: "git@github.com:user/app1.git"},
-			{Slug: "app2", RepoName: "app2", Active: true},
-		},
-	}
-	s := newTestServer(&testAgentLister{}, nil, projects)
-
-	req := httptest.NewRequest("GET", "/-/api/projects", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result []map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if len(result) != 2 {
-		t.Fatalf("expected 2 projects, got %d", len(result))
-	}
-	if result[0]["slug"] != "app1" {
-		t.Errorf("first project slug = %v, want app1", result[0]["slug"])
-	}
-}
-
-func TestHandleStatus(t *testing.T) {
-	t.Parallel()
-	agents := &testAgentLister{
-		agents: []domain.AgentInfo{
-			{ID: "dev-1", Status: "running"},
-			{ID: "dev-2", Status: "running"},
-			{ID: "rev-1", Status: "completed"},
-		},
-	}
-	quota := &testQuotaReader{
-		totalUsage: agent.TotalUsage{TotalCostUSD: 0.75},
-	}
-	s := newTestServer(agents, quota, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/status", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	if result["total_agents"].(float64) != 3 {
-		t.Errorf("total_agents = %v, want 3", result["total_agents"])
-	}
-	if result["total_cost_usd"].(float64) != 0.75 {
-		t.Errorf("total_cost_usd = %v, want 0.75", result["total_cost_usd"])
-	}
-	counts := result["agent_counts"].(map[string]any)
-	if counts["running"].(float64) != 2 {
-		t.Errorf("running count = %v, want 2", counts["running"])
-	}
-}
-
-func TestHandleAgentLog_NoLogFile(t *testing.T) {
-	t.Parallel()
-	agents := &testAgentLister{
-		agents: []domain.AgentInfo{
-			{ID: "dev-1", Status: "running"},
-		},
-	}
-	s := newTestServer(agents, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/agents/dev-1/log", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("status = %d, want 404", w.Code)
-	}
-}
-
-func TestHandleAgentLog_WithLines(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	logFile := filepath.Join(dir, "agent.log")
-	os.WriteFile(logFile, []byte("line1\nline2\nline3\nline4\nline5\n"), 0o644)
-
-	agents := &testAgentLister{
-		agents: []domain.AgentInfo{
-			{ID: "dev-1", Status: "running", LogFile: logFile},
-		},
-	}
-	s := newTestServer(agents, nil, &testProjectLister{})
-
-	req := httptest.NewRequest("GET", "/-/api/agents/dev-1/log?lines=3", nil)
-	w := httptest.NewRecorder()
-	s.mux.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	var result map[string]any
-	json.Unmarshal(w.Body.Bytes(), &result)
-	lines := result["lines"].([]any)
-	if len(lines) != 3 {
-		t.Fatalf("expected 3 lines, got %d", len(lines))
-	}
-	if lines[0] != "line3" {
-		t.Errorf("first line = %v, want line3", lines[0])
-	}
-}
 
 func TestSSEHub_BroadcastAndSubscribe(t *testing.T) {
 	t.Parallel()
@@ -407,38 +67,18 @@ func TestSSEHub_Unsubscribe(t *testing.T) {
 	}
 }
 
-func TestRegisterRoutes_MountsOnExternalMux(t *testing.T) {
+func TestRegisterNonAPIRoutes_MountsOnExternalMux(t *testing.T) {
 	t.Parallel()
-	agents := &testAgentLister{
-		agents: []domain.AgentInfo{
-			{ID: "dev-1", Role: "developer", Status: "running"},
-		},
-	}
-	quota := &testQuotaReader{
-		totalUsage: agent.TotalUsage{TotalCostUSD: 0.50},
-	}
-
-	s := New(0, agents, quota, "http://localhost:3000", &testProjectLister{})
+	s := New(0, &testAgentLister{}, nil, "http://localhost:3000", &testProjectLister{})
 
 	externalMux := http.NewServeMux()
-	s.RegisterRoutes(externalMux)
+	s.RegisterNonAPIRoutes(externalMux)
 
-	// All dashboard routes should work on the external mux.
-	routes := []struct {
-		path string
-		code int
-	}{
-		{"/-/api/agents", http.StatusOK},
-		{"/-/api/quota", http.StatusOK},
-		{"/-/api/status", http.StatusOK},
-	}
-
-	for _, r := range routes {
-		req := httptest.NewRequest("GET", r.path, nil)
-		w := httptest.NewRecorder()
-		externalMux.ServeHTTP(w, req)
-		if w.Code != r.code {
-			t.Errorf("%s: status = %d, want %d", r.path, w.Code, r.code)
-		}
+	// SPA static route should be registered and serve the frontend.
+	req := httptest.NewRequest("GET", "/-/", nil)
+	w := httptest.NewRecorder()
+	externalMux.ServeHTTP(w, req)
+	if w.Code == http.StatusNotFound {
+		t.Errorf("/-/: got 404, expected SPA route to be registered")
 	}
 }

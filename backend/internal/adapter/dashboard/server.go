@@ -81,29 +81,18 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 }
 
-// RegisterRoutes mounts all dashboard routes onto the given mux.
-// All routes are prefixed with /-/ to avoid collisions with Gitea paths.
-func (s *Server) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /-/api/agents", s.handleAgents)
-	mux.HandleFunc("GET /-/api/agents/{id}", s.handleAgent)
-	mux.HandleFunc("GET /-/api/agents/{id}/log", s.handleAgentLog)
-	mux.HandleFunc("GET /-/api/quota", s.handleQuota)
-	mux.HandleFunc("GET /-/api/tracks", s.handleTracks)
-	mux.HandleFunc("GET /-/api/projects", s.handleProjects)
-	mux.HandleFunc("GET /-/api/status", s.handleStatus)
+// RegisterNonAPIRoutes mounts only the non-API routes (SSE, HTML pages, SPA static).
+// All JSON API routes are served by the generated OpenAPI handler.
+func (s *Server) RegisterNonAPIRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /-/events", s.handleSSE)
 	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)
 	mux.HandleFunc("GET /-/pr/{slug}/{prNumber}", s.handlePRDetail)
 	mux.Handle("GET /-/", http.StripPrefix("/-", spaFileServer(http.FS(staticFS))))
 }
 
-// RegisterNonAPIRoutes mounts only the non-API routes (SSE, HTML pages, SPA static).
-// Use this when the JSON API routes are served by the generated OpenAPI handler.
-func (s *Server) RegisterNonAPIRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /-/events", s.handleSSE)
-	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)
-	mux.HandleFunc("GET /-/pr/{slug}/{prNumber}", s.handlePRDetail)
-	mux.Handle("GET /-/", http.StripPrefix("/-", spaFileServer(http.FS(staticFS))))
+// Mux returns the server's internal mux for registering additional routes.
+func (s *Server) Mux() *http.ServeMux {
+	return s.mux
 }
 
 // SSEClientCount returns the number of connected SSE clients.
@@ -112,5 +101,5 @@ func (s *Server) SSEClientCount() int {
 }
 
 func (s *Server) routes() {
-	s.RegisterRoutes(s.mux)
+	s.RegisterNonAPIRoutes(s.mux)
 }
