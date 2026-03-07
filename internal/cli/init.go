@@ -20,8 +20,8 @@ var initCmd = &cobra.Command{
 	Long: `Starts a local Gitea instance via Docker Compose, configures it with an admin
 user and API token, and saves the global configuration.
 
-This sets up the shared Gitea server. Project registration will be handled
-separately by 'crelay add' (coming soon).`,
+This sets up the shared Gitea server. Use 'crelay down' to stop and 'crelay up'
+to restart. Project registration is handled by 'crelay add'.`,
 	RunE: runInit,
 }
 
@@ -118,7 +118,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Data:       %s\n", cfg.DataDir)
 	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()
-	fmt.Println("Next: use 'crelay add' to register a project (coming soon).")
+	fmt.Println("Stop with 'crelay down', restart with 'crelay up'.")
+	fmt.Println("Register a project with 'crelay add' (coming soon).")
 
 	return nil
 }
