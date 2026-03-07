@@ -39,6 +39,14 @@ export interface Track {
   id: string;
   title: string;
   status: string;
+  project?: string;
+}
+
+export interface Project {
+  slug: string;
+  repo_name: string;
+  origin_remote?: string;
+  active: boolean;
 }
 
 export interface StatusResponse {

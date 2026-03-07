@@ -6,13 +6,16 @@ interface UseTracksResult {
   loading: boolean;
 }
 
-export function useTracks(): UseTracksResult {
+export function useTracks(project?: string): UseTracksResult {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTracks = () => {
-      fetch("/-/api/tracks")
+      const url = project
+        ? `/-/api/tracks?project=${encodeURIComponent(project)}`
+        : "/-/api/tracks";
+      fetch(url)
         .then((r) => r.json())
         .then((data: Track[]) => {
           setTracks(data || []);
@@ -24,7 +27,7 @@ export function useTracks(): UseTracksResult {
     fetchTracks();
     const interval = setInterval(fetchTracks, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [project]);
 
   return { tracks, loading };
 }

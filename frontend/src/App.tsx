@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { Routes, Route } from "react-router-dom";
 import type { StatusResponse } from "./types/api";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
@@ -6,10 +7,9 @@ import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
-import { StatCards } from "./components/StatCards";
-import { AgentGrid } from "./components/AgentGrid";
-import { TrackList } from "./components/TrackList";
 import { LogViewer } from "./components/LogViewer";
+import { OverviewPage } from "./pages/OverviewPage";
+import { ProjectPage } from "./pages/ProjectPage";
 import styles from "./App.module.css";
 
 export default function App() {
@@ -63,21 +63,22 @@ export default function App() {
       </header>
 
       <main className={styles.main}>
-        <StatCards agentCount={agents.length} quota={quota} />
-
-        <section className={styles.panel}>
-          <h2 className={styles.panelTitle}>Agents</h2>
-          {agentsLoading ? (
-            <p className={styles.empty}>Loading agents...</p>
-          ) : (
-            <AgentGrid agents={agents} giteaURL={status?.gitea_url ?? ""} onViewLog={handleViewLog} />
-          )}
-        </section>
-
-        <section className={styles.panel}>
-          <h2 className={styles.panelTitle}>Tracks</h2>
-          <TrackList tracks={tracks} />
-        </section>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <OverviewPage
+                agents={agents}
+                agentsLoading={agentsLoading}
+                quota={quota}
+                status={status}
+                tracks={tracks}
+                onViewLog={handleViewLog}
+              />
+            }
+          />
+          <Route path="/projects/:slug" element={<ProjectPage />} />
+        </Routes>
       </main>
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
