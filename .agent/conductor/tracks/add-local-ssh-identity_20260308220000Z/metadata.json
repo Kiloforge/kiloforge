@@ -2,15 +2,15 @@
   "id": "add-local-ssh-identity_20260308220000Z",
   "title": "Add Command SSH Identity and Repo Name Improvements",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-08T22:00:00Z",
   "updated": "2026-03-08T22:00:00Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }
