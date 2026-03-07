@@ -680,3 +680,31 @@ func (f *fakeSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir stri
 	f.resumeCalls = append(f.resumeCalls, resumeCall{sessionID: sessionID, workDir: workDir})
 	return nil
 }
+
+func TestNewServer_WithDashboard(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	cfg := &config.Config{
+		GiteaPort:      3000,
+		DataDir:        dir,
+		GiteaAdminUser: "conductor",
+	}
+	reg := &jsonfile.ProjectStore{
+		Version:  1,
+		Projects: map[string]domain.Project{},
+	}
+	srv := NewServer(cfg, reg, 3001, WithDashboard(nil, nil, "http://localhost:3000", dir))
+
+	if srv.dashboard == nil {
+		t.Fatal("expected dashboard to be set")
+	}
+}
+
+func TestNewServer_WithoutDashboard(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+
+	if srv.dashboard != nil {
+		t.Fatal("expected dashboard to be nil")
+	}
+}

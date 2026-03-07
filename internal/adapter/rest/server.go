@@ -14,6 +14,7 @@ import (
 	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/dashboard"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
@@ -25,6 +26,16 @@ import (
 // ShutdownTimeout is how long to wait for agents to exit before force-killing.
 const ShutdownTimeout = 10 * time.Second
 
+// ServerOption configures optional features on the relay server.
+type ServerOption func(*Server)
+
+// WithDashboard enables dashboard routes on the unified server.
+func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL, projectDir string) ServerOption {
+	return func(s *Server) {
+		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projectDir)
+	}
+}
+
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg       *config.Config
@@ -35,10 +46,11 @@ type Server struct {
 	prService *service.PRService
 	logger    *log.Logger
 	port      int
+	dashboard *dashboard.Server
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
-func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int) *Server {
+func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int, opts ...ServerOption) *Server {
 	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 	if err != nil {
 		store = &jsonfile.AgentStore{}
@@ -48,7 +60,7 @@ func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int) *S
 		client.SetToken(cfg.APIToken)
 	}
 	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
-	return &Server{
+	s := &Server{
 		cfg:       cfg,
 		registry:  registry,
 		store:     store,
@@ -58,6 +70,10 @@ func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int) *S
 		logger:    logger,
 		port:      port,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // newTestableServer creates a server with a custom spawner and client for testing.
@@ -118,6 +134,12 @@ func (s *Server) Run(ctx context.Context) error {
 	lockMgr.StartReaper(ctx)
 	lockHandler := lock.NewHandler(lockMgr)
 	lockHandler.RegisterRoutes(mux)
+
+	// Mount dashboard routes if enabled.
+	if s.dashboard != nil {
+		s.dashboard.RegisterRoutes(mux)
+		s.dashboard.StartWatcher(ctx)
+	}
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.port),
