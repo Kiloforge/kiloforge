@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"crelay/internal/adapter/persistence/jsonfile"
+	"crelay/internal/agent"
 	"crelay/internal/compose"
 	"crelay/internal/config"
 	"crelay/internal/gitea"
@@ -14,7 +16,7 @@ import (
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show Gitea server status",
+	Short: "Show relay status, quota usage, and agent costs",
 	RunE:  runStatus,
 }
 
@@ -53,10 +55,95 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Data:        %s\n", cfg.DataDir)
 	fmt.Printf("Compose:     %s\n", cfg.ComposeFile)
 
+	// Load quota tracker data.
+	tracker := agent.NewQuotaTracker(cfg.DataDir)
+	if err := tracker.Load(); err == nil {
+		printQuotaStatus(tracker, cfg)
+	}
+
+	// Load agent store for per-agent breakdown.
+	if store, err := jsonfile.LoadAgentStore(cfg.DataDir); err == nil {
+		printAgentCosts(tracker, store)
+	}
+
 	if composeInfo != "" {
 		fmt.Println()
 		fmt.Println(composeInfo)
 	}
 
 	return nil
+}
+
+func printQuotaStatus(tracker *agent.QuotaTracker, cfg *config.Config) {
+	total := tracker.GetTotalUsage()
+
+	quotaLabel := "OK"
+	if tracker.IsRateLimited() {
+		quotaLabel = fmt.Sprintf("LIMITED (retry after %s)", tracker.RetryAfter().Round(1e9))
+	}
+
+	fmt.Println()
+	fmt.Printf("Quota:       %s\n", quotaLabel)
+	fmt.Printf("Cost:        $%.2f", total.TotalCostUSD)
+	if cfg.MaxSessionCostUSD > 0 {
+		fmt.Printf(" / $%.2f", cfg.MaxSessionCostUSD)
+	}
+	fmt.Println()
+	fmt.Printf("Tokens:      %s in / %s out (%d agents)\n",
+		formatTokens(total.InputTokens), formatTokens(total.OutputTokens), total.AgentCount)
+}
+
+func printAgentCosts(tracker *agent.QuotaTracker, store *jsonfile.AgentStore) {
+	agents := store.AgentList
+	if len(agents) == 0 {
+		return
+	}
+
+	// Only show agents that have usage data.
+	type agentRow struct {
+		id     string
+		ref    string
+		tokens int
+		cost   float64
+	}
+	var rows []agentRow
+	for _, a := range agents {
+		usage := tracker.GetAgentUsage(a.ID)
+		if usage == nil {
+			continue
+		}
+		rows = append(rows, agentRow{
+			id:     a.ID[:8],
+			ref:    a.Ref,
+			tokens: usage.InputTokens + usage.OutputTokens,
+			cost:   usage.TotalCostUSD,
+		})
+	}
+
+	if len(rows) == 0 {
+		return
+	}
+
+	fmt.Println()
+	fmt.Println("Agent Usage:")
+	for _, r := range rows {
+		fmt.Printf("  %-10s %-30s tokens: %-10s cost: $%.2f\n",
+			r.id, r.ref, formatTokens(r.tokens), r.cost)
+	}
+}
+
+// formatTokens formats an integer with comma separators.
+func formatTokens(n int) string {
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	}
+	s := fmt.Sprintf("%d", n)
+	var result strings.Builder
+	for i, c := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			result.WriteByte(',')
+		}
+		result.WriteRune(c)
+	}
+	return result.String()
 }
