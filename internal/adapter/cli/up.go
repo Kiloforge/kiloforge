@@ -12,6 +12,7 @@ import (
 	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/rest"
+	"crelay/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -89,6 +90,15 @@ func runUp(cmd *cobra.Command, args []string) error {
 			fmt.Printf("==> Dashboard at http://localhost:%d\n", cfg.RelayPort)
 		}
 	}
+
+	// Enable board sync.
+	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	boardClient := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	if cfg.APIToken != "" {
+		boardClient.SetToken(cfg.APIToken)
+	}
+	boardSvc := service.NewBoardService(boardClient, boardStore)
+	opts = append(opts, rest.WithBoardSync(boardSvc, boardStore))
 
 	// Start unified server (blocking).
 	fmt.Printf("==> Gitea proxy at http://localhost:%d/gitea/\n", cfg.RelayPort)
