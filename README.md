@@ -1,15 +1,18 @@
-# Conductor Relay
+# crelay
 
-A local Gitea instance managed via Docker Compose that serves as the git forge for [Conductor](https://github.com/your-org/ai-skills) workflows with Claude Code agents.
+A local collaboration platform for AI agents and humans. Provides a fast, private workspace with a git forge (Gitea), a real-time monitoring dashboard, and orchestration tools for managing diverse agents at scale — all running efficiently on your machine.
 
 ## Why
 
-Conductor's role-based agents (developer, reviewer) work best with a git forge for PRs and code review. Running Gitea locally gives you:
+Working with multiple AI agents across multiple projects demands infrastructure that is fast, observable, and under your control. Remote forges add latency, rate limits, and cost. crelay gives you:
 
-- **Free, private, fast** — no GitHub rate limits or network latency
-- **Automatic agent orchestration** — webhooks trigger Claude agents (reviewer spawns when a PR is opened)
-- **Session management** — view logs, halt agents, and resume their Claude sessions interactively
-- **Full control** — everything runs on your machine
+- **Fast, local-first** — zero network latency for git operations, webhooks, and agent coordination
+- **Human + AI collaboration** — Gitea for code review and PRs, plus a custom web dashboard for real-time agent monitoring, quota tracking, and log streaming
+- **Agent orchestration at scale** — spawn, monitor, throttle, suspend, and resume dozens of concurrent agents across multiple projects
+- **Session persistence** — gracefully shut down agents and auto-recover them on restart, with full session continuity
+- **Quota-aware** — track token usage and cost per agent/track, enforce budgets, and handle rate limits gracefully
+- **Extensible** — scoped lock service, webhook relay, and REST APIs that agents and tools can build on
+- **Full control** — everything runs on your machine, no external dependencies
 
 ## Prerequisites
 
@@ -191,29 +194,38 @@ crelay destroy --force  # skip confirmation
 crelay init / crelay up
     │
     ├─ Docker Compose: start Gitea (localhost:3000)
-    ├─ Webhook relay server (localhost:3001, foreground)
+    ├─ Webhook relay server (localhost:3001)
     │   ├─ Receives events from all registered projects
     │   ├─ Routes by repository name → project registry
-    │   └─ Handles: issues, issue_comment, pull_request,
-    │              pull_request_review, pull_request_comment, push
+    │   ├─ Scoped lock service (merge coordination)
+    │   └─ Handles: issues, PRs, reviews, push events
+    │
+    ├─ Dashboard (localhost:3002)
+    │   ├─ Real-time agent status via SSE
+    │   ├─ Quota/cost monitoring
+    │   └─ Log streaming
     │
     └─ crelay add: register project → Gitea repo + webhook
 
 ┌─────────────────────────────────────────────────────────────┐
-│  Gitea (Docker Compose)                    localhost:3000    │
-│  • Hosts git repos for multiple projects                    │
-│  • Manages PRs and reviews                                  │
-│  • Sends webhooks to relay on events                        │
+│  Gitea (Docker)                            localhost:3000    │
+│  • Git repos, PRs, code review for multiple projects        │
+│  • Webhooks → relay on events                               │
 └────────────────────────┬────────────────────────────────────┘
                          │ webhooks
 ┌────────────────────────▼────────────────────────────────────┐
 │  Relay Server                              localhost:3001    │
 │  • Multi-project event routing                              │
 │  • Developer-reviewer relay cycle                           │
-│  • PR opened → spawn reviewer                               │
-│  • Review approved → resume developer for merge             │
-│  • Changes requested → resume developer (or escalate)       │
-│  • Health: GET /health                                      │
+│  • Agent lifecycle: spawn, suspend, resume                  │
+│  • Quota tracking and budget enforcement                    │
+│  • Scoped lock API (merge serialization)                    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  Dashboard                                 localhost:3002    │
+│  • Agent status, logs, and cost — live in the browser       │
+│  • Links to Gitea PRs and repos                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
