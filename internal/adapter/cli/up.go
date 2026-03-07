@@ -86,8 +86,8 @@ func runUp(cmd *cobra.Command, args []string) error {
 			tracker := agent.NewQuotaTracker(cfg.DataDir)
 			_ = tracker.Load()
 			projectDir, _ := os.Getwd()
-			opts = append(opts, rest.WithDashboard(store, tracker, "/gitea", projectDir))
-			fmt.Printf("==> Dashboard at http://localhost:%d\n", cfg.RelayPort)
+			opts = append(opts, rest.WithDashboard(store, tracker, "/", projectDir))
+			fmt.Printf("==> Dashboard at http://localhost:%d/-/\n", cfg.RelayPort)
 		}
 	}
 
@@ -101,7 +101,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	opts = append(opts, rest.WithBoardSync(boardSvc, boardStore))
 
 	// Start unified server (blocking).
-	fmt.Printf("==> Gitea proxy at http://localhost:%d/gitea/\n", cfg.RelayPort)
+	fmt.Printf("==> Gitea at http://localhost:%d/\n", cfg.RelayPort)
 	fmt.Printf("==> Starting server on :%d (%d project(s))...\n", cfg.RelayPort, len(projects))
 	fmt.Println("    Press Ctrl+C to stop.")
 	fmt.Println()

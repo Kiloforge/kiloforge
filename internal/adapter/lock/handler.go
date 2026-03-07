@@ -20,8 +20,8 @@ func NewHandler(mgr *Manager) *Handler {
 
 // RegisterRoutes adds lock endpoints to the given mux.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/locks", h.handleList)
-	mux.HandleFunc("/api/locks/", h.handleLockAction)
+	mux.HandleFunc("/-/api/locks", h.handleList)
+	mux.HandleFunc("/-/api/locks/", h.handleLockAction)
 }
 
 type acquireRequest struct {
@@ -83,8 +83,8 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleLockAction(w http.ResponseWriter, r *http.Request) {
-	// Parse: /api/locks/{scope}/acquire, /api/locks/{scope}/heartbeat, /api/locks/{scope}
-	path := strings.TrimPrefix(r.URL.Path, "/api/locks/")
+	// Parse: /-/api/locks/{scope}/acquire, /-/api/locks/{scope}/heartbeat, /-/api/locks/{scope}
+	path := strings.TrimPrefix(r.URL.Path, "/-/api/locks/")
 	parts := strings.SplitN(path, "/", 2)
 	if len(parts) == 0 || parts[0] == "" {
 		http.Error(w, "scope required", http.StatusBadRequest)

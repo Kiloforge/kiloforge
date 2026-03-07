@@ -65,7 +65,7 @@ func TestHandleAgents_Empty(t *testing.T) {
 	t.Parallel()
 	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/agents", nil)
+	req := httptest.NewRequest("GET", "/-/api/agents", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -94,7 +94,7 @@ func TestHandleAgents_WithAgents(t *testing.T) {
 	}
 	s := newTestServer(agents, quota, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/agents", nil)
+	req := httptest.NewRequest("GET", "/-/api/agents", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -118,7 +118,7 @@ func TestHandleAgent_NotFound(t *testing.T) {
 	t.Parallel()
 	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/agents/nonexistent", nil)
+	req := httptest.NewRequest("GET", "/-/api/agents/nonexistent", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -136,7 +136,7 @@ func TestHandleAgent_Found(t *testing.T) {
 	}
 	s := newTestServer(agents, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/agents/dev-1", nil)
+	req := httptest.NewRequest("GET", "/-/api/agents/dev-1", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -154,7 +154,7 @@ func TestHandleQuota_NoTracker(t *testing.T) {
 	t.Parallel()
 	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/quota", nil)
+	req := httptest.NewRequest("GET", "/-/api/quota", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -177,7 +177,7 @@ func TestHandleQuota_RateLimited(t *testing.T) {
 	}
 	s := newTestServer(&testAgentLister{}, quota, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/quota", nil)
+	req := httptest.NewRequest("GET", "/-/api/quota", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -210,7 +210,7 @@ func TestHandleTracks(t *testing.T) {
 
 	s := newTestServer(&testAgentLister{}, nil, dir)
 
-	req := httptest.NewRequest("GET", "/api/tracks", nil)
+	req := httptest.NewRequest("GET", "/-/api/tracks", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -234,7 +234,7 @@ func TestHandleTracks_NoFile(t *testing.T) {
 	t.Parallel()
 	s := newTestServer(&testAgentLister{}, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/tracks", nil)
+	req := httptest.NewRequest("GET", "/-/api/tracks", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -257,7 +257,7 @@ func TestHandleStatus(t *testing.T) {
 	}
 	s := newTestServer(agents, quota, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/status", nil)
+	req := httptest.NewRequest("GET", "/-/api/status", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -287,7 +287,7 @@ func TestHandleAgentLog_NoLogFile(t *testing.T) {
 	}
 	s := newTestServer(agents, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/agents/dev-1/log", nil)
+	req := httptest.NewRequest("GET", "/-/api/agents/dev-1/log", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -309,7 +309,7 @@ func TestHandleAgentLog_WithLines(t *testing.T) {
 	}
 	s := newTestServer(agents, nil, t.TempDir())
 
-	req := httptest.NewRequest("GET", "/api/agents/dev-1/log?lines=3", nil)
+	req := httptest.NewRequest("GET", "/-/api/agents/dev-1/log?lines=3", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -383,9 +383,9 @@ func TestRegisterRoutes_MountsOnExternalMux(t *testing.T) {
 		path string
 		code int
 	}{
-		{"/api/agents", http.StatusOK},
-		{"/api/quota", http.StatusOK},
-		{"/api/status", http.StatusOK},
+		{"/-/api/agents", http.StatusOK},
+		{"/-/api/quota", http.StatusOK},
+		{"/-/api/status", http.StatusOK},
 	}
 
 	for _, r := range routes {

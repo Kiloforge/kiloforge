@@ -40,7 +40,7 @@ func TestTrackBadge_RunningAgent(t *testing.T) {
 		{ID: "a1", Role: "developer", Ref: "my-track_123", Status: "running", StartedAt: time.Now()},
 	}, nil)
 
-	req := httptest.NewRequest("GET", "/api/badges/track/my-track_123", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/track/my-track_123", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -68,7 +68,7 @@ func TestTrackBadge_RunningAgent(t *testing.T) {
 func TestTrackBadge_Pending(t *testing.T) {
 	_, mux := setupBadgeHandler(nil, nil)
 
-	req := httptest.NewRequest("GET", "/api/badges/track/unknown-track", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/track/unknown-track", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -93,7 +93,7 @@ func TestPRBadge_BothAgents(t *testing.T) {
 		{ID: "rev-1", Role: "reviewer", Status: "waiting"},
 	}, loader)
 
-	req := httptest.NewRequest("GET", "/api/badges/pr/myproj/5", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/pr/myproj/5", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -109,7 +109,7 @@ func TestPRBadge_BothAgents(t *testing.T) {
 func TestPRBadge_NoTracking(t *testing.T) {
 	_, mux := setupBadgeHandler(nil, nil)
 
-	req := httptest.NewRequest("GET", "/api/badges/pr/myproj/5", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/pr/myproj/5", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -123,7 +123,7 @@ func TestAgentBadge_Found(t *testing.T) {
 		{ID: "agent-abc", Role: "reviewer", Status: "completed"},
 	}, nil)
 
-	req := httptest.NewRequest("GET", "/api/badges/agent/agent-abc", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/agent/agent-abc", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -139,7 +139,7 @@ func TestAgentBadge_Found(t *testing.T) {
 func TestAgentBadge_NotFound(t *testing.T) {
 	_, mux := setupBadgeHandler(nil, nil)
 
-	req := httptest.NewRequest("GET", "/api/badges/agent/nonexistent", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/agent/nonexistent", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -156,7 +156,7 @@ func TestTrackBadge_PicksMostRecent(t *testing.T) {
 		{ID: "a2", Ref: "track-x", Status: "running", StartedAt: recent},
 	}, nil)
 
-	req := httptest.NewRequest("GET", "/api/badges/track/track-x", nil)
+	req := httptest.NewRequest("GET", "/-/api/badges/track/track-x", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 

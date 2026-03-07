@@ -33,9 +33,9 @@ func NewHandler(agents AgentFinder, prLoader PRTrackingLoader) *Handler {
 
 // RegisterRoutes adds badge routes to the given mux.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/badges/track/{trackId}", h.handleTrackBadge)
-	mux.HandleFunc("GET /api/badges/pr/{slug}/{prNumber}", h.handlePRBadge)
-	mux.HandleFunc("GET /api/badges/agent/{agentId}", h.handleAgentBadge)
+	mux.HandleFunc("GET /-/api/badges/track/{trackId}", h.handleTrackBadge)
+	mux.HandleFunc("GET /-/api/badges/pr/{slug}/{prNumber}", h.handlePRBadge)
+	mux.HandleFunc("GET /-/api/badges/agent/{agentId}", h.handleAgentBadge)
 }
 
 func writeSVG(w http.ResponseWriter, svg []byte) {

@@ -120,30 +120,30 @@
 
   // Initial data load
   function loadAll() {
-    fetchJSON("/api/agents", function(data) {
+    fetchJSON("/-/api/agents", function(data) {
       state.agents = data || [];
       renderAgents();
     });
-    fetchJSON("/api/quota", function(data) {
+    fetchJSON("/-/api/quota", function(data) {
       state.quota = data;
       renderQuota();
     });
-    fetchJSON("/api/tracks", function(data) {
+    fetchJSON("/-/api/tracks", function(data) {
       state.tracks = data || [];
       renderTracks();
     });
-    fetchJSON("/api/status", function(data) {
+    fetchJSON("/-/api/status", function(data) {
       if (data && data.gitea_url) {
         state.giteaURL = data.gitea_url;
         var link = document.getElementById("gitea-link");
-        link.href = data.gitea_url + "/";
+        link.href = "/";
       }
     });
   }
 
   // SSE connection
   function connectSSE() {
-    var es = new EventSource("/events");
+    var es = new EventSource("/-/events");
 
     es.onopen = function() {
       connStatus.textContent = "connected";
@@ -190,7 +190,7 @@
     logViewer.textContent = "Loading...";
     logModal.hidden = false;
 
-    fetchJSON("/api/agents/" + encodeURIComponent(agentId) + "/log?lines=200", function(data) {
+    fetchJSON("/-/api/agents/" + encodeURIComponent(agentId) + "/log?lines=200", function(data) {
       if (data && data.lines) {
         logViewer.textContent = data.lines.join("\n");
         logViewer.scrollTop = logViewer.scrollHeight;

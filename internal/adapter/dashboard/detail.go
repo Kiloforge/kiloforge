@@ -13,21 +13,21 @@ const trackDetailHTML = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Track: {{.TrackID}} — crelay</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/-/style.css">
 </head>
 <body>
   <header>
     <div class="header-left">
-      <h1><a href="/" style="color:inherit;text-decoration:none">crelay</a></h1>
+      <h1><a href="/-/" style="color:inherit;text-decoration:none">crelay</a></h1>
       <span class="badge" id="conn-status">connecting</span>
     </div>
-    <nav><a href="/">Dashboard</a></nav>
+    <nav><a href="/-/">Dashboard</a></nav>
   </header>
   <main>
     <section class="panel">
       <h2>Track: {{.TrackID}}</h2>
       <div style="margin:1rem 0">
-        <img src="/api/badges/track/{{.TrackID}}" alt="status badge" style="height:20px">
+        <img src="/-/api/badges/track/{{.TrackID}}" alt="status badge" style="height:20px">
       </div>
       <div id="agent-grid" class="agent-grid">
         <p class="empty-state">Loading agent data...</p>
@@ -41,7 +41,7 @@ const trackDetailHTML = `<!DOCTYPE html>
   <script>
     const TRACK_ID = "{{.TrackID}}";
     async function loadAgents() {
-      const resp = await fetch('/api/agents');
+      const resp = await fetch('/-/api/agents');
       const agents = await resp.json();
       const matched = agents.filter(a => a.ref === TRACK_ID);
       const grid = document.getElementById('agent-grid');
@@ -60,12 +60,12 @@ const trackDetailHTML = `<!DOCTYPE html>
     }
     async function showLog(id) {
       document.getElementById('log-section').hidden = false;
-      const resp = await fetch('/api/agents/'+id+'/log?lines=200');
+      const resp = await fetch('/-/api/agents/'+id+'/log?lines=200');
       const data = await resp.json();
       document.getElementById('log-viewer').textContent = (data.lines||[]).join('\n');
     }
     loadAgents();
-    const es = new EventSource('/events');
+    const es = new EventSource('/-/events');
     es.onopen = () => document.getElementById('conn-status').textContent = 'live';
     es.addEventListener('agent_update', () => loadAgents());
   </script>
@@ -78,21 +78,21 @@ const prDetailHTML = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PR #{{.PRNumber}} — crelay</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/-/style.css">
 </head>
 <body>
   <header>
     <div class="header-left">
-      <h1><a href="/" style="color:inherit;text-decoration:none">crelay</a></h1>
+      <h1><a href="/-/" style="color:inherit;text-decoration:none">crelay</a></h1>
       <span class="badge" id="conn-status">connecting</span>
     </div>
-    <nav><a href="/">Dashboard</a></nav>
+    <nav><a href="/-/">Dashboard</a></nav>
   </header>
   <main>
     <section class="panel">
       <h2>PR #{{.PRNumber}} — {{.Slug}}</h2>
       <div style="margin:1rem 0">
-        <img src="/api/badges/pr/{{.Slug}}/{{.PRNumber}}" alt="status badge" style="height:20px">
+        <img src="/-/api/badges/pr/{{.Slug}}/{{.PRNumber}}" alt="status badge" style="height:20px">
       </div>
       <div id="agent-grid" class="agent-grid">
         <p class="empty-state">Loading agent data...</p>
@@ -105,7 +105,7 @@ const prDetailHTML = `<!DOCTYPE html>
   </main>
   <script>
     async function loadAgents() {
-      const resp = await fetch('/api/agents');
+      const resp = await fetch('/-/api/agents');
       const agents = await resp.json();
       const matched = agents.filter(a => a.ref && a.ref.includes('#{{.PRNumber}}'));
       const grid = document.getElementById('agent-grid');
@@ -124,12 +124,12 @@ const prDetailHTML = `<!DOCTYPE html>
     }
     async function showLog(id) {
       document.getElementById('log-section').hidden = false;
-      const resp = await fetch('/api/agents/'+id+'/log?lines=200');
+      const resp = await fetch('/-/api/agents/'+id+'/log?lines=200');
       const data = await resp.json();
       document.getElementById('log-viewer').textContent = (data.lines||[]).join('\n');
     }
     loadAgents();
-    const es = new EventSource('/events');
+    const es = new EventSource('/-/events');
     es.onopen = () => document.getElementById('conn-status').textContent = 'live';
     es.addEventListener('agent_update', () => loadAgents());
   </script>

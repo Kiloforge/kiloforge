@@ -77,18 +77,18 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 // RegisterRoutes mounts all dashboard routes onto the given mux.
-// This allows the relay server to host dashboard routes on its own mux.
+// All routes are prefixed with /-/ to avoid collisions with Gitea paths.
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/agents", s.handleAgents)
-	mux.HandleFunc("GET /api/agents/{id}", s.handleAgent)
-	mux.HandleFunc("GET /api/agents/{id}/log", s.handleAgentLog)
-	mux.HandleFunc("GET /api/quota", s.handleQuota)
-	mux.HandleFunc("GET /api/tracks", s.handleTracks)
-	mux.HandleFunc("GET /api/status", s.handleStatus)
-	mux.HandleFunc("GET /events", s.handleSSE)
-	mux.HandleFunc("GET /tracks/{trackId}", s.handleTrackDetail)
-	mux.HandleFunc("GET /pr/{slug}/{prNumber}", s.handlePRDetail)
-	mux.Handle("GET /", http.FileServer(http.FS(staticFS)))
+	mux.HandleFunc("GET /-/api/agents", s.handleAgents)
+	mux.HandleFunc("GET /-/api/agents/{id}", s.handleAgent)
+	mux.HandleFunc("GET /-/api/agents/{id}/log", s.handleAgentLog)
+	mux.HandleFunc("GET /-/api/quota", s.handleQuota)
+	mux.HandleFunc("GET /-/api/tracks", s.handleTracks)
+	mux.HandleFunc("GET /-/api/status", s.handleStatus)
+	mux.HandleFunc("GET /-/events", s.handleSSE)
+	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)
+	mux.HandleFunc("GET /-/pr/{slug}/{prNumber}", s.handlePRDetail)
+	mux.Handle("GET /-/", http.StripPrefix("/-", http.FileServer(http.FS(staticFS))))
 }
 
 func (s *Server) routes() {
