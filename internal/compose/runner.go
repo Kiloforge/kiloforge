@@ -77,6 +77,14 @@ func (r *Runner) Down(ctx context.Context, composeDir string, removeVolumes bool
 	return cmd.Run()
 }
 
+// Stop runs `docker compose stop` — stops containers without removing them.
+func (r *Runner) Stop(ctx context.Context, composeDir string) error {
+	cmd := r.command(ctx, composeDir, "stop")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 // Ps runs `docker compose ps` and returns the output.
 func (r *Runner) Ps(ctx context.Context, composeDir string) (string, error) {
 	cmd := r.command(ctx, composeDir, "ps", "--format", "table")

@@ -64,3 +64,30 @@ func TestRunner_CommandBuilding(t *testing.T) {
 		}
 	}
 }
+
+func TestRunner_StopCommandBuilding(t *testing.T) {
+	t.Parallel()
+
+	runner := &Runner{args: []string{"docker", "compose"}}
+
+	cmd := runner.command(context.Background(), "/tmp/test", "stop")
+	args := cmd.Args
+
+	// Should contain: docker compose -f /tmp/test/docker-compose.yml -p crelay stop
+	expected := []string{
+		"docker", "compose",
+		"-f", "/tmp/test/docker-compose.yml",
+		"-p", "crelay",
+		"stop",
+	}
+
+	if len(args) != len(expected) {
+		t.Fatalf("expected %d args, got %d: %v", len(expected), len(args), args)
+	}
+
+	for i, want := range expected {
+		if args[i] != want {
+			t.Errorf("arg[%d]: want %q, got %q", i, want, args[i])
+		}
+	}
+}
