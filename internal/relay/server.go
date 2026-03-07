@@ -18,6 +18,7 @@ import (
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
 	"crelay/internal/gitea"
+	"crelay/internal/lock"
 	"crelay/internal/pool"
 )
 
@@ -111,6 +112,12 @@ func (s *Server) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", s.handleWebhook)
 	mux.HandleFunc("/health", s.handleHealth)
+
+	// Lock service.
+	lockMgr := lock.New(s.cfg.DataDir)
+	lockMgr.StartReaper(ctx)
+	lockHandler := lock.NewHandler(lockMgr)
+	lockHandler.RegisterRoutes(mux)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.port),
