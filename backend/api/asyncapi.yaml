@@ -1,0 +1,323 @@
+asyncapi: 3.0.0
+info:
+  title: crelay Event API
+  version: 0.1.0
+  description: |
+    Event-driven interfaces for the crelay relay server.
+    Covers server-sent events for real-time UI updates and
+    consumed Gitea webhook payloads.
+
+defaultContentType: application/json
+
+channels:
+  sseEvents:
+    address: /-/events
+    description: |
+      Server-Sent Events channel for real-time agent and quota updates.
+      Clients connect via EventSource. Events are non-durable — slow
+      clients that can't keep up will miss events.
+    messages:
+      agentUpdate:
+        $ref: '#/components/messages/AgentUpdate'
+      agentRemoved:
+        $ref: '#/components/messages/AgentRemoved'
+      quotaUpdate:
+        $ref: '#/components/messages/QuotaUpdate'
+
+  giteaWebhook:
+    address: /webhook
+    description: |
+      Consumed Gitea webhook events. Gitea POSTs event payloads to this
+      endpoint. The event type is indicated by the X-Gitea-Event header.
+    messages:
+      issueEvent:
+        $ref: '#/components/messages/GiteaIssueEvent'
+      pullRequestEvent:
+        $ref: '#/components/messages/GiteaPullRequestEvent'
+      issueCommentEvent:
+        $ref: '#/components/messages/GiteaIssueCommentEvent'
+      pullRequestReviewEvent:
+        $ref: '#/components/messages/GiteaPullRequestReviewEvent'
+
+operations:
+  publishSSE:
+    action: send
+    channel:
+      $ref: '#/channels/sseEvents'
+    summary: Server pushes real-time updates to connected SSE clients.
+    messages:
+      - $ref: '#/channels/sseEvents/messages/agentUpdate'
+      - $ref: '#/channels/sseEvents/messages/agentRemoved'
+      - $ref: '#/channels/sseEvents/messages/quotaUpdate'
+
+  consumeWebhook:
+    action: receive
+    channel:
+      $ref: '#/channels/giteaWebhook'
+    summary: Server receives webhook events from Gitea.
+    messages:
+      - $ref: '#/channels/giteaWebhook/messages/issueEvent'
+      - $ref: '#/channels/giteaWebhook/messages/pullRequestEvent'
+      - $ref: '#/channels/giteaWebhook/messages/issueCommentEvent'
+      - $ref: '#/channels/giteaWebhook/messages/pullRequestReviewEvent'
+
+components:
+  messages:
+    AgentUpdate:
+      name: agent_update
+      title: Agent Update
+      summary: Emitted when an agent's status changes or a new agent appears.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AgentPayload'
+
+    AgentRemoved:
+      name: agent_removed
+      title: Agent Removed
+      summary: Emitted when a previously tracked agent is no longer present.
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - id
+        properties:
+          id:
+            type: string
+            description: The ID of the removed agent.
+
+    QuotaUpdate:
+      name: quota_update
+      title: Quota Update
+      summary: Emitted when quota usage or rate-limit status changes.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/QuotaPayload'
+
+    GiteaIssueEvent:
+      name: gitea_issue
+      title: Gitea Issue Event
+      summary: Issue created, updated, closed, or label changed.
+      headers:
+        type: object
+        properties:
+          X-Gitea-Event:
+            type: string
+            enum: [issues]
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/GiteaIssuePayload'
+
+    GiteaPullRequestEvent:
+      name: gitea_pull_request
+      title: Gitea Pull Request Event
+      summary: Pull request opened, closed, merged, or synchronized.
+      headers:
+        type: object
+        properties:
+          X-Gitea-Event:
+            type: string
+            enum: [pull_request]
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/GiteaPullRequestPayload'
+
+    GiteaIssueCommentEvent:
+      name: gitea_issue_comment
+      title: Gitea Issue Comment Event
+      summary: Comment added to an issue or pull request.
+      headers:
+        type: object
+        properties:
+          X-Gitea-Event:
+            type: string
+            enum: [issue_comment]
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/GiteaIssueCommentPayload'
+
+    GiteaPullRequestReviewEvent:
+      name: gitea_pull_request_review
+      title: Gitea Pull Request Review Event
+      summary: Review submitted on a pull request.
+      headers:
+        type: object
+        properties:
+          X-Gitea-Event:
+            type: string
+            enum: [pull_request_review]
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/GiteaPullRequestReviewPayload'
+
+  schemas:
+    AgentPayload:
+      type: object
+      required:
+        - id
+        - role
+        - status
+        - started_at
+      properties:
+        id:
+          type: string
+          description: Unique agent identifier.
+        role:
+          type: string
+          enum: [developer, reviewer]
+          description: Agent role.
+        ref:
+          type: string
+          description: Track ID or reference this agent is working on.
+        status:
+          type: string
+          enum: [running, waiting, halted, stopped, completed, resume-failed]
+          description: Current agent status.
+        session_id:
+          type: string
+          description: Claude Code session ID.
+        pid:
+          type: integer
+          description: OS process ID.
+        worktree_dir:
+          type: string
+          description: Git worktree directory path.
+        log_file:
+          type: string
+          description: Path to the agent's log file.
+        started_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        suspended_at:
+          type: string
+          format: date-time
+          description: When the agent was suspended (if applicable).
+        shutdown_reason:
+          type: string
+          description: Reason for shutdown (if applicable).
+
+    QuotaPayload:
+      type: object
+      properties:
+        total_cost_usd:
+          type: number
+          format: double
+          description: Total cost in USD across all agents.
+        rate_limited:
+          type: boolean
+          description: Whether any agent is currently rate-limited.
+
+    GiteaIssuePayload:
+      type: object
+      description: |
+        Gitea issue webhook payload. See Gitea API documentation for
+        the full schema. Key fields used by crelay are listed here.
+      properties:
+        action:
+          type: string
+          enum: [opened, closed, reopened, label_updated, edited]
+        number:
+          type: integer
+        issue:
+          type: object
+          properties:
+            number:
+              type: integer
+            title:
+              type: string
+            state:
+              type: string
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+        sender:
+          type: object
+          properties:
+            login:
+              type: string
+
+    GiteaPullRequestPayload:
+      type: object
+      description: Gitea pull request webhook payload (key fields).
+      properties:
+        action:
+          type: string
+          enum: [opened, closed, synchronize, edited, reviewed]
+        number:
+          type: integer
+        pull_request:
+          type: object
+          properties:
+            number:
+              type: integer
+            title:
+              type: string
+            state:
+              type: string
+            merged:
+              type: boolean
+            head:
+              type: object
+              properties:
+                ref:
+                  type: string
+            base:
+              type: object
+              properties:
+                ref:
+                  type: string
+
+    GiteaIssueCommentPayload:
+      type: object
+      description: Gitea issue comment webhook payload (key fields).
+      properties:
+        action:
+          type: string
+          enum: [created, edited, deleted]
+        comment:
+          type: object
+          properties:
+            body:
+              type: string
+        issue:
+          type: object
+          properties:
+            number:
+              type: integer
+        sender:
+          type: object
+          properties:
+            login:
+              type: string
+
+    GiteaPullRequestReviewPayload:
+      type: object
+      description: Gitea pull request review webhook payload (key fields).
+      properties:
+        action:
+          type: string
+          enum: [submitted]
+        review:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [approved, changes_requested, comment]
+            body:
+              type: string
+        pull_request:
+          type: object
+          properties:
+            number:
+              type: integer
+        sender:
+          type: object
+          properties:
+            login:
+              type: string
