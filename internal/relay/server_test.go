@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"crelay/internal/config"
+	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/project"
 	"crelay/internal/state"
@@ -39,6 +41,31 @@ func newTestServerWithDir(dataDir string) *Server {
 		},
 	}
 	return NewServer(cfg, reg, 3001)
+}
+
+// newTestServerWithSpawner creates a server with a fake spawner for testing review cycle.
+func newTestServerWithSpawner(dataDir string, spawner AgentSpawner, giteaSrv *httptest.Server) *Server {
+	cfg := &config.Config{
+		GiteaPort:      3000,
+		DataDir:        dataDir,
+		GiteaAdminUser: "conductor",
+	}
+	reg := &project.Registry{
+		Version: 1,
+		Projects: map[string]project.Project{
+			"myapp": {
+				Slug:     "myapp",
+				RepoName: "myapp",
+			},
+		},
+	}
+	var client *gitea.Client
+	if giteaSrv != nil {
+		client = gitea.NewClient(giteaSrv.URL, "conductor", "pass")
+	} else {
+		client = gitea.NewClient("http://localhost:3000", "conductor", "pass")
+	}
+	return newTestableServer(cfg, reg, spawner, client)
 }
 
 func postWebhook(t *testing.T, srv *Server, event string, payload map[string]any) *httptest.ResponseRecorder {
@@ -245,15 +272,17 @@ func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	srv := newTestServerWithDir(dir)
+	spawner := &fakeSpawner{}
+	srv := newTestServerWithSpawner(dir, spawner, nil)
 
 	// Add a developer agent to state so the tracking can find it.
 	srv.store.AddAgent(state.AgentInfo{
-		ID:        "dev-agent-123",
-		Role:      "developer",
-		Ref:       "my-track_20260101Z",
-		Status:    "running",
-		SessionID: "dev-session-456",
+		ID:          "dev-agent-123",
+		Role:        "developer",
+		Ref:         "my-track_20260101Z",
+		Status:      "running",
+		SessionID:   "dev-session-456",
+		WorktreeDir: "/tmp/worktree",
 	})
 
 	rec := postWebhook(t, srv, "pull_request", map[string]any{
@@ -287,7 +316,257 @@ func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
 	if tracking.DeveloperAgentID != "dev-agent-123" {
 		t.Errorf("DeveloperAgentID: want %q, got %q", "dev-agent-123", tracking.DeveloperAgentID)
 	}
-	if tracking.Status != "waiting-review" {
-		t.Errorf("Status: want %q, got %q", "waiting-review", tracking.Status)
+
+	// Reviewer should have been spawned.
+	if len(spawner.reviewerCalls) != 1 {
+		t.Fatalf("expected 1 reviewer spawn, got %d", len(spawner.reviewerCalls))
 	}
+}
+
+func TestReviewApproved_ResumesDeveloper(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	spawner := &fakeSpawner{}
+	srv := newTestServerWithSpawner(dir, spawner, nil)
+
+	// Set up developer agent.
+	srv.store.AddAgent(state.AgentInfo{
+		ID:        "dev-agent-123",
+		Role:      "developer",
+		Ref:       "my-track",
+		Status:    "waiting-review",
+		SessionID: "dev-session-456",
+	})
+
+	// Create PR tracking.
+	projectDir := filepath.Join(dir, "projects", "myapp")
+	os.MkdirAll(projectDir, 0o755)
+	tracking := &orchestration.PRTracking{
+		PRNumber:         5,
+		TrackID:          "my-track",
+		ProjectSlug:      "myapp",
+		DeveloperAgentID: "dev-agent-123",
+		DeveloperSession: "dev-session-456",
+		MaxReviewCycles:  3,
+		Status:           "in-review",
+	}
+	tracking.Save(projectDir)
+
+	// Send approved review.
+	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
+		"action":     "submitted",
+		"repository": map[string]any{"name": "myapp"},
+		"review":     map[string]any{"state": "approved"},
+		"pull_request": map[string]any{
+			"number": float64(5),
+		},
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	// Developer should have been resumed.
+	if len(spawner.resumeCalls) != 1 {
+		t.Fatalf("expected 1 resume call, got %d", len(spawner.resumeCalls))
+	}
+	if spawner.resumeCalls[0].sessionID != "dev-session-456" {
+		t.Errorf("resumed wrong session: %q", spawner.resumeCalls[0].sessionID)
+	}
+
+	// Tracking should be updated.
+	updated, _ := orchestration.LoadPRTracking(projectDir)
+	if updated.Status != "approved" {
+		t.Errorf("status: want %q, got %q", "approved", updated.Status)
+	}
+}
+
+func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	spawner := &fakeSpawner{}
+	srv := newTestServerWithSpawner(dir, spawner, nil)
+
+	srv.store.AddAgent(state.AgentInfo{
+		ID:        "dev-agent-123",
+		Role:      "developer",
+		Ref:       "my-track",
+		Status:    "waiting-review",
+		SessionID: "dev-session-456",
+	})
+
+	projectDir := filepath.Join(dir, "projects", "myapp")
+	os.MkdirAll(projectDir, 0o755)
+	tracking := &orchestration.PRTracking{
+		PRNumber:         5,
+		TrackID:          "my-track",
+		ProjectSlug:      "myapp",
+		DeveloperAgentID: "dev-agent-123",
+		DeveloperSession: "dev-session-456",
+		MaxReviewCycles:  3,
+		Status:           "in-review",
+	}
+	tracking.Save(projectDir)
+
+	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
+		"action":     "submitted",
+		"repository": map[string]any{"name": "myapp"},
+		"review":     map[string]any{"state": "changes_requested"},
+		"pull_request": map[string]any{
+			"number": float64(5),
+		},
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	if len(spawner.resumeCalls) != 1 {
+		t.Fatalf("expected 1 resume, got %d", len(spawner.resumeCalls))
+	}
+
+	updated, _ := orchestration.LoadPRTracking(projectDir)
+	if updated.ReviewCycleCount != 1 {
+		t.Errorf("ReviewCycleCount: want 1, got %d", updated.ReviewCycleCount)
+	}
+	if updated.Status != "changes-requested" {
+		t.Errorf("status: want %q, got %q", "changes-requested", updated.Status)
+	}
+}
+
+func TestReviewCycleLimit_Escalates(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	spawner := &fakeSpawner{}
+
+	// Fake Gitea server to receive label/comment calls.
+	var giteaCalls []string
+	giteaSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		giteaCalls = append(giteaCalls, r.Method+" "+r.URL.Path)
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"id": 1}`))
+	}))
+	defer giteaSrv.Close()
+
+	srv := newTestServerWithSpawner(dir, spawner, giteaSrv)
+
+	srv.store.AddAgent(state.AgentInfo{
+		ID:        "dev-agent-123",
+		Role:      "developer",
+		Ref:       "my-track",
+		Status:    "waiting-review",
+		SessionID: "dev-session-456",
+	})
+
+	projectDir := filepath.Join(dir, "projects", "myapp")
+	os.MkdirAll(projectDir, 0o755)
+	tracking := &orchestration.PRTracking{
+		PRNumber:         5,
+		TrackID:          "my-track",
+		ProjectSlug:      "myapp",
+		DeveloperAgentID: "dev-agent-123",
+		DeveloperSession: "dev-session-456",
+		ReviewCycleCount: 2, // Already at 2, next will be 3 = limit
+		MaxReviewCycles:  3,
+		Status:           "in-review",
+	}
+	tracking.Save(projectDir)
+
+	postWebhook(t, srv, "pull_request_review", map[string]any{
+		"action":     "submitted",
+		"repository": map[string]any{"name": "myapp"},
+		"review":     map[string]any{"state": "changes_requested"},
+		"pull_request": map[string]any{
+			"number": float64(5),
+		},
+	})
+
+	// Should NOT have resumed developer (escalated instead).
+	if len(spawner.resumeCalls) != 0 {
+		t.Errorf("expected 0 resume calls (escalated), got %d", len(spawner.resumeCalls))
+	}
+
+	// Should have made Gitea API calls for label + comment.
+	if len(giteaCalls) < 2 {
+		t.Errorf("expected at least 2 Gitea API calls, got %d: %v", len(giteaCalls), giteaCalls)
+	}
+
+	// Tracking should be escalated.
+	updated, _ := orchestration.LoadPRTracking(projectDir)
+	if updated.Status != "escalated" {
+		t.Errorf("status: want %q, got %q", "escalated", updated.Status)
+	}
+}
+
+func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	spawner := &fakeSpawner{}
+	srv := newTestServerWithSpawner(dir, spawner, nil)
+
+	srv.store.AddAgent(state.AgentInfo{
+		ID:        "dev-agent-123",
+		Role:      "developer",
+		Ref:       "my-track",
+		Status:    "running",
+		SessionID: "dev-session-456",
+	})
+
+	projectDir := filepath.Join(dir, "projects", "myapp")
+	os.MkdirAll(projectDir, 0o755)
+	tracking := &orchestration.PRTracking{
+		PRNumber:         5,
+		TrackID:          "my-track",
+		ProjectSlug:      "myapp",
+		DeveloperAgentID: "dev-agent-123",
+		DeveloperSession: "dev-session-456",
+		MaxReviewCycles:  3,
+		Status:           "changes-requested",
+	}
+	tracking.Save(projectDir)
+
+	postWebhook(t, srv, "pull_request", map[string]any{
+		"action":     "synchronize",
+		"repository": map[string]any{"name": "myapp"},
+		"pull_request": map[string]any{
+			"number": float64(5),
+			"title":  "feat: my track",
+		},
+	})
+
+	// Reviewer should have been spawned.
+	if len(spawner.reviewerCalls) != 1 {
+		t.Fatalf("expected 1 reviewer spawn, got %d", len(spawner.reviewerCalls))
+	}
+}
+
+// fakeSpawner records calls for testing.
+type fakeSpawner struct {
+	reviewerCalls []ReviewerOpts
+	resumeCalls   []resumeCall
+}
+
+type resumeCall struct {
+	sessionID string
+	workDir   string
+}
+
+func (f *fakeSpawner) SpawnReviewer(_ context.Context, opts ReviewerOpts) (*state.AgentInfo, error) {
+	f.reviewerCalls = append(f.reviewerCalls, opts)
+	return &state.AgentInfo{
+		ID:        "reviewer-fake",
+		Role:      "reviewer",
+		Ref:       fmt.Sprintf("PR #%d", opts.PRNumber),
+		Status:    "running",
+		SessionID: "reviewer-session-fake",
+	}, nil
+}
+
+func (f *fakeSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir string) error {
+	f.resumeCalls = append(f.resumeCalls, resumeCall{sessionID: sessionID, workDir: workDir})
+	return nil
 }

@@ -179,3 +179,51 @@ func (c *Client) GetPR(ctx context.Context, repoName string, prNumber int) (map[
 	}
 	return result, nil
 }
+
+// CommentOnPR posts a comment on a PR (uses the issues endpoint since PRs are issues in Gitea).
+func (c *Client) CommentOnPR(ctx context.Context, repoName string, prNumber int, body string) error {
+	payload := map[string]any{"body": body}
+	_, err := c.do(ctx, "POST", fmt.Sprintf("/api/v1/repos/%s/%s/issues/%d/comments", c.username, repoName, prNumber), payload)
+	return err
+}
+
+// AddLabel creates a label on the repo (if needed) and adds it to the given PR/issue.
+func (c *Client) AddLabel(ctx context.Context, repoName string, prNumber int, labelName string) error {
+	// Create the label on the repo.
+	createPayload := map[string]any{
+		"name":  labelName,
+		"color": "#e11d48",
+	}
+	data, err := c.do(ctx, "POST", fmt.Sprintf("/api/v1/repos/%s/%s/labels", c.username, repoName), createPayload)
+	if err != nil && !strings.Contains(err.Error(), "409") {
+		return fmt.Errorf("create label: %w", err)
+	}
+
+	// Extract label ID.
+	var label struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.Unmarshal(data, &label); err != nil {
+		return fmt.Errorf("parse label: %w", err)
+	}
+
+	// Add label to issue/PR.
+	addPayload := map[string]any{
+		"labels": []int64{label.ID},
+	}
+	_, err = c.do(ctx, "POST", fmt.Sprintf("/api/v1/repos/%s/%s/issues/%d/labels", c.username, repoName, prNumber), addPayload)
+	return err
+}
+
+// GetPRReviews fetches all reviews for a PR.
+func (c *Client) GetPRReviews(ctx context.Context, repoName string, prNumber int) ([]map[string]any, error) {
+	data, err := c.do(ctx, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/reviews", c.username, repoName, prNumber), nil)
+	if err != nil {
+		return nil, err
+	}
+	var result []map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

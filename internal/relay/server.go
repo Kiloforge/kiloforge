@@ -7,19 +7,37 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"crelay/internal/config"
+	"crelay/internal/gitea"
 	"crelay/internal/orchestration"
 	"crelay/internal/project"
 	"crelay/internal/state"
 )
+
+// AgentSpawner abstracts agent spawning and resume for testing.
+type AgentSpawner interface {
+	SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*state.AgentInfo, error)
+	ResumeDeveloper(ctx context.Context, sessionID, workDir string) error
+}
+
+// ReviewerOpts configures reviewer agent spawning.
+type ReviewerOpts struct {
+	PRNumber int
+	PRURL    string
+	WorkDir  string
+	LogDir   string
+}
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg      *config.Config
 	registry *project.Registry
 	store    *state.Store
+	client   *gitea.Client
+	spawner  AgentSpawner
 	logger   *log.Logger
 	port     int
 }
@@ -30,13 +48,64 @@ func NewServer(cfg *config.Config, registry *project.Registry, port int) *Server
 	if err != nil {
 		store = &state.Store{}
 	}
+	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	if cfg.APIToken != "" {
+		client.SetToken(cfg.APIToken)
+	}
 	return &Server{
 		cfg:      cfg,
 		registry: registry,
 		store:    store,
+		client:   client,
+		spawner:  &defaultSpawner{},
 		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
 		port:     port,
 	}
+}
+
+// newTestableServer creates a server with a custom spawner and client for testing.
+func newTestableServer(cfg *config.Config, registry *project.Registry, spawner AgentSpawner, client *gitea.Client) *Server {
+	store, _ := state.Load(cfg.DataDir)
+	if store == nil {
+		store = &state.Store{}
+	}
+	return &Server{
+		cfg:      cfg,
+		registry: registry,
+		store:    store,
+		client:   client,
+		spawner:  spawner,
+		logger:   log.New(log.Writer(), "[relay] ", log.LstdFlags),
+		port:     3001,
+	}
+}
+
+// defaultSpawner implements AgentSpawner using real claude commands.
+type defaultSpawner struct{}
+
+func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts ReviewerOpts) (*state.AgentInfo, error) {
+	// In production, use agent.Spawner. For now, use exec directly.
+	cmd := exec.CommandContext(ctx, "claude",
+		"-p", fmt.Sprintf("/conductor-reviewer %s", opts.PRURL),
+		"--output-format", "stream-json",
+	)
+	cmd.Dir = opts.WorkDir
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("start reviewer: %w", err)
+	}
+	return &state.AgentInfo{
+		ID:     fmt.Sprintf("reviewer-%d", cmd.Process.Pid),
+		Role:   "reviewer",
+		Ref:    fmt.Sprintf("PR #%d", opts.PRNumber),
+		Status: "running",
+		PID:    cmd.Process.Pid,
+	}, nil
+}
+
+func (d *defaultSpawner) ResumeDeveloper(ctx context.Context, sessionID, workDir string) error {
+	cmd := exec.CommandContext(ctx, "claude", "--resume", sessionID)
+	cmd.Dir = workDir
+	return cmd.Start()
 }
 
 // Run starts the HTTP server and blocks until the context is cancelled.
@@ -186,6 +255,7 @@ func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 	case "opened", "reopened":
 		s.logger.Printf("[%s] PR #%d opened: %q", slug, prNumber, prTitle)
 		s.createPRTracking(slug, prNumber, pr)
+		s.spawnReviewerForPR(slug, prNumber)
 	case "closed":
 		merged, _ := pr["merged"].(bool)
 		if merged {
@@ -195,6 +265,7 @@ func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 		}
 	case "synchronize":
 		s.logger.Printf("[%s] PR #%d updated — new commits pushed", slug, prNumber)
+		s.handlePRSynchronize(slug, prNumber)
 	default:
 		s.logger.Printf("[%s] PR #%d %s: %q", slug, prNumber, action, prTitle)
 	}
@@ -212,11 +283,12 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 	}
 
 	// Find developer agent by track ID (branch ref).
-	var devAgentID, devSession string
+	var devAgentID, devSession, devWorkDir string
 	for _, a := range s.store.Agents {
 		if a.Role == "developer" && a.Ref == branchRef {
 			devAgentID = a.ID
 			devSession = a.SessionID
+			devWorkDir = a.WorktreeDir
 			break
 		}
 	}
@@ -228,7 +300,8 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 		ProjectSlug:      slug,
 		DeveloperAgentID: devAgentID,
 		DeveloperSession: devSession,
-		MaxReviewCycles:  5,
+		DeveloperWorkDir: devWorkDir,
+		MaxReviewCycles:  3,
 		Status:           "waiting-review",
 	}
 
@@ -252,6 +325,49 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 	s.logger.Printf("[%s] PR #%d tracking created (track: %s)", slug, prNumber, branchRef)
 }
 
+func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
+	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
+	tracking, err := orchestration.LoadPRTracking(projectDir)
+	if err != nil {
+		s.logger.Printf("[%s] Cannot load PR tracking for reviewer spawn: %v", slug, err)
+		return
+	}
+
+	prURL := fmt.Sprintf("%s/%s/%s/pulls/%d", s.cfg.GiteaURL(), s.cfg.GiteaAdminUser, slug, prNumber)
+	logDir := filepath.Join(s.cfg.DataDir, "projects", slug, "logs")
+
+	workDir := tracking.DeveloperWorkDir
+	if workDir == "" {
+		workDir = projectDir
+	}
+
+	info, err := s.spawner.SpawnReviewer(context.Background(), ReviewerOpts{
+		PRNumber: prNumber,
+		PRURL:    prURL,
+		WorkDir:  workDir,
+		LogDir:   logDir,
+	})
+	if err != nil {
+		s.logger.Printf("[%s] Error spawning reviewer for PR #%d: %v", slug, prNumber, err)
+		return
+	}
+
+	// Update tracking with reviewer info.
+	tracking.ReviewerAgentID = info.ID
+	tracking.ReviewerSession = info.SessionID
+	tracking.Status = "in-review"
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+
+	s.store.AddAgent(*info)
+	if err := s.store.Save(s.cfg.DataDir); err != nil {
+		s.logger.Printf("[%s] Error saving state: %v", slug, err)
+	}
+
+	s.logger.Printf("[%s] Reviewer spawned for PR #%d (agent: %s)", slug, prNumber, info.ID)
+}
+
 func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 	review, _ := payload["review"].(map[string]any)
 	pr, _ := payload["pull_request"].(map[string]any)
@@ -263,6 +379,129 @@ func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 	reviewState, _ := review["state"].(string)
 
 	s.logger.Printf("[%s] PR #%d review %s", slug, prNumber, reviewState)
+
+	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
+	tracking, err := orchestration.LoadPRTracking(projectDir)
+	if err != nil {
+		s.logger.Printf("[%s] Cannot load PR tracking for review handling: %v", slug, err)
+		return
+	}
+
+	switch reviewState {
+	case "approved":
+		s.handleReviewApproved(slug, tracking, projectDir)
+	case "changes_requested", "request_changes":
+		s.handleReviewChangesRequested(slug, tracking, projectDir)
+	}
+}
+
+func (s *Server) handleReviewApproved(slug string, tracking *orchestration.PRTracking, projectDir string) {
+	s.logger.Printf("[%s] PR #%d approved — resuming developer for merge", slug, tracking.PRNumber)
+
+	tracking.Status = "approved"
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+
+	// Resume developer agent.
+	if tracking.DeveloperSession != "" {
+		workDir := tracking.DeveloperWorkDir
+		if workDir == "" {
+			workDir = projectDir
+		}
+		if err := s.spawner.ResumeDeveloper(context.Background(), tracking.DeveloperSession, workDir); err != nil {
+			s.logger.Printf("[%s] Error resuming developer: %v", slug, err)
+			return
+		}
+		s.store.UpdateStatus(tracking.DeveloperAgentID, "running")
+		_ = s.store.Save(s.cfg.DataDir)
+	}
+}
+
+func (s *Server) handleReviewChangesRequested(slug string, tracking *orchestration.PRTracking, projectDir string) {
+	tracking.ReviewCycleCount++
+
+	if tracking.ReviewCycleCount >= tracking.MaxReviewCycles {
+		s.logger.Printf("[%s] PR #%d review cycle limit reached (%d/%d) — escalating",
+			slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
+		s.escalatePR(slug, tracking, projectDir)
+		return
+	}
+
+	s.logger.Printf("[%s] PR #%d changes requested (cycle %d/%d) — resuming developer",
+		slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
+
+	tracking.Status = "changes-requested"
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+
+	// Resume developer for revisions.
+	if tracking.DeveloperSession != "" {
+		workDir := tracking.DeveloperWorkDir
+		if workDir == "" {
+			workDir = projectDir
+		}
+		if err := s.spawner.ResumeDeveloper(context.Background(), tracking.DeveloperSession, workDir); err != nil {
+			s.logger.Printf("[%s] Error resuming developer: %v", slug, err)
+			return
+		}
+		s.store.UpdateStatus(tracking.DeveloperAgentID, "running")
+		_ = s.store.Save(s.cfg.DataDir)
+	}
+}
+
+func (s *Server) escalatePR(slug string, tracking *orchestration.PRTracking, projectDir string) {
+	ctx := context.Background()
+
+	// Label PR.
+	if err := s.client.AddLabel(ctx, slug, tracking.PRNumber, "needs-human-review"); err != nil {
+		s.logger.Printf("[%s] Error adding label: %v", slug, err)
+	}
+
+	// Post comment.
+	comment := fmt.Sprintf("Review cycle limit reached (%d). Human review required.", tracking.MaxReviewCycles)
+	if err := s.client.CommentOnPR(ctx, slug, tracking.PRNumber, comment); err != nil {
+		s.logger.Printf("[%s] Error posting escalation comment: %v", slug, err)
+	}
+
+	// Stop agents.
+	if tracking.DeveloperAgentID != "" {
+		_ = s.store.HaltAgent(tracking.DeveloperAgentID)
+		s.store.UpdateStatus(tracking.DeveloperAgentID, "stopped")
+	}
+	if tracking.ReviewerAgentID != "" {
+		_ = s.store.HaltAgent(tracking.ReviewerAgentID)
+		s.store.UpdateStatus(tracking.ReviewerAgentID, "stopped")
+	}
+	_ = s.store.Save(s.cfg.DataDir)
+
+	tracking.Status = "escalated"
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+}
+
+func (s *Server) handlePRSynchronize(slug string, prNumber int) {
+	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
+	tracking, err := orchestration.LoadPRTracking(projectDir)
+	if err != nil {
+		s.logger.Printf("[%s] Cannot load PR tracking for synchronize: %v", slug, err)
+		return
+	}
+
+	// Mark developer as waiting-review and spawn new reviewer.
+	if tracking.DeveloperAgentID != "" {
+		s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review")
+		_ = s.store.Save(s.cfg.DataDir)
+	}
+
+	tracking.Status = "waiting-review"
+	if err := tracking.Save(projectDir); err != nil {
+		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+
+	s.spawnReviewerForPR(slug, prNumber)
 }
 
 func (s *Server) handlePullRequestComment(slug string, payload map[string]any) {
