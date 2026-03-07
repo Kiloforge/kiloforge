@@ -42,8 +42,8 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 
 	projectDir, _ := os.Getwd()
 
-	srv := dashboard.New(cfg.DashboardPort, store, tracker, cfg.GiteaURL(), projectDir)
-	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.DashboardPort)
+	srv := dashboard.New(cfg.RelayPort, store, tracker, cfg.GiteaURL(), projectDir)
+	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.RelayPort)
 	fmt.Println("Press Ctrl+C to stop.")
 	return srv.Run(ctx)
 }
