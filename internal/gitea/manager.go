@@ -40,7 +40,7 @@ func (m *Manager) waitReady(ctx context.Context) error {
 		case <-deadline:
 			return fmt.Errorf("gitea did not become ready within 60 seconds")
 		case <-tick.C:
-			client := NewClient(m.cfg.GiteaURL(), config.GiteaAdminUser, config.GiteaAdminPass)
+			client := NewClient(m.cfg.GiteaURL(), m.cfg.GiteaAdminUser, m.cfg.GiteaAdminPass)
 			if _, err := client.do(ctx, "GET", "/api/v1/version", nil); err == nil {
 				return nil
 			}
@@ -55,13 +55,13 @@ func (m *Manager) Configure(ctx context.Context) (*Client, error) {
 	// Gitea refuses to run CLI commands as root — run as the "git" user.
 	_, _ = m.runner.Exec(ctx, m.cfg.DataDir, "gitea", "git",
 		"gitea", "admin", "user", "create",
-		"--username", config.GiteaAdminUser,
-		"--password", config.GiteaAdminPass,
-		"--email", config.GiteaAdminEmail,
+		"--username", m.cfg.GiteaAdminUser,
+		"--password", m.cfg.GiteaAdminPass,
+		"--email", m.cfg.GiteaAdminEmail,
 		"--admin",
 	)
 
-	client := NewClient(m.cfg.GiteaURL(), config.GiteaAdminUser, config.GiteaAdminPass)
+	client := NewClient(m.cfg.GiteaURL(), m.cfg.GiteaAdminUser, m.cfg.GiteaAdminPass)
 
 	// Create API token.
 	token, err := client.CreateToken(ctx, "crelay")

@@ -21,7 +21,7 @@ var statusCmd = &cobra.Command{
 func runStatus(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	cfg, err := config.Load()
+	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
 	}
@@ -29,7 +29,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	// Check Gitea via API.
 	giteaStatus := "stopped"
 	giteaVersion := ""
-	client := gitea.NewClient(cfg.GiteaURL(), config.GiteaAdminUser, config.GiteaAdminPass)
+	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
 	if v, err := client.CheckVersion(ctx); err == nil {
 		giteaStatus = "running"
 		giteaVersion = v

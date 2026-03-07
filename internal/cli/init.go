@@ -39,28 +39,26 @@ func runInit(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if flagDataDir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("get home directory: %w", err)
-		}
-		flagDataDir = filepath.Join(home, ".crelay")
+	var flagOpts []config.FlagOption
+	if cmd.Flags().Changed("data-dir") {
+		flagOpts = append(flagOpts, config.WithDataDir(flagDataDir))
+	}
+	if cmd.Flags().Changed("gitea-port") {
+		flagOpts = append(flagOpts, config.WithGiteaPort(flagGiteaPort))
 	}
 
-	cfg := &config.Config{
-		GiteaPort: flagGiteaPort,
-		DataDir:   flagDataDir,
+	cfg, err := config.Resolve(config.NewFlagsAdapter(flagOpts...))
+	if err != nil {
+		return fmt.Errorf("resolve config: %w", err)
 	}
 
 	// Check idempotency: if Gitea is already running, report and exit.
-	if existingCfg, err := config.LoadFrom(flagDataDir); err == nil {
-		client := gitea.NewClient(existingCfg.GiteaURL(), config.GiteaAdminUser, config.GiteaAdminPass)
-		if _, err := client.CheckVersion(ctx); err == nil {
-			fmt.Println("Gitea is already running.")
-			fmt.Printf("  URL:  %s\n", existingCfg.GiteaURL())
-			fmt.Printf("  Data: %s\n", existingCfg.DataDir)
-			return nil
-		}
+	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	if _, err := client.CheckVersion(ctx); err == nil {
+		fmt.Println("Gitea is already running.")
+		fmt.Printf("  URL:  %s\n", cfg.GiteaURL())
+		fmt.Printf("  Data: %s\n", cfg.DataDir)
+		return nil
 	}
 
 	// Step 1: Detect docker compose CLI.
@@ -106,7 +104,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if _, err := manager.Configure(ctx); err != nil {
 		return fmt.Errorf("configure gitea: %w", err)
 	}
-	fmt.Printf("    Admin user: %s\n", config.GiteaAdminUser)
+	fmt.Printf("    Admin user: %s\n", cfg.GiteaAdminUser)
 
 	// Step 6: Save config.
 	if err := cfg.Save(); err != nil {
@@ -116,7 +114,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("Gitea is ready!")
 	fmt.Printf("  Web UI:     %s\n", cfg.GiteaURL())
-	fmt.Printf("  Admin:      %s / %s\n", config.GiteaAdminUser, config.GiteaAdminPass)
+	fmt.Printf("  Admin:      %s / %s\n", cfg.GiteaAdminUser, cfg.GiteaAdminPass)
 	fmt.Printf("  Data:       %s\n", cfg.DataDir)
 	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()

@@ -18,7 +18,7 @@ var stopCmd = &cobra.Command{
 }
 
 func runStop(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Load()
+	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}

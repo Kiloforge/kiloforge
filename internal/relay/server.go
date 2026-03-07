@@ -119,7 +119,7 @@ func (s *Server) handlePullRequest(ctx context.Context, payload map[string]any) 
 	case "opened", "reopened":
 		s.logger.Printf("PR #%d opened: %s — spawning reviewer", prNumber, prTitle)
 		prURL := fmt.Sprintf("%s/%s/%s/pulls/%d",
-			s.client.BaseURL(), config.GiteaAdminUser, s.repoName, prNumber)
+			s.client.BaseURL(), s.cfg.GiteaAdminUser, s.repoName, prNumber)
 
 		info, err := s.spawner.SpawnReviewer(ctx, prNumber, prURL)
 		if err != nil {

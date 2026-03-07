@@ -30,7 +30,7 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	cfg, err := config.Load()
+	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
 	}
