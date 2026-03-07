@@ -79,10 +79,19 @@ Gitea is ready!
   Compose:    /Users/you/.crelay/docker-compose.yml
 
 Stop with 'crelay down', restart with 'crelay up'.
-Register a project with 'crelay add' (coming soon).
+Register a project with 'crelay add <path>'.
 ```
 
-### 2. Verify
+### 2. Register a Project
+
+```bash
+cd ~/dev/my-project
+crelay add .
+```
+
+This creates a Gitea repo, adds a `gitea` remote, pushes your main branch, and registers a webhook. The origin remote URL is captured for future bridging.
+
+### 3. Verify
 
 ```bash
 # Check status
@@ -93,7 +102,7 @@ open http://localhost:3000
 # Login: conductor / conductor123
 ```
 
-### 3. Set Environment Variables
+### 4. Set Environment Variables
 
 For conductor skills to use Gitea automatically, set these in your shell or `.env`:
 

@@ -130,11 +130,78 @@ $ crelay destroy
 
 ---
 
+## `crelay add`
+
+Register a project with the Gitea server.
+
+**Synopsis:**
+```bash
+crelay add [repo-path] [--name SLUG] [--origin URL]
+```
+
+**What it does (in order):**
+1. Resolves the repo path (defaults to current directory)
+2. Verifies the path is a git repository
+3. Loads global config and verifies Gitea is running
+4. Derives a project slug from the directory basename (or `--name`)
+5. Detects the `origin` git remote URL (or uses `--origin`)
+6. Creates a repository in Gitea via API
+7. Adds a `gitea` git remote to the project
+8. Pushes the main branch to Gitea
+9. Registers a webhook for relay events
+10. Creates project data directory (`~/.crelay/projects/<slug>/logs/`)
+11. Saves the project to `~/.crelay/projects.json`
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--name` | Override the project slug (defaults to directory basename) |
+| `--origin` | Override the origin remote URL (defaults to auto-detected from git) |
+
+**Idempotent:** Re-adding an already-registered project prints the existing registration and exits.
+
+**Example:**
+```
+$ cd ~/dev/my-project
+$ crelay add .
+==> Creating Gitea repo 'my-project'...
+==> Adding gitea remote...
+    Remote: http://localhost:3000/conductor/my-project.git
+==> Pushing to Gitea...
+==> Registering webhook...
+
+Project 'my-project' registered!
+  Path:   /Users/you/dev/my-project
+  Gitea:  http://localhost:3000/conductor/my-project
+  Origin: git@github.com:you/my-project.git
+
+View registered projects with 'crelay projects'.
+```
+
+---
+
+## `crelay projects`
+
+List all registered projects.
+
+**Synopsis:**
+```bash
+crelay projects
+```
+
+**Output:**
+```
+SLUG        PATH                      ORIGIN                              REGISTERED  ACTIVE
+my-project  /Users/you/dev/my-project git@github.com:you/my-project.git   2026-03-07  yes
+```
+
+---
+
 ## Coming Soon
 
 The following commands are planned for future releases:
 
-- **`crelay add`** — Register a project with the global Gitea server
 - **`crelay agents`** — List active and recent agents
 - **`crelay logs <agent-id>`** — View agent log output
 - **`crelay attach <agent-id>`** — Resume an agent interactively

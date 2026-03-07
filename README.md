@@ -36,7 +36,12 @@ make build
 # Initialize the global Gitea server
 crelay init
 
-# That's it. Gitea is running via Docker Compose.
+# Register your project
+cd ~/dev/my-project
+crelay add .
+
+# List registered projects
+crelay projects
 ```
 
 This will:
@@ -45,6 +50,7 @@ This will:
 3. Start a Gitea instance at `http://localhost:3000`
 4. Create an admin user (`conductor` / `conductor123`)
 5. Generate an API token and save config
+6. Register your project: create Gitea repo, add remote, push code
 
 ## Commands
 
@@ -91,6 +97,26 @@ Data:        /Users/you/.crelay
 Compose:     /Users/you/.crelay/docker-compose.yml
 ```
 
+### `crelay add`
+
+Register a project with the Gitea server.
+
+```bash
+crelay add [repo-path]    # defaults to current directory
+crelay add . --name myapp # override project slug
+crelay add . --origin git@github.com:user/repo.git  # override origin
+```
+
+Creates a Gitea repo, adds a `gitea` remote, pushes the main branch, and registers a webhook. The project's origin remote URL is captured for future bridging support.
+
+### `crelay projects`
+
+List registered projects.
+
+```bash
+crelay projects
+```
+
 ### `crelay destroy`
 
 Permanently destroy all crelay data (requires confirmation).
@@ -130,19 +156,17 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 ```
 ~/.crelay/
 ├── config.json           # Global configuration
+├── projects.json         # Project registry
 ├── docker-compose.yml    # Generated compose file
-├── state.json            # Agent tracking state
-├── logs/                 # Agent log files
-│   └── <agent-id>.log
+├── projects/             # Per-project data
+│   └── <slug>/
+│       └── logs/
 └── gitea-data/           # Gitea Docker volume (repos, DB)
 ```
 
-## What's Next
+## Origin Bridging
 
-Project registration (`crelay add`) is coming in a future release. This will allow you to:
-- Register projects with the global Gitea instance
-- Set up git remotes and webhooks per project
-- Start the relay server for webhook-driven agent orchestration
+When you register a project with `crelay add`, the origin remote URL is captured and stored. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
 
 ## Development
 
