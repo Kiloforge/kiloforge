@@ -10,6 +10,7 @@ const (
 
 type Config struct {
 	GiteaPort       int    `json:"gitea_port"`
+	RelayPort       int    `json:"relay_port"`
 	DataDir         string `json:"data_dir"`
 	APIToken        string `json:"api_token,omitempty"`
 	ComposeFile     string `json:"compose_file,omitempty"`

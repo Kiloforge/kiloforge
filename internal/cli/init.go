@@ -119,7 +119,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()
 	fmt.Println("Stop with 'crelay down', restart with 'crelay up'.")
-	fmt.Println("Register a project with 'crelay add' (coming soon).")
+	fmt.Println("Register a project with 'crelay add <path>'.")
 
 	return nil
 }

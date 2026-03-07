@@ -20,6 +20,9 @@ func overlay(dst, src *Config) {
 	if src.GiteaPort != 0 {
 		dst.GiteaPort = src.GiteaPort
 	}
+	if src.RelayPort != 0 {
+		dst.RelayPort = src.RelayPort
+	}
 	if src.DataDir != "" {
 		dst.DataDir = src.DataDir
 	}

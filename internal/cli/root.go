@@ -22,7 +22,7 @@ func init() {
 	rootCmd.AddCommand(upCmd)
 	rootCmd.AddCommand(downCmd)
 	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(projectsCmd)
 	rootCmd.AddCommand(destroyCmd)
-	// Project-specific commands (agents, logs, attach, stop) are disabled
-	// until project context is restored via 'crelay add' (future track).
 }
