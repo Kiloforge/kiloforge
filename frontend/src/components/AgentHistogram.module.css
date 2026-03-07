@@ -1,0 +1,45 @@
+.histogram {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.running {
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--green);
+}
+
+.waiting {
+  background: rgba(240, 197, 65, 0.15);
+  color: var(--yellow);
+}
+
+.completed {
+  background: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+}
+
+.failed {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.halted,
+.stopped {
+  background: rgba(232, 148, 74, 0.15);
+  color: var(--orange);
+}
+
+.suspended {
+  background: rgba(139, 143, 163, 0.15);
+  color: var(--text-dim);
+}

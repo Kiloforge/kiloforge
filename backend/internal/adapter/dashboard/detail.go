@@ -7,13 +7,33 @@ import (
 	"strconv"
 )
 
+const detailPageCSS = `
+:root{--bg:#0f1117;--surface:#1a1d27;--border:#2a2d3a;--text:#e1e4ed;--text-dim:#8b8fa3;--accent:#6c8cff;--green:#3dd68c;--radius:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.header-left{display:flex;align-items:center;gap:12px}
+header h1{font-size:18px;font-weight:600;letter-spacing:-0.5px}
+nav a{color:var(--accent);text-decoration:none;font-size:14px}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--border);color:var(--text-dim)}
+main{padding:24px;max-width:1200px;margin:0 auto}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.panel h2{font-size:14px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px}
+.empty-state{color:var(--text-dim);font-size:14px;text-align:center;padding:20px}
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.agent-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer}
+.agent-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.agent-meta{font-size:12px;color:var(--text-dim)}
+.log-viewer{font-family:"SF Mono","Fira Code",monospace;font-size:12px;line-height:1.6;padding:12px 16px;color:var(--text-dim);white-space:pre-wrap;word-break:break-all}
+`
+
 const trackDetailHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Track: {{.TrackID}} — crelay</title>
-  <link rel="stylesheet" href="/-/style.css">
+  <style>` + detailPageCSS + `</style>
 </head>
 <body>
   <header>
@@ -78,7 +98,7 @@ const prDetailHTML = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PR #{{.PRNumber}} — crelay</title>
-  <link rel="stylesheet" href="/-/style.css">
+  <style>` + detailPageCSS + `</style>
 </head>
 <body>
   <header>

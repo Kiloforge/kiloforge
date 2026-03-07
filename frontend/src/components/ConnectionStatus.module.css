@@ -1,0 +1,22 @@
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--border);
+  color: var(--text-dim);
+}
+
+.connected {
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--green);
+}
+
+.reconnecting {
+  background: rgba(240, 197, 65, 0.15);
+  color: var(--yellow);
+}
+
+.disconnected {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
