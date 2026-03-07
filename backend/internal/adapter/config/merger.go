@@ -62,4 +62,7 @@ func overlay(dst, src *Config) {
 	if src.AutoUpdateSkills != nil {
 		dst.AutoUpdateSkills = src.AutoUpdateSkills
 	}
+	if src.SkillsDir != "" {
+		dst.SkillsDir = src.SkillsDir
+	}
 }

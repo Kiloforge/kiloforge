@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -24,6 +26,7 @@ type Config struct {
 	SkillsRepo         string  `json:"skills_repo,omitempty"`
 	SkillsVersion      string  `json:"skills_version,omitempty"`
 	AutoUpdateSkills   *bool   `json:"auto_update_skills,omitempty"`
+	SkillsDir          string  `json:"skills_dir,omitempty"`
 }
 
 // IsDashboardEnabled returns whether the dashboard is enabled.
@@ -33,6 +36,15 @@ func (c *Config) IsDashboardEnabled() bool {
 		return true
 	}
 	return *c.DashboardEnabled
+}
+
+// GetSkillsDir returns the configured skills directory, or the default (~/.claude/skills).
+func (c *Config) GetSkillsDir() string {
+	if c.SkillsDir != "" {
+		return c.SkillsDir
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".claude", "skills")
 }
 
 func (c *Config) GiteaURL() string {
