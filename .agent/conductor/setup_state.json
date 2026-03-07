@@ -1,0 +1,30 @@
+{
+  "status": "complete",
+  "project_type": "brownfield",
+  "current_section": "styleguides",
+  "current_question": 2,
+  "completed_sections": ["product", "guidelines", "tech_stack", "workflow", "styleguides"],
+  "answers": {
+    "project_name": "crelay",
+    "description": "A local Gitea + webhook relay that orchestrates Claude Code agents for automated PR review and development workflows. A CLI tool that bridges Gitea and Claude Code to automate conductor-based development and code review.",
+    "problem_statement": "Conductor's role-based agents need a git forge for PRs and code review, but using GitHub adds rate limits, latency, and cost. There's no easy way to orchestrate multiple Claude Code agents for parallel development and automated code review without manual intervention.",
+    "target_users": "Developers using Conductor workflows with Claude Code to orchestrate multi-agent development and review",
+    "key_goals": ["Session management — view logs, halt agents, resume interactively", "Easy conductor setup in a repo and adding repos to Gitea"],
+    "voice_tone": "Professional and technical",
+    "design_principles": ["Simplicity over features", "Local-first and private", "Convention over configuration", "Reliability and observability"],
+    "primary_language": "Go 1.24",
+    "frontend": "None / CLI only",
+    "backend": "OpenAPI code generation with Fiber, strict types mode",
+    "database": "SQLite",
+    "infrastructure": "Local machine only",
+    "tdd_strictness": "strict",
+    "commit_strategy": "conventional_commits",
+    "code_review": "optional",
+    "verification_checkpoints": "track_completion",
+    "style_guides": ["go"],
+    "existing_conventions": "fresh"
+  },
+  "files_created": [],
+  "started_at": "2026-03-07T00:00:00Z",
+  "last_updated": "2026-03-07T00:00:00Z"
+}
