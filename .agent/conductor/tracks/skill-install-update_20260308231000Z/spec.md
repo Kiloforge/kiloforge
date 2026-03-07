@@ -39,7 +39,7 @@ Conductor skills (track-generator, developer, reviewer, etc.) are currently manu
 - [ ] Version tracking: installed version and per-file checksums are recorded so update checks are fast and modification detection works
 - [ ] `crelay init` offers to install skills if not present (interactive prompt)
 - [ ] Auto-update option: configurable in `config.json` (`"auto_update_skills": true`)
-- [ ] When auto-update is enabled, the relay daemon checks for updates periodically (e.g., daily) — notifies the user that an update is available; does NOT auto-install if local modifications are detected
+- [ ] When auto-update is enabled, the relay daemon checks for updates periodically (e.g., daily) — this is a simple HTTP call to GitHub + file copy, no Claude Code agents or token usage involved. Notifies the user that an update is available; does NOT auto-install if local modifications are detected
 - [ ] Skills are installed atomically (download to temp, then move) — no partial installs
 - [ ] Works with public GitHub repos (no auth token required)
 - [ ] Graceful degradation: if GitHub is unreachable, warn and continue with existing skills
@@ -91,10 +91,11 @@ crelay skills --no-auto-update     # toggle auto-update off
 - Modified files are listed with a warning: "The following skills have local modifications that will be overwritten:"
 - User confirms interactively, or uses `--force` to skip
 
-**Auto-update flow (relay daemon):**
-1. On startup, and then every 24h, check latest release tag
-2. If newer than installed, notify the user; do not auto-install if modifications detected
-3. Log the availability to relay.log
+**Auto-update flow (relay daemon — no agent/token usage):**
+1. On startup, and then every 24h, check latest release tag (single HTTP GET to GitHub API)
+2. If newer than installed and no local modifications: download tarball and install (pure file I/O)
+3. If local modifications detected: log notice, do not install
+4. This is entirely handled by crelay's Go code — no Claude Code invocation, no token consumption
 
 **GitHub API (no auth for public repos):**
 ```
