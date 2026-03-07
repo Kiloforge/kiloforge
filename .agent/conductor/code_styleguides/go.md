@@ -14,13 +14,20 @@
 - **Acronyms**: All caps when exported (`HTTPServer`, `APIURL`), all lowercase when unexported (`httpServer`, `apiURL`)
 - **Test files**: `*_test.go` in the same package for unit tests. `*_test.go` in `_test` package for black-box tests.
 
+## Build
+
+- Build artifacts go in `.build/` (gitignored). Never output binaries to the project root.
+- The Makefile sets `GIT_WORK_TREE` for worktree compatibility.
+
 ## Project Structure
 
 ```
+.build/        — Build output (gitignored)
 cmd/           — Main applications (one per binary)
 internal/      — Private application code (not importable)
   cli/         — CLI command definitions
   agent/       — Agent lifecycle management
+  compose/     — Docker Compose CLI abstraction
   config/      — Configuration loading/saving
   gitea/       — Gitea API client and Docker management
   relay/       — Webhook relay HTTP server

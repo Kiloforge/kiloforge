@@ -1,16 +1,19 @@
 .PHONY: build run clean test
 
-BINARY := crelay
+BUILD_DIR := .build
+BINARY := $(BUILD_DIR)/crelay
 PKG := ./cmd/crelay
 export GIT_WORK_TREE ?= $(shell git rev-parse --show-toplevel 2>/dev/null)
+
 build:
+	@mkdir -p $(BUILD_DIR)
 	go build -o $(BINARY) $(PKG)
 
 run: build
 	./$(BINARY)
 
 clean:
-	rm -f $(BINARY)
+	rm -rf $(BUILD_DIR)
 	go clean
 
 test:
