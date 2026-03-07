@@ -168,6 +168,14 @@ Show worktree pool status. Displays idle and in-use worktrees for developer agen
 crelay pool
 ```
 
+### `crelay escalated`
+
+Show PRs that hit the review cycle limit and require human intervention.
+
+```bash
+crelay escalated
+```
+
 ### `crelay destroy`
 
 Permanently destroy all crelay data (requires confirmation).
@@ -201,7 +209,10 @@ crelay init / crelay up
 ┌────────────────────────▼────────────────────────────────────┐
 │  Relay Server                              localhost:3001    │
 │  • Multi-project event routing                              │
-│  • Structured logging per project                           │
+│  • Developer-reviewer relay cycle                           │
+│  • PR opened → spawn reviewer                               │
+│  • Review approved → resume developer for merge             │
+│  • Changes requested → resume developer (or escalate)       │
 │  • Health: GET /health                                      │
 └─────────────────────────────────────────────────────────────┘
 ```

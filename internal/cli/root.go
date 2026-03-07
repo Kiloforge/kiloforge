@@ -31,4 +31,5 @@ func init() {
 	rootCmd.AddCommand(logsCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(attachCmd)
+	rootCmd.AddCommand(escalatedCmd)
 }

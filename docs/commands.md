@@ -223,11 +223,35 @@ Worktrees are created automatically by `crelay implement` when needed. The pool 
 
 ---
 
-## Coming Soon
+## `crelay escalated`
 
-The following commands are planned for future releases:
+Show PRs that hit the review cycle limit and require human intervention.
 
-- **`crelay agents`** — List active and recent agents
-- **`crelay logs <agent-id>`** — View agent log output
-- **`crelay attach <agent-id>`** — Resume an agent interactively
-- **`crelay stop <agent-id>`** — Stop a running agent
+**Synopsis:**
+```bash
+crelay escalated
+```
+
+**Output:**
+```
+Escalated PRs (1)
+
+PROJECT  PR#  TRACK              CYCLES
+myapp    #5   auth_20260307...   3
+```
+
+When a PR exceeds the maximum review cycle count (default 3), the relay labels the PR `needs-human-review`, posts a comment, and stops all agents. Use this command to find such PRs.
+
+---
+
+## Review Cycle
+
+The relay server orchestrates the developer-reviewer cycle automatically:
+
+1. **PR opened** → reviewer agent spawned
+2. **Review approved** → developer resumed for merge
+3. **Changes requested** → developer resumed for revisions (cycle count incremented)
+4. **Developer pushes** → new reviewer spawned for re-review
+5. **Cycle limit reached** → PR escalated, agents stopped
+
+The default max review cycles is 3.
