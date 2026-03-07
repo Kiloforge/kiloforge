@@ -100,8 +100,51 @@
 - `make test` — all pass
 - `make test-smoke` — smoke tests pass
 
-## Phase 5: Documentation (1 task)
+## Phase 5: Dashboard API — Skills Endpoints (3 tasks)
 
-### Task 5.1: Update README with skills commands
+### Task 5.1: Add skills endpoints to OpenAPI spec
+- **File:** `backend/api/openapi.yaml`
+- `GET /-/api/skills` — returns `{ installed_version, available_version, skills: [{ name, modified, files }], update_available }`
+- `POST /-/api/skills/update` — triggers install/update, accepts `{ force: bool }` body
+- Define `SkillStatus`, `SkillDetail`, `SkillUpdateRequest`, `SkillUpdateResponse` schemas
+- Run `oapi-codegen` to regenerate server/types
+
+### Task 5.2: Implement skills API handler
+- **File:** `backend/internal/adapter/rest/skills_handler.go`
+- Implement generated strict handler interface for both endpoints
+- `GET` handler: calls installer's `ListInstalled` + GitHub checker's `LatestRelease`, returns combined status
+- `POST` handler: calls installer's `Install` with force flag, returns result
+- Wire into server registration
+
+### Task 5.3: Test skills API endpoints
+- **File:** `backend/internal/adapter/rest/skills_handler_test.go`
+- Test GET returns correct status (no skills, up-to-date, update available, modified)
+- Test POST triggers update and returns result
+- Test POST without force when modifications exist returns error with modified file list
+
+## Phase 6: Dashboard UI — Skill Notifications (3 tasks)
+
+### Task 6.1: Add skills status hook
+- **File:** `frontend/src/hooks/useSkillsStatus.ts`
+- Fetch `/-/api/skills` on mount and on interval (every 60s)
+- Expose `{ installed, updateAvailable, modified, loading }` state
+
+### Task 6.2: Add skill notification banner component
+- **File:** `frontend/src/components/SkillsBanner.tsx`
+- If skills not installed: warning banner with "Install Skills" button
+- If update available: info banner with "Update Skills" button
+- If local modifications detected on update: show list of modified skills, ask for confirmation before proceeding
+- Calls `POST /-/api/skills/update` with appropriate force flag
+- Shows progress/result feedback
+
+### Task 6.3: Mount banner in dashboard layout
+- **File:** `frontend/src/App.tsx` (or layout component)
+- Render `SkillsBanner` at top of dashboard, above project sections
+- Banner dismisses after successful install/update
+
+## Phase 7: Documentation (1 task)
+
+### Task 7.1: Update README with skills commands
 - Add `crelay skills` section to README command reference
 - Document initial setup: `crelay skills --repo owner/conductor-skills && crelay skills update`
+- Mention dashboard skill management as alternative to CLI

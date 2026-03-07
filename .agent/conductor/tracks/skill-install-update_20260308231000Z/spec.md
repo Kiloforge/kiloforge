@@ -43,6 +43,13 @@ Conductor skills (track-generator, developer, reviewer, etc.) are currently manu
 - [ ] Skills are installed atomically (download to temp, then move) — no partial installs
 - [ ] Works with public GitHub repos (no auth token required)
 - [ ] Graceful degradation: if GitHub is unreachable, warn and continue with existing skills
+- [ ] Dashboard shows a notification banner when skills are not installed (with an "Install Skills" button)
+- [ ] Dashboard shows a notification banner when a skill update is available (with an "Update Skills" button)
+- [ ] Dashboard "Install/Update Skills" button triggers the install/update via a backend API endpoint (same logic as CLI)
+- [ ] If local modifications are detected, the dashboard shows which skills are modified and asks for confirmation before overwriting
+- [ ] `/-/api/skills` endpoint returns current skill status: installed version, available version, modification status
+- [ ] `POST /-/api/skills/update` endpoint triggers skill update (with optional `force` param)
+- [ ] Both endpoints defined in OpenAPI spec (schema-first)
 
 ## Dependencies
 
