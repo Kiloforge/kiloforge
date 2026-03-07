@@ -5,70 +5,68 @@
 ## Phase 1: Create Core Layer Skeleton
 
 ### Task 1.1: Create core directories with doc.go files
-- Create `internal/core/domain/doc.go`, `internal/core/port/doc.go`, `internal/core/service/doc.go`
-- Each doc.go declares the package and documents its role
-- Tests: `go build ./...` succeeds
+- [x] ALREADY DONE — `internal/core/{domain,port,service}` created by refactor-domain-ports track
 
 ### Verification 1
-- [ ] `internal/core/{domain,port,service}` directories exist
-- [ ] Build succeeds
+- [x] `internal/core/{domain,port,service}` directories exist
+- [x] Build succeeds
 
 ## Phase 2: Move Adapter Packages
 
 ### Task 2.1: Move config package
-- `git mv internal/config internal/adapter/config`
-- Update all imports: `crelay/internal/config` → `crelay/internal/adapter/config`
-- Tests: `go build ./...` and `go test ./...`
+- [x] `git mv internal/config internal/adapter/config`
+- [x] Update all imports
 
 ### Task 2.2: Move compose package
-- `git mv internal/compose internal/adapter/compose`
-- Update all imports
-- Tests: build and test
+- [x] `git mv internal/compose internal/adapter/compose`
+- [x] Update all imports
 
 ### Task 2.3: Move gitea package
-- `git mv internal/gitea internal/adapter/gitea`
-- Update all imports
-- Tests: build and test
+- [x] `git mv internal/gitea internal/adapter/gitea`
+- [x] Update all imports
 
 ### Task 2.4: Move auth package
-- `git mv internal/auth internal/adapter/auth`
-- Update all imports
-- Tests: build and test
+- [x] `git mv internal/auth internal/adapter/auth`
+- [x] Update all imports
 
 ### Task 2.5: Move agent package
-- `git mv internal/agent internal/adapter/agent`
-- Update all imports
-- Tests: build and test
+- [x] `git mv internal/agent internal/adapter/agent`
+- [x] Update all imports
 
 ### Task 2.6: Move pool package
-- `git mv internal/pool internal/adapter/pool`
-- Update all imports
-- Tests: build and test
+- [x] `git mv internal/pool internal/adapter/pool`
+- [x] Update all imports
 
 ### Task 2.7: Move cli package
-- `git mv internal/cli internal/adapter/cli`
-- Update all imports (including `cmd/crelay/main.go`)
-- Tests: build and test
+- [x] `git mv internal/cli internal/adapter/cli`
+- [x] Update all imports (including `cmd/crelay/main.go`)
 
 ### Task 2.8: Move relay package to adapter/rest
-- `git mv internal/relay internal/adapter/rest`
-- Update all imports: `crelay/internal/relay` → `crelay/internal/adapter/rest`
-- Tests: build and test
+- [x] `git mv internal/relay internal/adapter/rest`
+- [x] Update all imports and rename package to `rest`
+
+### Additional moves (not in original plan)
+- [x] `git mv internal/lock internal/adapter/lock`
+- [x] `git mv internal/dashboard internal/adapter/dashboard`
 
 ### Verification 2
-- [ ] All adapter packages under `internal/adapter/`
-- [ ] No packages left directly under `internal/` except `project/`, `state/`, `orchestration/`
-- [ ] All imports updated
-- [ ] All tests pass
-- [ ] Build succeeds
+- [x] All adapter packages under `internal/adapter/`
+- [x] No packages left directly under `internal/` (only `adapter/` and `core/`)
+- [x] All imports updated (52 references across 24 files)
+- [x] All tests pass with `-race`
+- [x] Build succeeds
 
 ## Phase 3: Update Project Structure Documentation
 
 ### Task 3.1: Update style guide project structure section
-- Update the package layout in `.agent/conductor/code_styleguides/go.md` to reflect actual paths
-- Update README if it references package paths
+- [x] Updated package layout in `.agent/conductor/code_styleguides/go.md`
+- [x] Added agent, auth, pool, config, lock, dashboard to adapter listing
 
 ### Verification 3
-- [ ] Style guide matches actual directory structure
-- [ ] All tests pass
-- [ ] `go vet ./...` clean
+- [x] Style guide matches actual directory structure
+- [x] All tests pass
+- [x] `go vet ./...` clean
+
+---
+
+**Total: 10 tasks across 3 phases — ALL COMPLETE**
