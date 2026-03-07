@@ -4,29 +4,29 @@
 
 ## Phase 1: Architecture Research
 
-### Task 1.1: Design global vs per-project separation
+### Task 1.1: Design global vs per-project separation [x]
 - Define what is "global" (Gitea instance, relay server, ports) vs "per-project" (repo, webhooks, agents, state)
 - Propose data directory structure: `~/.crelay/` global vs per-project
 - Consider: should the relay be global too, or per-project?
 - **Output:** Architecture diagram / description
 
-### Task 1.2: Design config schema evolution
+### Task 1.2: Design config schema evolution [x]
 - Current: flat `config.json` with single project fields
 - Proposed: global config + per-project registration
 - Define both schemas with examples
 - Plan migration from old to new format
 - **Output:** Config schema proposal
 
-### Task 1.3: Design state model evolution
+### Task 1.3: Design state model evolution [x]
 - Current: flat `agents` array with no project association
 - Proposed: agents tagged with project ID, or separate state per project
 - Consider querying: "show all agents" vs "show agents for this project"
 - **Output:** State schema proposal
 
 ### Verification 1
-- [ ] Global vs per-project boundary defined
-- [ ] Config schema proposed
-- [ ] State model proposed
+- [x] Global vs per-project boundary defined
+- [x] Config schema proposed
+- [x] State model proposed
 
 ## Phase 2: Workflow & Integration Research
 
