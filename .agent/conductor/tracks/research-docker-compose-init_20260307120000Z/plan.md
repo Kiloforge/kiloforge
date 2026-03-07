@@ -30,13 +30,13 @@
 
 ## Phase 2: Compose File Design
 
-### Task 2.1: Draft docker-compose.yml for Gitea
+### Task 2.1: Draft docker-compose.yml for Gitea [x]
 - Translate current `docker run` flags to compose format
 - Define service, ports, volumes, environment, restart policy
 - Consider health check definition in compose
 - **Output:** Proposed docker-compose.yml
 
-### Task 2.2: Evaluate compose file management strategy
+### Task 2.2: Evaluate compose file management strategy [x]
 - Option A: Ship a template, copy to data dir at init
 - Option B: Generate programmatically with Go (template/text or struct)
 - Option C: Embed in binary via `embed` package
@@ -44,8 +44,8 @@
 - **Output:** Recommended approach with rationale
 
 ### Verification 2
-- [ ] Compose file drafted and validated
-- [ ] File management strategy chosen
+- [x] Compose file drafted and validated
+- [x] File management strategy chosen
 
 ## Phase 3: Impact Analysis & Recommendations
 
