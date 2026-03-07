@@ -54,6 +54,9 @@ Navigation hub for project context.
 - **schema-first-guidance_20260308200002Z** — Schema-First API Development Guidance and Standards
 - **fix-route-conflict_20260308200100Z** — Fix Route Pattern Conflict Panic on Startup
 - **testing-audit-e2e_20260308201000Z** — Testing Audit — Integration, E2E, and Smoke Tests
+- **remove-password-persistence_20260308210000Z** — Remove Password from Config Persistence
+- **build-embed-guidance_20260308210001Z** — Build and Embed Pattern Guidance
+- **readme-prerequisites_20260308210002Z** — Update README Prerequisites to Docker + Claude Code
 
 ## Getting Started
 
