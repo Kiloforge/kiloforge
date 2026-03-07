@@ -2,15 +2,15 @@
   "id": "schema-first-guidance_20260308200002Z",
   "title": "Schema-First API Development Guidance and Standards",
   "type": "chore",
-  "status": "in-progress",
+  "status": "complete",
   "created": "2026-03-08T20:00:02Z",
   "updated": "2026-03-08T20:00:02Z",
   "phases": {
     "total": 2,
-    "completed": 1
+    "completed": 2
   },
   "tasks": {
     "total": 7,
-    "completed": 4
+    "completed": 7
   }
 }

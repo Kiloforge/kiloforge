@@ -28,20 +28,22 @@
 ## Phase 2: API Documentation Artifacts (3 tasks)
 
 ### Task 2.1: Create api/README.md
-Write contributor-facing documentation explaining:
+- [x] Write contributor-facing documentation explaining:
 - The schema-first workflow
 - How to add a new endpoint (schema → generate → implement → test)
 - How to add a new event type (asyncapi schema → document → implement)
 - File layout (`api/openapi.yaml`, `api/asyncapi.yaml`, `api/cfg.yaml`)
 
 ### Task 2.2: Create AsyncAPI spec skeleton
-Create `api/asyncapi.yaml` with:
-- SSE channel (`/-/events`) with `agent_update` message schema
-- Webhook channel (`/webhook`) with documented Gitea event payload types
-- Proper AsyncAPI 3.0 structure
+- [x] Create `api/asyncapi.yaml` with:
+- SSE channel (`/-/events`) with `agent_update`, `agent_removed`, `quota_update` messages
+- Webhook channel (`/webhook`) with Gitea event payload types (issues, PRs, comments, reviews)
+- Proper AsyncAPI 3.0 structure with components/schemas
 
 ### Task 2.3: Verify Phase 2
-Validate AsyncAPI spec structure. Ensure README is accurate against actual project structure.
+- [x] Validate AsyncAPI spec structure
+- [x] Full build: `go build -buildvcs=false ./...`
+- [x] Full test: `go test -buildvcs=false -race ./...`
 
 ---
 
