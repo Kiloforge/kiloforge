@@ -123,6 +123,50 @@ func TestJSONAdapter_OldConfigWithPassword_LoadsGracefully(t *testing.T) {
 }
 
 
+func TestJSONAdapter_Save_StripsPassword(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	adapter := NewJSONAdapter(dir)
+
+	cfg := &Config{
+		GiteaPort:      3000,
+		DataDir:        dir,
+		GiteaAdminUser: "conductor",
+		GiteaAdminPass: "super-secret-pass", // non-empty password
+	}
+
+	if err := adapter.Save(cfg); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	// Raw JSON should never contain the password.
+	data, err := os.ReadFile(filepath.Join(dir, ConfigFileName))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if strings.Contains(string(data), "gitea_admin_pass") {
+		t.Errorf("config.json must not contain gitea_admin_pass, got:\n%s", data)
+	}
+	if strings.Contains(string(data), "super-secret-pass") {
+		t.Errorf("config.json must not contain the password value, got:\n%s", data)
+	}
+
+	// The in-memory config should still have the password (not mutated).
+	if cfg.GiteaAdminPass != "super-secret-pass" {
+		t.Errorf("Save should not mutate in-memory config, got GiteaAdminPass=%q", cfg.GiteaAdminPass)
+	}
+
+	// Loaded config should have no password.
+	loaded, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if loaded.GiteaAdminPass != "" {
+		t.Errorf("loaded GiteaAdminPass should be empty, got %q", loaded.GiteaAdminPass)
+	}
+}
+
 func TestJSONAdapter_PartialFile(t *testing.T) {
 	t.Parallel()
 
