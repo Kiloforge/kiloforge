@@ -70,6 +70,8 @@ Navigation hub for project context.
 - **fix-init-password-display_20260308235500Z** — Fix Init Password Display
 - **rebrand-kiloforge_20260309055250Z** — Rebrand crelay to Kiloforge (CLI: kf)
 - **track-lifecycle-tracing_20260309062329Z** — Track Lifecycle Tracing with OTel
+- **kf-skills-source_20260309063859Z** — Kiloforge-Branded Skill Source Artifacts
+- **rebrand-historical-records_20260309063900Z** — Rebrand Historical Conductor Records
 
 ## Getting Started
 

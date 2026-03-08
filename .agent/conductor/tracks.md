@@ -31,6 +31,8 @@
 | [x] | fix-init-password-display_20260308235500Z | Fix Init Password Display | 2026-03-08 | 2026-03-08 |
 | [x] | rebrand-kiloforge_20260309055250Z | Rebrand crelay to Kiloforge (CLI: kf) | 2026-03-09 | 2026-03-09 |
 | [x] | track-lifecycle-tracing_20260309062329Z | Track Lifecycle Tracing with OTel | 2026-03-09 | 2026-03-09 |
+| [ ] | kf-skills-source_20260309063859Z | Kiloforge-Branded Skill Source Artifacts | 2026-03-09 | 2026-03-09 |
+| [ ] | rebrand-historical-records_20260309063900Z | Rebrand Historical Conductor Records | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
