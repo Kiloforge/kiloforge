@@ -34,6 +34,7 @@
 | [x] | kf-skills-source_20260309063859Z | Kiloforge-Branded Skill Source Artifacts | 2026-03-09 | 2026-03-09 |
 | [ ] | rebrand-historical-records_20260309063900Z | Rebrand Historical Conductor Records | 2026-03-09 | 2026-03-09 |
 | [ ] | rename-relay-orchestrator_20260309075537Z | Rename Relay Server to Orchestrator | 2026-03-09 | 2026-03-09 |
+| [ ] | fix-password-display-v3_20260309083826Z | Fix Init Password Display (Root Cause) | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
