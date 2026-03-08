@@ -155,6 +155,34 @@ export interface BoardState {
   cards: Record<string, BoardCard>;
 }
 
+export interface SyncStatus {
+  ahead: number;
+  behind: number;
+  status: "synced" | "ahead" | "behind" | "diverged" | "unknown";
+  local_branch: string;
+  remote_url?: string;
+}
+
+export interface PushRequest {
+  remote_branch: string;
+  force?: boolean;
+}
+
+export interface PushResult {
+  success: boolean;
+  local_branch: string;
+  remote_branch: string;
+}
+
+export interface PullRequest {
+  remote_branch?: string;
+}
+
+export interface PullResult {
+  success: boolean;
+  new_head: string;
+}
+
 export interface ConfigResponse {
   tracing_enabled: boolean;
   dashboard_enabled: boolean;
