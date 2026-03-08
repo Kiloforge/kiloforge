@@ -137,6 +137,7 @@ Navigation hub for project context.
 - **refactor-cli-thin-adapters_20260310010000Z** — Refactor CLI Commands to Thin Adapters with Shared Service Layer
 - **fix-board-sync-ux-be_20260310012000Z** — Fix Board Sync and SSE Events (Backend)
 - **fix-board-sync-ux-fe_20260310012001Z** — Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)
+- **fix-project-delete-refresh_20260310013000Z** — Fix Project Delete — Refresh List and Close Modal
 
 ## Getting Started
 
