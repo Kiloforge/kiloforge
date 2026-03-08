@@ -80,7 +80,7 @@ func DetectCompose() (*ComposeRunner, error) {
 
 // Run executes a compose command (e.g., "up", "-d").
 func (c *ComposeRunner) Run(ctx context.Context, projectDir string, composeFile string, args ...string) error {
-    cmdArgs := append(c.args, "-f", composeFile, "-p", "crelay")
+    cmdArgs := append(c.args, "-f", composeFile, "-p", "kiloforge")
     cmdArgs = append(cmdArgs, args...)
     cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
     cmd.Dir = projectDir
@@ -138,12 +138,12 @@ services:
     container_name: conductor-gitea
     restart: unless-stopped
     ports:
-      - "${CRELAY_GITEA_PORT:-3000}:3000"
+      - "${KF_GITEA_PORT:-3000}:3000"
     volumes:
       - gitea-data:/data
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:${CRELAY_GITEA_PORT:-3000}/
+      - GITEA__server__ROOT_URL=http://localhost:${KF_GITEA_PORT:-3000}/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true
@@ -191,12 +191,12 @@ services:
     container_name: conductor-gitea
     restart: unless-stopped
     ports:
-      - "${CRELAY_GITEA_PORT:-3000}:3000"
+      - "${KF_GITEA_PORT:-3000}:3000"
     volumes:
-      - "${CRELAY_DATA_DIR}/gitea-data:/data"
+      - "${KF_DATA_DIR}/gitea-data:/data"
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:${CRELAY_GITEA_PORT:-3000}/
+      - GITEA__server__ROOT_URL=http://localhost:${KF_GITEA_PORT:-3000}/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true

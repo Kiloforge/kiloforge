@@ -26,10 +26,10 @@
 | [x] | impl-otel-task-tracing_20260308233001Z | OpenTelemetry Task-Level Tracing and Token Metrics | 2026-03-08 | 2026-03-08 |
 | [x] | fix-init-build-bugs_20260308234000Z | Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping | 2026-03-08 | 2026-03-08 |
 | [x] | fix-trace-timeline-unused-vars_20260308220100Z | Fix Unused Variable Errors in TraceTimeline | 2026-03-08 | 2026-03-08 |
-| [x] | research-native-track-board_20260308235000Z | Research: Native Track Board in crelay Dashboard | 2026-03-08 | 2026-03-08 |
+| [x] | research-native-track-board_20260308235000Z | Research: Native Track Board in Kiloforge Dashboard | 2026-03-08 | 2026-03-08 |
 | [x] | impl-native-track-board_20260308235001Z | Native Track Board with Dashboard Kanban and Agent Lifecycle | 2026-03-08 | 2026-03-08 |
 | [x] | fix-init-password-display_20260308235500Z | Fix Init Password Display | 2026-03-08 | 2026-03-08 |
-| [ ] | rebrand-kiloforge_20260309055250Z | Rebrand crelay to kiloforge (CLI: kf) | 2026-03-09 | 2026-03-09 |
+| [ ] | rebrand-kiloforge_20260309055250Z | Rebrand crelay to Kiloforge (CLI: kf) | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
@@ -45,15 +45,15 @@ All active tracks completed and archived at 2026-03-08T16:30:00Z.
 | research-global-gitea-multiproject_20260307120001Z | Research: Global Gitea Server for Multi-Project Coordination | Completed |
 | init-docker-compose_20260307120100Z | Implement Init Command with Docker Compose and Global Gitea | Completed |
 | refactor-config-port-adapter_20260307121000Z | Refactor Config to Port/Adapter Pattern with Layered Resolution | Completed |
-| add-project-command_20260307122000Z | Implement 'crelay add' Command for Project Registration | Completed |
+| add-project-command_20260307122000Z | Implement 'kf add' Command for Project Registration | Completed |
 | down-destroy-commands_20260307123000Z | Add 'up', 'down' Commands and Refactor 'destroy' | Completed |
 | relay-event-handling_20260307124000Z | Relay Event Handling for Issues and PRs with Multi-Project Routing | Completed |
 | init-ssh-and-auth_20260307125500Z | SSH Key Auto-Registration and Randomized Admin Password | Completed |
 | worktree-pool_20260307125000Z | Worktree Pool Management | Completed |
-| implement-command_20260307125001Z | 'crelay implement' Command — Spawn Developer Agent | Completed |
+| implement-command_20260307125001Z | 'kf implement' Command — Spawn Developer Agent | Completed |
 | review-cycle-relay_20260307125002Z | Developer-Reviewer Relay Cycle | Completed |
 | merge-cleanup_20260307125003Z | PR Merge, Worktree Cleanup, and Agent Teardown | Completed |
-| fix-add-remote-url_20260307130000Z | Fix 'crelay add' to Accept Remote URLs | Completed |
+| fix-add-remote-url_20260307130000Z | Fix 'kf add' to Accept Remote URLs | Completed |
 | refactor-clean-arch_20260307140000Z | Restructure Packages into Clean Architecture Layout | Completed |
 | refactor-domain-ports_20260307140001Z | Extract Domain Types, Port Interfaces, and Service Layer | Completed |
 | test-coverage-alignment_20260307140002Z | Test Coverage Alignment with Style Guide | Completed |
@@ -65,5 +65,5 @@ All active tracks completed and archived at 2026-03-08T16:30:00Z.
 | impl-webui-server_20260308140000Z | Web UI Server with Real-Time Agent Monitoring | Completed |
 | impl-webui-integration_20260308140001Z | Web UI CLI Integration and Gitea Links | Completed |
 | impl-lock-service_20260308150000Z | HTTP-Based Scoped Lock Service in Relay Server | Completed |
-| impl-conductor-lock-migration_20260308150001Z | Migrate Conductor Skills to Use crelay Lock API | Completed |
+| impl-conductor-lock-migration_20260308150001Z | Migrate Conductor Skills to Use Kiloforge Lock API | Completed |
 | impl-unified-server_20260308160000Z | Unified Server with Reverse Proxy to Gitea | Completed |

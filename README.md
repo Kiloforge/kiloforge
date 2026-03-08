@@ -1,10 +1,10 @@
-# crelay
+# Kiloforge
 
 A local collaboration platform for AI agents and humans. Provides a fast, private workspace with a git forge (Gitea), a real-time monitoring dashboard, and orchestration tools for managing diverse agents at scale — all running efficiently on your machine.
 
 ## Why
 
-Working with multiple AI agents across multiple projects demands infrastructure that is fast, observable, and under your control. Remote forges add latency, rate limits, and cost. crelay gives you:
+Working with multiple AI agents across multiple projects demands infrastructure that is fast, observable, and under your control. Remote forges add latency, rate limits, and cost. Kiloforge gives you:
 
 - **Fast, local-first** — zero network latency for git operations, webhooks, and agent coordination
 - **Human + AI collaboration** — Gitea for code review and PRs, plus a custom web dashboard for real-time agent monitoring, quota tracking, and log streaming
@@ -42,18 +42,18 @@ Both `docker compose` (v2) and `docker-compose` (v1) are auto-detected.
 make build
 
 # Initialize the global Gitea server
-crelay init
+kf init
 
 # Register your project
-crelay add git@github.com:user/my-project.git
+kf add git@github.com:user/my-project.git
 
 # List registered projects
-crelay projects
+kf projects
 ```
 
 This will:
 1. Detect your Docker Compose CLI variant (v2 or v1)
-2. Generate a `docker-compose.yml` in `~/.crelay/`
+2. Generate a `docker-compose.yml` in `~/.kiloforge/`
 3. Start a Gitea instance at `http://localhost:3000`
 4. Create an admin user (`conductor` / random password)
 5. Generate an API token and save config
@@ -61,16 +61,16 @@ This will:
 
 ## Commands
 
-### `crelay init`
+### `kf init`
 
 One-time setup: start the global Gitea server via Docker Compose.
 
 ```bash
-crelay init [flags]
+kf init [flags]
 
 Flags:
   --gitea-port int    Port for Gitea web UI (default 3000)
-  --data-dir string   Persistent data directory (default ~/.crelay)
+  --data-dir string   Persistent data directory (default ~/.kiloforge)
   --admin-pass string Admin password (default: generated random)
   --ssh-key string    Path to SSH public key (default: auto-detect)
 ```
@@ -81,122 +81,122 @@ Your SSH public key is auto-detected from `~/.ssh/` (tries `id_ed25519.pub`, `id
 
 **Idempotent:** Running again when Gitea is already running prints the status and exits.
 
-### `crelay up`
+### `kf up`
 
 Start Gitea and the webhook relay server (daily use). The relay runs in the foreground — press Ctrl+C to stop it. Gitea stays running via Docker Compose.
 
 ```bash
-crelay up
+kf up
 ```
 
-### `crelay down`
+### `kf down`
 
 Stop the Gitea server without removing data (daily use).
 
 ```bash
-crelay down
+kf down
 ```
 
-### `crelay status`
+### `kf status`
 
 Show Gitea server status.
 
 ```bash
-$ crelay status
-Conductor Relay Status
+$ kf status
+Kiloforge Status
 ======================
 Gitea:       running (v1.22.0) — http://localhost:3000
-Data:        /Users/you/.crelay
-Compose:     /Users/you/.crelay/docker-compose.yml
+Data:        /Users/you/.kiloforge
+Compose:     /Users/you/.kiloforge/docker-compose.yml
 ```
 
-### `crelay add`
+### `kf add`
 
 Clone a remote repo and register it with the Gitea server.
 
 ```bash
-crelay add git@github.com:user/repo.git          # SSH URL
-crelay add https://github.com/user/repo.git      # HTTPS URL
-crelay add git@github.com:user/repo.git --name x  # override slug
+kf add git@github.com:user/repo.git          # SSH URL
+kf add https://github.com/user/repo.git      # HTTPS URL
+kf add git@github.com:user/repo.git --name x  # override slug
 ```
 
-Clones the remote into `~/.crelay/repos/<slug>/`, creates a Gitea repo, adds a `gitea` remote, pushes the main branch, and registers a webhook.
+Clones the remote into `~/.kiloforge/repos/<slug>/`, creates a Gitea repo, adds a `gitea` remote, pushes the main branch, and registers a webhook.
 
-### `crelay projects`
+### `kf projects`
 
 List registered projects.
 
 ```bash
-crelay projects
+kf projects
 ```
 
-### `crelay implement`
+### `kf implement`
 
 Approve a conductor track and spawn a developer agent in a pooled worktree.
 
 ```bash
-crelay implement <track-id>            # spawn developer for track
-crelay implement --list                # list available tracks
-crelay implement --project myapp <id>  # specify project explicitly
+kf implement <track-id>            # spawn developer for track
+kf implement --list                # list available tracks
+kf implement --project myapp <id>  # specify project explicitly
 ```
 
-The command acquires a worktree from the pool, prepares it (reset to main, create implementation branch), and spawns a Claude Code agent running `/conductor-developer <track-id>`. Agent state is recorded for monitoring with `crelay agents`, `crelay logs`, `crelay stop`, and `crelay attach`.
+The command acquires a worktree from the pool, prepares it (reset to main, create implementation branch), and spawns a Claude Code agent running `/conductor-developer <track-id>`. Agent state is recorded for monitoring with `kf agents`, `kf logs`, `kf stop`, and `kf attach`.
 
-### `crelay agents`
+### `kf agents`
 
 List active and recent agents.
 
 ```bash
-crelay agents          # table output
-crelay agents --json   # JSON output
+kf agents          # table output
+kf agents --json   # JSON output
 ```
 
-### `crelay logs <agent-id>`
+### `kf logs <agent-id>`
 
 View logs for an agent. Supports prefix matching on the agent ID.
 
 ```bash
-crelay logs abc12345
-crelay logs abc12345 -f   # follow mode
+kf logs abc12345
+kf logs abc12345 -f   # follow mode
 ```
 
-### `crelay stop <agent-id>`
+### `kf stop <agent-id>`
 
 Send SIGINT to stop a running agent. The session is preserved for later resume.
 
-### `crelay attach <agent-id>`
+### `kf attach <agent-id>`
 
 Print the command to resume an agent's Claude session interactively. If the agent is running, it is halted first.
 
-### `crelay pool`
+### `kf pool`
 
 Show worktree pool status. Displays idle and in-use worktrees for developer agents.
 
 ```bash
-crelay pool
+kf pool
 ```
 
-### `crelay escalated`
+### `kf escalated`
 
 Show PRs that hit the review cycle limit and require human intervention.
 
 ```bash
-crelay escalated
+kf escalated
 ```
 
-### `crelay destroy`
+### `kf destroy`
 
-Permanently destroy all crelay data (requires confirmation).
+Permanently destroy all kiloforge data (requires confirmation).
 
 ```bash
-crelay destroy          # prompts for confirmation
-crelay destroy --force  # skip confirmation
+kf destroy          # prompts for confirmation
+kf destroy --force  # skip confirmation
 ```
 
 ## Architecture
 
 ```
-crelay init / crelay up
+kf init / kf up
     │
     ├─ Docker Compose: start Gitea (localhost:3000)
     ├─ Webhook relay server (localhost:3001)
@@ -210,7 +210,7 @@ crelay init / crelay up
     │   ├─ Quota/cost monitoring
     │   └─ Log streaming
     │
-    └─ crelay add: register project → Gitea repo + webhook
+    └─ kf add: register project → Gitea repo + webhook
 
 ┌─────────────────────────────────────────────────────────────┐
 │  Gitea (Docker)                            localhost:3000    │
@@ -247,10 +247,10 @@ crelay init / crelay up
 
 ## Data Directory
 
-All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
+All persistent data lives in `~/.kiloforge/` (configurable via `--data-dir`):
 
 ```
-~/.crelay/
+~/.kiloforge/
 ├── config.json           # Global configuration
 ├── projects.json         # Project registry
 ├── pool.json             # Worktree pool state
@@ -267,7 +267,7 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 
 ## Tracing
 
-crelay supports OpenTelemetry distributed tracing for agent lifecycle visibility. When enabled, each agent spawn creates a trace span with token metrics, and webhook events are recorded as span events.
+Kiloforge supports OpenTelemetry distributed tracing for agent lifecycle visibility. When enabled, each agent spawn creates a trace span with token metrics, and webhook events are recorded as span events.
 
 To enable tracing, add to your `config.json`:
 
@@ -294,14 +294,14 @@ The trace API is available at:
 
 ## Origin Bridging
 
-When you register a project with `crelay add <remote-url>`, the remote URL is stored as the origin. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
+When you register a project with `kf add <remote-url>`, the remote URL is stored as the origin. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
 
 ## Project Structure
 
 ```
-crelay/
-├── backend/          # Go backend (module: crelay)
-│   ├── cmd/crelay/   # CLI entrypoint
+kiloforge/
+├── backend/          # Go backend (module: kiloforge)
+│   ├── cmd/kf/       # CLI entrypoint
 │   ├── internal/     # Clean architecture (adapter/, core/)
 │   ├── go.mod
 │   └── go.sum

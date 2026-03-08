@@ -2,7 +2,7 @@
 
 ## Overview
 
-Conductor Relay manages a global Gitea instance via Docker Compose, providing a local git forge for Conductor-based development and automated code review with Claude Code agents.
+Kiloforge manages a global Gitea instance via Docker Compose, providing a local git forge for Conductor-based development and automated code review with Claude Code agents.
 
 ## Components
 
@@ -14,7 +14,7 @@ Cobra-based command-line interface:
 - **`status.go`** — Checks Gitea API health and shows compose container status
 - **`destroy.go`** — Tears down via `docker compose down`
 
-Project-specific commands (`agents`, `logs`, `attach`, `stop`) are disabled until project registration (`crelay add`) is implemented.
+Project-specific commands (`agents`, `logs`, `attach`, `stop`) are disabled until project registration (`kf add`) is implemented.
 
 ### 2. Compose Runner (`internal/compose/`)
 
@@ -41,14 +41,14 @@ Thin wrapper around Gitea's REST API:
 
 ### 5. Config (`internal/config/config.go`)
 
-Global configuration stored at `~/.crelay/config.json`:
+Global configuration stored at `~/.kiloforge/config.json`:
 
 ```json
 {
   "gitea_port": 3000,
-  "data_dir": "/Users/you/.crelay",
+  "data_dir": "/Users/you/.kiloforge",
   "api_token": "...",
-  "compose_file": "/Users/you/.crelay/docker-compose.yml"
+  "compose_file": "/Users/you/.kiloforge/docker-compose.yml"
 }
 ```
 
@@ -61,7 +61,7 @@ Manages Claude Code process lifecycle (currently used by relay server, disabled 
 
 ### 7. State Store (`internal/state/state.go`)
 
-JSON file-based agent state persistence at `~/.crelay/state.json`.
+JSON file-based agent state persistence at `~/.kiloforge/state.json`.
 
 ### 8. Relay Server (`internal/relay/server.go`)
 
@@ -70,7 +70,7 @@ HTTP server for Gitea webhook handling (will be re-enabled with project registra
 ## Data Flow
 
 ```
-crelay init
+kf init
     │
     ├─ compose.Detect() → finds docker compose v2 or v1
     ├─ compose.GenerateComposeFile() → renders docker-compose.yml
@@ -78,7 +78,7 @@ crelay init
     ├─ manager.waitReady() → polls /api/v1/version
     ├─ runner.Exec() → gitea admin user create
     ├─ client.CreateToken() → POST /api/v1/users/conductor/tokens
-    └─ config.Save() → ~/.crelay/config.json
+    └─ config.Save() → ~/.kiloforge/config.json
 ```
 
 ## Docker Compose Setup
@@ -87,13 +87,13 @@ The generated `docker-compose.yml` defines:
 
 - **Gitea service** — `gitea/gitea:latest` with SQLite, registration disabled
 - **Port mapping** — configurable host port → container port 3000
-- **Volume** — bind mount at `~/.crelay/gitea-data:/data`
+- **Volume** — bind mount at `~/.kiloforge/gitea-data:/data`
 - **Health check** — polls `/api/v1/version` every 5s
 - **Colima support** — `extra_hosts: host.docker.internal:host-gateway`
 
 ## Future: Project Registration
 
-The `crelay add` command will:
+The `kf add` command will:
 1. Create a repository in the global Gitea instance
 2. Add a `gitea` git remote to the project
 3. Push the project to Gitea

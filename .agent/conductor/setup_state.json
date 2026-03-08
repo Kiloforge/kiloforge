@@ -5,7 +5,7 @@
   "current_question": 2,
   "completed_sections": ["product", "guidelines", "tech_stack", "workflow", "styleguides"],
   "answers": {
-    "project_name": "crelay",
+    "project_name": "kiloforge",
     "description": "A local Gitea + webhook relay that orchestrates Claude Code agents for automated PR review and development workflows. A CLI tool that bridges Gitea and Claude Code to automate conductor-based development and code review.",
     "problem_statement": "Conductor's role-based agents need a git forge for PRs and code review, but using GitHub adds rate limits, latency, and cost. There's no easy way to orchestrate multiple Claude Code agents for parallel development and automated code review without manual intervention.",
     "target_users": "Developers using Conductor workflows with Claude Code to orchestrate multi-agent development and review",

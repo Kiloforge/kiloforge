@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks through setting up Conductor Relay.
+This guide walks through setting up Kiloforge.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ This guide walks through setting up Conductor Relay.
    claude --version
    ```
 
-3. **Go 1.21+** — To build crelay
+3. **Go 1.21+** — To build kiloforge
    ```bash
    go version
    ```
@@ -31,7 +31,7 @@ If you're using Colima on macOS, install docker-compose separately:
 brew install docker-compose
 ```
 
-crelay auto-detects which compose variant is available (v2 first, v1 fallback).
+Kiloforge auto-detects which compose variant is available (v2 first, v1 fallback).
 
 ### Optional
 
@@ -44,13 +44,13 @@ crelay auto-detects which compose variant is available (v2 first, v1 fallback).
 
 ```bash
 # Clone and build
-cd ~/dev/crelay
+cd ~/dev/kiloforge
 make build
 
 # Optionally install to PATH
-cp crelay /usr/local/bin/
+cp kf /usr/local/bin/
 # or
-go install ./cmd/crelay/
+go install ./cmd/kf/
 ```
 
 ## Setup
@@ -58,7 +58,7 @@ go install ./cmd/crelay/
 ### 1. Initialize the Global Gitea Server
 
 ```bash
-crelay init
+kf init
 ```
 
 You'll see output like:
@@ -75,18 +75,18 @@ You'll see output like:
 Gitea is ready!
   Web UI:     http://localhost:3000
   Admin:      conductor / conductor123
-  Data:       /Users/you/.crelay
-  Compose:    /Users/you/.crelay/docker-compose.yml
+  Data:       /Users/you/.kiloforge
+  Compose:    /Users/you/.kiloforge/docker-compose.yml
 
-Stop with 'crelay down', restart with 'crelay up'.
-Register a project with 'crelay add <path>'.
+Stop with 'kf down', restart with 'kf up'.
+Register a project with 'kf add <path>'.
 ```
 
 ### 2. Register a Project
 
 ```bash
 cd ~/dev/my-project
-crelay add .
+kf add .
 ```
 
 This creates a Gitea repo, adds a `gitea` remote, pushes your main branch, and registers a webhook. The origin remote URL is captured for future bridging.
@@ -95,7 +95,7 @@ This creates a Gitea repo, adds a `gitea` remote, pushes your main branch, and r
 
 ```bash
 # Check status
-crelay status
+kf status
 
 # Visit Gitea web UI
 open http://localhost:3000
@@ -151,15 +151,15 @@ tea pr list
 ## Daily Use
 
 ```bash
-crelay down    # stop Gitea (keeps data)
-crelay up      # start Gitea again
+kf down    # stop Gitea (keeps data)
+kf up      # start Gitea again
 ```
 
 ## Teardown
 
 ```bash
-crelay destroy          # permanently delete everything (requires confirmation)
-crelay destroy --force  # skip confirmation prompt
+kf destroy          # permanently delete everything (requires confirmation)
+kf destroy --force  # skip confirmation prompt
 ```
 
 ## Troubleshooting
@@ -168,19 +168,19 @@ crelay destroy --force  # skip confirmation prompt
 
 ```bash
 # Check Docker/compose
-docker compose -f ~/.crelay/docker-compose.yml ps
-docker compose -f ~/.crelay/docker-compose.yml logs
+docker compose -f ~/.kiloforge/docker-compose.yml ps
+docker compose -f ~/.kiloforge/docker-compose.yml logs
 
 # Retry
-crelay destroy --force
-crelay init
+kf destroy --force
+kf init
 ```
 
 ### Port conflicts
 
 ```bash
 # Use a different port
-crelay init --gitea-port 3010
+kf init --gitea-port 3010
 ```
 
 ### Colima: host.docker.internal not resolving

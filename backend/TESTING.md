@@ -41,7 +41,7 @@ lock_integration_test.go      — Scoped integration tests (//go:build integrati
 ### Test Locations
 
 ```
-cmd/crelay/main_test.go                          — Binary build smoke test
+cmd/kf/main_test.go                          — Binary build smoke test
 internal/adapter/cli/cli_test.go                 — CLI command registration and help
 internal/adapter/rest/routes_test.go             — Route registration smoke tests
 internal/adapter/rest/server_test.go             — Webhook handler unit tests

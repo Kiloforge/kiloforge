@@ -2,13 +2,13 @@
 
 ## Architecture: Layered Clean Architecture
 
-crelay follows a layered architecture with strict dependency direction: **domain → port → service → adapter → CLI**. Inner layers never import outer layers.
+Kiloforge follows a layered architecture with strict dependency direction: **domain → port → service → adapter → CLI**. Inner layers never import outer layers.
 
 ### Package Layout
 
 ```
 cmd/
-  crelay/          — Entry point. Wires dependencies and starts the app.
+  kf/              — Entry point. Wires dependencies and starts the app.
 
 internal/
   core/
@@ -662,7 +662,7 @@ go test ./test/e2e/ -v -tags=e2e -timeout 5m
 - `port.Config` interface abstracts config access.
 - Adapters: defaults, JSON file, environment variables, CLI flags.
 - Resolution order (highest priority last): defaults → JSON → env → flags.
-- Environment variable prefix: `CRELAY_` (e.g., `CRELAY_GITEA_PORT`).
+- Environment variable prefix: `KF_` (e.g., `KF_GITEA_PORT`).
 
 ## SQL (SQLite)
 

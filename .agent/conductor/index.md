@@ -1,4 +1,4 @@
-# Conductor - crelay
+# Conductor - Kiloforge
 
 Navigation hub for project context.
 
@@ -17,15 +17,15 @@ Navigation hub for project context.
 - **research-global-gitea-multiproject_20260307120001Z** — Research: Global Gitea Server for Multi-Project Coordination
 - **init-docker-compose_20260307120100Z** — Implement Init Command with Docker Compose and Global Gitea
 - **refactor-config-port-adapter_20260307121000Z** — Refactor Config to Port/Adapter Pattern with Layered Resolution
-- **add-project-command_20260307122000Z** — Implement 'crelay add' Command for Project Registration
+- **add-project-command_20260307122000Z** — Implement 'kf add' Command for Project Registration
 - **down-destroy-commands_20260307123000Z** — Add 'up', 'down' Commands and Refactor 'destroy'
 - **relay-event-handling_20260307124000Z** — Relay Event Handling for Issues and PRs with Multi-Project Routing
 - **init-ssh-and-auth_20260307125500Z** — SSH Key Auto-Registration and Randomized Admin Password
 - **worktree-pool_20260307125000Z** — Worktree Pool Management
-- **implement-command_20260307125001Z** — 'crelay implement' Command — Spawn Developer Agent
+- **implement-command_20260307125001Z** — 'kf implement' Command — Spawn Developer Agent
 - **review-cycle-relay_20260307125002Z** — Developer-Reviewer Relay Cycle
 - **merge-cleanup_20260307125003Z** — PR Merge, Worktree Cleanup, and Agent Teardown
-- **fix-add-remote-url_20260307130000Z** — Fix 'crelay add' to Accept Remote URLs
+- **fix-add-remote-url_20260307130000Z** — Fix 'kf add' to Accept Remote URLs
 
 ## Pending Tracks
 
@@ -40,7 +40,7 @@ Navigation hub for project context.
 - **impl-webui-server_20260308140000Z** — Web UI Server with Real-Time Agent Monitoring
 - **impl-webui-integration_20260308140001Z** — Web UI CLI Integration and Gitea Links
 - **impl-lock-service_20260308150000Z** — HTTP-Based Scoped Lock Service in Relay Server
-- **impl-conductor-lock-migration_20260308150001Z** — Migrate Conductor Skills to Use crelay Lock API
+- **impl-conductor-lock-migration_20260308150001Z** — Migrate Conductor Skills to Use Kiloforge Lock API
 - **impl-unified-server_20260308160000Z** — Unified Server with Reverse Proxy to Gitea
 - **impl-gitea-issue-api_20260308170000Z** — Extend Gitea Client with Issue, Label, and Project Board APIs
 - **impl-track-board-sync_20260308170001Z** — Track-to-Gitea Board Sync Service
@@ -65,10 +65,10 @@ Navigation hub for project context.
 - **research-otel-task-tracing_20260308233000Z** — Research: OpenTelemetry for Task-Level Tracing and Token Metrics
 - **impl-otel-task-tracing_20260308233001Z** — OpenTelemetry Task-Level Tracing and Token Metrics
 - **fix-init-build-bugs_20260308234000Z** — Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping
-- **research-native-track-board_20260308235000Z** — Research: Native Track Board in crelay Dashboard
+- **research-native-track-board_20260308235000Z** — Research: Native Track Board in Kiloforge Dashboard
 - **impl-native-track-board_20260308235001Z** — Native Track Board with Dashboard Kanban and Agent Lifecycle
 - **fix-init-password-display_20260308235500Z** — Fix Init Password Display
-- **rebrand-kiloforge_20260309055250Z** — Rebrand crelay to kiloforge (CLI: kf)
+- **rebrand-kiloforge_20260309055250Z** — Rebrand crelay to Kiloforge (CLI: kf)
 
 ## Getting Started
 

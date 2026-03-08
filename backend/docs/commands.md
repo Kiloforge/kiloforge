@@ -1,51 +1,51 @@
 # Command Reference
 
-## `crelay init`
+## `kf init`
 
 Initialize the global Gitea server via Docker Compose.
 
 **Synopsis:**
 ```bash
-crelay init [--gitea-port PORT] [--data-dir PATH]
+kf init [--gitea-port PORT] [--data-dir PATH]
 ```
 
 **What it does (in order):**
 1. Detects Docker Compose CLI variant (v2 plugin or v1 standalone)
-2. Creates data directory (`~/.crelay/`)
+2. Creates data directory (`~/.kiloforge/`)
 3. Generates `docker-compose.yml` with Gitea service definition
 4. Runs `docker compose up -d` to start Gitea
 5. Waits for Gitea to become healthy (up to 60s)
 6. Creates admin user `conductor` via `docker compose exec`
 7. Creates API access token via REST API
-8. Saves configuration to `~/.crelay/config.json`
+8. Saves configuration to `~/.kiloforge/config.json`
 
 **Flags:**
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--gitea-port` | `3000` | Port for Gitea web UI and API |
-| `--data-dir` | `~/.crelay` | Where to store config, compose file, and Gitea data |
+| `--data-dir` | `~/.kiloforge` | Where to store config, compose file, and Gitea data |
 
 **Idempotent:** If Gitea is already running, reports the status and exits without making changes.
 
 ---
 
-## `crelay status`
+## `kf status`
 
 Display the current status of the Gitea server.
 
 **Synopsis:**
 ```bash
-crelay status
+kf status
 ```
 
 **Output:**
 ```
-Conductor Relay Status
+Kiloforge Status
 ======================
 Gitea:       running (v1.22.0) — http://localhost:3000
-Data:        /Users/you/.crelay
-Compose:     /Users/you/.crelay/docker-compose.yml
+Data:        /Users/you/.kiloforge
+Compose:     /Users/you/.kiloforge/docker-compose.yml
 ```
 
 **Checks performed:**
@@ -54,13 +54,13 @@ Compose:     /Users/you/.crelay/docker-compose.yml
 
 ---
 
-## `crelay up`
+## `kf up`
 
 Start Gitea and the webhook relay server (daily use).
 
 **Synopsis:**
 ```bash
-crelay up
+kf up
 ```
 
 **What it does:**
@@ -70,7 +70,7 @@ crelay up
 4. Starts the webhook relay server on the relay port (default 3001)
 5. Relay runs in the foreground — press Ctrl+C to stop
 
-**Requires:** `crelay init` must have been run first.
+**Requires:** `kf init` must have been run first.
 
 **Relay behavior:**
 - Routes webhook events from Gitea to the correct project via `repository.name`
@@ -79,13 +79,13 @@ crelay up
 
 ---
 
-## `crelay down`
+## `kf down`
 
 Stop the Gitea server without removing data (daily use).
 
 **Synopsis:**
 ```bash
-crelay down
+kf down
 ```
 
 **What it does:**
@@ -93,24 +93,24 @@ crelay down
 2. Checks if Gitea is running (no-op if already stopped)
 3. Runs `docker compose stop` to stop containers without removing them
 
-**Non-destructive:** Containers and data are preserved. Restart with `crelay up`.
+**Non-destructive:** Containers and data are preserved. Restart with `kf up`.
 
 ---
 
-## `crelay destroy`
+## `kf destroy`
 
-Permanently destroy all crelay data.
+Permanently destroy all kiloforge data.
 
 **Synopsis:**
 ```bash
-crelay destroy [--force]
+kf destroy [--force]
 ```
 
 **What it does:**
 1. Prints a critical warning listing everything that will be deleted
 2. Requires typing "yes" to confirm (use `--force` to skip)
 3. Runs `docker compose down --volumes` to remove containers and volumes
-4. Removes the entire data directory (`~/.crelay/`)
+4. Removes the entire data directory (`~/.kiloforge/`)
 
 **Flags:**
 
@@ -120,13 +120,13 @@ crelay destroy [--force]
 
 **Example:**
 ```
-$ crelay destroy
+$ kf destroy
 
   WARNING: This will permanently delete:
     - Gitea server and all repositories
     - All project registrations
     - All agent state and logs
-    - Data directory: /Users/you/.crelay
+    - Data directory: /Users/you/.kiloforge
 
   This action cannot be undone.
 
@@ -135,26 +135,26 @@ $ crelay destroy
 
 ---
 
-## `crelay add`
+## `kf add`
 
 Clone a remote repo and register it with the Gitea server.
 
 **Synopsis:**
 ```bash
-crelay add <remote-url> [--name SLUG]
+kf add <remote-url> [--name SLUG]
 ```
 
 **What it does (in order):**
 1. Validates the argument is a remote URL (SSH or HTTPS)
 2. Derives a project slug from the URL (last path component, minus `.git`)
 3. Loads global config and verifies Gitea is running
-4. Clones the remote into `~/.crelay/repos/<slug>/`
+4. Clones the remote into `~/.kiloforge/repos/<slug>/`
 5. Creates a repository in Gitea via API
 6. Adds a `gitea` git remote to the cloned repo
 7. Pushes the main branch to Gitea
 8. Registers a webhook for relay events
-9. Creates project data directory (`~/.crelay/projects/<slug>/logs/`)
-10. Saves the project to `~/.crelay/projects.json`
+9. Creates project data directory (`~/.kiloforge/projects/<slug>/logs/`)
+10. Saves the project to `~/.kiloforge/projects.json`
 
 **Flags:**
 
@@ -166,7 +166,7 @@ crelay add <remote-url> [--name SLUG]
 
 **Example:**
 ```
-$ crelay add git@github.com:you/my-project.git
+$ kf add git@github.com:you/my-project.git
 ==> Cloning git@github.com:you/my-project.git...
 ==> Creating Gitea repo 'my-project'...
 ==> Adding gitea remote...
@@ -175,22 +175,22 @@ $ crelay add git@github.com:you/my-project.git
 ==> Registering webhook...
 
 Project 'my-project' registered!
-  Path:   /Users/you/.crelay/repos/my-project
+  Path:   /Users/you/.kiloforge/repos/my-project
   Gitea:  http://localhost:3000/conductor/my-project
   Origin: git@github.com:you/my-project.git
 
-View registered projects with 'crelay projects'.
+View registered projects with 'kf projects'.
 ```
 
 ---
 
-## `crelay projects`
+## `kf projects`
 
 List all registered projects.
 
 **Synopsis:**
 ```bash
-crelay projects
+kf projects
 ```
 
 **Output:**
@@ -201,13 +201,13 @@ my-project  /Users/you/dev/my-project git@github.com:you/my-project.git   2026-0
 
 ---
 
-## `crelay pool`
+## `kf pool`
 
 Show worktree pool status.
 
 **Synopsis:**
 ```bash
-crelay pool
+kf pool
 ```
 
 **Output:**
@@ -219,17 +219,17 @@ worker-1   idle    -               -          -
 worker-2   in-use  auth_20260307   uuid-123   2026-03-07 12:00:00
 ```
 
-Worktrees are created automatically by `crelay implement` when needed. The pool manages reusable git worktrees for developer agents, avoiding the overhead of creating and destroying worktrees per task.
+Worktrees are created automatically by `kf implement` when needed. The pool manages reusable git worktrees for developer agents, avoiding the overhead of creating and destroying worktrees per task.
 
 ---
 
-## `crelay escalated`
+## `kf escalated`
 
 Show PRs that hit the review cycle limit and require human intervention.
 
 **Synopsis:**
 ```bash
-crelay escalated
+kf escalated
 ```
 
 **Output:**

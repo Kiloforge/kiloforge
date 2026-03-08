@@ -11,7 +11,7 @@
 ### Current Model (Single-Project)
 
 ```
-~/.crelay/
+~/.kiloforge/
   config.json      # One project: ports, repo name, project dir, token
   state.json       # Flat agent list, no project association
   logs/            # All agent logs
@@ -47,7 +47,7 @@ Everything is singular: one config, one state file, one repo, one relay, one Git
 ### Proposed Directory Structure
 
 ```
-~/.crelay/
+~/.kiloforge/
   config.json              # Global config (ports, token, Gitea settings)
   projects.json            # Registry of all known projects
   gitea-data/              # Docker volume (shared)
@@ -62,7 +62,7 @@ Everything is singular: one config, one state file, one repo, one relay, one Git
         ...
 ```
 
-**Project slug** is derived from the repo name (e.g., `crelay`, `my-app`). It must be unique across all registered projects.
+**Project slug** is derived from the repo name (e.g., `kiloforge`, `my-app`). It must be unique across all registered projects.
 
 ### Should the Relay Be Global?
 
@@ -86,9 +86,9 @@ The relay maintains an in-memory map of `repo_name -> project_config` loaded at 
 {
   "gitea_port": 3000,
   "relay_port": 3001,
-  "repo_name": "crelay",
-  "project_dir": "/Users/dev/crelay",
-  "data_dir": "/Users/dev/.crelay",
+  "repo_name": "kiloforge",
+  "project_dir": "/Users/dev/kiloforge",
+  "data_dir": "/Users/dev/.kiloforge",
   "api_token": "abc123..."
 }
 ```
@@ -102,7 +102,7 @@ Single-project fields mixed with global settings.
   "version": 2,
   "gitea_port": 3000,
   "relay_port": 3001,
-  "data_dir": "/Users/dev/.crelay",
+  "data_dir": "/Users/dev/.kiloforge",
   "api_token": "abc123...",
   "container_name": "conductor-gitea"
 }
@@ -116,10 +116,10 @@ Removed: `repo_name`, `project_dir` — these move to project registration.
 {
   "version": 1,
   "projects": {
-    "crelay": {
-      "slug": "crelay",
-      "repo_name": "crelay",
-      "project_dir": "/Users/dev/crelay",
+    "kiloforge": {
+      "slug": "kiloforge",
+      "repo_name": "kiloforge",
+      "project_dir": "/Users/dev/kiloforge",
       "registered_at": "2026-03-07T12:00:00Z",
       "active": true
     },
@@ -200,8 +200,8 @@ This allows incremental migration — existing code that takes `*config.Config` 
       "status": "running",
       "session_id": "uuid-session",
       "pid": 12345,
-      "worktree_dir": "/Users/dev/crelay",
-      "log_file": "/Users/dev/.crelay/logs/uuid-1.log",
+      "worktree_dir": "/Users/dev/kiloforge",
+      "log_file": "/Users/dev/.kiloforge/logs/uuid-1.log",
       "started_at": "...",
       "updated_at": "..."
     }
@@ -216,8 +216,8 @@ No project association. All agents in one flat list.
 **Option A: Separate state files per project** (recommended)
 
 ```
-~/.crelay/projects/crelay/state.json
-~/.crelay/projects/my-app/state.json
+~/.kiloforge/projects/kiloforge/state.json
+~/.kiloforge/projects/my-app/state.json
 ```
 
 Each state file has the same structure as today:
@@ -234,7 +234,7 @@ Each state file has the same structure as today:
   "agents": [
     {
       "id": "uuid-1",
-      "project": "crelay",
+      "project": "kiloforge",
       "role": "developer",
       ...
     }
@@ -249,7 +249,7 @@ Reasons:
 2. **Simplicity** — no need for project-aware queries in the Store struct
 3. **Cleanup** — removing a project means deleting its directory
 4. **Compatibility** — state file format is unchanged, only its location moves
-5. **Cross-project queries** — `crelay agents` (no project flag) can iterate all project state files and merge results
+5. **Cross-project queries** — `kf agents` (no project flag) can iterate all project state files and merge results
 
 ### Store Evolution
 
@@ -260,9 +260,9 @@ func LoadProject(dataDir, projectSlug string) (*Store, error) {
     return loadFrom(path)
 }
 
-// Load all agents across all projects (for `crelay agents` without --project)
+// Load all agents across all projects (for `kf agents` without --project)
 func LoadAll(dataDir string) (map[string]*Store, error) {
-    // Iterate ~/.crelay/projects/*/state.json
+    // Iterate ~/.kiloforge/projects/*/state.json
     // Return map[projectSlug]*Store
 }
 ```
@@ -271,21 +271,21 @@ func LoadAll(dataDir string) (map[string]*Store, error) {
 
 Logs move to per-project directories:
 ```
-~/.crelay/projects/crelay/logs/uuid-1.log
-~/.crelay/projects/my-app/logs/uuid-2.log
+~/.kiloforge/projects/kiloforge/logs/uuid-1.log
+~/.kiloforge/projects/my-app/logs/uuid-2.log
 ```
 
 ---
 
 ## 4. Project Onboarding Flow
 
-### Command: `crelay add`
+### Command: `kf add`
 
 Run from within a project directory (or with `--project-dir` flag).
 
 ```
 $ cd ~/my-app
-$ crelay add
+$ kf add
 ```
 
 #### Flow
@@ -297,13 +297,13 @@ $ crelay add
    - No → start it (same as current init, minus repo creation)
    - Yes → continue
 4. Check: is project already registered?
-   - Yes → error "project already registered, use crelay remove first"
+   - Yes → error "project already registered, use kf remove first"
    - No → continue
 5. Create repo in Gitea: POST /api/v1/user/repos {name: slug}
 6. Add git remote: git remote add gitea http://.../<slug>.git
 7. Push main branch: git push gitea main
 8. Create webhook: POST /api/v1/repos/<owner>/<slug>/hooks
-9. Create project directory: mkdir -p ~/.crelay/projects/<slug>/logs/
+9. Create project directory: mkdir -p ~/.kiloforge/projects/<slug>/logs/
 10. Register in projects.json
 11. Notify relay to reload project registry (if relay is running)
 ```
@@ -312,17 +312,17 @@ $ crelay add
 
 | Scenario | Handling |
 |----------|----------|
-| Project already registered | Error with suggestion to `crelay remove` first |
-| Project dir moved | `crelay add` from new location; old registration is stale |
+| Project already registered | Error with suggestion to `kf remove` first |
+| Project dir moved | `kf add` from new location; old registration is stale |
 | Repo name conflict | Error — user must choose different `--name` |
 | Gitea not running | Auto-start Gitea (global init) |
 | No git repo in project dir | Error — must be a git repository |
 
-### Command: `crelay remove`
+### Command: `kf remove`
 
 ```
 $ cd ~/my-app
-$ crelay remove
+$ kf remove
 ```
 
 #### Flow
@@ -334,7 +334,7 @@ $ crelay remove
 4. Remove git remote
 5. Optionally delete Gitea repo (--delete-repo flag)
 6. Remove project from projects.json
-7. Remove ~/.crelay/projects/<slug>/ directory
+7. Remove ~/.kiloforge/projects/<slug>/ directory
 ```
 
 ---
@@ -347,7 +347,7 @@ The relay receives all webhooks at `POST /webhook`. It doesn't distinguish which
 
 ### Proposed: Single Relay with Repo-Name Routing
 
-Gitea webhook payloads include `repository.full_name` (e.g., `conductor/crelay`). The relay uses this to look up the project.
+Gitea webhook payloads include `repository.full_name` (e.g., `conductor/kiloforge`). The relay uses this to look up the project.
 
 #### Implementation
 
@@ -358,7 +358,7 @@ func (s *Server) handleWebhook(c *fiber.Ctx) error {
 
     // Extract repo name from payload
     repo := payload["repository"].(map[string]any)
-    repoName := repo["name"].(string) // e.g., "crelay"
+    repoName := repo["name"].(string) // e.g., "kiloforge"
 
     // Look up project
     project, ok := s.projects[repoName]
@@ -388,7 +388,7 @@ Option B (`/webhook/{project}`) was considered but rejected:
 
 When a project is added/removed, the relay needs to update its routing table. Options:
 1. **File watch** — relay watches `projects.json` for changes (inotify/fsnotify)
-2. **Signal** — `crelay add` sends SIGHUP to relay process, relay reloads
+2. **Signal** — `kf add` sends SIGHUP to relay process, relay reloads
 3. **API endpoint** — `POST /api/reload` triggers reload
 
 **Recommendation:** Option 2 (SIGHUP) — simple, standard Unix pattern, no extra dependencies.
@@ -400,40 +400,40 @@ When a project is added/removed, the relay needs to update its routing table. Op
 ### Current Commands
 
 ```
-crelay init       # Set up everything (Gitea + repo + relay) — single project
-crelay status     # Show system status
-crelay agents     # List agents
-crelay logs       # View agent logs
-crelay attach     # Halt agent and get resume command
-crelay stop       # Halt agent
-crelay destroy    # Tear down everything
+kf init       # Set up everything (Gitea + repo + relay) — single project
+kf status     # Show system status
+kf agents     # List agents
+kf logs       # View agent logs
+kf attach     # Halt agent and get resume command
+kf stop       # Halt agent
+kf destroy    # Tear down everything
 ```
 
 ### Proposed Commands
 
 ```
-crelay init                   # Global: start Gitea + relay (no project)
-crelay add [--name slug]      # Register current project with Gitea
-crelay remove [--name slug]   # Unregister project
-crelay projects               # List all registered projects
+kf init                   # Global: start Gitea + relay (no project)
+kf add [--name slug]      # Register current project with Gitea
+kf remove [--name slug]   # Unregister project
+kf projects               # List all registered projects
 
-crelay status                 # Global status + per-project summary
-crelay agents [--project X]   # List agents (all or filtered)
-crelay logs <id>              # View agent logs (auto-resolves project)
-crelay attach <id>            # Halt agent and resume
-crelay stop <id>              # Halt agent
+kf status                 # Global status + per-project summary
+kf agents [--project X]   # List agents (all or filtered)
+kf logs <id>              # View agent logs (auto-resolves project)
+kf attach <id>            # Halt agent and resume
+kf stop <id>              # Halt agent
 
-crelay destroy                # Tear down Gitea container + all data
-crelay destroy --project X    # Remove just one project (alias for remove)
+kf destroy                # Tear down Gitea container + all data
+kf destroy --project X    # Remove just one project (alias for remove)
 ```
 
 ### Project Context Resolution
 
 Many commands need to know which project they're operating on. Resolution order:
 
-1. **Explicit flag:** `--project crelay`
+1. **Explicit flag:** `--project kiloforge`
 2. **Current directory:** detect git root, look up in `projects.json` by `project_dir`
-3. **All projects:** if neither, operate on all (e.g., `crelay agents` shows all agents)
+3. **All projects:** if neither, operate on all (e.g., `kf agents` shows all agents)
 
 ```go
 func resolveProject(flagValue string) (*Project, error) {
@@ -484,9 +484,9 @@ On any CLI command, check `config.json` for a `version` field:
 1. Read old config.json
 2. Create new config.json (version: 2) with global fields only
 3. Create projects.json with single project entry from old config
-4. Create ~/.crelay/projects/<slug>/ directory
-5. Move state.json → ~/.crelay/projects/<slug>/state.json
-6. Move logs/* → ~/.crelay/projects/<slug>/logs/
+4. Create ~/.kiloforge/projects/<slug>/ directory
+5. Move state.json → ~/.kiloforge/projects/<slug>/state.json
+6. Move logs/* → ~/.kiloforge/projects/<slug>/logs/
 7. Back up old config.json as config.json.v1.bak
 ```
 
@@ -551,11 +551,11 @@ func MigrateIfNeeded(dataDir string) error {
 
 ## 8. Open Questions (Require User Input)
 
-1. **Global Gitea lifecycle** — Should `crelay init` start Gitea as a long-running background daemon? Or should the user explicitly start/stop it? Current behavior blocks the terminal.
+1. **Global Gitea lifecycle** — Should `kf init` start Gitea as a long-running background daemon? Or should the user explicitly start/stop it? Current behavior blocks the terminal.
 
 2. **Project naming** — Should the slug always match the directory name, or allow arbitrary names? Allowing arbitrary names adds complexity but avoids conflicts when two projects share a directory name.
 
-3. **Relay as daemon** — Currently the relay runs in the foreground (blocks terminal in `init`). For multi-project, the relay should be a background process. Options: daemonize with PID file, or use `crelay start`/`crelay stop` commands.
+3. **Relay as daemon** — Currently the relay runs in the foreground (blocks terminal in `init`). For multi-project, the relay should be a background process. Options: daemonize with PID file, or use `kf start`/`kf stop` commands.
 
 4. **Gitea organizations** — Should each project get its own Gitea org for namespace isolation? Or keep all repos under the single `conductor` user? Orgs add isolation but complexity.
 

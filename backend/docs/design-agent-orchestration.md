@@ -7,7 +7,7 @@
 
 ## Overview
 
-This document describes the full lifecycle of how crelay orchestrates Claude Code agents for track implementation and code review. The system coordinates two agent roles — **developer** and **reviewer** — through a structured cycle of implementation, PR review, revision, and merge, all mediated through the local Gitea instance and webhook relay.
+This document describes the full lifecycle of how kiloforge orchestrates Claude Code agents for track implementation and code review. The system coordinates two agent roles — **developer** and **reviewer** — through a structured cycle of implementation, PR review, revision, and merge, all mediated through the local Gitea instance and webhook relay.
 
 ---
 
@@ -21,7 +21,7 @@ draft → pending → approved → in-progress → review → complete
 ```
 
 **Approval mechanism (initial):**
-- Human approves via `crelay implement <track-id>` CLI command
+- Human approves via `kf implement <track-id>` CLI command
 - This is the trigger that starts the developer agent
 
 **Future automation:**
@@ -34,7 +34,7 @@ draft → pending → approved → in-progress → review → complete
 
 ### Branch and worktree management
 
-Developer agents need isolated working directories. Rather than creating/destroying worktrees per task, crelay maintains a **pool of reusable worktrees**.
+Developer agents need isolated working directories. Rather than creating/destroying worktrees per task, kiloforge maintains a **pool of reusable worktrees**.
 
 ### Pool structure
 ```
@@ -100,11 +100,11 @@ Developer agents need isolated working directories. Rather than creating/destroy
 ### Phase 1: Initialization
 
 ```
-1. User runs: crelay implement <track-id>
-2. crelay validates track is approved/pending
-3. crelay acquires a worktree from the pool
-4. crelay creates implementation branch: git checkout -b <track-id>
-5. crelay spawns Claude Code developer agent:
+1. User runs: kf implement <track-id>
+2. kf validates track is approved/pending
+3. kf acquires a worktree from the pool
+4. kf creates implementation branch: git checkout -b <track-id>
+5. kf spawns Claude Code developer agent:
    - Working directory: acquired worktree
    - Prompt: /conductor-developer <track-id>
    - Session ID: generated UUID
@@ -164,7 +164,7 @@ The relay:
 ### Reviewer Agent
 
 ```
-1. crelay spawns Claude Code reviewer agent:
+1. kf spawns Claude Code reviewer agent:
    - Working directory: can use a separate worktree or review in-place
    - Prompt: /conductor-reviewer <pr-url>
    - Session ID: generated UUID
@@ -248,7 +248,7 @@ review_cycle_count tracking per PR:
 Escalation:
   - PR labeled: "needs-human-review"
   - Comment on PR: "Review cycle limit reached (3). Human review required."
-  - CLI notification: crelay status shows escalated PRs
+  - CLI notification: kf status shows escalated PRs
   - All agents for this PR are stopped
 ```
 
@@ -311,7 +311,7 @@ spawned → running → waiting-review → running (revise) ┘
 spawned → running → completed (approved or changes-requested)
 ```
 
-### PR States (crelay tracking)
+### PR States (kiloforge tracking)
 ```
 created → in-review → changes-requested → in-review → ... → approved → merged
                                                                │
@@ -368,16 +368,16 @@ type PRTracking struct {
 ### New commands for orchestration
 
 ```
-crelay implement <track-id>     # Approve track and start developer agent
-crelay implement --list         # Show tracks available for implementation
+kf implement <track-id>     # Approve track and start developer agent
+kf implement --list         # Show tracks available for implementation
 
-crelay agents                   # List all agents (dev + reviewer)
-crelay agents --project <slug>  # Filter by project
+kf agents                   # List all agents (dev + reviewer)
+kf agents --project <slug>  # Filter by project
 
-crelay logs <agent-id>          # View agent log
-crelay attach <agent-id>        # Halt agent and get resume command
+kf logs <agent-id>          # View agent log
+kf attach <agent-id>        # Halt agent and get resume command
 
-crelay escalated                # Show PRs that hit review cycle limit
+kf escalated                # Show PRs that hit review cycle limit
 ```
 
 ---
@@ -385,7 +385,7 @@ crelay escalated                # Show PRs that hit review cycle limit
 ## 10. Sequence Diagram
 
 ```
-Human          crelay CLI       Relay          Gitea          Developer CC     Reviewer CC
+Human          kf CLI           Relay          Gitea          Developer CC     Reviewer CC
   │                │              │              │                │                │
   │ implement T1   │              │              │                │                │
   │───────────────>│              │              │                │                │
