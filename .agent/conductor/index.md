@@ -131,6 +131,8 @@ Navigation hub for project context.
 - **gitignore-frontend-dist_20260310000000Z** — Stop Committing Frontend Dist — Build Before Backend Instead
 - **fix-nested-claude-env_20260310001000Z** — Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var
 - **fix-spawner-verbose-flag_20260310003000Z** — Fix Agent Spawner — Add --verbose Flag for stream-json
+- **setup-prereq-be_20260310004000Z** — Setup Prerequisite Check Before Agent Spawning (Backend)
+- **setup-prereq-fe_20260310004001Z** — Setup Prerequisite Check — Dashboard UI (Frontend)
 
 ## Getting Started
 
