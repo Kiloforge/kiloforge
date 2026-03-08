@@ -61,6 +61,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Agent"
+        "403":
+          description: Agent permissions not consented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "412":
           description: Required skills not installed
           content:
@@ -446,6 +452,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenerateTracksResult"
+        "403":
+          description: Agent permissions not consented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "412":
           description: Required skills not installed
           content:
@@ -499,6 +511,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/consent/agent-permissions:
+    get:
+      operationId: getAgentPermissionsConsent
+      summary: Check agent permissions consent state
+      tags: [Consent]
+      responses:
+        "200":
+          description: Consent state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentState"
+    post:
+      operationId: recordAgentPermissionsConsent
+      summary: Record user consent for agent permissions
+      tags: [Consent]
+      responses:
+        "200":
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentState"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/admin/run:
     post:
       operationId: runAdminOperation
@@ -517,6 +559,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminOperationResult"
+        "403":
+          description: Agent permissions not consented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "412":
           description: Required skills not installed or another admin operation is running
           content:
@@ -1450,6 +1498,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SkillDetail"
+
+    ConsentState:
+      type: object
+      required: [consented]
+      properties:
+        consented:
+          type: boolean
+        consented_at:
+          type: string
+          description: RFC3339 timestamp of when consent was given
 
     AdminOperationRequest:
       type: object

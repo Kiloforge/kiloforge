@@ -56,6 +56,12 @@ type InteractiveSpawner interface {
 	SpawnInteractive(ctx context.Context, opts agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error)
 }
 
+// ConsentChecker provides consent state access.
+type ConsentChecker interface {
+	HasAgentPermissionsConsent() bool
+	RecordAgentPermissionsConsent() error
+}
+
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
@@ -73,6 +79,7 @@ type APIHandler struct {
 	cfg           *config.Config
 	interSpawner  InteractiveSpawner
 	wsSessions    *wsAdapter.SessionManager
+	consent       ConsentChecker
 
 	adminMu          sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -94,6 +101,7 @@ type APIHandlerOpts struct {
 	Cfg           *config.Config
 	InterSpawner  InteractiveSpawner
 	WSSessions    *wsAdapter.SessionManager
+	Consent       ConsentChecker
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -113,6 +121,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		cfg:          opts.Cfg,
 		interSpawner: opts.InterSpawner,
 		wsSessions:   opts.WSSessions,
+		consent:      opts.Consent,
 	}
 }
 
@@ -170,6 +179,38 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 	}, nil
 }
 
+// GetAgentPermissionsConsent implements gen.StrictServerInterface.
+func (h *APIHandler) GetAgentPermissionsConsent(_ context.Context, _ gen.GetAgentPermissionsConsentRequestObject) (gen.GetAgentPermissionsConsentResponseObject, error) {
+	if h.consent == nil {
+		return gen.GetAgentPermissionsConsent200JSONResponse{Consented: false}, nil
+	}
+	consented := h.consent.HasAgentPermissionsConsent()
+	return gen.GetAgentPermissionsConsent200JSONResponse{Consented: consented}, nil
+}
+
+// RecordAgentPermissionsConsent implements gen.StrictServerInterface.
+func (h *APIHandler) RecordAgentPermissionsConsent(_ context.Context, _ gen.RecordAgentPermissionsConsentRequestObject) (gen.RecordAgentPermissionsConsentResponseObject, error) {
+	if h.consent == nil {
+		return gen.RecordAgentPermissionsConsent500JSONResponse{Error: "consent store not configured"}, nil
+	}
+	if err := h.consent.RecordAgentPermissionsConsent(); err != nil {
+		return gen.RecordAgentPermissionsConsent500JSONResponse{Error: fmt.Sprintf("record consent: %v", err)}, nil
+	}
+	return gen.RecordAgentPermissionsConsent200JSONResponse{Consented: true}, nil
+}
+
+// checkConsent returns a 403 error string if consent is required but not given.
+// Returns empty string if consent is granted or consent store is not configured.
+func (h *APIHandler) checkConsent() string {
+	if h.consent == nil {
+		return ""
+	}
+	if h.consent.HasAgentPermissionsConsent() {
+		return ""
+	}
+	return "agent_permissions_not_consented: user must consent to agent permissions before spawning agents. POST /api/consent/agent-permissions to consent."
+}
+
 // ListAgents implements gen.StrictServerInterface.
 func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject) (gen.ListAgentsResponseObject, error) {
 	if err := h.agents.Load(); err != nil {
@@ -187,6 +228,11 @@ func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject
 func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInteractiveAgentRequestObject) (gen.SpawnInteractiveAgentResponseObject, error) {
 	if h.interSpawner == nil || h.wsSessions == nil {
 		return gen.SpawnInteractiveAgent500JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+
+	// Check agent permissions consent.
+	if msg := h.checkConsent(); msg != "" {
+		return gen.SpawnInteractiveAgent403JSONResponse{Error: msg}, nil
 	}
 
 	// Validate required skills for interactive agents.
@@ -1107,6 +1153,11 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		return gen.GenerateTracks500JSONResponse{Error: "prompt is required"}, nil
 	}
 
+	// Check agent permissions consent.
+	if msg := h.checkConsent(); msg != "" {
+		return gen.GenerateTracks403JSONResponse{Error: msg}, nil
+	}
+
 	// Validate required skills for track generation.
 	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
 		return gen.GenerateTracks412JSONResponse(*resp), nil
@@ -1210,6 +1261,11 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 	skillPrompt, ok := adminSkillMap[req.Body.Operation]
 	if !ok {
 		return gen.RunAdminOperation500JSONResponse{Error: fmt.Sprintf("unknown operation: %s", req.Body.Operation)}, nil
+	}
+
+	// Check agent permissions consent.
+	if msg := h.checkConsent(); msg != "" {
+		return gen.RunAdminOperation403JSONResponse{Error: msg}, nil
 	}
 
 	// Validate required skills.

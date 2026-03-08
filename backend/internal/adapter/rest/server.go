@@ -80,6 +80,13 @@ func WithInteractiveSpawner(spawner InteractiveSpawner) ServerOption {
 	}
 }
 
+// WithConsent enables agent permissions consent checking.
+func WithConsent(checker ConsentChecker) ServerOption {
+	return func(s *Server) {
+		s.consent = checker
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -107,6 +114,7 @@ type Server struct {
 	tracer        port.Tracer
 	interSpawner  InteractiveSpawner
 	wsSessions    *wsAdapter.SessionManager
+	consent       ConsentChecker
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -218,6 +226,7 @@ func (s *Server) Run(ctx context.Context) error {
 		Cfg:          s.cfg,
 		InterSpawner: s.interSpawner,
 		WSSessions:   s.wsSessions,
+		Consent:      s.consent,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

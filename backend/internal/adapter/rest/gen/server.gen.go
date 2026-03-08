@@ -245,23 +245,26 @@ type Agent struct {
 	CacheReadTokens     *int `json:"cache_read_tokens,omitempty"`
 
 	// EstimatedCostUsd Informational — API-equivalent cost estimate
-	EstimatedCostUsd *float64    `json:"estimated_cost_usd,omitempty"`
-	Id               string      `json:"id"`
-	InputTokens      *int        `json:"input_tokens,omitempty"`
-	LogFile          *string     `json:"log_file,omitempty"`
-	Model            *string     `json:"model,omitempty"`
-	OutputTokens     *int        `json:"output_tokens,omitempty"`
-	Pid              int         `json:"pid"`
-	Ref              string      `json:"ref"`
-	Role             AgentRole   `json:"role"`
-	SessionId        *string     `json:"session_id,omitempty"`
-	ShutdownReason   *string     `json:"shutdown_reason,omitempty"`
-	StartedAt        time.Time   `json:"started_at"`
-	Status           AgentStatus `json:"status"`
-	SuspendedAt      *time.Time  `json:"suspended_at,omitempty"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	UptimeSeconds    *int        `json:"uptime_seconds,omitempty"`
-	WorktreeDir      *string     `json:"worktree_dir,omitempty"`
+	EstimatedCostUsd *float64 `json:"estimated_cost_usd,omitempty"`
+	Id               string   `json:"id"`
+	InputTokens      *int     `json:"input_tokens,omitempty"`
+	LogFile          *string  `json:"log_file,omitempty"`
+	Model            *string  `json:"model,omitempty"`
+
+	// Name Random human-friendly display name
+	Name           *string     `json:"name,omitempty"`
+	OutputTokens   *int        `json:"output_tokens,omitempty"`
+	Pid            int         `json:"pid"`
+	Ref            string      `json:"ref"`
+	Role           AgentRole   `json:"role"`
+	SessionId      *string     `json:"session_id,omitempty"`
+	ShutdownReason *string     `json:"shutdown_reason,omitempty"`
+	StartedAt      time.Time   `json:"started_at"`
+	Status         AgentStatus `json:"status"`
+	SuspendedAt    *time.Time  `json:"suspended_at,omitempty"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+	UptimeSeconds  *int        `json:"uptime_seconds,omitempty"`
+	WorktreeDir    *string     `json:"worktree_dir,omitempty"`
 }
 
 // AgentRole defines model for Agent.Role.
@@ -305,6 +308,14 @@ type BoardState struct {
 type ConfigResponse struct {
 	DashboardEnabled bool `json:"dashboard_enabled"`
 	TracingEnabled   bool `json:"tracing_enabled"`
+}
+
+// ConsentState defines model for ConsentState.
+type ConsentState struct {
+	Consented bool `json:"consented"`
+
+	// ConsentedAt RFC3339 timestamp of when consent was given
+	ConsentedAt *string `json:"consented_at,omitempty"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -707,6 +718,12 @@ type ServerInterface interface {
 	// Update configuration
 	// (PUT /api/config)
 	UpdateConfig(w http.ResponseWriter, r *http.Request)
+	// Check agent permissions consent state
+	// (GET /api/consent/agent-permissions)
+	GetAgentPermissionsConsent(w http.ResponseWriter, r *http.Request)
+	// Record user consent for agent permissions
+	// (POST /api/consent/agent-permissions)
+	RecordAgentPermissionsConsent(w http.ResponseWriter, r *http.Request)
 	// List all active locks
 	// (GET /api/locks)
 	ListLocks(w http.ResponseWriter, r *http.Request)
@@ -978,6 +995,34 @@ func (siw *ServerInterfaceWrapper) UpdateConfig(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAgentPermissionsConsent operation middleware
+func (siw *ServerInterfaceWrapper) GetAgentPermissionsConsent(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAgentPermissionsConsent(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecordAgentPermissionsConsent operation middleware
+func (siw *ServerInterfaceWrapper) RecordAgentPermissionsConsent(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecordAgentPermissionsConsent(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1566,6 +1611,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/api/board/{project}/sync", wrapper.SyncBoard)
 	m.HandleFunc("GET "+options.BaseURL+"/api/config", wrapper.GetConfig)
 	m.HandleFunc("PUT "+options.BaseURL+"/api/config", wrapper.UpdateConfig)
+	m.HandleFunc("GET "+options.BaseURL+"/api/consent/agent-permissions", wrapper.GetAgentPermissionsConsent)
+	m.HandleFunc("POST "+options.BaseURL+"/api/consent/agent-permissions", wrapper.RecordAgentPermissionsConsent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/locks", wrapper.ListLocks)
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/locks/{scope}", wrapper.ReleaseLock)
 	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/acquire", wrapper.AcquireLock)
@@ -1604,6 +1651,15 @@ type RunAdminOperation201JSONResponse AdminOperationResult
 func (response RunAdminOperation201JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOperation403JSONResponse ErrorResponse
+
+func (response RunAdminOperation403JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1673,6 +1729,15 @@ type SpawnInteractiveAgent201JSONResponse Agent
 func (response SpawnInteractiveAgent201JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SpawnInteractiveAgent403JSONResponse ErrorResponse
+
+func (response SpawnInteractiveAgent403JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1935,6 +2000,47 @@ func (response UpdateConfig400JSONResponse) VisitUpdateConfigResponse(w http.Res
 type UpdateConfig500JSONResponse ErrorResponse
 
 func (response UpdateConfig500JSONResponse) VisitUpdateConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAgentPermissionsConsentRequestObject struct {
+}
+
+type GetAgentPermissionsConsentResponseObject interface {
+	VisitGetAgentPermissionsConsentResponse(w http.ResponseWriter) error
+}
+
+type GetAgentPermissionsConsent200JSONResponse ConsentState
+
+func (response GetAgentPermissionsConsent200JSONResponse) VisitGetAgentPermissionsConsentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordAgentPermissionsConsentRequestObject struct {
+}
+
+type RecordAgentPermissionsConsentResponseObject interface {
+	VisitRecordAgentPermissionsConsentResponse(w http.ResponseWriter) error
+}
+
+type RecordAgentPermissionsConsent200JSONResponse ConsentState
+
+func (response RecordAgentPermissionsConsent200JSONResponse) VisitRecordAgentPermissionsConsentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordAgentPermissionsConsent500JSONResponse ErrorResponse
+
+func (response RecordAgentPermissionsConsent500JSONResponse) VisitRecordAgentPermissionsConsentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -2499,6 +2605,15 @@ func (response GenerateTracks201JSONResponse) VisitGenerateTracksResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GenerateTracks403JSONResponse ErrorResponse
+
+func (response GenerateTracks403JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GenerateTracks412JSONResponse SkillsMissingResponse
 
 func (response GenerateTracks412JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
@@ -2609,6 +2724,12 @@ type StrictServerInterface interface {
 	// Update configuration
 	// (PUT /api/config)
 	UpdateConfig(ctx context.Context, request UpdateConfigRequestObject) (UpdateConfigResponseObject, error)
+	// Check agent permissions consent state
+	// (GET /api/consent/agent-permissions)
+	GetAgentPermissionsConsent(ctx context.Context, request GetAgentPermissionsConsentRequestObject) (GetAgentPermissionsConsentResponseObject, error)
+	// Record user consent for agent permissions
+	// (POST /api/consent/agent-permissions)
+	RecordAgentPermissionsConsent(ctx context.Context, request RecordAgentPermissionsConsentRequestObject) (RecordAgentPermissionsConsentResponseObject, error)
 	// List all active locks
 	// (GET /api/locks)
 	ListLocks(ctx context.Context, request ListLocksRequestObject) (ListLocksResponseObject, error)
@@ -2978,6 +3099,54 @@ func (sh *strictHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateConfigResponseObject); ok {
 		if err := validResponse.VisitUpdateConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAgentPermissionsConsent operation middleware
+func (sh *strictHandler) GetAgentPermissionsConsent(w http.ResponseWriter, r *http.Request) {
+	var request GetAgentPermissionsConsentRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAgentPermissionsConsent(ctx, request.(GetAgentPermissionsConsentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAgentPermissionsConsent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAgentPermissionsConsentResponseObject); ok {
+		if err := validResponse.VisitGetAgentPermissionsConsentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordAgentPermissionsConsent operation middleware
+func (sh *strictHandler) RecordAgentPermissionsConsent(w http.ResponseWriter, r *http.Request) {
+	var request RecordAgentPermissionsConsentRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordAgentPermissionsConsent(ctx, request.(RecordAgentPermissionsConsentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordAgentPermissionsConsent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecordAgentPermissionsConsentResponseObject); ok {
+		if err := validResponse.VisitRecordAgentPermissionsConsentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

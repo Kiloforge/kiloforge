@@ -110,6 +110,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	boardSvc := service.NewNativeBoardService(boardStore)
 	opts = append(opts, rest.WithBoardService(boardSvc))
 
+	// Wire consent store for agent-permissions consent API.
+	consentStore := sqlite.NewConsentStore(db)
+	opts = append(opts, rest.WithConsent(consentStore))
+
 	// Start auto-update checker if enabled.
 	if cfg.SkillsRepo != "" && cfg.AutoUpdateSkills != nil && *cfg.AutoUpdateSkills {
 		updater := skills.NewAutoUpdater(cfg.SkillsRepo, cfg.GetSkillsDir())

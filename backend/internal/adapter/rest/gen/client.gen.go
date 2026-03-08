@@ -127,6 +127,12 @@ type ClientInterface interface {
 
 	UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAgentPermissionsConsent request
+	GetAgentPermissionsConsent(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RecordAgentPermissionsConsent request
+	RecordAgentPermissionsConsent(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListLocks request
 	ListLocks(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -365,6 +371,30 @@ func (c *Client) UpdateConfigWithBody(ctx context.Context, contentType string, b
 
 func (c *Client) UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateConfigRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAgentPermissionsConsent(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentPermissionsConsentRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RecordAgentPermissionsConsent(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRecordAgentPermissionsConsentRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1098,6 +1128,60 @@ func NewUpdateConfigRequestWithBody(server string, contentType string, body io.R
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAgentPermissionsConsentRequest generates requests for GetAgentPermissionsConsent
+func NewGetAgentPermissionsConsentRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/consent/agent-permissions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRecordAgentPermissionsConsentRequest generates requests for RecordAgentPermissionsConsent
+func NewRecordAgentPermissionsConsentRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/consent/agent-permissions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -2021,6 +2105,12 @@ type ClientWithResponsesInterface interface {
 
 	UpdateConfigWithResponse(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error)
 
+	// GetAgentPermissionsConsentWithResponse request
+	GetAgentPermissionsConsentWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAgentPermissionsConsentResponse, error)
+
+	// RecordAgentPermissionsConsentWithResponse request
+	RecordAgentPermissionsConsentWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RecordAgentPermissionsConsentResponse, error)
+
 	// ListLocksWithResponse request
 	ListLocksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocksResponse, error)
 
@@ -2105,6 +2195,7 @@ type RunAdminOperationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *AdminOperationResult
+	JSON403      *ErrorResponse
 	JSON412      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -2153,6 +2244,7 @@ type SpawnInteractiveAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *Agent
+	JSON403      *ErrorResponse
 	JSON412      *SkillsMissingResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -2335,6 +2427,51 @@ func (r UpdateConfigResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateConfigResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAgentPermissionsConsentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConsentState
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentPermissionsConsentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentPermissionsConsentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RecordAgentPermissionsConsentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConsentState
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RecordAgentPermissionsConsentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RecordAgentPermissionsConsentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2768,6 +2905,7 @@ type GenerateTracksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *GenerateTracksResult
+	JSON403      *ErrorResponse
 	JSON412      *SkillsMissingResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -2954,6 +3092,24 @@ func (c *ClientWithResponses) UpdateConfigWithResponse(ctx context.Context, body
 		return nil, err
 	}
 	return ParseUpdateConfigResponse(rsp)
+}
+
+// GetAgentPermissionsConsentWithResponse request returning *GetAgentPermissionsConsentResponse
+func (c *ClientWithResponses) GetAgentPermissionsConsentWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAgentPermissionsConsentResponse, error) {
+	rsp, err := c.GetAgentPermissionsConsent(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentPermissionsConsentResponse(rsp)
+}
+
+// RecordAgentPermissionsConsentWithResponse request returning *RecordAgentPermissionsConsentResponse
+func (c *ClientWithResponses) RecordAgentPermissionsConsentWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RecordAgentPermissionsConsentResponse, error) {
+	rsp, err := c.RecordAgentPermissionsConsent(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRecordAgentPermissionsConsentResponse(rsp)
 }
 
 // ListLocksWithResponse request returning *ListLocksResponse
@@ -3230,6 +3386,13 @@ func ParseRunAdminOperationResponse(rsp *http.Response) (*RunAdminOperationRespo
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -3309,6 +3472,13 @@ func ParseSpawnInteractiveAgentResponse(rsp *http.Response) (*SpawnInteractiveAg
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
 		var dest SkillsMissingResponse
@@ -3596,6 +3766,65 @@ func ParseUpdateConfigResponse(rsp *http.Response) (*UpdateConfigResponse, error
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAgentPermissionsConsentResponse parses an HTTP response from a GetAgentPermissionsConsentWithResponse call
+func ParseGetAgentPermissionsConsentResponse(rsp *http.Response) (*GetAgentPermissionsConsentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentPermissionsConsentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConsentState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRecordAgentPermissionsConsentResponse parses an HTTP response from a RecordAgentPermissionsConsentWithResponse call
+func ParseRecordAgentPermissionsConsentResponse(rsp *http.Response) (*RecordAgentPermissionsConsentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RecordAgentPermissionsConsentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConsentState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse
@@ -4274,6 +4503,13 @@ func ParseGenerateTracksResponse(rsp *http.Response) (*GenerateTracksResponse, e
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
 		var dest SkillsMissingResponse
