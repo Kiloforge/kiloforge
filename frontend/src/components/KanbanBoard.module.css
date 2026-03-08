@@ -145,3 +145,90 @@
 .cardTrace:hover {
   text-decoration: underline;
 }
+
+.cardBacklog {
+  border-left: 3px solid var(--yellow);
+}
+
+.reviewBadge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 12%, transparent);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.approveBtn,
+.rejectBtn {
+  flex: 1;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.approveBtn {
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--green);
+}
+
+.approveBtn:hover {
+  background: color-mix(in srgb, var(--green) 25%, transparent);
+}
+
+.rejectBtn {
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+}
+
+.rejectBtn:hover {
+  background: color-mix(in srgb, var(--red) 25%, transparent);
+}
+
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.confirmText {
+  font-size: 11px;
+  color: var(--red);
+  flex: 1;
+}
+
+.confirmYes,
+.confirmNo {
+  border: none;
+  border-radius: 3px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmYes {
+  background: var(--red);
+  color: var(--bg);
+}
+
+.confirmNo {
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}

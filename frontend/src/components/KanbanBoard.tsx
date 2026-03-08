@@ -22,11 +22,13 @@ const COLUMN_COLORS: Record<string, string> = {
 interface KanbanBoardProps {
   board: BoardState;
   onMoveCard: (trackId: string, toColumn: string) => void;
+  onDeleteTrack?: (trackId: string) => void;
 }
 
-export function KanbanBoard({ board, onMoveCard }: KanbanBoardProps) {
+export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardProps) {
   const [dragTrackId, setDragTrackId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [confirmReject, setConfirmReject] = useState<string | null>(null);
 
   const cardsByColumn = (col: string): BoardCard[] => {
     return Object.values(board.cards)
@@ -90,8 +92,17 @@ export function KanbanBoard({ board, onMoveCard }: KanbanBoardProps) {
                   key={card.track_id}
                   card={card}
                   isDragging={dragTrackId === card.track_id}
+                  isBacklog={col === "backlog"}
+                  confirmingReject={confirmReject === card.track_id}
                   onDragStart={() => handleDragStart(card.track_id)}
                   onDragEnd={handleDragEnd}
+                  onApprove={() => onMoveCard(card.track_id, "approved")}
+                  onReject={() => setConfirmReject(card.track_id)}
+                  onConfirmReject={() => {
+                    onDeleteTrack?.(card.track_id);
+                    setConfirmReject(null);
+                  }}
+                  onCancelReject={() => setConfirmReject(null)}
                 />
               ))}
             </div>
@@ -105,20 +116,27 @@ export function KanbanBoard({ board, onMoveCard }: KanbanBoardProps) {
 interface CardItemProps {
   card: BoardCard;
   isDragging: boolean;
+  isBacklog: boolean;
+  confirmingReject: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onConfirmReject: () => void;
+  onCancelReject: () => void;
 }
 
-function CardItem({ card, isDragging, onDragStart, onDragEnd }: CardItemProps) {
+function CardItem({ card, isDragging, isBacklog, confirmingReject, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
   return (
     <div
-      className={`${styles.card} ${isDragging ? styles.cardDragging : ""}`}
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isBacklog ? styles.cardBacklog : ""}`}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
       <div className={styles.cardHeader}>
         {card.type && <span className={styles.cardType}>{card.type}</span>}
+        {isBacklog && <span className={styles.reviewBadge}>Pending Review</span>}
         {card.pr_number && card.pr_number > 0 && (
           <span className={styles.cardPR}>PR #{card.pr_number}</span>
         )}
@@ -139,6 +157,22 @@ function CardItem({ card, isDragging, onDragStart, onDragEnd }: CardItemProps) {
           </Link>
         )}
       </div>
+      {isBacklog && (
+        <div className={styles.cardActions}>
+          {confirmingReject ? (
+            <div className={styles.confirmRow}>
+              <span className={styles.confirmText}>Delete track?</span>
+              <button className={styles.confirmYes} onClick={(e) => { e.stopPropagation(); onConfirmReject(); }}>Yes</button>
+              <button className={styles.confirmNo} onClick={(e) => { e.stopPropagation(); onCancelReject(); }}>No</button>
+            </div>
+          ) : (
+            <>
+              <button className={styles.approveBtn} onClick={(e) => { e.stopPropagation(); onApprove(); }} title="Approve">&#x2713;</button>
+              <button className={styles.rejectBtn} onClick={(e) => { e.stopPropagation(); onReject(); }} title="Reject">&#x2717;</button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

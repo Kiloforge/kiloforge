@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
@@ -7,6 +7,7 @@ import { useOriginSync } from "../hooks/useOriginSync";
 import { TrackList } from "../components/TrackList";
 import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
+import { AgentTerminal } from "../components/AgentTerminal";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -14,9 +15,14 @@ export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
-  const { board, loading: boardLoading, moveCard } = useBoard(slug);
+  const { board, loading: boardLoading, moveCard, refresh: refreshBoard } = useBoard(slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
+
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
 
   const handlePush = useCallback((remoteBranch: string) => {
     push({ remote_branch: remoteBranch });
@@ -25,6 +31,39 @@ export function ProjectPage() {
   const handlePull = useCallback((remoteBranch?: string) => {
     pull(remoteBranch);
   }, [pull]);
+
+  const handleGenerateTracks = useCallback(async () => {
+    if (!prompt.trim() || !slug) return;
+    setGenerating(true);
+    try {
+      const resp = await fetch("/api/tracks/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), project: slug }),
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { agent_id: string; ws_url: string };
+        setTerminalAgentId(data.agent_id);
+        setShowPrompt(false);
+        setPrompt("");
+      }
+    } finally {
+      setGenerating(false);
+    }
+  }, [prompt, slug]);
+
+  const handleDeleteTrack = useCallback(async (trackId: string) => {
+    if (!slug) return;
+    await fetch(`/api/tracks/${encodeURIComponent(trackId)}?project=${encodeURIComponent(slug)}`, {
+      method: "DELETE",
+    });
+    refreshBoard();
+  }, [slug, refreshBoard]);
+
+  const handleTerminalClose = useCallback(() => {
+    setTerminalAgentId(null);
+    refreshBoard();
+  }, [refreshBoard]);
 
   return (
     <>
@@ -78,15 +117,55 @@ export function ProjectPage() {
       )}
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Board</h2>
+        <div className={styles.boardHeader}>
+          <h2 className={appStyles.panelTitle}>Board</h2>
+          <button
+            className={styles.generateBtn}
+            onClick={() => setShowPrompt((v) => !v)}
+          >
+            Generate Tracks
+          </button>
+        </div>
+        {showPrompt && (
+          <div className={styles.promptForm}>
+            <textarea
+              className={styles.promptInput}
+              placeholder="Describe the features or changes you want to generate tracks for..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={3}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  handleGenerateTracks();
+                }
+              }}
+            />
+            <div className={styles.promptActions}>
+              <button
+                className={styles.promptSubmit}
+                disabled={!prompt.trim() || generating}
+                onClick={handleGenerateTracks}
+              >
+                {generating ? "Starting..." : "Generate"}
+              </button>
+              <button className={styles.promptCancel} onClick={() => { setShowPrompt(false); setPrompt(""); }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         {boardLoading ? (
           <p className={appStyles.empty}>Loading board...</p>
         ) : board && Object.keys(board.cards).length > 0 ? (
-          <KanbanBoard board={board} onMoveCard={moveCard} />
+          <KanbanBoard board={board} onMoveCard={moveCard} onDeleteTrack={handleDeleteTrack} />
         ) : (
           <p className={appStyles.empty}>No cards on the board yet. Run sync to populate.</p>
         )}
       </section>
+
+      {terminalAgentId && (
+        <AgentTerminal agentId={terminalAgentId} onClose={handleTerminalClose} />
+      )}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>
