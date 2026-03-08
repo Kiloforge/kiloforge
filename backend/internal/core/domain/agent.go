@@ -40,7 +40,23 @@ type AgentInfo struct {
 	StartedAt      time.Time  `json:"started_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 	SuspendedAt    *time.Time `json:"suspended_at,omitempty"`
+	FinishedAt     *time.Time `json:"finished_at,omitempty"`
 	ShutdownReason string     `json:"shutdown_reason,omitempty"`
 	ResumeError    string     `json:"resume_error,omitempty"`
 	Model          string     `json:"model,omitempty"`
+}
+
+// IsActive returns true if the agent is in a non-terminal status.
+func (a AgentInfo) IsActive() bool {
+	return a.Status == string(AgentStatusRunning) || a.Status == string(AgentStatusWaiting)
+}
+
+// IsTerminal returns true if the agent is in a terminal status.
+func (a AgentInfo) IsTerminal() bool {
+	switch AgentStatus(a.Status) {
+	case AgentStatusStopped, AgentStatusCompleted, AgentStatusFailed,
+		AgentStatusForceKilled, AgentStatusResumeFailed:
+		return true
+	}
+	return false
 }
