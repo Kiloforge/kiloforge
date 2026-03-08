@@ -12,10 +12,13 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/pool"
+	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
-	
+
 	"github.com/spf13/cobra"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var implementCmd = &cobra.Command{
@@ -93,22 +96,55 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("track %q is already in progress", trackID)
 	}
 
+	// Initialize tracing for track lifecycle.
+	tracer, tracingShutdown := initTracing(ctx, cfg)
+	if tracingShutdown != nil {
+		defer tracingShutdown(context.Background())
+	}
+
+	// Start root trace span for the track lifecycle.
+	ctx, trackSpan := tracer.StartSpan(ctx, "track/"+trackID,
+		port.StringAttr("track.id", trackID),
+		port.StringAttr("track.title", found.Title),
+		port.StringAttr("project.slug", proj.Slug),
+	)
+	defer trackSpan.End()
+
+	// Extract trace ID from span context for cross-process propagation.
+	traceID := extractTraceID(ctx)
+
 	// Acquire worktree.
+	ctx, acquireSpan := tracer.StartSpan(ctx, "worktree.acquire",
+		port.StringAttr("track.id", trackID),
+	)
 	p, err := pool.Load(cfg.DataDir)
 	if err != nil {
+		acquireSpan.SetError(err)
+		acquireSpan.End()
 		return fmt.Errorf("load pool: %w", err)
 	}
 	p.ProjectRoot = proj.ProjectDir
 
 	wt, err := p.Acquire()
 	if err != nil {
+		acquireSpan.SetError(err)
+		acquireSpan.End()
 		return fmt.Errorf("acquire worktree: %w", err)
 	}
+	acquireSpan.SetAttributes(port.StringAttr("worktree.path", wt.Path))
+	acquireSpan.End()
 
 	// Prepare worktree for track.
+	_, prepareSpan := tracer.StartSpan(ctx, "worktree.prepare",
+		port.StringAttr("track.id", trackID),
+		port.StringAttr("worktree.path", wt.Path),
+	)
 	if err := p.Prepare(wt, trackID); err != nil {
+		prepareSpan.SetError(err)
+		prepareSpan.End()
 		return fmt.Errorf("prepare worktree: %w", err)
 	}
+	prepareSpan.End()
 
 	// Spawn developer agent.
 	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
@@ -121,6 +157,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
 	spawner := agent.NewSpawner(cfg, store, tracker)
+	spawner.SetTracer(tracer)
 	info, err := spawner.SpawnDeveloper(ctx, agent.SpawnDeveloperOpts{
 		TrackID:     trackID,
 		Flags:       "--auto-merge",
@@ -128,6 +165,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		LogDir:      logDir,
 	})
 	if err != nil {
+		trackSpan.SetError(err)
 		return fmt.Errorf("spawn developer: %w", err)
 	}
 
@@ -139,7 +177,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("save pool: %w", err)
 	}
 
-	// Move track card to In Progress on the native board.
+	// Move track card to In Progress on the native board and store trace ID.
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
 	nativeBoardSvc := service.NewNativeBoardService(boardStore)
 	if moveResult, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnInProgress); err == nil {
@@ -148,12 +186,20 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Store trace ID in board card for cross-process propagation.
+	if traceID != "" {
+		_ = nativeBoardSvc.StoreTraceID(proj.Slug, trackID, traceID)
+	}
+
 	fmt.Println()
 	fmt.Printf("Developer agent spawned for track %q\n", trackID)
 	fmt.Printf("  Agent:     %s\n", info.ID[:8])
 	fmt.Printf("  Session:   %s\n", info.SessionID[:8])
 	fmt.Printf("  Worktree:  %s\n", wt.Path)
 	fmt.Printf("  Log:       %s\n", info.LogFile)
+	if traceID != "" {
+		fmt.Printf("  Trace:     %s\n", traceID)
+	}
 	fmt.Println()
 	fmt.Printf("View logs:     kf logs %s\n", info.ID[:8])
 	fmt.Printf("Stop agent:    kf stop %s\n", info.ID[:8])
@@ -161,6 +207,28 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	return nil
+}
+
+// initTracing sets up a tracer for the implement command.
+// Returns NoopTracer if tracing is not enabled.
+func initTracing(ctx context.Context, cfg *config.Config) (port.Tracer, func(context.Context) error) {
+	if !cfg.IsTracingEnabled() {
+		return port.NoopTracer{}, nil
+	}
+	result, err := tracing.Init(ctx, "")
+	if err != nil {
+		return port.NoopTracer{}, nil
+	}
+	return tracing.NewOTelTracer(), result.Shutdown
+}
+
+// extractTraceID gets the hex trace ID from the current span context.
+func extractTraceID(ctx context.Context) string {
+	sc := oteltrace.SpanFromContext(ctx).SpanContext()
+	if !sc.IsValid() {
+		return ""
+	}
+	return sc.TraceID().String()
 }
 
 func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, error) {

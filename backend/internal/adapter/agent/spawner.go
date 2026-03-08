@@ -127,6 +127,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		port.StringAttr("agent.role", "reviewer"),
 		port.StringAttr("agent.ref", info.Ref),
 		port.IntAttr("agent.pid", cmd.Process.Pid),
+		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
 
@@ -217,6 +218,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		port.StringAttr("agent.ref", opts.TrackID),
 		port.IntAttr("agent.pid", cmd.Process.Pid),
 		port.StringAttr("agent.worktree", workDir),
+		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
 
