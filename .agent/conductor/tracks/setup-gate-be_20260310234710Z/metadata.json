@@ -2,15 +2,15 @@
   "id": "setup-gate-be_20260310234710Z",
   "title": "Gate All Agent Endpoints Behind Setup Check (Backend)",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T23:47:10Z",
   "updated": "2026-03-10T23:47:10Z",
   "phases": {
     "total": 2,
-    "completed": 0
+    "completed": 2
   },
   "tasks": {
     "total": 5,
-    "completed": 0
+    "completed": 5
   }
 }
