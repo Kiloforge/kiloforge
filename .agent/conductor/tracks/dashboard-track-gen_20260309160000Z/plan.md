@@ -28,7 +28,7 @@
 
 ## Phase 4: Verification
 
-- [ ] Task 4.1: Verify `go test ./...` passes
-- [ ] Task 4.2: Verify `npm run build` succeeds
-- [ ] Task 4.3: End-to-end: enter prompt → agent generates tracks → tracks appear in backlog → approve → moves to approved
-- [ ] Task 4.4: End-to-end: reject a track → artifacts deleted, card removed
+- [x] Task 4.1: Verify `go test ./...` passes
+- [x] Task 4.2: Verify `npm run build` succeeds
+- [x] Task 4.3: End-to-end: enter prompt → agent generates tracks → tracks appear in backlog → approve → moves to approved
+- [x] Task 4.4: End-to-end: reject a track → artifacts deleted, card removed
