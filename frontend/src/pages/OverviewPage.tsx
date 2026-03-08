@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type { Agent, QuotaResponse, StatusResponse, Track } from "../types/api";
 import type { Project } from "../types/api";
@@ -6,6 +7,8 @@ import { StatCards } from "../components/StatCards";
 import { AgentGrid } from "../components/AgentGrid";
 import { TrackList } from "../components/TrackList";
 import { TraceList } from "../components/TraceList";
+import { AddProjectForm } from "../components/AddProjectForm";
+import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
@@ -30,34 +33,59 @@ function trackCountsByStatus(tracks: Track[], slug: string) {
   return counts;
 }
 
-function ProjectRow({ project, tracks }: { project: Project; tracks: Track[] }) {
+interface ProjectRowProps {
+  project: Project;
+  tracks: Track[];
+  onRemove: (slug: string) => void;
+}
+
+function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   const counts = trackCountsByStatus(tracks, project.slug);
   return (
-    <Link to={`/projects/${project.slug}`} className={styles.projectRow}>
-      <span className={styles.projectSlug}>{project.slug}</span>
-      {project.origin_remote && (
-        <span className={styles.projectRemote}>{project.origin_remote}</span>
-      )}
-      <span className={styles.trackCounts}>
-        {counts.total > 0 ? (
-          <>
-            <span className={styles.countComplete}>{counts.complete}</span>
-            {" / "}
-            <span className={styles.countProgress}>{counts["in-progress"]}</span>
-            {" / "}
-            <span className={styles.countPending}>{counts.pending}</span>
-          </>
-        ) : (
-          <span className={styles.noTracks}>no tracks</span>
+    <div className={styles.projectRow}>
+      <Link to={`/projects/${project.slug}`} className={styles.projectLink}>
+        <span className={styles.projectSlug}>{project.slug}</span>
+        {project.origin_remote && (
+          <span className={styles.projectRemote}>{project.origin_remote}</span>
         )}
-      </span>
-    </Link>
+        <span className={styles.trackCounts}>
+          {counts.total > 0 ? (
+            <>
+              <span className={styles.countComplete}>{counts.complete}</span>
+              {" / "}
+              <span className={styles.countProgress}>{counts["in-progress"]}</span>
+              {" / "}
+              <span className={styles.countPending}>{counts.pending}</span>
+            </>
+          ) : (
+            <span className={styles.noTracks}>no tracks</span>
+          )}
+        </span>
+      </Link>
+      <button
+        className={styles.removeBtn}
+        onClick={(e) => { e.stopPropagation(); onRemove(project.slug); }}
+        title={`Remove ${project.slug}`}
+      >
+        &times;
+      </button>
+    </div>
   );
 }
 
 export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onViewLog }: OverviewPageProps) {
-  const { projects, loading: projectsLoading } = useProjects();
+  const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
+  const [removeSlug, setRemoveSlug] = useState<string | null>(null);
+
+  const handleRemoveConfirm = useCallback(
+    async (slug: string, cleanup: boolean): Promise<boolean> => {
+      const ok = await removeProject(slug, cleanup);
+      if (ok) setRemoveSlug(null);
+      return ok;
+    },
+    [removeProject],
+  );
 
   return (
     <>
@@ -74,11 +102,12 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Projects</h2>
+        <AddProjectForm adding={adding} error={error} onAdd={addProject} onClearError={clearError} />
         {projectsLoading ? (
           <p className={appStyles.empty}>Loading projects...</p>
         ) : projects.length === 0 ? (
           <p className={appStyles.empty}>
-            No projects registered — run <code>kf add &lt;remote&gt;</code>
+            No projects registered yet. Use the form above or run <code>kf add &lt;remote&gt;</code>
           </p>
         ) : (
           <div className={styles.projectList}>
@@ -86,9 +115,10 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
               <span>Project</span>
               <span>Remote</span>
               <span className={styles.trackCountsHeader}>done / active / pending</span>
+              <span className={styles.actionsHeader}></span>
             </div>
             {projects.map((p) => (
-              <ProjectRow key={p.slug} project={p} tracks={tracks} />
+              <ProjectRow key={p.slug} project={p} tracks={tracks} onRemove={setRemoveSlug} />
             ))}
           </div>
         )}
@@ -103,6 +133,15 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
         <h2 className={appStyles.panelTitle}>Traces</h2>
         <TraceList traces={traces} />
       </section>
+
+      {removeSlug && (
+        <RemoveProjectDialog
+          slug={removeSlug}
+          removing={removing === removeSlug}
+          onConfirm={handleRemoveConfirm}
+          onCancel={() => setRemoveSlug(null)}
+        />
+      )}
     </>
   );
 }

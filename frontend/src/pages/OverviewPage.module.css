@@ -26,11 +26,7 @@
 .projectRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0;
   border-bottom: 1px solid var(--border);
-  text-decoration: none;
-  color: inherit;
   transition: background 0.1s;
 }
 
@@ -40,6 +36,17 @@
 
 .projectRow:hover {
   background: var(--hover);
+}
+
+.projectLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  padding: 10px 0;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
 }
 
 .projectSlug {
@@ -69,6 +76,10 @@
   text-align: right;
 }
 
+.actionsHeader {
+  width: 32px;
+}
+
 .countComplete {
   color: var(--green);
 }
@@ -84,4 +95,25 @@
 .noTracks {
   color: var(--text-dim);
   font-style: italic;
+}
+
+.removeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  color: var(--red);
+  background: rgba(240, 108, 108, 0.08);
 }
