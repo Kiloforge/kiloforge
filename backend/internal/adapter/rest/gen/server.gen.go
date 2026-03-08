@@ -245,11 +245,12 @@ type Agent struct {
 	CacheReadTokens     *int `json:"cache_read_tokens,omitempty"`
 
 	// EstimatedCostUsd Informational — API-equivalent cost estimate
-	EstimatedCostUsd *float64 `json:"estimated_cost_usd,omitempty"`
-	Id               string   `json:"id"`
-	InputTokens      *int     `json:"input_tokens,omitempty"`
-	LogFile          *string  `json:"log_file,omitempty"`
-	Model            *string  `json:"model,omitempty"`
+	EstimatedCostUsd *float64   `json:"estimated_cost_usd,omitempty"`
+	FinishedAt       *time.Time `json:"finished_at,omitempty"`
+	Id               string     `json:"id"`
+	InputTokens      *int       `json:"input_tokens,omitempty"`
+	LogFile          *string    `json:"log_file,omitempty"`
+	Model            *string    `json:"model,omitempty"`
 
 	// Name Random human-friendly display name
 	Name           *string     `json:"name,omitempty"`
@@ -596,6 +597,10 @@ type SpawnInteractiveRequest struct {
 
 // StatusInfo defines model for StatusInfo.
 type StatusInfo struct {
+	// ActiveAgents Number of currently active agents (running, waiting)
+	ActiveAgents int `json:"active_agents"`
+
+	// AgentCounts Counts by status (active statuses only)
 	AgentCounts map[string]int `json:"agent_counts"`
 
 	// EstimatedCostUsd Informational — API-equivalent cost estimate
@@ -603,7 +608,9 @@ type StatusInfo struct {
 	GiteaUrl         string   `json:"gitea_url"`
 	RateLimited      *bool    `json:"rate_limited,omitempty"`
 	SseClients       int      `json:"sse_clients"`
-	TotalAgents      int      `json:"total_agents"`
+
+	// TotalAgents Total number of agents in history
+	TotalAgents int `json:"total_agents"`
 }
 
 // SyncBoardResult defines model for SyncBoardResult.
@@ -654,6 +661,12 @@ type TrackStatus string
 // UpdateConfigRequest defines model for UpdateConfigRequest.
 type UpdateConfigRequest struct {
 	DashboardEnabled *bool `json:"dashboard_enabled,omitempty"`
+}
+
+// ListAgentsParams defines parameters for ListAgents.
+type ListAgentsParams struct {
+	// Active If true (default), return only active agents + recently finished (30 min). If false, return all agents.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
 }
 
 // GetAgentLogParams defines parameters for GetAgentLog.
@@ -732,7 +745,7 @@ type ServerInterface interface {
 	RunAdminOperation(w http.ResponseWriter, r *http.Request)
 	// List all agents
 	// (GET /api/agents)
-	ListAgents(w http.ResponseWriter, r *http.Request)
+	ListAgents(w http.ResponseWriter, r *http.Request, params ListAgentsParams)
 	// Spawn an interactive agent with WebSocket IO
 	// (POST /api/agents/interactive)
 	SpawnInteractiveAgent(w http.ResponseWriter, r *http.Request)
@@ -863,8 +876,21 @@ func (siw *ServerInterfaceWrapper) RunAdminOperation(w http.ResponseWriter, r *h
 // ListAgents operation middleware
 func (siw *ServerInterfaceWrapper) ListAgents(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAgentsParams
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListAgents(w, r)
+		siw.Handler.ListAgents(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1816,6 +1842,7 @@ func (response RunAdminOperation500JSONResponse) VisitRunAdminOperationResponse(
 }
 
 type ListAgentsRequestObject struct {
+	Params ListAgentsParams
 }
 
 type ListAgentsResponseObject interface {
@@ -3129,8 +3156,10 @@ func (sh *strictHandler) RunAdminOperation(w http.ResponseWriter, r *http.Reques
 }
 
 // ListAgents operation middleware
-func (sh *strictHandler) ListAgents(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListAgents(w http.ResponseWriter, r *http.Request, params ListAgentsParams) {
 	var request ListAgentsRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListAgents(ctx, request.(ListAgentsRequestObject))

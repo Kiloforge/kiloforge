@@ -95,7 +95,7 @@ type ClientInterface interface {
 	RunAdminOperation(ctx context.Context, body RunAdminOperationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAgents request
-	ListAgents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAgents(ctx context.Context, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SpawnInteractiveAgentWithBody request with any body
 	SpawnInteractiveAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -246,8 +246,8 @@ func (c *Client) RunAdminOperation(ctx context.Context, body RunAdminOperationJS
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListAgents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAgentsRequest(c.Server)
+func (c *Client) ListAgents(ctx context.Context, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -839,7 +839,7 @@ func NewRunAdminOperationRequestWithBody(server string, contentType string, body
 }
 
 // NewListAgentsRequest generates requests for ListAgents
-func NewListAgentsRequest(server string) (*http.Request, error) {
+func NewListAgentsRequest(server string, params *ListAgentsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -855,6 +855,28 @@ func NewListAgentsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Active != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active", *params.Active, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -2213,7 +2235,7 @@ type ClientWithResponsesInterface interface {
 	RunAdminOperationWithResponse(ctx context.Context, body RunAdminOperationJSONRequestBody, reqEditors ...RequestEditorFn) (*RunAdminOperationResponse, error)
 
 	// ListAgentsWithResponse request
-	ListAgentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error)
+	ListAgentsWithResponse(ctx context.Context, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error)
 
 	// SpawnInteractiveAgentWithBodyWithResponse request with any body
 	SpawnInteractiveAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SpawnInteractiveAgentResponse, error)
@@ -3216,8 +3238,8 @@ func (c *ClientWithResponses) RunAdminOperationWithResponse(ctx context.Context,
 }
 
 // ListAgentsWithResponse request returning *ListAgentsResponse
-func (c *ClientWithResponses) ListAgentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error) {
-	rsp, err := c.ListAgents(ctx, reqEditors...)
+func (c *ClientWithResponses) ListAgentsWithResponse(ctx context.Context, params *ListAgentsParams, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error) {
+	rsp, err := c.ListAgents(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
