@@ -38,7 +38,9 @@ func (s *Spawner) SetTracer(t port.Tracer) {
 	}
 }
 
-// checkQuota returns an error if the tracker indicates rate limiting or budget exceeded.
+// checkQuota returns an error if the tracker indicates rate limiting.
+// Budget enforcement via MaxSessionCostUSD is deprecated — subscription
+// rate limits are the primary constraint.
 func (s *Spawner) checkQuota() error {
 	if s.tracker == nil {
 		return nil
@@ -46,15 +48,6 @@ func (s *Spawner) checkQuota() error {
 	if s.tracker.IsRateLimited() {
 		ra := s.tracker.RetryAfter()
 		return fmt.Errorf("rate limited — retry after %s", ra.Round(time.Second))
-	}
-	if s.cfg.MaxSessionCostUSD > 0 {
-		total := s.tracker.GetTotalUsage()
-		if total.TotalCostUSD >= s.cfg.MaxSessionCostUSD {
-			return fmt.Errorf("budget exceeded ($%.2f / $%.2f) — increase max_session_cost_usd or wait", total.TotalCostUSD, s.cfg.MaxSessionCostUSD)
-		}
-		if total.TotalCostUSD >= s.cfg.MaxSessionCostUSD*0.8 {
-			fmt.Fprintf(os.Stderr, "warning: approaching budget limit ($%.2f / $%.2f)\n", total.TotalCostUSD, s.cfg.MaxSessionCostUSD)
-		}
 	}
 	return nil
 }

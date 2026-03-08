@@ -24,10 +24,12 @@ type AgentUsage struct {
 
 // TotalUsage holds aggregate usage across all agents.
 type TotalUsage struct {
-	TotalCostUSD float64 `json:"total_cost_usd"`
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
-	AgentCount   int     `json:"agent_count"`
+	TotalCostUSD        float64 `json:"total_cost_usd"`
+	InputTokens         int     `json:"input_tokens"`
+	OutputTokens        int     `json:"output_tokens"`
+	CacheReadTokens     int     `json:"cache_read_tokens"`
+	CacheCreationTokens int     `json:"cache_creation_tokens"`
+	AgentCount          int     `json:"agent_count"`
 }
 
 // quotaSnapshot is the JSON-serializable state for persistence.
@@ -116,6 +118,8 @@ func (t *QuotaTracker) GetTotalUsage() TotalUsage {
 		total.TotalCostUSD += u.TotalCostUSD
 		total.InputTokens += u.InputTokens
 		total.OutputTokens += u.OutputTokens
+		total.CacheReadTokens += u.CacheReadTokens
+		total.CacheCreationTokens += u.CacheCreationTokens
 	}
 	return total
 }

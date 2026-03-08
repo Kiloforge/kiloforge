@@ -21,6 +21,8 @@ type Config struct {
 	GiteaAdminUser  string `json:"gitea_admin_user,omitempty"`
 	GiteaAdminPass  string `json:"gitea_admin_pass,omitempty"`
 	GiteaAdminEmail    string  `json:"gitea_admin_email,omitempty"`
+	// Deprecated: MaxSessionCostUSD is no longer enforced. Subscription rate
+	// limits are the primary constraint. Retained for backward compatibility.
 	MaxSessionCostUSD  float64 `json:"max_session_cost_usd,omitempty"`
 	DashboardEnabled   *bool   `json:"dashboard_enabled,omitempty"`
 	SkillsRepo         string  `json:"skills_repo,omitempty"`

@@ -179,17 +179,24 @@ func (h *APIHandler) GetAgentLog(_ context.Context, req gen.GetAgentLogRequestOb
 func (h *APIHandler) GetQuota(_ context.Context, _ gen.GetQuotaRequestObject) (gen.GetQuotaResponseObject, error) {
 	if h.quota == nil {
 		return gen.GetQuota200JSONResponse{
-			TotalCostUsd: 0,
-			RateLimited:  false,
+			EstimatedCostUsd:    0,
+			InputTokens:         0,
+			OutputTokens:        0,
+			CacheReadTokens:     0,
+			CacheCreationTokens: 0,
+			AgentCount:          0,
+			RateLimited:         false,
 		}, nil
 	}
 	total := h.quota.GetTotalUsage()
 	resp := gen.QuotaInfo{
-		TotalCostUsd: total.TotalCostUSD,
-		InputTokens:  intPtr(total.InputTokens),
-		OutputTokens: intPtr(total.OutputTokens),
-		AgentCount:   intPtr(total.AgentCount),
-		RateLimited:  h.quota.IsRateLimited(),
+		EstimatedCostUsd:    total.TotalCostUSD,
+		InputTokens:         total.InputTokens,
+		OutputTokens:        total.OutputTokens,
+		CacheReadTokens:     total.CacheReadTokens,
+		CacheCreationTokens: total.CacheCreationTokens,
+		AgentCount:          total.AgentCount,
+		RateLimited:         h.quota.IsRateLimited(),
 	}
 	if h.quota.IsRateLimited() {
 		resp.RetryAfterSeconds = intPtr(int(h.quota.RetryAfter().Seconds()))
@@ -202,10 +209,12 @@ func (h *APIHandler) GetQuota(_ context.Context, _ gen.GetQuotaRequestObject) (g
 		for _, a := range agents {
 			if usage := h.quota.GetAgentUsage(a.ID); usage != nil {
 				perAgent = append(perAgent, gen.QuotaAgentUsage{
-					AgentId:      a.ID,
-					CostUsd:      usage.TotalCostUSD,
-					InputTokens:  usage.InputTokens,
-					OutputTokens: usage.OutputTokens,
+					AgentId:             a.ID,
+					EstimatedCostUsd:    usage.TotalCostUSD,
+					InputTokens:         usage.InputTokens,
+					OutputTokens:        usage.OutputTokens,
+					CacheReadTokens:     usage.CacheReadTokens,
+					CacheCreationTokens: usage.CacheCreationTokens,
 				})
 			}
 		}
@@ -352,7 +361,7 @@ func (h *APIHandler) GetStatus(_ context.Context, _ gen.GetStatusRequestObject) 
 		rl := h.quota.IsRateLimited()
 		resp.RateLimited = &rl
 		total := h.quota.GetTotalUsage()
-		resp.TotalCostUsd = &total.TotalCostUSD
+		resp.EstimatedCostUsd = &total.TotalCostUSD
 	}
 
 	return gen.GetStatus200JSONResponse(resp), nil
@@ -481,9 +490,11 @@ func domainAgentToGen(a domain.AgentInfo, quota QuotaReader) gen.Agent {
 	}
 	if quota != nil {
 		if usage := quota.GetAgentUsage(a.ID); usage != nil {
-			g.CostUsd = &usage.TotalCostUSD
+			g.EstimatedCostUsd = &usage.TotalCostUSD
 			g.InputTokens = &usage.InputTokens
 			g.OutputTokens = &usage.OutputTokens
+			g.CacheReadTokens = &usage.CacheReadTokens
+			g.CacheCreationTokens = &usage.CacheCreationTokens
 		}
 	}
 	return g
