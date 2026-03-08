@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Agent, StatusResponse } from "./types/api";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
@@ -40,6 +40,14 @@ export default function App() {
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
+  const queryClient = useQueryClient();
+
+  const handleBoardUpdate = useCallback(
+    () => {
+      queryClient.invalidateQueries({ queryKey: ["board"] });
+    },
+    [queryClient],
+  );
 
   const sseHandlers = useMemo(
     () => ({
@@ -50,8 +58,9 @@ export default function App() {
       track_removed: handleTrackRemoved,
       project_update: handleProjectUpdate,
       project_removed: handleProjectRemoved,
+      board_update: handleBoardUpdate,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate],
   );
 
   const connectionState = useSSE("/events", sseHandlers);

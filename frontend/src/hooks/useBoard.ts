@@ -10,6 +10,8 @@ interface UseBoardResult {
   moveCard: (trackId: string, toColumn: string) => Promise<void>;
   refresh: () => void;
   handleBoardUpdate: (raw: unknown) => void;
+  syncBoard: () => void;
+  syncing: boolean;
 }
 
 export function useBoard(project?: string): UseBoardResult {
@@ -84,6 +86,16 @@ export function useBoard(project?: string): UseBoardResult {
     },
   });
 
+  const syncMutation = useMutation({
+    mutationFn: () =>
+      fetcher<void>(`/api/board/${encodeURIComponent(project!)}/sync`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: key });
+    },
+  });
+
   const moveCard = async (trackId: string, toColumn: string) => {
     if (!project) return;
     await moveMutation.mutateAsync({ trackId, toColumn });
@@ -95,5 +107,7 @@ export function useBoard(project?: string): UseBoardResult {
     moveCard,
     refresh: () => { refetch(); },
     handleBoardUpdate,
+    syncBoard: () => { if (project) syncMutation.mutate(); },
+    syncing: syncMutation.isPending,
   };
 }

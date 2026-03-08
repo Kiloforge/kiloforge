@@ -27,7 +27,7 @@ export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
-  const { board, loading: boardLoading, moveCard } = useBoard(slug);
+  const { board, loading: boardLoading, moveCard, syncBoard, syncing } = useBoard(slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
 
@@ -202,13 +202,22 @@ export function ProjectPage() {
       <section className={appStyles.panel} data-tour="board-section">
         <div className={styles.boardHeader}>
           <h2 className={appStyles.panelTitle}>Board</h2>
-          <button
-            className={styles.generateBtn}
-            onClick={() => setShowPrompt((v) => !v)}
-            data-tour="generate-tracks"
-          >
-            Generate Tracks
-          </button>
+          <div className={styles.boardActions}>
+            <button
+              className={styles.syncBtn}
+              onClick={syncBoard}
+              disabled={syncing}
+            >
+              {syncing ? "Syncing..." : "Sync"}
+            </button>
+            <button
+              className={styles.generateBtn}
+              onClick={() => setShowPrompt((v) => !v)}
+              data-tour="generate-tracks"
+            >
+              Generate Tracks
+            </button>
+          </div>
         </div>
         {showPrompt && (
           <div className={styles.promptForm}>
@@ -240,10 +249,12 @@ export function ProjectPage() {
         )}
         {boardLoading ? (
           <p className={appStyles.empty}>Loading board...</p>
-        ) : board && Object.keys(board.cards).length > 0 ? (
-          <KanbanBoard board={board} onMoveCard={moveCard} onDeleteTrack={handleDeleteTrack} />
         ) : (
-          <p className={appStyles.empty}>No cards on the board yet. Run sync to populate.</p>
+          <KanbanBoard
+            board={board ?? { columns: ["backlog", "approved", "in_progress", "in_review", "done"], cards: {} }}
+            onMoveCard={moveCard}
+            onDeleteTrack={handleDeleteTrack}
+          />
         )}
       </section>
 

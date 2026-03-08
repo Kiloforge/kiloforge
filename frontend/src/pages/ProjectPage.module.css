@@ -55,6 +55,33 @@
   margin-bottom: 0;
 }
 
+.boardActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.syncBtn {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.syncBtn:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.syncBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .generateBtn {
   background: var(--accent);
   color: var(--bg);
