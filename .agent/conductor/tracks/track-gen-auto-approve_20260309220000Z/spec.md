@@ -48,16 +48,15 @@ A track qualifies for auto-approve when ALL of these are true:
 
 ### Skill file location
 
-The skill is installed to one of two locations based on user preference:
+The skill source is embedded in the repo at:
 
-- **Global:** `~/.claude/skills/kf-track-generator/SKILL.md`
-- **Local:** `<repo>/.claude/skills/kf-track-generator/SKILL.md`
+- **`backend/internal/adapter/skills/embedded/kf-track-generator/SKILL.md`**
 
-Modify the installed `SKILL.md` at whichever location applies.
+This is the source of truth. At runtime, Kiloforge installs it to either `~/.claude/skills/kf-track-generator/` (global) or `<repo>/.claude/skills/kf-track-generator/` (local) based on user preference.
 
 ## Acceptance Criteria
 
-- [ ] Installed `kf-track-generator/SKILL.md` updated with auto-approve logic in Phase 4 (Review & Approval)
+- [ ] `backend/internal/adapter/skills/embedded/kf-track-generator/SKILL.md` updated with auto-approve logic in Phase 4 (Review & Approval)
 - [ ] When generating research-only tracks, the generator auto-approves and skips the review prompt
 - [ ] Auto-approve output includes a clear notice: "Auto-approved (non-code research track)"
 - [ ] Mixed batches (research + code tracks) still require review for the full batch — no partial auto-approve
