@@ -29,6 +29,7 @@ const composeTemplate = `services:
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true
       - GITEA__webhook__ALLOWED_HOST_LIST=*
     extra_hosts:
       - "host.docker.internal:host-gateway"
