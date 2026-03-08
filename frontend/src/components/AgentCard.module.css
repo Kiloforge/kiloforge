@@ -37,9 +37,21 @@
   color: var(--orange);
 }
 
-.cost {
+.tokens {
   font-size: 12px;
+  font-family: "SF Mono", "Fira Code", monospace;
   color: var(--text-dim);
+}
+
+.cacheRow {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.cost {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .meta {

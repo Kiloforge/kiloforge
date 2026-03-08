@@ -1,6 +1,6 @@
 import type { Agent } from "../types/api";
 import { StatusBadge } from "./StatusBadge";
-import { formatUSD, formatUptime } from "../utils/format";
+import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import styles from "./AgentCard.module.css";
 
 interface Props {
@@ -20,6 +20,11 @@ export function AgentCard({ agent, giteaURL, onViewLog }: Props) {
       agent.ref || null
     );
 
+  const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
+  const cacheRead = agent.cache_read_tokens ?? 0;
+  const cacheCreate = agent.cache_creation_tokens ?? 0;
+  const hasCache = cacheRead > 0 || cacheCreate > 0;
+
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -28,15 +33,26 @@ export function AgentCard({ agent, giteaURL, onViewLog }: Props) {
       </div>
       <div className={styles.header}>
         <StatusBadge status={agent.status} />
-        {agent.cost_usd != null && (
-          <span className={styles.cost}>{formatUSD(agent.cost_usd)}</span>
+        {hasTokens && (
+          <span className={styles.tokens}>
+            {formatTokens(agent.input_tokens ?? 0)} / {formatTokens(agent.output_tokens ?? 0)}
+          </span>
         )}
       </div>
+      {hasCache && (
+        <div className={styles.cacheRow}>
+          cache: {formatTokens(cacheRead)} read
+          {cacheCreate > 0 && <> · {formatTokens(cacheCreate)} create</>}
+        </div>
+      )}
       <div className={styles.meta}>
         {refLink && <span>ref: {refLink}</span>}
         {agent.model && <span>model: {agent.model}</span>}
         {agent.uptime_seconds != null && <span>uptime: {formatUptime(agent.uptime_seconds)}</span>}
         {agent.pid > 0 && <span>PID: {agent.pid}</span>}
+        {agent.estimated_cost_usd != null && (
+          <span className={styles.cost}>est. {formatUSD(agent.estimated_cost_usd)}</span>
+        )}
       </div>
       <div className={styles.actions}>
         {agent.log_file && (
