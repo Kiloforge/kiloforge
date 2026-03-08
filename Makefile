@@ -5,7 +5,7 @@ BINARY := $(BIN_DIR)/kf
 DIST_DIR := backend/internal/adapter/dashboard/dist
 
 # Ensure dist/ has at least a placeholder so //go:embed dist/* succeeds.
-# Only creates if dist/ is empty or missing — never overwrites real assets.
+# dist/ is committed with production assets; this only triggers if somehow missing.
 ensure-dist:
 	@if [ ! -f $(DIST_DIR)/index.html ]; then \
 		mkdir -p $(DIST_DIR) && \

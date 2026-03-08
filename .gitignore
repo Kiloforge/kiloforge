@@ -2,8 +2,8 @@
 /.build/
 /bin/
 
-# Frontend build output (populated by `make build-frontend`, embedded with -tags=embed_frontend)
-backend/internal/adapter/dashboard/dist/
+# Frontend build output is committed so //go:embed always has correct assets.
+# Rebuild with `make build-frontend` before committing frontend changes.
 
 # Node
 node_modules/
