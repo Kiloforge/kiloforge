@@ -169,8 +169,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("Use 'kf down' to stop.")
 
-	// Offer skills installation if configured and not yet installed.
-	offerSkillsInstall(ctx, cfg)
+	// Auto-install embedded skills (no prompt, no repo needed).
+	fmt.Println("==> Installing skills...")
+	installEmbeddedSkills(cfg)
 
 	return nil
 }

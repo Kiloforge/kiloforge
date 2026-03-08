@@ -172,9 +172,11 @@ func readLineCtx(ctx context.Context) (string, bool) {
 }
 
 // offerSkillsInstall prompts the user to install skills if repo is configured
-// but no skills are installed yet.
+// but no skills are installed yet. Falls back to embedded install when no repo.
 func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 	if cfg.SkillsRepo == "" {
+		// No repo configured — use embedded skills silently.
+		installEmbeddedSkills(cfg)
 		return
 	}
 	skillsDir := cfg.GetSkillsDir()
@@ -219,6 +221,25 @@ func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 	fmt.Printf("Installed %d skills:\n", len(result))
 	for _, s := range result {
 		fmt.Printf("  • %s\n", s.Name)
+	}
+}
+
+// installEmbeddedSkills auto-installs all embedded skills without prompting.
+// Skips skills that are already installed and up to date (hash match).
+func installEmbeddedSkills(cfg *config.Config) {
+	skillsDir := cfg.GetSkillsDir()
+	installed, err := skills.InstallAllEmbedded(skillsDir)
+	if err != nil {
+		fmt.Printf("    Warning: skills installation failed: %v\n", err)
+		return
+	}
+	if len(installed) == 0 {
+		fmt.Println("    Skills already up to date")
+		return
+	}
+	fmt.Printf("    Installed %d skill(s):\n", len(installed))
+	for _, name := range installed {
+		fmt.Printf("      • %s\n", name)
 	}
 }
 

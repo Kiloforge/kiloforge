@@ -132,6 +132,39 @@ func ListEmbedded() []string {
 	return names
 }
 
+// AllRequiredSkills returns required skills for all known roles.
+func AllRequiredSkills() []RequiredSkill {
+	var all []RequiredSkill
+	seen := map[string]bool{}
+	for _, role := range []string{"developer", "reviewer", "interactive"} {
+		for _, r := range RequiredSkillsForRole(role) {
+			if !seen[r.Name] {
+				seen[r.Name] = true
+				all = append(all, r)
+			}
+		}
+	}
+	return all
+}
+
+// InstallAllEmbedded installs all embedded skills to destDir, skipping those
+// that are already installed with matching hashes. Returns the names of
+// skills that were installed or updated.
+func InstallAllEmbedded(destDir string) ([]string, error) {
+	names := ListEmbedded()
+	var installed []string
+	for _, name := range names {
+		if hashMatches(name, destDir) {
+			continue
+		}
+		if _, err := InstallEmbedded(name, destDir); err != nil {
+			return installed, fmt.Errorf("install %s: %w", name, err)
+		}
+		installed = append(installed, name)
+	}
+	return installed, nil
+}
+
 // skillExists checks whether a skill directory contains SKILL.md.
 func skillExists(name, dir string) bool {
 	if dir == "" {
