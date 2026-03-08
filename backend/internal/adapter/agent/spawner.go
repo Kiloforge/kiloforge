@@ -10,9 +10,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/config"
+	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/core/domain"
+	"crelay/internal/core/port"
 
 	"github.com/google/uuid"
 )
@@ -22,11 +23,19 @@ type Spawner struct {
 	cfg     *config.Config
 	store   *jsonfile.AgentStore
 	tracker *QuotaTracker
+	tracer  port.Tracer
 }
 
 // NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
 func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore, tracker *QuotaTracker) *Spawner {
-	return &Spawner{cfg: cfg, store: store, tracker: tracker}
+	return &Spawner{cfg: cfg, store: store, tracker: tracker, tracer: port.NoopTracer{}}
+}
+
+// SetTracer sets the distributed tracer for agent lifecycle spans.
+func (s *Spawner) SetTracer(t port.Tracer) {
+	if t != nil {
+		s.tracer = t
+	}
 }
 
 // checkQuota returns an error if the tracker indicates rate limiting or budget exceeded.
@@ -113,7 +122,15 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
-	go s.monitorAgent(agentID, stdout, lf, cmd)
+	_, span := s.tracer.StartSpan(ctx, "agent/reviewer",
+		port.StringAttr("agent.id", agentID),
+		port.StringAttr("agent.role", "reviewer"),
+		port.StringAttr("agent.ref", info.Ref),
+		port.IntAttr("agent.pid", cmd.Process.Pid),
+	)
+	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
+
+	go s.monitorAgent(agentID, stdout, lf, cmd, span)
 
 	return &info, nil
 }
@@ -194,15 +211,26 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
-	go s.monitorAgent(agentID, stdout, lf, cmd)
+	_, span := s.tracer.StartSpan(ctx, "agent/developer",
+		port.StringAttr("agent.id", agentID),
+		port.StringAttr("agent.role", "developer"),
+		port.StringAttr("agent.ref", opts.TrackID),
+		port.IntAttr("agent.pid", cmd.Process.Pid),
+		port.StringAttr("agent.worktree", workDir),
+	)
+	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
+
+	go s.monitorAgent(agentID, stdout, lf, cmd, span)
 
 	return &info, nil
 }
 
 // monitorAgent reads stdout from a CC process, logs each line, parses stream
 // events for the quota tracker, and updates agent status on completion.
-func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cmd *exec.Cmd) {
+func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cmd *exec.Cmd, span port.SpanEnder) {
 	defer lf.Close()
+	defer span.End()
+
 	scanner := bufio.NewScanner(stdout)
 	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
 	for scanner.Scan() {
@@ -212,14 +240,26 @@ func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cm
 		if s.tracker != nil {
 			if ev, err := ParseStreamLine(line); err == nil {
 				s.tracker.RecordEvent(agentID, ev)
+				if ev.Type == "result" && ev.Usage != nil {
+					span.SetAttributes(
+						port.IntAttr("tokens.input", ev.Usage.InputTokens),
+						port.IntAttr("tokens.output", ev.Usage.OutputTokens),
+						port.IntAttr("tokens.cache_read", ev.Usage.CacheReadTokens),
+						port.IntAttr("tokens.cache_create", ev.Usage.CacheCreationTokens),
+						port.Float64Attr("cost.usd", ev.CostUSD),
+					)
+				}
 			}
 		}
 	}
 
 	if err := cmd.Wait(); err != nil {
 		s.store.UpdateStatus(agentID, "failed")
+		span.AddEvent("agent.failed")
+		span.SetError(err)
 	} else {
 		s.store.UpdateStatus(agentID, "completed")
+		span.AddEvent("agent.completed")
 	}
 	_ = s.store.Save()
 

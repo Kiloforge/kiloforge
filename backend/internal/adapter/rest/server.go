@@ -22,8 +22,12 @@ import (
 	"crelay/internal/adapter/pool"
 	"crelay/internal/adapter/proxy"
 	"crelay/internal/core/domain"
+	"crelay/internal/adapter/tracing"
 	"crelay/internal/core/port"
 	"crelay/internal/core/service"
+
+	otelattr "go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // ShutdownTimeout is how long to wait for agents to exit before force-killing.
@@ -45,6 +49,13 @@ func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, gi
 func WithGiteaProxy(giteaURL string) ServerOption {
 	return func(s *Server) {
 		s.giteaProxy = proxy.NewGiteaProxy(giteaURL)
+	}
+}
+
+// WithTracing enables trace store for the trace API endpoints.
+func WithTracing(store *tracing.Store) ServerOption {
+	return func(s *Server) {
+		s.traceStore = store
 	}
 }
 
@@ -93,6 +104,7 @@ type Server struct {
 	boardSync   *boardSyncer
 	quotaReader QuotaReader
 	_projects   dashboard.ProjectLister
+	traceStore  *tracing.Store
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -187,6 +199,7 @@ func (s *Server) Run(ctx context.Context) error {
 		Quota:      s.quotaReader,
 		LockMgr:    lockMgr,
 		Projects:   s._projects,
+		TraceStore: s.traceStore,
 		GiteaURL:   s.cfg.GiteaURL(),
 		SSEClients: sseClients,
 		Cfg:        s.cfg,
@@ -271,6 +284,16 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	slug := proj.Slug
 
+	// Record a trace span for the webhook event.
+	_, span := trace.SpanFromContext(r.Context()).TracerProvider().
+		Tracer("crelay/webhook").
+		Start(r.Context(), "webhook/"+event,
+			trace.WithAttributes(
+				otelattr.String("webhook.event", event),
+				otelattr.String("project.slug", slug),
+			))
+	defer span.End()
+
 	switch event {
 	case "issues":
 		s.handleIssues(slug, payload)
@@ -278,8 +301,15 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		s.handleIssueComment(slug, payload)
 	case "pull_request":
 		s.handlePullRequest(slug, payload)
+		if action, _ := payload["action"].(string); action == "opened" || action == "reopened" {
+			span.AddEvent("pr.opened", trace.WithAttributes(otelattr.String("action", action)))
+		}
 	case "pull_request_review":
 		s.handlePullRequestReview(slug, payload)
+		if review, _ := payload["review"].(map[string]any); review != nil {
+			state, _ := review["state"].(string)
+			span.AddEvent("review."+state)
+		}
 	case "pull_request_comment":
 		s.handlePullRequestComment(slug, payload)
 	case "push":

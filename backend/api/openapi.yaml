@@ -257,6 +257,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /-/api/traces:
+    get:
+      operationId: listTraces
+      summary: List trace summaries
+      tags: [Traces]
+      responses:
+        "200":
+          description: List of trace summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TraceSummary"
+
+  /-/api/traces/{traceId}:
+    get:
+      operationId: getTrace
+      summary: Get trace detail with all spans
+      tags: [Traces]
+      parameters:
+        - name: traceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Trace ID
+      responses:
+        "200":
+          description: Trace with span tree
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraceDetail"
+        "404":
+          description: Trace not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /-/api/locks:
     get:
       operationId: listLocks
@@ -601,6 +642,80 @@ components:
           type: string
         current_holder:
           type: string
+
+    TraceSummary:
+      type: object
+      required: [trace_id, root_name, span_count, start_time, end_time]
+      properties:
+        trace_id:
+          type: string
+        root_name:
+          type: string
+        span_count:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+    TraceDetail:
+      type: object
+      required: [trace_id, spans]
+      properties:
+        trace_id:
+          type: string
+        spans:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpanInfo"
+
+    SpanInfo:
+      type: object
+      required: [trace_id, span_id, name, start_time, end_time, duration_ms, status]
+      properties:
+        trace_id:
+          type: string
+        span_id:
+          type: string
+        parent_id:
+          type: string
+        name:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        duration_ms:
+          type: integer
+          format: int64
+        status:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpanEvent"
+
+    SpanEvent:
+      type: object
+      required: [name, timestamp]
+      properties:
+        name:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
 
     LockReleasedResponse:
       type: object

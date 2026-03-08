@@ -133,6 +133,12 @@ type ClientInterface interface {
 	// GetStatus request
 	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListTraces request
+	ListTraces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetTrace request
+	GetTrace(ctx context.Context, traceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListTracks request
 	ListTracks(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -322,6 +328,30 @@ func (c *Client) UpdateSkills(ctx context.Context, body UpdateSkillsJSONRequestB
 
 func (c *Client) GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListTraces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTracesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTrace(ctx context.Context, traceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTraceRequest(c.Server, traceId)
 	if err != nil {
 		return nil, err
 	}
@@ -789,6 +819,67 @@ func NewGetStatusRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListTracesRequest generates requests for ListTraces
+func NewListTracesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/traces")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetTraceRequest generates requests for GetTrace
+func NewGetTraceRequest(server string, traceId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "traceId", traceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/traces/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListTracksRequest generates requests for ListTracks
 func NewListTracksRequest(server string, params *ListTracksParams) (*http.Request, error) {
 	var err error
@@ -951,6 +1042,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetStatusWithResponse request
 	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
+
+	// ListTracesWithResponse request
+	ListTracesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTracesResponse, error)
+
+	// GetTraceWithResponse request
+	GetTraceWithResponse(ctx context.Context, traceId string, reqEditors ...RequestEditorFn) (*GetTraceResponse, error)
 
 	// ListTracksWithResponse request
 	ListTracksWithResponse(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*ListTracksResponse, error)
@@ -1241,6 +1338,51 @@ func (r GetStatusResponse) StatusCode() int {
 	return 0
 }
 
+type ListTracesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]TraceSummary
+}
+
+// Status returns HTTPResponse.Status
+func (r ListTracesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListTracesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetTraceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TraceDetail
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTraceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTraceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListTracksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1424,6 +1566,24 @@ func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, reqEdit
 		return nil, err
 	}
 	return ParseGetStatusResponse(rsp)
+}
+
+// ListTracesWithResponse request returning *ListTracesResponse
+func (c *ClientWithResponses) ListTracesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTracesResponse, error) {
+	rsp, err := c.ListTraces(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListTracesResponse(rsp)
+}
+
+// GetTraceWithResponse request returning *GetTraceResponse
+func (c *ClientWithResponses) GetTraceWithResponse(ctx context.Context, traceId string, reqEditors ...RequestEditorFn) (*GetTraceResponse, error) {
+	rsp, err := c.GetTrace(ctx, traceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTraceResponse(rsp)
 }
 
 // ListTracksWithResponse request returning *ListTracksResponse
@@ -1876,6 +2036,65 @@ func ParseGetStatusResponse(rsp *http.Response) (*GetStatusResponse, error) {
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListTracesResponse parses an HTTP response from a ListTracesWithResponse call
+func ParseListTracesResponse(rsp *http.Response) (*ListTracesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListTracesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []TraceSummary
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTraceResponse parses an HTTP response from a GetTraceWithResponse call
+func ParseGetTraceResponse(rsp *http.Response) (*GetTraceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTraceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TraceDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

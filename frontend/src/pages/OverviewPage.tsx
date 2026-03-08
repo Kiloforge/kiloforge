@@ -5,6 +5,8 @@ import { useProjects } from "../hooks/useProjects";
 import { StatCards } from "../components/StatCards";
 import { AgentGrid } from "../components/AgentGrid";
 import { TrackList } from "../components/TrackList";
+import { TraceList } from "../components/TraceList";
+import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
 
@@ -55,6 +57,7 @@ function ProjectRow({ project, tracks }: { project: Project; tracks: Track[] }) 
 
 export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onViewLog }: OverviewPageProps) {
   const { projects, loading: projectsLoading } = useProjects();
+  const { traces } = useTraces();
 
   return (
     <>
@@ -94,6 +97,11 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>All Tracks</h2>
         <TrackList tracks={tracks} />
+      </section>
+
+      <section className={appStyles.panel}>
+        <h2 className={appStyles.panelTitle}>Traces</h2>
+        <TraceList traces={traces} />
       </section>
     </>
   );

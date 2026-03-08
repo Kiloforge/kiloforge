@@ -85,6 +85,22 @@ func TestCheckQuota_UnderBudget(t *testing.T) {
 	}
 }
 
+func TestSetTracer(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{}, nil, nil)
+	// Default tracer should be NoopTracer.
+	if s.tracer == nil {
+		t.Fatal("expected non-nil default tracer")
+	}
+
+	// SetTracer with nil should not replace the default.
+	s.SetTracer(nil)
+	if s.tracer == nil {
+		t.Fatal("SetTracer(nil) should not set nil")
+	}
+}
+
 func TestCheckQuota_NoBudgetConfigured(t *testing.T) {
 	t.Parallel()
 

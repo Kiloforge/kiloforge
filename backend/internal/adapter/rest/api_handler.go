@@ -12,6 +12,7 @@ import (
 	"crelay/internal/adapter/lock"
 	"crelay/internal/adapter/rest/gen"
 	"crelay/internal/adapter/skills"
+	"crelay/internal/adapter/tracing"
 	"crelay/internal/core/domain"
 	"crelay/internal/core/service"
 )
@@ -43,6 +44,7 @@ type APIHandler struct {
 	quota      QuotaReader
 	lockMgr    *lock.Manager
 	projects   ProjectLister
+	traceStore *tracing.Store
 	giteaURL   string
 	sseClients func() int
 	cfg        *config.Config
@@ -54,6 +56,7 @@ type APIHandlerOpts struct {
 	Quota      QuotaReader
 	LockMgr    *lock.Manager
 	Projects   ProjectLister
+	TraceStore *tracing.Store
 	GiteaURL   string
 	SSEClients func() int
 	Cfg        *config.Config
@@ -66,6 +69,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		quota:      opts.Quota,
 		lockMgr:    opts.LockMgr,
 		projects:   opts.Projects,
+		traceStore: opts.TraceStore,
 		giteaURL:   opts.GiteaURL,
 		sseClients: opts.SSEClients,
 		cfg:        opts.Cfg,
@@ -535,6 +539,83 @@ func (h *APIHandler) UpdateSkills(_ context.Context, req gen.UpdateSkillsRequest
 		Version:        rel.TagName,
 		InstalledCount: len(result),
 		Skills:         &names,
+	}, nil
+}
+
+// ListTraces implements gen.StrictServerInterface.
+func (h *APIHandler) ListTraces(_ context.Context, _ gen.ListTracesRequestObject) (gen.ListTracesResponseObject, error) {
+	if h.traceStore == nil {
+		return gen.ListTraces200JSONResponse{}, nil
+	}
+	traces := h.traceStore.ListTraces()
+	result := make(gen.ListTraces200JSONResponse, 0, len(traces))
+	for _, t := range traces {
+		result = append(result, gen.TraceSummary{
+			TraceId:   t.TraceID,
+			RootName:  t.RootName,
+			SpanCount: t.SpanCount,
+			StartTime: t.StartTime,
+			EndTime:   t.EndTime,
+		})
+	}
+	return result, nil
+}
+
+// GetTrace implements gen.StrictServerInterface.
+func (h *APIHandler) GetTrace(_ context.Context, req gen.GetTraceRequestObject) (gen.GetTraceResponseObject, error) {
+	if h.traceStore == nil {
+		return gen.GetTrace404JSONResponse{Error: "tracing not enabled"}, nil
+	}
+	spans := h.traceStore.GetTrace(req.TraceId)
+	if len(spans) == 0 {
+		return gen.GetTrace404JSONResponse{Error: "trace not found"}, nil
+	}
+
+	genSpans := make([]gen.SpanInfo, 0, len(spans))
+	for _, sp := range spans {
+		s := gen.SpanInfo{
+			TraceId:    sp.TraceID,
+			SpanId:     sp.SpanID,
+			Name:       sp.Name,
+			StartTime:  sp.StartTime,
+			EndTime:    sp.EndTime,
+			DurationMs: sp.DurationMs,
+			Status:     sp.Status,
+		}
+		if sp.ParentID != "" {
+			s.ParentId = &sp.ParentID
+		}
+		if len(sp.Attributes) > 0 {
+			attrs := map[string]string{}
+			for k, v := range sp.Attributes {
+				attrs[k] = v
+			}
+			s.Attributes = &attrs
+		}
+		if len(sp.Events) > 0 {
+			events := make([]gen.SpanEvent, 0, len(sp.Events))
+			for _, ev := range sp.Events {
+				e := gen.SpanEvent{
+					Name:      ev.Name,
+					Timestamp: ev.Timestamp,
+				}
+				if len(ev.Attributes) > 0 {
+					ea := map[string]string{}
+					for k, v := range ev.Attributes {
+						ea[k] = v
+					}
+					e.Attributes = &ea
+				}
+				events = append(events, e)
+			}
+			s.Events = &events
+		}
+		genSpans = append(genSpans, s)
+	}
+
+	return gen.GetTrace200JSONResponse{
+		TraceId: req.TraceId,
+		Spans:   genSpans,
 	}, nil
 }
 

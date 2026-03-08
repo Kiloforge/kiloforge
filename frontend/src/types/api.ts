@@ -82,3 +82,35 @@ export interface SkillsStatus {
   repo?: string;
   skills: SkillDetail[];
 }
+
+export interface TraceSummary {
+  trace_id: string;
+  root_name: string;
+  span_count: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface SpanEvent {
+  name: string;
+  timestamp: string;
+  attributes?: Record<string, string>;
+}
+
+export interface SpanInfo {
+  trace_id: string;
+  span_id: string;
+  parent_id?: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  duration_ms: number;
+  status: string;
+  attributes?: Record<string, string>;
+  events?: SpanEvent[];
+}
+
+export interface TraceDetail {
+  trace_id: string;
+  spans: SpanInfo[];
+}

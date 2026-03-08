@@ -22,7 +22,7 @@ Working with multiple AI agents across multiple projects demands infrastructure 
 
 ### Building from Source
 
-- **Go 1.24+**
+- **Go 1.25+**
 - **Node.js 18+**
 
 ### Colima Users
@@ -264,6 +264,33 @@ All persistent data lives in `~/.crelay/` (configurable via `--data-dir`):
 │       └── pr-tracking.json  # PR-to-agent tracking
 └── gitea-data/           # Gitea Docker volume (repos, DB)
 ```
+
+## Tracing
+
+crelay supports OpenTelemetry distributed tracing for agent lifecycle visibility. When enabled, each agent spawn creates a trace span with token metrics, and webhook events are recorded as span events.
+
+To enable tracing, add to your `config.json`:
+
+```json
+{
+  "tracing_enabled": true
+}
+```
+
+This sends traces via OTLP HTTP to `localhost:4318` (Jaeger all-in-one). Start Jaeger with:
+
+```bash
+docker run -d --name jaeger \
+  -p 16686:16686 -p 4318:4318 \
+  -e COLLECTOR_OTLP_ENABLED=true \
+  jaegertracing/all-in-one:latest
+```
+
+View traces at `http://localhost:16686` or in the dashboard at `/-/dashboard/traces/{traceId}`.
+
+The trace API is available at:
+- `GET /-/api/traces` — list trace summaries
+- `GET /-/api/traces/{traceId}` — get full trace with span tree
 
 ## Origin Bridging
 

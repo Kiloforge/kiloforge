@@ -58,18 +58,18 @@ func TestGitCmd_SSHEnv(t *testing.T) {
 		t.Errorf("unexpected args: %v", args)
 	}
 
-	// Verify SSH env is set.
-	found := false
+	// Verify SSH env is set. Check the last GIT_SSH_COMMAND value since
+	// env vars are resolved last-wins (the system may also set one).
+	var lastSSH string
 	for _, e := range cmd.Env {
 		if strings.HasPrefix(e, "GIT_SSH_COMMAND=") {
-			found = true
-			if !strings.Contains(e, "/home/user/.ssh/id_ed25519") {
-				t.Errorf("SSH command missing key path: %s", e)
-			}
+			lastSSH = e
 		}
 	}
-	if !found {
+	if lastSSH == "" {
 		t.Error("GIT_SSH_COMMAND not set in env")
+	} else if !strings.Contains(lastSSH, "/home/user/.ssh/id_ed25519") {
+		t.Errorf("SSH command missing key path: %s", lastSSH)
 	}
 }
 

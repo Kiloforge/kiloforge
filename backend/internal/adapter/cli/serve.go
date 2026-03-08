@@ -17,6 +17,7 @@ import (
 	"crelay/internal/adapter/pidfile"
 	"crelay/internal/adapter/rest"
 	"crelay/internal/adapter/skills"
+	"crelay/internal/adapter/tracing"
 	"crelay/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -74,9 +75,25 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load project registry: %w", err)
 	}
 
+	// Initialize tracing if enabled.
+	var traceStore *tracing.Store
+	if cfg.IsTracingEnabled() {
+		result, tracingErr := tracing.Init(ctx, "")
+		if tracingErr != nil {
+			log.Printf("Warning: tracing init failed: %v", tracingErr)
+		} else {
+			defer result.Shutdown(context.Background())
+			traceStore = result.Store
+			log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
+		}
+	}
+
 	// Build server options.
 	opts := []rest.ServerOption{
 		rest.WithGiteaProxy(cfg.GiteaURL()),
+	}
+	if traceStore != nil {
+		opts = append(opts, rest.WithTracing(traceStore))
 	}
 	if cfg.IsDashboardEnabled() {
 		store, storeErr := jsonfile.LoadAgentStore(cfg.DataDir)

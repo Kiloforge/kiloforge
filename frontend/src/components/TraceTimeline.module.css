@@ -1,0 +1,71 @@
+.timeline {
+  font-family: monospace;
+  font-size: 13px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  background: #1a1a2e;
+  padding: 6px 8px;
+  font-weight: bold;
+  color: #888;
+  border-bottom: 1px solid #333;
+}
+
+.row {
+  display: flex;
+  padding: 4px 8px;
+  border-bottom: 1px solid #222;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.row:hover {
+  background: #1a1a2e;
+}
+
+.nameCol {
+  flex: 0 0 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ccc;
+}
+
+.durationCol {
+  flex: 0 0 80px;
+  text-align: right;
+  color: #888;
+  padding-right: 12px;
+}
+
+.barCol {
+  flex: 1;
+  position: relative;
+  min-height: 18px;
+}
+
+.bar {
+  position: absolute;
+  top: 2px;
+  height: 14px;
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+.ok {
+  background: #4caf50;
+}
+
+.error {
+  background: #f44336;
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  color: #666;
+}

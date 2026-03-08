@@ -11,6 +11,7 @@ import { LogViewer } from "./components/LogViewer";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ProjectPage } from "./pages/ProjectPage";
+import { TracePage } from "./pages/TracePage";
 import styles from "./App.module.css";
 
 export default function App() {
@@ -80,6 +81,7 @@ export default function App() {
             }
           />
           <Route path="/projects/:slug" element={<ProjectPage />} />
+          <Route path="/traces/:traceId" element={<TracePage />} />
         </Routes>
       </main>
 

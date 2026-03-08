@@ -11,7 +11,11 @@ import (
 	"crelay/internal/adapter/config"
 	"crelay/internal/adapter/lock"
 	"crelay/internal/adapter/rest/gen"
+	"crelay/internal/adapter/tracing"
 	"crelay/internal/core/domain"
+
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // stubProjectLister implements ProjectLister for testing.
@@ -364,5 +368,122 @@ func TestUpdateSkills_NoRepo(t *testing.T) {
 	}
 	if _, ok := resp.(gen.UpdateSkills400JSONResponse); !ok {
 		t.Fatalf("expected 400, got %T", resp)
+	}
+}
+
+func newTestHandlerWithTraces() (*APIHandler, *tracing.Store) {
+	store := tracing.NewStore()
+	proc := tracing.NewStoreProcessor(store)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(proc))
+	otel.SetTracerProvider(tp)
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{},
+		TraceStore: store,
+		GiteaURL:   "http://localhost:3000",
+		SSEClients: func() int { return 0 },
+	})
+	return h, store
+}
+
+func TestListTraces_Empty(t *testing.T) {
+	h, _ := newTestHandlerWithTraces()
+	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.ListTraces200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if len(r) != 0 {
+		t.Errorf("expected 0 traces, got %d", len(r))
+	}
+}
+
+func TestListTraces_WithSpans(t *testing.T) {
+	h, _ := newTestHandlerWithTraces()
+	tracer := otel.Tracer("test")
+
+	ctx, parent := tracer.Start(context.Background(), "track/abc")
+	_, child := tracer.Start(ctx, "phase/1")
+	child.End()
+	parent.End()
+
+	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r := resp.(gen.ListTraces200JSONResponse)
+	if len(r) != 1 {
+		t.Fatalf("expected 1 trace, got %d", len(r))
+	}
+	if r[0].SpanCount != 2 {
+		t.Errorf("expected 2 spans, got %d", r[0].SpanCount)
+	}
+	if r[0].RootName != "track/abc" {
+		t.Errorf("expected root name 'track/abc', got %q", r[0].RootName)
+	}
+}
+
+func TestGetTrace_NotFound(t *testing.T) {
+	h, _ := newTestHandlerWithTraces()
+	resp, err := h.GetTrace(context.Background(), gen.GetTraceRequestObject{TraceId: "nonexistent"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.GetTrace404JSONResponse); !ok {
+		t.Errorf("expected 404, got %T", resp)
+	}
+}
+
+func TestGetTrace_WithSpans(t *testing.T) {
+	h, _ := newTestHandlerWithTraces()
+	tracer := otel.Tracer("test")
+
+	_, span := tracer.Start(context.Background(), "agent/developer")
+	span.End()
+
+	// Get the trace ID from list.
+	listResp, _ := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
+	traces := listResp.(gen.ListTraces200JSONResponse)
+	if len(traces) == 0 {
+		t.Fatal("expected at least 1 trace")
+	}
+	traceID := traces[0].TraceId
+
+	resp, err := h.GetTrace(context.Background(), gen.GetTraceRequestObject{TraceId: traceID})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetTrace200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if len(r.Spans) != 1 {
+		t.Errorf("expected 1 span, got %d", len(r.Spans))
+	}
+	if r.Spans[0].Name != "agent/developer" {
+		t.Errorf("expected span name 'agent/developer', got %q", r.Spans[0].Name)
+	}
+}
+
+func TestListTraces_NilStore(t *testing.T) {
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		GiteaURL:   "http://localhost:3000",
+	})
+	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r := resp.(gen.ListTraces200JSONResponse)
+	if len(r) != 0 {
+		t.Errorf("expected 0 traces, got %d", len(r))
 	}
 }

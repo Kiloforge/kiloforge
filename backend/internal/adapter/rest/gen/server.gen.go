@@ -245,6 +245,27 @@ type SkillsStatus struct {
 	UpdateAvailable  bool          `json:"update_available"`
 }
 
+// SpanEvent defines model for SpanEvent.
+type SpanEvent struct {
+	Attributes *map[string]string `json:"attributes,omitempty"`
+	Name       string             `json:"name"`
+	Timestamp  time.Time          `json:"timestamp"`
+}
+
+// SpanInfo defines model for SpanInfo.
+type SpanInfo struct {
+	Attributes *map[string]string `json:"attributes,omitempty"`
+	DurationMs int64              `json:"duration_ms"`
+	EndTime    time.Time          `json:"end_time"`
+	Events     *[]SpanEvent       `json:"events,omitempty"`
+	Name       string             `json:"name"`
+	ParentId   *string            `json:"parent_id,omitempty"`
+	SpanId     string             `json:"span_id"`
+	StartTime  time.Time          `json:"start_time"`
+	Status     string             `json:"status"`
+	TraceId    string             `json:"trace_id"`
+}
+
 // StatusInfo defines model for StatusInfo.
 type StatusInfo struct {
 	AgentCounts  map[string]int `json:"agent_counts"`
@@ -253,6 +274,21 @@ type StatusInfo struct {
 	SseClients   int            `json:"sse_clients"`
 	TotalAgents  int            `json:"total_agents"`
 	TotalCostUsd *float64       `json:"total_cost_usd,omitempty"`
+}
+
+// TraceDetail defines model for TraceDetail.
+type TraceDetail struct {
+	Spans   []SpanInfo `json:"spans"`
+	TraceId string     `json:"trace_id"`
+}
+
+// TraceSummary defines model for TraceSummary.
+type TraceSummary struct {
+	EndTime   time.Time `json:"end_time"`
+	RootName  string    `json:"root_name"`
+	SpanCount int       `json:"span_count"`
+	StartTime time.Time `json:"start_time"`
+	TraceId   string    `json:"trace_id"`
 }
 
 // Track defines model for Track.
@@ -328,6 +364,12 @@ type ServerInterface interface {
 	// Get system status overview
 	// (GET /-/api/status)
 	GetStatus(w http.ResponseWriter, r *http.Request)
+	// List trace summaries
+	// (GET /-/api/traces)
+	ListTraces(w http.ResponseWriter, r *http.Request)
+	// Get trace detail with all spans
+	// (GET /-/api/traces/{traceId})
+	GetTrace(w http.ResponseWriter, r *http.Request, traceId string)
 	// List conductor tracks
 	// (GET /-/api/tracks)
 	ListTracks(w http.ResponseWriter, r *http.Request, params ListTracksParams)
@@ -579,6 +621,45 @@ func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// ListTraces operation middleware
+func (siw *ServerInterfaceWrapper) ListTraces(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTraces(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTrace operation middleware
+func (siw *ServerInterfaceWrapper) GetTrace(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "traceId" -------------
+	var traceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "traceId", r.PathValue("traceId"), &traceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "traceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTrace(w, r, traceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListTracks operation middleware
 func (siw *ServerInterfaceWrapper) ListTracks(w http.ResponseWriter, r *http.Request) {
 
@@ -752,6 +833,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/skills", wrapper.GetSkillsStatus)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/skills/update", wrapper.UpdateSkills)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/status", wrapper.GetStatus)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/traces", wrapper.ListTraces)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/traces/{traceId}", wrapper.GetTrace)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/tracks", wrapper.ListTracks)
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
 
@@ -1122,6 +1205,48 @@ func (response GetStatus500JSONResponse) VisitGetStatusResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListTracesRequestObject struct {
+}
+
+type ListTracesResponseObject interface {
+	VisitListTracesResponse(w http.ResponseWriter) error
+}
+
+type ListTraces200JSONResponse []TraceSummary
+
+func (response ListTraces200JSONResponse) VisitListTracesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTraceRequestObject struct {
+	TraceId string `json:"traceId"`
+}
+
+type GetTraceResponseObject interface {
+	VisitGetTraceResponse(w http.ResponseWriter) error
+}
+
+type GetTrace200JSONResponse TraceDetail
+
+func (response GetTrace200JSONResponse) VisitGetTraceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTrace404JSONResponse ErrorResponse
+
+func (response GetTrace404JSONResponse) VisitGetTraceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListTracksRequestObject struct {
 	Params ListTracksParams
 }
@@ -1202,6 +1327,12 @@ type StrictServerInterface interface {
 	// Get system status overview
 	// (GET /-/api/status)
 	GetStatus(ctx context.Context, request GetStatusRequestObject) (GetStatusResponseObject, error)
+	// List trace summaries
+	// (GET /-/api/traces)
+	ListTraces(ctx context.Context, request ListTracesRequestObject) (ListTracesResponseObject, error)
+	// Get trace detail with all spans
+	// (GET /-/api/traces/{traceId})
+	GetTrace(ctx context.Context, request GetTraceRequestObject) (GetTraceResponseObject, error)
 	// List conductor tracks
 	// (GET /-/api/tracks)
 	ListTracks(ctx context.Context, request ListTracksRequestObject) (ListTracksResponseObject, error)
@@ -1559,6 +1690,56 @@ func (sh *strictHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetStatusResponseObject); ok {
 		if err := validResponse.VisitGetStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTraces operation middleware
+func (sh *strictHandler) ListTraces(w http.ResponseWriter, r *http.Request) {
+	var request ListTracesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTraces(ctx, request.(ListTracesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTraces")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTracesResponseObject); ok {
+		if err := validResponse.VisitListTracesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTrace operation middleware
+func (sh *strictHandler) GetTrace(w http.ResponseWriter, r *http.Request, traceId string) {
+	var request GetTraceRequestObject
+
+	request.TraceId = traceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTrace(ctx, request.(GetTraceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTrace")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTraceResponseObject); ok {
+		if err := validResponse.VisitGetTraceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
