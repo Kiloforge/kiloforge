@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/pressly/goose/v3"
 
 	_ "modernc.org/sqlite"
@@ -163,12 +165,15 @@ func TestGooseDown_RollsBack(t *testing.T) {
 		t.Fatal("agents.name should exist before down")
 	}
 
+	// Create a provider for rollback.
+	provider, err := goose.NewProvider(goose.DialectSQLite3, db, migrationsFS())
+	if err != nil {
+		t.Fatalf("NewProvider: %v", err)
+	}
+
 	// Roll back migration 002.
-	goose.SetBaseFS(migrations)
-	goose.SetDialect("sqlite3")
-	goose.SetLogger(goose.NopLogger())
-	if err := goose.Down(db, "migrations"); err != nil {
-		t.Fatalf("goose.Down: %v", err)
+	if _, err := provider.Down(context.Background()); err != nil {
+		t.Fatalf("goose.Down (002): %v", err)
 	}
 
 	// agents.name should be gone.
@@ -177,7 +182,7 @@ func TestGooseDown_RollsBack(t *testing.T) {
 	}
 
 	// Roll back migration 001.
-	if err := goose.Down(db, "migrations"); err != nil {
+	if _, err := provider.Down(context.Background()); err != nil {
 		t.Fatalf("goose.Down (001): %v", err)
 	}
 

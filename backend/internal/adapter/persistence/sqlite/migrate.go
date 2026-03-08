@@ -1,15 +1,26 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
+	"io/fs"
 
 	"github.com/pressly/goose/v3"
 )
 
 //go:embed migrations/*.sql
-var migrations embed.FS
+var embeddedMigrations embed.FS
+
+// migrationsFS returns the sub-filesystem containing migration SQL files.
+func migrationsFS() fs.FS {
+	sub, err := fs.Sub(embeddedMigrations, "migrations")
+	if err != nil {
+		panic("embedded migrations sub: " + err.Error())
+	}
+	return sub
+}
 
 // Migrate runs all pending goose migrations against the database.
 // On first run after upgrading from the old custom migrator, it bridges
@@ -20,15 +31,12 @@ func Migrate(db *sql.DB) error {
 		return fmt.Errorf("bridge legacy migrations: %w", err)
 	}
 
-	goose.SetBaseFS(migrations)
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return fmt.Errorf("set goose dialect: %w", err)
+	provider, err := goose.NewProvider(goose.DialectSQLite3, db, migrationsFS())
+	if err != nil {
+		return fmt.Errorf("create goose provider: %w", err)
 	}
 
-	// Suppress goose log output.
-	goose.SetLogger(goose.NopLogger())
-
-	if err := goose.Up(db, "migrations"); err != nil {
+	if _, err := provider.Up(context.Background()); err != nil {
 		return fmt.Errorf("goose up: %w", err)
 	}
 	return nil
@@ -58,16 +66,19 @@ func bridgeFromLegacy(db *sql.DB) error {
 		return nil
 	}
 
-	// Ensure goose's version table exists.
-	if _, err := goose.EnsureDBVersion(db); err != nil {
-		return fmt.Errorf("ensure goose version table: %w", err)
+	// Ensure goose's version table exists by running a temporary provider.
+	// This creates goose_db_version if it doesn't exist.
+	provider, err := goose.NewProvider(goose.DialectSQLite3, db, migrationsFS())
+	if err != nil {
+		return fmt.Errorf("create goose provider for bridge: %w", err)
+	}
+	// GetDBVersion creates the version table as a side effect.
+	currentGooseVersion, err := provider.GetDBVersion(context.Background())
+	if err != nil {
+		return fmt.Errorf("get goose version: %w", err)
 	}
 
-	// Check if goose already has versions recorded (bridge already done).
-	var gooseMax int64
-	if err := db.QueryRow(
-		"SELECT COALESCE(MAX(version_id), 0) FROM goose_db_version WHERE version_id > 0",
-	).Scan(&gooseMax); err == nil && gooseMax > 0 {
+	if currentGooseVersion > 0 {
 		// Already bridged — just drop the legacy table.
 		_, _ = db.Exec("DROP TABLE schema_version")
 		return nil
