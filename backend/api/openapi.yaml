@@ -1722,6 +1722,9 @@ components:
         model:
           type: string
           description: Claude model alias (e.g., "opus", "sonnet")
+        project:
+          type: string
+          description: Project slug (optional — used for setup prerequisite check)
 
     PushProjectRequest:
       type: object

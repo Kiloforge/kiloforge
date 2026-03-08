@@ -587,6 +587,9 @@ type SpawnInteractiveRequest struct {
 	// Model Claude model alias (e.g., "opus", "sonnet")
 	Model *string `json:"model,omitempty"`
 
+	// Project Project slug (optional — used for setup prerequisite check)
+	Project *string `json:"project,omitempty"`
+
 	// WorkDir Working directory for the agent (defaults to cwd)
 	WorkDir *string `json:"work_dir,omitempty"`
 }

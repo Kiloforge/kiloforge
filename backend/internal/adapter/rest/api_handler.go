@@ -147,6 +147,7 @@ func (h *APIHandler) GetPreflight(ctx context.Context, _ gen.GetPreflightRequest
 		ClaudeAuthenticated: true,
 		SkillsOk:           true,
 		ConsentGiven:        true,
+		SetupRequired:       h.isSetupRequired(),
 	}
 
 	// Auth check.
@@ -246,6 +247,37 @@ func (h *APIHandler) checkConsent() string {
 	return "agent_permissions_not_consented: user must consent to agent permissions before spawning agents. POST /api/consent/agent-permissions to consent."
 }
 
+// checkSetup returns the project slug if kiloforge setup is required for the given project.
+// Returns empty string if setup is complete or project not found.
+func (h *APIHandler) checkSetup(projectSlug string) string {
+	if projectSlug == "" || h.projects == nil {
+		return ""
+	}
+	proj, ok := h.findProject(projectSlug)
+	if !ok {
+		return ""
+	}
+	productPath := filepath.Join(proj.ProjectDir, ".agent", "conductor", "product.md")
+	if _, err := os.Stat(productPath); os.IsNotExist(err) {
+		return projectSlug
+	}
+	return ""
+}
+
+// isSetupRequired checks if any registered project is missing kiloforge setup.
+func (h *APIHandler) isSetupRequired() bool {
+	if h.projects == nil {
+		return false
+	}
+	for _, p := range h.projects.List() {
+		productPath := filepath.Join(p.ProjectDir, ".agent", "conductor", "product.md")
+		if _, err := os.Stat(productPath); os.IsNotExist(err) {
+			return true
+		}
+	}
+	return false
+}
+
 // checkClaudeAuth returns a non-empty error string if the Claude CLI is not authenticated.
 func (h *APIHandler) checkClaudeAuth(ctx context.Context) string {
 	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
@@ -286,6 +318,16 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 	// Validate required skills for interactive agents.
 	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
 		return gen.SpawnInteractiveAgent412JSONResponse(*resp), nil
+	}
+
+	// Check kiloforge setup if a project is specified.
+	if req.Body != nil && req.Body.Project != nil && *req.Body.Project != "" {
+		if slug := h.checkSetup(*req.Body.Project); slug != "" {
+			return gen.SpawnInteractiveAgent428JSONResponse{
+				Error:   "kiloforge setup required",
+				Project: slug,
+			}, nil
+		}
 	}
 
 	opts := agent.SpawnInteractiveOpts{}
@@ -1270,15 +1312,15 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		}
 	}
 
-	// Auto-initialize conductor artifacts if missing. Chain /kf-setup before
-	// track generation so freshly added projects work without manual setup.
-	fullPrompt := fmt.Sprintf("/kf-track-generator I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
-	if workDir != "" {
-		productPath := filepath.Join(workDir, ".agent", "conductor", "product.md")
-		if _, err := os.Stat(productPath); os.IsNotExist(err) {
-			fullPrompt = "/kf-setup\n\nOnce setup is complete, proceed immediately with:\n\n" + fullPrompt
-		}
+	// Check kiloforge setup is complete before allowing track generation.
+	if slug := h.checkSetup(projectSlug); slug != "" {
+		return gen.GenerateTracks428JSONResponse{
+			Error:   "kiloforge setup required",
+			Project: slug,
+		}, nil
 	}
+
+	fullPrompt := fmt.Sprintf("/kf-track-generator I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
 
 	opts := agent.SpawnInteractiveOpts{
 		WorkDir: workDir,
@@ -1567,6 +1609,72 @@ func (h *APIHandler) checkSkillsForRole(role, workDir string) *gen.SkillsMissing
 		Error:         fmt.Sprintf("required skills not installed: %d missing", len(missing)),
 		MissingSkills: missingItems,
 	}
+}
+
+// GetProjectSetupStatus implements gen.StrictServerInterface.
+func (h *APIHandler) GetProjectSetupStatus(_ context.Context, req gen.GetProjectSetupStatusRequestObject) (gen.GetProjectSetupStatusResponseObject, error) {
+	proj, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.GetProjectSetupStatus404JSONResponse{Error: "project not found"}, nil
+	}
+	productPath := filepath.Join(proj.ProjectDir, ".agent", "conductor", "product.md")
+	_, err := os.Stat(productPath)
+	return gen.GetProjectSetupStatus200JSONResponse{
+		SetupComplete: err == nil,
+		ProjectSlug:   req.Slug,
+	}, nil
+}
+
+// StartProjectSetup implements gen.StrictServerInterface.
+func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProjectSetupRequestObject) (gen.StartProjectSetupResponseObject, error) {
+	if h.interSpawner == nil || h.wsSessions == nil {
+		return gen.StartProjectSetup500JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+
+	// Check Claude CLI authentication.
+	if msg := h.checkClaudeAuth(ctx); msg != "" {
+		return gen.StartProjectSetup401JSONResponse{Error: msg}, nil
+	}
+
+	// Check agent permissions consent.
+	if msg := h.checkConsent(); msg != "" {
+		return gen.StartProjectSetup403JSONResponse{Error: msg}, nil
+	}
+
+	proj, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.StartProjectSetup404JSONResponse{Error: "project not found"}, nil
+	}
+
+	// Validate required skills.
+	if resp := h.checkSkillsForRole("interactive", proj.ProjectDir); resp != nil {
+		return gen.StartProjectSetup412JSONResponse(*resp), nil
+	}
+
+	opts := agent.SpawnInteractiveOpts{
+		WorkDir: proj.ProjectDir,
+		Prompt:  "/kf-setup",
+		Ref:     "setup",
+	}
+
+	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
+	if err != nil {
+		return gen.StartProjectSetup500JSONResponse{Error: err.Error()}, nil
+	}
+
+	// Create bridge and register with WS session manager.
+	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
+
+	// Start output relay in background.
+	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+
+	wsURL := fmt.Sprintf("/ws/agent/%s", ia.Info.ID)
+
+	return gen.StartProjectSetup201JSONResponse{
+		AgentId: ia.Info.ID,
+		WsUrl:   wsURL,
+	}, nil
 }
 
 func intPtr(v int) *int       { return &v }
