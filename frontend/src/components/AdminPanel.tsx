@@ -1,4 +1,6 @@
 import { useCallback, useState } from "react";
+import { useConsent } from "../hooks/useConsent";
+import { ConsentDialog } from "./ConsentDialog";
 import styles from "./AdminPanel.module.css";
 
 type AdminOperation = "bulk-archive" | "compact-archive" | "report";
@@ -18,6 +20,7 @@ const operations: { key: AdminOperation; label: string }[] = [
 export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState<AdminOperation | null>(null);
+  const consent = useConsent();
 
   const handleRun = useCallback(
     async (op: AdminOperation) => {
@@ -32,6 +35,10 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
             ...(projectSlug ? { project: projectSlug } : {}),
           }),
         });
+        if (resp.status === 403) {
+          consent.requestConsent(() => handleRun(op));
+          return;
+        }
         if (!resp.ok) {
           const data = (await resp.json()) as { error?: string };
           setError(data.error ?? `Failed (${resp.status})`);
@@ -45,7 +52,7 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
         setStarting(null);
       }
     },
-    [projectSlug, onStartOperation],
+    [projectSlug, onStartOperation, consent],
   );
 
   return (
@@ -63,6 +70,7 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
         ))}
       </div>
       {error && <p className={styles.error}>{error}</p>}
+      {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
     </div>
   );
 }

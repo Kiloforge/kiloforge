@@ -5,11 +5,13 @@ import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
 import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
+import { useConsent } from "./hooks/useConsent";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
+import { ConsentDialog } from "./components/ConsentDialog";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { TracePage } from "./pages/TracePage";
@@ -23,6 +25,7 @@ export default function App() {
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [spawningInteractive, setSpawningInteractive] = useState(false);
+  const consent = useConsent();
 
   useEffect(() => {
     fetch("/api/status")
@@ -64,6 +67,10 @@ export default function App() {
     setSpawningInteractive(true);
     try {
       const res = await fetch("/api/agents/interactive", { method: "POST" });
+      if (res.status === 403) {
+        consent.requestConsent(() => handleSpawnInteractive());
+        return;
+      }
       if (!res.ok) throw new Error("Failed to spawn");
       const agent = (await res.json()) as Agent;
       setTerminalAgentId(agent.id);
@@ -72,7 +79,7 @@ export default function App() {
     } finally {
       setSpawningInteractive(false);
     }
-  }, []);
+  }, [consent]);
 
   return (
     <>
@@ -116,6 +123,7 @@ export default function App() {
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
       {terminalAgentId && <AgentTerminal agentId={terminalAgentId} onClose={handleCloseTerminal} />}
+      {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
     </>
   );
 }

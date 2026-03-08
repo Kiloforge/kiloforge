@@ -9,6 +9,8 @@ import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
 import { AgentTerminal } from "../components/AgentTerminal";
 import { AdminPanel } from "../components/AdminPanel";
+import { ConsentDialog } from "../components/ConsentDialog";
+import { useConsent } from "../hooks/useConsent";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -25,6 +27,7 @@ export function ProjectPage() {
   const [generating, setGenerating] = useState(false);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
+  const consent = useConsent();
 
   const handlePush = useCallback((remoteBranch: string) => {
     push({ remote_branch: remoteBranch });
@@ -43,6 +46,10 @@ export function ProjectPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim(), project: slug }),
       });
+      if (resp.status === 403) {
+        consent.requestConsent(() => handleGenerateTracks());
+        return;
+      }
       if (resp.ok) {
         const data = await resp.json() as { agent_id: string; ws_url: string };
         setTerminalAgentId(data.agent_id);
@@ -52,7 +59,7 @@ export function ProjectPage() {
     } finally {
       setGenerating(false);
     }
-  }, [prompt, slug]);
+  }, [prompt, slug, consent]);
 
   const handleDeleteTrack = useCallback(async (trackId: string) => {
     if (!slug) return;
@@ -186,6 +193,8 @@ export function ProjectPage() {
       {adminAgentId && (
         <AgentTerminal agentId={adminAgentId} onClose={handleAdminTerminalClose} />
       )}
+
+      {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>
