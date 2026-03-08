@@ -557,7 +557,7 @@ func NewListAgentsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/agents")
+	operationPath := fmt.Sprintf("/api/agents")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -591,7 +591,7 @@ func NewGetAgentRequest(server string, id string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/agents/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/agents/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -625,7 +625,7 @@ func NewGetAgentLogRequest(server string, id string, params *GetAgentLogParams) 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/agents/%s/log", pathParam0)
+	operationPath := fmt.Sprintf("/api/agents/%s/log", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -681,7 +681,7 @@ func NewGetBoardRequest(server string, project string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/board/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/board/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -726,7 +726,7 @@ func NewMoveCardRequestWithBody(server string, project string, contentType strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/board/%s/move", pathParam0)
+	operationPath := fmt.Sprintf("/api/board/%s/move", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -762,7 +762,7 @@ func NewSyncBoardRequest(server string, project string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/board/%s/sync", pathParam0)
+	operationPath := fmt.Sprintf("/api/board/%s/sync", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -789,7 +789,7 @@ func NewGetConfigRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/config")
+	operationPath := fmt.Sprintf("/api/config")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -827,7 +827,7 @@ func NewUpdateConfigRequestWithBody(server string, contentType string, body io.R
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/config")
+	operationPath := fmt.Sprintf("/api/config")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -856,7 +856,7 @@ func NewListLocksRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/locks")
+	operationPath := fmt.Sprintf("/api/locks")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -901,7 +901,7 @@ func NewReleaseLockRequestWithBody(server string, scope string, contentType stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/locks/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/locks/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -948,7 +948,7 @@ func NewAcquireLockRequestWithBody(server string, scope string, contentType stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/locks/%s/acquire", pathParam0)
+	operationPath := fmt.Sprintf("/api/locks/%s/acquire", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -995,7 +995,7 @@ func NewHeartbeatLockRequestWithBody(server string, scope string, contentType st
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/locks/%s/heartbeat", pathParam0)
+	operationPath := fmt.Sprintf("/api/locks/%s/heartbeat", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1024,7 +1024,7 @@ func NewListProjectsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/projects")
+	operationPath := fmt.Sprintf("/api/projects")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1062,7 +1062,7 @@ func NewAddProjectRequestWithBody(server string, contentType string, body io.Rea
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/projects")
+	operationPath := fmt.Sprintf("/api/projects")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1098,7 +1098,7 @@ func NewRemoveProjectRequest(server string, slug string, params *RemoveProjectPa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1147,7 +1147,7 @@ func NewGetQuotaRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/quota")
+	operationPath := fmt.Sprintf("/api/quota")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1174,7 +1174,7 @@ func NewGetSkillsStatusRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/skills")
+	operationPath := fmt.Sprintf("/api/skills")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1212,7 +1212,7 @@ func NewUpdateSkillsRequestWithBody(server string, contentType string, body io.R
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/skills/update")
+	operationPath := fmt.Sprintf("/api/skills/update")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1241,7 +1241,7 @@ func NewListSSHKeysRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/ssh-keys")
+	operationPath := fmt.Sprintf("/api/ssh-keys")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1268,7 +1268,7 @@ func NewGetStatusRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/status")
+	operationPath := fmt.Sprintf("/api/status")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1295,7 +1295,7 @@ func NewListTracesRequest(server string, params *ListTracesParams) (*http.Reques
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/traces")
+	operationPath := fmt.Sprintf("/api/traces")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1367,7 +1367,7 @@ func NewGetTraceRequest(server string, traceId string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/traces/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/traces/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1394,7 +1394,7 @@ func NewListTracksRequest(server string, params *ListTracksParams) (*http.Reques
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/-/api/tracks")
+	operationPath := fmt.Sprintf("/api/tracks")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}

@@ -22,7 +22,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
 
-  /-/api/agents:
+  /api/agents:
     get:
       operationId: listAgents
       summary: List all agents
@@ -43,7 +43,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/agents/{id}:
+  /api/agents/{id}:
     get:
       operationId: getAgent
       summary: Get agent by ID or ID prefix
@@ -81,7 +81,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/agents/{id}/log:
+  /api/agents/{id}/log:
     get:
       operationId: getAgentLog
       summary: Get recent log lines for an agent
@@ -126,7 +126,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/quota:
+  /api/quota:
     get:
       operationId: getQuota
       summary: Get quota and cost usage
@@ -139,7 +139,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuotaInfo"
 
-  /-/api/projects:
+  /api/projects:
     get:
       operationId: listProjects
       summary: List registered projects
@@ -189,7 +189,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/projects/{slug}:
+  /api/projects/{slug}:
     delete:
       operationId: removeProject
       summary: Remove a registered project
@@ -224,7 +224,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/ssh-keys:
+  /api/ssh-keys:
     get:
       operationId: listSSHKeys
       summary: List available SSH keys
@@ -243,7 +243,7 @@ paths:
                     items:
                       $ref: "#/components/schemas/SSHKeyInfo"
 
-  /-/api/tracks:
+  /api/tracks:
     get:
       operationId: listTracks
       summary: List conductor tracks
@@ -271,7 +271,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/config:
+  /api/config:
     get:
       operationId: getConfig
       summary: Get current configuration
@@ -313,7 +313,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/status:
+  /api/status:
     get:
       operationId: getStatus
       summary: Get system status overview
@@ -332,7 +332,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/skills:
+  /api/skills:
     get:
       operationId: getSkillsStatus
       summary: Get installed skills status
@@ -351,7 +351,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/skills/update:
+  /api/skills/update:
     post:
       operationId: updateSkills
       summary: Trigger skill update
@@ -388,7 +388,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/traces:
+  /api/traces:
     get:
       operationId: listTraces
       summary: List trace summaries
@@ -416,7 +416,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/TraceSummary"
 
-  /-/api/traces/{traceId}:
+  /api/traces/{traceId}:
     get:
       operationId: getTrace
       summary: Get trace detail with all spans
@@ -442,7 +442,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/board/{project}:
+  /api/board/{project}:
     get:
       operationId: getBoard
       summary: Get board state for a project
@@ -468,7 +468,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/board/{project}/move:
+  /api/board/{project}/move:
     post:
       operationId: moveCard
       summary: Move a board card to a different column
@@ -506,7 +506,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/board/{project}/sync:
+  /api/board/{project}/sync:
     post:
       operationId: syncBoard
       summary: Sync board from conductor tracks
@@ -538,7 +538,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/locks:
+  /api/locks:
     get:
       operationId: listLocks
       summary: List all active locks
@@ -553,7 +553,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/LockInfo"
 
-  /-/api/locks/{scope}/acquire:
+  /api/locks/{scope}/acquire:
     post:
       operationId: acquireLock
       summary: Acquire a scoped lock
@@ -591,7 +591,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LockConflictResponse"
 
-  /-/api/locks/{scope}/heartbeat:
+  /api/locks/{scope}/heartbeat:
     post:
       operationId: heartbeatLock
       summary: Extend lock TTL
@@ -629,7 +629,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /-/api/locks/{scope}:
+  /api/locks/{scope}:
     delete:
       operationId: releaseLock
       summary: Release a scoped lock

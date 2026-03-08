@@ -508,73 +508,73 @@ type UpdateSkillsJSONRequestBody = SkillUpdateRequest
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// List all agents
-	// (GET /-/api/agents)
+	// (GET /api/agents)
 	ListAgents(w http.ResponseWriter, r *http.Request)
 	// Get agent by ID or ID prefix
-	// (GET /-/api/agents/{id})
+	// (GET /api/agents/{id})
 	GetAgent(w http.ResponseWriter, r *http.Request, id string)
 	// Get recent log lines for an agent
-	// (GET /-/api/agents/{id}/log)
+	// (GET /api/agents/{id}/log)
 	GetAgentLog(w http.ResponseWriter, r *http.Request, id string, params GetAgentLogParams)
 	// Get board state for a project
-	// (GET /-/api/board/{project})
+	// (GET /api/board/{project})
 	GetBoard(w http.ResponseWriter, r *http.Request, project string)
 	// Move a board card to a different column
-	// (POST /-/api/board/{project}/move)
+	// (POST /api/board/{project}/move)
 	MoveCard(w http.ResponseWriter, r *http.Request, project string)
 	// Sync board from conductor tracks
-	// (POST /-/api/board/{project}/sync)
+	// (POST /api/board/{project}/sync)
 	SyncBoard(w http.ResponseWriter, r *http.Request, project string)
 	// Get current configuration
-	// (GET /-/api/config)
+	// (GET /api/config)
 	GetConfig(w http.ResponseWriter, r *http.Request)
 	// Update configuration
-	// (PUT /-/api/config)
+	// (PUT /api/config)
 	UpdateConfig(w http.ResponseWriter, r *http.Request)
 	// List all active locks
-	// (GET /-/api/locks)
+	// (GET /api/locks)
 	ListLocks(w http.ResponseWriter, r *http.Request)
 	// Release a scoped lock
-	// (DELETE /-/api/locks/{scope})
+	// (DELETE /api/locks/{scope})
 	ReleaseLock(w http.ResponseWriter, r *http.Request, scope string)
 	// Acquire a scoped lock
-	// (POST /-/api/locks/{scope}/acquire)
+	// (POST /api/locks/{scope}/acquire)
 	AcquireLock(w http.ResponseWriter, r *http.Request, scope string)
 	// Extend lock TTL
-	// (POST /-/api/locks/{scope}/heartbeat)
+	// (POST /api/locks/{scope}/heartbeat)
 	HeartbeatLock(w http.ResponseWriter, r *http.Request, scope string)
 	// List registered projects
-	// (GET /-/api/projects)
+	// (GET /api/projects)
 	ListProjects(w http.ResponseWriter, r *http.Request)
 	// Register a new project from a remote URL
-	// (POST /-/api/projects)
+	// (POST /api/projects)
 	AddProject(w http.ResponseWriter, r *http.Request)
 	// Remove a registered project
-	// (DELETE /-/api/projects/{slug})
+	// (DELETE /api/projects/{slug})
 	RemoveProject(w http.ResponseWriter, r *http.Request, slug string, params RemoveProjectParams)
 	// Get quota and cost usage
-	// (GET /-/api/quota)
+	// (GET /api/quota)
 	GetQuota(w http.ResponseWriter, r *http.Request)
 	// Get installed skills status
-	// (GET /-/api/skills)
+	// (GET /api/skills)
 	GetSkillsStatus(w http.ResponseWriter, r *http.Request)
 	// Trigger skill update
-	// (POST /-/api/skills/update)
+	// (POST /api/skills/update)
 	UpdateSkills(w http.ResponseWriter, r *http.Request)
 	// List available SSH keys
-	// (GET /-/api/ssh-keys)
+	// (GET /api/ssh-keys)
 	ListSSHKeys(w http.ResponseWriter, r *http.Request)
 	// Get system status overview
-	// (GET /-/api/status)
+	// (GET /api/status)
 	GetStatus(w http.ResponseWriter, r *http.Request)
 	// List trace summaries
-	// (GET /-/api/traces)
+	// (GET /api/traces)
 	ListTraces(w http.ResponseWriter, r *http.Request, params ListTracesParams)
 	// Get trace detail with all spans
-	// (GET /-/api/traces/{traceId})
+	// (GET /api/traces/{traceId})
 	GetTrace(w http.ResponseWriter, r *http.Request, traceId string)
 	// List conductor tracks
-	// (GET /-/api/tracks)
+	// (GET /api/tracks)
 	ListTracks(w http.ResponseWriter, r *http.Request, params ListTracksParams)
 	// Health check
 	// (GET /health)
@@ -1212,29 +1212,29 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/agents", wrapper.ListAgents)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/agents/{id}", wrapper.GetAgent)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/agents/{id}/log", wrapper.GetAgentLog)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/board/{project}", wrapper.GetBoard)
-	m.HandleFunc("POST "+options.BaseURL+"/-/api/board/{project}/move", wrapper.MoveCard)
-	m.HandleFunc("POST "+options.BaseURL+"/-/api/board/{project}/sync", wrapper.SyncBoard)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/config", wrapper.GetConfig)
-	m.HandleFunc("PUT "+options.BaseURL+"/-/api/config", wrapper.UpdateConfig)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/locks", wrapper.ListLocks)
-	m.HandleFunc("DELETE "+options.BaseURL+"/-/api/locks/{scope}", wrapper.ReleaseLock)
-	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/acquire", wrapper.AcquireLock)
-	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/heartbeat", wrapper.HeartbeatLock)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/projects", wrapper.ListProjects)
-	m.HandleFunc("POST "+options.BaseURL+"/-/api/projects", wrapper.AddProject)
-	m.HandleFunc("DELETE "+options.BaseURL+"/-/api/projects/{slug}", wrapper.RemoveProject)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/quota", wrapper.GetQuota)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/skills", wrapper.GetSkillsStatus)
-	m.HandleFunc("POST "+options.BaseURL+"/-/api/skills/update", wrapper.UpdateSkills)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/ssh-keys", wrapper.ListSSHKeys)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/status", wrapper.GetStatus)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/traces", wrapper.ListTraces)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/traces/{traceId}", wrapper.GetTrace)
-	m.HandleFunc("GET "+options.BaseURL+"/-/api/tracks", wrapper.ListTracks)
+	m.HandleFunc("GET "+options.BaseURL+"/api/agents", wrapper.ListAgents)
+	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}", wrapper.GetAgent)
+	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}/log", wrapper.GetAgentLog)
+	m.HandleFunc("GET "+options.BaseURL+"/api/board/{project}", wrapper.GetBoard)
+	m.HandleFunc("POST "+options.BaseURL+"/api/board/{project}/move", wrapper.MoveCard)
+	m.HandleFunc("POST "+options.BaseURL+"/api/board/{project}/sync", wrapper.SyncBoard)
+	m.HandleFunc("GET "+options.BaseURL+"/api/config", wrapper.GetConfig)
+	m.HandleFunc("PUT "+options.BaseURL+"/api/config", wrapper.UpdateConfig)
+	m.HandleFunc("GET "+options.BaseURL+"/api/locks", wrapper.ListLocks)
+	m.HandleFunc("DELETE "+options.BaseURL+"/api/locks/{scope}", wrapper.ReleaseLock)
+	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/acquire", wrapper.AcquireLock)
+	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/heartbeat", wrapper.HeartbeatLock)
+	m.HandleFunc("GET "+options.BaseURL+"/api/projects", wrapper.ListProjects)
+	m.HandleFunc("POST "+options.BaseURL+"/api/projects", wrapper.AddProject)
+	m.HandleFunc("DELETE "+options.BaseURL+"/api/projects/{slug}", wrapper.RemoveProject)
+	m.HandleFunc("GET "+options.BaseURL+"/api/quota", wrapper.GetQuota)
+	m.HandleFunc("GET "+options.BaseURL+"/api/skills", wrapper.GetSkillsStatus)
+	m.HandleFunc("POST "+options.BaseURL+"/api/skills/update", wrapper.UpdateSkills)
+	m.HandleFunc("GET "+options.BaseURL+"/api/ssh-keys", wrapper.ListSSHKeys)
+	m.HandleFunc("GET "+options.BaseURL+"/api/status", wrapper.GetStatus)
+	m.HandleFunc("GET "+options.BaseURL+"/api/traces", wrapper.ListTraces)
+	m.HandleFunc("GET "+options.BaseURL+"/api/traces/{traceId}", wrapper.GetTrace)
+	m.HandleFunc("GET "+options.BaseURL+"/api/tracks", wrapper.ListTracks)
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
 
 	return m
@@ -1937,73 +1937,73 @@ func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseW
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List all agents
-	// (GET /-/api/agents)
+	// (GET /api/agents)
 	ListAgents(ctx context.Context, request ListAgentsRequestObject) (ListAgentsResponseObject, error)
 	// Get agent by ID or ID prefix
-	// (GET /-/api/agents/{id})
+	// (GET /api/agents/{id})
 	GetAgent(ctx context.Context, request GetAgentRequestObject) (GetAgentResponseObject, error)
 	// Get recent log lines for an agent
-	// (GET /-/api/agents/{id}/log)
+	// (GET /api/agents/{id}/log)
 	GetAgentLog(ctx context.Context, request GetAgentLogRequestObject) (GetAgentLogResponseObject, error)
 	// Get board state for a project
-	// (GET /-/api/board/{project})
+	// (GET /api/board/{project})
 	GetBoard(ctx context.Context, request GetBoardRequestObject) (GetBoardResponseObject, error)
 	// Move a board card to a different column
-	// (POST /-/api/board/{project}/move)
+	// (POST /api/board/{project}/move)
 	MoveCard(ctx context.Context, request MoveCardRequestObject) (MoveCardResponseObject, error)
 	// Sync board from conductor tracks
-	// (POST /-/api/board/{project}/sync)
+	// (POST /api/board/{project}/sync)
 	SyncBoard(ctx context.Context, request SyncBoardRequestObject) (SyncBoardResponseObject, error)
 	// Get current configuration
-	// (GET /-/api/config)
+	// (GET /api/config)
 	GetConfig(ctx context.Context, request GetConfigRequestObject) (GetConfigResponseObject, error)
 	// Update configuration
-	// (PUT /-/api/config)
+	// (PUT /api/config)
 	UpdateConfig(ctx context.Context, request UpdateConfigRequestObject) (UpdateConfigResponseObject, error)
 	// List all active locks
-	// (GET /-/api/locks)
+	// (GET /api/locks)
 	ListLocks(ctx context.Context, request ListLocksRequestObject) (ListLocksResponseObject, error)
 	// Release a scoped lock
-	// (DELETE /-/api/locks/{scope})
+	// (DELETE /api/locks/{scope})
 	ReleaseLock(ctx context.Context, request ReleaseLockRequestObject) (ReleaseLockResponseObject, error)
 	// Acquire a scoped lock
-	// (POST /-/api/locks/{scope}/acquire)
+	// (POST /api/locks/{scope}/acquire)
 	AcquireLock(ctx context.Context, request AcquireLockRequestObject) (AcquireLockResponseObject, error)
 	// Extend lock TTL
-	// (POST /-/api/locks/{scope}/heartbeat)
+	// (POST /api/locks/{scope}/heartbeat)
 	HeartbeatLock(ctx context.Context, request HeartbeatLockRequestObject) (HeartbeatLockResponseObject, error)
 	// List registered projects
-	// (GET /-/api/projects)
+	// (GET /api/projects)
 	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
 	// Register a new project from a remote URL
-	// (POST /-/api/projects)
+	// (POST /api/projects)
 	AddProject(ctx context.Context, request AddProjectRequestObject) (AddProjectResponseObject, error)
 	// Remove a registered project
-	// (DELETE /-/api/projects/{slug})
+	// (DELETE /api/projects/{slug})
 	RemoveProject(ctx context.Context, request RemoveProjectRequestObject) (RemoveProjectResponseObject, error)
 	// Get quota and cost usage
-	// (GET /-/api/quota)
+	// (GET /api/quota)
 	GetQuota(ctx context.Context, request GetQuotaRequestObject) (GetQuotaResponseObject, error)
 	// Get installed skills status
-	// (GET /-/api/skills)
+	// (GET /api/skills)
 	GetSkillsStatus(ctx context.Context, request GetSkillsStatusRequestObject) (GetSkillsStatusResponseObject, error)
 	// Trigger skill update
-	// (POST /-/api/skills/update)
+	// (POST /api/skills/update)
 	UpdateSkills(ctx context.Context, request UpdateSkillsRequestObject) (UpdateSkillsResponseObject, error)
 	// List available SSH keys
-	// (GET /-/api/ssh-keys)
+	// (GET /api/ssh-keys)
 	ListSSHKeys(ctx context.Context, request ListSSHKeysRequestObject) (ListSSHKeysResponseObject, error)
 	// Get system status overview
-	// (GET /-/api/status)
+	// (GET /api/status)
 	GetStatus(ctx context.Context, request GetStatusRequestObject) (GetStatusResponseObject, error)
 	// List trace summaries
-	// (GET /-/api/traces)
+	// (GET /api/traces)
 	ListTraces(ctx context.Context, request ListTracesRequestObject) (ListTracesResponseObject, error)
 	// Get trace detail with all spans
-	// (GET /-/api/traces/{traceId})
+	// (GET /api/traces/{traceId})
 	GetTrace(ctx context.Context, request GetTraceRequestObject) (GetTraceResponseObject, error)
 	// List conductor tracks
-	// (GET /-/api/tracks)
+	// (GET /api/tracks)
 	ListTracks(ctx context.Context, request ListTracksRequestObject) (ListTracksResponseObject, error)
 	// Health check
 	// (GET /health)

@@ -21,10 +21,10 @@ func NewHandler(mgr *Manager) *Handler {
 // Routes use explicit method prefixes to avoid conflicts with other catch-all
 // patterns (e.g. "GET /-/") on the same ServeMux.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /-/api/locks", h.handleList)
-	mux.HandleFunc("POST /-/api/locks/{scope}/acquire", h.handleAcquire)
-	mux.HandleFunc("POST /-/api/locks/{scope}/heartbeat", h.handleHeartbeat)
-	mux.HandleFunc("DELETE /-/api/locks/{scope}", h.handleRelease)
+	mux.HandleFunc("GET /api/locks", h.handleList)
+	mux.HandleFunc("POST /api/locks/{scope}/acquire", h.handleAcquire)
+	mux.HandleFunc("POST /api/locks/{scope}/heartbeat", h.handleHeartbeat)
+	mux.HandleFunc("DELETE /api/locks/{scope}", h.handleRelease)
 }
 
 type acquireRequest struct {

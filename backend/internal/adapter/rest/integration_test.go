@@ -133,14 +133,14 @@ func TestIntegration_Health(t *testing.T) {
 func TestIntegration_Agents(t *testing.T) {
 	srv := startTestServer(t)
 
-	resp, err := http.Get(srv.URL + "/-/api/agents")
+	resp, err := http.Get(srv.URL + "/api/agents")
 	if err != nil {
-		t.Fatalf("GET /-/api/agents: %v", err)
+		t.Fatalf("GET /api/agents: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("GET /-/api/agents: got %d, want 200", resp.StatusCode)
+		t.Fatalf("GET /api/agents: got %d, want 200", resp.StatusCode)
 	}
 
 	var agents []any
@@ -153,14 +153,14 @@ func TestIntegration_Agents(t *testing.T) {
 func TestIntegration_Status(t *testing.T) {
 	srv := startTestServer(t)
 
-	resp, err := http.Get(srv.URL + "/-/api/status")
+	resp, err := http.Get(srv.URL + "/api/status")
 	if err != nil {
-		t.Fatalf("GET /-/api/status: %v", err)
+		t.Fatalf("GET /api/status: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("GET /-/api/status: got %d, want 200", resp.StatusCode)
+		t.Fatalf("GET /api/status: got %d, want 200", resp.StatusCode)
 	}
 
 	var body map[string]any
@@ -173,14 +173,14 @@ func TestIntegration_Status(t *testing.T) {
 func TestIntegration_Locks(t *testing.T) {
 	srv := startTestServer(t)
 
-	resp, err := http.Get(srv.URL + "/-/api/locks")
+	resp, err := http.Get(srv.URL + "/api/locks")
 	if err != nil {
-		t.Fatalf("GET /-/api/locks: %v", err)
+		t.Fatalf("GET /api/locks: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("GET /-/api/locks: got %d, want 200", resp.StatusCode)
+		t.Fatalf("GET /api/locks: got %d, want 200", resp.StatusCode)
 	}
 
 	var locks []any
@@ -193,7 +193,7 @@ func TestIntegration_Locks(t *testing.T) {
 func TestIntegration_BadgeEndpoint(t *testing.T) {
 	srv := startTestServer(t)
 
-	resp, err := http.Get(srv.URL + "/-/api/badges/track/nonexistent")
+	resp, err := http.Get(srv.URL + "/api/badges/track/nonexistent")
 	if err != nil {
 		t.Fatalf("GET badge: %v", err)
 	}
@@ -211,13 +211,13 @@ func TestIntegration_BadgeEndpoint(t *testing.T) {
 func TestIntegration_Quota(t *testing.T) {
 	srv := startTestServer(t)
 
-	resp, err := http.Get(srv.URL + "/-/api/quota")
+	resp, err := http.Get(srv.URL + "/api/quota")
 	if err != nil {
-		t.Fatalf("GET /-/api/quota: %v", err)
+		t.Fatalf("GET /api/quota: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("GET /-/api/quota: got %d, want 200", resp.StatusCode)
+		t.Fatalf("GET /api/quota: got %d, want 200", resp.StatusCode)
 	}
 }

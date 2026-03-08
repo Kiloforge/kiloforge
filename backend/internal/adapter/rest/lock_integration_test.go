@@ -17,7 +17,7 @@ func TestIntegration_LockLifecycle(t *testing.T) {
 		"holder":      "test-worker",
 		"ttl_seconds": 60,
 	})
-	resp, err := http.Post(srv.URL+"/-/api/locks/merge/acquire", "application/json", bytes.NewReader(acquireBody))
+	resp, err := http.Post(srv.URL+"/api/locks/merge/acquire", "application/json", bytes.NewReader(acquireBody))
 	if err != nil {
 		t.Fatalf("acquire: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestIntegration_LockLifecycle(t *testing.T) {
 		"holder":      "test-worker",
 		"ttl_seconds": 120,
 	})
-	resp, err = http.Post(srv.URL+"/-/api/locks/merge/heartbeat", "application/json", bytes.NewReader(heartbeatBody))
+	resp, err = http.Post(srv.URL+"/api/locks/merge/heartbeat", "application/json", bytes.NewReader(heartbeatBody))
 	if err != nil {
 		t.Fatalf("heartbeat: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestIntegration_LockLifecycle(t *testing.T) {
 	}
 
 	// 3. List locks — should see our lock.
-	resp, err = http.Get(srv.URL + "/-/api/locks")
+	resp, err = http.Get(srv.URL + "/api/locks")
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestIntegration_LockLifecycle(t *testing.T) {
 	releaseBody, _ := json.Marshal(map[string]any{
 		"holder": "test-worker",
 	})
-	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/-/api/locks/merge", bytes.NewReader(releaseBody))
+	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/api/locks/merge", bytes.NewReader(releaseBody))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
@@ -74,7 +74,7 @@ func TestIntegration_LockLifecycle(t *testing.T) {
 	}
 
 	// 5. List locks — should be empty.
-	resp, err = http.Get(srv.URL + "/-/api/locks")
+	resp, err = http.Get(srv.URL + "/api/locks")
 	if err != nil {
 		t.Fatalf("list after release: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestIntegration_LockConflict(t *testing.T) {
 		"ttl_seconds":     60,
 		"timeout_seconds": 0,
 	})
-	resp, err := http.Post(srv.URL+"/-/api/locks/merge/acquire", "application/json", bytes.NewReader(body))
+	resp, err := http.Post(srv.URL+"/api/locks/merge/acquire", "application/json", bytes.NewReader(body))
 	if err != nil {
 		t.Fatalf("first acquire: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestIntegration_LockConflict(t *testing.T) {
 		"ttl_seconds":     60,
 		"timeout_seconds": 0,
 	})
-	resp, err = http.Post(srv.URL+"/-/api/locks/merge/acquire", "application/json", bytes.NewReader(body2))
+	resp, err = http.Post(srv.URL+"/api/locks/merge/acquire", "application/json", bytes.NewReader(body2))
 	if err != nil {
 		t.Fatalf("second acquire: %v", err)
 	}

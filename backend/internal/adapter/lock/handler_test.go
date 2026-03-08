@@ -49,7 +49,7 @@ func getJSON(mux http.Handler, path string) *httptest.ResponseRecorder {
 func TestHandler_AcquireSuccess(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	w := postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	w := postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 60,
 	})
@@ -69,13 +69,13 @@ func TestHandler_AcquireTimeout(t *testing.T) {
 	_, mux := setupTestHandler()
 
 	// Acquire first.
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 60,
 	})
 
 	// Second acquire with very short timeout.
-	w := postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	w := postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:         "dev-2",
 		TTLSeconds:     60,
 		TimeoutSeconds: 1,
@@ -89,7 +89,7 @@ func TestHandler_AcquireTimeout(t *testing.T) {
 func TestHandler_AcquireMissingHolder(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	w := postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{TTLSeconds: 60})
+	w := postJSON(mux, "/api/locks/merge/acquire", acquireRequest{TTLSeconds: 60})
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", w.Code)
 	}
@@ -98,12 +98,12 @@ func TestHandler_AcquireMissingHolder(t *testing.T) {
 func TestHandler_ReleaseByHolder(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 60,
 	})
 
-	w := deleteJSON(mux, "/-/api/locks/merge", releaseRequest{Holder: "dev-1"})
+	w := deleteJSON(mux, "/api/locks/merge", releaseRequest{Holder: "dev-1"})
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
@@ -112,12 +112,12 @@ func TestHandler_ReleaseByHolder(t *testing.T) {
 func TestHandler_ReleaseByNonHolder(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 60,
 	})
 
-	w := deleteJSON(mux, "/-/api/locks/merge", releaseRequest{Holder: "dev-2"})
+	w := deleteJSON(mux, "/api/locks/merge", releaseRequest{Holder: "dev-2"})
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d: %s", w.Code, w.Body.String())
 	}
@@ -126,12 +126,12 @@ func TestHandler_ReleaseByNonHolder(t *testing.T) {
 func TestHandler_Heartbeat(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 5,
 	})
 
-	w := postJSON(mux, "/-/api/locks/merge/heartbeat", heartbeatRequest{
+	w := postJSON(mux, "/api/locks/merge/heartbeat", heartbeatRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 60,
 	})
@@ -149,12 +149,12 @@ func TestHandler_Heartbeat(t *testing.T) {
 func TestHandler_HeartbeatNonHolder(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 60,
 	})
 
-	w := postJSON(mux, "/-/api/locks/merge/heartbeat", heartbeatRequest{
+	w := postJSON(mux, "/api/locks/merge/heartbeat", heartbeatRequest{
 		Holder:     "dev-2",
 		TTLSeconds: 60,
 	})
@@ -166,7 +166,7 @@ func TestHandler_HeartbeatNonHolder(t *testing.T) {
 func TestHandler_ListEmpty(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	w := getJSON(mux, "/-/api/locks")
+	w := getJSON(mux, "/api/locks")
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
@@ -181,10 +181,10 @@ func TestHandler_ListEmpty(t *testing.T) {
 func TestHandler_ListMultiple(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{Holder: "dev-1", TTLSeconds: 60})
-	postJSON(mux, "/-/api/locks/deploy/acquire", acquireRequest{Holder: "dev-2", TTLSeconds: 60})
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{Holder: "dev-1", TTLSeconds: 60})
+	postJSON(mux, "/api/locks/deploy/acquire", acquireRequest{Holder: "dev-2", TTLSeconds: 60})
 
-	w := getJSON(mux, "/-/api/locks")
+	w := getJSON(mux, "/api/locks")
 	var resp []lockResponse
 	json.NewDecoder(w.Body).Decode(&resp)
 	if len(resp) != 2 {
@@ -195,10 +195,10 @@ func TestHandler_ListMultiple(t *testing.T) {
 func TestHandler_AcquireAfterRelease(t *testing.T) {
 	_, mux := setupTestHandler()
 
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{Holder: "dev-1", TTLSeconds: 60})
-	deleteJSON(mux, "/-/api/locks/merge", releaseRequest{Holder: "dev-1"})
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{Holder: "dev-1", TTLSeconds: 60})
+	deleteJSON(mux, "/api/locks/merge", releaseRequest{Holder: "dev-1"})
 
-	w := postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{Holder: "dev-2", TTLSeconds: 60})
+	w := postJSON(mux, "/api/locks/merge/acquire", acquireRequest{Holder: "dev-2", TTLSeconds: 60})
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 after release, got %d", w.Code)
 	}
@@ -220,7 +220,7 @@ func TestHandler_TTLExpiryViaHTTP(t *testing.T) {
 	h.RegisterRoutes(mux)
 
 	// Acquire with very short TTL.
-	postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-1",
 		TTLSeconds: 1,
 	})
@@ -229,7 +229,7 @@ func TestHandler_TTLExpiryViaHTTP(t *testing.T) {
 	time.Sleep(1500 * time.Millisecond)
 
 	// Should be free now.
-	w := postJSON(mux, "/-/api/locks/merge/acquire", acquireRequest{
+	w := postJSON(mux, "/api/locks/merge/acquire", acquireRequest{
 		Holder:     "dev-2",
 		TTLSeconds: 60,
 	})

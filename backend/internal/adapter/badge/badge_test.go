@@ -81,10 +81,10 @@ func TestRenderDualBadge_ContainsBothStatuses(t *testing.T) {
 func TestTrackBadgeMarkdown(t *testing.T) {
 	t.Parallel()
 	md := TrackBadgeMarkdown("my-track_123", "http://localhost:3001")
-	if !strings.Contains(md, "/-/api/badges/track/my-track_123") {
+	if !strings.Contains(md, "/api/badges/track/my-track_123") {
 		t.Error("missing badge URL")
 	}
-	if !strings.Contains(md, "/-/tracks/my-track_123") {
+	if !strings.Contains(md, "/tracks/my-track_123") {
 		t.Error("missing link URL")
 	}
 }
@@ -92,10 +92,10 @@ func TestTrackBadgeMarkdown(t *testing.T) {
 func TestPRBadgeMarkdown(t *testing.T) {
 	t.Parallel()
 	md := PRBadgeMarkdown("myproject", 42, "http://localhost:3001")
-	if !strings.Contains(md, "/-/api/badges/pr/myproject/42") {
+	if !strings.Contains(md, "/api/badges/pr/myproject/42") {
 		t.Error("missing badge URL")
 	}
-	if !strings.Contains(md, "/-/pr/myproject/42") {
+	if !strings.Contains(md, "/pr/myproject/42") {
 		t.Error("missing link URL")
 	}
 }
@@ -103,7 +103,7 @@ func TestPRBadgeMarkdown(t *testing.T) {
 func TestAgentBadgeMarkdown(t *testing.T) {
 	t.Parallel()
 	md := AgentBadgeMarkdown("agent-123", "http://localhost:3001", "http://localhost:3001/tracks/t1")
-	if !strings.Contains(md, "/-/api/badges/agent/agent-123") {
+	if !strings.Contains(md, "/api/badges/agent/agent-123") {
 		t.Error("missing badge URL")
 	}
 	if !strings.Contains(md, "http://localhost:3001/tracks/t1") {

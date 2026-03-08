@@ -75,10 +75,10 @@ func TestRouteRegistration(t *testing.T) {
 		want   int
 	}{
 		{"GET", "/health", http.StatusOK},
-		{"GET", "/-/api/agents", http.StatusOK},
-		{"GET", "/-/api/status", http.StatusOK},
-		{"GET", "/-/api/quota", http.StatusOK},
-		{"GET", "/-/api/locks", http.StatusOK},
+		{"GET", "/api/agents", http.StatusOK},
+		{"GET", "/api/status", http.StatusOK},
+		{"GET", "/api/quota", http.StatusOK},
+		{"GET", "/api/locks", http.StatusOK},
 	}
 
 	for _, tt := range routes {
@@ -162,9 +162,9 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 		want int
 	}{
 		{"/health", http.StatusOK},
-		{"/-/api/agents", http.StatusOK},
-		{"/-/api/locks", http.StatusOK},
-		{"/-/api/badges/track/test", http.StatusOK},
+		{"/api/agents", http.StatusOK},
+		{"/api/locks", http.StatusOK},
+		{"/api/badges/track/test", http.StatusOK},
 	}
 	for _, tt := range kfRoutes {
 		req := httptest.NewRequest("GET", tt.path, nil)
@@ -195,7 +195,7 @@ func TestBadgeRoutes(t *testing.T) {
 	srv := newTestServerWithDir(dir)
 	mux := buildMux(t, srv, nil)
 
-	req := httptest.NewRequest("GET", "/-/api/badges/track/nonexistent", nil)
+	req := httptest.NewRequest("GET", "/api/badges/track/nonexistent", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 

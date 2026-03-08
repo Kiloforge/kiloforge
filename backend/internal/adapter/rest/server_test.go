@@ -395,7 +395,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	// Should have called merge API.
 	hasMerge := false
 	for _, call := range giteaCalls {
-		if call == "POST /api/v1/repos/conductor/myapp/pulls/5/merge" {
+		if call == "POST /api/v1/repos/kiloforger/myapp/pulls/5/merge" {
 			hasMerge = true
 		}
 	}
