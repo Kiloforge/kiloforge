@@ -740,7 +740,7 @@ func TestNewServer_WithGiteaProxy(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 3001, WithGiteaProxy(backend.URL))
+	srv := NewServer(cfg, reg, 3001, WithGiteaProxy(backend.URL, "admin"))
 
 	if srv.giteaProxy == nil {
 		t.Fatal("expected giteaProxy to be set")

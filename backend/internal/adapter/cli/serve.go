@@ -90,7 +90,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Build server options.
 	opts := []rest.ServerOption{
-		rest.WithGiteaProxy(cfg.GiteaURL()),
+		rest.WithGiteaProxy(cfg.GiteaURL(), cfg.GiteaAdminUser),
 	}
 	if traceStore != nil {
 		opts = append(opts, rest.WithTracing(traceStore))

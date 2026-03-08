@@ -50,9 +50,10 @@ func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, gi
 }
 
 // WithGiteaProxy enables a reverse proxy to Gitea as the catch-all at /.
-func WithGiteaProxy(giteaURL string) ServerOption {
+// authUser is injected as X-WEBAUTH-USER for reverse proxy authentication.
+func WithGiteaProxy(giteaURL, authUser string) ServerOption {
 	return func(s *Server) {
-		s.giteaProxy = proxy.NewGiteaProxy(giteaURL)
+		s.giteaProxy = proxy.NewGiteaProxy(giteaURL, authUser)
 	}
 }
 

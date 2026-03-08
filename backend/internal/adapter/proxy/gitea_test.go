@@ -7,6 +7,48 @@ import (
 	"testing"
 )
 
+func TestNewGiteaProxy_InjectsAuthHeader(t *testing.T) {
+	t.Parallel()
+
+	var gotHeader string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHeader = r.Header.Get("X-WEBAUTH-USER")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+
+	proxy := NewGiteaProxy(backend.URL, "kfadmin")
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	proxy.ServeHTTP(w, req)
+
+	if gotHeader != "kfadmin" {
+		t.Errorf("X-WEBAUTH-USER = %q, want %q", gotHeader, "kfadmin")
+	}
+}
+
+func TestNewGiteaProxy_NoAuthUser(t *testing.T) {
+	t.Parallel()
+
+	var gotHeader string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHeader = r.Header.Get("X-WEBAUTH-USER")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+
+	proxy := NewGiteaProxy(backend.URL, "")
+
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	proxy.ServeHTTP(w, req)
+
+	if gotHeader != "" {
+		t.Errorf("X-WEBAUTH-USER should be empty when no authUser, got %q", gotHeader)
+	}
+}
+
 func TestNewGiteaProxy_ForwardsRequest(t *testing.T) {
 	t.Parallel()
 
@@ -17,7 +59,7 @@ func TestNewGiteaProxy_ForwardsRequest(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	proxy := NewGiteaProxy(backend.URL)
+	proxy := NewGiteaProxy(backend.URL, "admin")
 
 	// Proxy is mounted as catch-all at "/" — no prefix stripping.
 	mux := http.NewServeMux()
@@ -48,7 +90,7 @@ func TestNewGiteaProxy_RootPath(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	proxy := NewGiteaProxy(backend.URL)
+	proxy := NewGiteaProxy(backend.URL, "admin")
 
 	mux := http.NewServeMux()
 	mux.Handle("/", proxy)
@@ -74,7 +116,7 @@ func TestNewGiteaProxy_AssetPaths(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	proxy := NewGiteaProxy(backend.URL)
+	proxy := NewGiteaProxy(backend.URL, "admin")
 
 	mux := http.NewServeMux()
 	mux.Handle("/", proxy)
