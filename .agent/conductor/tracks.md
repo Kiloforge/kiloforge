@@ -35,6 +35,8 @@
 | [ ] | rebrand-historical-records_20260309063900Z | Rebrand Historical Conductor Records | 2026-03-09 | 2026-03-09 |
 | [x] | rename-relay-orchestrator_20260309075537Z | Rename Relay Server to Orchestrator | 2026-03-09 | 2026-03-09 |
 | [x] | fix-password-display-v3_20260309083826Z | Fix Init Password Display (Root Cause) | 2026-03-09 | 2026-03-09 |
+| [ ] | project-manage-api_20260309084650Z | Project Add/Remove REST API | 2026-03-09 | 2026-03-09 |
+| [ ] | project-manage-ui_20260309084651Z | Project Add/Remove Dashboard UI | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

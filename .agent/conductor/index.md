@@ -74,6 +74,8 @@ Navigation hub for project context.
 - **rebrand-historical-records_20260309063900Z** — Rebrand Historical Conductor Records
 - **rename-relay-orchestrator_20260309075537Z** — Rename Relay Server to Orchestrator
 - **fix-password-display-v3_20260309083826Z** — Fix Init Password Display (Root Cause)
+- **project-manage-api_20260309084650Z** — Project Add/Remove REST API
+- **project-manage-ui_20260309084651Z** — Project Add/Remove Dashboard UI
 
 ## Getting Started
 
