@@ -8,6 +8,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSMessage, WSConnectionState } from "../hooks/useAgentWebSocket";
+import { useTracks } from "../hooks/useTracks";
 import styles from "./AgentDetailPage.module.css";
 
 // No props needed — log and terminal are embedded directly.
@@ -84,6 +85,8 @@ function TerminalBubble({ msg }: { msg: WSMessage }) {
 
 export function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
+
+  const { tracks } = useTracks();
 
   const { data: agent, error: agentError } = useQuery({
     queryKey: queryKeys.agent(id ?? ""),
@@ -187,12 +190,24 @@ export function AgentDetailPage() {
             <span>{agent.model}</span>
           </div>
         )}
-        {agent.ref && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Track</span>
-            <span className={styles.refValue}>{agent.ref}</span>
-          </div>
-        )}
+        {agent.ref && (() => {
+          const matchedTrack = tracks.find((t) => t.id === agent.ref);
+          const projectSlug = matchedTrack?.project;
+          return (
+            <div className={styles.metaItem}>
+              <span className={styles.metaLabel}>Track</span>
+              <span className={styles.refValue}>
+                {agent.ref}
+                {projectSlug && (
+                  <>
+                    {" "}
+                    <Link to={`/projects/${projectSlug}`} className={styles.boardLink}>View on Board</Link>
+                  </>
+                )}
+              </span>
+            </div>
+          );
+        })()}
         {agent.uptime_seconds != null && (
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>Uptime</span>

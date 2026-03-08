@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
+import { useTracks } from "../hooks/useTracks";
 import { StatusBadge } from "./StatusBadge";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import styles from "./AgentCard.module.css";
@@ -12,6 +13,9 @@ interface Props {
 
 export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   const refLink = agent.ref || null;
+  const { tracks } = useTracks();
+  const matchedTrack = refLink ? tracks.find((t) => t.id === refLink) : null;
+  const projectSlug = matchedTrack?.project ?? null;
 
   const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
   const cacheRead = agent.cache_read_tokens ?? 0;
@@ -42,7 +46,11 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
         </div>
       )}
       <div className={styles.meta}>
-        {refLink && <Link to={`/agents/${agent.id}`}>ref: {refLink}</Link>}
+        {refLink && (
+          projectSlug
+            ? <Link to={`/projects/${projectSlug}`}>ref: {refLink}</Link>
+            : <Link to={`/agents/${agent.id}`}>ref: {refLink}</Link>
+        )}
         {agent.model && <span>model: {agent.model}</span>}
         {agent.uptime_seconds != null && <span>uptime: {formatUptime(agent.uptime_seconds)}</span>}
         {agent.pid > 0 && <span>PID: {agent.pid}</span>}
