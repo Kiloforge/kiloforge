@@ -82,6 +82,7 @@ Navigation hub for project context.
 - **quota-reframe-be_20260309103000Z** — Reframe Quota System — Tokens and Rate Limits (Backend)
 - **quota-reframe-fe_20260309103001Z** — Reframe Quota System — Tokens and Rate Limits (Frontend)
 - **model-selection_20260309110000Z** — Configurable Model Selection with Opus Default
+- **agent-completion-callback_20260309112000Z** — Agent Completion Callback and Dry-Run Mode
 
 ## Getting Started
 
