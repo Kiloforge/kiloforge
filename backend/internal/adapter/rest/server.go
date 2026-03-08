@@ -218,6 +218,7 @@ func (s *Server) Run(ctx context.Context) error {
 		DataDir:          s.cfg.DataDir,
 		OrchestratorPort: s.cfg.OrchestratorPort,
 		GiteaAdminUser:   s.cfg.GiteaAdminUser,
+		APIToken:         s.cfg.APIToken,
 	})
 
 	apiHandler := NewAPIHandler(APIHandlerOpts{

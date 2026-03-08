@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,6 +36,7 @@ type ProjectServiceConfig struct {
 	DataDir          string
 	OrchestratorPort int
 	GiteaAdminUser   string
+	APIToken         string
 }
 
 // ProjectService handles project registration and removal.
@@ -130,8 +132,16 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		os.RemoveAll(cloneDir)
 	}
 
-	// Add gitea remote and push.
-	giteaRemoteURL := fmt.Sprintf("%s/%s/%s.git", s.gitea.BaseURL(), s.config.GiteaAdminUser, repoName)
+	// Add gitea remote and push (embed API token for HTTP auth).
+	displayRemoteURL := fmt.Sprintf("%s/%s/%s.git", s.gitea.BaseURL(), s.config.GiteaAdminUser, repoName)
+	parsedURL, err := url.Parse(displayRemoteURL)
+	if err != nil {
+		rollback()
+		return nil, fmt.Errorf("parse gitea URL: %w", err)
+	}
+	parsedURL.User = url.UserPassword(s.config.GiteaAdminUser, s.config.APIToken)
+	giteaRemoteURL := parsedURL.String()
+
 	_ = exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "remove", "gitea").Run()
 	if err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "add", "gitea", giteaRemoteURL).Run(); err != nil {
 		rollback()

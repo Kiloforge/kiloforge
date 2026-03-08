@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -158,15 +159,24 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		os.RemoveAll(cloneDir)
 	}
 
-	// Add gitea remote to cloned repo.
-	giteaRemoteURL := fmt.Sprintf("%s/%s/%s.git", cfg.GiteaURL(), cfg.GiteaAdminUser, repoName)
+	// Add gitea remote to cloned repo (embed API token for HTTP auth).
+	giteaBaseURL := cfg.GiteaURL() // e.g. http://localhost:4000
+	displayRemoteURL := fmt.Sprintf("%s/%s/%s.git", giteaBaseURL, cfg.GiteaAdminUser, repoName)
+	parsedURL, err := url.Parse(displayRemoteURL)
+	if err != nil {
+		rollback()
+		return fmt.Errorf("parse gitea URL: %w", err)
+	}
+	parsedURL.User = url.UserPassword(cfg.GiteaAdminUser, cfg.APIToken)
+	giteaRemoteURL := parsedURL.String()
+
 	fmt.Println("==> Adding gitea remote...")
 	_ = exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "remove", "gitea").Run()
 	if err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "add", "gitea", giteaRemoteURL).Run(); err != nil {
 		rollback()
 		return fmt.Errorf("add gitea remote: %w", err)
 	}
-	fmt.Printf("    Remote: %s\n", giteaRemoteURL)
+	fmt.Printf("    Remote: %s\n", displayRemoteURL)
 
 	// Check if repo has commits — skip push for empty repos.
 	emptyRepo := exec.CommandContext(ctx, "git", "-C", cloneDir, "rev-parse", "HEAD").Run() != nil
