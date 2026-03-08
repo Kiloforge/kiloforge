@@ -67,16 +67,16 @@ if [ -f "$TRACKS_MD" ]; then
 EOF
 fi
 
-# 6. Update the root conductor index.md
-CONDUCTOR_INDEX=".agent/conductor/index.md"
-if [ -f "$CONDUCTOR_INDEX" ]; then
+# 6. Update the root kiloforge index.md
+KF_INDEX=".agent/conductor/index.md"
+if [ -f "$KF_INDEX" ]; then
   # Remove the track from the Active Tracks list
-  sed -i '' "/.*$TRACK_ID.*/d" "$CONDUCTOR_INDEX"
-  git add "$CONDUCTOR_INDEX"
+  sed -i '' "/.*$TRACK_ID.*/d" "$KF_INDEX"
+  git add "$KF_INDEX"
 fi
 
 # 7. Commit the changes
 git add "$ARCHIVE_DIR" "$TRACKS_MD"
-git commit -m "chore(conductor): archive track '$TRACK_ID' (Reason: $REASON)"
+git commit -m "chore(kf): archive track '$TRACK_ID' (Reason: $REASON)"
 
 echo "Successfully archived $TRACK_ID!"

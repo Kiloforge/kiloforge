@@ -1,5 +1,5 @@
 ---
-name: conductor-bulk-archive
+name: kf-bulk-archive
 description: Archive all completed tracks by moving their directories to _archive and updating tracks.md
 ---
 
@@ -15,9 +15,9 @@ Move all completed track directories into `_archive/` and update `tracks.md` in 
 
 ## Do not use this skill when
 
-- Conductor is not initialized (use `/conductor-setup` first)
+- Kiloforge is not initialized (use `/kf-setup` first)
 - There are no completed tracks to archive
-- The user wants to compact (delete) archived directories — use `/conductor-compact-archive` instead
+- The user wants to compact (delete) archived directories — use `/kf-compact-archive` instead
 
 ## Instructions
 
@@ -73,6 +73,6 @@ Tracks archived:  {count}
 Commit:           {hash}
 Active tracks:    {remaining} remaining
 
-Want to compact the archive? Run /conductor-compact-archive
+Want to compact the archive? Run /kf-compact-archive
 ================================================================================
 ```

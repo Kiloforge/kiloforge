@@ -1,25 +1,25 @@
 ---
-name: conductor-developer
-description: Receive a track ID, validate it is an active unclaimed track, then implement it following the conductor workflow. Worker role in the track generation => approval => push to worker pipeline.
+name: kf-developer
+description: Receive a track ID, validate it is an active unclaimed track, then implement it following the kiloforge workflow. Worker role in the track generation => approval => push to worker pipeline.
 metadata:
   argument-hint: "<track-id> [--auto-merge] [--with-review]"
 ---
 
-# Conductor Developer
+# Kiloforge Developer
 
-Implement a conductor track in a parallel worktree workflow. Receives a track ID, validates it is available for work, then executes the full implementation cycle: branch, implement, verify, and merge.
+Implement a kiloforge track in a parallel worktree workflow. Receives a track ID, validates it is available for work, then executes the full implementation cycle: branch, implement, verify, and merge.
 
 ## Use this skill when
 
-- A track has been generated and approved via `/conductor-track-generator`
+- A track has been generated and approved via `/kf-track-generator`
 - You have been assigned a specific track ID to implement
 - You are a developer worker in a parallel worktree setup
 
 ## Do not use this skill when
 
-- You need to create new tracks (use `/conductor-track-generator` instead)
-- The project has no Conductor artifacts (use `/conductor-setup` first)
-- You are working in a single-branch workflow (use `/conductor-implement` instead)
+- You need to create new tracks (use `/kf-track-generator` instead)
+- The project has no Kiloforge artifacts (use `/kf-setup` first)
+- You are working in a single-branch workflow (use `/kf-implement` instead)
 
 ---
 
@@ -28,7 +28,7 @@ Implement a conductor track in a parallel worktree workflow. Receives a track ID
 When entering the developer role, output this anchor line exactly:
 
 ```
-ACTIVE ROLE: conductor-developer — track {trackId} — skill at ~/.claude/skills/conductor-developer/SKILL.md
+ACTIVE ROLE: kf-developer — track {trackId} — skill at ~/.claude/skills/kf-developer/SKILL.md
 ```
 
 This line is designed to survive compaction summaries. If you see it in your context but can no longer recall the full workflow, re-read the skill file before continuing. For project-specific values, re-read only what you need:
@@ -71,14 +71,14 @@ If no argument was provided:
 ```
 ERROR: Track ID required.
 
-Usage: /conductor-developer <track-id>
+Usage: /kf-developer <track-id>
 
-To see available tracks, check .agent/conductor/tracks.md or run /conductor-track-generator to create new ones.
+To see available tracks, check .agent/conductor/tracks.md or run /kf-track-generator to create new ones.
 ```
 
 **HALT.**
 
-### Step 2 — Verify Conductor is initialized
+### Step 2 — Verify Kiloforge is initialized
 
 Check these files exist (read from main):
 ```bash
@@ -87,7 +87,7 @@ git show main:.agent/conductor/workflow.md > /dev/null 2>&1
 git show main:.agent/conductor/tracks.md > /dev/null 2>&1
 ```
 
-If missing: Display error and suggest `/conductor-setup`. **HALT.**
+If missing: Display error and suggest `/kf-setup`. **HALT.**
 
 ### Step 3 — Validate track exists and is claimable
 
@@ -153,7 +153,7 @@ If missing: Display error and suggest `/conductor-setup`. **HALT.**
    Missing required files on main:
    - {list missing files}
 
-   This track may need to be regenerated via /conductor-track-generator.
+   This track may need to be regenerated via /kf-track-generator.
    ```
    **HALT.**
 
@@ -161,7 +161,7 @@ If missing: Display error and suggest `/conductor-setup`. **HALT.**
 
 ```
 ================================================================================
-                    CONDUCTOR DEVELOPER — TRACK VALIDATED
+                    KILOFORGE DEVELOPER — TRACK VALIDATED
 ================================================================================
 
 Track:    {trackId}
@@ -181,7 +181,7 @@ Beginning implementation:
 
 Output the compaction anchor:
 ```
-ACTIVE ROLE: conductor-developer — track {trackId} — skill at ~/.claude/skills/conductor-developer/SKILL.md
+ACTIVE ROLE: kf-developer — track {trackId} — skill at ~/.claude/skills/kf-developer/SKILL.md
 ```
 
 ---
@@ -227,7 +227,7 @@ Read all track files (now from the working tree, which is based on main):
 
 ### Step 8 — Execute the plan
 
-Follow the exact same implementation workflow as `/conductor-implement`:
+Follow the exact same implementation workflow as `/kf-implement`:
 
 - Execute each task in the plan sequentially
 - Follow TDD workflow if configured in `workflow.md`
@@ -272,8 +272,8 @@ Record the session ID for use in PR comments.
 
 Resolve the git remote and PR platform:
 
-1. **Remote name:** Use env var `CONDUCTOR_REMOTE` if set, otherwise `origin`
-2. **PR platform:** Use env var `CONDUCTOR_PR_PLATFORM` if set (`github` or `gitea`), otherwise auto-detect:
+1. **Remote name:** Use env var `KF_REMOTE` if set, otherwise `origin`
+2. **PR platform:** Use env var `KF_PR_PLATFORM` if set (`github` or `gitea`), otherwise auto-detect:
    ```bash
    REMOTE_URL=$(git remote get-url ${REMOTE_NAME})
    ```
@@ -310,7 +310,7 @@ RESUME_CMD=claude --resume {session-id}
 \`\`\`
 
 ---
-_Created by conductor-developer with --with-review_
+_Created by kf-developer with --with-review_
 EOF
 )"
 ```
@@ -338,10 +338,10 @@ PR:         {pr-url}
 Session:    {session-id}
 
 To trigger a reviewer:
-  claude --worktree reviewer-1 -p "/conductor-reviewer {pr-url}"
+  claude --worktree reviewer-1 -p "/kf-reviewer {pr-url}"
 
 Or in an existing reviewer worktree:
-  /conductor-reviewer {pr-url}
+  /kf-reviewer {pr-url}
 
 This agent is WAITING. It will resume when review feedback is provided.
 Say "review complete" or paste review feedback to continue.
@@ -432,12 +432,12 @@ When the user says "merge" (or immediately if `--auto-merge` / post-review-appro
 
 #### 11a. Acquire merge lock
 
-The merge lock supports two modes: **HTTP** (via crelay lock API) with automatic fallback to **mkdir** (local filesystem). The HTTP mode provides TTL-based crash recovery and server-side long-poll for `--auto-merge`.
+The merge lock supports two modes: **HTTP** (via kiloforge lock API) with automatic fallback to **mkdir** (local filesystem). The HTTP mode provides TTL-based crash recovery and server-side long-poll for `--auto-merge`.
 
 **Setup — determine lock mode and define helpers:**
 
 ```bash
-RELAY_URL="${CRELAY_RELAY_URL:-http://localhost:3001}"
+RELAY_URL="${KF_RELAY_URL:-http://localhost:3001}"
 HOLDER="$(basename $(pwd))"  # e.g., "developer-1"
 LOCK_MODE=""
 HEARTBEAT_PID=""
@@ -626,7 +626,7 @@ Developer is ready for next track.
 | Track already complete     | Notify, **HALT**                                         |
 | Track already claimed      | Show claiming worker/branch, **HALT**                    |
 | Track missing spec/plan    | Suggest regeneration, **HALT**                           |
-| Conductor not initialized  | Suggest `/conductor-setup`, **HALT**                     |
+| Kiloforge not initialized  | Suggest `/kf-setup`, **HALT**                     |
 | Verification failure       | Report details, offer fix/retry/wait                     |
 | Merge lock held            | Report, wait for other worker                            |
 | Rebase conflict            | Abort rebase, release lock, report, **HALT**             |
@@ -648,13 +648,13 @@ Developer is ready for next track.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CRELAY_RELAY_URL` | `http://localhost:3001` | Relay server URL for HTTP lock API |
+| `KF_RELAY_URL` | `http://localhost:3001` | Relay server URL for HTTP lock API |
 
 ## Merge Lock Modes
 
 The merge lock uses dual-mode acquisition:
 
-1. **HTTP mode** — Preferred when crelay relay is running. Uses TTL (120s), heartbeat (every 30s), and server-side long-poll for `--auto-merge`. Crash recovery via automatic TTL expiry.
+1. **HTTP mode** — Preferred when kiloforge relay is running. Uses TTL (120s), heartbeat (every 30s), and server-side long-poll for `--auto-merge`. Crash recovery via automatic TTL expiry.
 2. **mkdir mode** — Fallback when relay is unreachable. Uses `$(git rev-parse --git-common-dir)/merge.lock` directory. No TTL — requires manual cleanup on crashes.
 
 Detection is automatic: if `curl -sf $RELAY_URL/health` succeeds, HTTP mode is used.

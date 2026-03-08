@@ -1,23 +1,23 @@
 ---
-name: conductor-setup
-description: Initialize project with Conductor artifacts (product definition,
+name: kf-setup
+description: Initialize project with Kiloforge artifacts (product definition,
   tech stack, workflow, style guides)
 metadata:
   argument-hint: "[--resume]"
 ---
 
-# Conductor Setup
+# Kiloforge Setup
 
-Initialize or resume Conductor project setup. This command creates foundational project documentation through interactive Q&A.
+Initialize or resume Kiloforge project setup. This command creates foundational project documentation through interactive Q&A.
 
 ## Use this skill when
 
-- Working on conductor setup tasks or workflows
-- Needing guidance, best practices, or checklists for conductor setup
+- Working on kiloforge setup tasks or workflows
+- Needing guidance, best practices, or checklists for kiloforge setup
 
 ## Do not use this skill when
 
-- The task is unrelated to conductor setup
+- The task is unrelated to kiloforge setup
 - You need a different domain or tool outside this scope
 
 ## Instructions
@@ -302,7 +302,7 @@ After completing Q&A, generate the following files:
 ### 1. .agent/conductor/index.md
 
 ```markdown
-# Conductor - [Project Name]
+# Kiloforge - [Project Name]
 
 Navigation hub for project context.
 
@@ -316,11 +316,11 @@ Navigation hub for project context.
 
 ## Active Tracks
 
-<!-- Auto-populated by /conductor-new-track -->
+<!-- Auto-populated by /kf-new-track -->
 
 ## Getting Started
 
-Run `/conductor-new-track` to create your first feature track.
+Run `/kf-new-track` to create your first feature track.
 ```
 
 ### 2. .agent/conductor/product.md
@@ -368,7 +368,7 @@ Template populated with:
 | Status | Track ID | Title | Created | Updated |
 | ------ | -------- | ----- | ------- | ------- |
 
-<!-- Tracks registered by /conductor-new-track -->
+<!-- Tracks registered by /kf-new-track -->
 ```
 
 ### 7. .agent/conductor/code_styleguides/
@@ -393,7 +393,7 @@ When all files are created:
 2. Display summary:
 
    ```
-   Conductor setup complete!
+   Kiloforge setup complete!
 
    Created artifacts:
    - .agent/conductor/index.md
@@ -406,7 +406,7 @@ When all files are created:
 
    Next steps:
    1. Review generated files and customize as needed
-   2. Run /conductor-new-track to create your first track
+   2. Run /kf-new-track to create your first track
    ```
 
 ## Resume Handling

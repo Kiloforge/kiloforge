@@ -1,5 +1,5 @@
 ---
-name: conductor-implement
+name: kf-implement
 description: Execute tasks from a track's implementation plan following TDD workflow
 metadata:
   argument-hint: "[track-id] [--task X.Y] [--phase N]"
@@ -28,11 +28,11 @@ Execute tasks from a track's implementation plan, following the workflow rules d
 
 ## Pre-flight Checks
 
-1. Verify Conductor is initialized:
+1. Verify Kiloforge is initialized:
    - Check `.agent/conductor/product.md` exists
    - Check `.agent/conductor/workflow.md` exists
    - Check `.agent/conductor/tracks.md` exists
-   - If missing: Display error and suggest running `/conductor-setup` first
+   - If missing: Display error and suggest running `/kf-setup` first
 
 2. Load workflow configuration:
    - Read `.agent/conductor/workflow.md`
@@ -245,7 +245,7 @@ Options:
 GIT ERROR: {error message}
 
 This may indicate:
-- Uncommitted changes from outside Conductor
+- Uncommitted changes from outside Kiloforge
 - Merge conflicts
 - Permission issues
 
@@ -325,8 +325,8 @@ Summary:
 - Tests: All passing
 
 Next steps:
-- Run /conductor-status to see project progress
-- Run /conductor-new-track for next feature
+- Run /kf-status to see project progress
+- Run /kf-new-track for next feature
 ```
 
 ## Progress Tracking

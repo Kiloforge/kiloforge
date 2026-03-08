@@ -1,5 +1,5 @@
 ---
-name: conductor-revert
+name: kf-revert
 description: Git-aware undo by logical work unit (track, phase, or task)
 metadata:
   argument-hint: "[track-id | track-id:phase | track-id:task]"
@@ -28,9 +28,9 @@ Revert changes by logical work unit with full git awareness. Supports reverting 
 
 ## Pre-flight Checks
 
-1. Verify Conductor is initialized:
+1. Verify Kiloforge is initialized:
    - Check `.agent/conductor/tracks.md` exists
-   - If missing: Display error and suggest running `/conductor-setup` first
+   - If missing: Display error and suggest running `/kf-setup` first
 
 2. Verify git repository:
    - Run `git status` to confirm git repo

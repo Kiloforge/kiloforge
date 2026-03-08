@@ -1,16 +1,16 @@
 ---
-name: conductor-report
+name: kf-report
 description: Generate comprehensive project timeline, velocity, SLOC, track
-  summary, and cost estimate reports from conductor tracks and git history.
+  summary, and cost estimate reports from kiloforge tracks and git history.
   Outputs markdown reports to .agent/conductor/_reports/.
 metadata:
   argument-hint: "[--timeline] [--velocity] [--tracks] [--phases] [--sloc] [--costs] [--full] [--detailed] [--since YYYY-MM-DD] [--until YYYY-MM-DD]"
   allowed-tools: Read Glob Grep Bash Write
 ---
 
-# Conductor Project Report
+# Kiloforge Project Report
 
-Generate strict, reproducible project reports in **markdown format**: timeline with daily activity, development velocity, track summary, project phases, SLOC analysis, and multi-model cost estimates. All data is collected from git history and conductor track artifacts.
+Generate strict, reproducible project reports in **markdown format**: timeline with daily activity, development velocity, track summary, project phases, SLOC analysis, and multi-model cost estimates. All data is collected from git history and kiloforge track artifacts.
 
 Reports are written to `.agent/conductor/_reports/` as markdown files.
 
@@ -22,15 +22,15 @@ Reports are written to `.agent/conductor/_reports/` as markdown files.
 
 ## Do not use this skill when
 
-- The task is about implementing or managing tracks (use conductor-implement, conductor-manage)
-- The user wants real-time status of the current task (use conductor-status)
+- The task is about implementing or managing tracks (use kf-implement, kf-manage)
+- The user wants real-time status of the current task (use kf-status)
 
 ## Pre-flight Checks
 
-1. Verify Conductor is initialized:
+1. Verify Kiloforge is initialized:
    - Check `.agent/conductor/product.md` exists
    - Check `.agent/conductor/tracks.md` exists
-   - If missing: Display error and suggest running `/conductor-setup` first
+   - If missing: Display error and suggest running `/kf-setup` first
 
 2. Verify git repository:
    - Run `git rev-parse --is-inside-work-tree`
@@ -543,9 +543,9 @@ If a report for today already exists, overwrite it (reports are regenerated snap
 
 ## Error States
 
-### Conductor Not Initialized
+### Kiloforge Not Initialized
 
-Display error and suggest: `Run /conductor-setup to initialize Conductor for this project.`
+Display error and suggest: `Run /kf-setup to initialize Kiloforge for this project.`
 
 ### No Git History
 

@@ -1,5 +1,5 @@
 ---
-name: conductor-compact-archive
+name: kf-compact-archive
 description: Remove archived track directories from the working tree while preserving recovery via git history with rich metadata tracking
 ---
 
@@ -15,9 +15,9 @@ Remove archived track directories from the working tree while preserving access 
 
 ## Do not use this skill when
 
-- Conductor is not initialized (use `/conductor-setup` first)
+- Kiloforge is not initialized (use `/kf-setup` first)
 - There is no `_archive/` directory or it is empty
-- The user wants to archive completed tracks — use `/conductor-bulk-archive` instead
+- The user wants to archive completed tracks — use `/kf-bulk-archive` instead
 
 ## Instructions
 
@@ -93,7 +93,7 @@ rm -rf .agent/conductor/tracks/_archive/
 
 ### Step 6: Clean up tracks.md
 
-Remove all content under the `## Archived Tracks` section in `.agent/conductor/tracks.md`. This includes all batch archive entries added by `/conductor-bulk-archive`. The section header itself can be kept (empty) or removed — either is fine.
+Remove all content under the `## Archived Tracks` section in `.agent/conductor/tracks.md`. This includes all batch archive entries added by `/kf-bulk-archive`. The section header itself can be kept (empty) or removed — either is fine.
 
 This data is already preserved in `archive-compactions.md` and recoverable via git history, so keeping it in `tracks.md` would just be orphaned references to directories that no longer exist.
 

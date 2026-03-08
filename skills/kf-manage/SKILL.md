@@ -1,5 +1,5 @@
 ---
-name: conductor-manage
+name: kf-manage
 description: "Manage track lifecycle: archive, restore, delete, rename, and cleanup"
 metadata:
   argument-hint: "[--archive | --restore | --delete | --rename | --list | --cleanup]"
@@ -11,15 +11,15 @@ Manage the complete track lifecycle including archiving, restoring, deleting, re
 
 ## Use this skill when
 
-- Archiving, restoring, renaming, or deleting Conductor tracks
+- Archiving, restoring, renaming, or deleting Kiloforge tracks
 - Listing track status or cleaning orphaned artifacts
 - Managing the track lifecycle across active, completed, and archived states
 
 ## Do not use this skill when
 
-- Conductor is not initialized in the repository
+- Kiloforge is not initialized in the repository
 - You lack permission to modify track metadata or files
-- The task is unrelated to Conductor track management
+- The task is unrelated to Kiloforge track management
 
 ## Instructions
 

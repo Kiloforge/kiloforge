@@ -4,11 +4,11 @@ This file contains detailed patterns, checklists, and code samples referenced by
 
 ## Pre-flight Checks
 
-1. Verify Conductor is initialized:
+1. Verify Kiloforge is initialized:
    - Check `.agent/conductor/product.md` exists
    - Check `.agent/conductor/tracks.md` exists
    - Check `.agent/conductor/tracks/` directory exists
-   - If missing: Display error and suggest running `/conductor:setup` first
+   - If missing: Display error and suggest running `/kf:setup` first
 
 2. Ensure archive directory exists (for archive/restore operations):
    - Check if `.agent/conductor/tracks/_archive/` exists
@@ -130,7 +130,7 @@ ARCHIVED TRACKS ({count})
 | old-feature_20241201  | feature | Superseded | 2025-01-05 |
 
 ================================================================================
-Commands: /conductor:manage --archive | --restore | --delete | --rename | --cleanup
+Commands: /kf:manage --archive | --restore | --delete | --rename | --cleanup
 ================================================================================
 ```
 
@@ -149,7 +149,7 @@ Show only the requested section with the same format.
 
 No tracks found.
 
-To create your first track: /conductor:new-track
+To create your first track: /kf:new-track
 
 ================================================================================
 ```
@@ -186,7 +186,7 @@ Move completed tracks to the archive directory.
   - auth_20250110 (completed)
   - dashboard_20250112 (in progress)
 
-  Usage: /conductor:manage --archive <track-id>
+  Usage: /kf:manage --archive <track-id>
   ```
 
 - Check track is not already archived (not in `_archive/`)
@@ -199,7 +199,7 @@ Move completed tracks to the archive directory.
   Reason:   {archive_reason}
   Location: .agent/conductor/tracks/_archive/{track-id}/
 
-  To restore: /conductor:manage --restore {track-id}
+  To restore: /kf:manage --restore {track-id}
   ```
 
 #### 2. Verify Completion Status
@@ -257,7 +257,7 @@ Actions:
 - Move .agent/conductor/tracks/{track-id}/ to .agent/conductor/tracks/_archive/{track-id}/
 - Update .agent/conductor/tracks.md (move to Archived Tracks section)
 - Update metadata.json with archive info
-- Create git commit: chore(conductor): Archive track '{title}'
+- Create git commit: chore(kf): Archive track '{title}'
 
 ================================================================================
 
@@ -273,7 +273,7 @@ Type 'YES' to proceed, or anything else to cancel:
 You MUST execute the provided archive script to safely sync all tracking text and move the files:
 
 ```bash
-~/.gemini/antigravity/skills/conductor-manage/scripts/archive_track.sh {track-id}
+~/.gemini/antigravity/skills/kf-manage/scripts/archive_track.sh {track-id}
 ```
 
 Wait for the script to complete successfully. The script will automatically handle:
@@ -298,8 +298,8 @@ Location:  .agent/conductor/tracks/_archive/{track-id}/
 Reason:    {reason}
 Commit:    {sha}
 
-To restore: /conductor:manage --restore {track-id}
-To list:    /conductor:manage --list archived
+To restore: /kf:manage --restore {track-id}
+To list:    /kf:manage --list archived
 
 ================================================================================
 ```
@@ -395,7 +395,7 @@ Archive reason for all: Completed
 Actions:
 - Move 2 track directories to .agent/conductor/tracks/_archive/
 - Update .agent/conductor/tracks.md
-- Create git commit: chore(conductor): Archive 2 completed tracks
+- Create git commit: chore(kf): Archive 2 completed tracks
 
 ================================================================================
 
@@ -408,7 +408,7 @@ Type 'YES' to proceed, or anything else to cancel:
 - Single git commit for all:
   ```bash
   git add .agent/conductor/tracks/_archive/ .agent/conductor/tracks.md
-  git commit -m "chore(conductor): Archive {N} completed tracks"
+  git commit -m "chore(kf): Archive {N} completed tracks"
   ```
 
 ---
@@ -430,7 +430,7 @@ Restore archived tracks back to active status.
   Available archived tracks:
   - old-feature_20241201 (archived 2025-01-05)
 
-  Usage: /conductor:manage --restore <track-id>
+  Usage: /kf:manage --restore <track-id>
   ```
 
 #### 2. Check for Conflicts
@@ -469,9 +469,9 @@ Actions:
 - Move .agent/conductor/tracks/_archive/{track-id}/ to .agent/conductor/tracks/{track-id}/
 - Update .agent/conductor/tracks.md (move to Completed Tracks section)
 - Update metadata.json
-- Create git commit: chore(conductor): Restore track '{title}'
+- Create git commit: chore(kf): Restore track '{title}'
 
-Note: Track will be restored with status 'completed'. Use /conductor:implement
+Note: Track will be restored with status 'completed'. Use /kf:implement
 to resume work if needed.
 
 ================================================================================
@@ -504,7 +504,7 @@ Type 'YES' to proceed, or anything else to cancel:
 4. Git commit:
    ```bash
    git add .agent/conductor/tracks/{track-id} .agent/conductor/tracks.md
-   git commit -m "chore(conductor): Restore track '{title}'"
+   git commit -m "chore(kf): Restore track '{title}'"
    ```
 
 #### 5. Success Output
@@ -520,8 +520,8 @@ Location:  .agent/conductor/tracks/{track-id}/
 Status:    completed
 
 Next steps:
-- Run /conductor:status {track-id} to see track details
-- Run /conductor:implement {track-id} to resume work (if needed)
+- Run /kf:status {track-id} to see track details
+- Run /kf:implement {track-id} to resume work (if needed)
 
 ================================================================================
 ```
@@ -576,7 +576,7 @@ Active:
 Archived:
 - old-feature_20241201
 
-Usage: /conductor:manage --delete <track-id>
+Usage: /kf:manage --delete <track-id>
 ```
 
 #### 2. Check In-Progress Status
@@ -623,7 +623,7 @@ Commits:  {count} related commits (will NOT be deleted)
 This action CANNOT be undone. The track directory and all contents
 will be permanently removed.
 
-Consider archiving instead: /conductor:manage --archive {track-id}
+Consider archiving instead: /kf:manage --archive {track-id}
 
 ================================================================================
 
@@ -648,7 +648,7 @@ Type 'DELETE' to permanently remove, or anything else to cancel:
 3. Git commit:
    ```bash
    git add .agent/conductor/tracks.md
-   git commit -m "chore(conductor): Delete track '{title}'"
+   git commit -m "chore(kf): Delete track '{title}'"
    ```
 
 Note: The git commit records the deletion but does not remove historical commits.
@@ -721,7 +721,7 @@ Available tracks:
 - auth_20250110
 - dashboard_20250112
 
-Usage: /conductor:manage --rename <old-id> <new-id>
+Usage: /kf:manage --rename <old-id> <new-id>
 ```
 
 #### 2. Validate New ID
@@ -802,7 +802,7 @@ Type 'YES' to proceed, or anything else to cancel:
 5. Git commit:
    ```bash
    git add .agent/conductor/tracks/{new-id} .agent/conductor/tracks.md
-   git commit -m "chore(conductor): Rename track '{old-id}' to '{new-id}'"
+   git commit -m "chore(kf): Rename track '{old-id}' to '{new-id}'"
    ```
 
 #### 5. Success Output
@@ -1002,7 +1002,7 @@ Execute all applicable fixes in sequence, then:
 
 ```bash
 git add .agent/conductor/
-git commit -m "chore(conductor): Clean up {N} orphaned track artifacts"
+git commit -m "chore(kf): Clean up {N} orphaned track artifacts"
 ```
 
 ### 5. Completion Output
@@ -1068,17 +1068,17 @@ No changes were made. Please resolve the issue and try again.
 ```
 ERROR: Invalid argument: {argument}
 
-Usage: /conductor:manage [--archive | --restore | --delete | --rename | --list | --cleanup]
+Usage: /kf:manage [--archive | --restore | --delete | --rename | --list | --cleanup]
 
 Examples:
-  /conductor:manage                     # Interactive mode
-  /conductor:manage --list              # List all tracks
-  /conductor:manage --list archived     # List archived tracks only
-  /conductor:manage --archive track-id  # Archive specific track
-  /conductor:manage --restore track-id  # Restore archived track
-  /conductor:manage --delete track-id   # Delete track permanently
-  /conductor:manage --rename old new    # Rename track ID
-  /conductor:manage --cleanup           # Fix orphaned artifacts
+  /kf:manage                     # Interactive mode
+  /kf:manage --list              # List all tracks
+  /kf:manage --list archived     # List archived tracks only
+  /kf:manage --archive track-id  # Archive specific track
+  /kf:manage --restore track-id  # Restore archived track
+  /kf:manage --delete track-id   # Delete track permanently
+  /kf:manage --rename old new    # Rename track ID
+  /kf:manage --cleanup           # Fix orphaned artifacts
 ```
 
 ---

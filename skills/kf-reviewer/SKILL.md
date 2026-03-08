@@ -1,13 +1,13 @@
 ---
-name: conductor-reviewer
-description: Review a PR created by a conductor-developer agent. Fetch the diff, review against track spec and project standards, approve or request changes. Pairs with conductor-developer --with-review.
+name: kf-reviewer
+description: Review a PR created by a kf-developer agent. Fetch the diff, review against track spec and project standards, approve or request changes. Pairs with kf-developer --with-review.
 metadata:
   argument-hint: "<pr-url-or-number> [--max-iterations N]"
 ---
 
-# Conductor Reviewer
+# Kiloforge Reviewer
 
-Review a pull request created by a conductor-developer with `--with-review`. Fetches the PR diff, reviews it against the track specification, project standards, and code quality criteria, then approves or requests changes via the PR platform.
+Review a pull request created by a kf-developer with `--with-review`. Fetches the PR diff, reviews it against the track specification, project standards, and code quality criteria, then approves or requests changes via the PR platform.
 
 ## Use this skill when
 
@@ -18,8 +18,8 @@ Review a pull request created by a conductor-developer with `--with-review`. Fet
 ## Do not use this skill when
 
 - There is no PR to review
-- You want to implement a track (use `/conductor-developer` instead)
-- The PR was not created by the conductor workflow
+- You want to implement a track (use `/kf-developer` instead)
+- The PR was not created by the kiloforge workflow
 
 ---
 
@@ -28,7 +28,7 @@ Review a pull request created by a conductor-developer with `--with-review`. Fet
 Output this anchor line exactly:
 
 ```
-ACTIVE ROLE: conductor-reviewer — PR {pr-url} — skill at ~/.claude/skills/conductor-reviewer/SKILL.md
+ACTIVE ROLE: kf-reviewer — PR {pr-url} — skill at ~/.claude/skills/kf-reviewer/SKILL.md
 ```
 
 If you see this after compaction, re-read the skill file before continuing.
@@ -54,16 +54,16 @@ If no argument:
 ```
 ERROR: PR reference required.
 
-Usage: /conductor-reviewer <pr-url-or-number> [--max-iterations N]
+Usage: /kf-reviewer <pr-url-or-number> [--max-iterations N]
 ```
 **HALT.**
 
 ### Step 2 — Determine PR platform
 
-Same logic as conductor-developer:
-1. **`CONDUCTOR_PR_PLATFORM`** env var if set (`github` or `gitea`)
+Same logic as kf-developer:
+1. **`KF_PR_PLATFORM`** env var if set (`github` or `gitea`)
 2. Auto-detect from remote URL
-3. **`CONDUCTOR_REMOTE`** env var or `origin` for remote name
+3. **`KF_REMOTE`** env var or `origin` for remote name
 
 ### Step 3 — Fetch PR details
 
@@ -104,7 +104,7 @@ Read project standards and track spec to review against:
 
 Output the compaction anchor:
 ```
-ACTIVE ROLE: conductor-reviewer — PR {pr-url} — skill at ~/.claude/skills/conductor-reviewer/SKILL.md
+ACTIVE ROLE: kf-reviewer — PR {pr-url} — skill at ~/.claude/skills/kf-reviewer/SKILL.md
 ```
 
 ---
@@ -159,7 +159,7 @@ Evaluate the PR against these criteria:
 
 #### Track Completeness
 - Are all tasks in the plan marked complete?
-- Are conductor artifacts (tracks.md, metadata.json, plan.md) properly updated?
+- Are kiloforge artifacts (tracks.md, metadata.json, plan.md) properly updated?
 
 ### Step 7 — Determine review outcome
 
@@ -187,7 +187,7 @@ gh pr review {pr-number} --approve --body "$(cat <<'EOF'
 All acceptance criteria met. Code quality, architecture, and testing look good.
 
 ---
-_Reviewed by conductor-reviewer_
+_Reviewed by kf-reviewer_
 EOF
 )"
 ```
@@ -215,7 +215,7 @@ gh pr review {pr-number} --request-changes --body "$(cat <<'EOF'
 {N} blocking issue(s) found. Please address and push updates.
 
 ---
-_Reviewed by conductor-reviewer (iteration {N}/{max})_
+_Reviewed by kf-reviewer (iteration {N}/{max})_
 EOF
 )"
 ```

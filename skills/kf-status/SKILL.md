@@ -1,22 +1,22 @@
 ---
-name: conductor-status
+name: kf-status
 description: Display project status, active tracks, and next actions
 metadata:
   argument-hint: "[track-id] [--detailed]"
 ---
 
-# Conductor Status
+# Kiloforge Status
 
-Display the current status of the Conductor project, including overall progress, active tracks, and next actions.
+Display the current status of the Kiloforge project, including overall progress, active tracks, and next actions.
 
 ## Use this skill when
 
-- Working on conductor status tasks or workflows
-- Needing guidance, best practices, or checklists for conductor status
+- Working on kiloforge status tasks or workflows
+- Needing guidance, best practices, or checklists for kiloforge status
 
 ## Do not use this skill when
 
-- The task is unrelated to conductor status
+- The task is unrelated to kiloforge status
 - You need a different domain or tool outside this scope
 
 ## Instructions
@@ -28,10 +28,10 @@ Display the current status of the Conductor project, including overall progress,
 
 ## Pre-flight Checks
 
-1. Verify Conductor is initialized:
+1. Verify Kiloforge is initialized:
    - Check `.agent/conductor/product.md` exists
    - Check `.agent/conductor/tracks.md` exists
-   - If missing: Display error and suggest running `/conductor-setup` first
+   - If missing: Display error and suggest running `/kf-setup` first
 
 2. Check for any tracks:
    - Read `.agent/conductor/tracks.md`
@@ -149,7 +149,7 @@ Progress in Phase:
 No blockers identified.
 
 ================================================================================
-Commands: /conductor-implement {trackId} | /conductor-new-track | /conductor-revert
+Commands: /kf-implement {trackId} | /kf-new-track | /kf-revert
 ================================================================================
 ```
 
@@ -217,7 +217,7 @@ Related Commits:
 3. Phase 2 verification pending
 
 ================================================================================
-Commands: /conductor-implement {trackId} | /conductor-revert {trackId}
+Commands: /kf-implement {trackId} | /kf-revert {trackId}
 ================================================================================
 ```
 
@@ -242,22 +242,22 @@ Legend:
                         PROJECT STATUS: {Project Name}
 ================================================================================
 
-Conductor is set up but no tracks have been created yet.
+Kiloforge is set up but no tracks have been created yet.
 
 To get started:
-  /conductor-new-track "your feature description"
+  /kf-new-track "your feature description"
 
 ================================================================================
 ```
 
-### Conductor Not Initialized
+### Kiloforge Not Initialized
 
 ```
-ERROR: Conductor not initialized
+ERROR: Kiloforge not initialized
 
 Could not find .agent/conductor/product.md
 
-Run /conductor-setup to initialize Conductor for this project.
+Run /kf-setup to initialize Kiloforge for this project.
 ```
 
 ### Track Not Found (with argument)
@@ -270,7 +270,7 @@ Available tracks:
   - dashboard_20250112140000Z
   - nav-fix_20250114081500Z
 
-Usage: /conductor-status [track-id]
+Usage: /kf-status [track-id]
 ```
 
 ## Calculation Logic
