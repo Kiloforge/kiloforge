@@ -8,6 +8,7 @@ import { TrackList } from "../components/TrackList";
 import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
 import { AgentTerminal } from "../components/AgentTerminal";
+import { AdminPanel } from "../components/AdminPanel";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -23,6 +24,7 @@ export function ProjectPage() {
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
+  const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
 
   const handlePush = useCallback((remoteBranch: string) => {
     push({ remote_branch: remoteBranch });
@@ -62,6 +64,11 @@ export function ProjectPage() {
 
   const handleTerminalClose = useCallback(() => {
     setTerminalAgentId(null);
+    refreshBoard();
+  }, [refreshBoard]);
+
+  const handleAdminTerminalClose = useCallback(() => {
+    setAdminAgentId(null);
     refreshBoard();
   }, [refreshBoard]);
 
@@ -165,6 +172,19 @@ export function ProjectPage() {
 
       {terminalAgentId && (
         <AgentTerminal agentId={terminalAgentId} onClose={handleTerminalClose} />
+      )}
+
+      <section className={appStyles.panel}>
+        <h2 className={appStyles.panelTitle}>Admin Operations</h2>
+        <AdminPanel
+          projectSlug={slug}
+          running={adminAgentId !== null}
+          onStartOperation={setAdminAgentId}
+        />
+      </section>
+
+      {adminAgentId && (
+        <AgentTerminal agentId={adminAgentId} onClose={handleAdminTerminalClose} />
       )}
 
       <section className={appStyles.panel}>
