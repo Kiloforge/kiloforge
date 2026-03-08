@@ -65,6 +65,8 @@ Navigation hub for project context.
 - **research-otel-task-tracing_20260308233000Z** — Research: OpenTelemetry for Task-Level Tracing and Token Metrics
 - **impl-otel-task-tracing_20260308233001Z** — OpenTelemetry Task-Level Tracing and Token Metrics
 - **fix-init-build-bugs_20260308234000Z** — Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping
+- **research-native-track-board_20260308235000Z** — Research: Native Track Board in crelay Dashboard
+- **impl-native-track-board_20260308235001Z** — Native Track Board with Dashboard Kanban and Agent Lifecycle
 
 ## Getting Started
 

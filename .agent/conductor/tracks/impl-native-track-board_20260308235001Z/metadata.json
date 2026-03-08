@@ -1,0 +1,10 @@
+{
+  "id": "impl-native-track-board_20260308235001Z",
+  "title": "Native Track Board with Dashboard Kanban and Agent Lifecycle",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-08T23:50:01Z",
+  "updated": "2026-03-08T23:50:01Z",
+  "phases": { "total": 5, "completed": 0 },
+  "tasks": { "total": 16, "completed": 0 }
+}
