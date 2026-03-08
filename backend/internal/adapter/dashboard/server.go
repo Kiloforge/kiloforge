@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 )
@@ -33,14 +34,15 @@ type ProjectLister interface {
 
 // Server serves the web dashboard on a dedicated HTTP port.
 type Server struct {
-	port     int
-	agents   AgentLister
-	quota    QuotaReader
-	giteaURL string
-	projects ProjectLister
-	hub      *SSEHub
-	eventBus port.EventBus
-	mux      *http.ServeMux
+	port       int
+	agents     AgentLister
+	quota      QuotaReader
+	giteaURL   string
+	projects   ProjectLister
+	hub        *SSEHub
+	eventBus   port.EventBus
+	traceStore *tracing.Store
+	mux        *http.ServeMux
 }
 
 // New creates a dashboard server. If eventBus is nil, a new SSEHub is created
@@ -120,6 +122,11 @@ func (s *Server) SSEClientCount() int {
 // EventBus returns the event bus used by this server.
 func (s *Server) EventBus() port.EventBus {
 	return s.eventBus
+}
+
+// SetTraceStore sets the trace store for watcher-driven trace events.
+func (s *Server) SetTraceStore(store *tracing.Store) {
+	s.traceStore = store
 }
 
 func (s *Server) routes() {

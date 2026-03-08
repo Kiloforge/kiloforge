@@ -215,6 +215,9 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// Mount dashboard non-API routes (SSE, HTML pages, SPA static).
 	if s.dashboard != nil {
+		if s.traceStore != nil {
+			s.dashboard.SetTraceStore(s.traceStore)
+		}
 		s.dashboard.RegisterNonAPIRoutes(mux)
 		s.dashboard.StartWatcher(ctx)
 	}
