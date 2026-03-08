@@ -29,7 +29,6 @@ type Config struct {
 	SkillsVersion      string  `json:"skills_version,omitempty"`
 	AutoUpdateSkills   *bool   `json:"auto_update_skills,omitempty"`
 	SkillsDir          string  `json:"skills_dir,omitempty"`
-	TracingEnabled     *bool   `json:"tracing_enabled,omitempty"`
 	Model              string  `json:"model,omitempty"`
 }
 
@@ -49,15 +48,6 @@ func (c *Config) GetSkillsDir() string {
 	}
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".claude", "skills")
-}
-
-// IsTracingEnabled returns whether OTel tracing is enabled.
-// Defaults to true when TracingEnabled is nil.
-func (c *Config) IsTracingEnabled() bool {
-	if c.TracingEnabled == nil {
-		return true
-	}
-	return *c.TracingEnabled
 }
 
 func (c *Config) GiteaURL() string {
