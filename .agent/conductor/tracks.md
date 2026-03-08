@@ -93,7 +93,7 @@
 | [x] | fix-nested-claude-env_20260310001000Z | Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var | 2026-03-10 | 2026-03-10 |
 | [x] | fix-spawner-verbose-flag_20260310003000Z | Fix Agent Spawner — Add --verbose Flag for stream-json | 2026-03-10 | 2026-03-10 |
 | [x] | setup-prereq-be_20260310004000Z | Setup Prerequisite Check Before Agent Spawning (Backend) | 2026-03-10 | 2026-03-10 |
-| [ ] | setup-prereq-fe_20260310004001Z | Setup Prerequisite Check — Dashboard UI (Frontend) | 2026-03-10 | 2026-03-10 |
+| [x] | setup-prereq-fe_20260310004001Z | Setup Prerequisite Check — Dashboard UI (Frontend) | 2026-03-10 | 2026-03-10 |
 | [ ] | cli-sqlite-migration_20260310005000Z | Migrate CLI Commands from JSON Files to SQLite | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
