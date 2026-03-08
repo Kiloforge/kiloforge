@@ -182,3 +182,44 @@
   color: var(--red);
   background: rgba(240, 108, 108, 0.08);
 }
+
+.filterRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.chip:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.chipActive {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.chipActive:hover {
+  background: var(--accent);
+  color: var(--bg);
+  opacity: 0.9;
+}

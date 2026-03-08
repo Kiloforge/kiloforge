@@ -18,6 +18,12 @@
   font-size: 14px;
   font-weight: 600;
   text-transform: lowercase;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
 }
 
 .idRow {

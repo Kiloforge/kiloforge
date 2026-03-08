@@ -1,0 +1,329 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.agentId {
+  font-family: "SF Mono", "Fira Code", monospace;
+  color: var(--accent);
+}
+
+.error {
+  color: var(--red);
+  font-size: 14px;
+}
+
+.loading {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* Metadata grid */
+.metaGrid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roleBadge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.developer {
+  background: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+}
+
+.reviewer {
+  background: rgba(232, 148, 74, 0.15);
+  color: var(--orange);
+}
+
+.interactive {
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--green);
+}
+
+.refValue {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.mono {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+}
+
+.cacheInfo {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+/* Log section */
+.logSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+}
+
+.logHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logHeader h3 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.followToggle {
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logViewer {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px 16px;
+  overflow: auto;
+  max-height: 400px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+
+/* Terminal section */
+.terminalSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+}
+
+.terminalHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.terminalHeader h3 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.terminalMessages {
+  padding: 12px 16px;
+  overflow: auto;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emptyState {
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.terminalInput {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.inputField {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.inputField:disabled {
+  opacity: 0.4;
+}
+
+.sendBtn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sendBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sendBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Connection dot */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dotConnected {
+  background: var(--green);
+}
+
+.dotReconnecting {
+  background: var(--yellow);
+  animation: pulse 1s infinite;
+}
+
+.dotDisconnected {
+  background: var(--text-dim);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Message bubbles */
+.message {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.messageIcon {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  height: fit-content;
+}
+
+.messageContent {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.userMessage .messageIcon {
+  background: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+}
+
+.agentMessage .messageIcon {
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--green);
+}
+
+.errorMessage .messageIcon {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.statusMessage {
+  justify-content: center;
+}
+
+.statusText {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.codeBlock {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 4px 0;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+.inlineCode {
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+}

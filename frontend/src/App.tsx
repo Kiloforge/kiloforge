@@ -13,6 +13,7 @@ import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
 import { OverviewPage } from "./pages/OverviewPage";
+import { AgentDetailPage } from "./pages/AgentDetailPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { TracePage } from "./pages/TracePage";
 import styles from "./App.module.css";
@@ -116,6 +117,7 @@ export default function App() {
               />
             }
           />
+          <Route path="/agents/:id" element={<AgentDetailPage />} />
           <Route path="/projects/:slug" element={<ProjectPage />} />
           <Route path="/traces/:traceId" element={<TracePage />} />
         </Routes>

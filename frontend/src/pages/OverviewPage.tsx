@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type { Agent, QuotaResponse, Track, Project, SyncStatus } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
@@ -109,6 +109,22 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
   const { traces } = useTraces();
   const { config, loading: configLoading, updating: configUpdating, updateConfig } = useConfig();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  const filteredAgents = useMemo(() => {
+    return agents.filter((a) => {
+      if (roleFilter && a.role !== roleFilter) return false;
+      if (statusFilter) {
+        if (statusFilter === "active") {
+          if (a.status !== "running" && a.status !== "waiting") return false;
+        } else if (a.status !== statusFilter) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [agents, roleFilter, statusFilter]);
 
   const handleRemoveConfirm = useCallback(
     async (slug: string, cleanup: boolean): Promise<boolean> => {
@@ -136,10 +152,38 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
             </button>
           )}
         </div>
+        <div className={styles.filterRow}>
+          <div className={styles.filterGroup}>
+            {["developer", "reviewer", "interactive"].map((role) => (
+              <button
+                key={role}
+                className={`${styles.chip} ${roleFilter === role ? styles.chipActive : ""}`}
+                onClick={() => setRoleFilter(roleFilter === role ? null : role)}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
+          <div className={styles.filterGroup}>
+            {[
+              { key: "active", label: "Active" },
+              { key: "completed", label: "Completed" },
+              { key: "failed", label: "Failed" },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                className={`${styles.chip} ${statusFilter === key ? styles.chipActive : ""}`}
+                onClick={() => setStatusFilter(statusFilter === key ? null : key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {agentsLoading ? (
           <p className={appStyles.empty}>Loading agents...</p>
         ) : (
-          <AgentGrid agents={agents} onViewLog={onViewLog} onAttach={onAttach} />
+          <AgentGrid agents={filteredAgents} onViewLog={onViewLog} onAttach={onAttach} />
         )}
       </section>
 

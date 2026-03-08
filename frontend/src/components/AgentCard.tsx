@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
 import { StatusBadge } from "./StatusBadge";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
@@ -20,7 +21,7 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <span className={styles.name}>{agent.name || agent.id}</span>
+        <Link to={`/agents/${agent.id}`} className={styles.name}>{agent.name || agent.id}</Link>
         <span className={`${styles.role} ${styles[agent.role] ?? ""}`}>{agent.role}</span>
       </div>
       {agent.name && (
@@ -41,7 +42,7 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
         </div>
       )}
       <div className={styles.meta}>
-        {refLink && <span>ref: {refLink}</span>}
+        {refLink && <Link to={`/agents/${agent.id}`}>ref: {refLink}</Link>}
         {agent.model && <span>model: {agent.model}</span>}
         {agent.uptime_seconds != null && <span>uptime: {formatUptime(agent.uptime_seconds)}</span>}
         {agent.pid > 0 && <span>PID: {agent.pid}</span>}

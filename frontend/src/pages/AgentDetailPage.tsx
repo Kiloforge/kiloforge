@@ -1,0 +1,324 @@
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useParams, Link } from "react-router-dom";
+import type { Agent, LogResponse } from "../types/api";
+import { StatusBadge } from "../components/StatusBadge";
+import { formatUSD, formatTokens, formatUptime } from "../utils/format";
+import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
+import type { WSMessage, WSConnectionState } from "../hooks/useAgentWebSocket";
+import styles from "./AgentDetailPage.module.css";
+
+// No props needed — log and terminal are embedded directly.
+
+function ConnectionDot({ status }: { status: WSConnectionState }) {
+  const cls =
+    status === "connected"
+      ? styles.dotConnected
+      : status === "reconnecting" || status === "connecting"
+        ? styles.dotReconnecting
+        : styles.dotDisconnected;
+  return <span className={`${styles.dot} ${cls}`} />;
+}
+
+function formatCode(text: string): React.ReactNode[] {
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("```") && part.endsWith("```")) {
+      const inner = part.slice(3, -3);
+      const newlineIdx = inner.indexOf("\n");
+      const code = newlineIdx >= 0 ? inner.slice(newlineIdx + 1) : inner;
+      return (
+        <pre key={i} className={styles.codeBlock}>
+          <code>{code}</code>
+        </pre>
+      );
+    }
+    const inlineParts = part.split(/(`[^`]+`)/g);
+    return (
+      <span key={i}>
+        {inlineParts.map((ip, j) =>
+          ip.startsWith("`") && ip.endsWith("`") ? (
+            <code key={j} className={styles.inlineCode}>{ip.slice(1, -1)}</code>
+          ) : (
+            <span key={j}>{ip}</span>
+          ),
+        )}
+      </span>
+    );
+  });
+}
+
+function TerminalBubble({ msg }: { msg: WSMessage }) {
+  if (msg.type === "input") {
+    return (
+      <div className={`${styles.message} ${styles.userMessage}`}>
+        <span className={styles.messageIcon}>you</span>
+        <div className={styles.messageContent}>{msg.text}</div>
+      </div>
+    );
+  }
+  if (msg.type === "status") {
+    return (
+      <div className={`${styles.message} ${styles.statusMessage}`}>
+        <span className={styles.statusText}>{msg.text}</span>
+      </div>
+    );
+  }
+  if (msg.type === "error") {
+    return (
+      <div className={`${styles.message} ${styles.errorMessage}`}>
+        <span className={styles.messageIcon}>err</span>
+        <div className={styles.messageContent}>{msg.text}</div>
+      </div>
+    );
+  }
+  return (
+    <div className={`${styles.message} ${styles.agentMessage}`}>
+      <span className={styles.messageIcon}>kf</span>
+      <div className={styles.messageContent}>{formatCode(msg.text)}</div>
+    </div>
+  );
+}
+
+export function AgentDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Log viewer state
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [logLoading, setLogLoading] = useState(true);
+  const [following, setFollowing] = useState(false);
+  const logRef = useRef<HTMLPreElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Fetch agent data
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/agents/${encodeURIComponent(id)}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Agent not found");
+        return r.json();
+      })
+      .then((data: Agent) => setAgent(data))
+      .catch((err) => setError(err.message));
+  }, [id]);
+
+  // Fetch log data
+  useEffect(() => {
+    if (!id) return;
+    setLogLoading(true);
+    fetch(`/api/agents/${encodeURIComponent(id)}/log?lines=200`)
+      .then((r) => r.json())
+      .then((data: LogResponse) => {
+        setLogLines(data.lines || []);
+        setLogLoading(false);
+        requestAnimationFrame(() => {
+          if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+        });
+      })
+      .catch(() => {
+        setLogLines(["Failed to load log."]);
+        setLogLoading(false);
+      });
+  }, [id]);
+
+  // Follow mode
+  useEffect(() => {
+    if (!id || !following) {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      return;
+    }
+    const es = new EventSource(`/api/agents/${encodeURIComponent(id)}/log?lines=200&follow=true`);
+    eventSourceRef.current = es;
+    es.onmessage = (e) => {
+      setLogLines((prev) => [...prev, e.data as string]);
+      requestAnimationFrame(() => {
+        if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+      });
+    };
+    es.onerror = () => { es.close(); setFollowing(false); };
+    return () => { es.close(); };
+  }, [following, id]);
+
+  useEffect(() => {
+    return () => { eventSourceRef.current?.close(); };
+  }, []);
+
+  if (error) {
+    return (
+      <div className={styles.page}>
+        <Link to="/" className={styles.back}>&larr; Back</Link>
+        <p className={styles.error}>{error}</p>
+      </div>
+    );
+  }
+
+  if (!agent) {
+    return (
+      <div className={styles.page}>
+        <Link to="/" className={styles.back}>&larr; Back</Link>
+        <p className={styles.loading}>Loading agent...</p>
+      </div>
+    );
+  }
+
+  const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
+  const cacheRead = agent.cache_read_tokens ?? 0;
+  const cacheCreate = agent.cache_creation_tokens ?? 0;
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.topBar}>
+        <Link to="/" className={styles.back}>&larr; Back</Link>
+        <h2 className={styles.title}>
+          Agent <span className={styles.agentId}>{agent.name || agent.id}</span>
+        </h2>
+      </div>
+
+      <div className={styles.metaGrid}>
+        <div className={styles.metaItem}>
+          <span className={styles.metaLabel}>Role</span>
+          <span className={`${styles.roleBadge} ${styles[agent.role] ?? ""}`}>{agent.role}</span>
+        </div>
+        <div className={styles.metaItem}>
+          <span className={styles.metaLabel}>Status</span>
+          <StatusBadge status={agent.status} />
+        </div>
+        {agent.model && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Model</span>
+            <span>{agent.model}</span>
+          </div>
+        )}
+        {agent.ref && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Track</span>
+            <span className={styles.refValue}>{agent.ref}</span>
+          </div>
+        )}
+        {agent.uptime_seconds != null && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Uptime</span>
+            <span>{formatUptime(agent.uptime_seconds)}</span>
+          </div>
+        )}
+        {agent.pid > 0 && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>PID</span>
+            <span className={styles.mono}>{agent.pid}</span>
+          </div>
+        )}
+        {agent.worktree_dir && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Worktree</span>
+            <span className={styles.mono}>{agent.worktree_dir}</span>
+          </div>
+        )}
+        {hasTokens && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Tokens</span>
+            <span className={styles.mono}>
+              {formatTokens(agent.input_tokens ?? 0)} in / {formatTokens(agent.output_tokens ?? 0)} out
+              {(cacheRead > 0 || cacheCreate > 0) && (
+                <span className={styles.cacheInfo}>
+                  {" "}({formatTokens(cacheRead)} cache
+                  {cacheCreate > 0 && <>, {formatTokens(cacheCreate)} create</>})
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+        {agent.estimated_cost_usd != null && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Cost</span>
+            <span>{formatUSD(agent.estimated_cost_usd)}</span>
+          </div>
+        )}
+      </div>
+
+      <div className={styles.logSection}>
+        <div className={styles.logHeader}>
+          <h3>Log Output</h3>
+          <label className={styles.followToggle}>
+            <input type="checkbox" checked={following} onChange={(e) => setFollowing(e.target.checked)} />
+            Follow
+          </label>
+        </div>
+        <pre ref={logRef} className={styles.logViewer}>
+          {logLoading ? "Loading..." : logLines.join("\n") || "No log data available."}
+        </pre>
+      </div>
+
+      {agent.role === "interactive" && id && <TerminalSection agentId={id} />}
+    </div>
+  );
+}
+
+function TerminalSection({ agentId }: { agentId: string }) {
+  const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = useCallback(() => {
+    const text = input.trim();
+    if (!text) return;
+    sendMessage(text);
+    setInput("");
+    inputRef.current?.focus();
+  }, [input, sendMessage]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend],
+  );
+
+  const isTerminal = agentStatus === "completed" || agentStatus === "failed";
+  const canSend = status === "connected" && !isTerminal;
+
+  return (
+    <div className={styles.terminalSection}>
+      <div className={styles.terminalHeader}>
+        <h3>Terminal</h3>
+        <ConnectionDot status={status} />
+      </div>
+      <div className={styles.terminalMessages}>
+        {messages.length === 0 && status === "connecting" && (
+          <p className={styles.emptyState}>Connecting to agent...</p>
+        )}
+        {messages.length === 0 && status === "connected" && (
+          <p className={styles.emptyState}>Waiting for agent output...</p>
+        )}
+        {messages.map((msg, i) => (
+          <TerminalBubble key={i} msg={msg} />
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className={styles.terminalInput}>
+        <textarea
+          ref={inputRef}
+          className={styles.inputField}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={canSend ? "Type a message... (Enter to send)" : isTerminal ? "Agent has exited" : "Connecting..."}
+          disabled={!canSend}
+          rows={1}
+        />
+        <button className={styles.sendBtn} onClick={handleSend} disabled={!canSend || !input.trim()}>
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
