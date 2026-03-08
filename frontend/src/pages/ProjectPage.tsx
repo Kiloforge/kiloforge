@@ -1,9 +1,12 @@
+import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
 import { useBoard } from "../hooks/useBoard";
+import { useOriginSync } from "../hooks/useOriginSync";
 import { TrackList } from "../components/TrackList";
 import { KanbanBoard } from "../components/KanbanBoard";
+import { SyncPanel } from "../components/SyncPanel";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -12,7 +15,16 @@ export function ProjectPage() {
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
   const { board, loading: boardLoading, moveCard } = useBoard(slug);
+  const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
+
+  const handlePush = useCallback((remoteBranch: string) => {
+    push({ remote_branch: remoteBranch });
+  }, [push]);
+
+  const handlePull = useCallback((remoteBranch?: string) => {
+    pull(remoteBranch);
+  }, [pull]);
 
   return (
     <>
@@ -45,6 +57,23 @@ export function ProjectPage() {
               <span>{project.active ? "Active" : "Inactive"}</span>
             </div>
           </div>
+        </section>
+      )}
+
+      {project?.origin_remote && (
+        <section className={appStyles.panel}>
+          <h2 className={appStyles.panelTitle}>Origin Sync</h2>
+          <SyncPanel
+            syncStatus={syncStatus}
+            loading={syncLoading}
+            pushing={pushing}
+            pulling={pulling}
+            error={syncError}
+            onPush={handlePush}
+            onPull={handlePull}
+            onRefresh={refreshSync}
+            onClearError={clearSyncError}
+          />
         </section>
       )}
 
