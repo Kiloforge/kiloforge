@@ -54,6 +54,8 @@
 | [x] | tracing-default-on-be_20260309133000Z | Enable Tracing by Default with Config API (Backend) | 2026-03-09 | 2026-03-09 |
 | [x] | tracing-default-on-fe_20260309133001Z | Tracing Toggle in Dashboard UI (Frontend) | 2026-03-09 | 2026-03-09 |
 | [ ] | sqlite-storage-core_20260309140000Z | SQLite Storage Layer — Core Schema and Migration | 2026-03-09 | 2026-03-09 |
+| [ ] | origin-sync-api_20260309143000Z | Origin Push/Pull REST API with Remote Branch Targeting | 2026-03-09 | 2026-03-09 |
+| [ ] | origin-sync-ui_20260309143001Z | Origin Push/Pull Dashboard UI | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

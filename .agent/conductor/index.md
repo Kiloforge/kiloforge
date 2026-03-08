@@ -93,6 +93,8 @@ Navigation hub for project context.
 - **tracing-default-on-be_20260309133000Z** — Enable Tracing by Default with Config API (Backend)
 - **tracing-default-on-fe_20260309133001Z** — Tracing Toggle in Dashboard UI (Frontend)
 - **sqlite-storage-core_20260309140000Z** — SQLite Storage Layer — Core Schema and Migration
+- **origin-sync-api_20260309143000Z** — Origin Push/Pull REST API with Remote Branch Targeting
+- **origin-sync-ui_20260309143001Z** — Origin Push/Pull Dashboard UI
 
 ## Getting Started
 
