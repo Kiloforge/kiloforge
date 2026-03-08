@@ -98,6 +98,7 @@ Navigation hub for project context.
 - **interactive-agent-be_20260309150000Z** — Interactive Agent Sessions via WebSocket (Backend)
 - **interactive-agent-fe_20260309150001Z** — Interactive Agent Terminal in Dashboard (Frontend)
 - **release-process_20260309153000Z** — Release Process with GoReleaser, GitHub Actions, and Homebrew
+- **dashboard-track-gen_20260309160000Z** — Dashboard-Driven Track Generation with Interactive Agent
 
 ## Getting Started
 
