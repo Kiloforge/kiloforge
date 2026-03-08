@@ -49,7 +49,7 @@ func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, gi
 	}
 }
 
-// WithGiteaProxy enables a reverse proxy to Gitea as the catch-all at /.
+// WithGiteaProxy enables a reverse proxy to Gitea at /gitea/.
 // authUser is injected as X-WEBAUTH-USER for reverse proxy authentication.
 func WithGiteaProxy(giteaURL, authUser string) ServerOption {
 	return func(s *Server) {
@@ -176,7 +176,7 @@ func (s *Server) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 
 	// Manual routes: webhook is Gitea-defined, not our API spec.
-	mux.HandleFunc("/webhook", s.handleWebhook)
+	mux.HandleFunc("POST /webhook", s.handleWebhook)
 
 	// Lock service (shared with generated API handler).
 	lockMgr := lock.New(s.cfg.DataDir)
@@ -230,10 +230,10 @@ func (s *Server) Run(ctx context.Context) error {
 		s.dashboard.StartWatcher(ctx)
 	}
 
-	// Mount Gitea reverse proxy as catch-all. All non-kiloforge routes
-	// are forwarded to Gitea so its UI and assets load naturally.
+	// Mount Gitea reverse proxy at /gitea/. Path stripping is handled by
+	// the proxy handler so Gitea receives requests at its expected paths.
 	if s.giteaProxy != nil {
-		mux.Handle("/", s.giteaProxy)
+		mux.Handle("/gitea/", s.giteaProxy)
 	}
 
 	srv := &http.Server{

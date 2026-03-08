@@ -200,7 +200,7 @@ func TestSSEHandler_Integration(t *testing.T) {
 
 	// Use a cancellable context to cleanly stop the handler.
 	ctx, cancel := context.WithCancel(context.Background())
-	req := httptest.NewRequest("GET", "/-/events", nil).WithContext(ctx)
+	req := httptest.NewRequest("GET", "/events", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
 
 	done := make(chan struct{})

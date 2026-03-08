@@ -103,10 +103,12 @@ func (s *Server) Run(ctx context.Context) error {
 // RegisterNonAPIRoutes mounts only the non-API routes (SSE, HTML pages, SPA static).
 // All JSON API routes are served by the generated OpenAPI handler.
 func (s *Server) RegisterNonAPIRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /-/events", s.handleSSE)
-	mux.HandleFunc("GET /-/tracks/{trackId}", s.handleTrackDetail)
-	mux.HandleFunc("GET /-/pr/{slug}/{prNumber}", s.handlePRDetail)
-	mux.Handle("GET /-/", http.StripPrefix("/-", spaFileServer(http.FS(staticFS))))
+	mux.HandleFunc("GET /events", s.handleSSE)
+	mux.HandleFunc("GET /tracks/{trackId}", s.handleTrackDetail)
+	mux.HandleFunc("GET /pr/{slug}/{prNumber}", s.handlePRDetail)
+	// SPA catch-all: method-agnostic so it doesn't conflict with method-agnostic
+	// sub-path patterns like /gitea/. More specific patterns take priority.
+	mux.Handle("/", spaFileServer(http.FS(staticFS)))
 }
 
 // Mux returns the server's internal mux for registering additional routes.

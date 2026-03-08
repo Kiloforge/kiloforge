@@ -75,10 +75,10 @@ func TestRegisterNonAPIRoutes_MountsOnExternalMux(t *testing.T) {
 	s.RegisterNonAPIRoutes(externalMux)
 
 	// SPA static route should be registered and serve the frontend.
-	req := httptest.NewRequest("GET", "/-/", nil)
+	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	externalMux.ServeHTTP(w, req)
 	if w.Code == http.StatusNotFound {
-		t.Errorf("/-/: got 404, expected SPA route to be registered")
+		t.Errorf("/: got 404, expected SPA route to be registered")
 	}
 }

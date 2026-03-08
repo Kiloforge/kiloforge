@@ -19,7 +19,8 @@ func TestNewGiteaProxy_InjectsAuthHeader(t *testing.T) {
 
 	proxy := NewGiteaProxy(backend.URL, "kfadmin")
 
-	req := httptest.NewRequest("GET", "/", nil)
+	// Proxy includes StripPrefix("/gitea"), so request path must include /gitea.
+	req := httptest.NewRequest("GET", "/gitea/", nil)
 	w := httptest.NewRecorder()
 	proxy.ServeHTTP(w, req)
 
@@ -40,7 +41,7 @@ func TestNewGiteaProxy_NoAuthUser(t *testing.T) {
 
 	proxy := NewGiteaProxy(backend.URL, "")
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest("GET", "/gitea/", nil)
 	w := httptest.NewRecorder()
 	proxy.ServeHTTP(w, req)
 
@@ -61,11 +62,11 @@ func TestNewGiteaProxy_ForwardsRequest(t *testing.T) {
 
 	proxy := NewGiteaProxy(backend.URL, "admin")
 
-	// Proxy is mounted as catch-all at "/" — no prefix stripping.
+	// Proxy is mounted at /gitea/ with StripPrefix.
 	mux := http.NewServeMux()
-	mux.Handle("/", proxy)
+	mux.Handle("/gitea/", proxy)
 
-	req := httptest.NewRequest("GET", "/some/path", nil)
+	req := httptest.NewRequest("GET", "/gitea/some/path", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -93,9 +94,9 @@ func TestNewGiteaProxy_RootPath(t *testing.T) {
 	proxy := NewGiteaProxy(backend.URL, "admin")
 
 	mux := http.NewServeMux()
-	mux.Handle("/", proxy)
+	mux.Handle("/gitea/", proxy)
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest("GET", "/gitea/", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -119,26 +120,29 @@ func TestNewGiteaProxy_AssetPaths(t *testing.T) {
 	proxy := NewGiteaProxy(backend.URL, "admin")
 
 	mux := http.NewServeMux()
-	mux.Handle("/", proxy)
+	mux.Handle("/gitea/", proxy)
 
-	// Gitea asset paths must reach the backend without any prefix mangling.
-	paths := []string{
-		"/assets/css/theme-gitea-auto.css",
-		"/assets/js/index.js",
-		"/user/login",
-		"/api/v1/version",
+	// Gitea asset paths with /gitea/ prefix must reach the backend with prefix stripped.
+	tests := []struct {
+		reqPath    string
+		wantBackend string
+	}{
+		{"/gitea/assets/css/theme-gitea-auto.css", "/assets/css/theme-gitea-auto.css"},
+		{"/gitea/assets/js/index.js", "/assets/js/index.js"},
+		{"/gitea/user/login", "/user/login"},
+		{"/gitea/api/v1/version", "/api/v1/version"},
 	}
 
-	for _, path := range paths {
-		req := httptest.NewRequest("GET", path, nil)
+	for _, tt := range tests {
+		req := httptest.NewRequest("GET", tt.reqPath, nil)
 		w := httptest.NewRecorder()
 		mux.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
-			t.Errorf("GET %s: status = %d, want 200", path, w.Code)
+			t.Errorf("GET %s: status = %d, want 200", tt.reqPath, w.Code)
 		}
-		if got := w.Header().Get("X-Backend-Path"); got != path {
-			t.Errorf("GET %s: backend saw %q, want %q", path, got, path)
+		if got := w.Header().Get("X-Backend-Path"); got != tt.wantBackend {
+			t.Errorf("GET %s: backend saw %q, want %q", tt.reqPath, got, tt.wantBackend)
 		}
 	}
 }

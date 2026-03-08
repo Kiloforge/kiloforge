@@ -22,7 +22,7 @@ func buildMux(t *testing.T, srv *Server, dash *dashboard.Server) *http.ServeMux 
 	t.Helper()
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/webhook", srv.handleWebhook)
+	mux.HandleFunc("POST /webhook", srv.handleWebhook)
 
 	lockMgr := lock.New(t.TempDir())
 	ctx, cancel := context.WithCancel(context.Background())
@@ -144,19 +144,19 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 
 	mux := buildMux(t, srv, dash)
 
-	// Mount Gitea proxy as catch-all — same as production Server.Run().
+	// Mount Gitea proxy at /gitea/ — same as production Server.Run().
 	fakeGitea := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("gitea"))
 	}))
 	t.Cleanup(fakeGitea.Close)
 
-	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/gitea/", http.StripPrefix("/gitea", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("gitea-proxy"))
-	}))
+	})))
 
-	// kf routes must still work — proxy is only for unmatched paths.
+	// kf routes must still work — Gitea is at /gitea/ not catch-all.
 	kfRoutes := []struct {
 		path string
 		want int
@@ -175,8 +175,8 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 		}
 	}
 
-	// Gitea asset paths should fall through to the proxy.
-	giteaPaths := []string{"/assets/css/theme.css", "/user/login"}
+	// Gitea paths under /gitea/ should route to the proxy.
+	giteaPaths := []string{"/gitea/assets/css/theme.css", "/gitea/user/login"}
 	for _, path := range giteaPaths {
 		req := httptest.NewRequest("GET", path, nil)
 		rec := httptest.NewRecorder()
