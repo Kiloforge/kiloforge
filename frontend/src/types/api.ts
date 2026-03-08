@@ -192,3 +192,8 @@ export interface UpdateConfigRequest {
   tracing_enabled?: boolean;
   dashboard_enabled?: boolean;
 }
+
+export interface SpawnInteractiveRequest {
+  work_dir?: string;
+  model?: string;
+}
