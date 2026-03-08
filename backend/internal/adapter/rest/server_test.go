@@ -13,7 +13,6 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
@@ -46,20 +45,15 @@ func newTestServerWithDir(dataDir string) *Server {
 		GiteaAdminUser: "kiloforger",
 		SkillsDir:      skillsDir,
 	}
-	reg := &jsonfile.ProjectStore{
-		Version: 1,
-		Projects: map[string]domain.Project{
-			"myapp": {
-				Slug:     "myapp",
-				RepoName: "myapp",
-			},
-		},
-	}
-	store := &jsonfile.AgentStore{}
 	db, err := sqlite.Open(dataDir)
 	if err != nil {
 		panic(fmt.Sprintf("open test db: %v", err))
 	}
+	reg := sqlite.NewProjectStore(db)
+	if err := reg.Add(domain.Project{Slug: "myapp", RepoName: "myapp"}); err != nil {
+		panic(fmt.Sprintf("seed project: %v", err))
+	}
+	store := sqlite.NewAgentStore(db)
 	prTracker := sqlite.NewPRTrackingStore(db)
 	return NewServer(cfg, reg, store, prTracker, 3001)
 }
@@ -91,20 +85,15 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 		GiteaAdminUser: "kiloforger",
 		SkillsDir:      skillsDir,
 	}
-	reg := &jsonfile.ProjectStore{
-		Version: 1,
-		Projects: map[string]domain.Project{
-			"myapp": {
-				Slug:     "myapp",
-				RepoName: "myapp",
-			},
-		},
-	}
-	store := &jsonfile.AgentStore{}
 	db, err := sqlite.Open(dataDir)
 	if err != nil {
 		panic(fmt.Sprintf("open test db: %v", err))
 	}
+	reg := sqlite.NewProjectStore(db)
+	if err := reg.Add(domain.Project{Slug: "myapp", RepoName: "myapp"}); err != nil {
+		panic(fmt.Sprintf("seed project: %v", err))
+	}
+	store := sqlite.NewAgentStore(db)
 	prTracker := sqlite.NewPRTrackingStore(db)
 	var client *gitea.Client
 	if giteaSrv != nil {
@@ -735,16 +724,14 @@ func TestNewServer_WithDashboard(t *testing.T) {
 		DataDir:        dir,
 		GiteaAdminUser: "kiloforger",
 	}
-	reg := &jsonfile.ProjectStore{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
 	t.Cleanup(func() { db.Close() })
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
+	reg := sqlite.NewProjectStore(db)
+	store := sqlite.NewAgentStore(db)
+	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
 
 	if srv.dashboard == nil {
 		t.Fatal("expected dashboard to be set")
@@ -777,16 +764,14 @@ func TestNewServer_WithGiteaProxy(t *testing.T) {
 		DataDir:        dir,
 		GiteaAdminUser: "kiloforger",
 	}
-	reg := &jsonfile.ProjectStore{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
 	t.Cleanup(func() { db.Close() })
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 3001, WithGiteaProxy(backend.URL, "admin"))
+	reg := sqlite.NewProjectStore(db)
+	store := sqlite.NewAgentStore(db)
+	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 3001, WithGiteaProxy(backend.URL, "admin"))
 
 	if srv.giteaProxy == nil {
 		t.Fatal("expected giteaProxy to be set")

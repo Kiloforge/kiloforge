@@ -14,7 +14,6 @@ import (
 	"kiloforge/internal/adapter/badge"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/core/domain"
@@ -36,16 +35,13 @@ func startTestServer(t *testing.T) *testServer {
 		DataDir:        dir,
 		GiteaAdminUser: "kiloforger",
 	}
-	reg := &jsonfile.ProjectStore{
-		Version:  1,
-		Projects: map[string]domain.Project{},
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
 	t.Cleanup(func() { db.Close() })
-	store := &jsonfile.AgentStore{}
+	reg := sqlite.NewProjectStore(db)
+	store := sqlite.NewAgentStore(db)
 	prTracker := sqlite.NewPRTrackingStore(db)
 
 	// Find a random available port.
@@ -64,11 +60,10 @@ func startTestServer(t *testing.T) *testServer {
 	lockMgr.StartReaper(ctx)
 
 	apiHandler := NewAPIHandler(APIHandlerOpts{
-		Agents:     store,
-		LockMgr:    lockMgr,
-		ProjectDir: dir,
-		GiteaURL:   cfg.GiteaURL(),
-		Projects:   len(reg.Projects),
+		Agents:   store,
+		LockMgr:  lockMgr,
+		Projects: reg,
+		GiteaURL: cfg.GiteaURL(),
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
