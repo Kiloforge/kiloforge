@@ -224,6 +224,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /-/api/ssh-keys:
+    get:
+      operationId: listSSHKeys
+      summary: List available SSH keys
+      tags: [System]
+      responses:
+        "200":
+          description: List of SSH keys found on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SSHKeyInfo"
+
   /-/api/tracks:
     get:
       operationId: listTracks
@@ -744,6 +763,26 @@ components:
         name:
           type: string
           description: Override project slug (defaults to repo name from URL)
+        ssh_key:
+          type: string
+          description: Path to SSH private key to use for cloning
+
+    SSHKeyInfo:
+      type: object
+      required: [name, path, type]
+      properties:
+        name:
+          type: string
+          description: Key filename (e.g., "id_ed25519")
+        path:
+          type: string
+          description: Full path to private key
+        type:
+          type: string
+          description: Key type (e.g., "ed25519", "rsa")
+        comment:
+          type: string
+          description: Key comment from public key file
 
     Project:
       type: object

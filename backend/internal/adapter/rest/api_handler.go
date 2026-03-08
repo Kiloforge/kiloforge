@@ -6,9 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/rest/gen"
@@ -374,6 +377,33 @@ func (h *APIHandler) GetStatus(_ context.Context, _ gen.GetStatusRequestObject) 
 	}
 
 	return gen.GetStatus200JSONResponse(resp), nil
+}
+
+// ListSSHKeys implements gen.StrictServerInterface.
+func (h *APIHandler) ListSSHKeys(_ context.Context, _ gen.ListSSHKeysRequestObject) (gen.ListSSHKeysResponseObject, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return gen.ListSSHKeys200JSONResponse{Keys: []gen.SSHKeyInfo{}}, nil
+	}
+	sshDir := filepath.Join(home, ".ssh")
+	keys := auth.DiscoverSSHKeys(sshDir)
+	result := make([]gen.SSHKeyInfo, 0, len(keys))
+	for _, k := range keys {
+		info := gen.SSHKeyInfo{
+			Name: k.Name,
+			Path: k.Path,
+			Type: k.Type,
+		}
+		if k.PubContent != "" {
+			// Extract comment from pub key content (last field).
+			parts := strings.SplitN(k.PubContent, " ", 3)
+			if len(parts) >= 3 {
+				info.Comment = &parts[2]
+			}
+		}
+		result = append(result, info)
+	}
+	return gen.ListSSHKeys200JSONResponse{Keys: result}, nil
 }
 
 // ListLocks implements gen.StrictServerInterface.

@@ -161,6 +161,9 @@ type AddProjectRequest struct {
 
 	// RemoteUrl Git remote URL (SSH or HTTPS)
 	RemoteUrl string `json:"remote_url"`
+
+	// SshKey Path to SSH private key to use for cloning
+	SshKey *string `json:"ssh_key,omitempty"`
 }
 
 // Agent defines model for Agent.
@@ -325,6 +328,21 @@ type QuotaInfo struct {
 	OutputTokens      int     `json:"output_tokens"`
 	RateLimited       bool    `json:"rate_limited"`
 	RetryAfterSeconds *int    `json:"retry_after_seconds,omitempty"`
+}
+
+// SSHKeyInfo defines model for SSHKeyInfo.
+type SSHKeyInfo struct {
+	// Comment Key comment from public key file
+	Comment *string `json:"comment,omitempty"`
+
+	// Name Key filename (e.g., "id_ed25519")
+	Name string `json:"name"`
+
+	// Path Full path to private key
+	Path string `json:"path"`
+
+	// Type Key type (e.g., "ed25519", "rsa")
+	Type string `json:"type"`
 }
 
 // SkillDetail defines model for SkillDetail.
@@ -522,6 +540,9 @@ type ServerInterface interface {
 	// Trigger skill update
 	// (POST /-/api/skills/update)
 	UpdateSkills(w http.ResponseWriter, r *http.Request)
+	// List available SSH keys
+	// (GET /-/api/ssh-keys)
+	ListSSHKeys(w http.ResponseWriter, r *http.Request)
 	// Get system status overview
 	// (GET /-/api/status)
 	GetStatus(w http.ResponseWriter, r *http.Request)
@@ -893,6 +914,20 @@ func (siw *ServerInterfaceWrapper) UpdateSkills(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListSSHKeys operation middleware
+func (siw *ServerInterfaceWrapper) ListSSHKeys(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSSHKeys(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -1144,6 +1179,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/quota", wrapper.GetQuota)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/skills", wrapper.GetSkillsStatus)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/skills/update", wrapper.UpdateSkills)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/ssh-keys", wrapper.ListSSHKeys)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/status", wrapper.GetStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/traces", wrapper.ListTraces)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/traces/{traceId}", wrapper.GetTrace)
@@ -1668,6 +1704,24 @@ func (response UpdateSkills500JSONResponse) VisitUpdateSkillsResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListSSHKeysRequestObject struct {
+}
+
+type ListSSHKeysResponseObject interface {
+	VisitListSSHKeysResponse(w http.ResponseWriter) error
+}
+
+type ListSSHKeys200JSONResponse struct {
+	Keys []SSHKeyInfo `json:"keys"`
+}
+
+func (response ListSSHKeys200JSONResponse) VisitListSSHKeysResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetStatusRequestObject struct {
 }
 
@@ -1828,6 +1882,9 @@ type StrictServerInterface interface {
 	// Trigger skill update
 	// (POST /-/api/skills/update)
 	UpdateSkills(ctx context.Context, request UpdateSkillsRequestObject) (UpdateSkillsResponseObject, error)
+	// List available SSH keys
+	// (GET /-/api/ssh-keys)
+	ListSSHKeys(ctx context.Context, request ListSSHKeysRequestObject) (ListSSHKeysResponseObject, error)
 	// Get system status overview
 	// (GET /-/api/status)
 	GetStatus(ctx context.Context, request GetStatusRequestObject) (GetStatusResponseObject, error)
@@ -2313,6 +2370,30 @@ func (sh *strictHandler) UpdateSkills(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSkillsResponseObject); ok {
 		if err := validResponse.VisitUpdateSkillsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSSHKeys operation middleware
+func (sh *strictHandler) ListSSHKeys(w http.ResponseWriter, r *http.Request) {
+	var request ListSSHKeysRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSSHKeys(ctx, request.(ListSSHKeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSSHKeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSSHKeysResponseObject); ok {
+		if err := validResponse.VisitListSSHKeysResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

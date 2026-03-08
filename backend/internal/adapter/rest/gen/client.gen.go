@@ -149,6 +149,9 @@ type ClientInterface interface {
 
 	UpdateSkills(ctx context.Context, body UpdateSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListSSHKeys request
+	ListSSHKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetStatus request
 	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -419,6 +422,18 @@ func (c *Client) UpdateSkillsWithBody(ctx context.Context, contentType string, b
 
 func (c *Client) UpdateSkills(ctx context.Context, body UpdateSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateSkillsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSSHKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSSHKeysRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1106,6 +1121,33 @@ func NewUpdateSkillsRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
+// NewListSSHKeysRequest generates requests for ListSSHKeys
+func NewListSSHKeysRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/ssh-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetStatusRequest generates requests for GetStatus
 func NewGetStatusRequest(server string) (*http.Request, error) {
 	var err error
@@ -1410,6 +1452,9 @@ type ClientWithResponsesInterface interface {
 	UpdateSkillsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSkillsResponse, error)
 
 	UpdateSkillsWithResponse(ctx context.Context, body UpdateSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSkillsResponse, error)
+
+	// ListSSHKeysWithResponse request
+	ListSSHKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSSHKeysResponse, error)
 
 	// GetStatusWithResponse request
 	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
@@ -1805,6 +1850,30 @@ func (r UpdateSkillsResponse) StatusCode() int {
 	return 0
 }
 
+type ListSSHKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Keys []SSHKeyInfo `json:"keys"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSSHKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSSHKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetStatusResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2108,6 +2177,15 @@ func (c *ClientWithResponses) UpdateSkillsWithResponse(ctx context.Context, body
 		return nil, err
 	}
 	return ParseUpdateSkillsResponse(rsp)
+}
+
+// ListSSHKeysWithResponse request returning *ListSSHKeysResponse
+func (c *ClientWithResponses) ListSSHKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSSHKeysResponse, error) {
+	rsp, err := c.ListSSHKeys(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSSHKeysResponse(rsp)
 }
 
 // GetStatusWithResponse request returning *GetStatusResponse
@@ -2747,6 +2825,34 @@ func ParseUpdateSkillsResponse(rsp *http.Response) (*UpdateSkillsResponse, error
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSSHKeysResponse parses an HTTP response from a ListSSHKeysWithResponse call
+func ParseListSSHKeysResponse(rsp *http.Response) (*ListSSHKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSSHKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Keys []SSHKeyInfo `json:"keys"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
