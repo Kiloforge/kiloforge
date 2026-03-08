@@ -104,6 +104,7 @@ Navigation hub for project context.
 - **fix-test-ci-pr-tracking_20260309173000Z** — Fix CI Test Failure — PR Tracking Store References
 - **admin-operations-ui_20260309173001Z** — Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard
 - **skill-ref-migration_20260309173002Z** — Migrate All Skill References from conductor-* to kf-*
+- **agent-list-monitoring-ui_20260309180000Z** — Agent List with Role/Track Links and Monitoring View
 
 ## Getting Started
 

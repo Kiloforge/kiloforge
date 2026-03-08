@@ -65,6 +65,7 @@
 | [ ] | fix-test-ci-pr-tracking_20260309173000Z | Fix CI Test Failure — PR Tracking Store References | 2026-03-09 | 2026-03-09 |
 | [ ] | admin-operations-ui_20260309173001Z | Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard | 2026-03-09 | 2026-03-09 |
 | [x] | skill-ref-migration_20260309173002Z | Migrate All Skill References from conductor-* to kf-* | 2026-03-09 | 2026-03-09 |
+| [ ] | agent-list-monitoring-ui_20260309180000Z | Agent List with Role/Track Links and Monitoring View | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 
