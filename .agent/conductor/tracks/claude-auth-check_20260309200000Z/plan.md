@@ -23,5 +23,5 @@
 
 ## Phase 4: Verification
 
-- [ ] Task 4.1: `go test ./...` passes
-- [ ] Task 4.2: Manual test — spawn with logged-in Claude succeeds; spawn without auth shows clear error
+- [x] Task 4.1: `go test ./...` passes
+- [x] Task 4.2: Manual test — spawn with logged-in Claude succeeds; spawn without auth shows clear error
