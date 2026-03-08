@@ -107,4 +107,4 @@ Navigation hub for project context.
 
 ## Getting Started
 
-Run `/conductor-track-generator` to generate tracks from a prompt, or `/conductor-new-track` to create a single track manually.
+Run `/kf-track-generator` to generate tracks from a prompt, or `/kf-new-track` to create a single track manually.

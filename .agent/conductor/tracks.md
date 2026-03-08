@@ -66,7 +66,7 @@
 | [ ] | admin-operations-ui_20260309173001Z | Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard | 2026-03-09 | 2026-03-09 |
 | [ ] | skill-ref-migration_20260309173002Z | Migrate All Skill References from conductor-* to kf-* | 2026-03-09 | 2026-03-09 |
 
-<!-- Tracks registered by /conductor-new-track -->
+<!-- Tracks registered by /kf-new-track -->
 
 ## Archived Tracks
 
