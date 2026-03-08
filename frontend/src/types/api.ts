@@ -154,3 +154,13 @@ export interface BoardState {
   columns: string[];
   cards: Record<string, BoardCard>;
 }
+
+export interface ConfigResponse {
+  tracing_enabled: boolean;
+  dashboard_enabled: boolean;
+}
+
+export interface UpdateConfigRequest {
+  tracing_enabled?: boolean;
+  dashboard_enabled?: boolean;
+}
