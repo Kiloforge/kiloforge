@@ -101,6 +101,9 @@ Navigation hub for project context.
 - **dashboard-track-gen_20260309160000Z** — Dashboard-Driven Track Generation with Interactive Agent
 - **fix-spa-and-init-output_20260309163000Z** — Fix SPA Asset MIME Type, Init Output URLs, and Password Display
 - **skill-preflight-check_20260309170000Z** — Pre-flight Skill Validation Before Agent Spawning
+- **fix-test-ci-pr-tracking_20260309173000Z** — Fix CI Test Failure — PR Tracking Store References
+- **admin-operations-ui_20260309173001Z** — Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard
+- **skill-ref-migration_20260309173002Z** — Migrate All Skill References from conductor-* to kf-*
 
 ## Getting Started
 
