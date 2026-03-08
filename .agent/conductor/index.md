@@ -121,6 +121,8 @@ Navigation hub for project context.
 - **frontend-test-infra_20260309225000Z** — Frontend Test Infrastructure and Makefile Integration
 - **fix-dashboard-interactive-agent_20260309230000Z** — Fix Interactive Agent Wiring in Dashboard Command
 - **fix-project-sse-subscription_20260309230001Z** — Wire Project SSE Events in Dashboard Frontend
+- **tracing-always-on-be_20260309231000Z** — Remove Optional Tracing — Always-On (Backend)
+- **tracing-always-on-fe_20260309231001Z** — Remove Tracing Toggle UI (Frontend)
 
 ## Getting Started
 

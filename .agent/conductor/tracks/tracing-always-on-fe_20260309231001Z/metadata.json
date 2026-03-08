@@ -1,0 +1,16 @@
+{
+  "id": "tracing-always-on-fe_20260309231001Z",
+  "title": "Remove Tracing Toggle UI (Frontend)",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T23:10:01Z",
+  "updated": "2026-03-09T23:10:01Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 7,
+    "completed": 0
+  }
+}
