@@ -286,11 +286,8 @@ func runImplement(cmd *cobra.Command, args []string) error {
 }
 
 // initTracing sets up a tracer for the implement command.
-// Returns NoopTracer if tracing is not enabled.
-func initTracing(ctx context.Context, cfg *config.Config) (port.Tracer, func(context.Context) error) {
-	if !cfg.IsTracingEnabled() {
-		return port.NoopTracer{}, nil
-	}
+// Returns NoopTracer if OTel initialization fails.
+func initTracing(ctx context.Context, _ *config.Config) (port.Tracer, func(context.Context) error) {
 	result, err := tracing.Init(ctx, "")
 	if err != nil {
 		return port.NoopTracer{}, nil

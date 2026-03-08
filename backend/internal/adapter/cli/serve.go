@@ -84,24 +84,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 	quotaStore := sqlite.NewQuotaStore(db)
 	boardStore := sqlite.NewBoardStore(db)
 
-	// Initialize tracing if enabled.
-	if cfg.IsTracingEnabled() {
-		result, tracingErr := tracing.Init(ctx, "", tracing.WithSpanRecorder(traceStore))
-		if tracingErr != nil {
-			log.Printf("Warning: tracing init failed: %v", tracingErr)
-		} else {
-			defer result.Shutdown(context.Background())
-			log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
-		}
+	// Initialize tracing (always on).
+	result, tracingErr := tracing.Init(ctx, "", tracing.WithSpanRecorder(traceStore))
+	if tracingErr != nil {
+		log.Printf("Warning: tracing init failed: %v", tracingErr)
+	} else {
+		defer result.Shutdown(context.Background())
+		log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
 	}
 
 	// Build server options.
 	opts := []rest.ServerOption{
 		rest.WithGiteaProxy(cfg.GiteaURL(), cfg.GiteaAdminUser),
 		rest.WithTracing(traceStore),
-	}
-	if cfg.IsTracingEnabled() {
-		opts = append(opts, rest.WithTracer(tracing.NewOTelTracer()))
+		rest.WithTracer(tracing.NewOTelTracer()),
 	}
 	if cfg.IsDashboardEnabled() {
 		opts = append(opts, rest.WithDashboard(agentStore, quotaStore, "/", reg))
