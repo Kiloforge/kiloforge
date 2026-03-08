@@ -95,6 +95,8 @@ Navigation hub for project context.
 - **sqlite-storage-core_20260309140000Z** — SQLite Storage Layer — Core Schema and Migration
 - **origin-sync-api_20260309143000Z** — Origin Push/Pull REST API with Remote Branch Targeting
 - **origin-sync-ui_20260309143001Z** — Origin Push/Pull Dashboard UI
+- **interactive-agent-be_20260309150000Z** — Interactive Agent Sessions via WebSocket (Backend)
+- **interactive-agent-fe_20260309150001Z** — Interactive Agent Terminal in Dashboard (Frontend)
 
 ## Getting Started
 
