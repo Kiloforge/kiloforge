@@ -1,7 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
+import { useBoard } from "../hooks/useBoard";
 import { TrackList } from "../components/TrackList";
+import { KanbanBoard } from "../components/KanbanBoard";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -9,6 +11,7 @@ export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
+  const { board, loading: boardLoading, moveCard } = useBoard(slug);
   const project = projects.find((p) => p.slug === slug);
 
   return (
@@ -44,6 +47,17 @@ export function ProjectPage() {
           </div>
         </section>
       )}
+
+      <section className={appStyles.panel}>
+        <h2 className={appStyles.panelTitle}>Board</h2>
+        {boardLoading ? (
+          <p className={appStyles.empty}>Loading board...</p>
+        ) : board && Object.keys(board.cards).length > 0 ? (
+          <KanbanBoard board={board} onMoveCard={moveCard} />
+        ) : (
+          <p className={appStyles.empty}>No cards on the board yet. Run sync to populate.</p>
+        )}
+      </section>
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>

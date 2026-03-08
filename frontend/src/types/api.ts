@@ -114,3 +114,22 @@ export interface TraceDetail {
   trace_id: string;
   spans: SpanInfo[];
 }
+
+export interface BoardCard {
+  track_id: string;
+  title: string;
+  type?: string;
+  column: string;
+  position: number;
+  agent_id?: string;
+  agent_status?: string;
+  assigned_worker?: string;
+  pr_number?: number;
+  moved_at: string;
+  created_at: string;
+}
+
+export interface BoardState {
+  columns: string[];
+  cards: Record<string, BoardCard>;
+}

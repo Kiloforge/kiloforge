@@ -1,0 +1,136 @@
+.board {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  min-height: 200px;
+}
+
+.column {
+  flex: 1;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  transition: border-color 0.15s;
+}
+
+.columnOver {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.columnDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.columnTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.columnCount {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: grab;
+  transition: opacity 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.card:hover {
+  border-color: var(--text-dim);
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.cardDragging {
+  opacity: 0.4;
+}
+
+.cardHeader {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.cardType {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.cardPR {
+  font-size: 10px;
+  color: var(--green);
+  font-family: "SF Mono", "Fira Code", monospace;
+}
+
+.cardTitle {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.cardMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardId {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: "SF Mono", "Fira Code", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+.cardAgent {
+  font-size: 10px;
+  color: var(--yellow);
+}
