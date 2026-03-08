@@ -1015,18 +1015,14 @@ components:
   schemas:
     ConfigResponse:
       type: object
-      required: [tracing_enabled, dashboard_enabled]
+      required: [dashboard_enabled]
       properties:
-        tracing_enabled:
-          type: boolean
         dashboard_enabled:
           type: boolean
 
     UpdateConfigRequest:
       type: object
       properties:
-        tracing_enabled:
-          type: boolean
         dashboard_enabled:
           type: boolean
 

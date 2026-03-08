@@ -187,7 +187,6 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 		return gen.GetConfig200JSONResponse{}, nil
 	}
 	return gen.GetConfig200JSONResponse{
-		TracingEnabled:   h.cfg.IsTracingEnabled(),
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 	}, nil
 }
@@ -201,10 +200,6 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		return gen.UpdateConfig400JSONResponse{Error: "request body required"}, nil
 	}
 
-	if req.Body.TracingEnabled != nil {
-		v := *req.Body.TracingEnabled
-		h.cfg.TracingEnabled = &v
-	}
 	if req.Body.DashboardEnabled != nil {
 		v := *req.Body.DashboardEnabled
 		h.cfg.DashboardEnabled = &v
@@ -215,7 +210,6 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 	}
 
 	return gen.UpdateConfig200JSONResponse{
-		TracingEnabled:   h.cfg.IsTracingEnabled(),
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 	}, nil
 }

@@ -307,7 +307,6 @@ type BoardState struct {
 // ConfigResponse defines model for ConfigResponse.
 type ConfigResponse struct {
 	DashboardEnabled bool `json:"dashboard_enabled"`
-	TracingEnabled   bool `json:"tracing_enabled"`
 }
 
 // ConsentState defines model for ConsentState.
@@ -632,7 +631,6 @@ type TrackStatus string
 // UpdateConfigRequest defines model for UpdateConfigRequest.
 type UpdateConfigRequest struct {
 	DashboardEnabled *bool `json:"dashboard_enabled,omitempty"`
-	TracingEnabled   *bool `json:"tracing_enabled,omitempty"`
 }
 
 // GetAgentLogParams defines parameters for GetAgentLog.

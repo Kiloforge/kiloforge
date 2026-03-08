@@ -1025,10 +1025,7 @@ func TestGetConfig(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected 200, got %T", resp)
 	}
-	// Default: tracing=true, dashboard=true.
-	if !r.TracingEnabled {
-		t.Error("expected TracingEnabled=true by default")
-	}
+	// Default: dashboard=true.
 	if !r.DashboardEnabled {
 		t.Error("expected DashboardEnabled=true by default")
 	}
@@ -1048,7 +1045,7 @@ func TestUpdateConfig(t *testing.T) {
 	f := false
 	resp, err := h.UpdateConfig(context.Background(), gen.UpdateConfigRequestObject{
 		Body: &gen.UpdateConfigJSONRequestBody{
-			TracingEnabled: &f,
+			DashboardEnabled: &f,
 		},
 	})
 	if err != nil {
@@ -1058,16 +1055,12 @@ func TestUpdateConfig(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected 200, got %T", resp)
 	}
-	if r.TracingEnabled {
-		t.Error("expected TracingEnabled=false after update")
-	}
-	// Dashboard should remain true (not changed).
-	if !r.DashboardEnabled {
-		t.Error("expected DashboardEnabled=true (unchanged)")
+	if r.DashboardEnabled {
+		t.Error("expected DashboardEnabled=false after update")
 	}
 	// Verify persisted.
-	if cfg.TracingEnabled == nil || *cfg.TracingEnabled != false {
-		t.Error("expected cfg.TracingEnabled to be set to false")
+	if cfg.DashboardEnabled == nil || *cfg.DashboardEnabled != false {
+		t.Error("expected cfg.DashboardEnabled to be set to false")
 	}
 }
 
