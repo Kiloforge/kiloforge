@@ -10,6 +10,7 @@ import { TraceList } from "../components/TraceList";
 import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { useTraces } from "../hooks/useTraces";
+import { useConfig } from "../hooks/useConfig";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
 
@@ -76,6 +77,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
 export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onViewLog }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
+  const { config, loading: configLoading, updating: configUpdating, updateConfig } = useConfig();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
 
   const handleRemoveConfirm = useCallback(
@@ -131,7 +133,13 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Traces</h2>
-        <TraceList traces={traces} />
+        <TraceList
+          traces={traces}
+          config={config}
+          configLoading={configLoading}
+          configUpdating={configUpdating}
+          onUpdateConfig={updateConfig}
+        />
       </section>
 
       {removeSlug && (

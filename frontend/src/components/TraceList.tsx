@@ -1,20 +1,35 @@
 import { Link } from "react-router-dom";
-import type { TraceSummary } from "../types/api";
+import type { TraceSummary, ConfigResponse, UpdateConfigRequest } from "../types/api";
+import { TracingToggle } from "./TracingToggle";
 
 interface Props {
   traces: TraceSummary[];
+  config: ConfigResponse | null;
+  configLoading: boolean;
+  configUpdating: boolean;
+  onUpdateConfig: (req: UpdateConfigRequest) => Promise<boolean>;
 }
 
-export function TraceList({ traces }: Props) {
+export function TraceList({ traces, config, configLoading, configUpdating, onUpdateConfig }: Props) {
   if (traces.length === 0) {
     return (
-      <p style={{ color: "#666", padding: "8px 0" }}>
-        No traces recorded. Enable tracing with <code>"tracing_enabled": true</code> in config.
-      </p>
+      <div style={{ padding: "8px 0" }}>
+        <TracingToggle config={config} loading={configLoading} updating={configUpdating} onUpdate={onUpdateConfig} />
+        <p style={{ color: "#666", marginTop: 12 }}>
+          No traces recorded.{" "}
+          {config && !config.tracing_enabled
+            ? "Enable tracing above to start collecting traces."
+            : "Traces will appear here once operations are recorded."}
+        </p>
+      </div>
     );
   }
 
   return (
+    <div>
+      <div style={{ marginBottom: 12 }}>
+        <TracingToggle config={config} loading={configLoading} updating={configUpdating} onUpdate={onUpdateConfig} />
+      </div>
     <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "monospace", fontSize: 13 }}>
       <thead>
         <tr style={{ color: "#888", textAlign: "left", borderBottom: "1px solid #333" }}>
@@ -55,5 +70,6 @@ export function TraceList({ traces }: Props) {
         })}
       </tbody>
     </table>
+    </div>
   );
 }
