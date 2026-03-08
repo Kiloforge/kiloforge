@@ -2,15 +2,15 @@
   "id": "agent-permissions-consent_20260309190000Z",
   "title": "Agent Permissions Flag and User Consent",
   "type": "bug",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T19:00:00Z",
   "updated": "2026-03-09T19:00:00Z",
   "phases": {
     "total": 6,
-    "completed": 0
+    "completed": 6
   },
   "tasks": {
     "total": 16,
-    "completed": 0
+    "completed": 16
   }
 }
