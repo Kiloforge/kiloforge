@@ -7,7 +7,7 @@
 
 ## Summary
 
-Add frontend handling for the 428 "conductor setup required" response. When a user tries to generate tracks or spawn an agent on a project that hasn't been set up, show a dialog explaining that setup is needed and offer a button to launch an interactive setup session. After setup completes, the original operation is retried automatically.
+Add frontend handling for the 428 "kiloforge setup required" response. When a user tries to generate tracks or spawn an agent on a project that hasn't been set up, show a dialog explaining that setup is needed and offer a button to launch an interactive setup session. After setup completes, the original operation is retried automatically.
 
 ## Context
 
@@ -111,7 +111,7 @@ Similar to ConsentDialog/SkillsInstallDialog. The "Run Setup" button:
 
 ### Setup status indicator
 
-The project page can poll `GET /api/projects/{slug}/setup-status` to show a banner like "Setup required — Run setup to configure this project for track management" with a prominent action button.
+The project page can poll `GET /api/projects/{slug}/setup-status` to show a banner like "Kiloforge Setup Required — Run setup to configure this project for track management" with a prominent action button.
 
 ---
 

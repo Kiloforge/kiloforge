@@ -29,7 +29,7 @@ The current auto-chain approach (`/kf-setup\n\n...` prepended to the track gen p
 - **401** — Claude CLI not authenticated (`checkClaudeAuth`)
 - **403** — Agent permissions not consented (`checkConsent`)
 - **412** — Required skills not installed (`checkSkillsForRole`)
-- **New: 428** — Conductor setup not completed (proposed)
+- **New: 428** — Kiloforge setup not completed (proposed)
 
 ### Files to modify
 - `backend/internal/adapter/rest/api_handler.go` — add setup check, remove auto-chain
@@ -40,7 +40,7 @@ The current auto-chain approach (`/kf-setup\n\n...` prepended to the track gen p
 - [ ] `GET /api/preflight` returns `setup_required` boolean (true if `.agent/conductor/product.md` missing for the active project)
 - [ ] `GET /api/projects/{slug}/setup-status` returns whether conductor setup is complete for that project
 - [ ] `POST /api/projects/{slug}/setup` spawns an interactive setup agent session (same pattern as `SpawnInteractiveAgent`)
-- [ ] `POST /api/tracks/generate` returns 428 with `{"error": "conductor setup required", "project": "<slug>"}` when setup is incomplete — **instead of** auto-chaining `/kf-setup`
+- [ ] `POST /api/tracks/generate` returns 428 with `{"error": "kiloforge setup required", "project": "<slug>"}` when setup is incomplete — **instead of** auto-chaining `/kf-setup`
 - [ ] `POST /api/agents/interactive` also returns 428 when setup is incomplete for the target project
 - [ ] Remove the auto-chain `/kf-setup` hack from `GenerateTracks`
 - [ ] OpenAPI spec updated with new endpoint and response schemas
@@ -98,7 +98,7 @@ func (h *APIHandler) checkSetup(projectSlug string) *string {
     }
     productPath := filepath.Join(project.WorktreeDir, ".agent", "conductor", "product.md")
     if _, err := os.Stat(productPath); os.IsNotExist(err) {
-        msg := "conductor setup required"
+        msg := "kiloforge setup required"
         return &msg
     }
     return nil
