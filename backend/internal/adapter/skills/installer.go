@@ -40,7 +40,7 @@ func NewInstallerWith(c *http.Client) *Installer {
 // Returns the list of installed skills.
 func (inst *Installer) Install(tarballURL, destDir string) ([]InstalledSkill, error) {
 	// Download to temp file.
-	tmpFile, err := os.CreateTemp("", "crelay-skills-*.tar.gz")
+	tmpFile, err := os.CreateTemp("", "kf-skills-*.tar.gz")
 	if err != nil {
 		return nil, fmt.Errorf("create temp file: %w", err)
 	}
@@ -66,7 +66,7 @@ func (inst *Installer) Install(tarballURL, destDir string) ([]InstalledSkill, er
 	tmpFile.Close()
 
 	// Extract to temp directory.
-	extractDir, err := os.MkdirTemp("", "crelay-skills-extract-*")
+	extractDir, err := os.MkdirTemp("", "kf-skills-extract-*")
 	if err != nil {
 		return nil, fmt.Errorf("create extract dir: %w", err)
 	}

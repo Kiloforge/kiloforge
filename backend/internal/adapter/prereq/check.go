@@ -51,7 +51,7 @@ func Check() []PrereqError {
 	if _, err := exec.LookPath("claude"); err != nil {
 		errs = append(errs, PrereqError{
 			Tool:        "claude",
-			Reason:      "required for agent spawning (crelay implement)",
+			Reason:      "required for agent spawning (kf implement)",
 			InstallHint: claudeHint(),
 		})
 	}
@@ -81,7 +81,7 @@ func FormatErrors(errs []PrereqError) string {
 		fmt.Fprintf(&b, "\n  %s — %s\n", e.Tool, e.Reason)
 		fmt.Fprintf(&b, "    Install: %s\n", e.InstallHint)
 	}
-	b.WriteString("\nInstall the missing tools and run 'crelay init' again.")
+	b.WriteString("\nInstall the missing tools and run 'kf init' again.")
 	return b.String()
 }
 

@@ -21,7 +21,7 @@ var poolCmd = &cobra.Command{
 func runPool(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	p, err := pool.Load(cfg.DataDir)
@@ -33,7 +33,7 @@ func runPool(cmd *cobra.Command, args []string) error {
 	if len(statuses) == 0 {
 		fmt.Println("No worktrees in pool.")
 		fmt.Printf("Pool max size: %d\n", p.MaxSize)
-		fmt.Println("\nWorktrees are created automatically when needed by 'crelay implement'.")
+		fmt.Println("\nWorktrees are created automatically when needed by 'kf implement'.")
 		return nil
 	}
 

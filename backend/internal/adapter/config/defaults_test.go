@@ -20,7 +20,7 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 	}
 
 	home, _ := os.UserHomeDir()
-	wantDataDir := filepath.Join(home, ".crelay")
+	wantDataDir := filepath.Join(home, ".kiloforge")
 	if cfg.DataDir != wantDataDir {
 		t.Errorf("DataDir: want %q, got %q", wantDataDir, cfg.DataDir)
 	}

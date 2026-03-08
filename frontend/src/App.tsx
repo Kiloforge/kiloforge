@@ -52,7 +52,7 @@ export default function App() {
       <SkillsBanner />
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>crelay</h1>
+          <h1 className={styles.title}>kiloforge</h1>
           <ConnectionStatus state={connectionState} />
           <AgentHistogram agents={agents} />
         </div>

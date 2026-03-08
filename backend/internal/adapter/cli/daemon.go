@@ -11,7 +11,7 @@ import (
 	"kiloforge/internal/adapter/pidfile"
 )
 
-// startDaemon spawns `crelay serve` as a detached background process.
+// startDaemon spawns `kf serve` as a detached background process.
 // Returns the PID of the spawned process.
 func startDaemon(dataDir string) (int, error) {
 	pidMgr := pidfile.New(dataDir)

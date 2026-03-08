@@ -32,13 +32,13 @@ const trackDetailHTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Track: {{.TrackID}} — crelay</title>
+  <title>Track: {{.TrackID}} — kiloforge</title>
   <style>` + detailPageCSS + `</style>
 </head>
 <body>
   <header>
     <div class="header-left">
-      <h1><a href="/-/" style="color:inherit;text-decoration:none">crelay</a></h1>
+      <h1><a href="/-/" style="color:inherit;text-decoration:none">kiloforge</a></h1>
       <span class="badge" id="conn-status">connecting</span>
     </div>
     <nav><a href="/-/">Dashboard</a></nav>
@@ -97,13 +97,13 @@ const prDetailHTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PR #{{.PRNumber}} — crelay</title>
+  <title>PR #{{.PRNumber}} — kiloforge</title>
   <style>` + detailPageCSS + `</style>
 </head>
 <body>
   <header>
     <div class="header-left">
-      <h1><a href="/-/" style="color:inherit;text-decoration:none">crelay</a></h1>
+      <h1><a href="/-/" style="color:inherit;text-decoration:none">kiloforge</a></h1>
       <span class="badge" id="conn-status">connecting</span>
     </div>
     <nav><a href="/-/">Dashboard</a></nav>

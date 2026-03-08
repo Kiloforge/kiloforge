@@ -199,7 +199,7 @@ func (s *Server) Run(ctx context.Context) error {
 		s.dashboard.StartWatcher(ctx)
 	}
 
-	// Mount Gitea reverse proxy as catch-all. All non-crelay routes
+	// Mount Gitea reverse proxy as catch-all. All non-kiloforge routes
 	// are forwarded to Gitea so its UI and assets load naturally.
 	if s.giteaProxy != nil {
 		mux.Handle("/", s.giteaProxy)

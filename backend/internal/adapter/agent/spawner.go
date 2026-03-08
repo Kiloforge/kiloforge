@@ -77,7 +77,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	prompt := fmt.Sprintf("/conductor-reviewer %s", prURL)
 
-	// Use current working directory as project dir (will be improved with 'crelay add').
+	// Use current working directory as project dir (will be improved with 'kf add').
 	projectDir, _ := os.Getwd()
 
 	info := domain.AgentInfo{

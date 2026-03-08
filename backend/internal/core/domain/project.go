@@ -15,7 +15,7 @@ const (
 	ProjectInactive ProjectStatus = "inactive"
 )
 
-// Project represents a registered project in the crelay system.
+// Project represents a registered project in the kiloforge system.
 type Project struct {
 	Slug         string    `json:"slug"`
 	RepoName     string    `json:"repo_name"`

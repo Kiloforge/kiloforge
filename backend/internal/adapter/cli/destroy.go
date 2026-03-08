@@ -16,7 +16,7 @@ import (
 
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
-	Short: "Permanently destroy all crelay data",
+	Short: "Permanently destroy all kiloforge data",
 	Long: `Removes the Gitea Docker Compose stack, volumes, and the entire data directory.
 
 This action cannot be undone. You will be prompted to confirm unless --force is used.`,
@@ -35,7 +35,7 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		fmt.Println("Nothing to destroy — crelay is not initialized.")
+		fmt.Println("Nothing to destroy — kiloforge is not initialized.")
 		return nil
 	}
 
@@ -78,6 +78,6 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("remove data dir: %w", err)
 	}
 
-	fmt.Println("Done. All crelay data has been destroyed.")
+	fmt.Println("Done. All kiloforge data has been destroyed.")
 	return nil
 }

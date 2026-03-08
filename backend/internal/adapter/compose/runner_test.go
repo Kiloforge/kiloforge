@@ -46,11 +46,11 @@ func TestRunner_CommandBuilding(t *testing.T) {
 	cmd := runner.command(context.Background(), "/tmp/test", "up", "-d")
 	args := cmd.Args
 
-	// Should contain: docker compose -f /tmp/test/docker-compose.yml -p crelay up -d
+	// Should contain: docker compose -f /tmp/test/docker-compose.yml -p kiloforge up -d
 	expected := []string{
 		"docker", "compose",
 		"-f", "/tmp/test/docker-compose.yml",
-		"-p", "crelay",
+		"-p", "kiloforge",
 		"up", "-d",
 	}
 
@@ -73,11 +73,11 @@ func TestRunner_StopCommandBuilding(t *testing.T) {
 	cmd := runner.command(context.Background(), "/tmp/test", "stop")
 	args := cmd.Args
 
-	// Should contain: docker compose -f /tmp/test/docker-compose.yml -p crelay stop
+	// Should contain: docker compose -f /tmp/test/docker-compose.yml -p kiloforge stop
 	expected := []string{
 		"docker", "compose",
 		"-f", "/tmp/test/docker-compose.yml",
-		"-p", "crelay",
+		"-p", "kiloforge",
 		"stop",
 	}
 

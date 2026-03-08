@@ -12,7 +12,7 @@ import (
 
 const (
 	ComposeFileName = "docker-compose.yml"
-	ProjectName     = "crelay"
+	ProjectName     = "kiloforge"
 )
 
 // Runner abstracts docker compose CLI invocation, supporting both v2 (docker compose) and v1 (docker-compose).

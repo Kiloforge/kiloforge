@@ -78,7 +78,7 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
           <p className={appStyles.empty}>Loading projects...</p>
         ) : projects.length === 0 ? (
           <p className={appStyles.empty}>
-            No projects registered — run <code>crelay add &lt;remote&gt;</code>
+            No projects registered — run <code>kf add &lt;remote&gt;</code>
           </p>
         ) : (
           <div className={styles.projectList}>

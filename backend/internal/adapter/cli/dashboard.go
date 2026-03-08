@@ -21,7 +21,7 @@ var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start the web dashboard (standalone)",
 	Long: `Starts the web dashboard server without starting Gitea or the relay.
-Useful when the relay is already running via 'crelay up' and you want
+Useful when the relay is already running via 'kf up' and you want
 to view the dashboard separately.`,
 	RunE: runDashboard,
 }
@@ -32,7 +32,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	store, err := jsonfile.LoadAgentStore(cfg.DataDir)

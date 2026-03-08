@@ -1,9 +1,9 @@
 asyncapi: 3.0.0
 info:
-  title: crelay Event API
+  title: Kiloforge Event API
   version: 0.1.0
   description: |
-    Event-driven interfaces for the crelay relay server.
+    Event-driven interfaces for the kiloforge relay server.
     Covers server-sent events for real-time UI updates and
     consumed Gitea webhook payloads.
 
@@ -213,7 +213,7 @@ components:
       type: object
       description: |
         Gitea issue webhook payload. See Gitea API documentation for
-        the full schema. Key fields used by crelay are listed here.
+        the full schema. Key fields used by kiloforge are listed here.
       properties:
         action:
           type: string

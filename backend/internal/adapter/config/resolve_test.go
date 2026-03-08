@@ -53,9 +53,9 @@ func TestResolve_FullChain(t *testing.T) {
 	}
 
 	// Set an env var that overrides JSON.
-	t.Setenv("CRELAY_API_TOKEN", "env-tok")
+	t.Setenv("KF_API_TOKEN", "env-tok")
 	// Set data dir env so the JSON adapter can find the file.
-	t.Setenv("CRELAY_DATA_DIR", dir)
+	t.Setenv("KF_DATA_DIR", dir)
 
 	cfg, err := Resolve(
 		NewFlagsAdapter(WithGiteaPort(9999)),

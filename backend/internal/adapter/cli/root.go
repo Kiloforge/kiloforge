@@ -5,12 +5,12 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "crelay",
-	Short: "Gitea + Claude agent relay for conductor workflows",
-	Long: `crelay manages a local Gitea instance for conductor-based development
+	Use:   "kf",
+	Short: "Development orchestration forge with Claude Code agents",
+	Long: `kiloforge manages a local Gitea instance for conductor-based development
 and automated code review with Claude Code agents.
 
-Initialize with 'crelay init' to start the global Gitea server.`,
+Initialize with 'kf init' to start the global Gitea server.`,
 }
 
 func Execute() error {

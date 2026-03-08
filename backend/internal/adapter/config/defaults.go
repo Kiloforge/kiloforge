@@ -17,7 +17,7 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 	return &Config{
 		GiteaPort:       3000,
 		RelayPort:       3001,
-		DataDir:         filepath.Join(home, ".crelay"),
+		DataDir:         filepath.Join(home, ".kiloforge"),
 		ContainerName:   "conductor-gitea",
 		GiteaImage:      "gitea/gitea:latest",
 		GiteaAdminUser:  "conductor",

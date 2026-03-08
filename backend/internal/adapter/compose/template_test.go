@@ -11,7 +11,7 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 	cfg := ComposeConfig{
 		GiteaPort: 3000,
 		RelayPort: 3001,
-		DataDir:   "/home/user/.crelay",
+		DataDir:   "/home/user/.kiloforge",
 	}
 
 	data, err := GenerateComposeFile(cfg)
@@ -50,7 +50,7 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 	cfg := ComposeConfig{
 		GiteaPort: 4000,
 		RelayPort: 5000,
-		DataDir:   "/tmp/crelay",
+		DataDir:   "/tmp/kiloforge",
 	}
 
 	data, err := GenerateComposeFile(cfg)
@@ -77,7 +77,7 @@ func TestGenerateComposeFile_RootURLHasNoSubPath(t *testing.T) {
 	cfg := ComposeConfig{
 		GiteaPort: 3000,
 		RelayPort: 3001,
-		DataDir:   "/home/user/.crelay",
+		DataDir:   "/home/user/.kiloforge",
 	}
 
 	data, err := GenerateComposeFile(cfg)

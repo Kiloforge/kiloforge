@@ -23,8 +23,8 @@ var initCmd = &cobra.Command{
 	Long: `Starts a local Gitea instance via Docker Compose, configures it with an admin
 user and API token, and saves the global configuration.
 
-This sets up the shared Gitea server. Use 'crelay down' to stop and 'crelay up'
-to restart. Project registration is handled by 'crelay add'.`,
+This sets up the shared Gitea server. Use 'kf down' to stop and 'kf up'
+to restart. Project registration is handled by 'kf add'.`,
 	RunE: runInit,
 }
 
@@ -37,7 +37,7 @@ var (
 
 func init() {
 	initCmd.Flags().IntVar(&flagGiteaPort, "gitea-port", 3000, "Port for Gitea web UI")
-	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.crelay)")
+	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.kiloforge)")
 	initCmd.Flags().StringVar(&flagAdminPass, "admin-pass", "", "Admin password (default: generated random)")
 	initCmd.Flags().StringVar(&flagSSHKey, "ssh-key", "", "Path to SSH public key (default: auto-detect)")
 }
@@ -147,7 +147,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Data:       %s\n", cfg.DataDir)
 	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()
-	fmt.Println("Register a project with 'crelay add <path>'.")
+	fmt.Println("Register a project with 'kf add <path>'.")
 	fmt.Println()
 
 	// Start relay daemon.
@@ -168,7 +168,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
 	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
 	fmt.Println()
-	fmt.Println("Use 'crelay down' to stop.")
+	fmt.Println("Use 'kf down' to stop.")
 
 	// Offer skills installation if configured and not yet installed.
 	offerSkillsInstall(ctx, cfg)
@@ -202,7 +202,7 @@ func registerSSHKey(ctx context.Context, client *gitea.Client, customPath string
 	}
 
 	fmt.Printf("==> Registering SSH key (%s)...\n", keyPath)
-	if err := client.AddSSHKey(ctx, "crelay-auto", keyContent); err != nil {
+	if err := client.AddSSHKey(ctx, "kf-auto", keyContent); err != nil {
 		fmt.Printf("    Warning: SSH key registration failed: %v\n", err)
 		return
 	}

@@ -156,8 +156,8 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 		w.Write([]byte("gitea-proxy"))
 	}))
 
-	// crelay routes must still work — proxy is only for unmatched paths.
-	crelayRoutes := []struct {
+	// kf routes must still work — proxy is only for unmatched paths.
+	kfRoutes := []struct {
 		path string
 		want int
 	}{
@@ -166,7 +166,7 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 		{"/-/api/locks", http.StatusOK},
 		{"/-/api/badges/track/test", http.StatusOK},
 	}
-	for _, tt := range crelayRoutes {
+	for _, tt := range kfRoutes {
 		req := httptest.NewRequest("GET", tt.path, nil)
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)

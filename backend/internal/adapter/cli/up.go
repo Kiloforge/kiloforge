@@ -20,7 +20,7 @@ var upCmd = &cobra.Command{
 	Long: `Starts the Gitea Docker Compose stack and the relay server as a background
 daemon. Returns immediately after both are running.
 
-Use 'crelay down' to stop both Gitea and the relay.`,
+Use 'kf down' to stop both Gitea and the relay.`,
 	RunE: runUp,
 }
 
@@ -30,7 +30,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
@@ -69,7 +69,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
 	fmt.Printf("Gitea:       http://localhost:%d/\n", cfg.RelayPort)
 	fmt.Println()
-	fmt.Println("Use 'crelay down' to stop.")
+	fmt.Println("Use 'kf down' to stop.")
 
 	return nil
 }

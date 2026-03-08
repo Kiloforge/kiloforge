@@ -12,7 +12,7 @@ import (
 var stopCmd = &cobra.Command{
 	Use:   "stop <agent-id>",
 	Short: "Stop a running agent",
-	Long:  `Sends SIGINT to the agent process, gracefully stopping it. The session is preserved and can be resumed later with 'crelay attach'.`,
+	Long:  `Sends SIGINT to the agent process, gracefully stopping it. The session is preserved and can be resumed later with 'kf attach'.`,
 	Args:  cobra.ExactArgs(1),
 	RunE:  runStop,
 }

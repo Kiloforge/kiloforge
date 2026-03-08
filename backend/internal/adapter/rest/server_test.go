@@ -26,7 +26,7 @@ func newTestServer() *Server {
 
 func newTestServerWithDir(dataDir string) *Server {
 	if dataDir == "" {
-		dataDir = "/tmp/crelay-test-" + fmt.Sprintf("%d", os.Getpid())
+		dataDir = "/tmp/kf-test-" + fmt.Sprintf("%d", os.Getpid())
 	}
 	cfg := &config.Config{
 		GiteaPort:      3000,

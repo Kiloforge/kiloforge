@@ -1,6 +1,6 @@
 # API Schemas
 
-crelay uses a **schema-first** approach for all API development. Schemas are the single source of truth — Go server code, client code, and models are generated from them.
+kiloforge uses a **schema-first** approach for all API development. Schemas are the single source of truth — Go server code, client code, and models are generated from them.
 
 ## File Layout
 

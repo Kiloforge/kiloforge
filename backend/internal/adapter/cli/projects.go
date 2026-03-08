@@ -20,7 +20,7 @@ var projectsCmd = &cobra.Command{
 func runProjects(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
@@ -32,7 +32,7 @@ func runProjects(cmd *cobra.Command, args []string) error {
 	if len(projects) == 0 {
 		fmt.Println("No projects registered.")
 		fmt.Println()
-		fmt.Println("Register a project with: crelay add <repo-path>")
+		fmt.Println("Register a project with: kf add <repo-path>")
 		return nil
 	}
 

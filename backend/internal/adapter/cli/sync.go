@@ -21,7 +21,7 @@ to the native track board. Creates cards for new tracks and updates columns
 for tracks that changed status.
 
 Examples:
-  crelay sync --project myapp`,
+  kf sync --project myapp`,
 	RunE: runSync,
 }
 
@@ -38,7 +38,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)

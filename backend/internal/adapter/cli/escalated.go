@@ -22,7 +22,7 @@ var escalatedCmd = &cobra.Command{
 func runEscalated(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)

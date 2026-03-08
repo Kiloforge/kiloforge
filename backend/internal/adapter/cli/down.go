@@ -27,7 +27,7 @@ func runDown(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	// Stop relay daemon.
@@ -60,7 +60,7 @@ func runDown(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("Restart with: crelay up")
+	fmt.Println("Restart with: kf up")
 
 	return nil
 }

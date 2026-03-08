@@ -12,7 +12,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-const serviceName = "crelay"
+const serviceName = "kiloforge"
 
 // InitResult holds the output of Init.
 type InitResult struct {

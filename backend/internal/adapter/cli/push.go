@@ -22,9 +22,9 @@ var pushCmd = &cobra.Command{
 project's origin remote (GitHub, GitLab, etc.), using the stored SSH identity if configured.
 
 Examples:
-  crelay push myapp                       # push main branch to origin
-  crelay push myapp --branch feature-x    # push specific branch
-  crelay push --all                       # push all projects' main branches`,
+  kf push myapp                       # push main branch to origin
+  kf push myapp --branch feature-x    # push specific branch
+  kf push --all                       # push all projects' main branches`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPush,
 }
@@ -41,7 +41,7 @@ func init() {
 
 func runPush(cmd *cobra.Command, args []string) error {
 	if !flagPushAll && len(args) == 0 {
-		return fmt.Errorf("project slug required (or use --all)\n\nUsage: crelay push <slug> [--branch <name>]\n       crelay push --all")
+		return fmt.Errorf("project slug required (or use --all)\n\nUsage: kf push <slug> [--branch <name>]\n       kf push --all")
 	}
 	if flagPushAll && len(args) > 0 {
 		return fmt.Errorf("cannot use --all with a specific project slug")
@@ -52,7 +52,7 @@ func runPush(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)

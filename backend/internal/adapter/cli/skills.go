@@ -50,7 +50,7 @@ func runSkillsConfig(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	changed := false
@@ -80,10 +80,10 @@ func runSkillsConfig(cmd *cobra.Command, args []string) error {
 func runSkillsUpdate(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 	if cfg.SkillsRepo == "" {
-		return fmt.Errorf("no skills repo configured — run 'crelay skills --repo owner/repo' first")
+		return fmt.Errorf("no skills repo configured — run 'kf skills --repo owner/repo' first")
 	}
 
 	force, _ := cmd.Flags().GetBool("force")
@@ -191,7 +191,7 @@ func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 		return
 	}
 	if answer != "y" && answer != "Y" {
-		fmt.Println("Skipped. Run 'crelay skills update' to install later.")
+		fmt.Println("Skipped. Run 'kf skills update' to install later.")
 		return
 	}
 
@@ -225,7 +225,7 @@ func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 func runSkillsList(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	skillsDir := cfg.GetSkillsDir()
@@ -235,9 +235,9 @@ func runSkillsList(cmd *cobra.Command, args []string) error {
 	if len(installed) == 0 {
 		fmt.Println("No skills installed.")
 		if cfg.SkillsRepo != "" {
-			fmt.Printf("Run 'crelay skills update' to install from %s\n", cfg.SkillsRepo)
+			fmt.Printf("Run 'kf skills update' to install from %s\n", cfg.SkillsRepo)
 		} else {
-			fmt.Println("Run 'crelay skills --repo owner/repo' to configure a source.")
+			fmt.Println("Run 'kf skills --repo owner/repo' to configure a source.")
 		}
 		return nil
 	}

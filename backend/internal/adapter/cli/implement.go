@@ -45,7 +45,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	// Resolve project.
@@ -65,7 +65,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(args) == 0 {
-		return fmt.Errorf("track ID required\n\nUsage: crelay implement <track-id>\n\nUse --list to see available tracks.")
+		return fmt.Errorf("track ID required\n\nUsage: kf implement <track-id>\n\nUse --list to see available tracks.")
 	}
 
 	trackID := args[0]
@@ -155,9 +155,9 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Worktree:  %s\n", wt.Path)
 	fmt.Printf("  Log:       %s\n", info.LogFile)
 	fmt.Println()
-	fmt.Printf("View logs:     crelay logs %s\n", info.ID[:8])
-	fmt.Printf("Stop agent:    crelay stop %s\n", info.ID[:8])
-	fmt.Printf("Resume agent:  crelay attach %s\n", info.ID[:8])
+	fmt.Printf("View logs:     kf logs %s\n", info.ID[:8])
+	fmt.Printf("Stop agent:    kf stop %s\n", info.ID[:8])
+	fmt.Printf("Resume agent:  kf attach %s\n", info.ID[:8])
 	fmt.Println()
 
 	return nil
@@ -167,7 +167,7 @@ func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, er
 	if slug != "" {
 		proj, ok := reg.Get(slug)
 		if !ok {
-			return domain.Project{}, fmt.Errorf("project %q not found — use 'crelay add' to register", slug)
+			return domain.Project{}, fmt.Errorf("project %q not found — use 'kf add' to register", slug)
 		}
 		return proj, nil
 	}
@@ -180,7 +180,7 @@ func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, er
 
 	proj, ok := reg.FindByDir(cwd)
 	if !ok {
-		return domain.Project{}, fmt.Errorf("no project registered for %s — use 'crelay add' or --project flag", cwd)
+		return domain.Project{}, fmt.Errorf("no project registered for %s — use 'kf add' or --project flag", cwd)
 	}
 	return proj, nil
 }

@@ -27,7 +27,7 @@ func init() {
 func runCost(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("load config: %w (have you run 'crelay init'?)", err)
+		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
 	}
 
 	tracker := agent.NewQuotaTracker(cfg.DataDir)

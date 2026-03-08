@@ -19,7 +19,7 @@ type Manifest struct {
 // ManifestPath returns the path to the skills manifest file.
 func ManifestPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".crelay", "skills-manifest.json")
+	return filepath.Join(home, ".kiloforge", "skills-manifest.json")
 }
 
 // LoadManifest reads the manifest from disk, returning an empty manifest if not found.

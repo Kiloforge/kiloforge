@@ -11,15 +11,15 @@ func TestEnvAdapter_ImplementsConfigProvider(t *testing.T) {
 
 func TestEnvAdapter_Load(t *testing.T) {
 	// Not parallel — modifies env vars.
-	t.Setenv("CRELAY_GITEA_PORT", "4000")
-	t.Setenv("CRELAY_DATA_DIR", "/opt/crelay")
-	t.Setenv("CRELAY_API_TOKEN", "env-token")
-	t.Setenv("CRELAY_COMPOSE_FILE", "/opt/compose.yml")
-	t.Setenv("CRELAY_CONTAINER_NAME", "env-gitea")
-	t.Setenv("CRELAY_GITEA_IMAGE", "gitea/gitea:1.21")
-	t.Setenv("CRELAY_GITEA_ADMIN_USER", "envadmin")
-	t.Setenv("CRELAY_GITEA_ADMIN_PASS", "envpass")
-	t.Setenv("CRELAY_GITEA_ADMIN_EMAIL", "env@test.com")
+	t.Setenv("KF_GITEA_PORT", "4000")
+	t.Setenv("KF_DATA_DIR", "/opt/kf")
+	t.Setenv("KF_API_TOKEN", "env-token")
+	t.Setenv("KF_COMPOSE_FILE", "/opt/compose.yml")
+	t.Setenv("KF_CONTAINER_NAME", "env-gitea")
+	t.Setenv("KF_GITEA_IMAGE", "gitea/gitea:1.21")
+	t.Setenv("KF_GITEA_ADMIN_USER", "envadmin")
+	t.Setenv("KF_GITEA_ADMIN_PASS", "envpass")
+	t.Setenv("KF_GITEA_ADMIN_EMAIL", "env@test.com")
 
 	adapter := &EnvAdapter{}
 	cfg, err := adapter.Load()
@@ -30,8 +30,8 @@ func TestEnvAdapter_Load(t *testing.T) {
 	if cfg.GiteaPort != 4000 {
 		t.Errorf("GiteaPort: want 4000, got %d", cfg.GiteaPort)
 	}
-	if cfg.DataDir != "/opt/crelay" {
-		t.Errorf("DataDir: want %q, got %q", "/opt/crelay", cfg.DataDir)
+	if cfg.DataDir != "/opt/kf" {
+		t.Errorf("DataDir: want %q, got %q", "/opt/kf", cfg.DataDir)
 	}
 	if cfg.APIToken != "env-token" {
 		t.Errorf("APIToken: want %q, got %q", "env-token", cfg.APIToken)
@@ -75,7 +75,7 @@ func TestEnvAdapter_UnsetVars_ReturnZero(t *testing.T) {
 }
 
 func TestEnvAdapter_DashboardEnabled(t *testing.T) {
-	t.Setenv("CRELAY_DASHBOARD_ENABLED", "false")
+	t.Setenv("KF_DASHBOARD_ENABLED", "false")
 
 	adapter := &EnvAdapter{}
 	cfg, err := adapter.Load()
@@ -91,7 +91,7 @@ func TestEnvAdapter_DashboardEnabled(t *testing.T) {
 }
 
 func TestEnvAdapter_InvalidPort_Ignored(t *testing.T) {
-	t.Setenv("CRELAY_GITEA_PORT", "notanumber")
+	t.Setenv("KF_GITEA_PORT", "notanumber")
 
 	adapter := &EnvAdapter{}
 	cfg, err := adapter.Load()

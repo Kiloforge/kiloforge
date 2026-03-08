@@ -72,7 +72,7 @@ func (m *Manager) Configure(ctx context.Context) (*Client, error) {
 	client := NewClient(m.cfg.GiteaURL(), m.cfg.GiteaAdminUser, m.cfg.GiteaAdminPass)
 
 	// Create API token.
-	token, err := client.CreateToken(ctx, "crelay")
+	token, err := client.CreateToken(ctx, "kiloforge")
 	if err != nil {
 		fmt.Println("    (using basic auth — token may already exist)")
 	} else {

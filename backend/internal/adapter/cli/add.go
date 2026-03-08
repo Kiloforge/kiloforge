@@ -29,9 +29,9 @@ The repo name is derived from the remote URL (e.g., git@github.com:user/repo.git
 Use --name to override the derived name.
 
 Examples:
-  crelay add git@github.com:user/my-project.git
-  crelay add https://github.com/user/my-project.git
-  crelay add git@github.com:user/my-project.git --name custom-name`,
+  kf add git@github.com:user/my-project.git
+  kf add https://github.com/user/my-project.git
+  kf add git@github.com:user/my-project.git --name custom-name`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAdd,
 }
@@ -54,7 +54,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	// Validate it looks like a remote URL.
 	if !isRemoteURL(remoteURL) {
-		return fmt.Errorf("not a remote URL: %s\n\nUsage: crelay add <remote-url>\nExample: crelay add git@github.com:user/repo.git", remoteURL)
+		return fmt.Errorf("not a remote URL: %s\n\nUsage: kf add <remote-url>\nExample: kf add git@github.com:user/repo.git", remoteURL)
 	}
 
 	// Derive repo name from URL.
@@ -87,12 +87,12 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	// Load global config, verify Gitea is initialized and running.
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'crelay init' first")
+		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
 	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	if _, err := client.CheckVersion(ctx); err != nil {
-		return fmt.Errorf("Gitea is not running — run 'crelay init' or 'crelay up' first")
+		return fmt.Errorf("Gitea is not running — run 'kf init' or 'kf up' first")
 	}
 
 	// Load registry and check for duplicate.
@@ -150,7 +150,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		pubKeyPath := sshKeyPath + ".pub"
 		if pubData, err := os.ReadFile(pubKeyPath); err == nil {
 			fmt.Println("==> Registering SSH public key with Gitea...")
-			keyTitle := fmt.Sprintf("crelay-%s", slug)
+			keyTitle := fmt.Sprintf("kf-%s", slug)
 			if err := client.AddSSHKey(ctx, keyTitle, strings.TrimSpace(string(pubData))); err != nil {
 				fmt.Printf("    Warning: SSH key registration failed: %v\n", err)
 			}
@@ -194,7 +194,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, repoName)
 	fmt.Printf("  Origin: %s\n", remoteURL)
 	fmt.Println()
-	fmt.Println("View registered projects with 'crelay projects'.")
+	fmt.Println("View registered projects with 'kf projects'.")
 
 	return nil
 }
