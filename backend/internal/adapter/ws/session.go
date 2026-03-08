@@ -125,3 +125,18 @@ func (b *Bridge) WriteInput(text string) error {
 	_, err := io.WriteString(b.Stdin, text+"\n")
 	return err
 }
+
+// StartOutputRelay reads from an output channel (from InteractiveAgent) and
+// broadcasts each message to all WebSocket clients while buffering for reconnection.
+// It runs until the output channel is closed.
+func (sm *SessionManager) StartOutputRelay(agentID string, output <-chan []byte) {
+	bridge, ok := sm.GetBridge(agentID)
+	if !ok {
+		return
+	}
+	for text := range output {
+		msg := OutputMsg(string(text))
+		bridge.Buffer.Write(msg)
+		sm.BroadcastToAgent(agentID, msg)
+	}
+}

@@ -62,6 +62,30 @@ func TestBridge_WriteInput(t *testing.T) {
 	}
 }
 
+func TestStartOutputRelay(t *testing.T) {
+	t.Parallel()
+
+	sm := NewSessionManager()
+	_, w := io.Pipe()
+	defer w.Close()
+	done := make(chan struct{})
+	bridge := NewBridge("relay-agent", w, done)
+	sm.RegisterBridge("relay-agent", bridge)
+
+	output := make(chan []byte, 5)
+	output <- []byte("line 1")
+	output <- []byte("line 2")
+	close(output)
+
+	sm.StartOutputRelay("relay-agent", output)
+
+	// Ring buffer should contain both lines.
+	lines := bridge.Buffer.Lines()
+	if len(lines) != 2 {
+		t.Fatalf("buffer lines = %d, want 2", len(lines))
+	}
+}
+
 func TestMessage_Constructors(t *testing.T) {
 	t.Parallel()
 
