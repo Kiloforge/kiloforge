@@ -412,6 +412,9 @@ type PreflightResponse struct {
 	// ConsentGiven Whether agent permissions consent has been given
 	ConsentGiven bool `json:"consent_given"`
 
+	// SetupRequired Whether kiloforge setup is required for the active project
+	SetupRequired bool `json:"setup_required"`
+
 	// SkillsMissing Names of missing skills
 	SkillsMissing *[]string `json:"skills_missing,omitempty"`
 
@@ -496,6 +499,23 @@ type SSHKeyInfo struct {
 
 	// Type Key type (e.g., "ed25519", "rsa")
 	Type string `json:"type"`
+}
+
+// SetupRequiredResponse defines model for SetupRequiredResponse.
+type SetupRequiredResponse struct {
+	Error string `json:"error"`
+
+	// Project Project slug that needs setup
+	Project string `json:"project"`
+}
+
+// SetupStatusResponse defines model for SetupStatusResponse.
+type SetupStatusResponse struct {
+	// ProjectSlug The project slug
+	ProjectSlug string `json:"project_slug"`
+
+	// SetupComplete Whether conductor setup is complete for this project
+	SetupComplete bool `json:"setup_complete"`
 }
 
 // SkillDetail defines model for SkillDetail.
@@ -770,6 +790,12 @@ type ServerInterface interface {
 	// Push local main to a remote branch
 	// (POST /api/projects/{slug}/push)
 	PushProject(w http.ResponseWriter, r *http.Request, slug string)
+	// Spawn an interactive setup agent for a project
+	// (POST /api/projects/{slug}/setup)
+	StartProjectSetup(w http.ResponseWriter, r *http.Request, slug string)
+	// Check if kiloforge setup is complete for a project
+	// (GET /api/projects/{slug}/setup-status)
+	GetProjectSetupStatus(w http.ResponseWriter, r *http.Request, slug string)
 	// Get ahead/behind sync status vs upstream
 	// (GET /api/projects/{slug}/sync-status)
 	GetSyncStatus(w http.ResponseWriter, r *http.Request, slug string)
@@ -1268,6 +1294,56 @@ func (siw *ServerInterfaceWrapper) PushProject(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// StartProjectSetup operation middleware
+func (siw *ServerInterfaceWrapper) StartProjectSetup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartProjectSetup(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectSetupStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectSetupStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectSetupStatus(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSyncStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetSyncStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -1656,6 +1732,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/projects/{slug}", wrapper.RemoveProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/pull", wrapper.PullProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/push", wrapper.PushProject)
+	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/setup", wrapper.StartProjectSetup)
+	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/setup-status", wrapper.GetProjectSetupStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/sync-status", wrapper.GetSyncStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/api/quota", wrapper.GetQuota)
 	m.HandleFunc("GET "+options.BaseURL+"/api/skills", wrapper.GetSkillsStatus)
@@ -1799,6 +1877,15 @@ type SpawnInteractiveAgent412JSONResponse SkillsMissingResponse
 func (response SpawnInteractiveAgent412JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(412)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SpawnInteractiveAgent428JSONResponse SetupRequiredResponse
+
+func (response SpawnInteractiveAgent428JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(428)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -2424,6 +2511,94 @@ func (response PushProject500JSONResponse) VisitPushProjectResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type StartProjectSetupRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type StartProjectSetupResponseObject interface {
+	VisitStartProjectSetupResponse(w http.ResponseWriter) error
+}
+
+type StartProjectSetup201JSONResponse GenerateTracksResult
+
+func (response StartProjectSetup201JSONResponse) VisitStartProjectSetupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartProjectSetup401JSONResponse ErrorResponse
+
+func (response StartProjectSetup401JSONResponse) VisitStartProjectSetupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartProjectSetup403JSONResponse ErrorResponse
+
+func (response StartProjectSetup403JSONResponse) VisitStartProjectSetupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartProjectSetup404JSONResponse ErrorResponse
+
+func (response StartProjectSetup404JSONResponse) VisitStartProjectSetupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartProjectSetup412JSONResponse SkillsMissingResponse
+
+func (response StartProjectSetup412JSONResponse) VisitStartProjectSetupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(412)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartProjectSetup500JSONResponse ErrorResponse
+
+func (response StartProjectSetup500JSONResponse) VisitStartProjectSetupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectSetupStatusRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetProjectSetupStatusResponseObject interface {
+	VisitGetProjectSetupStatusResponse(w http.ResponseWriter) error
+}
+
+type GetProjectSetupStatus200JSONResponse SetupStatusResponse
+
+func (response GetProjectSetupStatus200JSONResponse) VisitGetProjectSetupStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectSetupStatus404JSONResponse ErrorResponse
+
+func (response GetProjectSetupStatus404JSONResponse) VisitGetProjectSetupStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetSyncStatusRequestObject struct {
 	Slug string `json:"slug"`
 }
@@ -2700,6 +2875,15 @@ func (response GenerateTracks412JSONResponse) VisitGenerateTracksResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GenerateTracks428JSONResponse SetupRequiredResponse
+
+func (response GenerateTracks428JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(428)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GenerateTracks429JSONResponse ErrorResponse
 
 func (response GenerateTracks429JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
@@ -2837,6 +3021,12 @@ type StrictServerInterface interface {
 	// Push local main to a remote branch
 	// (POST /api/projects/{slug}/push)
 	PushProject(ctx context.Context, request PushProjectRequestObject) (PushProjectResponseObject, error)
+	// Spawn an interactive setup agent for a project
+	// (POST /api/projects/{slug}/setup)
+	StartProjectSetup(ctx context.Context, request StartProjectSetupRequestObject) (StartProjectSetupResponseObject, error)
+	// Check if kiloforge setup is complete for a project
+	// (GET /api/projects/{slug}/setup-status)
+	GetProjectSetupStatus(ctx context.Context, request GetProjectSetupStatusRequestObject) (GetProjectSetupStatusResponseObject, error)
 	// Get ahead/behind sync status vs upstream
 	// (GET /api/projects/{slug}/sync-status)
 	GetSyncStatus(ctx context.Context, request GetSyncStatusRequestObject) (GetSyncStatusResponseObject, error)
@@ -3525,6 +3715,58 @@ func (sh *strictHandler) PushProject(w http.ResponseWriter, r *http.Request, slu
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PushProjectResponseObject); ok {
 		if err := validResponse.VisitPushProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartProjectSetup operation middleware
+func (sh *strictHandler) StartProjectSetup(w http.ResponseWriter, r *http.Request, slug string) {
+	var request StartProjectSetupRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartProjectSetup(ctx, request.(StartProjectSetupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartProjectSetup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartProjectSetupResponseObject); ok {
+		if err := validResponse.VisitStartProjectSetupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectSetupStatus operation middleware
+func (sh *strictHandler) GetProjectSetupStatus(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetProjectSetupStatusRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectSetupStatus(ctx, request.(GetProjectSetupStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectSetupStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectSetupStatusResponseObject); ok {
+		if err := validResponse.VisitGetProjectSetupStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -79,6 +79,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SkillsMissingResponse"
+        "428":
+          description: Kiloforge setup required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupRequiredResponse"
         "429":
           description: Rate limited
           content:
@@ -393,6 +399,82 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/projects/{slug}/setup-status:
+    get:
+      operationId: getProjectSetupStatus
+      summary: Check if kiloforge setup is complete for a project
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "200":
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatusResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/projects/{slug}/setup:
+    post:
+      operationId: startProjectSetup
+      summary: Spawn an interactive setup agent for a project
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "201":
+          description: Setup agent spawned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateTracksResult"
+        "401":
+          description: Claude CLI not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Agent permissions not consented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "412":
+          description: Required skills not installed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillsMissingResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/ssh-keys:
     get:
       operationId: listSSHKeys
@@ -476,6 +558,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SkillsMissingResponse"
+        "428":
+          description: Kiloforge setup required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupRequiredResponse"
         "429":
           description: Rate limited
           content:
@@ -1028,7 +1116,7 @@ components:
 
     PreflightResponse:
       type: object
-      required: [claude_authenticated, skills_ok, consent_given]
+      required: [claude_authenticated, skills_ok, consent_given, setup_required]
       properties:
         claude_authenticated:
           type: boolean
@@ -1047,6 +1135,9 @@ components:
         consent_given:
           type: boolean
           description: Whether agent permissions consent has been given
+        setup_required:
+          type: boolean
+          description: Whether kiloforge setup is required for the active project
 
     ErrorResponse:
       type: object
@@ -1054,6 +1145,27 @@ components:
       properties:
         error:
           type: string
+
+    SetupStatusResponse:
+      type: object
+      required: [setup_complete, project_slug]
+      properties:
+        setup_complete:
+          type: boolean
+          description: Whether conductor setup is complete for this project
+        project_slug:
+          type: string
+          description: The project slug
+
+    SetupRequiredResponse:
+      type: object
+      required: [error, project]
+      properties:
+        error:
+          type: string
+        project:
+          type: string
+          description: Project slug that needs setup
 
     SkillsMissingResponse:
       type: object
