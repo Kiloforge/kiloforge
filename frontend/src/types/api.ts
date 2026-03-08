@@ -185,12 +185,10 @@ export interface PullResult {
 }
 
 export interface ConfigResponse {
-  tracing_enabled: boolean;
   dashboard_enabled: boolean;
 }
 
 export interface UpdateConfigRequest {
-  tracing_enabled?: boolean;
   dashboard_enabled?: boolean;
 }
 

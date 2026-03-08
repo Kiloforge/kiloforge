@@ -14,7 +14,6 @@ import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { useTourContextSafe } from "../components/tour/TourProvider";
 import { TOUR_STEPS } from "../components/tour/tourSteps";
 import { useTraces } from "../hooks/useTraces";
-import { useConfig } from "../hooks/useConfig";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
 
@@ -108,7 +107,6 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
 export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
-  const { config, loading: configLoading, updating: configUpdating, updateConfig } = useConfig();
   const tour = useTourContextSafe();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
@@ -234,13 +232,7 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Traces</h2>
-        <TraceList
-          traces={traces}
-          config={config}
-          configLoading={configLoading}
-          configUpdating={configUpdating}
-          onUpdateConfig={updateConfig}
-        />
+        <TraceList traces={traces} />
       </section>
 
       {removeSlug && (
