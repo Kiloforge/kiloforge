@@ -7,7 +7,10 @@ import (
 )
 
 func TestResolve_DefaultChain(t *testing.T) {
-	t.Parallel()
+	// Not parallel — uses env vars.
+
+	// Isolate from user's real config by pointing to an empty temp dir.
+	t.Setenv("KF_DATA_DIR", t.TempDir())
 
 	// With no JSON file and no env vars, Resolve should return defaults.
 	cfg, err := Resolve()
@@ -15,8 +18,8 @@ func TestResolve_DefaultChain(t *testing.T) {
 		t.Fatalf("Resolve: %v", err)
 	}
 
-	if cfg.GiteaPort != 3000 {
-		t.Errorf("GiteaPort: want 3000, got %d", cfg.GiteaPort)
+	if cfg.GiteaPort != 4000 {
+		t.Errorf("GiteaPort: want 4000, got %d", cfg.GiteaPort)
 	}
 	if cfg.GiteaAdminUser != "conductor" {
 		t.Errorf("GiteaAdminUser: want %q, got %q", "conductor", cfg.GiteaAdminUser)
@@ -24,7 +27,8 @@ func TestResolve_DefaultChain(t *testing.T) {
 }
 
 func TestResolve_WithFlags(t *testing.T) {
-	t.Parallel()
+	// Not parallel — uses env vars.
+	t.Setenv("KF_DATA_DIR", t.TempDir())
 
 	cfg, err := Resolve(
 		NewFlagsAdapter(WithGiteaPort(8080)),

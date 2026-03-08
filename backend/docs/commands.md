@@ -23,7 +23,7 @@ kf init [--gitea-port PORT] [--data-dir PATH]
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--gitea-port` | `3000` | Port for Gitea web UI and API |
+| `--gitea-port` | `4000` | Port for Gitea web UI and API |
 | `--data-dir` | `~/.kiloforge` | Where to store config, compose file, and Gitea data |
 
 **Idempotent:** If Gitea is already running, reports the status and exits without making changes.
@@ -43,7 +43,7 @@ kf status
 ```
 Kiloforge Status
 ======================
-Gitea:       running (v1.22.0) — http://localhost:3000
+Gitea:       running (v1.22.0) — http://localhost:4000
 Data:        /Users/you/.kiloforge
 Compose:     /Users/you/.kiloforge/docker-compose.yml
 ```
@@ -66,7 +66,7 @@ kf up
 **What it does:**
 1. Loads saved config — errors if not initialized
 2. Starts Gitea via Docker Compose (if not already running)
-3. Starts the orchestrator as a background daemon on the configured port (default 3001)
+3. Starts the orchestrator as a background daemon on the configured port (default 4001)
 
 **Requires:** `kf init` must have been run first.
 
@@ -168,13 +168,13 @@ $ kf add git@github.com:you/my-project.git
 ==> Cloning git@github.com:you/my-project.git...
 ==> Creating Gitea repo 'my-project'...
 ==> Adding gitea remote...
-    Remote: http://localhost:3000/conductor/my-project.git
+    Remote: http://localhost:4000/conductor/my-project.git
 ==> Pushing to Gitea...
 ==> Registering webhook...
 
 Project 'my-project' registered!
   Path:   /Users/you/.kiloforge/repos/my-project
-  Gitea:  http://localhost:3000/conductor/my-project
+  Gitea:  http://localhost:4000/conductor/my-project
   Origin: git@github.com:you/my-project.git
 
 View registered projects with 'kf projects'.

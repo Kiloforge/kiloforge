@@ -36,7 +36,7 @@ var (
 )
 
 func init() {
-	initCmd.Flags().IntVar(&flagGiteaPort, "gitea-port", 3000, "Port for Gitea web UI")
+	initCmd.Flags().IntVar(&flagGiteaPort, "gitea-port", 4000, "Port for Gitea web UI")
 	initCmd.Flags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.kiloforge)")
 	initCmd.Flags().StringVar(&flagAdminPass, "admin-pass", "", "Admin password (default: generated random)")
 	initCmd.Flags().StringVar(&flagSSHKey, "ssh-key", "", "Path to SSH public key (default: auto-detect)")

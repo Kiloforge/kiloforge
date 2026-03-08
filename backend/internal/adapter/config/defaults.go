@@ -15,8 +15,8 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 	}
 
 	return &Config{
-		GiteaPort:       3000,
-		OrchestratorPort: 3001,
+		GiteaPort:       4000,
+		OrchestratorPort: 4001,
 		DataDir:         filepath.Join(home, ".kiloforge"),
 		ContainerName:   "conductor-gitea",
 		GiteaImage:      "gitea/gitea:latest",

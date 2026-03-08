@@ -437,7 +437,7 @@ The merge lock supports two modes: **HTTP** (via kiloforge lock API) with automa
 **Setup — determine lock mode and define helpers:**
 
 ```bash
-ORCH_URL="${KF_ORCH_URL:-http://localhost:3001}"
+ORCH_URL="${KF_ORCH_URL:-http://localhost:4001}"
 HOLDER="$(basename $(pwd))"  # e.g., "developer-1"
 LOCK_MODE=""
 HEARTBEAT_PID=""
@@ -648,7 +648,7 @@ Developer is ready for next track.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `KF_ORCH_URL` | `http://localhost:3001` | Orchestrator URL for HTTP lock API |
+| `KF_ORCH_URL` | `http://localhost:4001` | Orchestrator URL for HTTP lock API |
 
 ## Merge Lock Modes
 

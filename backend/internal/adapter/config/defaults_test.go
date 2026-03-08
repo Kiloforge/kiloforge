@@ -15,8 +15,8 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if cfg.GiteaPort != 3000 {
-		t.Errorf("GiteaPort: want 3000, got %d", cfg.GiteaPort)
+	if cfg.GiteaPort != 4000 {
+		t.Errorf("GiteaPort: want 4000, got %d", cfg.GiteaPort)
 	}
 
 	home, _ := os.UserHomeDir()

@@ -11,12 +11,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/-/api': 'http://localhost:3001',
-      '/-/events': 'http://localhost:3001',
-      '/webhook': 'http://localhost:3001',
-      '/health': 'http://localhost:3001',
-      '/gitea': 'http://localhost:3001',
-      '/-/locks': 'http://localhost:3001',
+      '/-/api': 'http://localhost:4001',
+      '/-/events': 'http://localhost:4001',
+      '/webhook': 'http://localhost:4001',
+      '/health': 'http://localhost:4001',
+      '/gitea': 'http://localhost:4001',
+      '/-/locks': 'http://localhost:4001',
     },
   },
 })

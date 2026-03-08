@@ -68,12 +68,12 @@ You'll see output like:
     Found: 2.29.1
 ==> Generating docker-compose.yml...
 ==> Starting Gitea...
-    Gitea running at http://localhost:3000
+    Gitea running at http://localhost:4000
 ==> Configuring Gitea...
     Admin user: conductor
 
 Gitea is ready!
-  Web UI:     http://localhost:3000
+  Web UI:     http://localhost:4000
   Admin:      conductor / conductor123
   Data:       /Users/you/.kiloforge
   Compose:    /Users/you/.kiloforge/docker-compose.yml
@@ -98,7 +98,7 @@ This creates a Gitea repo, adds a `gitea` remote, pushes your main branch, and r
 kf status
 
 # Visit Gitea web UI
-open http://localhost:3000
+open http://localhost:4000
 # Login: conductor / conductor123
 ```
 
@@ -141,10 +141,10 @@ Or add to your project's `.claude/settings.json`:
 
 ```bash
 # Browse the web UI
-open http://localhost:3000
+open http://localhost:4000
 
 # Use tea CLI (if installed)
-tea login add --name local --url http://localhost:3000 --token <your-token>
+tea login add --name local --url http://localhost:4000 --token <your-token>
 tea pr list
 ```
 

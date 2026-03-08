@@ -57,7 +57,7 @@ kf projects
 This will:
 1. Detect your Docker Compose CLI variant (v2 or v1)
 2. Generate a `docker-compose.yml` in `~/.kiloforge/`
-3. Start a Gitea instance at `http://localhost:3000`
+3. Start a Gitea instance at `http://localhost:4000`
 4. Create an admin user (`conductor` / random password)
 5. Generate an API token and save config
 6. Register your project: create Gitea repo, add remote, push code
@@ -108,7 +108,7 @@ Show Gitea server status.
 $ kf status
 Kiloforge Status
 ======================
-Gitea:       running (v1.22.0) — http://localhost:3000
+Gitea:       running (v1.22.0) — http://localhost:4000
 Data:        /Users/you/.kiloforge
 Compose:     /Users/you/.kiloforge/docker-compose.yml
 ```
@@ -201,14 +201,14 @@ kf destroy --force  # skip confirmation
 ```
 kf init / kf up
     │
-    ├─ Docker Compose: start Gitea (localhost:3000)
-    ├─ Orchestrator (localhost:3001)
+    ├─ Docker Compose: start Gitea (localhost:4000)
+    ├─ Orchestrator (localhost:4001)
     │   ├─ Receives events from all registered projects
     │   ├─ Routes by repository name → project registry
     │   ├─ Scoped lock service (merge coordination)
     │   └─ Handles: issues, PRs, reviews, push events
     │
-    ├─ Dashboard (localhost:3002)
+    ├─ Dashboard (localhost:4001/-/)
     │   ├─ Real-time agent status via SSE
     │   ├─ Quota/cost monitoring
     │   └─ Log streaming
@@ -216,13 +216,13 @@ kf init / kf up
     └─ kf add: register project → Gitea repo + webhook
 
 ┌─────────────────────────────────────────────────────────────┐
-│  Gitea (Docker)                            localhost:3000    │
+│  Gitea (Docker)                            localhost:4000    │
 │  • Git repos, PRs, code review for multiple projects        │
 │  • Webhooks → orchestrator on events                         │
 └────────────────────────┬────────────────────────────────────┘
                          │ webhooks
 ┌────────────────────────▼────────────────────────────────────┐
-│  Orchestrator                              localhost:3001    │
+│  Orchestrator                              localhost:4001    │
 │  • Multi-project event routing                              │
 │  • Developer-reviewer review cycle                          │
 │  • Agent lifecycle: spawn, suspend, resume                  │
@@ -231,7 +231,7 @@ kf init / kf up
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│  Dashboard                                 localhost:3002    │
+│  Dashboard                                 localhost:4001/-/    │
 │  • Agent status, logs, and cost — live in the browser       │
 │  • Links to Gitea PRs and repos                             │
 └─────────────────────────────────────────────────────────────┘

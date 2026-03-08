@@ -138,12 +138,12 @@ services:
     container_name: conductor-gitea
     restart: unless-stopped
     ports:
-      - "${KF_GITEA_PORT:-3000}:3000"
+      - "${KF_GITEA_PORT:-4000}:3000"
     volumes:
       - gitea-data:/data
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:${KF_GITEA_PORT:-3000}/
+      - GITEA__server__ROOT_URL=http://localhost:${KF_GITEA_PORT:-4000}/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true
@@ -191,12 +191,12 @@ services:
     container_name: conductor-gitea
     restart: unless-stopped
     ports:
-      - "${KF_GITEA_PORT:-3000}:3000"
+      - "${KF_GITEA_PORT:-4000}:3000"
     volumes:
       - "${KF_DATA_DIR}/gitea-data:/data"
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:${KF_GITEA_PORT:-3000}/
+      - GITEA__server__ROOT_URL=http://localhost:${KF_GITEA_PORT:-4000}/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true
