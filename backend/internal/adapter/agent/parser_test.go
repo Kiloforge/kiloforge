@@ -162,3 +162,61 @@ func TestParseStreamLine_ResultWithZeroCost(t *testing.T) {
 		t.Errorf("CostUSD: want 0, got %f", ev.CostUSD)
 	}
 }
+
+func TestExtractText_ContentBlockDelta(t *testing.T) {
+	t.Parallel()
+
+	line := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"Hello world"}}`
+	got := ExtractText(line)
+	if got != "Hello world" {
+		t.Errorf("got %q, want %q", got, "Hello world")
+	}
+}
+
+func TestExtractText_MessageWithContent(t *testing.T) {
+	t.Parallel()
+
+	line := `{"type":"message","content":[{"type":"text","text":"Hello"},{"type":"text","text":" there"}]}`
+	got := ExtractText(line)
+	if got != "Hello there" {
+		t.Errorf("got %q, want %q", got, "Hello there")
+	}
+}
+
+func TestExtractText_AssistantNestedMessage(t *testing.T) {
+	t.Parallel()
+
+	line := `{"type":"assistant","message":{"content":[{"type":"text","text":"Nested text"}]}}`
+	got := ExtractText(line)
+	if got != "Nested text" {
+		t.Errorf("got %q, want %q", got, "Nested text")
+	}
+}
+
+func TestExtractText_NoText(t *testing.T) {
+	t.Parallel()
+
+	cases := []string{
+		`{"type":"result","subtype":"success"}`,
+		`{"type":"tool_use","name":"Read"}`,
+		`{"type":"init","session_id":"abc"}`,
+		`not json`,
+		``,
+	}
+	for _, line := range cases {
+		if got := ExtractText(line); got != "" {
+			t.Errorf("ExtractText(%q) = %q, want empty", line, got)
+		}
+	}
+}
+
+func TestExtractText_ToolUseContent(t *testing.T) {
+	t.Parallel()
+
+	// Tool use content blocks should not produce text.
+	line := `{"type":"message","content":[{"type":"tool_use","id":"123","name":"Read"}]}`
+	got := ExtractText(line)
+	if got != "" {
+		t.Errorf("got %q, want empty", got)
+	}
+}
