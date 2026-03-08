@@ -26,7 +26,7 @@
 | [x] | impl-otel-task-tracing_20260308233001Z | OpenTelemetry Task-Level Tracing and Token Metrics | 2026-03-08 | 2026-03-08 |
 | [x] | fix-init-build-bugs_20260308234000Z | Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping | 2026-03-08 | 2026-03-08 |
 | [x] | fix-trace-timeline-unused-vars_20260308220100Z | Fix Unused Variable Errors in TraceTimeline | 2026-03-08 | 2026-03-08 |
-| [ ] | research-native-track-board_20260308235000Z | Research: Native Track Board in crelay Dashboard | 2026-03-08 | 2026-03-08 |
+| [x] | research-native-track-board_20260308235000Z | Research: Native Track Board in crelay Dashboard | 2026-03-08 | 2026-03-08 |
 | [ ] | impl-native-track-board_20260308235001Z | Native Track Board with Dashboard Kanban and Agent Lifecycle | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
