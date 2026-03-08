@@ -1005,3 +1005,88 @@ func TestListSSHKeys_Returns200(t *testing.T) {
 		t.Fatal("expected non-nil keys slice")
 	}
 }
+
+func TestGetConfig(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	cfg := &config.Config{DataDir: dir}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:  &stubAgentLister{},
+		LockMgr: lock.New(t.TempDir()),
+		Cfg:     cfg,
+	})
+
+	resp, err := h.GetConfig(context.Background(), gen.GetConfigRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetConfig200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	// Default: tracing=true, dashboard=true.
+	if !r.TracingEnabled {
+		t.Error("expected TracingEnabled=true by default")
+	}
+	if !r.DashboardEnabled {
+		t.Error("expected DashboardEnabled=true by default")
+	}
+}
+
+func TestUpdateConfig(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	cfg := &config.Config{DataDir: dir}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:  &stubAgentLister{},
+		LockMgr: lock.New(t.TempDir()),
+		Cfg:     cfg,
+	})
+
+	f := false
+	resp, err := h.UpdateConfig(context.Background(), gen.UpdateConfigRequestObject{
+		Body: &gen.UpdateConfigJSONRequestBody{
+			TracingEnabled: &f,
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.UpdateConfig200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.TracingEnabled {
+		t.Error("expected TracingEnabled=false after update")
+	}
+	// Dashboard should remain true (not changed).
+	if !r.DashboardEnabled {
+		t.Error("expected DashboardEnabled=true (unchanged)")
+	}
+	// Verify persisted.
+	if cfg.TracingEnabled == nil || *cfg.TracingEnabled != false {
+		t.Error("expected cfg.TracingEnabled to be set to false")
+	}
+}
+
+func TestUpdateConfig_NilBody(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	cfg := &config.Config{DataDir: dir}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:  &stubAgentLister{},
+		LockMgr: lock.New(t.TempDir()),
+		Cfg:     cfg,
+	})
+
+	resp, err := h.UpdateConfig(context.Background(), gen.UpdateConfigRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.UpdateConfig400JSONResponse); !ok {
+		t.Fatalf("expected 400, got %T", resp)
+	}
+}

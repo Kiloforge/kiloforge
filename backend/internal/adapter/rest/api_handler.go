@@ -111,6 +111,45 @@ func (h *APIHandler) GetHealth(_ context.Context, _ gen.GetHealthRequestObject) 
 	}, nil
 }
 
+// GetConfig implements gen.StrictServerInterface.
+func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) (gen.GetConfigResponseObject, error) {
+	if h.cfg == nil {
+		return gen.GetConfig200JSONResponse{}, nil
+	}
+	return gen.GetConfig200JSONResponse{
+		TracingEnabled:   h.cfg.IsTracingEnabled(),
+		DashboardEnabled: h.cfg.IsDashboardEnabled(),
+	}, nil
+}
+
+// UpdateConfig implements gen.StrictServerInterface.
+func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequestObject) (gen.UpdateConfigResponseObject, error) {
+	if h.cfg == nil {
+		return gen.UpdateConfig500JSONResponse{Error: "config not available"}, nil
+	}
+	if req.Body == nil {
+		return gen.UpdateConfig400JSONResponse{Error: "request body required"}, nil
+	}
+
+	if req.Body.TracingEnabled != nil {
+		v := *req.Body.TracingEnabled
+		h.cfg.TracingEnabled = &v
+	}
+	if req.Body.DashboardEnabled != nil {
+		v := *req.Body.DashboardEnabled
+		h.cfg.DashboardEnabled = &v
+	}
+
+	if err := h.cfg.Save(); err != nil {
+		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
+	}
+
+	return gen.UpdateConfig200JSONResponse{
+		TracingEnabled:   h.cfg.IsTracingEnabled(),
+		DashboardEnabled: h.cfg.IsDashboardEnabled(),
+	}, nil
+}
+
 // ListAgents implements gen.StrictServerInterface.
 func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject) (gen.ListAgentsResponseObject, error) {
 	if err := h.agents.Load(); err != nil {

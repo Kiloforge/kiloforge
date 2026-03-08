@@ -109,6 +109,14 @@ type ClientInterface interface {
 	// SyncBoard request
 	SyncBoard(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetConfig request
+	GetConfig(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateConfigWithBody request with any body
+	UpdateConfigWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListLocks request
 	ListLocks(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -242,6 +250,42 @@ func (c *Client) MoveCard(ctx context.Context, project string, body MoveCardJSON
 
 func (c *Client) SyncBoard(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSyncBoardRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetConfig(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetConfigRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateConfigWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateConfigRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateConfigRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -732,6 +776,73 @@ func NewSyncBoardRequest(server string, project string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewGetConfigRequest generates requests for GetConfig
+func NewGetConfigRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/config")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateConfigRequest calls the generic UpdateConfig builder with application/json body
+func NewUpdateConfigRequest(server string, body UpdateConfigJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateConfigRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateConfigRequestWithBody generates requests for UpdateConfig with any type of body
+func NewUpdateConfigRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/config")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1413,6 +1524,14 @@ type ClientWithResponsesInterface interface {
 	// SyncBoardWithResponse request
 	SyncBoardWithResponse(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*SyncBoardResponse, error)
 
+	// GetConfigWithResponse request
+	GetConfigWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConfigResponse, error)
+
+	// UpdateConfigWithBodyWithResponse request with any body
+	UpdateConfigWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error)
+
+	UpdateConfigWithResponse(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error)
+
 	// ListLocksWithResponse request
 	ListLocksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocksResponse, error)
 
@@ -1610,6 +1729,52 @@ func (r SyncBoardResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SyncBoardResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetConfigResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConfigResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetConfigResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetConfigResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateConfigResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConfigResponse
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateConfigResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateConfigResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2049,6 +2214,32 @@ func (c *ClientWithResponses) SyncBoardWithResponse(ctx context.Context, project
 	return ParseSyncBoardResponse(rsp)
 }
 
+// GetConfigWithResponse request returning *GetConfigResponse
+func (c *ClientWithResponses) GetConfigWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConfigResponse, error) {
+	rsp, err := c.GetConfig(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetConfigResponse(rsp)
+}
+
+// UpdateConfigWithBodyWithResponse request with arbitrary body returning *UpdateConfigResponse
+func (c *ClientWithResponses) UpdateConfigWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error) {
+	rsp, err := c.UpdateConfigWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateConfigResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateConfigWithResponse(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error) {
+	rsp, err := c.UpdateConfig(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateConfigResponse(rsp)
+}
+
 // ListLocksWithResponse request returning *ListLocksResponse
 func (c *ClientWithResponses) ListLocksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocksResponse, error) {
 	rsp, err := c.ListLocks(ctx, reqEditors...)
@@ -2449,6 +2640,72 @@ func ParseSyncBoardResponse(rsp *http.Response) (*SyncBoardResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest SyncBoardResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetConfigResponse parses an HTTP response from a GetConfigWithResponse call
+func ParseGetConfigResponse(rsp *http.Response) (*GetConfigResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetConfigResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConfigResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateConfigResponse parses an HTTP response from a UpdateConfigWithResponse call
+func ParseUpdateConfigResponse(rsp *http.Response) (*UpdateConfigResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateConfigResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConfigResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

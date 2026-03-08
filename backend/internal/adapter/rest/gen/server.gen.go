@@ -228,6 +228,12 @@ type BoardState struct {
 	Columns []string             `json:"columns"`
 }
 
+// ConfigResponse defines model for ConfigResponse.
+type ConfigResponse struct {
+	DashboardEnabled bool `json:"dashboard_enabled"`
+	TracingEnabled   bool `json:"tracing_enabled"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -445,6 +451,12 @@ type Track struct {
 // TrackStatus defines model for Track.Status.
 type TrackStatus string
 
+// UpdateConfigRequest defines model for UpdateConfigRequest.
+type UpdateConfigRequest struct {
+	DashboardEnabled *bool `json:"dashboard_enabled,omitempty"`
+	TracingEnabled   *bool `json:"tracing_enabled,omitempty"`
+}
+
 // GetAgentLogParams defines parameters for GetAgentLog.
 type GetAgentLogParams struct {
 	// Lines Number of tail lines to return
@@ -474,6 +486,9 @@ type ListTracksParams struct {
 
 // MoveCardJSONRequestBody defines body for MoveCard for application/json ContentType.
 type MoveCardJSONRequestBody = MoveCardRequest
+
+// UpdateConfigJSONRequestBody defines body for UpdateConfig for application/json ContentType.
+type UpdateConfigJSONRequestBody = UpdateConfigRequest
 
 // ReleaseLockJSONRequestBody defines body for ReleaseLock for application/json ContentType.
 type ReleaseLockJSONRequestBody = LockReleaseRequest
@@ -510,6 +525,12 @@ type ServerInterface interface {
 	// Sync board from conductor tracks
 	// (POST /-/api/board/{project}/sync)
 	SyncBoard(w http.ResponseWriter, r *http.Request, project string)
+	// Get current configuration
+	// (GET /-/api/config)
+	GetConfig(w http.ResponseWriter, r *http.Request)
+	// Update configuration
+	// (PUT /-/api/config)
+	UpdateConfig(w http.ResponseWriter, r *http.Request)
 	// List all active locks
 	// (GET /-/api/locks)
 	ListLocks(w http.ResponseWriter, r *http.Request)
@@ -710,6 +731,34 @@ func (siw *ServerInterfaceWrapper) SyncBoard(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SyncBoard(w, r, project)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetConfig(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateConfig operation middleware
+func (siw *ServerInterfaceWrapper) UpdateConfig(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateConfig(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1169,6 +1218,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/board/{project}", wrapper.GetBoard)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/board/{project}/move", wrapper.MoveCard)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/board/{project}/sync", wrapper.SyncBoard)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/config", wrapper.GetConfig)
+	m.HandleFunc("PUT "+options.BaseURL+"/-/api/config", wrapper.UpdateConfig)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/locks", wrapper.ListLocks)
 	m.HandleFunc("DELETE "+options.BaseURL+"/-/api/locks/{scope}", wrapper.ReleaseLock)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/acquire", wrapper.AcquireLock)
@@ -1394,6 +1445,57 @@ func (response SyncBoard400JSONResponse) VisitSyncBoardResponse(w http.ResponseW
 type SyncBoard500JSONResponse ErrorResponse
 
 func (response SyncBoard500JSONResponse) VisitSyncBoardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetConfigRequestObject struct {
+}
+
+type GetConfigResponseObject interface {
+	VisitGetConfigResponse(w http.ResponseWriter) error
+}
+
+type GetConfig200JSONResponse ConfigResponse
+
+func (response GetConfig200JSONResponse) VisitGetConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateConfigRequestObject struct {
+	Body *UpdateConfigJSONRequestBody
+}
+
+type UpdateConfigResponseObject interface {
+	VisitUpdateConfigResponse(w http.ResponseWriter) error
+}
+
+type UpdateConfig200JSONResponse ConfigResponse
+
+func (response UpdateConfig200JSONResponse) VisitUpdateConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateConfig400JSONResponse ErrorResponse
+
+func (response UpdateConfig400JSONResponse) VisitUpdateConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateConfig500JSONResponse ErrorResponse
+
+func (response UpdateConfig500JSONResponse) VisitUpdateConfigResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -1852,6 +1954,12 @@ type StrictServerInterface interface {
 	// Sync board from conductor tracks
 	// (POST /-/api/board/{project}/sync)
 	SyncBoard(ctx context.Context, request SyncBoardRequestObject) (SyncBoardResponseObject, error)
+	// Get current configuration
+	// (GET /-/api/config)
+	GetConfig(ctx context.Context, request GetConfigRequestObject) (GetConfigResponseObject, error)
+	// Update configuration
+	// (PUT /-/api/config)
+	UpdateConfig(ctx context.Context, request UpdateConfigRequestObject) (UpdateConfigResponseObject, error)
 	// List all active locks
 	// (GET /-/api/locks)
 	ListLocks(ctx context.Context, request ListLocksRequestObject) (ListLocksResponseObject, error)
@@ -2086,6 +2194,61 @@ func (sh *strictHandler) SyncBoard(w http.ResponseWriter, r *http.Request, proje
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SyncBoardResponseObject); ok {
 		if err := validResponse.VisitSyncBoardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetConfig operation middleware
+func (sh *strictHandler) GetConfig(w http.ResponseWriter, r *http.Request) {
+	var request GetConfigRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetConfig(ctx, request.(GetConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetConfigResponseObject); ok {
+		if err := validResponse.VisitGetConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateConfig operation middleware
+func (sh *strictHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
+	var request UpdateConfigRequestObject
+
+	var body UpdateConfigJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateConfig(ctx, request.(UpdateConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateConfigResponseObject); ok {
+		if err := validResponse.VisitUpdateConfigResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
