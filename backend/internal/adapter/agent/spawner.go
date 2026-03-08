@@ -18,12 +18,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// CompletionCallback is called when an agent process exits.
+// It receives the agent ID, ref (track ID), and final status.
+type CompletionCallback func(agentID, ref, status string)
+
 // Spawner manages Claude agent lifecycle.
 type Spawner struct {
-	cfg     *config.Config
-	store   *jsonfile.AgentStore
-	tracker *QuotaTracker
-	tracer  port.Tracer
+	cfg                *config.Config
+	store              *jsonfile.AgentStore
+	tracker            *QuotaTracker
+	tracer             port.Tracer
+	completionCallback CompletionCallback
 }
 
 // NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
@@ -35,6 +40,18 @@ func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore, tracker *QuotaTr
 func (s *Spawner) SetTracer(t port.Tracer) {
 	if t != nil {
 		s.tracer = t
+	}
+}
+
+// SetCompletionCallback sets the function called when an agent process exits.
+func (s *Spawner) SetCompletionCallback(fn CompletionCallback) {
+	s.completionCallback = fn
+}
+
+// onCompletion invokes the completion callback if set.
+func (s *Spawner) onCompletion(agentID, ref, status string) {
+	if s.completionCallback != nil {
+		s.completionCallback(agentID, ref, status)
 	}
 }
 
@@ -258,12 +275,16 @@ func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cm
 		}
 	}
 
+	// Determine final status and get agent ref for callback.
+	var finalStatus string
 	if err := cmd.Wait(); err != nil {
-		s.store.UpdateStatus(agentID, "failed")
+		finalStatus = "failed"
+		s.store.UpdateStatus(agentID, finalStatus)
 		span.AddEvent("agent.failed")
 		span.SetError(err)
 	} else {
-		s.store.UpdateStatus(agentID, "completed")
+		finalStatus = "completed"
+		s.store.UpdateStatus(agentID, finalStatus)
 		span.AddEvent("agent.completed")
 	}
 	_ = s.store.Save()
@@ -271,4 +292,11 @@ func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cm
 	if s.tracker != nil {
 		_ = s.tracker.Save()
 	}
+
+	// Look up the agent ref (track ID) for the callback.
+	ref := ""
+	if a, err := s.store.FindAgent(agentID); err == nil {
+		ref = a.Ref
+	}
+	s.onCompletion(agentID, ref, finalStatus)
 }

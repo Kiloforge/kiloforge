@@ -81,6 +81,45 @@ func TestSetTracer(t *testing.T) {
 	}
 }
 
+func TestSetCompletionCallback(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{}, nil, nil)
+
+	var called bool
+	var gotID, gotRef, gotStatus string
+	s.SetCompletionCallback(func(agentID, ref, status string) {
+		called = true
+		gotID = agentID
+		gotRef = ref
+		gotStatus = status
+	})
+
+	// Invoke callback directly to test it's wired.
+	s.onCompletion("agent-123", "track-abc", "completed")
+
+	if !called {
+		t.Fatal("completion callback was not called")
+	}
+	if gotID != "agent-123" {
+		t.Errorf("agentID = %q, want %q", gotID, "agent-123")
+	}
+	if gotRef != "track-abc" {
+		t.Errorf("ref = %q, want %q", gotRef, "track-abc")
+	}
+	if gotStatus != "completed" {
+		t.Errorf("status = %q, want %q", gotStatus, "completed")
+	}
+}
+
+func TestOnCompletion_NilCallback(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{}, nil, nil)
+	// Should not panic when no callback is set.
+	s.onCompletion("agent-123", "track-abc", "completed")
+}
+
 func TestCheckQuota_HighCostAllowed(t *testing.T) {
 	t.Parallel()
 
