@@ -24,7 +24,7 @@
 | [x] | skill-install-update_20260308231000Z | Conductor Skill Installation and Auto-Update | 2026-03-08 | 2026-03-08 |
 | [x] | research-otel-task-tracing_20260308233000Z | Research: OpenTelemetry for Task-Level Tracing and Token Metrics | 2026-03-08 | 2026-03-08 |
 | [x] | impl-otel-task-tracing_20260308233001Z | OpenTelemetry Task-Level Tracing and Token Metrics | 2026-03-08 | 2026-03-08 |
-| [ ] | fix-init-build-bugs_20260308234000Z | Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping | 2026-03-08 | 2026-03-08 |
+| [x] | fix-init-build-bugs_20260308234000Z | Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
