@@ -190,7 +190,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 // SpawnDeveloperOpts configures a developer agent spawn.
 type SpawnDeveloperOpts struct {
 	TrackID     string // conductor track ID
-	Flags       string // additional conductor-developer flags
+	Flags       string // additional kf-developer flags
 	WorktreeDir string // working directory (worktree path); defaults to cwd
 	LogDir      string // log directory; defaults to DataDir/logs
 	Model       string // claude model alias (e.g., "opus", "sonnet")

@@ -41,8 +41,8 @@ func createTestTarball(t *testing.T, files map[string]string) []byte {
 func TestInstall_ExtractsSkills(t *testing.T) {
 	t.Parallel()
 	tarball := createTestTarball(t, map[string]string{
-		"conductor-developer/SKILL.md": "# Developer Skill",
-		"conductor-reviewer/SKILL.md":  "# Reviewer Skill",
+		"kf-developer/SKILL.md": "# Developer Skill",
+		"kf-reviewer/SKILL.md":  "# Reviewer Skill",
 		"README.md":                    "# Not a skill",
 	})
 
