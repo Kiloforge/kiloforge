@@ -98,7 +98,7 @@
 | [x] | refactor-cli-thin-adapters_20260310010000Z | Refactor CLI Commands to Thin Adapters with Shared Service Layer | 2026-03-10 | 2026-03-10 |
 | [x] | fix-board-sync-ux-be_20260310012000Z | Fix Board Sync and SSE Events (Backend) | 2026-03-10 | 2026-03-10 |
 | [x] | fix-board-sync-ux-fe_20260310012001Z | Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend) | 2026-03-10 | 2026-03-10 |
-| [ ] | fix-project-delete-refresh_20260310013000Z | Fix Project Delete — Refresh List and Close Modal | 2026-03-10 | 2026-03-10 |
+| [x] | fix-project-delete-refresh_20260310013000Z | Fix Project Delete — Refresh List and Close Modal | 2026-03-10 | 2026-03-10 |
 | [ ] | agent-display-ttl-be_20260310014000Z | Agent Display TTL and History API (Backend) | 2026-03-10 | 2026-03-10 |
 | [ ] | agent-display-ttl-fe_20260310014001Z | Agent Display TTL and History Page (Frontend) | 2026-03-10 | 2026-03-10 |
 
