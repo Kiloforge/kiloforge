@@ -61,6 +61,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Agent"
+        "401":
+          description: Claude CLI not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "403":
           description: Agent permissions not consented
           content:
@@ -452,6 +458,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenerateTracksResult"
+        "401":
+          description: Claude CLI not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "403":
           description: Agent permissions not consented
           content:
@@ -559,6 +571,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminOperationResult"
+        "401":
+          description: Claude CLI not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "403":
           description: Agent permissions not consented
           content:
@@ -583,6 +601,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /api/preflight:
+    get:
+      operationId: getPreflight
+      summary: Pre-flight check status for agent spawning
+      tags: [System]
+      responses:
+        "200":
+          description: Pre-flight check results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreflightResponse"
 
   /api/config:
     get:
@@ -998,6 +1029,28 @@ components:
           type: boolean
         dashboard_enabled:
           type: boolean
+
+    PreflightResponse:
+      type: object
+      required: [claude_authenticated, skills_ok, consent_given]
+      properties:
+        claude_authenticated:
+          type: boolean
+          description: Whether Claude CLI is authenticated
+        claude_auth_error:
+          type: string
+          description: Auth error message if not authenticated
+        skills_ok:
+          type: boolean
+          description: Whether required skills are installed
+        skills_missing:
+          type: array
+          items:
+            type: string
+          description: Names of missing skills
+        consent_given:
+          type: boolean
+          description: Whether agent permissions consent has been given
 
     ErrorResponse:
       type: object

@@ -151,6 +151,9 @@ type ClientInterface interface {
 
 	HeartbeatLock(ctx context.Context, scope string, body HeartbeatLockJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetPreflight request
+	GetPreflight(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProjects request
 	ListProjects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -479,6 +482,18 @@ func (c *Client) HeartbeatLockWithBody(ctx context.Context, scope string, conten
 
 func (c *Client) HeartbeatLock(ctx context.Context, scope string, body HeartbeatLockJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewHeartbeatLockRequest(c.Server, scope, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetPreflight(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPreflightRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1354,6 +1369,33 @@ func NewHeartbeatLockRequestWithBody(server string, scope string, contentType st
 	return req, nil
 }
 
+// NewGetPreflightRequest generates requests for GetPreflight
+func NewGetPreflightRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/preflight")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListProjectsRequest generates requests for ListProjects
 func NewListProjectsRequest(server string) (*http.Request, error) {
 	var err error
@@ -2129,6 +2171,9 @@ type ClientWithResponsesInterface interface {
 
 	HeartbeatLockWithResponse(ctx context.Context, scope string, body HeartbeatLockJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatLockResponse, error)
 
+	// GetPreflightWithResponse request
+	GetPreflightWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPreflightResponse, error)
+
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
 
@@ -2195,6 +2240,7 @@ type RunAdminOperationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *AdminOperationResult
+	JSON401      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON412      *ErrorResponse
 	JSON429      *ErrorResponse
@@ -2244,6 +2290,7 @@ type SpawnInteractiveAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *Agent
+	JSON401      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON412      *SkillsMissingResponse
 	JSON429      *ErrorResponse
@@ -2566,6 +2613,28 @@ func (r HeartbeatLockResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r HeartbeatLockResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetPreflightResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PreflightResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPreflightResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPreflightResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2905,6 +2974,7 @@ type GenerateTracksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *GenerateTracksResult
+	JSON401      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON412      *SkillsMissingResponse
 	JSON429      *ErrorResponse
@@ -3172,6 +3242,15 @@ func (c *ClientWithResponses) HeartbeatLockWithResponse(ctx context.Context, sco
 	return ParseHeartbeatLockResponse(rsp)
 }
 
+// GetPreflightWithResponse request returning *GetPreflightResponse
+func (c *ClientWithResponses) GetPreflightWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPreflightResponse, error) {
+	rsp, err := c.GetPreflight(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPreflightResponse(rsp)
+}
+
 // ListProjectsWithResponse request returning *ListProjectsResponse
 func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error) {
 	rsp, err := c.ListProjects(ctx, reqEditors...)
@@ -3386,6 +3465,13 @@ func ParseRunAdminOperationResponse(rsp *http.Response) (*RunAdminOperationRespo
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -3472,6 +3558,13 @@ func ParseSpawnInteractiveAgentResponse(rsp *http.Response) (*SpawnInteractiveAg
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
@@ -3978,6 +4071,32 @@ func ParseHeartbeatLockResponse(rsp *http.Response) (*HeartbeatLockResponse, err
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPreflightResponse parses an HTTP response from a GetPreflightWithResponse call
+func ParseGetPreflightResponse(rsp *http.Response) (*GetPreflightResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPreflightResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PreflightResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
@@ -4503,6 +4622,13 @@ func ParseGenerateTracksResponse(rsp *http.Response) (*GenerateTracksResponse, e
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse

@@ -17,9 +17,9 @@
 
 ## Phase 3: REST API and CLI Integration
 
-- [ ] Task 3.1: REST spawn endpoints (`POST /api/agents/*`, `POST /api/tracks/generate`, `POST /api/admin/run`) — return 401 with auth error message if `CheckClaudeAuthCached()` fails
-- [ ] Task 3.2: CLI `kf implement` — show auth error with login instructions before reaching skill/consent checks
-- [ ] Task 3.3: Add `GET /api/preflight` endpoint — returns combined auth + skills + consent status for dashboard pre-spawn checks
+- [x] Task 3.1: REST spawn endpoints (`POST /api/agents/*`, `POST /api/tracks/generate`, `POST /api/admin/run`) — return 401 with auth error message if `CheckClaudeAuthCached()` fails
+- [x] Task 3.2: CLI `kf implement` — show auth error with login instructions before reaching skill/consent checks
+- [x] Task 3.3: Add `GET /api/preflight` endpoint — returns combined auth + skills + consent status for dashboard pre-spawn checks
 
 ## Phase 4: Verification
 

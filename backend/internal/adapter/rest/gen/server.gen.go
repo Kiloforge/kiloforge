@@ -402,6 +402,24 @@ type MoveCardResult struct {
 	TrackId    string `json:"track_id"`
 }
 
+// PreflightResponse defines model for PreflightResponse.
+type PreflightResponse struct {
+	// ClaudeAuthError Auth error message if not authenticated
+	ClaudeAuthError *string `json:"claude_auth_error,omitempty"`
+
+	// ClaudeAuthenticated Whether Claude CLI is authenticated
+	ClaudeAuthenticated bool `json:"claude_authenticated"`
+
+	// ConsentGiven Whether agent permissions consent has been given
+	ConsentGiven bool `json:"consent_given"`
+
+	// SkillsMissing Names of missing skills
+	SkillsMissing *[]string `json:"skills_missing,omitempty"`
+
+	// SkillsOk Whether required skills are installed
+	SkillsOk bool `json:"skills_ok"`
+}
+
 // Project defines model for Project.
 type Project struct {
 	Active       bool    `json:"active"`
@@ -736,6 +754,9 @@ type ServerInterface interface {
 	// Extend lock TTL
 	// (POST /api/locks/{scope}/heartbeat)
 	HeartbeatLock(w http.ResponseWriter, r *http.Request, scope string)
+	// Pre-flight check status for agent spawning
+	// (GET /api/preflight)
+	GetPreflight(w http.ResponseWriter, r *http.Request)
 	// List registered projects
 	// (GET /api/projects)
 	ListProjects(w http.ResponseWriter, r *http.Request)
@@ -1112,6 +1133,20 @@ func (siw *ServerInterfaceWrapper) HeartbeatLock(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.HeartbeatLock(w, r, scope)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPreflight operation middleware
+func (siw *ServerInterfaceWrapper) GetPreflight(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPreflight(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1617,6 +1652,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/locks/{scope}", wrapper.ReleaseLock)
 	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/acquire", wrapper.AcquireLock)
 	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/heartbeat", wrapper.HeartbeatLock)
+	m.HandleFunc("GET "+options.BaseURL+"/api/preflight", wrapper.GetPreflight)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects", wrapper.ListProjects)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects", wrapper.AddProject)
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/projects/{slug}", wrapper.RemoveProject)
@@ -1651,6 +1687,15 @@ type RunAdminOperation201JSONResponse AdminOperationResult
 func (response RunAdminOperation201JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOperation401JSONResponse ErrorResponse
+
+func (response RunAdminOperation401JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1729,6 +1774,15 @@ type SpawnInteractiveAgent201JSONResponse Agent
 func (response SpawnInteractiveAgent201JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SpawnInteractiveAgent401JSONResponse ErrorResponse
+
+func (response SpawnInteractiveAgent401JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -2171,6 +2225,22 @@ func (response HeartbeatLock404JSONResponse) VisitHeartbeatLockResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetPreflightRequestObject struct {
+}
+
+type GetPreflightResponseObject interface {
+	VisitGetPreflightResponse(w http.ResponseWriter) error
+}
+
+type GetPreflight200JSONResponse PreflightResponse
+
+func (response GetPreflight200JSONResponse) VisitGetPreflightResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListProjectsRequestObject struct {
 }
 
@@ -2605,6 +2675,15 @@ func (response GenerateTracks201JSONResponse) VisitGenerateTracksResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GenerateTracks401JSONResponse ErrorResponse
+
+func (response GenerateTracks401JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GenerateTracks403JSONResponse ErrorResponse
 
 func (response GenerateTracks403JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
@@ -2742,6 +2821,9 @@ type StrictServerInterface interface {
 	// Extend lock TTL
 	// (POST /api/locks/{scope}/heartbeat)
 	HeartbeatLock(ctx context.Context, request HeartbeatLockRequestObject) (HeartbeatLockResponseObject, error)
+	// Pre-flight check status for agent spawning
+	// (GET /api/preflight)
+	GetPreflight(ctx context.Context, request GetPreflightRequestObject) (GetPreflightResponseObject, error)
 	// List registered projects
 	// (GET /api/projects)
 	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
@@ -3270,6 +3352,30 @@ func (sh *strictHandler) HeartbeatLock(w http.ResponseWriter, r *http.Request, s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(HeartbeatLockResponseObject); ok {
 		if err := validResponse.VisitHeartbeatLockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPreflight operation middleware
+func (sh *strictHandler) GetPreflight(w http.ResponseWriter, r *http.Request) {
+	var request GetPreflightRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPreflight(ctx, request.(GetPreflightRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPreflight")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPreflightResponseObject); ok {
+		if err := validResponse.VisitGetPreflightResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

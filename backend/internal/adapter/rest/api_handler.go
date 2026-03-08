@@ -14,6 +14,7 @@ import (
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/prereq"
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/rest/gen"
@@ -140,6 +141,46 @@ func (h *APIHandler) GetHealth(_ context.Context, _ gen.GetHealthRequestObject) 
 	}, nil
 }
 
+// GetPreflight implements gen.StrictServerInterface.
+func (h *APIHandler) GetPreflight(ctx context.Context, _ gen.GetPreflightRequestObject) (gen.GetPreflightResponseObject, error) {
+	resp := gen.GetPreflight200JSONResponse{
+		ClaudeAuthenticated: true,
+		SkillsOk:           true,
+		ConsentGiven:        true,
+	}
+
+	// Auth check.
+	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
+		resp.ClaudeAuthenticated = false
+		msg := err.Error()
+		resp.ClaudeAuthError = &msg
+	}
+
+	// Skills check (interactive role as baseline).
+	if h.cfg != nil {
+		required := skills.RequiredSkillsForRole("interactive")
+		if len(required) > 0 {
+			globalDir := h.cfg.GetSkillsDir()
+			missing := skills.CheckRequired(required, globalDir, "")
+			if len(missing) > 0 {
+				resp.SkillsOk = false
+				names := make([]string, len(missing))
+				for i, m := range missing {
+					names[i] = m.Name
+				}
+				resp.SkillsMissing = &names
+			}
+		}
+	}
+
+	// Consent check.
+	if h.consent != nil && !h.consent.HasAgentPermissionsConsent() {
+		resp.ConsentGiven = false
+	}
+
+	return resp, nil
+}
+
 // GetConfig implements gen.StrictServerInterface.
 func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) (gen.GetConfigResponseObject, error) {
 	if h.cfg == nil {
@@ -211,6 +252,14 @@ func (h *APIHandler) checkConsent() string {
 	return "agent_permissions_not_consented: user must consent to agent permissions before spawning agents. POST /api/consent/agent-permissions to consent."
 }
 
+// checkClaudeAuth returns a non-empty error string if the Claude CLI is not authenticated.
+func (h *APIHandler) checkClaudeAuth(ctx context.Context) string {
+	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
 // ListAgents implements gen.StrictServerInterface.
 func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject) (gen.ListAgentsResponseObject, error) {
 	if err := h.agents.Load(); err != nil {
@@ -228,6 +277,11 @@ func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject
 func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInteractiveAgentRequestObject) (gen.SpawnInteractiveAgentResponseObject, error) {
 	if h.interSpawner == nil || h.wsSessions == nil {
 		return gen.SpawnInteractiveAgent500JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+
+	// Check Claude CLI authentication.
+	if msg := h.checkClaudeAuth(ctx); msg != "" {
+		return gen.SpawnInteractiveAgent401JSONResponse{Error: msg}, nil
 	}
 
 	// Check agent permissions consent.
@@ -1153,6 +1207,11 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		return gen.GenerateTracks500JSONResponse{Error: "prompt is required"}, nil
 	}
 
+	// Check Claude CLI authentication.
+	if msg := h.checkClaudeAuth(ctx); msg != "" {
+		return gen.GenerateTracks401JSONResponse{Error: msg}, nil
+	}
+
 	// Check agent permissions consent.
 	if msg := h.checkConsent(); msg != "" {
 		return gen.GenerateTracks403JSONResponse{Error: msg}, nil
@@ -1261,6 +1320,11 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 	skillPrompt, ok := adminSkillMap[req.Body.Operation]
 	if !ok {
 		return gen.RunAdminOperation500JSONResponse{Error: fmt.Sprintf("unknown operation: %s", req.Body.Operation)}, nil
+	}
+
+	// Check Claude CLI authentication.
+	if msg := h.checkClaudeAuth(ctx); msg != "" {
+		return gen.RunAdminOperation401JSONResponse{Error: msg}, nil
 	}
 
 	// Check agent permissions consent.

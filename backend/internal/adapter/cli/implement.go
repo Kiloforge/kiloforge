@@ -14,6 +14,7 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pool"
+	"kiloforge/internal/adapter/prereq"
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
@@ -197,6 +198,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
 	spawner := agent.NewSpawner(cfg, store, tracker)
 	spawner.SetTracer(tracer)
+
+	// Pre-flight: verify Claude CLI authentication.
+	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
+		return fmt.Errorf("claude auth check failed: %w\n\nRun 'claude' in a terminal to authenticate, then retry.", err)
+	}
 
 	// Pre-flight skill validation: ensure required skills are installed.
 	if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
