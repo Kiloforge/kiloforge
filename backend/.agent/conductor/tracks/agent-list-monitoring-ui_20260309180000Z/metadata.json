@@ -1,0 +1,16 @@
+{
+  "id": "agent-list-monitoring-ui_20260309180000Z",
+  "title": "Agent List with Role/Track Links and Monitoring View",
+  "type": "feature",
+  "status": "complete",
+  "created": "2026-03-09T18:00:00Z",
+  "updated": "2026-03-09T18:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 3
+  },
+  "tasks": {
+    "total": 10,
+    "completed": 10
+  }
+}

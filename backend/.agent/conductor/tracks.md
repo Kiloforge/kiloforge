@@ -62,10 +62,14 @@
 | [x] | dashboard-track-gen_20260309160000Z | Dashboard-Driven Track Generation with Interactive Agent | 2026-03-09 | 2026-03-09 |
 | [x] | fix-spa-and-init-output_20260309163000Z | Fix SPA Asset MIME Type, Init Output URLs, and Password Display | 2026-03-09 | 2026-03-09 |
 | [x] | skill-preflight-check_20260309170000Z | Pre-flight Skill Validation Before Agent Spawning | 2026-03-09 | 2026-03-09 |
-| [x] | fix-test-ci-pr-tracking_20260309173000Z | Fix CI Test Failure — PR Tracking Store References | 2026-03-09 | 2026-03-09 |
+| [ ] | fix-test-ci-pr-tracking_20260309173000Z | Fix CI Test Failure — PR Tracking Store References | 2026-03-09 | 2026-03-09 |
 | [x] | admin-operations-ui_20260309173001Z | Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard | 2026-03-09 | 2026-03-09 |
 | [x] | skill-ref-migration_20260309173002Z | Migrate All Skill References from conductor-* to kf-* | 2026-03-09 | 2026-03-09 |
-| [ ] | agent-list-monitoring-ui_20260309180000Z | Agent List with Role/Track Links and Monitoring View | 2026-03-09 | 2026-03-09 |
+| [x] | agent-list-monitoring-ui_20260309180000Z | Agent List with Role/Track Links and Monitoring View | 2026-03-09 | 2026-03-09 |
+| [x] | agent-random-names_20260309183000Z | Random Human-Friendly Agent Names | 2026-03-09 | 2026-03-09 |
+| [x] | goose-migrations_20260309184000Z | Migrate to Goose for Database Schema Migrations | 2026-03-09 | 2026-03-09 |
+| [x] | agent-permissions-consent_20260309190000Z | Agent Permissions Flag and User Consent | 2026-03-09 | 2026-03-09 |
+| [ ] | tanstack-query-migration_20260309193000Z | Migrate Frontend Data Fetching to TanStack Query | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 
