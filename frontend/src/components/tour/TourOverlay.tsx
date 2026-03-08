@@ -134,10 +134,16 @@ export function TourOverlay() {
         </div>
         <h3 className={styles.tooltipTitle}>{step.title}</h3>
         <p className={styles.tooltipContent}>{step.content}</p>
-        {!isWaitStep && (
+        {!isWaitStep ? (
           <div className={styles.tooltipActions}>
             <button className={styles.nextBtn} onClick={isLast ? completeTour : nextStep}>
               {isLast ? "Finish" : "Next"}
+            </button>
+          </div>
+        ) : (
+          <div className={styles.tooltipActions}>
+            <button className={styles.skipLink} onClick={completeTour}>
+              Skip and finish tour
             </button>
           </div>
         )}

@@ -31,7 +31,7 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
   useEffect(() => {
     if (tourStep?.id === "add-project" && !expanded) {
       setExpanded(true);
-      setRemoteUrl("https://github.com/example/demo-app.git");
+      setRemoteUrl("https://github.com/kiloforge/example-project");
     }
   }, [tourStep?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 

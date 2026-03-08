@@ -164,6 +164,20 @@
   opacity: 0.9;
 }
 
+.skipLink {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.skipLink:hover {
+  color: var(--text);
+}
+
 /* Completion banner */
 .completeBanner {
   background: rgba(61, 214, 140, 0.1);

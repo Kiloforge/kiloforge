@@ -63,7 +63,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="board-card-first"]',
     title: "Try It: Move a Card",
     content:
-      'Drag this card from Backlog to the Approved column. In production, approving a track kicks off a developer agent.',
+      'Try dragging this card from Backlog to the Approved column. In production, approving a track kicks off a developer agent. You can also skip this step below.',
     action: "wait-for-drag",
     placement: "right",
   },
