@@ -488,6 +488,9 @@ func domainAgentToGen(a domain.AgentInfo, quota QuotaReader) gen.Agent {
 		uptime := int(time.Since(a.StartedAt).Seconds())
 		g.UptimeSeconds = &uptime
 	}
+	if a.Model != "" {
+		g.Model = &a.Model
+	}
 	if quota != nil {
 		if usage := quota.GetAgentUsage(a.ID); usage != nil {
 			g.EstimatedCostUsd = &usage.TotalCostUSD

@@ -173,6 +173,7 @@ type Agent struct {
 	Id               string      `json:"id"`
 	InputTokens      *int        `json:"input_tokens,omitempty"`
 	LogFile          *string     `json:"log_file,omitempty"`
+	Model            *string     `json:"model,omitempty"`
 	OutputTokens     *int        `json:"output_tokens,omitempty"`
 	Pid              int         `json:"pid"`
 	Ref              string      `json:"ref"`

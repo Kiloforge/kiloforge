@@ -163,6 +163,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		Flags:       "--auto-merge",
 		WorktreeDir: wt.Path,
 		LogDir:      logDir,
+		Model:       cfg.Model,
 	})
 	if err != nil {
 		trackSpan.SetError(err)
