@@ -38,7 +38,8 @@ func TestExtractTraceID_NoSpan(t *testing.T) {
 }
 
 func TestInitTracing_Disabled(t *testing.T) {
-	cfg := &config.Config{} // tracing not enabled
+	f := false
+	cfg := &config.Config{TracingEnabled: &f} // tracing explicitly disabled
 	tracer, shutdown := initTracing(context.Background(), cfg)
 	if tracer == nil {
 		t.Fatal("expected non-nil tracer even when disabled")
