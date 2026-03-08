@@ -2,15 +2,15 @@
   "id": "fix-nested-claude-env_20260310001000Z",
   "title": "Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var",
   "type": "bug",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T00:10:00Z",
   "updated": "2026-03-10T00:10:00Z",
   "phases": {
     "total": 2,
-    "completed": 0
+    "completed": 2
   },
   "tasks": {
     "total": 7,
-    "completed": 0
+    "completed": 7
   }
 }
