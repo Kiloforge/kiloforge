@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.42.0
 	go.opentelemetry.io/otel/trace v1.42.0
 	modernc.org/sqlite v1.46.1
+	nhooyr.io/websocket v1.8.17
 )
 
 require (
