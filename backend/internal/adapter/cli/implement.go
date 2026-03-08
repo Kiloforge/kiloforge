@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pool"
+	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
@@ -171,6 +173,22 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	spawner := agent.NewSpawner(cfg, store, tracker)
 	spawner.SetTracer(tracer)
 
+	// Pre-flight skill validation: ensure required skills are installed.
+	if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
+		var errMissing *agent.ErrSkillsMissing
+		if errors.As(err, &errMissing) {
+			if installErr := promptSkillInstall(ctx, cfg, errMissing.Missing, proj.ProjectDir); installErr != nil {
+				return installErr
+			}
+			// Re-validate after install.
+			if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
+				return fmt.Errorf("skills still missing after install: %w", err)
+			}
+		} else {
+			return fmt.Errorf("validate skills: %w", err)
+		}
+	}
+
 	// Wire completion callback: move board card and return worktree on agent exit.
 	spawner.SetCompletionCallback(func(agentID, ref, status string) {
 		if status == "completed" {
@@ -295,6 +313,73 @@ func runDryRun(db *sql.DB, proj domain.Project, trackID string) error {
 	fmt.Printf("  Worktree:  not acquired (dry run)\n")
 	fmt.Printf("  Agent:     not spawned (dry run)\n\n")
 	fmt.Printf("Done. Track %q marked complete via dry-run.\n", trackID)
+	return nil
+}
+
+// promptSkillInstall offers the user a choice to install missing skills
+// globally, locally, or abort.
+func promptSkillInstall(ctx context.Context, cfg *config.Config, missing []skills.RequiredSkill, projectDir string) error {
+	if cfg.SkillsRepo == "" {
+		fmt.Println("\nRequired skills are not installed:")
+		for _, s := range missing {
+			fmt.Printf("  • %s — %s\n", s.Name, s.Reason)
+		}
+		return fmt.Errorf("skills repo not configured — run 'kf skills --repo owner/repo' first")
+	}
+
+	fmt.Println("\nRequired skills are not installed:")
+	for _, s := range missing {
+		fmt.Printf("  • %s — %s\n", s.Name, s.Reason)
+	}
+
+	fmt.Println("\nInstall options:")
+	fmt.Printf("  1. Install globally (%s) — available to all repos\n", cfg.GetSkillsDir())
+	fmt.Printf("  2. Install locally (%s/.claude/skills/) — scoped to this repo\n", projectDir)
+	fmt.Println("  3. Skip — abort agent spawning")
+	fmt.Print("\nChoice [1/2/3]: ")
+
+	answer, ok := readLineCtx(ctx)
+	if !ok {
+		return fmt.Errorf("aborted")
+	}
+
+	var destDir string
+	switch answer {
+	case "1":
+		destDir = cfg.GetSkillsDir()
+	case "2":
+		destDir = filepath.Join(projectDir, ".claude", "skills")
+	default:
+		return fmt.Errorf("agent spawning aborted — required skills not installed")
+	}
+
+	gh := skills.NewGitHubClient()
+	rel, err := gh.LatestRelease(cfg.SkillsRepo)
+	if err != nil {
+		return fmt.Errorf("check for skills: %w", err)
+	}
+
+	fmt.Printf("Installing skills %s...\n", rel.TagName)
+	inst := skills.NewInstaller()
+	result, err := inst.Install(rel.TarballURL, destDir)
+	if err != nil {
+		return fmt.Errorf("install skills: %w", err)
+	}
+
+	// Update manifest and config only for global installs.
+	if answer == "1" {
+		checksums, _ := skills.ComputeChecksums(destDir)
+		m := &skills.Manifest{Version: rel.TagName, Checksums: checksums}
+		_ = m.Save()
+		cfg.SkillsVersion = rel.TagName
+		_ = cfg.Save()
+	}
+
+	fmt.Printf("Installed %d skills:\n", len(result))
+	for _, s := range result {
+		fmt.Printf("  • %s\n", s.Name)
+	}
+	fmt.Println()
 	return nil
 }
 
