@@ -271,6 +271,13 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 	}
 
 	p := result.Project
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewProjectUpdateEvent(map[string]any{
+			"slug":      p.Slug,
+			"repo_name": p.RepoName,
+			"active":    p.Active,
+		}))
+	}
 	resp := gen.AddProject201JSONResponse{
 		Slug:     p.Slug,
 		RepoName: p.RepoName,
@@ -301,7 +308,9 @@ func (h *APIHandler) RemoveProject(ctx context.Context, req gen.RemoveProjectReq
 		}
 		return gen.RemoveProject500JSONResponse{Error: err.Error()}, nil
 	}
-
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewProjectRemovedEvent(req.Slug))
+	}
 	return gen.RemoveProject204Response{}, nil
 }
 
@@ -422,7 +431,13 @@ func (h *APIHandler) AcquireLock(ctx context.Context, req gen.AcquireLockRequest
 			CurrentHolder: strPtr(currentHolder),
 		}, nil
 	}
-
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewLockUpdateEvent(map[string]string{
+			"scope":      l.Scope,
+			"holder":     l.Holder,
+			"expires_at": l.ExpiresAt.Format(time.RFC3339),
+		}))
+	}
 	return gen.AcquireLock200JSONResponse(lockToGen(l)), nil
 }
 
@@ -441,7 +456,13 @@ func (h *APIHandler) HeartbeatLock(_ context.Context, req gen.HeartbeatLockReque
 	if err != nil {
 		return gen.HeartbeatLock404JSONResponse{Error: err.Error()}, nil
 	}
-
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewLockUpdateEvent(map[string]string{
+			"scope":      l.Scope,
+			"holder":     l.Holder,
+			"expires_at": l.ExpiresAt.Format(time.RFC3339),
+		}))
+	}
 	return gen.HeartbeatLock200JSONResponse(lockToGen(l)), nil
 }
 
@@ -454,7 +475,9 @@ func (h *APIHandler) ReleaseLock(_ context.Context, req gen.ReleaseLockRequestOb
 	if err := h.lockMgr.Release(req.Scope, req.Body.Holder); err != nil {
 		return gen.ReleaseLock404JSONResponse{Error: err.Error()}, nil
 	}
-
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewLockReleasedEvent(req.Scope))
+	}
 	return gen.ReleaseLock200JSONResponse{Released: true}, nil
 }
 
@@ -742,6 +765,13 @@ func (h *APIHandler) MoveCard(_ context.Context, req gen.MoveCardRequestObject) 
 	if err != nil {
 		return gen.MoveCard400JSONResponse{Error: err.Error()}, nil
 	}
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewBoardUpdateEvent(map[string]string{
+			"track_id":    result.TrackID,
+			"from_column": result.FromColumn,
+			"to_column":   result.ToColumn,
+		}))
+	}
 	return gen.MoveCard200JSONResponse{
 		TrackId:    result.TrackID,
 		FromColumn: result.FromColumn,
@@ -779,7 +809,12 @@ func (h *APIHandler) SyncBoard(_ context.Context, req gen.SyncBoardRequestObject
 	if err != nil {
 		return gen.SyncBoard500JSONResponse{Error: err.Error()}, nil
 	}
-
+	if h.eventBus != nil && (result.Created > 0 || result.Updated > 0) {
+		board, boardErr := h.boardSvc.GetBoard(req.Project)
+		if boardErr == nil {
+			h.eventBus.Publish(domain.NewBoardUpdateEvent(board))
+		}
+	}
 	return gen.SyncBoard200JSONResponse{
 		Created:   result.Created,
 		Updated:   result.Updated,

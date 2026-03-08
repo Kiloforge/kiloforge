@@ -11,6 +11,7 @@ import (
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
@@ -19,6 +20,10 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
+
+func newTestBoardStore(dir string) *jsonfile.BoardStore {
+	return jsonfile.NewBoardStore(dir)
+}
 
 // stubProjectLister implements ProjectLister for testing.
 type stubProjectLister struct {
@@ -780,6 +785,141 @@ func TestRemoveProject_NotFound(t *testing.T) {
 	}
 	if _, ok := resp.(gen.RemoveProject404JSONResponse); !ok {
 		t.Fatalf("expected 404, got %T", resp)
+	}
+}
+
+// spyEventBus records published events for testing.
+type spyEventBus struct {
+	events []domain.Event
+}
+
+func (s *spyEventBus) Publish(event domain.Event)              { s.events = append(s.events, event) }
+func (s *spyEventBus) Subscribe() <-chan domain.Event           { return make(chan domain.Event) }
+func (s *spyEventBus) Unsubscribe(_ <-chan domain.Event)        {}
+func (s *spyEventBus) ClientCount() int                         { return 0 }
+
+func TestMoveCard_EmitsBoardUpdate(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	boardSvc := service.NewNativeBoardService(newTestBoardStore(dir))
+
+	// Create a board with a card.
+	_, _ = boardSvc.SyncFromTracks("proj", []service.TrackEntry{
+		{ID: "track-1", Title: "Test Track", Status: "pending"},
+	}, nil)
+
+	spy := &spyEventBus{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		BoardSvc: boardSvc,
+		EventBus: spy,
+		GiteaURL: "http://localhost:3000",
+	})
+
+	_, err := h.MoveCard(context.Background(), gen.MoveCardRequestObject{
+		Project: "proj",
+		Body:    &gen.MoveCardJSONRequestBody{TrackId: "track-1", ToColumn: gen.MoveCardRequestToColumnApproved},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	if spy.events[0].Type != domain.EventBoardUpdate {
+		t.Errorf("expected board_update, got %s", spy.events[0].Type)
+	}
+}
+
+func TestLockAcquireRelease_EmitsEvents(t *testing.T) {
+	t.Parallel()
+	spy := &spyEventBus{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		EventBus: spy,
+		GiteaURL: "http://localhost:3000",
+	})
+
+	ttl := 60
+	_, _ = h.AcquireLock(context.Background(), gen.AcquireLockRequestObject{
+		Scope: "test-scope",
+		Body:  &gen.LockAcquireRequest{Holder: "w1", TtlSeconds: &ttl},
+	})
+	_, _ = h.ReleaseLock(context.Background(), gen.ReleaseLockRequestObject{
+		Scope: "test-scope",
+		Body:  &gen.LockReleaseRequest{Holder: "w1"},
+	})
+
+	if len(spy.events) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(spy.events))
+	}
+	if spy.events[0].Type != domain.EventLockUpdate {
+		t.Errorf("expected lock_update, got %s", spy.events[0].Type)
+	}
+	if spy.events[1].Type != domain.EventLockReleased {
+		t.Errorf("expected lock_released, got %s", spy.events[1].Type)
+	}
+}
+
+func TestAddProject_EmitsProjectUpdate(t *testing.T) {
+	t.Parallel()
+	spy := &spyEventBus{}
+	mgr := &stubProjectManager{
+		addResult: &service.AddProjectResult{
+			Project: domain.Project{Slug: "myapp", RepoName: "myapp", Active: true},
+		},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: mgr,
+		EventBus:   spy,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	_, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
+		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: "git@github.com:user/myapp.git"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	if spy.events[0].Type != domain.EventProjectUpdate {
+		t.Errorf("expected project_update, got %s", spy.events[0].Type)
+	}
+}
+
+func TestRemoveProject_EmitsProjectRemoved(t *testing.T) {
+	t.Parallel()
+	spy := &spyEventBus{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: &stubProjectManager{},
+		EventBus:   spy,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	_, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
+		Slug:   "myapp",
+		Params: gen.RemoveProjectParams{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	if spy.events[0].Type != domain.EventProjectRemoved {
+		t.Errorf("expected project_removed, got %s", spy.events[0].Type)
 	}
 }
 
