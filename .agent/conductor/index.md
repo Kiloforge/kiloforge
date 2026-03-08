@@ -90,6 +90,8 @@ Navigation hub for project context.
 - **gitea-proxy-authn_20260309123000Z** — Passwordless Gitea Login via Reverse Proxy Authentication
 - **dashboard-root-routing-be_20260309130000Z** — Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)
 - **dashboard-root-routing-fe_20260309130001Z** — Dashboard Root Routing (Frontend)
+- **tracing-default-on-be_20260309133000Z** — Enable Tracing by Default with Config API (Backend)
+- **tracing-default-on-fe_20260309133001Z** — Tracing Toggle in Dashboard UI (Frontend)
 
 ## Getting Started
 

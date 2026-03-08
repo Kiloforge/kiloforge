@@ -1,0 +1,16 @@
+{
+  "id": "tracing-default-on-fe_20260309133001Z",
+  "title": "Tracing Toggle in Dashboard UI (Frontend)",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-09T13:30:01Z",
+  "updated": "2026-03-09T13:30:01Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}
