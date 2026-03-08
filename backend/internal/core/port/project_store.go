@@ -7,6 +7,7 @@ type ProjectStore interface {
 	Get(slug string) (domain.Project, error)
 	List() []domain.Project
 	Add(p domain.Project) error
+	Remove(slug string) error
 	FindByRepoName(name string) (domain.Project, error)
 	FindByDir(dir string) (domain.Project, error)
 	Save() error

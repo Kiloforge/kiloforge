@@ -66,6 +66,15 @@ func (s *ProjectStore) Add(p domain.Project) error {
 	return nil
 }
 
+// Remove deletes a project by slug. Returns an error if the slug does not exist.
+func (s *ProjectStore) Remove(slug string) error {
+	if _, exists := s.Projects[slug]; !exists {
+		return fmt.Errorf("project %q not found", slug)
+	}
+	delete(s.Projects, slug)
+	return nil
+}
+
 // FindByRepoName looks up a project by its Gitea repo name.
 func (s *ProjectStore) FindByRepoName(repoName string) (domain.Project, bool) {
 	for _, p := range s.Projects {

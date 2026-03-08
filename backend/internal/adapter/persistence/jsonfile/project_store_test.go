@@ -118,6 +118,67 @@ func TestProjectStore_List(t *testing.T) {
 	}
 }
 
+func TestProjectStore_Remove(t *testing.T) {
+	t.Parallel()
+
+	store, _ := LoadProjectStore(t.TempDir())
+	_ = store.Add(domain.Project{Slug: "proj1", ProjectDir: "/a"})
+	_ = store.Add(domain.Project{Slug: "proj2", ProjectDir: "/b"})
+
+	if err := store.Remove("proj1"); err != nil {
+		t.Fatalf("unexpected error removing project: %v", err)
+	}
+
+	// Verify removed
+	_, ok := store.Get("proj1")
+	if ok {
+		t.Error("expected proj1 to be removed")
+	}
+
+	// Verify other project still exists
+	_, ok = store.Get("proj2")
+	if !ok {
+		t.Error("expected proj2 to still exist")
+	}
+
+	// Verify list count
+	if len(store.List()) != 1 {
+		t.Errorf("expected 1 project, got %d", len(store.List()))
+	}
+}
+
+func TestProjectStore_RemoveNotFound(t *testing.T) {
+	t.Parallel()
+
+	store, _ := LoadProjectStore(t.TempDir())
+
+	err := store.Remove("nonexistent")
+	if err == nil {
+		t.Fatal("expected error removing nonexistent project")
+	}
+}
+
+func TestProjectStore_RemovePersists(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	store, _ := LoadProjectStore(dir)
+	_ = store.Add(domain.Project{Slug: "proj1", ProjectDir: "/a"})
+	_ = store.Save()
+
+	_ = store.Remove("proj1")
+	_ = store.Save()
+
+	// Reload and verify
+	loaded, err := LoadProjectStore(dir)
+	if err != nil {
+		t.Fatalf("load error: %v", err)
+	}
+	if len(loaded.List()) != 0 {
+		t.Errorf("expected 0 projects after reload, got %d", len(loaded.List()))
+	}
+}
+
 func TestEnsureProjectDir(t *testing.T) {
 	t.Parallel()
 
