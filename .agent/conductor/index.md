@@ -72,6 +72,7 @@ Navigation hub for project context.
 - **track-lifecycle-tracing_20260309062329Z** — Track Lifecycle Tracing with OTel
 - **kf-skills-source_20260309063859Z** — Kiloforge-Branded Skill Source Artifacts
 - **rebrand-historical-records_20260309063900Z** — Rebrand Historical Conductor Records
+- **rename-relay-orchestrator_20260309075537Z** — Rename Relay Server to Orchestrator
 
 ## Getting Started
 
