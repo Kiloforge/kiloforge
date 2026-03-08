@@ -130,6 +130,7 @@ Navigation hub for project context.
 - **fix-track-gen-project-init_20260309235500Z** — Auto-Initialize Conductor Artifacts Before Track Generation
 - **gitignore-frontend-dist_20260310000000Z** — Stop Committing Frontend Dist — Build Before Backend Instead
 - **fix-nested-claude-env_20260310001000Z** — Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var
+- **fix-spawner-verbose-flag_20260310003000Z** — Fix Agent Spawner — Add --verbose Flag for stream-json
 
 ## Getting Started
 

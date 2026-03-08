@@ -128,3 +128,4 @@ All active tracks completed and archived at 2026-03-08T16:30:00Z.
 | impl-lock-service_20260308150000Z | HTTP-Based Scoped Lock Service in Relay Server | Completed |
 | impl-conductor-lock-migration_20260308150001Z | Migrate Conductor Skills to Use Kiloforge Lock API | Completed |
 | impl-unified-server_20260308160000Z | Unified Server with Reverse Proxy to Gitea | Completed |
+| [ ] | fix-spawner-verbose-flag_20260310003000Z | Fix Agent Spawner — Add --verbose Flag for stream-json | 2026-03-10 | 2026-03-10 |

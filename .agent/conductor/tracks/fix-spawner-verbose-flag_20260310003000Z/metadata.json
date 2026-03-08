@@ -1,0 +1,16 @@
+{
+  "id": "fix-spawner-verbose-flag_20260310003000Z",
+  "title": "Fix Agent Spawner — Add --verbose Flag for stream-json",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-10T00:30:00Z",
+  "updated": "2026-03-10T00:30:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 6,
+    "completed": 0
+  }
+}
