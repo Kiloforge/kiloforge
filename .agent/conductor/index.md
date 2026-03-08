@@ -68,6 +68,7 @@ Navigation hub for project context.
 - **research-native-track-board_20260308235000Z** — Research: Native Track Board in crelay Dashboard
 - **impl-native-track-board_20260308235001Z** — Native Track Board with Dashboard Kanban and Agent Lifecycle
 - **fix-init-password-display_20260308235500Z** — Fix Init Password Display
+- **rebrand-kiloforge_20260309055250Z** — Rebrand crelay to kiloforge (CLI: kf)
 
 ## Getting Started
 
