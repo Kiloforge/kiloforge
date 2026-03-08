@@ -106,6 +106,7 @@ Navigation hub for project context.
 - **skill-ref-migration_20260309173002Z** — Migrate All Skill References from conductor-* to kf-*
 - **agent-list-monitoring-ui_20260309180000Z** — Agent List with Role/Track Links and Monitoring View
 - **agent-random-names_20260309183000Z** — Random Human-Friendly Agent Names
+- **goose-migrations_20260309184000Z** — Migrate to Goose for Database Schema Migrations
 
 ## Getting Started
 

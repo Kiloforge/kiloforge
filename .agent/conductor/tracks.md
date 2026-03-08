@@ -67,6 +67,7 @@
 | [x] | skill-ref-migration_20260309173002Z | Migrate All Skill References from conductor-* to kf-* | 2026-03-09 | 2026-03-09 |
 | [ ] | agent-list-monitoring-ui_20260309180000Z | Agent List with Role/Track Links and Monitoring View | 2026-03-09 | 2026-03-09 |
 | [x] | agent-random-names_20260309183000Z | Random Human-Friendly Agent Names | 2026-03-09 | 2026-03-09 |
+| [ ] | goose-migrations_20260309184000Z | Migrate to Goose for Database Schema Migrations | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 
