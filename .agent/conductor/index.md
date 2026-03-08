@@ -99,6 +99,7 @@ Navigation hub for project context.
 - **interactive-agent-fe_20260309150001Z** — Interactive Agent Terminal in Dashboard (Frontend)
 - **release-process_20260309153000Z** — Release Process with GoReleaser, GitHub Actions, and Homebrew
 - **dashboard-track-gen_20260309160000Z** — Dashboard-Driven Track Generation with Interactive Agent
+- **fix-spa-and-init-output_20260309163000Z** — Fix SPA Asset MIME Type, Init Output URLs, and Password Display
 
 ## Getting Started
 
