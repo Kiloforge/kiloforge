@@ -1,13 +1,16 @@
 package agent
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 )
@@ -230,6 +233,87 @@ func TestMonitorInteractive_ExtractsText(t *testing.T) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for done")
+	}
+}
+
+func TestValidateSkills_Developer(t *testing.T) {
+	t.Parallel()
+
+	globalDir := t.TempDir()
+	cfg := &config.Config{SkillsDir: globalDir}
+	s := NewSpawner(cfg, nil, nil)
+
+	// No skills installed — should return ErrSkillsMissing.
+	err := s.ValidateSkills("developer", "")
+	if err == nil {
+		t.Fatal("expected error when skills are missing")
+	}
+	var errMissing *ErrSkillsMissing
+	if !errors.As(err, &errMissing) {
+		t.Fatalf("expected ErrSkillsMissing, got %T", err)
+	}
+	if len(errMissing.Missing) != 1 || errMissing.Missing[0].Name != "conductor-developer" {
+		t.Errorf("unexpected missing skills: %v", errMissing.Missing)
+	}
+
+	// Install the skill globally.
+	devDir := filepath.Join(globalDir, "conductor-developer")
+	os.MkdirAll(devDir, 0o755)
+	os.WriteFile(filepath.Join(devDir, "SKILL.md"), []byte("# Dev"), 0o644)
+
+	// Now should pass.
+	if err := s.ValidateSkills("developer", ""); err != nil {
+		t.Errorf("expected no error after install, got: %v", err)
+	}
+}
+
+func TestValidateSkills_Reviewer(t *testing.T) {
+	t.Parallel()
+
+	globalDir := t.TempDir()
+	cfg := &config.Config{SkillsDir: globalDir}
+	s := NewSpawner(cfg, nil, nil)
+
+	err := s.ValidateSkills("reviewer", "")
+	if err == nil {
+		t.Fatal("expected error when reviewer skill is missing")
+	}
+
+	// Install locally.
+	workDir := t.TempDir()
+	localDir := filepath.Join(workDir, ".claude", "skills", "conductor-reviewer")
+	os.MkdirAll(localDir, 0o755)
+	os.WriteFile(filepath.Join(localDir, "SKILL.md"), []byte("# Rev"), 0o644)
+
+	if err := s.ValidateSkills("reviewer", workDir); err != nil {
+		t.Errorf("expected no error after local install, got: %v", err)
+	}
+}
+
+func TestValidateSkills_UnknownRole(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{SkillsDir: t.TempDir()}
+	s := NewSpawner(cfg, nil, nil)
+
+	// Unknown role should not require any skills.
+	if err := s.ValidateSkills("unknown", ""); err != nil {
+		t.Errorf("unexpected error for unknown role: %v", err)
+	}
+}
+
+func TestErrSkillsMissing_Error(t *testing.T) {
+	t.Parallel()
+
+	err := &ErrSkillsMissing{
+		Missing: []skills.RequiredSkill{
+			{Name: "conductor-developer", Reason: "dev"},
+			{Name: "conductor-reviewer", Reason: "rev"},
+		},
+	}
+	msg := err.Error()
+	if msg != "required skills not installed: conductor-developer, conductor-reviewer" {
+		t.Errorf("unexpected error message: %q", msg)
 	}
 }
 

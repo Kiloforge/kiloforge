@@ -8,14 +8,73 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 
 	"github.com/google/uuid"
 )
+
+// ErrSkillsMissing is returned when required skills are not installed.
+type ErrSkillsMissing struct {
+	Missing []skills.RequiredSkill
+}
+
+func (e *ErrSkillsMissing) Error() string {
+	names := make([]string, len(e.Missing))
+	for i, s := range e.Missing {
+		names[i] = s.Name
+	}
+	return fmt.Sprintf("required skills not installed: %s", strings.Join(names, ", "))
+}
+
+// requiredSkillsForRole returns the skills needed for a given agent role.
+func requiredSkillsForRole(role string) []skills.RequiredSkill {
+	switch role {
+	case "developer":
+		return []skills.RequiredSkill{
+			{Name: "conductor-developer", Reason: "required for agent developer spawning"},
+		}
+	case "reviewer":
+		return []skills.RequiredSkill{
+			{Name: "conductor-reviewer", Reason: "required for agent reviewer spawning"},
+		}
+	case "interactive":
+		return []skills.RequiredSkill{
+			{Name: "conductor-track-generator", Reason: "required for interactive track generation"},
+		}
+	default:
+		return nil
+	}
+}
+
+// ValidateSkills checks that the required skills for a given role are installed.
+// It checks both the global skills directory (from config) and the local
+// .claude/skills/ directory relative to workDir.
+// Returns ErrSkillsMissing if any required skills are not found.
+func (s *Spawner) ValidateSkills(role, workDir string) error {
+	required := requiredSkillsForRole(role)
+	if len(required) == 0 {
+		return nil
+	}
+
+	globalDir := s.cfg.GetSkillsDir()
+
+	localDir := ""
+	if workDir != "" {
+		localDir = filepath.Join(workDir, ".claude", "skills")
+	}
+
+	missing := skills.CheckRequired(required, globalDir, localDir)
+	if len(missing) > 0 {
+		return &ErrSkillsMissing{Missing: missing}
+	}
+	return nil
+}
 
 // CompletionCallback is called when an agent process exits.
 // It receives the agent ID, ref (track ID), and final status.
