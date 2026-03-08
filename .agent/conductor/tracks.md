@@ -39,7 +39,7 @@
 | [x] | project-manage-ui_20260309084651Z | Project Add/Remove Dashboard UI | 2026-03-09 | 2026-03-09 |
 | [ ] | sse-event-bus_20260309091500Z | SSE Event Bus Infrastructure | 2026-03-09 | 2026-03-09 |
 | [ ] | sse-entity-subscriptions_20260309091501Z | SSE Entity Subscriptions | 2026-03-09 | 2026-03-09 |
-| [ ] | ssh-key-selection_20260309100000Z | Interactive SSH Key Selection for Add Command | 2026-03-09 | 2026-03-09 |
+| [x] | ssh-key-selection_20260309100000Z | Interactive SSH Key Selection for Add Command | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

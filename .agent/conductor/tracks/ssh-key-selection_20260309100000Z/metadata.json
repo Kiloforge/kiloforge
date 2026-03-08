@@ -2,15 +2,15 @@
   "id": "ssh-key-selection_20260309100000Z",
   "title": "Interactive SSH Key Selection for Add Command",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T10:00:00Z",
   "updated": "2026-03-09T10:00:00Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }
