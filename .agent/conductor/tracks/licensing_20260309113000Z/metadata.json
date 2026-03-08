@@ -1,0 +1,16 @@
+{
+  "id": "licensing_20260309113000Z",
+  "title": "Add Apache 2.0 License and Upstream Attribution",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T11:30:00Z",
+  "updated": "2026-03-09T11:30:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 7,
+    "completed": 0
+  }
+}

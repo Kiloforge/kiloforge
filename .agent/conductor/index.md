@@ -83,6 +83,7 @@ Navigation hub for project context.
 - **quota-reframe-fe_20260309103001Z** — Reframe Quota System — Tokens and Rate Limits (Frontend)
 - **model-selection_20260309110000Z** — Configurable Model Selection with Opus Default
 - **agent-completion-callback_20260309112000Z** — Agent Completion Callback and Dry-Run Mode
+- **licensing_20260309113000Z** — Add Apache 2.0 License and Upstream Attribution
 
 ## Getting Started
 
