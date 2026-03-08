@@ -1,0 +1,16 @@
+{
+  "id": "fix-init-build-bugs_20260308234000Z",
+  "title": "Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-08T23:40:00Z",
+  "updated": "2026-03-08T23:40:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 5,
+    "completed": 0
+  }
+}

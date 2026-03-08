@@ -64,6 +64,7 @@ Navigation hub for project context.
 - **skill-install-update_20260308231000Z** — Conductor Skill Installation and Auto-Update
 - **research-otel-task-tracing_20260308233000Z** — Research: OpenTelemetry for Task-Level Tracing and Token Metrics
 - **impl-otel-task-tracing_20260308233001Z** — OpenTelemetry Task-Level Tracing and Token Metrics
+- **fix-init-build-bugs_20260308234000Z** — Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping
 
 ## Getting Started
 
