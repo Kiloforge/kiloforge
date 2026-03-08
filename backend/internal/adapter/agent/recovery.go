@@ -11,15 +11,15 @@ import (
 
 // ProcessStarter abstracts launching a claude --resume process.
 type ProcessStarter interface {
-	Start(ctx context.Context, sessionID, workDir string) (pid int, err error)
+	Start(ctx context.Context, sessionID, workDir, model string) (pid int, err error)
 }
 
 // ExecProcessStarter starts a real claude --resume process.
 type ExecProcessStarter struct{}
 
 // Start launches claude --resume <sessionID> in the given directory.
-func (e *ExecProcessStarter) Start(ctx context.Context, sessionID, workDir string) (int, error) {
-	return execClaudeResume(ctx, sessionID, workDir)
+func (e *ExecProcessStarter) Start(ctx context.Context, sessionID, workDir, model string) (int, error) {
+	return execClaudeResume(ctx, sessionID, workDir, model)
 }
 
 // RecoveryResult summarizes the outcome of recovering agents.
@@ -97,7 +97,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 			}
 		}
 
-		pid, err := rm.starter.Start(ctx, a.SessionID, workDir)
+		pid, err := rm.starter.Start(ctx, a.SessionID, workDir, a.Model)
 		if err != nil {
 			rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
 			errMsg := fmt.Sprintf("resume failed: %v", err)
@@ -123,9 +123,12 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 }
 
 // execClaudeResume runs `claude --resume <sessionID>` in the given directory.
-func execClaudeResume(ctx context.Context, sessionID, workDir string) (int, error) {
-	// Import here to avoid circular dependency concerns in tests.
-	cmd := newCommand(ctx, "claude", "--resume", sessionID, "--output-format", "stream-json")
+func execClaudeResume(ctx context.Context, sessionID, workDir, model string) (int, error) {
+	args := []string{"--resume", sessionID, "--output-format", "stream-json"}
+	if model != "" {
+		args = append([]string{"--model", model}, args...)
+	}
+	cmd := newCommand(ctx, "claude", args...)
 	cmd.Dir = workDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

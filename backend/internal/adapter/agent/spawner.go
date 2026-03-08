@@ -73,6 +73,8 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	// Use current working directory as project dir (will be improved with 'kf add').
 	projectDir, _ := os.Getwd()
 
+	model := s.cfg.Model
+
 	info := domain.AgentInfo{
 		ID:          agentID,
 		Role:        "reviewer",
@@ -83,13 +85,14 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		LogFile:     logFile,
 		StartedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
+		Model:       model,
 	}
 
-	cmd := exec.CommandContext(ctx, "claude",
-		"-p", prompt,
-		"--session-id", sessionID,
-		"--output-format", "stream-json",
-	)
+	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json"}
+	if model != "" {
+		args = append([]string{"--model", model}, args...)
+	}
+	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = projectDir
 
 	lf, err := os.Create(logFile)
@@ -135,6 +138,7 @@ type SpawnDeveloperOpts struct {
 	Flags       string // additional conductor-developer flags
 	WorktreeDir string // working directory (worktree path); defaults to cwd
 	LogDir      string // log directory; defaults to DataDir/logs
+	Model       string // claude model alias (e.g., "opus", "sonnet")
 }
 
 // SpawnDeveloper launches a Claude agent to implement a track.
@@ -163,6 +167,11 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		workDir, _ = os.Getwd()
 	}
 
+	model := opts.Model
+	if model == "" {
+		model = s.cfg.Model
+	}
+
 	info := domain.AgentInfo{
 		ID:          agentID,
 		Role:        "developer",
@@ -173,13 +182,14 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		LogFile:     logFile,
 		StartedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
+		Model:       model,
 	}
 
-	cmd := exec.CommandContext(ctx, "claude",
-		"-p", prompt,
-		"--session-id", sessionID,
-		"--output-format", "stream-json",
-	)
+	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json"}
+	if model != "" {
+		args = append([]string{"--model", model}, args...)
+	}
+	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = workDir
 
 	lf, err := os.Create(logFile)

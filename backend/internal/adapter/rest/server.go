@@ -145,11 +145,11 @@ func newTestableServer(cfg *config.Config, registry *jsonfile.ProjectStore, spaw
 type defaultSpawner struct{}
 
 func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOpts) (*domain.AgentInfo, error) {
-	// In production, use agent.Spawner. For now, use exec directly.
-	cmd := exec.CommandContext(ctx, "claude",
-		"-p", fmt.Sprintf("/conductor-reviewer %s", opts.PRURL),
-		"--output-format", "stream-json",
-	)
+	args := []string{"-p", fmt.Sprintf("/conductor-reviewer %s", opts.PRURL), "--output-format", "stream-json"}
+	if opts.Model != "" {
+		args = append([]string{"--model", opts.Model}, args...)
+	}
+	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = opts.WorkDir
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start reviewer: %w", err)
@@ -160,6 +160,7 @@ func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOp
 		Ref:    fmt.Sprintf("PR #%d", opts.PRNumber),
 		Status: "running",
 		PID:    cmd.Process.Pid,
+		Model:  opts.Model,
 	}, nil
 }
 
@@ -487,6 +488,7 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 		PRURL:    prURL,
 		WorkDir:  workDir,
 		LogDir:   logDir,
+		Model:    s.cfg.Model,
 	})
 	if err != nil {
 		s.logger.Printf("[%s] Error spawning reviewer for PR #%d: %v", slug, prNumber, err)

@@ -12,6 +12,7 @@ type ReviewerOpts struct {
 	PRURL    string
 	WorkDir  string
 	LogDir   string
+	Model    string
 }
 
 // AgentSpawner abstracts agent spawning and resume.

@@ -22,7 +22,7 @@ type mockStartCall struct {
 	workDir   string
 }
 
-func (m *mockProcessStarter) Start(_ context.Context, sessionID, workDir string) (int, error) {
+func (m *mockProcessStarter) Start(_ context.Context, sessionID, workDir, _ string) (int, error) {
 	m.calls = append(m.calls, mockStartCall{sessionID: sessionID, workDir: workDir})
 	if m.err != nil {
 		return 0, m.err
