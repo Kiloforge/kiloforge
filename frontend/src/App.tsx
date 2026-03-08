@@ -17,7 +17,7 @@ import styles from "./App.module.css";
 export default function App() {
   const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved } = useAgents();
   const { quota, handleQuotaUpdate } = useQuota();
-  const { tracks } = useTracks();
+  const { tracks, handleTrackUpdate, handleTrackRemoved } = useTracks();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
 
@@ -33,8 +33,10 @@ export default function App() {
       agent_update: handleAgentUpdate,
       agent_removed: handleAgentRemoved,
       quota_update: handleQuotaUpdate,
+      track_update: handleTrackUpdate,
+      track_removed: handleTrackRemoved,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved],
   );
 
   const connectionState = useSSE("/-/events", sseHandlers);

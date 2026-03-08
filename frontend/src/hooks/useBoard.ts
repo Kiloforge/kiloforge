@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import type { BoardState } from "../types/api";
+import type { BoardState, SSEEventData } from "../types/api";
 
 interface UseBoardResult {
   board: BoardState | null;
   loading: boolean;
   moveCard: (trackId: string, toColumn: string) => Promise<void>;
   refresh: () => void;
+  handleBoardUpdate: (raw: unknown) => void;
 }
 
 export function useBoard(project?: string): UseBoardResult {
@@ -28,9 +29,36 @@ export function useBoard(project?: string): UseBoardResult {
 
   useEffect(() => {
     fetchBoard();
-    const interval = setInterval(fetchBoard, 15000);
+    // Long-interval background sync as drift protection.
+    const interval = setInterval(fetchBoard, 300000);
     return () => clearInterval(interval);
   }, [fetchBoard]);
+
+  const handleBoardUpdate = useCallback((raw: unknown) => {
+    const event = raw as SSEEventData;
+    const data = event.data as Record<string, unknown>;
+    // If the event contains full board state (columns + cards), replace entirely.
+    if (data && "columns" in data && "cards" in data) {
+      setBoard(data as unknown as BoardState);
+      return;
+    }
+    // If the event is a card move (track_id, from_column, to_column), update in place.
+    if (data && "track_id" in data && "to_column" in data) {
+      setBoard((prev) => {
+        if (!prev) return prev;
+        const trackId = data.track_id as string;
+        const card = prev.cards[trackId];
+        if (!card) return prev;
+        return {
+          ...prev,
+          cards: {
+            ...prev.cards,
+            [trackId]: { ...card, column: data.to_column as string },
+          },
+        };
+      });
+    }
+  }, []);
 
   const moveCard = useCallback(
     async (trackId: string, toColumn: string) => {
@@ -69,5 +97,5 @@ export function useBoard(project?: string): UseBoardResult {
     [project, fetchBoard],
   );
 
-  return { board, loading, moveCard, refresh: fetchBoard };
+  return { board, loading, moveCard, refresh: fetchBoard, handleBoardUpdate };
 }

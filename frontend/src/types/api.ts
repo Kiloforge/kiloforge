@@ -66,7 +66,7 @@ export interface StatusResponse {
 
 export interface SSEEventData {
   type: string;
-  data: Agent | { id: string } | QuotaResponse;
+  data: unknown;
 }
 
 export interface LogResponse {

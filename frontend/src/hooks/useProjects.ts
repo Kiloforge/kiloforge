@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Project, AddProjectRequest } from "../types/api";
+import type { Project, AddProjectRequest, SSEEventData } from "../types/api";
 
 interface UseProjectsResult {
   projects: Project[];
@@ -10,6 +10,8 @@ interface UseProjectsResult {
   addProject: (req: AddProjectRequest) => Promise<boolean>;
   removeProject: (slug: string, cleanup: boolean) => Promise<boolean>;
   clearError: () => void;
+  handleProjectUpdate: (raw: unknown) => void;
+  handleProjectRemoved: (raw: unknown) => void;
 }
 
 export function useProjects(): UseProjectsResult {
@@ -33,6 +35,28 @@ export function useProjects(): UseProjectsResult {
     fetchProjects();
   }, [fetchProjects]);
 
+  const handleProjectUpdate = useCallback((raw: unknown) => {
+    const event = raw as SSEEventData;
+    const data = event.data as Project;
+    if (!data?.slug) return;
+    setProjects((prev) => {
+      const idx = prev.findIndex((p) => p.slug === data.slug);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...data };
+        return next;
+      }
+      return [...prev, data];
+    });
+  }, []);
+
+  const handleProjectRemoved = useCallback((raw: unknown) => {
+    const event = raw as SSEEventData;
+    const data = event.data as { slug: string };
+    if (!data?.slug) return;
+    setProjects((prev) => prev.filter((p) => p.slug !== data.slug));
+  }, []);
+
   const addProject = useCallback(
     async (req: AddProjectRequest): Promise<boolean> => {
       setAdding(true);
@@ -49,7 +73,7 @@ export function useProjects(): UseProjectsResult {
           setAdding(false);
           return false;
         }
-        fetchProjects();
+        // SSE will update the list; no need to refetch.
         setAdding(false);
         return true;
       } catch {
@@ -58,7 +82,7 @@ export function useProjects(): UseProjectsResult {
         return false;
       }
     },
-    [fetchProjects],
+    [],
   );
 
   const removeProject = useCallback(
@@ -74,7 +98,7 @@ export function useProjects(): UseProjectsResult {
           setRemoving(null);
           return false;
         }
-        fetchProjects();
+        // SSE will update the list; no need to refetch.
         setRemoving(null);
         return true;
       } catch {
@@ -83,10 +107,10 @@ export function useProjects(): UseProjectsResult {
         return false;
       }
     },
-    [fetchProjects],
+    [],
   );
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { projects, loading, adding, removing, error, addProject, removeProject, clearError };
+  return { projects, loading, adding, removing, error, addProject, removeProject, clearError, handleProjectUpdate, handleProjectRemoved };
 }
