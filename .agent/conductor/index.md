@@ -109,6 +109,7 @@ Navigation hub for project context.
 - **goose-migrations_20260309184000Z** — Migrate to Goose for Database Schema Migrations
 - **agent-permissions-consent_20260309190000Z** — Agent Permissions Flag and User Consent
 - **tanstack-query-migration_20260309193000Z** — Migrate Frontend Data Fetching to TanStack Query
+- **claude-auth-check_20260309200000Z** — Claude CLI Authentication Check Before Agent Spawning
 
 ## Getting Started
 
