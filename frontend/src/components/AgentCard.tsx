@@ -34,6 +34,7 @@ export function AgentCard({ agent, giteaURL, onViewLog }: Props) {
       </div>
       <div className={styles.meta}>
         {refLink && <span>ref: {refLink}</span>}
+        {agent.model && <span>model: {agent.model}</span>}
         {agent.uptime_seconds != null && <span>uptime: {formatUptime(agent.uptime_seconds)}</span>}
         {agent.pid > 0 && <span>PID: {agent.pid}</span>}
       </div>
