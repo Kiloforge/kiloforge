@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"kiloforge/internal/adapter/agent"
@@ -72,6 +73,9 @@ type APIHandler struct {
 	cfg           *config.Config
 	interSpawner  InteractiveSpawner
 	wsSessions    *wsAdapter.SessionManager
+
+	adminMu          sync.Mutex
+	runningAdminAgent string // agent ID of currently running admin op, empty if none
 }
 
 // APIHandlerOpts configures the API handler.
@@ -1175,6 +1179,125 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 	wsURL := fmt.Sprintf("/ws/agent/%s", ia.Info.ID)
 
 	return gen.GenerateTracks201JSONResponse{
+		AgentId: ia.Info.ID,
+		WsUrl:   wsURL,
+	}, nil
+}
+
+// adminSkillMap maps operation names to skill prompts.
+var adminSkillMap = map[gen.AdminOperationRequestOperation]string{
+	gen.BulkArchive:    "/kf-bulk-archive",
+	gen.CompactArchive: "/kf-compact-archive",
+	gen.Report:         "/kf-report",
+}
+
+// adminArchiveOps are operations that modify tracks and should trigger board sync.
+var adminArchiveOps = map[gen.AdminOperationRequestOperation]bool{
+	gen.BulkArchive:    true,
+	gen.CompactArchive: true,
+}
+
+// RunAdminOperation implements gen.StrictServerInterface.
+func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOperationRequestObject) (gen.RunAdminOperationResponseObject, error) {
+	if h.interSpawner == nil || h.wsSessions == nil {
+		return gen.RunAdminOperation500JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+	if req.Body == nil {
+		return gen.RunAdminOperation500JSONResponse{Error: "request body required"}, nil
+	}
+
+	// Validate operation.
+	skillPrompt, ok := adminSkillMap[req.Body.Operation]
+	if !ok {
+		return gen.RunAdminOperation500JSONResponse{Error: fmt.Sprintf("unknown operation: %s", req.Body.Operation)}, nil
+	}
+
+	// Validate required skills.
+	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
+		return gen.RunAdminOperation412JSONResponse{Error: resp.Error}, nil
+	}
+
+	// Concurrency guard — only one admin operation at a time.
+	h.adminMu.Lock()
+	if h.runningAdminAgent != "" {
+		h.adminMu.Unlock()
+		return gen.RunAdminOperation412JSONResponse{Error: fmt.Sprintf("admin operation already running (agent %s)", h.runningAdminAgent)}, nil
+	}
+
+	// Resolve project working directory.
+	var workDir string
+	var projectSlug string
+	if req.Body.Project != nil && *req.Body.Project != "" {
+		projectSlug = *req.Body.Project
+		if h.projects != nil {
+			for _, p := range h.projects.List() {
+				if p.Slug == projectSlug {
+					workDir = p.ProjectDir
+					break
+				}
+			}
+		}
+		if workDir == "" {
+			h.adminMu.Unlock()
+			return gen.RunAdminOperation500JSONResponse{Error: fmt.Sprintf("project %q not found", projectSlug)}, nil
+		}
+	}
+
+	opts := agent.SpawnInteractiveOpts{
+		WorkDir: workDir,
+		Prompt:  skillPrompt,
+		Ref:     "admin",
+	}
+
+	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
+	if err != nil {
+		h.adminMu.Unlock()
+		if strings.Contains(err.Error(), "rate limited") {
+			return gen.RunAdminOperation429JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.RunAdminOperation500JSONResponse{Error: err.Error()}, nil
+	}
+
+	h.runningAdminAgent = ia.Info.ID
+	h.adminMu.Unlock()
+
+	// Create bridge and register with WS session manager.
+	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
+
+	// Start output relay in background.
+	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+
+	// Clear concurrency guard and auto-sync board on completion.
+	go func() {
+		<-ia.Done
+
+		h.adminMu.Lock()
+		h.runningAdminAgent = ""
+		h.adminMu.Unlock()
+
+		// Auto-sync board after archive operations.
+		if adminArchiveOps[req.Body.Operation] && projectSlug != "" && h.boardSvc != nil {
+			tracks, err := service.DiscoverTracks(workDir)
+			if err != nil {
+				return
+			}
+			result, err := h.boardSvc.SyncFromTracks(projectSlug, tracks, nil)
+			if err != nil {
+				return
+			}
+			if h.eventBus != nil && (result.Created > 0 || result.Updated > 0) {
+				board, boardErr := h.boardSvc.GetBoard(projectSlug)
+				if boardErr == nil {
+					h.eventBus.Publish(domain.NewBoardUpdateEvent(board))
+				}
+			}
+		}
+	}()
+
+	wsURL := fmt.Sprintf("/ws/agent/%s", ia.Info.ID)
+
+	return gen.RunAdminOperation201JSONResponse{
 		AgentId: ia.Info.ID,
 		WsUrl:   wsURL,
 	}, nil

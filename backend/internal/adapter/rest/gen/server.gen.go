@@ -18,6 +18,27 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// Defines values for AdminOperationRequestOperation.
+const (
+	BulkArchive    AdminOperationRequestOperation = "bulk-archive"
+	CompactArchive AdminOperationRequestOperation = "compact-archive"
+	Report         AdminOperationRequestOperation = "report"
+)
+
+// Valid indicates whether the value is a known member of the AdminOperationRequestOperation enum.
+func (e AdminOperationRequestOperation) Valid() bool {
+	switch e {
+	case BulkArchive:
+		return true
+	case CompactArchive:
+		return true
+	case Report:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentRole.
 const (
 	Developer   AgentRole = "developer"
@@ -196,6 +217,26 @@ type AddProjectRequest struct {
 
 	// SshKey Path to SSH private key to use for cloning
 	SshKey *string `json:"ssh_key,omitempty"`
+}
+
+// AdminOperationRequest defines model for AdminOperationRequest.
+type AdminOperationRequest struct {
+	// Operation Admin operation to run
+	Operation AdminOperationRequestOperation `json:"operation"`
+
+	// Project Project slug (determines working directory)
+	Project *string `json:"project,omitempty"`
+}
+
+// AdminOperationRequestOperation Admin operation to run
+type AdminOperationRequestOperation string
+
+// AdminOperationResult defines model for AdminOperationResult.
+type AdminOperationResult struct {
+	AgentId string `json:"agent_id"`
+
+	// WsUrl WebSocket URL for agent conversation
+	WsUrl string `json:"ws_url"`
 }
 
 // Agent defines model for Agent.
@@ -598,6 +639,9 @@ type DeleteTrackParams struct {
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
+// RunAdminOperationJSONRequestBody defines body for RunAdminOperation for application/json ContentType.
+type RunAdminOperationJSONRequestBody = AdminOperationRequest
+
 // SpawnInteractiveAgentJSONRequestBody defines body for SpawnInteractiveAgent for application/json ContentType.
 type SpawnInteractiveAgentJSONRequestBody = SpawnInteractiveRequest
 
@@ -633,6 +677,9 @@ type GenerateTracksJSONRequestBody = GenerateTracksRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Spawn an interactive agent to run an admin operation
+	// (POST /api/admin/run)
+	RunAdminOperation(w http.ResponseWriter, r *http.Request)
 	// List all agents
 	// (GET /api/agents)
 	ListAgents(w http.ResponseWriter, r *http.Request)
@@ -733,6 +780,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// RunAdminOperation operation middleware
+func (siw *ServerInterfaceWrapper) RunAdminOperation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunAdminOperation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListAgents operation middleware
 func (siw *ServerInterfaceWrapper) ListAgents(w http.ResponseWriter, r *http.Request) {
@@ -1495,6 +1556,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	m.HandleFunc("POST "+options.BaseURL+"/api/admin/run", wrapper.RunAdminOperation)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents", wrapper.ListAgents)
 	m.HandleFunc("POST "+options.BaseURL+"/api/agents/interactive", wrapper.SpawnInteractiveAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}", wrapper.GetAgent)
@@ -1527,6 +1589,50 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
 
 	return m
+}
+
+type RunAdminOperationRequestObject struct {
+	Body *RunAdminOperationJSONRequestBody
+}
+
+type RunAdminOperationResponseObject interface {
+	VisitRunAdminOperationResponse(w http.ResponseWriter) error
+}
+
+type RunAdminOperation201JSONResponse AdminOperationResult
+
+func (response RunAdminOperation201JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOperation412JSONResponse ErrorResponse
+
+func (response RunAdminOperation412JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(412)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOperation429JSONResponse ErrorResponse
+
+func (response RunAdminOperation429JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOperation500JSONResponse ErrorResponse
+
+func (response RunAdminOperation500JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListAgentsRequestObject struct {
@@ -2473,6 +2579,9 @@ func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseW
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Spawn an interactive agent to run an admin operation
+	// (POST /api/admin/run)
+	RunAdminOperation(ctx context.Context, request RunAdminOperationRequestObject) (RunAdminOperationResponseObject, error)
 	// List all agents
 	// (GET /api/agents)
 	ListAgents(ctx context.Context, request ListAgentsRequestObject) (ListAgentsResponseObject, error)
@@ -2592,6 +2701,37 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// RunAdminOperation operation middleware
+func (sh *strictHandler) RunAdminOperation(w http.ResponseWriter, r *http.Request) {
+	var request RunAdminOperationRequestObject
+
+	var body RunAdminOperationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunAdminOperation(ctx, request.(RunAdminOperationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunAdminOperation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunAdminOperationResponseObject); ok {
+		if err := validResponse.VisitRunAdminOperationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListAgents operation middleware

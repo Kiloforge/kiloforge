@@ -499,6 +499,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/admin/run:
+    post:
+      operationId: runAdminOperation
+      summary: Spawn an interactive agent to run an admin operation
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminOperationRequest"
+      responses:
+        "201":
+          description: Admin operation agent spawned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOperationResult"
+        "412":
+          description: Required skills not installed or another admin operation is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/config:
     get:
       operationId: getConfig
@@ -1410,6 +1447,28 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SkillDetail"
+
+    AdminOperationRequest:
+      type: object
+      required: [operation]
+      properties:
+        operation:
+          type: string
+          enum: [bulk-archive, compact-archive, report]
+          description: Admin operation to run
+        project:
+          type: string
+          description: Project slug (determines working directory)
+
+    AdminOperationResult:
+      type: object
+      required: [agent_id, ws_url]
+      properties:
+        agent_id:
+          type: string
+        ws_url:
+          type: string
+          description: WebSocket URL for agent conversation
 
     GenerateTracksRequest:
       type: object
