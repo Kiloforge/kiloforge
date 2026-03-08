@@ -37,7 +37,7 @@
 | [x] | fix-password-display-v3_20260309083826Z | Fix Init Password Display (Root Cause) | 2026-03-09 | 2026-03-09 |
 | [x] | project-manage-api_20260309084650Z | Project Add/Remove REST API | 2026-03-09 | 2026-03-09 |
 | [x] | project-manage-ui_20260309084651Z | Project Add/Remove Dashboard UI | 2026-03-09 | 2026-03-09 |
-| [ ] | sse-event-bus_20260309091500Z | SSE Event Bus Infrastructure | 2026-03-09 | 2026-03-09 |
+| [x] | sse-event-bus_20260309091500Z | SSE Event Bus Infrastructure | 2026-03-09 | 2026-03-09 |
 | [ ] | sse-entity-subscriptions_20260309091501Z | SSE Entity Subscriptions | 2026-03-09 | 2026-03-09 |
 | [x] | ssh-key-selection_20260309100000Z | Interactive SSH Key Selection for Add Command | 2026-03-09 | 2026-03-09 |
 | [ ] | quota-reframe-be_20260309103000Z | Reframe Quota System — Tokens and Rate Limits (Backend) | 2026-03-09 | 2026-03-09 |
