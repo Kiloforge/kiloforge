@@ -1,0 +1,16 @@
+{
+  "id": "fix-gitea-push-auth_20260309224000Z",
+  "title": "Fix Gitea Push Authentication — Embed Credentials in Remote URL",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-09T22:40:00Z",
+  "updated": "2026-03-09T22:40:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 6,
+    "completed": 0
+  }
+}

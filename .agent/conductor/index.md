@@ -117,6 +117,7 @@ Navigation hub for project context.
 - **track-gen-auto-approve_20260309220000Z** — Track Generator Auto-Approve for Non-Code Tracks
 - **fix-tour-api-mismatch_20260309223000Z** — Fix Tour API Request Body Mismatch
 - **error-toast-notifications_20260309223001Z** — Error Toast Notifications in Dashboard
+- **fix-gitea-push-auth_20260309224000Z** — Fix Gitea Push Authentication — Embed Credentials in Remote URL
 
 ## Getting Started
 
