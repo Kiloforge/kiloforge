@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"crelay/internal/adapter/auth"
-	"crelay/internal/adapter/compose"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/pidfile"
-	"crelay/internal/adapter/prereq"
+	"kiloforge/internal/adapter/auth"
+	"kiloforge/internal/adapter/compose"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/gitea"
+	"kiloforge/internal/adapter/pidfile"
+	"kiloforge/internal/adapter/prereq"
 
 	"github.com/spf13/cobra"
 )

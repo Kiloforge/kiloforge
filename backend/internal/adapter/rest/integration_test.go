@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/adapter/badge"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest/gen"
-	"crelay/internal/core/domain"
+	"kiloforge/internal/adapter/badge"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/core/domain"
 )
 
 // testServer wraps an HTTP server for integration tests.

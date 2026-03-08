@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/core/domain"
+	"kiloforge/internal/core/domain"
 )
 
 func TestProjectStore_LoadEmpty(t *testing.T) {

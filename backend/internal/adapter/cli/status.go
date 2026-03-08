@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/compose"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/pidfile"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/compose"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/gitea"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
 )

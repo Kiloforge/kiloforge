@@ -6,13 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"crelay/internal/adapter/badge"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/dashboard"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest/gen"
-	"crelay/internal/core/domain"
+	"kiloforge/internal/adapter/badge"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/dashboard"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/core/domain"
 )
 
 // buildMux replicates the route registration logic from Server.Run()

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"crelay/internal/core/domain"
+	"kiloforge/internal/core/domain"
 )
 
 // AgentFinder provides read-only access to agent data for badge rendering.

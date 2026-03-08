@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"crelay/internal/adapter/cli"
+	"kiloforge/internal/adapter/cli"
 )
 
 func main() {

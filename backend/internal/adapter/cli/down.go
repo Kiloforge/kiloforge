@@ -6,10 +6,10 @@ import (
 	"os"
 	"os/signal"
 
-	"crelay/internal/adapter/compose"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/pidfile"
+	"kiloforge/internal/adapter/compose"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/gitea"
+	"kiloforge/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
 )

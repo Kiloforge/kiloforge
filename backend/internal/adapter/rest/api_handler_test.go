@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/rest/gen"
-	"crelay/internal/adapter/tracing"
-	"crelay/internal/core/domain"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/tracing"
+	"kiloforge/internal/core/domain"
 
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"

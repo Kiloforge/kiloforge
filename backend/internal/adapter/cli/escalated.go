@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/jsonfile"
 
 	"github.com/spf13/cobra"
 )

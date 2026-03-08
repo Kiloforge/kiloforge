@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/skills"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/skills"
 
 	"github.com/spf13/cobra"
 )

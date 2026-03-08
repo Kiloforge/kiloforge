@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"strings"
 
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/core/domain"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/core/domain"
 
 	"github.com/spf13/cobra"
 )

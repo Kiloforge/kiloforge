@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/testutil"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/testutil"
 )
 
 func TestShutdownAll_NoRunningAgents(t *testing.T) {

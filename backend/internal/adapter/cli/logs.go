@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"crelay/internal/adapter/config"
+	"kiloforge/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

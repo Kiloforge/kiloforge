@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/core/domain"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/core/domain"
 )
 
 func TestBoardStore_SaveAndLoad(t *testing.T) {

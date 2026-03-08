@@ -1,6 +1,6 @@
 package port
 
-import "crelay/internal/core/domain"
+import "kiloforge/internal/core/domain"
 
 // ProjectStore persists and retrieves registered projects.
 type ProjectStore interface {

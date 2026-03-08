@@ -1,4 +1,4 @@
-module crelay
+module kiloforge
 
 go 1.25.0
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/testutil"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/testutil"
 )
 
 func newTestLifecycleService(agents *testutil.MockAgentStore, spawner *testutil.MockAgentSpawner, pool *testutil.MockPoolReturner) *LifecycleService {

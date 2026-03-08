@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/port"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
 
 // ColumnOrder defines the priority ordering of board columns.

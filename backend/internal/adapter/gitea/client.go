@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"crelay/internal/core/port"
+	"kiloforge/internal/core/port"
 )
 
 var _ port.GiteaClient = (*Client)(nil)

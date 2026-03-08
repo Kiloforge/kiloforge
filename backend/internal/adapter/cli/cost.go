@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

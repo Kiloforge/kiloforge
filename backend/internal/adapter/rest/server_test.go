@@ -11,13 +11,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest/gen"
-	"crelay/internal/core/domain"
-	"crelay/internal/core/port"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/gitea"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
 
 func newTestServer() *Server {

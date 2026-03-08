@@ -1,7 +1,7 @@
 .PHONY: build build-frontend build-backend dev test test-coverage test-integration test-smoke test-all clean gen-api verify-codegen
 
 BIN_DIR := .build
-BINARY := $(BIN_DIR)/crelay
+BINARY := $(BIN_DIR)/kf
 DIST_DIR := backend/internal/adapter/dashboard/dist
 
 # Ensure dist/ has at least a placeholder so //go:embed dist/* succeeds.
@@ -21,11 +21,11 @@ build-frontend:
 
 build-backend: ensure-dist
 	@mkdir -p $(BIN_DIR)
-	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/crelay
+	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/kf
 
 dev: ensure-dist
 	@trap 'kill 0' INT TERM; \
-	cd backend && go run ./cmd/crelay up & \
+	cd backend && go run ./cmd/kf up & \
 	cd frontend && npm run dev & \
 	wait
 

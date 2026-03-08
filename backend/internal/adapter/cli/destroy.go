@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"strings"
 
-	"crelay/internal/adapter/compose"
-	"crelay/internal/adapter/config"
+	"kiloforge/internal/adapter/compose"
+	"kiloforge/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

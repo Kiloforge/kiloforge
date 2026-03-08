@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"crelay/internal/core/domain"
+	"kiloforge/internal/core/domain"
 )
 
 const registryFileName = "projects.json"

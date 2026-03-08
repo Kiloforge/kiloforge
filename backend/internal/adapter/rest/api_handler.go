@@ -7,14 +7,14 @@ import (
 	"os"
 	"time"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/rest/gen"
-	"crelay/internal/adapter/skills"
-	"crelay/internal/adapter/tracing"
-	"crelay/internal/core/domain"
-	"crelay/internal/core/service"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/skills"
+	"kiloforge/internal/adapter/tracing"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 )
 
 // AgentLister provides read access to agent state.

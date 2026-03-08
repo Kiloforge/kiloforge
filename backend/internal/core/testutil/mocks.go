@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/port"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
 
 // Compile-time interface checks.

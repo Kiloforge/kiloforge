@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/adapter/config"
+	"kiloforge/internal/adapter/config"
 )
 
 func TestCheckQuota_NilTracker(t *testing.T) {

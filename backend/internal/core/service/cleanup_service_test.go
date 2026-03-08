@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/service"
-	"crelay/internal/core/testutil"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
+	"kiloforge/internal/core/testutil"
 )
 
 func TestMergeAndCleanup_HappyPath(t *testing.T) {

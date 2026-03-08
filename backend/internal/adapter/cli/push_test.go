@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"crelay/internal/core/domain"
+	"kiloforge/internal/core/domain"
 )
 
 func TestPushCmd_FlagsRegistered(t *testing.T) {

@@ -6,13 +6,13 @@ import (
 	"os"
 	"os/signal"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/dashboard"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest"
-	"crelay/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/dashboard"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/rest"
+	"kiloforge/internal/adapter/rest/gen"
 
 	"github.com/spf13/cobra"
 )

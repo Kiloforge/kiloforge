@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/core/domain"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/core/domain"
 )
 
 // AgentLister provides read access to agent state.

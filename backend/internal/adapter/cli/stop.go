@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )

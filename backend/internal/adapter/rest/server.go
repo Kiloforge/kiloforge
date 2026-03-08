@@ -11,20 +11,20 @@ import (
 	"path/filepath"
 	"time"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/badge"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/dashboard"
-	"crelay/internal/adapter/gitea"
-	"crelay/internal/adapter/lock"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/rest/gen"
-	"crelay/internal/adapter/pool"
-	"crelay/internal/adapter/proxy"
-	"crelay/internal/core/domain"
-	"crelay/internal/adapter/tracing"
-	"crelay/internal/core/port"
-	"crelay/internal/core/service"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/badge"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/dashboard"
+	"kiloforge/internal/adapter/gitea"
+	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/pool"
+	"kiloforge/internal/adapter/proxy"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/adapter/tracing"
+	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 
 	otelattr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -264,7 +264,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Record a trace span for the webhook event.
 	_, span := trace.SpanFromContext(r.Context()).TracerProvider().
-		Tracer("crelay/webhook").
+		Tracer("kiloforge/webhook").
 		Start(r.Context(), "webhook/"+event,
 			trace.WithAttributes(
 				otelattr.String("webhook.event", event),

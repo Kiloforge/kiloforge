@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"crelay/internal/core/domain"
+	"kiloforge/internal/core/domain"
 )
 
 // NativeBoardStore abstracts persistence for the native board.

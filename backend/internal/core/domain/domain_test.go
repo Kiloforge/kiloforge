@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"crelay/internal/core/domain"
+	"kiloforge/internal/core/domain"
 )
 
 func TestSentinelErrors_AreDistinct(t *testing.T) {

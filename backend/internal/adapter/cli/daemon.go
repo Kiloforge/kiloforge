@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"crelay/internal/adapter/pidfile"
+	"kiloforge/internal/adapter/pidfile"
 )
 
 // startDaemon spawns `crelay serve` as a detached background process.

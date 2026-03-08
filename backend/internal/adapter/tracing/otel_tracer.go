@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"crelay/internal/core/port"
+	"kiloforge/internal/core/port"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const tracerName = "crelay/conductor"
+const tracerName = "kiloforge/conductor"
 
 // OTelTracer implements port.Tracer using the OpenTelemetry SDK.
 type OTelTracer struct {

@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"crelay/internal/adapter/agent"
-	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/persistence/jsonfile"
-	"crelay/internal/adapter/pool"
-	"crelay/internal/core/domain"
-	"crelay/internal/core/service"
+	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/pool"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 	
 	"github.com/spf13/cobra"
 )

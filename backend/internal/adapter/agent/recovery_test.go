@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/testutil"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/testutil"
 )
 
 // mockProcessStarter records start calls and returns configurable results.

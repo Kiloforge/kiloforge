@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"crelay/internal/core/service"
+	"kiloforge/internal/core/service"
 )
 
 func TestParseTracks_ValidMarkdown(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"crelay/internal/core/domain"
-	"crelay/internal/core/service"
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 )
 
 // mockNativeBoardStore implements service.NativeBoardStore for testing.
