@@ -2054,6 +2054,7 @@ type SpawnInteractiveAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *Agent
+	JSON412      *SkillsMissingResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 }
@@ -2668,6 +2669,7 @@ type GenerateTracksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *GenerateTracksResult
+	JSON412      *SkillsMissingResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 }
@@ -3144,6 +3146,13 @@ func ParseSpawnInteractiveAgentResponse(rsp *http.Response) (*SpawnInteractiveAg
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest SkillsMissingResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -4102,6 +4111,13 @@ func ParseGenerateTracksResponse(rsp *http.Response) (*GenerateTracksResponse, e
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest SkillsMissingResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse

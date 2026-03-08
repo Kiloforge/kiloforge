@@ -151,7 +151,7 @@ func newTestableServer(cfg *config.Config, registry port.ProjectStore, store por
 type defaultSpawner struct{}
 
 func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOpts) (*domain.AgentInfo, error) {
-	args := []string{"-p", fmt.Sprintf("/conductor-reviewer %s", opts.PRURL), "--output-format", "stream-json"}
+	args := []string{"-p", fmt.Sprintf("/kf-reviewer %s", opts.PRURL), "--output-format", "stream-json"}
 	if opts.Model != "" {
 		args = append([]string{"--model", opts.Model}, args...)
 	}

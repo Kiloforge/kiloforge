@@ -32,32 +32,12 @@ func (e *ErrSkillsMissing) Error() string {
 	return fmt.Sprintf("required skills not installed: %s", strings.Join(names, ", "))
 }
 
-// requiredSkillsForRole returns the skills needed for a given agent role.
-func requiredSkillsForRole(role string) []skills.RequiredSkill {
-	switch role {
-	case "developer":
-		return []skills.RequiredSkill{
-			{Name: "conductor-developer", Reason: "required for agent developer spawning"},
-		}
-	case "reviewer":
-		return []skills.RequiredSkill{
-			{Name: "conductor-reviewer", Reason: "required for agent reviewer spawning"},
-		}
-	case "interactive":
-		return []skills.RequiredSkill{
-			{Name: "conductor-track-generator", Reason: "required for interactive track generation"},
-		}
-	default:
-		return nil
-	}
-}
-
 // ValidateSkills checks that the required skills for a given role are installed.
 // It checks both the global skills directory (from config) and the local
 // .claude/skills/ directory relative to workDir.
 // Returns ErrSkillsMissing if any required skills are not found.
 func (s *Spawner) ValidateSkills(role, workDir string) error {
-	required := requiredSkillsForRole(role)
+	required := skills.RequiredSkillsForRole(role)
 	if len(required) == 0 {
 		return nil
 	}
@@ -143,7 +123,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	logFile := filepath.Join(logDir, agentID+".log")
 
-	prompt := fmt.Sprintf("/conductor-reviewer %s", prURL)
+	prompt := fmt.Sprintf("/kf-reviewer %s", prURL)
 
 	// Use current working directory as project dir (will be improved with 'kf add').
 	projectDir, _ := os.Getwd()
@@ -235,7 +215,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 
 	logFile := filepath.Join(logDir, agentID+".log")
 
-	prompt := fmt.Sprintf("/conductor-developer %s %s", opts.TrackID, opts.Flags)
+	prompt := fmt.Sprintf("/kf-developer %s %s", opts.TrackID, opts.Flags)
 
 	workDir := opts.WorktreeDir
 	if workDir == "" {

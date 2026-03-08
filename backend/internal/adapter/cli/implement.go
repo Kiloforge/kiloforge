@@ -317,25 +317,21 @@ func runDryRun(db *sql.DB, proj domain.Project, trackID string) error {
 }
 
 // promptSkillInstall offers the user a choice to install missing skills
-// globally, locally, or abort.
+// globally, locally, or deny. Skills are extracted from the embedded assets
+// bundled in the binary.
 func promptSkillInstall(ctx context.Context, cfg *config.Config, missing []skills.RequiredSkill, projectDir string) error {
-	if cfg.SkillsRepo == "" {
-		fmt.Println("\nRequired skills are not installed:")
-		for _, s := range missing {
-			fmt.Printf("  • %s — %s\n", s.Name, s.Reason)
-		}
-		return fmt.Errorf("skills repo not configured — run 'kf skills --repo owner/repo' first")
-	}
-
 	fmt.Println("\nRequired skills are not installed:")
 	for _, s := range missing {
 		fmt.Printf("  • %s — %s\n", s.Name, s.Reason)
 	}
 
+	globalDir := cfg.GetSkillsDir()
+	localDir := filepath.Join(projectDir, ".claude", "skills")
+
 	fmt.Println("\nInstall options:")
-	fmt.Printf("  1. Install globally (%s) — available to all repos\n", cfg.GetSkillsDir())
-	fmt.Printf("  2. Install locally (%s/.claude/skills/) — scoped to this repo\n", projectDir)
-	fmt.Println("  3. Skip — abort agent spawning")
+	fmt.Printf("  1. Install globally (%s) — available to all repos\n", globalDir)
+	fmt.Printf("  2. Install locally (%s) — scoped to this repo\n", localDir)
+	fmt.Println("  3. Deny — agents are not compatible without these skills")
 	fmt.Print("\nChoice [1/2/3]: ")
 
 	answer, ok := readLineCtx(ctx)
@@ -346,38 +342,20 @@ func promptSkillInstall(ctx context.Context, cfg *config.Config, missing []skill
 	var destDir string
 	switch answer {
 	case "1":
-		destDir = cfg.GetSkillsDir()
+		destDir = globalDir
 	case "2":
-		destDir = filepath.Join(projectDir, ".claude", "skills")
+		destDir = localDir
 	default:
 		return fmt.Errorf("agent spawning aborted — required skills not installed")
 	}
 
-	gh := skills.NewGitHubClient()
-	rel, err := gh.LatestRelease(cfg.SkillsRepo)
-	if err != nil {
-		return fmt.Errorf("check for skills: %w", err)
-	}
-
-	fmt.Printf("Installing skills %s...\n", rel.TagName)
-	inst := skills.NewInstaller()
-	result, err := inst.Install(rel.TarballURL, destDir)
-	if err != nil {
-		return fmt.Errorf("install skills: %w", err)
-	}
-
-	// Update manifest and config only for global installs.
-	if answer == "1" {
-		checksums, _ := skills.ComputeChecksums(destDir)
-		m := &skills.Manifest{Version: rel.TagName, Checksums: checksums}
-		_ = m.Save()
-		cfg.SkillsVersion = rel.TagName
-		_ = cfg.Save()
-	}
-
-	fmt.Printf("Installed %d skills:\n", len(result))
-	for _, s := range result {
-		fmt.Printf("  • %s\n", s.Name)
+	fmt.Println("Installing skills from embedded assets...")
+	for _, s := range missing {
+		path, err := skills.InstallEmbedded(s.Name, destDir)
+		if err != nil {
+			return fmt.Errorf("install skill %s: %w", s.Name, err)
+		}
+		fmt.Printf("  • %s → %s\n", s.Name, path)
 	}
 	fmt.Println()
 	return nil

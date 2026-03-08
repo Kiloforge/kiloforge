@@ -252,12 +252,12 @@ func TestValidateSkills_Developer(t *testing.T) {
 	if !errors.As(err, &errMissing) {
 		t.Fatalf("expected ErrSkillsMissing, got %T", err)
 	}
-	if len(errMissing.Missing) != 1 || errMissing.Missing[0].Name != "conductor-developer" {
+	if len(errMissing.Missing) != 1 || errMissing.Missing[0].Name != "kf-developer" {
 		t.Errorf("unexpected missing skills: %v", errMissing.Missing)
 	}
 
 	// Install the skill globally.
-	devDir := filepath.Join(globalDir, "conductor-developer")
+	devDir := filepath.Join(globalDir, "kf-developer")
 	os.MkdirAll(devDir, 0o755)
 	os.WriteFile(filepath.Join(devDir, "SKILL.md"), []byte("# Dev"), 0o644)
 
@@ -281,7 +281,7 @@ func TestValidateSkills_Reviewer(t *testing.T) {
 
 	// Install locally.
 	workDir := t.TempDir()
-	localDir := filepath.Join(workDir, ".claude", "skills", "conductor-reviewer")
+	localDir := filepath.Join(workDir, ".claude", "skills", "kf-reviewer")
 	os.MkdirAll(localDir, 0o755)
 	os.WriteFile(filepath.Join(localDir, "SKILL.md"), []byte("# Rev"), 0o644)
 
@@ -307,12 +307,12 @@ func TestErrSkillsMissing_Error(t *testing.T) {
 
 	err := &ErrSkillsMissing{
 		Missing: []skills.RequiredSkill{
-			{Name: "conductor-developer", Reason: "dev"},
-			{Name: "conductor-reviewer", Reason: "rev"},
+			{Name: "kf-developer", Reason: "dev"},
+			{Name: "kf-reviewer", Reason: "rev"},
 		},
 	}
 	msg := err.Error()
-	if msg != "required skills not installed: conductor-developer, conductor-reviewer" {
+	if msg != "required skills not installed: kf-developer, kf-reviewer" {
 		t.Errorf("unexpected error message: %q", msg)
 	}
 }

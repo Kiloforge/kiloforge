@@ -185,6 +185,11 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 		return gen.SpawnInteractiveAgent500JSONResponse{Error: "interactive agents not configured"}, nil
 	}
 
+	// Validate required skills for interactive agents.
+	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
+		return gen.SpawnInteractiveAgent412JSONResponse(*resp), nil
+	}
+
 	opts := agent.SpawnInteractiveOpts{}
 	if req.Body != nil {
 		if req.Body.WorkDir != nil {
@@ -1098,6 +1103,11 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		return gen.GenerateTracks500JSONResponse{Error: "prompt is required"}, nil
 	}
 
+	// Validate required skills for track generation.
+	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
+		return gen.GenerateTracks412JSONResponse(*resp), nil
+	}
+
 	// Resolve project working directory.
 	var workDir string
 	var projectSlug string
@@ -1240,6 +1250,43 @@ func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestOb
 	}
 
 	return gen.DeleteTrack204Response{}, nil
+}
+
+// checkSkillsForRole validates required skills for a role and returns a
+// SkillsMissingResponse if any are missing, or nil if all are present.
+func (h *APIHandler) checkSkillsForRole(role, workDir string) *gen.SkillsMissingResponse {
+	if h.cfg == nil {
+		return nil
+	}
+	required := skills.RequiredSkillsForRole(role)
+	if len(required) == 0 {
+		return nil
+	}
+
+	globalDir := h.cfg.GetSkillsDir()
+	localDir := ""
+	if workDir != "" {
+		localDir = filepath.Join(workDir, ".claude", "skills")
+	}
+
+	missing := skills.CheckRequired(required, globalDir, localDir)
+	if len(missing) == 0 {
+		return nil
+	}
+
+	missingItems := make([]struct {
+		Name   string `json:"name"`
+		Reason string `json:"reason"`
+	}, len(missing))
+	for i, m := range missing {
+		missingItems[i].Name = m.Name
+		missingItems[i].Reason = m.Reason
+	}
+
+	return &gen.SkillsMissingResponse{
+		Error:         fmt.Sprintf("required skills not installed: %d missing", len(missing)),
+		MissingSkills: missingItems,
+	}
 }
 
 func intPtr(v int) *int       { return &v }

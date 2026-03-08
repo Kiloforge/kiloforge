@@ -454,6 +454,15 @@ type SkillUpdateResponse struct {
 	Version        string    `json:"version"`
 }
 
+// SkillsMissingResponse defines model for SkillsMissingResponse.
+type SkillsMissingResponse struct {
+	Error         string `json:"error"`
+	MissingSkills []struct {
+		Name   string `json:"name"`
+		Reason string `json:"reason"`
+	} `json:"missing_skills"`
+}
+
 // SkillsStatus defines model for SkillsStatus.
 type SkillsStatus struct {
 	AvailableVersion *string       `json:"available_version,omitempty"`
@@ -1562,6 +1571,15 @@ func (response SpawnInteractiveAgent201JSONResponse) VisitSpawnInteractiveAgentR
 	return json.NewEncoder(w).Encode(response)
 }
 
+type SpawnInteractiveAgent412JSONResponse SkillsMissingResponse
+
+func (response SpawnInteractiveAgent412JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(412)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type SpawnInteractiveAgent429JSONResponse ErrorResponse
 
 func (response SpawnInteractiveAgent429JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
@@ -2371,6 +2389,15 @@ type GenerateTracks201JSONResponse GenerateTracksResult
 func (response GenerateTracks201JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GenerateTracks412JSONResponse SkillsMissingResponse
+
+func (response GenerateTracks412JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(412)
 
 	return json.NewEncoder(w).Encode(response)
 }
