@@ -1,0 +1,66 @@
+version: 2
+project_name: kf
+
+before:
+  hooks:
+    - cd frontend && npm ci && npm run build
+    - cd backend && go mod tidy
+
+builds:
+  - id: kf
+    dir: backend
+    main: ./cmd/kf
+    binary: kf
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  use: github-native
+
+brews:
+  - name: kf
+    repository:
+      owner: Goblinlordx
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/Goblinlordx/crelay"
+    description: "Local AI agent orchestrator — Gitea + Claude Code"
+    license: "Apache-2.0"
+    install: |
+      bin.install "kf"
+    test: |
+      system "#{bin}/kf", "version"
+
+release:
+  github:
+    owner: Goblinlordx
+    name: crelay
+  prerelease: auto
+  name_template: "v{{.Version}}"

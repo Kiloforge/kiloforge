@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-smoke test-all clean gen-api verify-codegen
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-smoke test-all clean gen-api verify-codegen release-local
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
@@ -71,3 +71,6 @@ verify-codegen:
 	@diff backend/internal/adapter/rest/gen/server.gen.go /tmp/server.gen.go.bak >/dev/null 2>&1 || (cp /tmp/server.gen.go.bak backend/internal/adapter/rest/gen/server.gen.go && echo "server.gen.go is out of date — run 'make gen-api'" && exit 1)
 	@diff backend/internal/adapter/rest/gen/client.gen.go /tmp/client.gen.go.bak >/dev/null 2>&1 || (cp /tmp/client.gen.go.bak backend/internal/adapter/rest/gen/client.gen.go && echo "client.gen.go is out of date — run 'make gen-api'" && exit 1)
 	@echo "Generated code is up to date."
+
+release-local:
+	goreleaser release --snapshot --clean
