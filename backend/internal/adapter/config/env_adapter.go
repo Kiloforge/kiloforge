@@ -26,6 +26,12 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		}
 	}
 
+	if v := os.Getenv("KF_ORCH_PORT"); v != "" {
+		if port, err := strconv.Atoi(v); err == nil {
+			cfg.OrchestratorPort = port
+		}
+	}
+
 	if v := os.Getenv("KF_DASHBOARD_ENABLED"); v != "" {
 		b, err := strconv.ParseBool(v)
 		if err == nil {

@@ -4,7 +4,7 @@ package config
 type FlagOption func(*Config)
 
 func WithGiteaPort(v int) FlagOption       { return func(c *Config) { c.GiteaPort = v } }
-func WithRelayPort(v int) FlagOption       { return func(c *Config) { c.RelayPort = v } }
+func WithOrchestratorPort(v int) FlagOption { return func(c *Config) { c.OrchestratorPort = v } }
 func WithDataDir(v string) FlagOption      { return func(c *Config) { c.DataDir = v } }
 func WithAPIToken(v string) FlagOption     { return func(c *Config) { c.APIToken = v } }
 func WithComposeFile(v string) FlagOption  { return func(c *Config) { c.ComposeFile = v } }

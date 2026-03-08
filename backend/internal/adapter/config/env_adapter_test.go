@@ -90,6 +90,19 @@ func TestEnvAdapter_DashboardEnabled(t *testing.T) {
 	}
 }
 
+func TestEnvAdapter_OrchestratorPort(t *testing.T) {
+	t.Setenv("KF_ORCH_PORT", "4001")
+
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OrchestratorPort != 4001 {
+		t.Errorf("OrchestratorPort: want 4001, got %d", cfg.OrchestratorPort)
+	}
+}
+
 func TestEnvAdapter_InvalidPort_Ignored(t *testing.T) {
 	t.Setenv("KF_GITEA_PORT", "notanumber")
 
