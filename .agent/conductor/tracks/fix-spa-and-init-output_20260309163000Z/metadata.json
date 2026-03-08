@@ -2,15 +2,15 @@
   "id": "fix-spa-and-init-output_20260309163000Z",
   "title": "Fix SPA Asset MIME Type, Init Output URLs, and Password Display",
   "type": "bug",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T16:30:00Z",
-  "updated": "2026-03-09T16:30:00Z",
+  "updated": "2026-03-09T16:38:00Z",
   "phases": {
     "total": 3,
-    "completed": 0
+    "completed": 3
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }
