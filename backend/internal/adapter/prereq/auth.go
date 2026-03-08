@@ -89,12 +89,13 @@ func ResetAuthCache() {
 	authCheckErr = nil
 }
 
-// cleanClaudeEnv returns os.Environ() with CLAUDECODE removed to prevent
-// "nested session" detection in child claude processes.
+// cleanClaudeEnv returns os.Environ() with Claude-internal env vars removed
+// to prevent "nested session" detection in child claude processes.
 func cleanClaudeEnv() []string {
 	var env []string
 	for _, e := range os.Environ() {
-		if strings.HasPrefix(e, "CLAUDECODE=") {
+		if strings.HasPrefix(e, "CLAUDECODE=") ||
+			strings.HasPrefix(e, "CLAUDE_CODE_ENTRYPOINT=") {
 			continue
 		}
 		env = append(env, e)

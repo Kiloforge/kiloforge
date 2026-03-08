@@ -124,7 +124,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 
 // execClaudeResume runs `claude --resume <sessionID>` in the given directory.
 func execClaudeResume(ctx context.Context, sessionID, workDir, model string) (int, error) {
-	args := []string{"--resume", sessionID, "--output-format", "stream-json"}
+	args := []string{"--resume", sessionID, "--output-format", "stream-json", "--verbose"}
 	if model != "" {
 		args = append([]string{"--model", model}, args...)
 	}

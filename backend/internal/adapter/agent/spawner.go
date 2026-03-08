@@ -80,7 +80,8 @@ func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker
 func CleanClaudeEnv() []string {
 	var env []string
 	for _, e := range os.Environ() {
-		if strings.HasPrefix(e, "CLAUDECODE=") {
+		if strings.HasPrefix(e, "CLAUDECODE=") ||
+			strings.HasPrefix(e, "CLAUDE_CODE_ENTRYPOINT=") {
 			continue
 		}
 		env = append(env, e)
@@ -169,7 +170,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		Model:       model,
 	}
 
-	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json", "--dangerously-skip-permissions"}
+	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
 	if model != "" {
 		args = append([]string{"--model", model}, args...)
 	}
@@ -272,7 +273,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		Model:       model,
 	}
 
-	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json", "--dangerously-skip-permissions"}
+	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
 	if model != "" {
 		args = append([]string{"--model", model}, args...)
 	}
@@ -382,7 +383,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		Model:       model,
 	}
 
-	args := []string{"--session-id", sessionID, "--output-format", "stream-json", "--dangerously-skip-permissions"}
+	args := []string{"--session-id", sessionID, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
 	if model != "" {
 		args = append([]string{"--model", model}, args...)
 	}
