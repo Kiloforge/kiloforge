@@ -78,6 +78,7 @@ Navigation hub for project context.
 - **project-manage-ui_20260309084651Z** — Project Add/Remove Dashboard UI
 - **sse-event-bus_20260309091500Z** — SSE Event Bus Infrastructure
 - **sse-entity-subscriptions_20260309091501Z** — SSE Entity Subscriptions
+- **ssh-key-selection_20260309100000Z** — Interactive SSH Key Selection for Add Command
 
 ## Getting Started
 
