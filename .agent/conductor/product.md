@@ -6,7 +6,7 @@ kiloforge
 
 ## Description
 
-A local Gitea + webhook relay that orchestrates Claude Code agents for automated PR review and development workflows. A CLI tool that bridges Gitea and Claude Code to automate conductor-based development and code review.
+A local collaboration platform that orchestrates Claude Code agents for automated PR review and development workflows. A CLI tool that bridges Gitea and Claude Code to automate conductor-based development and code review.
 
 ## Problem Statement
 

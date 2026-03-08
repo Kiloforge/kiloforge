@@ -86,7 +86,7 @@ Your SSH public key is auto-detected from `~/.ssh/` (tries `id_ed25519.pub`, `id
 
 ### `kf up`
 
-Start Gitea and the webhook relay server (daily use). The relay runs in the foreground — press Ctrl+C to stop it. Gitea stays running via Docker Compose.
+Start Gitea and the orchestrator (daily use). Returns immediately after both are running.
 
 ```bash
 kf up
@@ -202,7 +202,7 @@ kf destroy --force  # skip confirmation
 kf init / kf up
     │
     ├─ Docker Compose: start Gitea (localhost:3000)
-    ├─ Webhook relay server (localhost:3001)
+    ├─ Orchestrator (localhost:3001)
     │   ├─ Receives events from all registered projects
     │   ├─ Routes by repository name → project registry
     │   ├─ Scoped lock service (merge coordination)
@@ -218,13 +218,13 @@ kf init / kf up
 ┌─────────────────────────────────────────────────────────────┐
 │  Gitea (Docker)                            localhost:3000    │
 │  • Git repos, PRs, code review for multiple projects        │
-│  • Webhooks → relay on events                               │
+│  • Webhooks → orchestrator on events                         │
 └────────────────────────┬────────────────────────────────────┘
                          │ webhooks
 ┌────────────────────────▼────────────────────────────────────┐
-│  Relay Server                              localhost:3001    │
+│  Orchestrator                              localhost:3001    │
 │  • Multi-project event routing                              │
-│  • Developer-reviewer relay cycle                           │
+│  • Developer-reviewer review cycle                          │
 │  • Agent lifecycle: spawn, suspend, resume                  │
 │  • Quota tracking and budget enforcement                    │
 │  • Scoped lock API (merge serialization)                    │

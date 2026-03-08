@@ -54,7 +54,7 @@ Global configuration stored at `~/.kiloforge/config.json`:
 
 ### 6. Agent Spawner (`internal/agent/spawner.go`)
 
-Manages Claude Code process lifecycle (currently used by relay server, disabled in CLI):
+Manages Claude Code process lifecycle (currently used by orchestrator, disabled in CLI):
 
 - **SpawnReviewer**: Launches `claude -p "/conductor-reviewer <pr-url>"`
 - **SpawnDeveloper**: Launches `claude -p "/conductor-developer <track> <flags>"`
@@ -63,9 +63,9 @@ Manages Claude Code process lifecycle (currently used by relay server, disabled 
 
 JSON file-based agent state persistence at `~/.kiloforge/state.json`.
 
-### 8. Relay Server (`internal/relay/server.go`)
+### 8. Orchestrator (`internal/rest/server.go`)
 
-HTTP server for Gitea webhook handling (will be re-enabled with project registration).
+HTTP server for webhook handling, agent orchestration, dashboard, and lock service.
 
 ## Data Flow
 
@@ -98,4 +98,4 @@ The `kf add` command will:
 2. Add a `gitea` git remote to the project
 3. Push the project to Gitea
 4. Register webhooks
-5. Re-enable relay server and agent management commands
+5. Re-enable orchestrator and agent management commands

@@ -56,7 +56,7 @@ Compose:     /Users/you/.kiloforge/docker-compose.yml
 
 ## `kf up`
 
-Start Gitea and the webhook relay server (daily use).
+Start Gitea and the orchestrator (daily use).
 
 **Synopsis:**
 ```bash
@@ -66,16 +66,14 @@ kf up
 **What it does:**
 1. Loads saved config — errors if not initialized
 2. Starts Gitea via Docker Compose (if not already running)
-3. Loads the project registry
-4. Starts the webhook relay server on the relay port (default 3001)
-5. Relay runs in the foreground — press Ctrl+C to stop
+3. Starts the orchestrator as a background daemon on the configured port (default 3001)
 
 **Requires:** `kf init` must have been run first.
 
-**Relay behavior:**
+**Orchestrator behavior:**
 - Routes webhook events from Gitea to the correct project via `repository.name`
 - Handles: issues, issue_comment, pull_request, pull_request_review, pull_request_comment, push
-- Logs structured output per project: `[relay] [project-slug] event: details`
+- Logs structured output per project: `[orchestrator] [project-slug] event: details`
 
 ---
 
@@ -152,7 +150,7 @@ kf add <remote-url> [--name SLUG]
 5. Creates a repository in Gitea via API
 6. Adds a `gitea` git remote to the cloned repo
 7. Pushes the main branch to Gitea
-8. Registers a webhook for relay events
+8. Registers a webhook for orchestrator events
 9. Creates project data directory (`~/.kiloforge/projects/<slug>/logs/`)
 10. Saves the project to `~/.kiloforge/projects.json`
 
@@ -240,13 +238,13 @@ PROJECT  PR#  TRACK              CYCLES
 myapp    #5   auth_20260307...   3
 ```
 
-When a PR exceeds the maximum review cycle count (default 3), the relay labels the PR `needs-human-review`, posts a comment, and stops all agents. Use this command to find such PRs.
+When a PR exceeds the maximum review cycle count (default 3), the orchestrator labels the PR `needs-human-review`, posts a comment, and stops all agents. Use this command to find such PRs.
 
 ---
 
 ## Review Cycle
 
-The relay server orchestrates the developer-reviewer cycle automatically:
+The orchestrator manages the developer-reviewer cycle automatically:
 
 1. **PR opened** → reviewer agent spawned
 2. **Review approved** → developer resumed for merge

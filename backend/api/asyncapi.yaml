@@ -3,7 +3,7 @@ info:
   title: Kiloforge Event API
   version: 0.1.0
   description: |
-    Event-driven interfaces for the kiloforge relay server.
+    Event-driven interfaces for the kiloforge orchestrator.
     Covers server-sent events for real-time UI updates and
     consumed Gitea webhook payloads.
 
