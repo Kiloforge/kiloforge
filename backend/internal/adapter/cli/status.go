@@ -17,7 +17,7 @@ import (
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show relay status, quota usage, and agent costs",
+	Short: "Show orchestrator status, quota usage, and agent costs",
 	RunE:  runStatus,
 }
 
@@ -29,9 +29,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
 	}
 
-	// Check relay daemon.
+	// Check orchestrator daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
-	relayRunning, relayPID, _ := pidMgr.IsRunning()
+	orchRunning, orchPID, _ := pidMgr.IsRunning()
 
 	// Check Gitea via API.
 	giteaStatus := "stopped"
@@ -50,13 +50,13 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Println("Conductor Relay Status")
+	fmt.Println("Kiloforge Status")
 	fmt.Println("======================")
 
-	if relayRunning {
-		fmt.Printf("Relay:       running (PID %d) on :%d\n", relayPID, cfg.RelayPort)
+	if orchRunning {
+		fmt.Printf("Orchestrator: running (PID %d) on :%d\n", orchPID, cfg.OrchestratorPort)
 	} else {
-		fmt.Println("Relay:       stopped")
+		fmt.Println("Orchestrator: stopped")
 	}
 
 	if giteaVersion != "" {
@@ -66,9 +66,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("Data:        %s\n", cfg.DataDir)
 	fmt.Printf("Compose:     %s\n", cfg.ComposeFile)
-	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
+	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
 	if cfg.IsDashboardEnabled() {
-		fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
+		fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
 	} else {
 		fmt.Println("Dashboard:   disabled")
 	}

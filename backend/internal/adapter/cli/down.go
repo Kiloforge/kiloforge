@@ -16,8 +16,8 @@ import (
 
 var downCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Stop the relay daemon and Gitea server",
-	Long:  `Stops the relay daemon and the Gitea Docker Compose stack without removing containers or data.`,
+	Short: "Stop the orchestrator and Gitea server",
+	Long:  `Stops the orchestrator and the Gitea Docker Compose stack without removing containers or data.`,
 	RunE:  runDown,
 }
 
@@ -30,17 +30,17 @@ func runDown(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	// Stop relay daemon.
+	// Stop orchestrator daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	if running, pid, _ := pidMgr.IsRunning(); running {
-		fmt.Printf("==> Stopping relay daemon (PID %d)...\n", pid)
+		fmt.Printf("==> Stopping orchestrator (PID %d)...\n", pid)
 		if err := stopDaemon(cfg.DataDir); err != nil {
-			fmt.Printf("    Warning: stop relay: %v\n", err)
+			fmt.Printf("    Warning: stop orchestrator: %v\n", err)
 		} else {
-			fmt.Println("    Relay stopped.")
+			fmt.Println("    Orchestrator stopped.")
 		}
 	} else {
-		fmt.Println("Relay is not running.")
+		fmt.Println("Orchestrator is not running.")
 	}
 
 	// Stop Gitea.

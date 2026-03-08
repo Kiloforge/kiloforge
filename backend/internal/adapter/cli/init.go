@@ -104,7 +104,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Generating docker-compose.yml...")
 	composeData, err := compose.GenerateComposeFile(compose.ComposeConfig{
 		GiteaPort: cfg.GiteaPort,
-		RelayPort: cfg.RelayPort,
+		OrchestratorPort: cfg.OrchestratorPort,
 		DataDir:   cfg.DataDir,
 	})
 	if err != nil {
@@ -150,23 +150,23 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("Register a project with 'kf add <path>'.")
 	fmt.Println()
 
-	// Start relay daemon.
+	// Start orchestrator daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	if running, pid, _ := pidMgr.IsRunning(); running {
-		fmt.Printf("Relay already running (PID %d)\n", pid)
+		fmt.Printf("Orchestrator already running (PID %d)\n", pid)
 	} else {
-		fmt.Println("==> Starting relay daemon...")
+		fmt.Println("==> Starting orchestrator...")
 		pid, err := startDaemon(cfg.DataDir)
 		if err != nil {
-			fmt.Printf("    Warning: start relay daemon: %v\n", err)
+			fmt.Printf("    Warning: start orchestrator: %v\n", err)
 		} else {
-			fmt.Printf("    Relay daemon started (PID %d)\n", pid)
+			fmt.Printf("    Orchestrator started (PID %d)\n", pid)
 		}
 	}
 
 	fmt.Println()
-	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
-	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
+	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
+	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
 	fmt.Println()
 	fmt.Println("Use 'kf down' to stop.")
 

@@ -125,9 +125,9 @@ func (c *Client) CreateRepo(ctx context.Context, name string) error {
 }
 
 // CreateWebhook registers a webhook on the repository.
-func (c *Client) CreateWebhook(ctx context.Context, repoName string, relayPort int) error {
-	// Use host.docker.internal so the container can reach the host relay server.
-	hookURL := fmt.Sprintf("http://host.docker.internal:%d/webhook", relayPort)
+func (c *Client) CreateWebhook(ctx context.Context, repoName string, orchPort int) error {
+	// Use host.docker.internal so the container can reach the host orchestrator.
+	hookURL := fmt.Sprintf("http://host.docker.internal:%d/webhook", orchPort)
 
 	payload := map[string]any{
 		"type":   "gitea",

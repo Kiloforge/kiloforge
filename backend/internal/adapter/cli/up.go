@@ -16,11 +16,11 @@ import (
 
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "Start the Gitea server and relay daemon",
-	Long: `Starts the Gitea Docker Compose stack and the relay server as a background
+	Short: "Start the Gitea server and orchestrator",
+	Long: `Starts the Gitea Docker Compose stack and the orchestrator as a background
 daemon. Returns immediately after both are running.
 
-Use 'kf down' to stop both Gitea and the relay.`,
+Use 'kf down' to stop both Gitea and the orchestrator.`,
 	RunE: runUp,
 }
 
@@ -51,23 +51,23 @@ func runUp(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Gitea already running at %s\n", cfg.GiteaURL())
 	}
 
-	// Start relay daemon.
+	// Start orchestrator daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	if running, pid, _ := pidMgr.IsRunning(); running {
-		fmt.Printf("Relay already running (PID %d)\n", pid)
+		fmt.Printf("Orchestrator already running (PID %d)\n", pid)
 	} else {
-		fmt.Println("==> Starting relay daemon...")
+		fmt.Println("==> Starting orchestrator...")
 		pid, err := startDaemon(cfg.DataDir)
 		if err != nil {
-			return fmt.Errorf("start relay daemon: %w", err)
+			return fmt.Errorf("start orchestrator: %w", err)
 		}
-		fmt.Printf("    Relay daemon started (PID %d)\n", pid)
+		fmt.Printf("    Orchestrator started (PID %d)\n", pid)
 	}
 
 	fmt.Println()
-	fmt.Printf("Server:      http://localhost:%d\n", cfg.RelayPort)
-	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.RelayPort)
-	fmt.Printf("Gitea:       http://localhost:%d/\n", cfg.RelayPort)
+	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
+	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
+	fmt.Printf("Gitea:       http://localhost:%d/\n", cfg.OrchestratorPort)
 	fmt.Println()
 	fmt.Println("Use 'kf down' to stop.")
 

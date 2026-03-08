@@ -58,10 +58,10 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Stop relay daemon first.
-	fmt.Println("==> Stopping relay daemon...")
+	// Stop orchestrator daemon first.
+	fmt.Println("==> Stopping orchestrator...")
 	if err := stopDaemon(cfg.DataDir); err != nil {
-		fmt.Printf("    Warning: stop relay: %v\n", err)
+		fmt.Printf("    Warning: stop orchestrator: %v\n", err)
 	}
 
 	// Try to bring down compose stack with volumes.

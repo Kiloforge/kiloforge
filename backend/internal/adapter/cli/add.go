@@ -161,9 +161,9 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	// Create webhook.
 	fmt.Println("==> Registering webhook...")
-	if err := client.CreateWebhook(ctx, repoName, cfg.RelayPort); err != nil {
+	if err := client.CreateWebhook(ctx, repoName, cfg.OrchestratorPort); err != nil {
 		fmt.Printf("    Warning: webhook creation failed: %v\n", err)
-		fmt.Println("    (Webhook can be added later when the relay server is configured)")
+		fmt.Println("    (Webhook can be added later when the orchestrator is running)")
 	}
 
 	// Create project data directory.

@@ -20,8 +20,8 @@ import (
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start the web dashboard (standalone)",
-	Long: `Starts the web dashboard server without starting Gitea or the relay.
-Useful when the relay is already running via 'kf up' and you want
+	Long: `Starts the web dashboard server without starting Gitea or the orchestrator.
+Useful when the orchestrator is already running via 'kf up' and you want
 to view the dashboard separately.`,
 	RunE: runDashboard,
 }
@@ -48,7 +48,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load project store: %w", err)
 	}
 
-	srv := dashboard.New(cfg.RelayPort, store, tracker, cfg.GiteaURL(), reg)
+	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, cfg.GiteaURL(), reg)
 
 	// Register OpenAPI generated API handlers on the dashboard mux.
 	lockMgr := lock.New(cfg.DataDir)
@@ -65,7 +65,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, srv.Mux())
 
-	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.RelayPort)
+	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.OrchestratorPort)
 	fmt.Println("Press Ctrl+C to stop.")
 	return srv.Run(ctx)
 }

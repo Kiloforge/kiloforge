@@ -10,7 +10,7 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 
 	cfg := ComposeConfig{
 		GiteaPort: 3000,
-		RelayPort: 3001,
+		OrchestratorPort: 3001,
 		DataDir:   "/home/user/.kiloforge",
 	}
 
@@ -49,7 +49,7 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 
 	cfg := ComposeConfig{
 		GiteaPort: 4000,
-		RelayPort: 5000,
+		OrchestratorPort: 5000,
 		DataDir:   "/tmp/kiloforge",
 	}
 
@@ -64,7 +64,7 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 		t.Error("expected port mapping 4000:3000")
 	}
 	if !strings.Contains(content, "ROOT_URL=http://localhost:5000/") {
-		t.Error("expected ROOT_URL with relay port 5000")
+		t.Error("expected ROOT_URL with orchestrator port 5000")
 	}
 }
 
@@ -76,7 +76,7 @@ func TestGenerateComposeFile_RootURLHasNoSubPath(t *testing.T) {
 
 	cfg := ComposeConfig{
 		GiteaPort: 3000,
-		RelayPort: 3001,
+		OrchestratorPort: 3001,
 		DataDir:   "/home/user/.kiloforge",
 	}
 

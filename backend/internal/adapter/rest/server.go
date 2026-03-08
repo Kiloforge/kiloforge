@@ -36,7 +36,7 @@ const ShutdownTimeout = 10 * time.Second
 // defaultTracer is the tracer used when no tracer is configured.
 var defaultTracer port.Tracer = port.NoopTracer{}
 
-// ServerOption configures optional features on the relay server.
+// ServerOption configures optional features on the orchestrator server.
 type ServerOption func(*Server)
 
 // WithDashboard enables dashboard routes on the unified server.
@@ -95,14 +95,14 @@ type Server struct {
 	tracer      port.Tracer
 }
 
-// NewServer creates a relay server with multi-project routing via the registry.
+// NewServer creates an orchestrator server with multi-project routing via the registry.
 func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int, opts ...ServerOption) *Server {
 	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
 	if err != nil {
 		store = &jsonfile.AgentStore{}
 	}
 	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
+	logger := log.New(log.Writer(), "[orchestrator] ", log.LstdFlags)
 	s := &Server{
 		cfg:       cfg,
 		registry:  registry,
@@ -126,7 +126,7 @@ func newTestableServer(cfg *config.Config, registry *jsonfile.ProjectStore, spaw
 	if store == nil {
 		store = &jsonfile.AgentStore{}
 	}
-	logger := log.New(log.Writer(), "[relay] ", log.LstdFlags)
+	logger := log.New(log.Writer(), "[orchestrator] ", log.LstdFlags)
 	return &Server{
 		cfg:       cfg,
 		registry:  registry,
@@ -232,7 +232,7 @@ func (s *Server) Run(ctx context.Context) error {
 		return err
 	}
 
-	// Graceful agent shutdown on relay stop.
+	// Graceful agent shutdown on orchestrator stop.
 	running := s.store.AgentsByStatus("running", "waiting")
 	if len(running) > 0 {
 		s.logger.Printf("Shutting down %d agent(s)...", len(running))

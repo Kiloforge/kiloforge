@@ -25,7 +25,7 @@ import (
 
 var serveCmd = &cobra.Command{
 	Use:    "serve",
-	Short:  "Run the relay server in the foreground (internal)",
+	Short:  "Run the orchestrator in the foreground (internal)",
 	Hidden: true,
 	RunE:   runServe,
 }
@@ -37,7 +37,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	// Open log file.
-	logPath := filepath.Join(cfg.DataDir, "relay.log")
+	logPath := filepath.Join(cfg.DataDir, "orchestrator.log")
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return fmt.Errorf("open log file: %w", err)
@@ -117,14 +117,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 		log.Printf("[skills] Auto-update enabled for %s", cfg.SkillsRepo)
 	}
 
-	log.Printf("Relay server starting on :%d (PID %d)", cfg.RelayPort, os.Getpid())
+	log.Printf("Orchestrator starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
 
-	srv := rest.NewServer(cfg, reg, cfg.RelayPort, opts...)
+	srv := rest.NewServer(cfg, reg, cfg.OrchestratorPort, opts...)
 	if err := srv.Run(ctx); err != nil {
 		log.Printf("Server error: %v", err)
 		return err
 	}
 
-	log.Printf("Relay server stopped")
+	log.Printf("Orchestrator stopped")
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-const FileName = "relay.pid"
+const FileName = "orchestrator.pid"
 
 // Manager implements port.PIDManager using a file on disk.
 type Manager struct {
