@@ -96,7 +96,7 @@
 | [x] | setup-prereq-fe_20260310004001Z | Setup Prerequisite Check — Dashboard UI (Frontend) | 2026-03-10 | 2026-03-10 |
 | [x] | cli-sqlite-migration_20260310005000Z | Migrate CLI Commands from JSON Files to SQLite | 2026-03-10 | 2026-03-10 |
 | [ ] | refactor-cli-thin-adapters_20260310010000Z | Refactor CLI Commands to Thin Adapters with Shared Service Layer | 2026-03-10 | 2026-03-10 |
-| [ ] | fix-board-sync-ux-be_20260310012000Z | Fix Board Sync and SSE Events (Backend) | 2026-03-10 | 2026-03-10 |
+| [x] | fix-board-sync-ux-be_20260310012000Z | Fix Board Sync and SSE Events (Backend) | 2026-03-10 | 2026-03-10 |
 | [ ] | fix-board-sync-ux-fe_20260310012001Z | Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend) | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
