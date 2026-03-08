@@ -19,6 +19,7 @@ import (
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/proxy"
+	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
 	wsAdapter "kiloforge/internal/adapter/ws"
@@ -499,6 +500,15 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 	workDir := tracking.DeveloperWorkDir
 	if workDir == "" {
 		workDir = filepath.Join(s.cfg.DataDir, "projects", slug)
+	}
+
+	// Validate reviewer skill is installed before spawning.
+	required := skills.RequiredSkillsForRole("reviewer")
+	globalDir := s.cfg.GetSkillsDir()
+	localDir := filepath.Join(workDir, ".claude", "skills")
+	if missing := skills.CheckRequired(required, globalDir, localDir); len(missing) > 0 {
+		s.logger.Printf("[%s] Cannot spawn reviewer for PR #%d: required skill %q not installed", slug, prNumber, missing[0].Name)
+		return
 	}
 
 	info, err := s.spawner.SpawnReviewer(context.Background(), port.ReviewerOpts{

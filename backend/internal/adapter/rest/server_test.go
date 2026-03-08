@@ -16,6 +16,7 @@ import (
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 )
@@ -28,10 +29,18 @@ func newTestServerWithDir(dataDir string) *Server {
 	if dataDir == "" {
 		dataDir = "/tmp/kf-test-" + fmt.Sprintf("%d", os.Getpid())
 	}
+
+	// Install embedded skills for validation to pass.
+	skillsDir, _ := os.MkdirTemp("", "kf-test-skills-*")
+	for _, name := range skills.ListEmbedded() {
+		skills.InstallEmbedded(name, skillsDir)
+	}
+
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dataDir,
 		GiteaAdminUser: "kiloforger",
+		SkillsDir:      skillsDir,
 	}
 	reg := &jsonfile.ProjectStore{
 		Version: 1,
@@ -47,12 +56,32 @@ func newTestServerWithDir(dataDir string) *Server {
 	return NewServer(cfg, reg, store, prTracker, 3001)
 }
 
+// installTestSkills extracts all embedded kf-* skills into a temp directory
+// and returns the path, suitable for use as config.SkillsDir in tests.
+func installTestSkills(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	for _, name := range skills.ListEmbedded() {
+		if _, err := skills.InstallEmbedded(name, dir); err != nil {
+			t.Fatalf("install embedded skill %s: %v", name, err)
+		}
+	}
+	return dir
+}
+
 // newTestServerWithSpawner creates a server with a fake spawner for testing review cycle.
 func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSrv *httptest.Server) *Server {
+	// Install embedded skills for validation to pass.
+	skillsDir, _ := os.MkdirTemp("", "kf-test-skills-*")
+	for _, name := range skills.ListEmbedded() {
+		skills.InstallEmbedded(name, skillsDir)
+	}
+
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dataDir,
 		GiteaAdminUser: "kiloforger",
+		SkillsDir:      skillsDir,
 	}
 	reg := &jsonfile.ProjectStore{
 		Version: 1,
