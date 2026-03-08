@@ -176,7 +176,7 @@ kf implement --list                # list available tracks
 kf implement --project myapp <id>  # specify project explicitly
 ```
 
-The command acquires a worktree from the pool, prepares it (reset to main, create implementation branch), and spawns a Claude Code agent running `/conductor-developer <track-id>`. Agent state is recorded for monitoring with `kf agents`, `kf logs`, `kf stop`, and `kf attach`.
+The command acquires a worktree from the pool, prepares it (reset to main, create implementation branch), and spawns a Claude Code agent running `/kf-developer <track-id>`. Agent state is recorded for monitoring with `kf agents`, `kf logs`, `kf stop`, and `kf attach`.
 
 ### `kf agents`
 

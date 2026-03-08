@@ -106,7 +106,7 @@ Developer agents need isolated working directories. Rather than creating/destroy
 4. kf creates implementation branch: git checkout -b <track-id>
 5. kf spawns Claude Code developer agent:
    - Working directory: acquired worktree
-   - Prompt: /conductor-developer <track-id>
+   - Prompt: /kf-developer <track-id>
    - Session ID: generated UUID
    - Flags: --dangerously-skip-permissions (sandboxed)
    - Output: stream-json to log file
@@ -166,7 +166,7 @@ The orchestrator:
 ```
 1. kf spawns Claude Code reviewer agent:
    - Working directory: can use a separate worktree or review in-place
-   - Prompt: /conductor-reviewer <pr-url>
+   - Prompt: /kf-reviewer <pr-url>
    - Session ID: generated UUID
    - Output: stream-json to log file
 2. Agent state recorded:
@@ -447,7 +447,7 @@ Human          kf CLI           Relay          Gitea          Developer CC     R
 
 1. **Developer self-review vs separate reviewer** — Should the developer agent also do a self-review pass before creating the PR? This could reduce review cycles.
 
-2. **Reviewer worktree** — Does the reviewer need its own worktree, or can it review from the PR diff alone? The conductor-reviewer skill currently works from the diff.
+2. **Reviewer worktree** — Does the reviewer need its own worktree, or can it review from the PR diff alone? The kf-reviewer skill currently works from the diff.
 
 3. **Concurrent tracks** — How many tracks can be implemented simultaneously? Limited by worktree pool size and system resources.
 

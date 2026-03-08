@@ -127,12 +127,12 @@ Or add to your project's `.claude/settings.json`:
 
 1. **Generate tracks** (in your project):
    ```bash
-   claude -p "/conductor-track-generator add user authentication"
+   claude -p "/kf-track-generator add user authentication"
    ```
 
 2. **Start a developer agent** (in a worktree):
    ```bash
-   claude --worktree developer-1 -p "/conductor-developer auth_20250307 --with-review --auto-merge"
+   claude --worktree developer-1 -p "/kf-developer auth_20250307 --with-review --auto-merge"
    ```
 
 3. **Watch it work** — The developer implements the track and creates a PR.
