@@ -94,6 +94,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	if traceStore != nil {
 		opts = append(opts, rest.WithTracing(traceStore))
+		opts = append(opts, rest.WithTracer(tracing.NewOTelTracer()))
 	}
 	if cfg.IsDashboardEnabled() {
 		store, storeErr := jsonfile.LoadAgentStore(cfg.DataDir)

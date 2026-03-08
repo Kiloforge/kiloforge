@@ -33,6 +33,9 @@ import (
 // ShutdownTimeout is how long to wait for agents to exit before force-killing.
 const ShutdownTimeout = 10 * time.Second
 
+// defaultTracer is the tracer used when no tracer is configured.
+var defaultTracer port.Tracer = port.NoopTracer{}
+
 // ServerOption configures optional features on the relay server.
 type ServerOption func(*Server)
 
@@ -66,6 +69,13 @@ func WithBoardService(svc *service.NativeBoardService) ServerOption {
 	}
 }
 
+// WithTracer sets the distributed tracer for webhook trace continuation.
+func WithTracer(t port.Tracer) ServerOption {
+	return func(s *Server) {
+		s.tracer = t
+	}
+}
+
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg         *config.Config
@@ -82,6 +92,7 @@ type Server struct {
 	_projects   dashboard.ProjectLister
 	traceStore  *tracing.Store
 	boardSvc    *service.NativeBoardService
+	tracer      port.Tracer
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -101,6 +112,7 @@ func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int, op
 		prService: service.NewPRService(client, &defaultSpawner{}, logger),
 		logger:    logger,
 		port:      port,
+		tracer:    defaultTracer,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -262,10 +274,22 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	slug := proj.Slug
 
+	// For PR events, try to join the track's trace for continuity.
+	ctx := r.Context()
+	if trackID := extractTrackIDFromPayload(payload); trackID != "" && s.boardSvc != nil {
+		if storedTraceID, ok := s.boardSvc.GetTraceID(slug, trackID); ok {
+			ctx, _ = s.tracer.StartSpanWithTraceID(ctx, storedTraceID, "webhook/"+event,
+				port.StringAttr("webhook.event", event),
+				port.StringAttr("project.slug", slug),
+				port.StringAttr("track.id", trackID),
+			)
+		}
+	}
+
 	// Record a trace span for the webhook event.
-	_, span := trace.SpanFromContext(r.Context()).TracerProvider().
+	_, span := trace.SpanFromContext(ctx).TracerProvider().
 		Tracer("kiloforge/webhook").
-		Start(r.Context(), "webhook/"+event,
+		Start(ctx, "webhook/"+event,
 			trace.WithAttributes(
 				otelattr.String("webhook.event", event),
 				otelattr.String("project.slug", slug),
@@ -281,6 +305,10 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		s.handlePullRequest(slug, payload)
 		if action, _ := payload["action"].(string); action == "opened" || action == "reopened" {
 			span.AddEvent("pr.opened", trace.WithAttributes(otelattr.String("action", action)))
+			if prData, _ := payload["pull_request"].(map[string]any); prData != nil {
+				prNum := int(prData["number"].(float64))
+				span.SetAttributes(otelattr.Int("pr.number", prNum))
+			}
 		}
 	case "pull_request_review":
 		s.handlePullRequestReview(slug, payload)
@@ -656,6 +684,30 @@ func (s *Server) handlePullRequestComment(slug string, payload map[string]any) {
 	if action == "created" {
 		s.logger.Printf("[%s] PR #%d comment: %s", slug, prNumber, body)
 	}
+}
+
+// extractTrackIDFromPayload extracts the track ID from a webhook payload
+// by looking at the PR head branch ref (e.g., "feature/my-track_123Z" → "my-track_123Z").
+func extractTrackIDFromPayload(payload map[string]any) string {
+	pr, _ := payload["pull_request"].(map[string]any)
+	if pr == nil {
+		return ""
+	}
+	head, _ := pr["head"].(map[string]any)
+	if head == nil {
+		return ""
+	}
+	ref, _ := head["ref"].(string)
+	if ref == "" {
+		return ""
+	}
+	// Branch format: {type}/{trackId} — extract the track ID after the slash.
+	for i := len(ref) - 1; i >= 0; i-- {
+		if ref[i] == '/' {
+			return ref[i+1:]
+		}
+	}
+	return ref
 }
 
 func (s *Server) handlePush(slug string, payload map[string]any) {
