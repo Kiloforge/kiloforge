@@ -11,9 +11,9 @@
 
 ## Phase 2: Spawner Integration
 
-- [ ] Task 2.1: Add `preflightChecks()` method to `Spawner` — calls `CheckClaudeAuthCached()` then `ValidateSkills()`
-- [ ] Task 2.2: Update `SpawnDeveloper()`, `SpawnReviewer()`, `SpawnInteractive()` to call `preflightChecks()` as the first step
-- [ ] Task 2.3: Update `kf init` prereq check — call `CheckClaudeAuth()` as a warning (not blocking) alongside existing checks
+- [x] Task 2.1: Add `checkAuth()` method to `Spawner` — calls `CheckClaudeAuthCached()`
+- [x] Task 2.2: Update `SpawnDeveloper()`, `SpawnReviewer()`, `SpawnInteractive()` to call `checkAuth()` before `checkQuota()`
+- [x] Task 2.3: Update `kf init` prereq check — call `CheckClaudeAuth()` as a warning (not blocking) alongside existing checks
 
 ## Phase 3: REST API and CLI Integration
 

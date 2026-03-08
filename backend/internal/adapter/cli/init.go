@@ -48,6 +48,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", prereq.FormatErrors(errs))
 	}
 
+	// Warn (non-blocking) if Claude CLI is not authenticated.
+	if err := prereq.CheckClaudeAuth(context.Background()); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 

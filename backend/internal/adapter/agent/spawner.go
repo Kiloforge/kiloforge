@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/prereq"
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
@@ -93,6 +94,14 @@ func (s *Spawner) onCompletion(agentID, ref, status string) {
 	}
 }
 
+// checkAuth verifies Claude CLI authentication before spawning.
+func (s *Spawner) checkAuth(ctx context.Context) error {
+	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
+		return fmt.Errorf("claude auth: %w", err)
+	}
+	return nil
+}
+
 // checkQuota returns an error if the tracker indicates rate limiting.
 // Budget enforcement via MaxSessionCostUSD is deprecated — subscription
 // rate limits are the primary constraint.
@@ -110,6 +119,9 @@ func (s *Spawner) checkQuota() error {
 // SpawnReviewer launches a Claude agent to review a PR.
 // The projectDir parameter specifies the working directory for the agent.
 func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error) {
+	if err := s.checkAuth(ctx); err != nil {
+		return nil, err
+	}
 	if err := s.checkQuota(); err != nil {
 		return nil, fmt.Errorf("spawn blocked: %w", err)
 	}
@@ -200,6 +212,9 @@ type SpawnDeveloperOpts struct {
 
 // SpawnDeveloper launches a Claude agent to implement a track.
 func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*domain.AgentInfo, error) {
+	if err := s.checkAuth(ctx); err != nil {
+		return nil, err
+	}
 	if err := s.checkQuota(); err != nil {
 		return nil, fmt.Errorf("spawn blocked: %w", err)
 	}
@@ -307,6 +322,9 @@ type InteractiveAgent struct {
 
 // SpawnInteractive launches a Claude agent in interactive mode with stdin connected.
 func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpts) (*InteractiveAgent, error) {
+	if err := s.checkAuth(ctx); err != nil {
+		return nil, err
+	}
 	if err := s.checkQuota(); err != nil {
 		return nil, fmt.Errorf("spawn blocked: %w", err)
 	}
