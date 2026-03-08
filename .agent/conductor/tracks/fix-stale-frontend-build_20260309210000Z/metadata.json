@@ -1,0 +1,16 @@
+{
+  "id": "fix-stale-frontend-build_20260309210000Z",
+  "title": "Fix Stale Frontend Build — Rebuild dist with Correct Base Path",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-09T21:00:00Z",
+  "updated": "2026-03-09T21:00:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}

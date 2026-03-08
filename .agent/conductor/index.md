@@ -112,6 +112,7 @@ Navigation hub for project context.
 - **claude-auth-check_20260309200000Z** — Claude CLI Authentication Check Before Agent Spawning
 - **guided-tour-be_20260309203000Z** — Guided Tour State API and Demo Seed Data (Backend)
 - **guided-tour-fe_20260309203001Z** — Guided Tour Overlay with Simulated Onboarding Flow (Frontend)
+- **fix-stale-frontend-build_20260309210000Z** — Fix Stale Frontend Build — Rebuild dist with Correct Base Path
 
 ## Getting Started
 
