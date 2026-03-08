@@ -48,11 +48,9 @@ A track qualifies for auto-approve when ALL of these are true:
 
 ### Skill file location
 
-The kf-branded skills are embedded in the repo at `backend/internal/adapter/skills/embedded/`. The track generator skill is at:
+Skills are embedded in the binary at `backend/internal/adapter/skills/embedded/` and installed at runtime to either `~/.claude/skills/kf-*` (global) or `<repo>/.claude/skills/kf-*` (local) based on user preference. The file to modify:
 
-- **`backend/internal/adapter/skills/embedded/kf-track-generator/SKILL.md`** — the in-repo source of truth
-
-This is the file to modify. The global `~/.claude/skills/conductor-track-generator/SKILL.md` is installed from here (or manually) — the repo copy is canonical.
+- **`backend/internal/adapter/skills/embedded/kf-track-generator/SKILL.md`** — embedded source that gets installed to the user's chosen location
 
 ## Acceptance Criteria
 
