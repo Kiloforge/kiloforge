@@ -25,6 +25,17 @@ Format: `<type>(<optional scope>): <description>`
 
 **Optional / Self-review OK** — Code review is not required for changes. Contributors may self-review and merge.
 
+## Verification Commands
+
+The following commands must pass at phase completion and before merge (post-rebase):
+
+```bash
+make test    # Go unit/integration tests
+make build   # Full build (frontend + backend) — catches TS errors, embed failures, etc.
+```
+
+Both commands must succeed. A build failure is a blocking error.
+
 ## Verification Checkpoints
 
 **Track completion only** — Manual verification is required only when an entire track is complete. Individual phases and tasks do not require manual sign-off.
