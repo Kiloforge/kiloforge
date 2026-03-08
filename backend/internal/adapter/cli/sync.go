@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -41,16 +41,19 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	db, err := openDB(cfg)
 	if err != nil {
-		return fmt.Errorf("load registry: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+
+	reg := sqlite.NewProjectStore(db)
 	project, ok := reg.Get(flagSyncProject)
 	if !ok {
 		return fmt.Errorf("project %q not found", flagSyncProject)
 	}
 
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	boardStore := sqlite.NewBoardStore(db)
 	boardSvc := service.NewNativeBoardService(boardStore)
 
 	// Discover tracks.

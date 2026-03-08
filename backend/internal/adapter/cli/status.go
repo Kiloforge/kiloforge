@@ -9,8 +9,9 @@ import (
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pidfile"
+	"kiloforge/internal/core/port"
 
 	"github.com/spf13/cobra"
 )
@@ -80,7 +81,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load agent store for per-agent breakdown.
-	if store, err := jsonfile.LoadAgentStore(cfg.DataDir); err == nil {
+	if db, err := openDB(cfg); err == nil {
+		defer db.Close()
+		store := sqlite.NewAgentStore(db)
 		printAgentCosts(tracker, store)
 	}
 
@@ -111,8 +114,8 @@ func printQuotaStatus(tracker *agent.QuotaTracker, cfg *config.Config) {
 		formatTokens(total.InputTokens), formatTokens(total.OutputTokens), total.AgentCount)
 }
 
-func printAgentCosts(tracker *agent.QuotaTracker, store *jsonfile.AgentStore) {
-	agents := store.AgentList
+func printAgentCosts(tracker *agent.QuotaTracker, store port.AgentStore) {
+	agents := store.Agents()
 	if len(agents) == 0 {
 		return
 	}

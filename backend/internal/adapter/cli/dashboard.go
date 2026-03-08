@@ -12,7 +12,6 @@ import (
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest"
 	"kiloforge/internal/adapter/rest/gen"
@@ -40,25 +39,18 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
-	if err != nil {
-		return fmt.Errorf("load agent store: %w", err)
-	}
-
-	tracker := agent.NewQuotaTracker(cfg.DataDir)
-	_ = tracker.Load()
-
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
-	if err != nil {
-		return fmt.Errorf("load project store: %w", err)
-	}
-
-	// Open SQLite database for trace, board, consent stores.
-	db, err := sqlite.Open(cfg.DataDir)
+	// Open SQLite database for all stores.
+	db, err := openDB(cfg)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
 	defer db.Close()
+
+	store := sqlite.NewAgentStore(db)
+	reg := sqlite.NewProjectStore(db)
+
+	tracker := agent.NewQuotaTracker(cfg.DataDir)
+	_ = tracker.Load()
 
 	traceStore := sqlite.NewTraceStore(db)
 	boardStore := sqlite.NewBoardStore(db)

@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/sqlite"
 
 	"github.com/spf13/cobra"
 )
@@ -27,10 +27,12 @@ func runAttach(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
+	db, err := openDB(cfg)
 	if err != nil {
-		return fmt.Errorf("load state: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+	store := sqlite.NewAgentStore(db)
 
 	agentID := args[0]
 	agent, err := store.FindAgent(agentID)

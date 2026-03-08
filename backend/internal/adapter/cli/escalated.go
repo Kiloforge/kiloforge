@@ -3,11 +3,10 @@ package cli
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/tabwriter"
 
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 
 	"github.com/spf13/cobra"
 )
@@ -25,10 +24,13 @@ func runEscalated(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	db, err := openDB(cfg)
 	if err != nil {
-		return fmt.Errorf("load registry: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+	reg := sqlite.NewProjectStore(db)
+	prTracker := sqlite.NewPRTrackingStore(db)
 
 	type escalatedPR struct {
 		slug    string
@@ -40,8 +42,7 @@ func runEscalated(cmd *cobra.Command, args []string) error {
 	var escalated []escalatedPR
 
 	for _, proj := range reg.List() {
-		projectDir := filepath.Join(cfg.DataDir, "projects", proj.Slug)
-		tracking, err := jsonfile.LoadPRTracking(projectDir)
+		tracking, err := prTracker.LoadPRTracking(proj.Slug)
 		if err != nil {
 			continue
 		}

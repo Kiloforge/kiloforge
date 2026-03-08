@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/adapter/persistence/sqlite"
+	"kiloforge/internal/core/port"
 
 	"github.com/spf13/cobra"
 )
@@ -35,10 +36,12 @@ func runCost(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load quota data: %w", err)
 	}
 
-	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
+	db, err := openDB(cfg)
 	if err != nil {
-		return fmt.Errorf("load agent store: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+	store := sqlite.NewAgentStore(db)
 
 	if flagCostJSON {
 		return printCostJSON(tracker, store)
@@ -55,10 +58,10 @@ type costEntry struct {
 	CostUSD  float64 `json:"cost_usd"`
 }
 
-func printCostJSON(tracker *agent.QuotaTracker, store *jsonfile.AgentStore) error {
+func printCostJSON(tracker *agent.QuotaTracker, store port.AgentStore) error {
 	total := tracker.GetTotalUsage()
 	var entries []costEntry
-	for _, a := range store.AgentList {
+	for _, a := range store.Agents() {
 		usage := tracker.GetAgentUsage(a.ID)
 		if usage == nil {
 			continue
@@ -84,7 +87,7 @@ func printCostJSON(tracker *agent.QuotaTracker, store *jsonfile.AgentStore) erro
 	return enc.Encode(out)
 }
 
-func printCostTable(tracker *agent.QuotaTracker, store *jsonfile.AgentStore, cfg *config.Config) error {
+func printCostTable(tracker *agent.QuotaTracker, store port.AgentStore, cfg *config.Config) error {
 	total := tracker.GetTotalUsage()
 
 	if total.AgentCount == 0 {
@@ -101,7 +104,7 @@ func printCostTable(tracker *agent.QuotaTracker, store *jsonfile.AgentStore, cfg
 	fmt.Printf("Agents:      %d\n", total.AgentCount)
 	fmt.Println()
 
-	for _, a := range store.AgentList {
+	for _, a := range store.Agents() {
 		usage := tracker.GetAgentUsage(a.ID)
 		if usage == nil {
 			continue

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/core/domain"
 
 	"github.com/spf13/cobra"
@@ -55,10 +55,12 @@ func runPush(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	db, err := openDB(cfg)
 	if err != nil {
-		return fmt.Errorf("load project registry: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+	reg := sqlite.NewProjectStore(db)
 
 	if flagPushAll {
 		return pushAll(ctx, reg.List())

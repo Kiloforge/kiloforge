@@ -14,7 +14,7 @@ import (
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/core/domain"
 
 	"github.com/spf13/cobra"
@@ -103,11 +103,13 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gitea is not running — run 'kf init' or 'kf up' first")
 	}
 
-	// Load registry and check for duplicate.
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	// Open database and load registry.
+	db, err := openDB(cfg)
 	if err != nil {
-		return fmt.Errorf("load project registry: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+	reg := sqlite.NewProjectStore(db)
 	if p, ok := reg.Get(slug); ok {
 		fmt.Printf("Project %q is already registered.\n", slug)
 		fmt.Printf("  Path:   %s\n", p.ProjectDir)
@@ -217,12 +219,13 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		fmt.Println("    (Webhook can be added later when the orchestrator is running)")
 	}
 
-	// Create project data directory.
-	if err := jsonfile.EnsureProjectDir(cfg.DataDir, slug); err != nil {
+	// Create project data directory for logs.
+	logsDir := filepath.Join(cfg.DataDir, "projects", slug, "logs")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
 		return fmt.Errorf("create project dir: %w", err)
 	}
 
-	// Register in projects.json.
+	// Register project in database.
 	p := domain.Project{
 		Slug:         slug,
 		RepoName:     repoName,
