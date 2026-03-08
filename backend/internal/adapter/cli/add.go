@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/persistence/jsonfile"
@@ -68,10 +69,11 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		slug = flagAddName
 	}
 
-	// Resolve SSH key path if provided.
+	// Resolve SSH key path.
 	var sshKeyPath string
 	var sshEnv []string
 	if flagAddSSHKey != "" {
+		// Explicit --ssh-key flag: use as-is.
 		sshKeyPath, err = expandPath(flagAddSSHKey)
 		if err != nil {
 			return fmt.Errorf("resolve SSH key path: %w", err)
@@ -79,6 +81,11 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		if _, err := os.Stat(sshKeyPath); err != nil {
 			return fmt.Errorf("SSH key not found: %s", sshKeyPath)
 		}
+	} else if isSSHRemote(remoteURL) {
+		// SSH remote without --ssh-key: discover and prompt.
+		sshKeyPath = discoverAndSelectSSHKey()
+	}
+	if sshKeyPath != "" {
 		sshEnv = []string{
 			fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", sshKeyPath),
 		}
@@ -234,6 +241,46 @@ func isRemoteURL(arg string) bool {
 		return true
 	}
 	return false
+}
+
+// isSSHRemote returns true if the URL uses SSH protocol.
+func isSSHRemote(url string) bool {
+	if strings.HasPrefix(url, "ssh://") {
+		return true
+	}
+	// SSH shorthand: git@host:path
+	if strings.Contains(url, "@") && strings.Contains(url, ":") {
+		return true
+	}
+	return false
+}
+
+// discoverAndSelectSSHKey discovers SSH keys in ~/.ssh/ and prompts the user
+// to select one. Returns the selected private key path, or "" if none selected.
+func discoverAndSelectSSHKey() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	sshDir := filepath.Join(home, ".ssh")
+	keys := auth.DiscoverSSHKeys(sshDir)
+	if len(keys) == 0 {
+		fmt.Println("    No SSH keys found in ~/.ssh/ — using default SSH agent")
+		return ""
+	}
+
+	// Detect non-interactive stdin.
+	var reader *os.File
+	fi, err := os.Stdin.Stat()
+	if err == nil && (fi.Mode()&os.ModeCharDevice) != 0 {
+		reader = os.Stdin
+	}
+
+	path, err := PromptSSHKeySelection(keys, reader, os.Stdout)
+	if err != nil {
+		return ""
+	}
+	return path
 }
 
 // repoNameFromURL extracts the repository name from a git remote URL.
