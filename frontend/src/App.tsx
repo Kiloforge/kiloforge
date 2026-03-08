@@ -15,6 +15,7 @@ import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
+import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay, TourComplete } from "./components/tour/TourOverlay";
 import { OverviewPage } from "./pages/OverviewPage";
@@ -83,6 +84,7 @@ export default function App() {
 
   return (
     <TourProvider>
+      <ToastContainer />
       <TourOverlay />
       <SkillsBanner />
       <header className={styles.header}>
