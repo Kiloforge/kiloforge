@@ -1823,6 +1823,15 @@ func (response RunAdminOperation412JSONResponse) VisitRunAdminOperationResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
+type RunAdminOperation428JSONResponse SetupRequiredResponse
+
+func (response RunAdminOperation428JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(428)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type RunAdminOperation429JSONResponse ErrorResponse
 
 func (response RunAdminOperation429JSONResponse) VisitRunAdminOperationResponse(w http.ResponseWriter) error {

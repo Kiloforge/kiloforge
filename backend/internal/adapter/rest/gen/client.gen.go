@@ -2369,6 +2369,7 @@ type RunAdminOperationResponse struct {
 	JSON401      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON412      *ErrorResponse
+	JSON428      *SetupRequiredResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 }
@@ -3681,6 +3682,13 @@ func ParseRunAdminOperationResponse(rsp *http.Response) (*RunAdminOperationRespo
 			return nil, err
 		}
 		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest SetupRequiredResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse

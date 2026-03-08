@@ -1462,6 +1462,16 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 		return gen.RunAdminOperation412JSONResponse{Error: resp.Error}, nil
 	}
 
+	// Check kiloforge setup if a project is specified.
+	if req.Body.Project != nil && *req.Body.Project != "" {
+		if slug := h.checkSetup(*req.Body.Project); slug != "" {
+			return gen.RunAdminOperation428JSONResponse{
+				Error:   "kiloforge setup required",
+				Project: slug,
+			}, nil
+		}
+	}
+
 	// Concurrency guard — only one admin operation at a time.
 	h.adminMu.Lock()
 	if h.runningAdminAgent != "" {

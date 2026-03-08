@@ -684,6 +684,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "428":
+          description: Kiloforge setup required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupRequiredResponse"
         "429":
           description: Rate limited
           content:
