@@ -115,6 +115,8 @@ Navigation hub for project context.
 - **fix-stale-frontend-build_20260309210000Z** — Fix Stale Frontend Build — Rebuild dist with Correct Base Path
 - **fix-add-empty-repo-cleanup_20260309213000Z** — Fix kf add for Empty Repos and Add Rollback on Failure
 - **track-gen-auto-approve_20260309220000Z** — Track Generator Auto-Approve for Non-Code Tracks
+- **fix-tour-api-mismatch_20260309223000Z** — Fix Tour API Request Body Mismatch
+- **error-toast-notifications_20260309223001Z** — Error Toast Notifications in Dashboard
 
 ## Getting Started
 

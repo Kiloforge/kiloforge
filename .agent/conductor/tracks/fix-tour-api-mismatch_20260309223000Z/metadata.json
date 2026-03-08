@@ -1,0 +1,16 @@
+{
+  "id": "fix-tour-api-mismatch_20260309223000Z",
+  "title": "Fix Tour API Request Body Mismatch",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-09T22:30:00Z",
+  "updated": "2026-03-09T22:30:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}
