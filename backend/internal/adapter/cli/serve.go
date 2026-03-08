@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
@@ -117,6 +118,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Wire tour store for guided tour API.
 	tourStore := sqlite.NewTourStore(db)
 	opts = append(opts, rest.WithTourStore(tourStore))
+
+	// Wire interactive agent spawner for WebSocket-based agent sessions.
+	quotaTracker := agent.NewQuotaTracker(cfg.DataDir)
+	_ = quotaTracker.Load()
+	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
+	opts = append(opts, rest.WithInteractiveSpawner(spawner))
 
 	// Start auto-update checker if enabled.
 	if cfg.SkillsRepo != "" && cfg.AutoUpdateSkills != nil && *cfg.AutoUpdateSkills {
