@@ -79,6 +79,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		fmt.Println("Gitea is already running.")
 		fmt.Printf("  URL:  %s\n", cfg.GiteaURL())
 		fmt.Printf("  Data: %s\n", cfg.DataDir)
+		if cfg.GiteaAdminPass != "" {
+			fmt.Printf("  Admin: %s / %s\n", cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+		} else {
+			fmt.Printf("  Admin: %s (password not stored — use --admin-pass to set a known one)\n", cfg.GiteaAdminUser)
+		}
 		return nil
 	}
 
