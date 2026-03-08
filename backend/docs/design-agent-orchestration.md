@@ -7,7 +7,7 @@
 
 ## Overview
 
-This document describes the full lifecycle of how kiloforge orchestrates Claude Code agents for track implementation and code review. The system coordinates two agent roles — **developer** and **reviewer** — through a structured cycle of implementation, PR review, revision, and merge, all mediated through the local Gitea instance and webhook relay.
+This document describes the full lifecycle of how kiloforge orchestrates Claude Code agents for track implementation and code review. The system coordinates two agent roles — **developer** and **reviewer** — through a structured cycle of implementation, PR review, revision, and merge, all mediated through the local Gitea instance and webhook orchestrator.
 
 ---
 
@@ -150,12 +150,12 @@ After PR creation:
 ### Trigger: PR Opened Webhook
 
 ```
-Gitea → POST /webhook → relay
+Gitea → POST /webhook → orchestrator
   X-Gitea-Event: pull_request
   action: opened
 ```
 
-The relay:
+The orchestrator:
 1. Resolves project from `repository.name`
 2. Extracts PR number, branch name (track ID)
 3. Records PR metadata: developer session ID from PR body/labels
@@ -188,7 +188,7 @@ The reviewer:
 1. Reviewer agent exits
 2. Reviewer state updated: status=completed
 3. Webhook fires: pull_request_review, state=approved
-4. Relay resumes developer agent (see Section 5)
+4. Orchestrator resumes developer agent (see Section 5)
 5. Developer merges PR (see Section 6)
 ```
 
@@ -197,7 +197,7 @@ The reviewer:
 1. Reviewer agent exits
 2. Reviewer state updated: status=completed
 3. Webhook fires: pull_request_review, state=changes_requested
-4. Relay checks review cycle count
+4. Orchestrator checks review cycle count
 5. If cycles < max (default 3): resume developer for revisions
 6. If cycles >= max: escalate to human intervention
 ```
@@ -209,9 +209,9 @@ The reviewer:
 ### Developer Resume for Revisions
 
 ```
-1. Relay receives pull_request_review webhook (changes_requested)
-2. Relay looks up developer agent by track_id / PR number
-3. Relay resumes developer with saved session ID:
+1. Orchestrator receives pull_request_review webhook (changes_requested)
+2. Orchestrator looks up developer agent by track_id / PR number
+3. Orchestrator resumes developer with saved session ID:
    - claude --resume <developer-session-id>
    - Prompt context: "PR #N has review comments. Address feedback and push updates."
 4. Developer state updated: status=running, review_cycle=N+1
@@ -227,10 +227,10 @@ The reviewer:
 ### Re-Review
 
 ```
-1. Relay receives pull_request.synchronize webhook
+1. Orchestrator receives pull_request.synchronize webhook
 2. Developer agent signals it has pushed revisions (exits or is halted)
 3. Developer state: status=waiting-review
-4. Relay spawns new reviewer agent (or resumes existing one)
+4. Orchestrator spawns new reviewer agent (or resumes existing one)
 5. Reviewer reviews updated PR
 6. Cycle repeats (approve or request changes)
 ```
@@ -259,8 +259,8 @@ Escalation:
 ### Merge (on approval)
 
 ```
-1. Relay receives pull_request_review webhook (approved)
-2. Relay resumes developer agent
+1. Orchestrator receives pull_request_review webhook (approved)
+2. Orchestrator resumes developer agent
 3. Developer merges PR via Gitea API:
    - POST /api/v1/repos/{owner}/{repo}/pulls/{number}/merge
    - Merge method: merge commit (or rebase, configurable)

@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 info:
   title: Kiloforge API
-  description: Conductor Relay server API for agent management, quota tracking, lock coordination, and system status.
+  description: Kiloforge orchestrator API for agent management, quota tracking, lock coordination, and system status.
   version: 0.1.0
 
 servers:
