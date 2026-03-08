@@ -79,6 +79,8 @@ Navigation hub for project context.
 - **sse-event-bus_20260309091500Z** — SSE Event Bus Infrastructure
 - **sse-entity-subscriptions_20260309091501Z** — SSE Entity Subscriptions
 - **ssh-key-selection_20260309100000Z** — Interactive SSH Key Selection for Add Command
+- **quota-reframe-be_20260309103000Z** — Reframe Quota System — Tokens and Rate Limits (Backend)
+- **quota-reframe-fe_20260309103001Z** — Reframe Quota System — Tokens and Rate Limits (Frontend)
 
 ## Getting Started
 

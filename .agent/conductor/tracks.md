@@ -40,6 +40,8 @@
 | [ ] | sse-event-bus_20260309091500Z | SSE Event Bus Infrastructure | 2026-03-09 | 2026-03-09 |
 | [ ] | sse-entity-subscriptions_20260309091501Z | SSE Entity Subscriptions | 2026-03-09 | 2026-03-09 |
 | [x] | ssh-key-selection_20260309100000Z | Interactive SSH Key Selection for Add Command | 2026-03-09 | 2026-03-09 |
+| [ ] | quota-reframe-be_20260309103000Z | Reframe Quota System — Tokens and Rate Limits (Backend) | 2026-03-09 | 2026-03-09 |
+| [ ] | quota-reframe-fe_20260309103001Z | Reframe Quota System — Tokens and Rate Limits (Frontend) | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
