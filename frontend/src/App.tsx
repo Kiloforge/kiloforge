@@ -6,6 +6,7 @@ import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
 import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
+import { useProjects } from "./hooks/useProjects";
 import { useConsent } from "./hooks/useConsent";
 import { queryKeys } from "./api/queryKeys";
 import { fetcher, FetchError } from "./api/fetcher";
@@ -28,6 +29,7 @@ export default function App() {
   const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved } = useAgents();
   const { quota, handleQuotaUpdate } = useQuota();
   const { tracks, handleTrackUpdate, handleTrackRemoved } = useTracks();
+  const { handleProjectUpdate, handleProjectRemoved } = useProjects();
   const { data: status = null } = useQuery({
     queryKey: queryKeys.status,
     queryFn: () => fetcher<StatusResponse>("/api/status"),
@@ -43,8 +45,10 @@ export default function App() {
       quota_update: handleQuotaUpdate,
       track_update: handleTrackUpdate,
       track_removed: handleTrackRemoved,
+      project_update: handleProjectUpdate,
+      project_removed: handleProjectRemoved,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved],
   );
 
   const connectionState = useSSE("/events", sseHandlers);
