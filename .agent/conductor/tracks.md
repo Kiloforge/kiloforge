@@ -82,7 +82,7 @@
 | [ ] | frontend-test-infra_20260309225000Z | Frontend Test Infrastructure and Makefile Integration | 2026-03-09 | 2026-03-09 |
 | [x] | fix-dashboard-interactive-agent_20260309230000Z | Fix Interactive Agent Wiring in Dashboard Command | 2026-03-09 | 2026-03-09 |
 | [x] | fix-project-sse-subscription_20260309230001Z | Wire Project SSE Events in Dashboard Frontend | 2026-03-09 | 2026-03-09 |
-| [ ] | tracing-always-on-be_20260309231000Z | Remove Optional Tracing — Always-On (Backend) | 2026-03-09 | 2026-03-09 |
+| [x] | tracing-always-on-be_20260309231000Z | Remove Optional Tracing — Always-On (Backend) | 2026-03-09 | 2026-03-09 |
 | [x] | tracing-always-on-fe_20260309231001Z | Remove Tracing Toggle UI (Frontend) | 2026-03-09 | 2026-03-09 |
 | [x] | fix-serve-interactive-agent_20260309232000Z | Fix Interactive Agent Wiring in Serve Command (kf up) | 2026-03-09 | 2026-03-09 |
 | [x] | fix-skills-412-prompt_20260309233000Z | Handle 412 Skills Missing with Install Prompt Instead of Error | 2026-03-09 | 2026-03-09 |
