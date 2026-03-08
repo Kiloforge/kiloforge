@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { AddProjectRequest } from "../types/api";
+import { useSSHKeys } from "../hooks/useProjects";
 import styles from "./AddProjectForm.module.css";
 
 interface AddProjectFormProps {
@@ -10,12 +11,29 @@ interface AddProjectFormProps {
 }
 
 const URL_PATTERN = /^(https?:\/\/.+|ssh:\/\/.+|[^/]+@[^:]+:.+)$/;
+const SSH_URL_PATTERN = /^(ssh:\/\/.+|[^/]+@[^:]+:.+)$/;
 
 export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjectFormProps) {
   const [expanded, setExpanded] = useState(false);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [name, setName] = useState("");
+  const [sshKey, setSSHKey] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
+  const { keys: sshKeys, loading: keysLoading, fetchKeys } = useSSHKeys();
+
+  const isSSH = SSH_URL_PATTERN.test(remoteUrl.trim());
+
+  // Fetch SSH keys when an SSH URL is detected.
+  useEffect(() => {
+    if (isSSH) fetchKeys();
+  }, [isSSH, fetchKeys]);
+
+  // Auto-select when single key available.
+  useEffect(() => {
+    if (isSSH && sshKeys.length === 1 && !sshKey) {
+      setSSHKey(sshKeys[0].path);
+    }
+  }, [isSSH, sshKeys, sshKey]);
 
   const validate = useCallback((url: string): boolean => {
     if (!url.trim()) {
@@ -37,15 +55,17 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
 
       const req: AddProjectRequest = { remote_url: remoteUrl.trim() };
       if (name.trim()) req.name = name.trim();
+      if (isSSH && sshKey) req.ssh_key = sshKey;
 
       const ok = await onAdd(req);
       if (ok) {
         setRemoteUrl("");
         setName("");
+        setSSHKey("");
         setExpanded(false);
       }
     },
-    [remoteUrl, name, onAdd, validate],
+    [remoteUrl, name, sshKey, isSSH, onAdd, validate],
   );
 
   if (!expanded) {
@@ -86,6 +106,25 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
           />
         </div>
       </div>
+      {isSSH && sshKeys.length > 0 && (
+        <div className={styles.sshKeyField}>
+          <label className={styles.label} htmlFor="ssh-key">SSH Key</label>
+          <select
+            id="ssh-key"
+            className={styles.select}
+            value={sshKey}
+            onChange={(e) => setSSHKey(e.target.value)}
+            disabled={adding || keysLoading}
+          >
+            <option value="">System default</option>
+            {sshKeys.map((k) => (
+              <option key={k.path} value={k.path}>
+                {k.name} ({k.type}){k.comment ? ` — ${k.comment}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.actions}>
         <button type="submit" className={styles.submitBtn} disabled={adding}>

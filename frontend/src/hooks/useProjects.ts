@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Project, AddProjectRequest, SSEEventData } from "../types/api";
+import type { Project, AddProjectRequest, SSEEventData, SSHKeyInfo } from "../types/api";
 
 interface UseProjectsResult {
   projects: Project[];
@@ -113,4 +113,28 @@ export function useProjects(): UseProjectsResult {
   const clearError = useCallback(() => setError(null), []);
 
   return { projects, loading, adding, removing, error, addProject, removeProject, clearError, handleProjectUpdate, handleProjectRemoved };
+}
+
+export function useSSHKeys() {
+  const [keys, setKeys] = useState<SSHKeyInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState(false);
+
+  const fetchKeys = useCallback(() => {
+    if (fetched) return;
+    setLoading(true);
+    fetch("/-/api/ssh-keys")
+      .then((r) => r.json())
+      .then((data: { keys: SSHKeyInfo[] }) => {
+        setKeys(data.keys || []);
+        setFetched(true);
+        setLoading(false);
+      })
+      .catch(() => {
+        setFetched(true);
+        setLoading(false);
+      });
+  }, [fetched]);
+
+  return { keys, loading, fetchKeys };
 }

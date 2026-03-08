@@ -59,6 +59,14 @@ export interface Project {
 export interface AddProjectRequest {
   remote_url: string;
   name?: string;
+  ssh_key?: string;
+}
+
+export interface SSHKeyInfo {
+  name: string;
+  path: string;
+  type: string;
+  comment?: string;
 }
 
 export interface StatusResponse {
