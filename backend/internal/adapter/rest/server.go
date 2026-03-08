@@ -185,6 +185,10 @@ func (s *Server) Run(ctx context.Context) error {
 	if s.dashboard != nil {
 		sseClients = s.dashboard.SSEClientCount
 	}
+	var eventBus port.EventBus
+	if s.dashboard != nil {
+		eventBus = s.dashboard.EventBus()
+	}
 	apiHandler := NewAPIHandler(APIHandlerOpts{
 		Agents:     s.store,
 		Quota:      s.quotaReader,
@@ -192,6 +196,7 @@ func (s *Server) Run(ctx context.Context) error {
 		Projects:   s._projects,
 		TraceStore: s.traceStore,
 		BoardSvc:   s.boardSvc,
+		EventBus:   eventBus,
 		GiteaURL:   s.cfg.GiteaURL(),
 		SSEClients: sseClients,
 		Cfg:        s.cfg,

@@ -15,6 +15,7 @@ import (
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 )
 
@@ -54,6 +55,7 @@ type APIHandler struct {
 	projectMgr ProjectManager
 	traceStore *tracing.Store
 	boardSvc   *service.NativeBoardService
+	eventBus   port.EventBus
 	giteaURL   string
 	sseClients func() int
 	cfg        *config.Config
@@ -68,6 +70,7 @@ type APIHandlerOpts struct {
 	ProjectMgr ProjectManager
 	TraceStore *tracing.Store
 	BoardSvc   *service.NativeBoardService
+	EventBus   port.EventBus
 	GiteaURL   string
 	SSEClients func() int
 	Cfg        *config.Config
@@ -83,6 +86,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		projectMgr: opts.ProjectMgr,
 		traceStore: opts.TraceStore,
 		boardSvc:   opts.BoardSvc,
+		eventBus:   opts.EventBus,
 		giteaURL:   opts.GiteaURL,
 		sseClients: opts.SSEClients,
 		cfg:        opts.Cfg,
