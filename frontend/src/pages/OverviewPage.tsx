@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import type { Agent, QuotaResponse, StatusResponse, Track } from "../types/api";
+import type { Agent, QuotaResponse, Track } from "../types/api";
 import type { Project } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
 import { StatCards } from "../components/StatCards";
@@ -18,7 +18,6 @@ interface OverviewPageProps {
   agents: Agent[];
   agentsLoading: boolean;
   quota: QuotaResponse | null;
-  status: StatusResponse | null;
   tracks: Track[];
   onViewLog: (agentId: string) => void;
 }
@@ -74,7 +73,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onViewLog }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
   const { config, loading: configLoading, updating: configUpdating, updateConfig } = useConfig();

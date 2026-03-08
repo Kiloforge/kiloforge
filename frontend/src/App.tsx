@@ -76,7 +76,6 @@ export default function App() {
                 agents={agents}
                 agentsLoading={agentsLoading}
                 quota={quota}
-                status={status}
                 tracks={tracks}
                 onViewLog={handleViewLog}
               />
