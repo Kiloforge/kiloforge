@@ -372,6 +372,16 @@ func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 		s.logger.Printf("[%s] PR #%d opened: %q", slug, prNumber, prTitle)
 		s.createPRTracking(slug, prNumber, pr)
 		s.spawnReviewerForPR(slug, prNumber)
+		// Move track card to In Review on native board.
+		if s.boardSvc != nil {
+			if head, _ := pr["head"].(map[string]any); head != nil {
+				if trackID, _ := head["ref"].(string); trackID != "" {
+					if _, err := s.boardSvc.MoveCard(slug, trackID, domain.ColumnInReview); err != nil {
+						s.logger.Printf("[%s] Board move to in_review: %v", slug, err)
+					}
+				}
+			}
+		}
 	case "closed":
 		merged, _ := pr["merged"].(bool)
 		if merged {
@@ -527,6 +537,13 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 	// Save tracking.
 	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
+	}
+
+	// Move track card to Done on native board.
+	if s.boardSvc != nil && tracking.TrackID != "" {
+		if _, err := s.boardSvc.MoveCard(slug, tracking.TrackID, domain.ColumnDone); err != nil {
+			s.logger.Printf("[%s] Board move to done: %v", slug, err)
+		}
 	}
 
 	s.logger.Printf("[%s] PR #%d merged and cleaned up (track: %s)", slug, tracking.PRNumber, tracking.TrackID)
