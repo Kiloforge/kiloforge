@@ -1055,6 +1055,23 @@ func (h *APIHandler) GetBoard(_ context.Context, req gen.GetBoardRequestObject) 
 	if err != nil {
 		return gen.GetBoard500JSONResponse{Error: err.Error()}, nil
 	}
+
+	// Auto-sync if board is empty (first load or after reset).
+	if len(board.Cards) == 0 {
+		if proj, ok := h.findProject(req.Project); ok {
+			tracks, discoverErr := service.DiscoverTracks(proj.ProjectDir)
+			if discoverErr == nil && len(tracks) > 0 {
+				result, syncErr := h.boardSvc.SyncFromTracks(req.Project, tracks, nil)
+				if syncErr == nil && (result.Created > 0 || result.Updated > 0) {
+					board, _ = h.boardSvc.GetBoard(req.Project)
+					if h.eventBus != nil {
+						h.eventBus.Publish(domain.NewBoardUpdateEvent(board))
+					}
+				}
+			}
+		}
+	}
+
 	return gen.GetBoard200JSONResponse(domainBoardToGen(board)), nil
 }
 

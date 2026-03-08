@@ -803,6 +803,77 @@ func (s *spyEventBus) Subscribe() <-chan domain.Event           { return make(ch
 func (s *spyEventBus) Unsubscribe(_ <-chan domain.Event)        {}
 func (s *spyEventBus) ClientCount() int                         { return 0 }
 
+func TestGetBoard_AutoSyncOnEmpty(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	boardSvc := service.NewNativeBoardService(newTestBoardStore(dir))
+
+	// Create a project directory with tracks.md containing a track.
+	projectDir := t.TempDir()
+	tracksDir := filepath.Join(projectDir, ".agent", "conductor")
+	if err := os.MkdirAll(tracksDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tracksMd := `# Tracks Registry
+
+| Status | Track ID | Title | Created | Updated |
+| ------ | -------- | ----- | ------- | ------- |
+| [ ] | my-track_20260310Z | My Test Track | 2026-03-10 | 2026-03-10 |
+`
+	if err := os.WriteFile(filepath.Join(tracksDir, "tracks.md"), []byte(tracksMd), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	spy := &spyEventBus{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		BoardSvc: boardSvc,
+		EventBus: spy,
+		Projects: &stubProjectLister{projects: []domain.Project{
+			{Slug: "proj", ProjectDir: projectDir},
+		}},
+		GiteaURL: "http://localhost:3000",
+	})
+
+	// First call: board is empty, should auto-sync.
+	resp, err := h.GetBoard(context.Background(), gen.GetBoardRequestObject{Project: "proj"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetBoard200JSONResponse)
+	if !ok {
+		t.Fatalf("unexpected response type: %T", resp)
+	}
+	if len(r.Cards) == 0 {
+		t.Error("expected auto-synced cards, got empty board")
+	}
+	if _, found := r.Cards["my-track_20260310Z"]; !found {
+		t.Error("expected card my-track_20260310Z to be auto-synced")
+	}
+	if len(spy.events) != 1 || spy.events[0].Type != domain.EventBoardUpdate {
+		t.Errorf("expected 1 board_update event, got %d events", len(spy.events))
+	}
+
+	// Second call: board is not empty, should NOT re-sync.
+	spy.events = nil
+	resp2, err := h.GetBoard(context.Background(), gen.GetBoardRequestObject{Project: "proj"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r2, ok := resp2.(gen.GetBoard200JSONResponse)
+	if !ok {
+		t.Fatalf("unexpected response type: %T", resp2)
+	}
+	if len(r2.Cards) == 0 {
+		t.Error("expected non-empty board on second call")
+	}
+	if len(spy.events) != 0 {
+		t.Errorf("expected 0 events on second call (no re-sync), got %d", len(spy.events))
+	}
+}
+
 func TestMoveCard_EmitsBoardUpdate(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
