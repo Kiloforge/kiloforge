@@ -6,9 +6,10 @@ import styles from "./AgentCard.module.css";
 interface Props {
   agent: Agent;
   onViewLog: (agentId: string) => void;
+  onAttach?: (agentId: string) => void;
 }
 
-export function AgentCard({ agent, onViewLog }: Props) {
+export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   const refLink = agent.ref || null;
 
   const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
@@ -46,6 +47,11 @@ export function AgentCard({ agent, onViewLog }: Props) {
         )}
       </div>
       <div className={styles.actions}>
+        {agent.role === "interactive" && onAttach && (
+          <button className={styles.btn} onClick={() => onAttach(agent.id)}>
+            Attach
+          </button>
+        )}
         {agent.log_file && (
           <button className={styles.btn} onClick={() => onViewLog(agent.id)}>
             View Log

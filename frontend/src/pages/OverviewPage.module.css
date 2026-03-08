@@ -1,3 +1,34 @@
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 0;
+}
+
+.spawnBtn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.spawnBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.spawnBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .projectList {
   display: flex;
   flex-direction: column;

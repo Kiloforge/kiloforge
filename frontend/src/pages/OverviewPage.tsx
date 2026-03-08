@@ -19,6 +19,9 @@ interface OverviewPageProps {
   quota: QuotaResponse | null;
   tracks: Track[];
   onViewLog: (agentId: string) => void;
+  onAttach?: (agentId: string) => void;
+  onSpawnInteractive?: () => void;
+  spawningInteractive?: boolean;
 }
 
 function trackCountsByStatus(tracks: Track[], slug: string) {
@@ -101,7 +104,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
   const { config, loading: configLoading, updating: configUpdating, updateConfig } = useConfig();
@@ -121,11 +124,22 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog }
       <StatCards agentCount={agents.length} quota={quota} />
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Agents</h2>
+        <div className={styles.sectionHeader}>
+          <h2 className={appStyles.panelTitle}>Agents</h2>
+          {onSpawnInteractive && (
+            <button
+              className={styles.spawnBtn}
+              onClick={onSpawnInteractive}
+              disabled={spawningInteractive}
+            >
+              {spawningInteractive ? "Starting..." : "Start Interactive Agent"}
+            </button>
+          )}
+        </div>
         {agentsLoading ? (
           <p className={appStyles.empty}>Loading agents...</p>
         ) : (
-          <AgentGrid agents={agents} onViewLog={onViewLog} />
+          <AgentGrid agents={agents} onViewLog={onViewLog} onAttach={onAttach} />
         )}
       </section>
 

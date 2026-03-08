@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route } from "react-router-dom";
-import type { StatusResponse } from "./types/api";
+import type { Agent, StatusResponse } from "./types/api";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
 import { useQuota } from "./hooks/useQuota";
@@ -8,6 +8,7 @@ import { useTracks } from "./hooks/useTracks";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
+import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ProjectPage } from "./pages/ProjectPage";
@@ -20,6 +21,8 @@ export default function App() {
   const { tracks, handleTrackUpdate, handleTrackRemoved } = useTracks();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
+  const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
+  const [spawningInteractive, setSpawningInteractive] = useState(false);
 
   useEffect(() => {
     fetch("/api/status")
@@ -47,6 +50,28 @@ export default function App() {
 
   const handleCloseLog = useCallback(() => {
     setLogAgentId(null);
+  }, []);
+
+  const handleAttach = useCallback((agentId: string) => {
+    setTerminalAgentId(agentId);
+  }, []);
+
+  const handleCloseTerminal = useCallback(() => {
+    setTerminalAgentId(null);
+  }, []);
+
+  const handleSpawnInteractive = useCallback(async () => {
+    setSpawningInteractive(true);
+    try {
+      const res = await fetch("/api/agents/interactive", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to spawn");
+      const agent = (await res.json()) as Agent;
+      setTerminalAgentId(agent.id);
+    } catch {
+      // silent fail — user sees the button re-enable
+    } finally {
+      setSpawningInteractive(false);
+    }
   }, []);
 
   return (
@@ -78,6 +103,9 @@ export default function App() {
                 quota={quota}
                 tracks={tracks}
                 onViewLog={handleViewLog}
+                onAttach={handleAttach}
+                onSpawnInteractive={handleSpawnInteractive}
+                spawningInteractive={spawningInteractive}
               />
             }
           />
@@ -87,6 +115,7 @@ export default function App() {
       </main>
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
+      {terminalAgentId && <AgentTerminal agentId={terminalAgentId} onClose={handleCloseTerminal} />}
     </>
   );
 }
