@@ -119,6 +119,8 @@ Navigation hub for project context.
 - **error-toast-notifications_20260309223001Z** — Error Toast Notifications in Dashboard
 - **fix-gitea-push-auth_20260309224000Z** — Fix Gitea Push Authentication — Embed Credentials in Remote URL
 - **frontend-test-infra_20260309225000Z** — Frontend Test Infrastructure and Makefile Integration
+- **fix-dashboard-interactive-agent_20260309230000Z** — Fix Interactive Agent Wiring in Dashboard Command
+- **fix-project-sse-subscription_20260309230001Z** — Wire Project SSE Events in Dashboard Frontend
 
 ## Getting Started
 
