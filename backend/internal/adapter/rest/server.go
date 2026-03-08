@@ -190,11 +190,18 @@ func (s *Server) Run(ctx context.Context) error {
 	if s.dashboard != nil {
 		eventBus = s.dashboard.EventBus()
 	}
+	projectSvc := service.NewProjectService(s.registry, s.client, service.ProjectServiceConfig{
+		DataDir:          s.cfg.DataDir,
+		OrchestratorPort: s.cfg.OrchestratorPort,
+		GiteaAdminUser:   s.cfg.GiteaAdminUser,
+	})
+
 	apiHandler := NewAPIHandler(APIHandlerOpts{
 		Agents:     s.store,
 		Quota:      s.quotaReader,
 		LockMgr:    lockMgr,
 		Projects:   s._projects,
+		ProjectMgr: projectSvc,
 		TraceStore: s.traceStore,
 		BoardSvc:   s.boardSvc,
 		EventBus:   eventBus,
