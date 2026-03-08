@@ -52,7 +52,7 @@
 | [ ] | dashboard-root-routing-be_20260309130000Z | Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend) | 2026-03-09 | 2026-03-09 |
 | [ ] | dashboard-root-routing-fe_20260309130001Z | Dashboard Root Routing (Frontend) | 2026-03-09 | 2026-03-09 |
 | [x] | tracing-default-on-be_20260309133000Z | Enable Tracing by Default with Config API (Backend) | 2026-03-09 | 2026-03-09 |
-| [ ] | tracing-default-on-fe_20260309133001Z | Tracing Toggle in Dashboard UI (Frontend) | 2026-03-09 | 2026-03-09 |
+| [x] | tracing-default-on-fe_20260309133001Z | Tracing Toggle in Dashboard UI (Frontend) | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
