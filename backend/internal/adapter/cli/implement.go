@@ -155,9 +155,29 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	tracker := agent.NewQuotaTracker(cfg.DataDir)
 	_ = tracker.Load()
 
+	// Create board service before spawner so the completion callback can reference it.
+	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	nativeBoardSvc := service.NewNativeBoardService(boardStore)
+
 	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
 	spawner := agent.NewSpawner(cfg, store, tracker)
 	spawner.SetTracer(tracer)
+
+	// Wire completion callback: move board card and return worktree on agent exit.
+	spawner.SetCompletionCallback(func(agentID, ref, status string) {
+		if status == "completed" {
+			if _, err := nativeBoardSvc.MoveCard(proj.Slug, ref, domain.ColumnDone); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: board move to done: %v\n", err)
+			}
+		}
+		if err := p.ReturnByTrackID(ref); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: return worktree: %v\n", err)
+		}
+		if err := p.Save(cfg.DataDir); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: save pool: %v\n", err)
+		}
+	})
+
 	info, err := spawner.SpawnDeveloper(ctx, agent.SpawnDeveloperOpts{
 		TrackID:     trackID,
 		Flags:       "--auto-merge",
@@ -179,8 +199,6 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	// Move track card to In Progress on the native board and store trace ID.
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
-	nativeBoardSvc := service.NewNativeBoardService(boardStore)
 	if moveResult, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnInProgress); err == nil {
 		if moveResult.FromColumn != moveResult.ToColumn {
 			fmt.Println("  Board:     → In Progress")
