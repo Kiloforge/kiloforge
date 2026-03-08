@@ -127,8 +127,8 @@ func TestCommentOnPR(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CommentOnPR: %v", err)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp/issues/5/comments" {
-		t.Errorf("path: want /api/v1/repos/conductor/myapp/issues/5/comments, got %s", gotPath)
+	if gotPath != "/api/v1/repos/kiloforger/myapp/issues/5/comments" {
+		t.Errorf("path: want /api/v1/repos/kiloforger/myapp/issues/5/comments, got %s", gotPath)
 	}
 	if gotPayload["body"] != "Review cycle limit reached." {
 		t.Errorf("body: want %q, got %v", "Review cycle limit reached.", gotPayload["body"])
@@ -142,11 +142,11 @@ func TestAddLabel(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
 		switch {
-		case r.Method == "POST" && r.URL.Path == "/api/v1/repos/conductor/myapp/labels":
+		case r.Method == "POST" && r.URL.Path == "/api/v1/repos/kiloforger/myapp/labels":
 			// Create label
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte(`{"id": 42, "name": "needs-human-review"}`))
-		case r.Method == "POST" && r.URL.Path == "/api/v1/repos/conductor/myapp/issues/5/labels":
+		case r.Method == "POST" && r.URL.Path == "/api/v1/repos/kiloforger/myapp/issues/5/labels":
 			// Add label to issue
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`[{"id": 42}]`))
@@ -184,8 +184,8 @@ func TestMergePR_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MergePR: %v", err)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp/pulls/3/merge" {
-		t.Errorf("path: want /api/v1/repos/conductor/myapp/pulls/3/merge, got %s", gotPath)
+	if gotPath != "/api/v1/repos/kiloforger/myapp/pulls/3/merge" {
+		t.Errorf("path: want /api/v1/repos/kiloforger/myapp/pulls/3/merge, got %s", gotPath)
 	}
 	if gotPayload["Do"] != "merge" {
 		t.Errorf("Do: want %q, got %v", "merge", gotPayload["Do"])
@@ -227,8 +227,8 @@ func TestDeleteBranch(t *testing.T) {
 	if gotMethod != "DELETE" {
 		t.Errorf("method: want DELETE, got %s", gotMethod)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp/branches/feature-branch" {
-		t.Errorf("path: want /api/v1/repos/conductor/myapp/branches/feature-branch, got %s", gotPath)
+	if gotPath != "/api/v1/repos/kiloforger/myapp/branches/feature-branch" {
+		t.Errorf("path: want /api/v1/repos/kiloforger/myapp/branches/feature-branch, got %s", gotPath)
 	}
 }
 
@@ -251,8 +251,8 @@ func TestDeleteRepo_Success(t *testing.T) {
 	if gotMethod != "DELETE" {
 		t.Errorf("method: want DELETE, got %s", gotMethod)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp" {
-		t.Errorf("path: want /api/v1/repos/conductor/myapp, got %s", gotPath)
+	if gotPath != "/api/v1/repos/kiloforger/myapp" {
+		t.Errorf("path: want /api/v1/repos/kiloforger/myapp, got %s", gotPath)
 	}
 }
 
@@ -276,7 +276,7 @@ func TestListWebhooks(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/repos/conductor/myapp/hooks" || r.Method != "GET" {
+		if r.URL.Path != "/api/v1/repos/kiloforger/myapp/hooks" || r.Method != "GET" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
@@ -300,7 +300,7 @@ func TestDeleteAllWebhooks(t *testing.T) {
 	deletedIDs := make(map[string]bool)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == "GET" && r.URL.Path == "/api/v1/repos/conductor/myapp/hooks":
+		case r.Method == "GET" && r.URL.Path == "/api/v1/repos/kiloforger/myapp/hooks":
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`[{"id": 10}, {"id": 20}]`))
 		case r.Method == "DELETE":
@@ -327,7 +327,7 @@ func TestGetPRReviews(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/repos/conductor/myapp/pulls/5/reviews" {
+		if r.URL.Path != "/api/v1/repos/kiloforger/myapp/pulls/5/reviews" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)

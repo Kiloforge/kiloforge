@@ -29,8 +29,8 @@ func TestCreateIssue_Success(t *testing.T) {
 	if num != 42 {
 		t.Errorf("issue number: want 42, got %d", num)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp/issues" {
-		t.Errorf("path: want /api/v1/repos/conductor/myapp/issues, got %s", gotPath)
+	if gotPath != "/api/v1/repos/kiloforger/myapp/issues" {
+		t.Errorf("path: want /api/v1/repos/kiloforger/myapp/issues, got %s", gotPath)
 	}
 	if gotPayload["title"] != "test issue" {
 		t.Errorf("title: want %q, got %v", "test issue", gotPayload["title"])
@@ -78,8 +78,8 @@ func TestUpdateIssue_Success(t *testing.T) {
 	if gotMethod != "PATCH" {
 		t.Errorf("method: want PATCH, got %s", gotMethod)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp/issues/5" {
-		t.Errorf("path: want /api/v1/repos/conductor/myapp/issues/5, got %s", gotPath)
+	if gotPath != "/api/v1/repos/kiloforger/myapp/issues/5" {
+		t.Errorf("path: want /api/v1/repos/kiloforger/myapp/issues/5, got %s", gotPath)
 	}
 	if gotPayload["title"] != "new title" {
 		t.Errorf("title: want %q, got %v", "new title", gotPayload["title"])
@@ -114,7 +114,7 @@ func TestGetIssues_Success(t *testing.T) {
 	if issues[0].Number != 1 {
 		t.Errorf("first issue number: want 1, got %d", issues[0].Number)
 	}
-	if gotPath != "/api/v1/repos/conductor/myapp/issues?state=open&labels=bug" {
+	if gotPath != "/api/v1/repos/kiloforger/myapp/issues?state=open&labels=bug" {
 		t.Errorf("path: want ?state=open&labels=bug, got %s", gotPath)
 	}
 }
