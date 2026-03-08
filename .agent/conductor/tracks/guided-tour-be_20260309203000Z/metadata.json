@@ -1,0 +1,16 @@
+{
+  "id": "guided-tour-be_20260309203000Z",
+  "title": "Guided Tour State API and Demo Seed Data (Backend)",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-09T20:30:00Z",
+  "updated": "2026-03-09T20:30:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}

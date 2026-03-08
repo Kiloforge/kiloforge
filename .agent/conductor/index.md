@@ -110,6 +110,8 @@ Navigation hub for project context.
 - **agent-permissions-consent_20260309190000Z** — Agent Permissions Flag and User Consent
 - **tanstack-query-migration_20260309193000Z** — Migrate Frontend Data Fetching to TanStack Query
 - **claude-auth-check_20260309200000Z** — Claude CLI Authentication Check Before Agent Spawning
+- **guided-tour-be_20260309203000Z** — Guided Tour State API and Demo Seed Data (Backend)
+- **guided-tour-fe_20260309203001Z** — Guided Tour Overlay with Simulated Onboarding Flow (Frontend)
 
 ## Getting Started
 
