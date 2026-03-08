@@ -58,8 +58,18 @@ type AddProjectResult struct {
 	Project domain.Project
 }
 
+// AddProjectOpts contains optional parameters for AddProject.
+type AddProjectOpts struct {
+	SSHKeyPath string // Path to SSH private key for cloning.
+}
+
 // AddProject registers a new project from a remote URL.
-func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string) (*AddProjectResult, error) {
+func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string, opts ...AddProjectOpts) (*AddProjectResult, error) {
+	var opt AddProjectOpts
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+	_ = opt
 	if !isRemoteURL(remoteURL) {
 		return nil, fmt.Errorf("invalid remote URL: %s", remoteURL)
 	}
@@ -82,6 +92,11 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string)
 	cloneDir := filepath.Join(s.config.DataDir, "repos", slug)
 	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "git", "clone", remoteURL, cloneDir)
+		if opt.SSHKeyPath != "" {
+			cmd.Env = append(os.Environ(),
+				fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", opt.SSHKeyPath),
+			)
+		}
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("clone: %s: %w", string(out), err)
 		}

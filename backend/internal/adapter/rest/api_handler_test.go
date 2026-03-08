@@ -576,7 +576,7 @@ type stubProjectManager struct {
 	removedCleanup bool
 }
 
-func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name string) (*service.AddProjectResult, error) {
+func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name string, _ ...service.AddProjectOpts) (*service.AddProjectResult, error) {
 	if m.addErr != nil {
 		return nil, m.addErr
 	}
