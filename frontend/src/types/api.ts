@@ -49,6 +49,11 @@ export interface Project {
   active: boolean;
 }
 
+export interface AddProjectRequest {
+  remote_url: string;
+  name?: string;
+}
+
 export interface StatusResponse {
   gitea_url: string;
   agent_counts: Record<string, number>;
