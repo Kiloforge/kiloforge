@@ -1,0 +1,118 @@
+# Specification: Pre-flight Skill Validation Before Agent Spawning
+
+**Track ID:** skill-preflight-check_20260309170000Z
+**Type:** Feature
+**Created:** 2026-03-09T17:00:00Z
+**Status:** Draft
+
+## Summary
+
+Add mandatory skill validation before any agent spawning. If required skills are missing, offer the user a choice: install globally (`~/.claude/skills/`) or locally inside the repo (`.claude/skills/`). Block agent spawning until skills are available.
+
+## Context
+
+Currently, `agent/spawner.go` spawns agents with prompts like `/conductor-developer <track-id>` and `/conductor-reviewer <pr-url>` without verifying that these skills are actually installed. If skills are missing, the agent fails at runtime with confusing errors. The `prereq/check.go` validates `claude`, `git`, `docker`, and `docker compose` — but never checks for skills. The `kf init` flow offers optional skill installation, but a user can skip it and later try `kf implement`, which will silently fail.
+
+## Codebase Analysis
+
+### Current state
+
+- **`backend/internal/adapter/agent/spawner.go`** — `SpawnDeveloper()` (line 179) and `SpawnReviewer()` (line 87) construct prompts referencing `/conductor-developer` and `/conductor-reviewer` without validation
+- **`backend/internal/adapter/prereq/check.go`** — Checks `git`, `docker`, `docker compose`, `claude` — no skill checks
+- **`backend/internal/adapter/cli/skills.go:176`** — `offerSkillsInstall()` only runs during `kf init` and only if `SkillsRepo` is configured
+- **`backend/internal/adapter/skills/installer.go`** — Fully functional installer that downloads GitHub tarballs and extracts to a target directory
+- **`backend/internal/adapter/skills/manifest.go`** — Manifest with checksums for tracking installed skills
+- **`backend/internal/adapter/cli/implement.go:189`** — Calls `spawner.SpawnDeveloper()` directly with no skill pre-check
+
+### Required skills per agent type
+
+| Agent Type | Required Skill |
+|-----------|---------------|
+| Developer | `conductor-developer` |
+| Reviewer | `conductor-reviewer` |
+| Interactive (track gen) | `conductor-track-generator` |
+
+### Skill installation targets
+
+1. **Global** — `~/.claude/skills/<name>/SKILL.md` — available to all repos, standard Claude Code location
+2. **Local (repo)** — `.claude/skills/<name>/SKILL.md` — scoped to the repo, committed or gitignored, discoverable by Claude Code when run from that repo
+
+## Acceptance Criteria
+
+- [ ] Agent spawning (developer, reviewer, interactive) validates required skills exist before starting
+- [ ] If skills are missing, user is prompted with options: (1) install globally, (2) install locally in repo, (3) abort
+- [ ] Global install targets `~/.claude/skills/`
+- [ ] Local install targets `<repo-root>/.claude/skills/` (the repo where `kf` data lives, not the project repo)
+- [ ] Skill validation checks for `SKILL.md` file presence in the expected directory
+- [ ] `kf implement` blocks with a clear error if skills are missing and user declines install
+- [ ] REST API agent spawn endpoints also validate skills (return 412 Precondition Failed if missing)
+- [ ] `go test ./...` passes
+- [ ] Existing `kf init` skill offer flow continues to work unchanged
+
+## Dependencies
+
+None — builds on existing `skills` adapter package.
+
+## Blockers
+
+None.
+
+## Conflict Risk
+
+- LOW — `rebrand-historical-records` (only pending track) touches conductor metadata files, not Go source.
+- LOW across all completed tracks.
+
+## Out of Scope
+
+- Changing the skill installation format or manifest structure
+- Auto-update integration (already handled by `skills/updater.go`)
+- Dashboard UI for skill management (already exists via `/api/skills`)
+- Prompting for `SkillsRepo` if not configured — assume it's already set (from `kf init`)
+
+## Technical Notes
+
+### Skill checker function
+
+New function in `backend/internal/adapter/skills/` package:
+
+```go
+// RequiredSkill describes a skill needed for a specific operation.
+type RequiredSkill struct {
+    Name   string // e.g., "conductor-developer"
+    Reason string // e.g., "required for agent developer spawning"
+}
+
+// CheckRequired verifies that all required skills are installed.
+// Checks both global (~/.claude/skills/) and local (.claude/skills/) directories.
+// Returns list of missing skills.
+func CheckRequired(required []RequiredSkill, globalDir, localDir string) []RequiredSkill
+```
+
+### Integration points
+
+1. **`agent/spawner.go`** — Add a `ValidateSkills()` method or accept a pre-validated flag. The spawner itself should not prompt — it's a library. Return a typed error (`ErrSkillsMissing`) that callers handle.
+
+2. **`cli/implement.go`** — Before calling `spawner.SpawnDeveloper()`, call the skill checker. If missing, run the interactive prompt offering global/local install. Only proceed if skills are resolved.
+
+3. **REST API handlers** — Before spawning via API, check skills. Return 412 with JSON body listing missing skills. The dashboard can then surface this to the user.
+
+### Interactive prompt flow
+
+```
+Required skill "conductor-developer" is not installed.
+
+Install options:
+  1. Install globally (~/.claude/skills/) — available to all repos
+  2. Install locally (.claude/skills/) — scoped to this repo
+  3. Skip — abort agent spawning
+
+Choice [1/2/3]:
+```
+
+### Local skill directory
+
+Claude Code discovers skills from `.claude/skills/` relative to the project root. For local install, the installer targets `<kf-data-dir>/../.claude/skills/` or the repo root's `.claude/skills/`. The existing `Installer.Install()` already accepts a `destDir` parameter, so this just means passing a different path.
+
+---
+
+_Generated by conductor-track-generator from prompt: "skill pre-flight check before agent spawning with global/local install options"_
