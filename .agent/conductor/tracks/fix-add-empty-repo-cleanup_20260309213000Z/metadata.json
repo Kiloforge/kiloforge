@@ -1,0 +1,16 @@
+{
+  "id": "fix-add-empty-repo-cleanup_20260309213000Z",
+  "title": "Fix kf add for Empty Repos and Add Rollback on Failure",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-09T21:30:00Z",
+  "updated": "2026-03-09T21:30:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 10,
+    "completed": 0
+  }
+}

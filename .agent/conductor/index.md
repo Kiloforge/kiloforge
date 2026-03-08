@@ -113,6 +113,7 @@ Navigation hub for project context.
 - **guided-tour-be_20260309203000Z** — Guided Tour State API and Demo Seed Data (Backend)
 - **guided-tour-fe_20260309203001Z** — Guided Tour Overlay with Simulated Onboarding Flow (Frontend)
 - **fix-stale-frontend-build_20260309210000Z** — Fix Stale Frontend Build — Rebuild dist with Correct Base Path
+- **fix-add-empty-repo-cleanup_20260309213000Z** — Fix kf add for Empty Repos and Add Rollback on Failure
 
 ## Getting Started
 
