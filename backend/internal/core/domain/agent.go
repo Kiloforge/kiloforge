@@ -29,6 +29,7 @@ const (
 // AgentInfo tracks a spawned Claude agent.
 type AgentInfo struct {
 	ID             string     `json:"id"`
+	Name           string     `json:"name,omitempty"`
 	Role           string     `json:"role"`
 	Ref            string     `json:"ref"`
 	Status         string     `json:"status"`
