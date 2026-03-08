@@ -267,7 +267,13 @@ All persistent data lives in `~/.kiloforge/` (configurable via `--data-dir`):
 
 ## Tracing
 
-Kiloforge supports OpenTelemetry distributed tracing for agent lifecycle visibility. When enabled, each agent spawn creates a trace span with token metrics, and webhook events are recorded as span events.
+Kiloforge supports OpenTelemetry distributed tracing with **track lifecycle tracing** — a single trace follows a development track from claim through agent work, PR review, merge, and completion. This gives end-to-end visibility into the full lifecycle of every track.
+
+When enabled:
+- **`kf implement`** creates a root span `track/{trackId}` with child spans for worktree acquisition, agent spawning, and session tracking
+- **Webhook events** (PR opened, review submitted, merge) automatically join the track's trace via stored trace IDs, so all activity for a track appears in one trace
+- **Agent spans** include `session.id` attributes for cross-referencing with Claude Code sessions
+- **The dashboard** shows track IDs in the trace list and "Trace" links on board cards
 
 To enable tracing, add to your `config.json`:
 
@@ -289,7 +295,7 @@ docker run -d --name jaeger \
 View traces at `http://localhost:16686` or in the dashboard at `/-/dashboard/traces/{traceId}`.
 
 The trace API is available at:
-- `GET /-/api/traces` — list trace summaries
+- `GET /-/api/traces` — list trace summaries (filter with `?track_id=X` or `?session_id=Y`)
 - `GET /-/api/traces/{traceId}` — get full trace with span tree
 
 ## Origin Bridging
