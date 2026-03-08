@@ -316,7 +316,53 @@ Generate a phased implementation plan following the same structure as `/kf-new-t
 
 ### Step 9 — Present tracks for review
 
-Display a summary of all generated tracks:
+#### Auto-approve check
+
+Before presenting the review prompt, evaluate whether ALL generated tracks qualify for auto-approval. A track qualifies when ALL conditions are met:
+
+1. Track type is "Research" — the title starts with "Research:" or the type field is "research" (case-insensitive)
+2. All planned outputs are within `.agent/conductor/tracks/{trackId}/` — no source code, tests, configs, or project documentation is created or modified
+3. The track does not depend on or block any code-impacting tracks
+4. No acceptance criteria mention modifying source code, tests, or project files outside `.agent/conductor/`
+
+**If ALL tracks in the batch qualify for auto-approve:**
+
+Display the track summary (for transparency), add the auto-approve notice, and proceed directly to Step 10 without waiting for user input:
+
+```
+================================================================================
+                    TRACKS GENERATED — AUTO-APPROVED
+================================================================================
+
+Source prompt: "{user's original prompt}"
+Tracks generated: {count}
+
+{For each track:}
+
+  Track {N}: {trackId}
+  Title:    {title}
+  Type:     {type}
+  Tasks:    {task count} across {phase count} phases
+  Depends:  {dependencies or "None"}
+  Summary:  {1-line summary}
+
+Auto-approved: research-only track(s) — no code impact
+================================================================================
+```
+
+Proceed immediately to Step 10.
+
+**If ANY track in the batch does NOT qualify:**
+
+Present the full review prompt for the entire batch — do not partially auto-approve. Mixed batches are always reviewed as a whole.
+
+**If uncertain about a track's impact:**
+
+Default to requiring review (safe fallback). When in doubt, do not auto-approve.
+
+#### Manual review prompt
+
+When auto-approve does not apply, display the review prompt:
 
 ```
 ================================================================================
