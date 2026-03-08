@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function TraceTimeline({ spans, onSpanClick }: Props) {
-  const { rows, minTime, totalDuration } = useMemo(() => {
+  const { rows } = useMemo(() => {
     if (spans.length === 0) return { rows: [], minTime: 0, totalDuration: 1 };
 
     const sorted = [...spans].sort(
