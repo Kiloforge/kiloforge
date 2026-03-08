@@ -72,7 +72,7 @@
 | [x] | tanstack-query-migration_20260309193000Z | Migrate Frontend Data Fetching to TanStack Query | 2026-03-09 | 2026-03-09 |
 | [x] | claude-auth-check_20260309200000Z | Claude CLI Authentication Check Before Agent Spawning | 2026-03-09 | 2026-03-09 |
 | [x] | guided-tour-be_20260309203000Z | Guided Tour State API and Demo Seed Data (Backend) | 2026-03-09 | 2026-03-09 |
-| [ ] | guided-tour-fe_20260309203001Z | Guided Tour Overlay with Simulated Onboarding Flow (Frontend) | 2026-03-09 | 2026-03-09 |
+| [x] | guided-tour-fe_20260309203001Z | Guided Tour Overlay with Simulated Onboarding Flow (Frontend) | 2026-03-09 | 2026-03-09 |
 | [ ] | fix-stale-frontend-build_20260309210000Z | Fix Stale Frontend Build — Rebuild dist with Correct Base Path | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->

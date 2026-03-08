@@ -2,15 +2,15 @@
   "id": "guided-tour-fe_20260309203001Z",
   "title": "Guided Tour Overlay with Simulated Onboarding Flow (Frontend)",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T20:30:01Z",
-  "updated": "2026-03-09T20:30:01Z",
+  "updated": "2026-03-09T20:47:00Z",
   "phases": {
     "total": 5,
-    "completed": 0
+    "completed": 5
   },
   "tasks": {
     "total": 16,
-    "completed": 0
+    "completed": 16
   }
 }
