@@ -102,7 +102,10 @@ func TestListAgents(t *testing.T) {
 		{ID: "agent-2", Role: "reviewer", Status: "completed", StartedAt: time.Now()},
 	}
 	h := newTestHandler(agents)
-	resp, err := h.ListAgents(context.Background(), gen.ListAgentsRequestObject{})
+	showAll := false
+	resp, err := h.ListAgents(context.Background(), gen.ListAgentsRequestObject{
+		Params: gen.ListAgentsParams{Active: &showAll},
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
