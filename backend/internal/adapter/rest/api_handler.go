@@ -1089,6 +1089,159 @@ func (h *APIHandler) findProject(slug string) (domain.Project, bool) {
 	return domain.Project{}, false
 }
 
+// GenerateTracks implements gen.StrictServerInterface.
+func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksRequestObject) (gen.GenerateTracksResponseObject, error) {
+	if h.interSpawner == nil || h.wsSessions == nil {
+		return gen.GenerateTracks500JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+	if req.Body == nil || req.Body.Prompt == "" {
+		return gen.GenerateTracks500JSONResponse{Error: "prompt is required"}, nil
+	}
+
+	// Resolve project working directory.
+	var workDir string
+	var projectSlug string
+	if req.Body.Project != nil && *req.Body.Project != "" {
+		projectSlug = *req.Body.Project
+		if h.projects != nil {
+			for _, p := range h.projects.List() {
+				if p.Slug == projectSlug {
+					workDir = p.ProjectDir
+					break
+				}
+			}
+		}
+		if workDir == "" {
+			return gen.GenerateTracks500JSONResponse{Error: fmt.Sprintf("project %q not found", projectSlug)}, nil
+		}
+	}
+
+	// Build prompt: prefix user prompt with skill invocation.
+	fullPrompt := fmt.Sprintf("/kf-track-generator I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
+
+	opts := agent.SpawnInteractiveOpts{
+		WorkDir: workDir,
+		Prompt:  fullPrompt,
+		Ref:     "track-gen",
+	}
+
+	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
+	if err != nil {
+		if strings.Contains(err.Error(), "rate limited") {
+			return gen.GenerateTracks429JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.GenerateTracks500JSONResponse{Error: err.Error()}, nil
+	}
+
+	// Create bridge and register with WS session manager.
+	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
+
+	// Start output relay in background.
+	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+
+	// Auto-sync board when track-gen agent completes.
+	if projectSlug != "" && h.boardSvc != nil {
+		go func() {
+			<-ia.Done
+			projectDir := workDir
+			tracks, err := service.DiscoverTracks(projectDir)
+			if err != nil {
+				return
+			}
+			result, err := h.boardSvc.SyncFromTracks(projectSlug, tracks, nil)
+			if err != nil {
+				return
+			}
+			if h.eventBus != nil && (result.Created > 0 || result.Updated > 0) {
+				board, boardErr := h.boardSvc.GetBoard(projectSlug)
+				if boardErr == nil {
+					h.eventBus.Publish(domain.NewBoardUpdateEvent(board))
+				}
+			}
+		}()
+	}
+
+	wsURL := fmt.Sprintf("/ws/agent/%s", ia.Info.ID)
+
+	return gen.GenerateTracks201JSONResponse{
+		AgentId: ia.Info.ID,
+		WsUrl:   wsURL,
+	}, nil
+}
+
+// DeleteTrack implements gen.StrictServerInterface.
+func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestObject) (gen.DeleteTrackResponseObject, error) {
+	trackID := req.TrackId
+
+	// Find the project to locate track artifacts.
+	var projectSlug string
+	var projectDir string
+	if req.Params.Project != nil && *req.Params.Project != "" {
+		projectSlug = *req.Params.Project
+	}
+
+	if projectSlug != "" && h.projects != nil {
+		for _, p := range h.projects.List() {
+			if p.Slug == projectSlug {
+				projectDir = p.ProjectDir
+				break
+			}
+		}
+	} else if h.projects != nil {
+		// Try to find the track across all projects.
+		for _, p := range h.projects.List() {
+			trackDir := filepath.Join(p.ProjectDir, ".agent", "conductor", "tracks", trackID)
+			if _, err := os.Stat(trackDir); err == nil {
+				projectSlug = p.Slug
+				projectDir = p.ProjectDir
+				break
+			}
+		}
+	}
+
+	if projectDir == "" {
+		return gen.DeleteTrack404JSONResponse{Error: fmt.Sprintf("track %q not found in any project", trackID)}, nil
+	}
+
+	// Remove track directory.
+	trackDir := filepath.Join(projectDir, ".agent", "conductor", "tracks", trackID)
+	if _, err := os.Stat(trackDir); os.IsNotExist(err) {
+		return gen.DeleteTrack404JSONResponse{Error: fmt.Sprintf("track %q not found", trackID)}, nil
+	}
+	if err := os.RemoveAll(trackDir); err != nil {
+		return gen.DeleteTrack500JSONResponse{Error: fmt.Sprintf("remove track dir: %v", err)}, nil
+	}
+
+	// Remove from tracks.md — read, filter out the line, write back.
+	tracksMdPath := filepath.Join(projectDir, ".agent", "conductor", "tracks.md")
+	if data, err := os.ReadFile(tracksMdPath); err == nil {
+		lines := strings.Split(string(data), "\n")
+		var filtered []string
+		for _, line := range lines {
+			if strings.Contains(line, trackID) {
+				continue
+			}
+			filtered = append(filtered, line)
+		}
+		_ = os.WriteFile(tracksMdPath, []byte(strings.Join(filtered, "\n")), 0o644)
+	}
+
+	// Remove board card if board service is available.
+	if h.boardSvc != nil && projectSlug != "" {
+		if removed, err := h.boardSvc.RemoveCard(projectSlug, trackID); err == nil && removed {
+			if h.eventBus != nil {
+				board, boardErr := h.boardSvc.GetBoard(projectSlug)
+				if boardErr == nil {
+					h.eventBus.Publish(domain.NewBoardUpdateEvent(board))
+				}
+			}
+		}
+	}
+
+	return gen.DeleteTrack204Response{}, nil
+}
+
 func intPtr(v int) *int       { return &v }
 func strPtr(v string) *string { return &v }
 

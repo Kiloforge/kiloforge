@@ -4,11 +4,11 @@
 
 ## Phase 1: Track Generation API
 
-- [ ] Task 1.1: Add `POST /api/tracks/generate` to OpenAPI spec — accepts prompt text and optional project slug, returns agent ID and WebSocket URL
-- [ ] Task 1.2: Implement handler — spawns interactive track-generator agent (`claude -p "/kf-track-generator <prompt>"`) in a track-generator worktree
-- [ ] Task 1.3: Add `DELETE /api/tracks/{trackId}` to OpenAPI spec — removes track artifacts and board card
-- [ ] Task 1.4: Implement delete handler — removes track directory from conductor artifacts, updates tracks.md and index.md, removes board card
-- [ ] Task 1.5: Add auto-sync trigger — after track-generator agent completes, automatically run board sync to surface new tracks
+- [x] Task 1.1: Add `POST /api/tracks/generate` to OpenAPI spec — accepts prompt text and optional project slug, returns agent ID and WebSocket URL
+- [x] Task 1.2: Implement handler — spawns interactive track-generator agent (`claude -p "/kf-track-generator <prompt>"`) in a track-generator worktree
+- [x] Task 1.3: Add `DELETE /api/tracks/{trackId}` to OpenAPI spec — removes track artifacts and board card
+- [x] Task 1.4: Implement delete handler — removes track directory from conductor artifacts, updates tracks.md and index.md, removes board card
+- [x] Task 1.5: Add auto-sync trigger — after track-generator agent completes, automatically run board sync to surface new tracks
 
 ## Phase 2: Board Approval Actions
 

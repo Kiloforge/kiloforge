@@ -271,6 +271,23 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// GenerateTracksRequest defines model for GenerateTracksRequest.
+type GenerateTracksRequest struct {
+	// Project Project slug (optional — determines working directory)
+	Project *string `json:"project,omitempty"`
+
+	// Prompt Feature description for track generation
+	Prompt string `json:"prompt"`
+}
+
+// GenerateTracksResult defines model for GenerateTracksResult.
+type GenerateTracksResult struct {
+	AgentId string `json:"agent_id"`
+
+	// WsUrl WebSocket URL for agent conversation
+	WsUrl string `json:"ws_url"`
+}
+
 // HealthResponse defines model for HealthResponse.
 type HealthResponse struct {
 	Projects int    `json:"projects"`
@@ -566,6 +583,12 @@ type ListTracksParams struct {
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
+// DeleteTrackParams defines parameters for DeleteTrack.
+type DeleteTrackParams struct {
+	// Project Project slug for board card removal
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
+}
+
 // SpawnInteractiveAgentJSONRequestBody defines body for SpawnInteractiveAgent for application/json ContentType.
 type SpawnInteractiveAgentJSONRequestBody = SpawnInteractiveRequest
 
@@ -595,6 +618,9 @@ type PushProjectJSONRequestBody = PushProjectRequest
 
 // UpdateSkillsJSONRequestBody defines body for UpdateSkills for application/json ContentType.
 type UpdateSkillsJSONRequestBody = SkillUpdateRequest
+
+// GenerateTracksJSONRequestBody defines body for GenerateTracks for application/json ContentType.
+type GenerateTracksJSONRequestBody = GenerateTracksRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -679,6 +705,12 @@ type ServerInterface interface {
 	// List conductor tracks
 	// (GET /api/tracks)
 	ListTracks(w http.ResponseWriter, r *http.Request, params ListTracksParams)
+	// Spawn an interactive track-generator agent with a prompt
+	// (POST /api/tracks/generate)
+	GenerateTracks(w http.ResponseWriter, r *http.Request)
+	// Delete a track's artifacts and board card
+	// (DELETE /api/tracks/{trackId})
+	DeleteTrack(w http.ResponseWriter, r *http.Request, trackId string, params DeleteTrackParams)
 	// Health check
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -1270,6 +1302,56 @@ func (siw *ServerInterfaceWrapper) ListTracks(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// GenerateTracks operation middleware
+func (siw *ServerInterfaceWrapper) GenerateTracks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GenerateTracks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteTrack operation middleware
+func (siw *ServerInterfaceWrapper) DeleteTrack(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", r.PathValue("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trackId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteTrackParams
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteTrack(w, r, trackId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -1431,6 +1513,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/api/traces", wrapper.ListTraces)
 	m.HandleFunc("GET "+options.BaseURL+"/api/traces/{traceId}", wrapper.GetTrace)
 	m.HandleFunc("GET "+options.BaseURL+"/api/tracks", wrapper.ListTracks)
+	m.HandleFunc("POST "+options.BaseURL+"/api/tracks/generate", wrapper.GenerateTracks)
+	m.HandleFunc("DELETE "+options.BaseURL+"/api/tracks/{trackId}", wrapper.DeleteTrack)
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
 
 	return m
@@ -2274,6 +2358,76 @@ func (response ListTracks500JSONResponse) VisitListTracksResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GenerateTracksRequestObject struct {
+	Body *GenerateTracksJSONRequestBody
+}
+
+type GenerateTracksResponseObject interface {
+	VisitGenerateTracksResponse(w http.ResponseWriter) error
+}
+
+type GenerateTracks201JSONResponse GenerateTracksResult
+
+func (response GenerateTracks201JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GenerateTracks429JSONResponse ErrorResponse
+
+func (response GenerateTracks429JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GenerateTracks500JSONResponse ErrorResponse
+
+func (response GenerateTracks500JSONResponse) VisitGenerateTracksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteTrackRequestObject struct {
+	TrackId string `json:"trackId"`
+	Params  DeleteTrackParams
+}
+
+type DeleteTrackResponseObject interface {
+	VisitDeleteTrackResponse(w http.ResponseWriter) error
+}
+
+type DeleteTrack204Response struct {
+}
+
+func (response DeleteTrack204Response) VisitDeleteTrackResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteTrack404JSONResponse ErrorResponse
+
+func (response DeleteTrack404JSONResponse) VisitDeleteTrackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteTrack500JSONResponse ErrorResponse
+
+func (response DeleteTrack500JSONResponse) VisitDeleteTrackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -2373,6 +2527,12 @@ type StrictServerInterface interface {
 	// List conductor tracks
 	// (GET /api/tracks)
 	ListTracks(ctx context.Context, request ListTracksRequestObject) (ListTracksResponseObject, error)
+	// Spawn an interactive track-generator agent with a prompt
+	// (POST /api/tracks/generate)
+	GenerateTracks(ctx context.Context, request GenerateTracksRequestObject) (GenerateTracksResponseObject, error)
+	// Delete a track's artifacts and board card
+	// (DELETE /api/tracks/{trackId})
+	DeleteTrack(ctx context.Context, request DeleteTrackRequestObject) (DeleteTrackResponseObject, error)
 	// Health check
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -3156,6 +3316,64 @@ func (sh *strictHandler) ListTracks(w http.ResponseWriter, r *http.Request, para
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListTracksResponseObject); ok {
 		if err := validResponse.VisitListTracksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GenerateTracks operation middleware
+func (sh *strictHandler) GenerateTracks(w http.ResponseWriter, r *http.Request) {
+	var request GenerateTracksRequestObject
+
+	var body GenerateTracksJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GenerateTracks(ctx, request.(GenerateTracksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GenerateTracks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GenerateTracksResponseObject); ok {
+		if err := validResponse.VisitGenerateTracksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteTrack operation middleware
+func (sh *strictHandler) DeleteTrack(w http.ResponseWriter, r *http.Request, trackId string, params DeleteTrackParams) {
+	var request DeleteTrackRequestObject
+
+	request.TrackId = trackId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteTrack(ctx, request.(DeleteTrackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteTrack")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteTrackResponseObject); ok {
+		if err := validResponse.VisitDeleteTrackResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

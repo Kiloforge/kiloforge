@@ -250,6 +250,8 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 type SpawnInteractiveOpts struct {
 	WorkDir string // working directory; defaults to cwd
 	Model   string // claude model alias
+	Prompt  string // initial prompt; if set, passed via -p flag
+	Ref     string // ref label (e.g., "track-gen"); defaults to "interactive"
 }
 
 // InteractiveAgent represents a running interactive Claude agent with IO handles.
@@ -285,10 +287,15 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		model = s.cfg.Model
 	}
 
+	ref := opts.Ref
+	if ref == "" {
+		ref = "interactive"
+	}
+
 	info := domain.AgentInfo{
 		ID:          agentID,
 		Role:        "interactive",
-		Ref:         "interactive",
+		Ref:         ref,
 		Status:      "running",
 		SessionID:   sessionID,
 		WorktreeDir: workDir,
@@ -301,6 +308,9 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	args := []string{"--session-id", sessionID, "--output-format", "stream-json"}
 	if model != "" {
 		args = append([]string{"--model", model}, args...)
+	}
+	if opts.Prompt != "" {
+		args = append(args, "-p", opts.Prompt)
 	}
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = workDir

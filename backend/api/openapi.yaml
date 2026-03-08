@@ -422,6 +422,71 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tracks/generate:
+    post:
+      operationId: generateTracks
+      summary: Spawn an interactive track-generator agent with a prompt
+      tags: [Tracks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateTracksRequest"
+      responses:
+        "201":
+          description: Track-generator agent spawned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateTracksResult"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/tracks/{trackId}:
+    delete:
+      operationId: deleteTrack
+      summary: Delete a track's artifacts and board card
+      tags: [Tracks]
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Track ID to delete
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Project slug for board card removal
+      responses:
+        "204":
+          description: Track deleted
+        "404":
+          description: Track not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/config:
     get:
       operationId: getConfig
@@ -1316,6 +1381,27 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SkillDetail"
+
+    GenerateTracksRequest:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+          description: Feature description for track generation
+        project:
+          type: string
+          description: Project slug (optional — determines working directory)
+
+    GenerateTracksResult:
+      type: object
+      required: [agent_id, ws_url]
+      properties:
+        agent_id:
+          type: string
+        ws_url:
+          type: string
+          description: WebSocket URL for agent conversation
 
     SpawnInteractiveRequest:
       type: object

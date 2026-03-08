@@ -190,6 +190,14 @@ type ClientInterface interface {
 	// ListTracks request
 	ListTracks(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GenerateTracksWithBody request with any body
+	GenerateTracksWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	GenerateTracks(ctx context.Context, body GenerateTracksJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteTrack request
+	DeleteTrack(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -628,6 +636,42 @@ func (c *Client) GetTrace(ctx context.Context, traceId string, reqEditors ...Req
 
 func (c *Client) ListTracks(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListTracksRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GenerateTracksWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGenerateTracksRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GenerateTracks(ctx context.Context, body GenerateTracksJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGenerateTracksRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteTrack(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteTrackRequest(c.Server, trackId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1704,6 +1748,102 @@ func NewListTracksRequest(server string, params *ListTracksParams) (*http.Reques
 	return req, nil
 }
 
+// NewGenerateTracksRequest calls the generic GenerateTracks builder with application/json body
+func NewGenerateTracksRequest(server string, body GenerateTracksJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGenerateTracksRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewGenerateTracksRequestWithBody generates requests for GenerateTracks with any type of body
+func NewGenerateTracksRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/generate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteTrackRequest generates requests for DeleteTrack
+func NewDeleteTrackRequest(server string, trackId string, params *DeleteTrackParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Project != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project", *params.Project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetHealthRequest generates requests for GetHealth
 func NewGetHealthRequest(server string) (*http.Request, error) {
 	var err error
@@ -1874,6 +2014,14 @@ type ClientWithResponsesInterface interface {
 
 	// ListTracksWithResponse request
 	ListTracksWithResponse(ctx context.Context, params *ListTracksParams, reqEditors ...RequestEditorFn) (*ListTracksResponse, error)
+
+	// GenerateTracksWithBodyWithResponse request with any body
+	GenerateTracksWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateTracksResponse, error)
+
+	GenerateTracksWithResponse(ctx context.Context, body GenerateTracksJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateTracksResponse, error)
+
+	// DeleteTrackWithResponse request
+	DeleteTrackWithResponse(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*DeleteTrackResponse, error)
 
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
@@ -2516,6 +2664,53 @@ func (r ListTracksResponse) StatusCode() int {
 	return 0
 }
 
+type GenerateTracksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *GenerateTracksResult
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GenerateTracksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GenerateTracksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteTrackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteTrackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteTrackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2859,6 +3054,32 @@ func (c *ClientWithResponses) ListTracksWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseListTracksResponse(rsp)
+}
+
+// GenerateTracksWithBodyWithResponse request with arbitrary body returning *GenerateTracksResponse
+func (c *ClientWithResponses) GenerateTracksWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateTracksResponse, error) {
+	rsp, err := c.GenerateTracksWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGenerateTracksResponse(rsp)
+}
+
+func (c *ClientWithResponses) GenerateTracksWithResponse(ctx context.Context, body GenerateTracksJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateTracksResponse, error) {
+	rsp, err := c.GenerateTracks(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGenerateTracksResponse(rsp)
+}
+
+// DeleteTrackWithResponse request returning *DeleteTrackResponse
+func (c *ClientWithResponses) DeleteTrackWithResponse(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*DeleteTrackResponse, error) {
+	rsp, err := c.DeleteTrack(ctx, trackId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteTrackResponse(rsp)
 }
 
 // GetHealthWithResponse request returning *GetHealthResponse
@@ -3848,6 +4069,79 @@ func ParseListTracksResponse(rsp *http.Response) (*ListTracksResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGenerateTracksResponse parses an HTTP response from a GenerateTracksWithResponse call
+func ParseGenerateTracksResponse(rsp *http.Response) (*GenerateTracksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GenerateTracksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest GenerateTracksResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteTrackResponse parses an HTTP response from a DeleteTrackWithResponse call
+func ParseDeleteTrackResponse(rsp *http.Response) (*DeleteTrackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteTrackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

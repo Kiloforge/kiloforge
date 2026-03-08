@@ -202,6 +202,27 @@ func (s *NativeBoardService) GetTraceID(slug, trackID string) (string, bool) {
 	return card.TraceID, true
 }
 
+// RemoveCard removes a card from the board. Returns true if the card existed.
+func (s *NativeBoardService) RemoveCard(slug, trackID string) (bool, error) {
+	board, err := s.store.GetBoard(slug)
+	if err != nil {
+		return false, fmt.Errorf("get board: %w", err)
+	}
+	if board == nil {
+		return false, nil
+	}
+
+	if _, ok := board.Cards[trackID]; !ok {
+		return false, nil
+	}
+
+	delete(board.Cards, trackID)
+	if err := s.store.SaveBoard(slug, board); err != nil {
+		return false, fmt.Errorf("save board: %w", err)
+	}
+	return true, nil
+}
+
 // statusToColumn maps a track status from tracks.md to a board column.
 func statusToColumn(status string) string {
 	switch status {
