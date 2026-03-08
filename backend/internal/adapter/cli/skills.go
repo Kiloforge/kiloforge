@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -152,9 +153,27 @@ func runSkillsUpdate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// readLineCtx reads a line from stdin, respecting context cancellation.
+// Returns the input string, or empty string if cancelled.
+func readLineCtx(ctx context.Context) (string, bool) {
+	ch := make(chan string, 1)
+	go func() {
+		var answer string
+		fmt.Scanln(&answer)
+		ch <- answer
+	}()
+	select {
+	case <-ctx.Done():
+		fmt.Println()
+		return "", false
+	case answer := <-ch:
+		return answer, true
+	}
+}
+
 // offerSkillsInstall prompts the user to install skills if repo is configured
 // but no skills are installed yet.
-func offerSkillsInstall(cfg *config.Config) {
+func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 	if cfg.SkillsRepo == "" {
 		return
 	}
@@ -167,8 +186,10 @@ func offerSkillsInstall(cfg *config.Config) {
 
 	fmt.Printf("\nSkills repo configured (%s) but no skills installed.\n", cfg.SkillsRepo)
 	fmt.Print("Install skills now? [y/N] ")
-	var answer string
-	fmt.Scanln(&answer)
+	answer, ok := readLineCtx(ctx)
+	if !ok {
+		return
+	}
 	if answer != "y" && answer != "Y" {
 		fmt.Println("Skipped. Run 'crelay skills update' to install later.")
 		return
