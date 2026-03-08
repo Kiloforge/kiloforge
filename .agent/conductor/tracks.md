@@ -88,7 +88,7 @@
 | [x] | fix-skills-412-prompt_20260309233000Z | Handle 412 Skills Missing with Install Prompt Instead of Error | 2026-03-09 | 2026-03-09 |
 | [x] | embedded-skills-default_20260309234000Z | Embedded Skills as Default — Remove Repo Dependency | 2026-03-09 | 2026-03-09 |
 | [ ] | tour-ux-improvements_20260309235000Z | Tour UX Improvements — State Transitions, Demo Data, and Example URL | 2026-03-09 | 2026-03-09 |
-| [ ] | fix-track-gen-project-init_20260309235500Z | Auto-Initialize Conductor Artifacts Before Track Generation | 2026-03-09 | 2026-03-09 |
+| [x] | fix-track-gen-project-init_20260309235500Z | Auto-Initialize Conductor Artifacts Before Track Generation | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 
