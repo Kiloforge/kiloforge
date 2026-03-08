@@ -15,9 +15,9 @@ import (
 	"kiloforge/internal/adapter/config"
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
-	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
@@ -58,7 +58,7 @@ type APIHandler struct {
 	projects   ProjectLister
 	projectMgr ProjectManager
 	gitSync    *gitadapter.GitSync
-	traceStore *tracing.Store
+	traceStore tracing.TraceReader
 	boardSvc   *service.NativeBoardService
 	eventBus   port.EventBus
 	giteaURL   string
@@ -74,7 +74,7 @@ type APIHandlerOpts struct {
 	Projects   ProjectLister
 	ProjectMgr ProjectManager
 	GitSync    *gitadapter.GitSync
-	TraceStore *tracing.Store
+	TraceStore tracing.TraceReader
 	BoardSvc   *service.NativeBoardService
 	EventBus   port.EventBus
 	GiteaURL   string

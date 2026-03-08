@@ -9,11 +9,10 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pidfile"
 	"kiloforge/internal/adapter/rest"
 	"kiloforge/internal/adapter/skills"
@@ -69,21 +68,28 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Load project registry.
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	// Open SQLite database (creates if needed, runs migrations).
+	db, err := sqlite.Open(cfg.DataDir)
 	if err != nil {
-		return fmt.Errorf("load project registry: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+
+	// Create stores backed by SQLite.
+	reg := sqlite.NewProjectStore(db)
+	agentStore := sqlite.NewAgentStore(db)
+	prTracker := sqlite.NewPRTrackingStore(db)
+	traceStore := sqlite.NewTraceStore(db)
+	quotaStore := sqlite.NewQuotaStore(db)
+	boardStore := sqlite.NewBoardStore(db)
 
 	// Initialize tracing if enabled.
-	var traceStore *tracing.Store
 	if cfg.IsTracingEnabled() {
-		result, tracingErr := tracing.Init(ctx, "")
+		result, tracingErr := tracing.Init(ctx, "", tracing.WithSpanRecorder(traceStore))
 		if tracingErr != nil {
 			log.Printf("Warning: tracing init failed: %v", tracingErr)
 		} else {
 			defer result.Shutdown(context.Background())
-			traceStore = result.Store
 			log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
 		}
 	}
@@ -91,22 +97,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Build server options.
 	opts := []rest.ServerOption{
 		rest.WithGiteaProxy(cfg.GiteaURL(), cfg.GiteaAdminUser),
+		rest.WithTracing(traceStore),
 	}
-	if traceStore != nil {
-		opts = append(opts, rest.WithTracing(traceStore))
+	if cfg.IsTracingEnabled() {
 		opts = append(opts, rest.WithTracer(tracing.NewOTelTracer()))
 	}
 	if cfg.IsDashboardEnabled() {
-		store, storeErr := jsonfile.LoadAgentStore(cfg.DataDir)
-		if storeErr == nil {
-			tracker := agent.NewQuotaTracker(cfg.DataDir)
-			_ = tracker.Load()
-			opts = append(opts, rest.WithDashboard(store, tracker, "/", reg))
-		}
+		opts = append(opts, rest.WithDashboard(agentStore, quotaStore, "/", reg))
 	}
 
 	// Enable native board service.
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
 	boardSvc := service.NewNativeBoardService(boardStore)
 	opts = append(opts, rest.WithBoardService(boardSvc))
 
@@ -119,7 +119,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	log.Printf("Orchestrator starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
 
-	srv := rest.NewServer(cfg, reg, cfg.OrchestratorPort, opts...)
+	srv := rest.NewServer(cfg, reg, agentStore, prTracker, cfg.OrchestratorPort, opts...)
 	if err := srv.Run(ctx); err != nil {
 		log.Printf("Server error: %v", err)
 		return err

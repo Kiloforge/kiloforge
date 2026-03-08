@@ -65,7 +65,7 @@ func TestRouteRegistration(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 0)
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 0)
 
 	mux := buildMux(t, srv, nil)
 
@@ -109,7 +109,7 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 0)
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 0)
 	dash := dashboard.New(0, &stubAgentLister{}, nil, "http://localhost:3000", &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)
@@ -139,7 +139,7 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 0)
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 0)
 	dash := dashboard.New(0, &stubAgentLister{}, nil, "http://localhost:3000", &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)

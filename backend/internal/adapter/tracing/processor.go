@@ -7,13 +7,13 @@ import (
 )
 
 // StoreProcessor is an OTel SpanProcessor that records completed spans
-// into an in-memory Store for API queries.
+// into a SpanRecorder (in-memory Store or SQLite TraceStore) for API queries.
 type StoreProcessor struct {
-	store *Store
+	store SpanRecorder
 }
 
-// NewStoreProcessor creates a processor backed by the given store.
-func NewStoreProcessor(store *Store) *StoreProcessor {
+// NewStoreProcessor creates a processor backed by the given span recorder.
+func NewStoreProcessor(store SpanRecorder) *StoreProcessor {
 	return &StoreProcessor{store: store}
 }
 

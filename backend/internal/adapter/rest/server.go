@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -18,12 +17,11 @@ import (
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/proxy"
-	"kiloforge/internal/core/domain"
 	"kiloforge/internal/adapter/tracing"
+	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 
@@ -59,7 +57,7 @@ func WithGiteaProxy(giteaURL, authUser string) ServerOption {
 }
 
 // WithTracing enables trace store for the trace API endpoints.
-func WithTracing(store *tracing.Store) ServerOption {
+func WithTracing(store tracing.TraceReader) ServerOption {
 	return func(s *Server) {
 		s.traceStore = store
 	}
@@ -82,8 +80,9 @@ func WithTracer(t port.Tracer) ServerOption {
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg         *config.Config
-	registry    *jsonfile.ProjectStore
-	store       *jsonfile.AgentStore
+	registry    port.ProjectStore
+	store       port.AgentStore
+	prTracker   port.PRTrackingStore
 	client      *gitea.Client
 	spawner     port.AgentSpawner
 	prService   *service.PRService
@@ -93,23 +92,20 @@ type Server struct {
 	giteaProxy  http.Handler
 	quotaReader QuotaReader
 	_projects   dashboard.ProjectLister
-	traceStore  *tracing.Store
+	traceStore  tracing.TraceReader
 	boardSvc    *service.NativeBoardService
 	tracer      port.Tracer
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
-func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int, opts ...ServerOption) *Server {
-	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
-	if err != nil {
-		store = &jsonfile.AgentStore{}
-	}
+func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentStore, prTracker port.PRTrackingStore, port int, opts ...ServerOption) *Server {
 	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
 	logger := log.New(log.Writer(), "[orchestrator] ", log.LstdFlags)
 	s := &Server{
 		cfg:       cfg,
 		registry:  registry,
 		store:     store,
+		prTracker: prTracker,
 		client:    client,
 		spawner:   &defaultSpawner{},
 		prService: service.NewPRService(client, &defaultSpawner{}, logger),
@@ -124,16 +120,13 @@ func NewServer(cfg *config.Config, registry *jsonfile.ProjectStore, port int, op
 }
 
 // newTestableServer creates a server with a custom spawner and client for testing.
-func newTestableServer(cfg *config.Config, registry *jsonfile.ProjectStore, spawner port.AgentSpawner, client *gitea.Client) *Server {
-	store, _ := jsonfile.LoadAgentStore(cfg.DataDir)
-	if store == nil {
-		store = &jsonfile.AgentStore{}
-	}
+func newTestableServer(cfg *config.Config, registry port.ProjectStore, store port.AgentStore, prTracker port.PRTrackingStore, spawner port.AgentSpawner, client *gitea.Client) *Server {
 	logger := log.New(log.Writer(), "[orchestrator] ", log.LstdFlags)
 	return &Server{
 		cfg:       cfg,
 		registry:  registry,
 		store:     store,
+		prTracker: prTracker,
 		client:    client,
 		spawner:   spawner,
 		prService: service.NewPRService(client, spawner, logger),
@@ -217,8 +210,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// Badge endpoints (SVG, not JSON — stays manual).
 	prLoader := func(slug string) (*domain.PRTracking, error) {
-		projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-		return jsonfile.LoadPRTracking(projectDir)
+		return s.prTracker.LoadPRTracking(slug)
 	}
 	badgeHandler := badge.NewHandler(s.store, prLoader)
 	badgeHandler.RegisterRoutes(mux)
@@ -457,14 +449,9 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 		return
 	}
 
-	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking := s.prService.CreateTracking(prNumber, branchRef, slug, s.store.AgentList, 3)
+	tracking := s.prService.CreateTracking(prNumber, branchRef, slug, s.store.Agents(), 3)
 
-	if err := os.MkdirAll(projectDir, 0o755); err != nil {
-		s.logger.Printf("[%s] Error creating project dir: %v", slug, err)
-		return
-	}
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 		return
 	}
@@ -481,8 +468,7 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 }
 
 func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
-	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking, err := jsonfile.LoadPRTracking(projectDir)
+	tracking, err := s.prTracker.LoadPRTracking(slug)
 	if err != nil {
 		s.logger.Printf("[%s] Cannot load PR tracking for reviewer spawn: %v", slug, err)
 		return
@@ -493,7 +479,7 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 
 	workDir := tracking.DeveloperWorkDir
 	if workDir == "" {
-		workDir = projectDir
+		workDir = filepath.Join(s.cfg.DataDir, "projects", slug)
 	}
 
 	info, err := s.spawner.SpawnReviewer(context.Background(), port.ReviewerOpts{
@@ -512,7 +498,7 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 	tracking.ReviewerAgentID = info.ID
 	tracking.ReviewerSession = info.SessionID
 	tracking.Status = "in-review"
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -536,8 +522,7 @@ func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 
 	s.logger.Printf("[%s] PR #%d review %s", slug, prNumber, reviewState)
 
-	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking, err := jsonfile.LoadPRTracking(projectDir)
+	tracking, err := s.prTracker.LoadPRTracking(slug)
 	if err != nil {
 		s.logger.Printf("[%s] Cannot load PR tracking for review handling: %v", slug, err)
 		return
@@ -545,13 +530,13 @@ func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 
 	switch reviewState {
 	case "approved":
-		s.handleReviewApproved(slug, tracking, projectDir)
+		s.handleReviewApproved(slug, tracking)
 	case "changes_requested", "request_changes":
-		s.handleReviewChangesRequested(slug, tracking, projectDir)
+		s.handleReviewChangesRequested(slug, tracking)
 	}
 }
 
-func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, projectDir string) {
+func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking) {
 	s.logger.Printf("[%s] PR #%d approved — merging and cleaning up", slug, tracking.PRNumber)
 
 	// Reconstruct trace context for merge spans.
@@ -574,7 +559,7 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 	defer mergeSpan.End()
 
 	tracking.Status = "approved"
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -607,7 +592,7 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 	mergeSpan.AddEvent("agents.cleanup")
 
 	// Save tracking.
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -635,19 +620,19 @@ func (a *poolReturnerAdapter) ReturnByTrackID(trackID string) error {
 	return a.pool.Save(a.dataDir)
 }
 
-func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTracking, projectDir string) {
+func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTracking) {
 	resumeDev := s.prService.HandleChangesRequested(tracking)
 
 	if !resumeDev {
 		s.logger.Printf("[%s] PR #%d review cycle limit reached (%d/%d) — escalating",
 			slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
-		s.escalatePR(slug, tracking, projectDir)
+		s.escalatePR(slug, tracking)
 		return
 	}
 
 	s.logger.Printf("[%s] PR #%d changes requested (cycle %d/%d) — resuming developer",
 		slug, tracking.PRNumber, tracking.ReviewCycleCount, tracking.MaxReviewCycles)
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
@@ -655,7 +640,7 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 	if tracking.DeveloperSession != "" {
 		workDir := tracking.DeveloperWorkDir
 		if workDir == "" {
-			workDir = projectDir
+			workDir = filepath.Join(s.cfg.DataDir, "projects", slug)
 		}
 		if err := s.spawner.ResumeDeveloper(context.Background(), tracking.DeveloperSession, workDir); err != nil {
 			s.logger.Printf("[%s] Error resuming developer: %v", slug, err)
@@ -666,7 +651,7 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 	}
 }
 
-func (s *Server) escalatePR(slug string, tracking *domain.PRTracking, projectDir string) {
+func (s *Server) escalatePR(slug string, tracking *domain.PRTracking) {
 	s.prService.Escalate(context.Background(), tracking, s.client)
 
 	// Stop agents.
@@ -681,14 +666,13 @@ func (s *Server) escalatePR(slug string, tracking *domain.PRTracking, projectDir
 	_ = s.store.Save()
 
 	tracking.Status = "escalated"
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 }
 
 func (s *Server) handlePRSynchronize(slug string, prNumber int) {
-	projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-	tracking, err := jsonfile.LoadPRTracking(projectDir)
+	tracking, err := s.prTracker.LoadPRTracking(slug)
 	if err != nil {
 		s.logger.Printf("[%s] Cannot load PR tracking for synchronize: %v", slug, err)
 		return
@@ -701,7 +685,7 @@ func (s *Server) handlePRSynchronize(slug string, prNumber int) {
 	}
 
 	tracking.Status = "waiting-review"
-	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
+	if err := s.prTracker.SavePRTracking(slug, tracking); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 

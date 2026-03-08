@@ -42,7 +42,9 @@ func newTestServerWithDir(dataDir string) *Server {
 			},
 		},
 	}
-	return NewServer(cfg, reg, 3001)
+	store := &jsonfile.AgentStore{}
+	prTracker := jsonfile.NewPRTrackingStoreAdapter(dataDir)
+	return NewServer(cfg, reg, store, prTracker, 3001)
 }
 
 // newTestServerWithSpawner creates a server with a fake spawner for testing review cycle.
@@ -61,13 +63,15 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 			},
 		},
 	}
+	store := &jsonfile.AgentStore{}
+	prTracker := jsonfile.NewPRTrackingStoreAdapter(dataDir)
 	var client *gitea.Client
 	if giteaSrv != nil {
 		client = gitea.NewClientWithToken(giteaSrv.URL, "kiloforger", "test-token")
 	} else {
 		client = gitea.NewClientWithToken("http://localhost:3000", "kiloforger", "test-token")
 	}
-	return newTestableServer(cfg, reg, spawner, client)
+	return newTestableServer(cfg, reg, store, prTracker, spawner, client)
 }
 
 func postWebhook(t *testing.T, srv *Server, event string, payload map[string]any) *httptest.ResponseRecorder {
@@ -703,7 +707,7 @@ func TestNewServer_WithDashboard(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
 
 	if srv.dashboard == nil {
 		t.Fatal("expected dashboard to be set")
@@ -740,7 +744,7 @@ func TestNewServer_WithGiteaProxy(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, 3001, WithGiteaProxy(backend.URL, "admin"))
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 3001, WithGiteaProxy(backend.URL, "admin"))
 
 	if srv.giteaProxy == nil {
 		t.Fatal("expected giteaProxy to be set")

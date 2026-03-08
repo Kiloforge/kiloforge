@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/jsonfile"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 
@@ -25,14 +24,14 @@ type CompletionCallback func(agentID, ref, status string)
 // Spawner manages Claude agent lifecycle.
 type Spawner struct {
 	cfg                *config.Config
-	store              *jsonfile.AgentStore
+	store              port.AgentStore
 	tracker            *QuotaTracker
 	tracer             port.Tracer
 	completionCallback CompletionCallback
 }
 
 // NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
-func NewSpawner(cfg *config.Config, store *jsonfile.AgentStore, tracker *QuotaTracker) *Spawner {
+func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker) *Spawner {
 	return &Spawner{cfg: cfg, store: store, tracker: tracker, tracer: port.NoopTracer{}}
 }
 

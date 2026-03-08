@@ -41,7 +41,7 @@ type Server struct {
 	projects   ProjectLister
 	hub        *SSEHub
 	eventBus   port.EventBus
-	traceStore *tracing.Store
+	traceStore tracing.TraceReader
 	mux        *http.ServeMux
 }
 
@@ -127,7 +127,7 @@ func (s *Server) EventBus() port.EventBus {
 }
 
 // SetTraceStore sets the trace store for watcher-driven trace events.
-func (s *Server) SetTraceStore(store *tracing.Store) {
+func (s *Server) SetTraceStore(store tracing.TraceReader) {
 	s.traceStore = store
 }
 

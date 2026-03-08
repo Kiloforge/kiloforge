@@ -4,8 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/service"
 )
@@ -14,13 +13,18 @@ func TestRunDryRun_MovesCardToDone(t *testing.T) {
 	t.Parallel()
 
 	dataDir := t.TempDir()
-	cfg := &config.Config{DataDir: dataDir}
+
+	db, err := sqlite.Open(dataDir)
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
 
 	slug := "test-proj"
 	trackID := "test-track_123Z"
 
 	// Set up a board with a card in backlog.
-	boardStore := jsonfile.NewBoardStore(dataDir)
+	boardStore := sqlite.NewBoardStore(db)
 	board := domain.NewBoardState()
 	board.Cards[trackID] = domain.BoardCard{
 		TrackID:   trackID,
@@ -36,7 +40,7 @@ func TestRunDryRun_MovesCardToDone(t *testing.T) {
 	proj := domain.Project{Slug: slug, ProjectDir: t.TempDir()}
 
 	// Run dry-run.
-	if err := runDryRun(cfg, proj, trackID); err != nil {
+	if err := runDryRun(db, proj, trackID); err != nil {
 		t.Fatalf("runDryRun: %v", err)
 	}
 
@@ -60,12 +64,17 @@ func TestRunDryRun_NoBoard(t *testing.T) {
 	t.Parallel()
 
 	dataDir := t.TempDir()
-	cfg := &config.Config{DataDir: dataDir}
+
+	db, err := sqlite.Open(dataDir)
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
 
 	proj := domain.Project{Slug: "no-board-proj", ProjectDir: t.TempDir()}
 
 	// Should not error even if track is not on the board.
-	if err := runDryRun(cfg, proj, "nonexistent-track"); err != nil {
+	if err := runDryRun(db, proj, "nonexistent-track"); err != nil {
 		t.Fatalf("runDryRun should not error for missing board card: %v", err)
 	}
 }

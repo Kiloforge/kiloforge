@@ -7,9 +7,35 @@ import (
 	"path/filepath"
 
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
 
+var _ port.PRTrackingStore = (*PRTrackingStoreAdapter)(nil)
+
 const prTrackingFile = "pr-tracking.json"
+
+// PRTrackingStoreAdapter wraps the file-based PR tracking functions into a port.PRTrackingStore.
+type PRTrackingStoreAdapter struct {
+	dataDir string
+}
+
+// NewPRTrackingStoreAdapter creates a PRTrackingStoreAdapter.
+func NewPRTrackingStoreAdapter(dataDir string) *PRTrackingStoreAdapter {
+	return &PRTrackingStoreAdapter{dataDir: dataDir}
+}
+
+func (a *PRTrackingStoreAdapter) LoadPRTracking(slug string) (*domain.PRTracking, error) {
+	dir := filepath.Join(a.dataDir, "projects", slug)
+	return LoadPRTracking(dir)
+}
+
+func (a *PRTrackingStoreAdapter) SavePRTracking(slug string, t *domain.PRTracking) error {
+	dir := filepath.Join(a.dataDir, "projects", slug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create project dir: %w", err)
+	}
+	return SavePRTracking(t, dir)
+}
 
 // PRTrackingPath returns the path for a project's PR tracking file.
 func PRTrackingPath(dataDir, slug string) string {

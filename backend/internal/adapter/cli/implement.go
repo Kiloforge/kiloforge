@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,7 +11,7 @@ import (
 
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
@@ -53,11 +54,15 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	// Resolve project.
-	reg, err := jsonfile.LoadProjectStore(cfg.DataDir)
+	// Open SQLite database.
+	db, err := sqlite.Open(cfg.DataDir)
 	if err != nil {
-		return fmt.Errorf("load registry: %w", err)
+		return fmt.Errorf("open database: %w", err)
 	}
+	defer db.Close()
+
+	// Resolve project.
+	reg := sqlite.NewProjectStore(db)
 
 	proj, err := resolveProject(reg, flagImplementProject)
 	if err != nil {
@@ -100,7 +105,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	// Dry-run mode: skip agent spawn, move board card to Done.
 	if flagImplementDryRun {
-		return runDryRun(cfg, proj, trackID)
+		return runDryRun(db, proj, trackID)
 	}
 
 	// Initialize tracing for track lifecycle.
@@ -154,16 +159,12 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	prepareSpan.End()
 
 	// Spawn developer agent.
-	store, err := jsonfile.LoadAgentStore(cfg.DataDir)
-	if err != nil {
-		return fmt.Errorf("load state: %w", err)
-	}
-
+	store := sqlite.NewAgentStore(db)
 	tracker := agent.NewQuotaTracker(cfg.DataDir)
 	_ = tracker.Load()
 
 	// Create board service before spawner so the completion callback can reference it.
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	boardStore := sqlite.NewBoardStore(db)
 	nativeBoardSvc := service.NewNativeBoardService(boardStore)
 
 	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
@@ -257,7 +258,7 @@ func extractTraceID(ctx context.Context) string {
 	return sc.TraceID().String()
 }
 
-func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, error) {
+func resolveProject(reg port.ProjectStore, slug string) (domain.Project, error) {
 	if slug != "" {
 		proj, ok := reg.Get(slug)
 		if !ok {
@@ -279,11 +280,11 @@ func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, er
 	return proj, nil
 }
 
-func runDryRun(cfg *config.Config, proj domain.Project, trackID string) error {
+func runDryRun(db *sql.DB, proj domain.Project, trackID string) error {
 	fmt.Printf("Dry run: skipping agent spawn for track %q\n\n", trackID)
 
 	// Move board card to Done.
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	boardStore := sqlite.NewBoardStore(db)
 	nativeBoardSvc := service.NewNativeBoardService(boardStore)
 	if result, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnDone); err == nil {
 		fmt.Printf("  Board:     %s → %s\n", result.FromColumn, result.ToColumn)
