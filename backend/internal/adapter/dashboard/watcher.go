@@ -51,19 +51,13 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 	for _, a := range agents {
 		oldStatus, existed := prev.agents[a.ID]
 		if !existed || oldStatus != a.Status {
-			s.hub.Broadcast(SSEEvent{
-				Type: "agent_update",
-				Data: agentToJSON(a),
-			})
+			s.hub.Publish(domain.NewAgentUpdateEvent(agentToJSON(a)))
 		}
 	}
 	// Detect removed agents.
 	for id := range prev.agents {
 		if _, ok := cur.agents[id]; !ok {
-			s.hub.Broadcast(SSEEvent{
-				Type: "agent_removed",
-				Data: map[string]string{"id": id},
-			})
+			s.hub.Publish(domain.NewAgentRemovedEvent(id))
 		}
 	}
 
@@ -74,10 +68,7 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 		cur.rateLimited = s.quota.IsRateLimited()
 
 		if cur.totalCost != prev.totalCost || cur.rateLimited != prev.rateLimited {
-			s.hub.Broadcast(SSEEvent{
-				Type: "quota_update",
-				Data: s.quotaResponse(),
-			})
+			s.hub.Publish(domain.NewQuotaUpdateEvent(s.quotaResponse()))
 		}
 	}
 

@@ -48,7 +48,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load project store: %w", err)
 	}
 
-	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, cfg.GiteaURL(), reg)
+	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, cfg.GiteaURL(), reg, nil)
 
 	// Register OpenAPI generated API handlers on the dashboard mux.
 	lockMgr := lock.New(cfg.DataDir)

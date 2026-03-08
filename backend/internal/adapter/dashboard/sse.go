@@ -5,30 +5,27 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+
+	"kiloforge/internal/core/domain"
 )
 
-// SSEEvent is a server-sent event payload.
-type SSEEvent struct {
-	Type string `json:"type"`
-	Data any    `json:"data"`
-}
-
 // SSEHub manages SSE client connections and broadcasts events.
+// It implements port.EventBus.
 type SSEHub struct {
 	mu      sync.RWMutex
-	clients map[chan SSEEvent]struct{}
+	clients map[chan domain.Event]struct{}
 }
 
 // NewSSEHub creates a new hub.
 func NewSSEHub() *SSEHub {
 	return &SSEHub{
-		clients: make(map[chan SSEEvent]struct{}),
+		clients: make(map[chan domain.Event]struct{}),
 	}
 }
 
 // Subscribe registers a new client and returns its event channel.
-func (h *SSEHub) Subscribe() chan SSEEvent {
-	ch := make(chan SSEEvent, 16)
+func (h *SSEHub) Subscribe() <-chan domain.Event {
+	ch := make(chan domain.Event, 16)
 	h.mu.Lock()
 	h.clients[ch] = struct{}{}
 	h.mu.Unlock()
@@ -36,16 +33,26 @@ func (h *SSEHub) Subscribe() chan SSEEvent {
 }
 
 // Unsubscribe removes a client and closes its channel.
-func (h *SSEHub) Unsubscribe(ch chan SSEEvent) {
+func (h *SSEHub) Unsubscribe(ch <-chan domain.Event) {
+	// We need the bidirectional channel to delete from the map.
+	// The subscribe method creates a bidirectional channel and returns
+	// a receive-only view. We recover the original via type assertion
+	// on the map lookup. This is safe because only Subscribe creates channels.
 	h.mu.Lock()
-	delete(h.clients, ch)
+	for bch := range h.clients {
+		if (<-chan domain.Event)(bch) == ch {
+			delete(h.clients, bch)
+			h.mu.Unlock()
+			close(bch)
+			return
+		}
+	}
 	h.mu.Unlock()
-	close(ch)
 }
 
-// Broadcast sends an event to all connected clients.
+// Publish sends an event to all connected clients.
 // Slow clients that can't keep up will miss events (non-blocking send).
-func (h *SSEHub) Broadcast(event SSEEvent) {
+func (h *SSEHub) Publish(event domain.Event) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for ch := range h.clients {

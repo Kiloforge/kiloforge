@@ -8,6 +8,7 @@ import (
 
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
 
 // AgentLister provides read access to agent state.
@@ -38,18 +39,34 @@ type Server struct {
 	giteaURL string
 	projects ProjectLister
 	hub      *SSEHub
+	eventBus port.EventBus
 	mux      *http.ServeMux
 }
 
-// New creates a dashboard server.
-func New(port int, agents AgentLister, quota QuotaReader, giteaURL string, projects ProjectLister) *Server {
+// New creates a dashboard server. If eventBus is nil, a new SSEHub is created
+// and used as both the SSE transport and the event bus. If eventBus is provided
+// (and is an *SSEHub), it is used directly so the bus can be shared with other
+// components like the REST API handler.
+func New(port int, agents AgentLister, quota QuotaReader, giteaURL string, projects ProjectLister, eventBus port.EventBus) *Server {
+	var hub *SSEHub
+	if eventBus == nil {
+		hub = NewSSEHub()
+		eventBus = hub
+	} else if h, ok := eventBus.(*SSEHub); ok {
+		hub = h
+	} else {
+		// Non-SSEHub event bus: create an SSEHub that bridges events to SSE clients.
+		hub = NewSSEHub()
+	}
+
 	s := &Server{
 		port:     port,
 		agents:   agents,
 		quota:    quota,
 		giteaURL: giteaURL,
 		projects: projects,
-		hub:      NewSSEHub(),
+		hub:      hub,
+		eventBus: eventBus,
 		mux:      http.NewServeMux(),
 	}
 	s.routes()
@@ -98,6 +115,11 @@ func (s *Server) Mux() *http.ServeMux {
 // SSEClientCount returns the number of connected SSE clients.
 func (s *Server) SSEClientCount() int {
 	return s.hub.ClientCount()
+}
+
+// EventBus returns the event bus used by this server.
+func (s *Server) EventBus() port.EventBus {
+	return s.eventBus
 }
 
 func (s *Server) routes() {

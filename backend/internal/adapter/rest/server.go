@@ -42,7 +42,8 @@ type ServerOption func(*Server)
 // WithDashboard enables dashboard routes on the unified server.
 func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
 	return func(s *Server) {
-		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projects)
+		hub := dashboard.NewSSEHub()
+		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projects, hub)
 		s.quotaReader = quota
 		s._projects = projects
 	}

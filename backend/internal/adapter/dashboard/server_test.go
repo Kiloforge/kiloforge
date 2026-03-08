@@ -32,7 +32,7 @@ type testProjectLister struct {
 
 func (t *testProjectLister) List() []domain.Project { return t.projects }
 
-func TestSSEHub_BroadcastAndSubscribe(t *testing.T) {
+func TestSSEHub_PublishAndSubscribe(t *testing.T) {
 	t.Parallel()
 	hub := NewSSEHub()
 
@@ -43,7 +43,7 @@ func TestSSEHub_BroadcastAndSubscribe(t *testing.T) {
 		t.Fatalf("client count = %d, want 1", hub.ClientCount())
 	}
 
-	hub.Broadcast(SSEEvent{Type: "test", Data: "hello"})
+	hub.Publish(domain.Event{Type: "test", Data: "hello"})
 
 	select {
 	case event := <-ch:
@@ -69,7 +69,7 @@ func TestSSEHub_Unsubscribe(t *testing.T) {
 
 func TestRegisterNonAPIRoutes_MountsOnExternalMux(t *testing.T) {
 	t.Parallel()
-	s := New(0, &testAgentLister{}, nil, "http://localhost:3000", &testProjectLister{})
+	s := New(0, &testAgentLister{}, nil, "http://localhost:3000", &testProjectLister{}, nil)
 
 	externalMux := http.NewServeMux()
 	s.RegisterNonAPIRoutes(externalMux)
