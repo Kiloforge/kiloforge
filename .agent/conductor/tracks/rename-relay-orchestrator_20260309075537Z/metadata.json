@@ -2,15 +2,15 @@
   "id": "rename-relay-orchestrator_20260309075537Z",
   "title": "Rename Relay Server to Orchestrator",
   "type": "refactor",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T07:55:37Z",
   "updated": "2026-03-09T07:55:37Z",
   "phases": {
     "total": 7,
-    "completed": 0
+    "completed": 7
   },
   "tasks": {
-    "total": 31,
-    "completed": 0
+    "total": 30,
+    "completed": 30
   }
 }
