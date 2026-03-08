@@ -45,6 +45,7 @@
 | [x] | model-selection_20260309110000Z | Configurable Model Selection with Opus Default | 2026-03-09 | 2026-03-09 |
 | [x] | agent-completion-callback_20260309112000Z | Agent Completion Callback and Dry-Run Mode | 2026-03-09 | 2026-03-09 |
 | [x] | licensing_20260309113000Z | Add Apache 2.0 License and Upstream Attribution | 2026-03-09 | 2026-03-09 |
+| [ ] | fix-buildvcs-worktree_20260309114000Z | Fix VCS Stamping in Git Worktrees | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 

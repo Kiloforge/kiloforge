@@ -1,0 +1,16 @@
+{
+  "id": "fix-buildvcs-worktree_20260309114000Z",
+  "title": "Fix VCS Stamping in Git Worktrees",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-09T11:40:00Z",
+  "updated": "2026-03-09T11:40:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 6,
+    "completed": 0
+  }
+}

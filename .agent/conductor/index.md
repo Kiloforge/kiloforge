@@ -84,6 +84,7 @@ Navigation hub for project context.
 - **model-selection_20260309110000Z** — Configurable Model Selection with Opus Default
 - **agent-completion-callback_20260309112000Z** — Agent Completion Callback and Dry-Run Mode
 - **licensing_20260309113000Z** — Add Apache 2.0 License and Upstream Attribution
+- **fix-buildvcs-worktree_20260309114000Z** — Fix VCS Stamping in Git Worktrees
 
 ## Getting Started
 
