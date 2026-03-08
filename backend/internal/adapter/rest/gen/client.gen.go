@@ -92,6 +92,11 @@ type ClientInterface interface {
 	// ListAgents request
 	ListAgents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SpawnInteractiveAgentWithBody request with any body
+	SpawnInteractiveAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SpawnInteractiveAgent(ctx context.Context, body SpawnInteractiveAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAgent request
 	GetAgent(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -191,6 +196,30 @@ type ClientInterface interface {
 
 func (c *Client) ListAgents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAgentsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SpawnInteractiveAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSpawnInteractiveAgentRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SpawnInteractiveAgent(ctx context.Context, body SpawnInteractiveAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSpawnInteractiveAgentRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -644,6 +673,46 @@ func NewListAgentsRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSpawnInteractiveAgentRequest calls the generic SpawnInteractiveAgent builder with application/json body
+func NewSpawnInteractiveAgentRequest(server string, body SpawnInteractiveAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSpawnInteractiveAgentRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSpawnInteractiveAgentRequestWithBody generates requests for SpawnInteractiveAgent with any type of body
+func NewSpawnInteractiveAgentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/agents/interactive")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1708,6 +1777,11 @@ type ClientWithResponsesInterface interface {
 	// ListAgentsWithResponse request
 	ListAgentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAgentsResponse, error)
 
+	// SpawnInteractiveAgentWithBodyWithResponse request with any body
+	SpawnInteractiveAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SpawnInteractiveAgentResponse, error)
+
+	SpawnInteractiveAgentWithResponse(ctx context.Context, body SpawnInteractiveAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*SpawnInteractiveAgentResponse, error)
+
 	// GetAgentWithResponse request
 	GetAgentWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAgentResponse, error)
 
@@ -1822,6 +1896,30 @@ func (r ListAgentsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListAgentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SpawnInteractiveAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Agent
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SpawnInteractiveAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SpawnInteractiveAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2449,6 +2547,23 @@ func (c *ClientWithResponses) ListAgentsWithResponse(ctx context.Context, reqEdi
 	return ParseListAgentsResponse(rsp)
 }
 
+// SpawnInteractiveAgentWithBodyWithResponse request with arbitrary body returning *SpawnInteractiveAgentResponse
+func (c *ClientWithResponses) SpawnInteractiveAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SpawnInteractiveAgentResponse, error) {
+	rsp, err := c.SpawnInteractiveAgentWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSpawnInteractiveAgentResponse(rsp)
+}
+
+func (c *ClientWithResponses) SpawnInteractiveAgentWithResponse(ctx context.Context, body SpawnInteractiveAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*SpawnInteractiveAgentResponse, error) {
+	rsp, err := c.SpawnInteractiveAgent(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSpawnInteractiveAgentResponse(rsp)
+}
+
 // GetAgentWithResponse request returning *GetAgentResponse
 func (c *ClientWithResponses) GetAgentWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAgentResponse, error) {
 	rsp, err := c.GetAgent(ctx, id, reqEditors...)
@@ -2775,6 +2890,46 @@ func ParseListAgentsResponse(rsp *http.Response) (*ListAgentsResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSpawnInteractiveAgentResponse parses an HTTP response from a SpawnInteractiveAgentWithResponse call
+func ParseSpawnInteractiveAgentResponse(rsp *http.Response) (*SpawnInteractiveAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SpawnInteractiveAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

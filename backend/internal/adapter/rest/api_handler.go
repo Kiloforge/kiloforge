@@ -15,9 +15,10 @@ import (
 	"kiloforge/internal/adapter/config"
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
+	"kiloforge/internal/adapter/tracing"
+	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
@@ -49,6 +50,11 @@ type ProjectManager interface {
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
 }
 
+// InteractiveSpawner creates interactive agent sessions.
+type InteractiveSpawner interface {
+	SpawnInteractive(ctx context.Context, opts agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error)
+}
+
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
@@ -61,42 +67,48 @@ type APIHandler struct {
 	traceStore tracing.TraceReader
 	boardSvc   *service.NativeBoardService
 	eventBus   port.EventBus
-	giteaURL   string
-	sseClients func() int
-	cfg        *config.Config
+	giteaURL      string
+	sseClients    func() int
+	cfg           *config.Config
+	interSpawner  InteractiveSpawner
+	wsSessions    *wsAdapter.SessionManager
 }
 
 // APIHandlerOpts configures the API handler.
 type APIHandlerOpts struct {
-	Agents     AgentLister
-	Quota      QuotaReader
-	LockMgr    *lock.Manager
-	Projects   ProjectLister
-	ProjectMgr ProjectManager
-	GitSync    *gitadapter.GitSync
-	TraceStore tracing.TraceReader
-	BoardSvc   *service.NativeBoardService
-	EventBus   port.EventBus
-	GiteaURL   string
-	SSEClients func() int
-	Cfg        *config.Config
+	Agents        AgentLister
+	Quota         QuotaReader
+	LockMgr       *lock.Manager
+	Projects      ProjectLister
+	ProjectMgr    ProjectManager
+	GitSync       *gitadapter.GitSync
+	TraceStore    tracing.TraceReader
+	BoardSvc      *service.NativeBoardService
+	EventBus      port.EventBus
+	GiteaURL      string
+	SSEClients    func() int
+	Cfg           *config.Config
+	InterSpawner  InteractiveSpawner
+	WSSessions    *wsAdapter.SessionManager
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
 func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 	return &APIHandler{
-		agents:     opts.Agents,
-		quota:      opts.Quota,
-		lockMgr:    opts.LockMgr,
-		projects:   opts.Projects,
-		projectMgr: opts.ProjectMgr,
-		gitSync:    opts.GitSync,
-		traceStore: opts.TraceStore,
-		boardSvc:   opts.BoardSvc,
-		eventBus:   opts.EventBus,
-		giteaURL:   opts.GiteaURL,
-		sseClients: opts.SSEClients,
-		cfg:        opts.Cfg,
+		agents:       opts.Agents,
+		quota:        opts.Quota,
+		lockMgr:      opts.LockMgr,
+		projects:     opts.Projects,
+		projectMgr:   opts.ProjectMgr,
+		gitSync:      opts.GitSync,
+		traceStore:   opts.TraceStore,
+		boardSvc:     opts.BoardSvc,
+		eventBus:     opts.EventBus,
+		giteaURL:     opts.GiteaURL,
+		sseClients:   opts.SSEClients,
+		cfg:          opts.Cfg,
+		interSpawner: opts.InterSpawner,
+		wsSessions:   opts.WSSessions,
 	}
 }
 
@@ -165,6 +177,40 @@ func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject
 		result = append(result, domainAgentToGen(a, h.quota))
 	}
 	return result, nil
+}
+
+// SpawnInteractiveAgent implements gen.StrictServerInterface.
+func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInteractiveAgentRequestObject) (gen.SpawnInteractiveAgentResponseObject, error) {
+	if h.interSpawner == nil || h.wsSessions == nil {
+		return gen.SpawnInteractiveAgent500JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+
+	opts := agent.SpawnInteractiveOpts{}
+	if req.Body != nil {
+		if req.Body.WorkDir != nil {
+			opts.WorkDir = *req.Body.WorkDir
+		}
+		if req.Body.Model != nil {
+			opts.Model = *req.Body.Model
+		}
+	}
+
+	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
+	if err != nil {
+		if strings.Contains(err.Error(), "rate limited") {
+			return gen.SpawnInteractiveAgent429JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.SpawnInteractiveAgent500JSONResponse{Error: err.Error()}, nil
+	}
+
+	// Create bridge and register with WS session manager.
+	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
+
+	// Start output relay in background.
+	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+
+	return gen.SpawnInteractiveAgent201JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
 }
 
 // GetAgent implements gen.StrictServerInterface.

@@ -20,14 +20,17 @@ import (
 
 // Defines values for AgentRole.
 const (
-	Developer AgentRole = "developer"
-	Reviewer  AgentRole = "reviewer"
+	Developer   AgentRole = "developer"
+	Interactive AgentRole = "interactive"
+	Reviewer    AgentRole = "reviewer"
 )
 
 // Valid indicates whether the value is a known member of the AgentRole enum.
 func (e AgentRole) Valid() bool {
 	switch e {
 	case Developer:
+		return true
+	case Interactive:
 		return true
 	case Reviewer:
 		return true
@@ -464,6 +467,15 @@ type SpanInfo struct {
 	TraceId    string             `json:"trace_id"`
 }
 
+// SpawnInteractiveRequest defines model for SpawnInteractiveRequest.
+type SpawnInteractiveRequest struct {
+	// Model Claude model alias (e.g., "opus", "sonnet")
+	Model *string `json:"model,omitempty"`
+
+	// WorkDir Working directory for the agent (defaults to cwd)
+	WorkDir *string `json:"work_dir,omitempty"`
+}
+
 // StatusInfo defines model for StatusInfo.
 type StatusInfo struct {
 	AgentCounts map[string]int `json:"agent_counts"`
@@ -554,6 +566,9 @@ type ListTracksParams struct {
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
+// SpawnInteractiveAgentJSONRequestBody defines body for SpawnInteractiveAgent for application/json ContentType.
+type SpawnInteractiveAgentJSONRequestBody = SpawnInteractiveRequest
+
 // MoveCardJSONRequestBody defines body for MoveCard for application/json ContentType.
 type MoveCardJSONRequestBody = MoveCardRequest
 
@@ -586,6 +601,9 @@ type ServerInterface interface {
 	// List all agents
 	// (GET /api/agents)
 	ListAgents(w http.ResponseWriter, r *http.Request)
+	// Spawn an interactive agent with WebSocket IO
+	// (POST /api/agents/interactive)
+	SpawnInteractiveAgent(w http.ResponseWriter, r *http.Request)
 	// Get agent by ID or ID prefix
 	// (GET /api/agents/{id})
 	GetAgent(w http.ResponseWriter, r *http.Request, id string)
@@ -680,6 +698,20 @@ func (siw *ServerInterfaceWrapper) ListAgents(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAgents(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SpawnInteractiveAgent operation middleware
+func (siw *ServerInterfaceWrapper) SpawnInteractiveAgent(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SpawnInteractiveAgent(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1373,6 +1405,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents", wrapper.ListAgents)
+	m.HandleFunc("POST "+options.BaseURL+"/api/agents/interactive", wrapper.SpawnInteractiveAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}", wrapper.GetAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}/log", wrapper.GetAgentLog)
 	m.HandleFunc("GET "+options.BaseURL+"/api/board/{project}", wrapper.GetBoard)
@@ -1422,6 +1455,41 @@ func (response ListAgents200JSONResponse) VisitListAgentsResponse(w http.Respons
 type ListAgents500JSONResponse ErrorResponse
 
 func (response ListAgents500JSONResponse) VisitListAgentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SpawnInteractiveAgentRequestObject struct {
+	Body *SpawnInteractiveAgentJSONRequestBody
+}
+
+type SpawnInteractiveAgentResponseObject interface {
+	VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error
+}
+
+type SpawnInteractiveAgent201JSONResponse Agent
+
+func (response SpawnInteractiveAgent201JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SpawnInteractiveAgent429JSONResponse ErrorResponse
+
+func (response SpawnInteractiveAgent429JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SpawnInteractiveAgent500JSONResponse ErrorResponse
+
+func (response SpawnInteractiveAgent500JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -2227,6 +2295,9 @@ type StrictServerInterface interface {
 	// List all agents
 	// (GET /api/agents)
 	ListAgents(ctx context.Context, request ListAgentsRequestObject) (ListAgentsResponseObject, error)
+	// Spawn an interactive agent with WebSocket IO
+	// (POST /api/agents/interactive)
+	SpawnInteractiveAgent(ctx context.Context, request SpawnInteractiveAgentRequestObject) (SpawnInteractiveAgentResponseObject, error)
 	// Get agent by ID or ID prefix
 	// (GET /api/agents/{id})
 	GetAgent(ctx context.Context, request GetAgentRequestObject) (GetAgentResponseObject, error)
@@ -2353,6 +2424,40 @@ func (sh *strictHandler) ListAgents(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAgentsResponseObject); ok {
 		if err := validResponse.VisitListAgentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SpawnInteractiveAgent operation middleware
+func (sh *strictHandler) SpawnInteractiveAgent(w http.ResponseWriter, r *http.Request) {
+	var request SpawnInteractiveAgentRequestObject
+
+	var body SpawnInteractiveAgentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SpawnInteractiveAgent(ctx, request.(SpawnInteractiveAgentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SpawnInteractiveAgent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SpawnInteractiveAgentResponseObject); ok {
+		if err := validResponse.VisitSpawnInteractiveAgentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

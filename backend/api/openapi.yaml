@@ -43,6 +43,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/agents/interactive:
+    post:
+      operationId: spawnInteractiveAgent
+      summary: Spawn an interactive agent with WebSocket IO
+      tags: [Agents]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpawnInteractiveRequest"
+      responses:
+        "201":
+          description: Interactive agent spawned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/agents/{id}:
     get:
       operationId: getAgent
@@ -831,7 +862,7 @@ components:
           type: string
         role:
           type: string
-          enum: [developer, reviewer]
+          enum: [developer, reviewer, interactive]
         ref:
           type: string
         status:
@@ -1285,6 +1316,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SkillDetail"
+
+    SpawnInteractiveRequest:
+      type: object
+      properties:
+        work_dir:
+          type: string
+          description: Working directory for the agent (defaults to cwd)
+        model:
+          type: string
+          description: Claude model alias (e.g., "opus", "sonnet")
 
     PushProjectRequest:
       type: object

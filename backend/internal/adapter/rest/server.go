@@ -17,10 +17,11 @@ import (
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/proxy"
+	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
+	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
@@ -70,6 +71,14 @@ func WithBoardService(svc *service.NativeBoardService) ServerOption {
 	}
 }
 
+// WithInteractiveSpawner enables interactive agent spawning with WebSocket support.
+func WithInteractiveSpawner(spawner InteractiveSpawner) ServerOption {
+	return func(s *Server) {
+		s.interSpawner = spawner
+		s.wsSessions = wsAdapter.NewSessionManager()
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -92,9 +101,11 @@ type Server struct {
 	giteaProxy  http.Handler
 	quotaReader QuotaReader
 	_projects   dashboard.ProjectLister
-	traceStore  tracing.TraceReader
-	boardSvc    *service.NativeBoardService
-	tracer      port.Tracer
+	traceStore    tracing.TraceReader
+	boardSvc      *service.NativeBoardService
+	tracer        port.Tracer
+	interSpawner  InteractiveSpawner
+	wsSessions    *wsAdapter.SessionManager
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -192,21 +203,29 @@ func (s *Server) Run(ctx context.Context) error {
 	})
 
 	apiHandler := NewAPIHandler(APIHandlerOpts{
-		Agents:     s.store,
-		Quota:      s.quotaReader,
-		LockMgr:    lockMgr,
-		Projects:   s._projects,
-		ProjectMgr: projectSvc,
-		GitSync:    gitadapter.New(),
-		TraceStore: s.traceStore,
-		BoardSvc:   s.boardSvc,
-		EventBus:   eventBus,
-		GiteaURL:   s.cfg.GiteaURL(),
-		SSEClients: sseClients,
-		Cfg:        s.cfg,
+		Agents:       s.store,
+		Quota:        s.quotaReader,
+		LockMgr:      lockMgr,
+		Projects:     s._projects,
+		ProjectMgr:   projectSvc,
+		GitSync:      gitadapter.New(),
+		TraceStore:   s.traceStore,
+		BoardSvc:     s.boardSvc,
+		EventBus:     eventBus,
+		GiteaURL:     s.cfg.GiteaURL(),
+		SSEClients:   sseClients,
+		Cfg:          s.cfg,
+		InterSpawner: s.interSpawner,
+		WSSessions:   s.wsSessions,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
+
+	// WebSocket routes for interactive agents.
+	if s.wsSessions != nil {
+		wsHandler := wsAdapter.NewHandler(s.wsSessions, nil)
+		wsHandler.RegisterRoutes(mux)
+	}
 
 	// Badge endpoints (SVG, not JSON — stays manual).
 	prLoader := func(slug string) (*domain.PRTracking, error) {
