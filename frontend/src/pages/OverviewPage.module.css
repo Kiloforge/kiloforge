@@ -71,6 +71,11 @@
   text-align: right;
 }
 
+.syncHeader {
+  width: 24px;
+  text-align: center;
+}
+
 .trackCountsHeader {
   min-width: 120px;
   text-align: right;
@@ -95,6 +100,35 @@
 .noTracks {
   color: var(--text-dim);
   font-style: italic;
+}
+
+.syncBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.syncSynced {
+  color: var(--green);
+}
+
+.syncAhead {
+  color: var(--yellow);
+}
+
+.syncBehind {
+  color: var(--yellow);
+}
+
+.syncDiverged {
+  color: var(--red);
 }
 
 .removeBtn {

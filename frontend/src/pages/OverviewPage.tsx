@@ -1,7 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import type { Agent, QuotaResponse, Track } from "../types/api";
-import type { Project } from "../types/api";
+import type { Agent, QuotaResponse, Track, Project, SyncStatus } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
 import { StatCards } from "../components/StatCards";
 import { AgentGrid } from "../components/AgentGrid";
@@ -33,6 +32,34 @@ function trackCountsByStatus(tracks: Track[], slug: string) {
   return counts;
 }
 
+function SyncBadge({ slug }: { slug: string }) {
+  const [status, setStatus] = useState<SyncStatus | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/projects/${encodeURIComponent(slug)}/sync-status`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: SyncStatus | null) => setStatus(data))
+      .catch(() => {});
+  }, [slug]);
+
+  if (!status) return <span className={styles.syncBadge} title="Sync unknown">&#x2500;</span>;
+
+  const map: Record<string, { label: string; cls: string; icon: string }> = {
+    synced: { label: "Synced", cls: styles.syncSynced, icon: "\u2713" },
+    ahead: { label: `${status.ahead} ahead`, cls: styles.syncAhead, icon: "\u2191" },
+    behind: { label: `${status.behind} behind`, cls: styles.syncBehind, icon: "\u2193" },
+    diverged: { label: `${status.ahead}\u2191 ${status.behind}\u2193`, cls: styles.syncDiverged, icon: "\u21c5" },
+    unknown: { label: "Unknown", cls: "", icon: "?" },
+  };
+  const info = map[status.status] ?? map.unknown;
+
+  return (
+    <span className={`${styles.syncBadge} ${info.cls}`} title={info.label}>
+      {info.icon}
+    </span>
+  );
+}
+
 interface ProjectRowProps {
   project: Project;
   tracks: Track[];
@@ -48,6 +75,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
         {project.origin_remote && (
           <span className={styles.projectRemote}>{project.origin_remote}</span>
         )}
+        {project.origin_remote && <SyncBadge slug={project.slug} />}
         <span className={styles.trackCounts}>
           {counts.total > 0 ? (
             <>
@@ -115,6 +143,7 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog }
             <div className={styles.projectHeader}>
               <span>Project</span>
               <span>Remote</span>
+              <span className={styles.syncHeader}>Sync</span>
               <span className={styles.trackCountsHeader}>done / active / pending</span>
               <span className={styles.actionsHeader}></span>
             </div>
