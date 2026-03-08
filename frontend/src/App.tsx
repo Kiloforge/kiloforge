@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Agent, StatusResponse } from "./types/api";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
@@ -8,7 +8,7 @@ import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
 import { useConsent } from "./hooks/useConsent";
 import { queryKeys } from "./api/queryKeys";
-import { fetcher } from "./api/fetcher";
+import { fetcher, FetchError } from "./api/fetcher";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
@@ -31,7 +31,6 @@ export default function App() {
   });
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
-  const [spawningInteractive, setSpawningInteractive] = useState(false);
   const consent = useConsent();
 
   const sseHandlers = useMemo(
@@ -63,23 +62,22 @@ export default function App() {
     setTerminalAgentId(null);
   }, []);
 
-  const handleSpawnInteractive = useCallback(async () => {
-    setSpawningInteractive(true);
-    try {
-      const res = await fetch("/api/agents/interactive", { method: "POST" });
-      if (res.status === 403) {
-        consent.requestConsent(() => handleSpawnInteractive());
-        return;
-      }
-      if (!res.ok) throw new Error("Failed to spawn");
-      const agent = (await res.json()) as Agent;
+  const spawnMutation = useMutation({
+    mutationFn: () =>
+      fetcher<Agent>("/api/agents/interactive", { method: "POST" }),
+    onSuccess: (agent) => {
       setTerminalAgentId(agent.id);
-    } catch {
-      // silent fail — user sees the button re-enable
-    } finally {
-      setSpawningInteractive(false);
-    }
-  }, [consent]);
+    },
+    onError: (err) => {
+      if (err instanceof FetchError && err.status === 403) {
+        consent.requestConsent(() => spawnMutation.mutate());
+      }
+    },
+  });
+
+  const handleSpawnInteractive = useCallback(() => {
+    spawnMutation.mutate();
+  }, [spawnMutation]);
 
   return (
     <>
@@ -112,7 +110,7 @@ export default function App() {
                 onViewLog={handleViewLog}
                 onAttach={handleAttach}
                 onSpawnInteractive={handleSpawnInteractive}
-                spawningInteractive={spawningInteractive}
+                spawningInteractive={spawnMutation.isPending}
               />
             }
           />
