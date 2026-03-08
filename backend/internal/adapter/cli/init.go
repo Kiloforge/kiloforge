@@ -78,14 +78,10 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Check idempotency: if Gitea is already running, report and exit.
 	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
 	if _, err := client.CheckVersion(ctx); err == nil {
-		fmt.Println("Gitea is already running.")
-		fmt.Printf("  URL:  %s\n", cfg.GiteaURL())
-		fmt.Printf("  Data: %s\n", cfg.DataDir)
-		if cfg.GiteaAdminPass != "" {
-			fmt.Printf("  Admin: %s / %s\n", cfg.GiteaAdminUser, cfg.GiteaAdminPass)
-		} else {
-			fmt.Printf("  Admin: %s (password not stored — use --admin-pass to set a known one)\n", cfg.GiteaAdminUser)
-		}
+		fmt.Println("Kiloforge is already initialized.")
+		fmt.Printf("  Dashboard:  http://localhost:%d/\n", cfg.OrchestratorPort)
+		fmt.Printf("  Gitea:      http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
+		fmt.Printf("  Data:       %s\n", cfg.DataDir)
 		return nil
 	}
 
@@ -143,11 +139,10 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("Gitea is ready!")
-	fmt.Printf("  Web UI:     %s\n", cfg.GiteaURL())
-	fmt.Printf("  Admin:      %s / %s\n", cfg.GiteaAdminUser, cfg.GiteaAdminPass)
+	fmt.Println("Kiloforge is ready!")
+	fmt.Printf("  Dashboard:  http://localhost:%d/\n", cfg.OrchestratorPort)
+	fmt.Printf("  Gitea:      http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
 	fmt.Printf("  Data:       %s\n", cfg.DataDir)
-	fmt.Printf("  Compose:    %s\n", cfg.ComposeFile)
 	fmt.Println()
 	fmt.Println("Register a project with 'kf add <path>'.")
 	fmt.Println()
@@ -166,9 +161,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Println()
-	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
-	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
 	fmt.Println()
 	fmt.Println("Use 'kf down' to stop.")
 

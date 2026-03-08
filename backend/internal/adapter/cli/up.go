@@ -65,9 +65,8 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
-	fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
-	fmt.Printf("Gitea:       http://localhost:%d/\n", cfg.OrchestratorPort)
+	fmt.Printf("Dashboard:   http://localhost:%d/\n", cfg.OrchestratorPort)
+	fmt.Printf("Gitea:       http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
 	fmt.Println()
 	fmt.Println("Use 'kf down' to stop.")
 
