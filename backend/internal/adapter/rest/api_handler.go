@@ -1276,8 +1276,15 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		}
 	}
 
-	// Build prompt: prefix user prompt with skill invocation.
+	// Auto-initialize conductor artifacts if missing. Chain /kf-setup before
+	// track generation so freshly added projects work without manual setup.
 	fullPrompt := fmt.Sprintf("/kf-track-generator I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
+	if workDir != "" {
+		productPath := filepath.Join(workDir, ".agent", "conductor", "product.md")
+		if _, err := os.Stat(productPath); os.IsNotExist(err) {
+			fullPrompt = "/kf-setup\n\nOnce setup is complete, proceed immediately with:\n\n" + fullPrompt
+		}
+	}
 
 	opts := agent.SpawnInteractiveOpts{
 		WorkDir: workDir,
