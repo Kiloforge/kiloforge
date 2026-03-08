@@ -129,6 +129,7 @@ Navigation hub for project context.
 - **tour-ux-improvements_20260309235000Z** — Tour UX Improvements — State Transitions, Demo Data, and Example URL
 - **fix-track-gen-project-init_20260309235500Z** — Auto-Initialize Conductor Artifacts Before Track Generation
 - **gitignore-frontend-dist_20260310000000Z** — Stop Committing Frontend Dist — Build Before Backend Instead
+- **fix-nested-claude-env_20260310001000Z** — Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var
 
 ## Getting Started
 
