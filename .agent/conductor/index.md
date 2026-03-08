@@ -76,6 +76,8 @@ Navigation hub for project context.
 - **fix-password-display-v3_20260309083826Z** — Fix Init Password Display (Root Cause)
 - **project-manage-api_20260309084650Z** — Project Add/Remove REST API
 - **project-manage-ui_20260309084651Z** — Project Add/Remove Dashboard UI
+- **sse-event-bus_20260309091500Z** — SSE Event Bus Infrastructure
+- **sse-entity-subscriptions_20260309091501Z** — SSE Entity Subscriptions
 
 ## Getting Started
 
