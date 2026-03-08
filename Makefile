@@ -21,7 +21,12 @@ build-frontend:
 
 build-backend: ensure-dist
 	@mkdir -p $(BIN_DIR)
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) go build -o ../$(BINARY) ./cmd/kf
+	$(eval GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev"))
+	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none"))
+	$(eval BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ))
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go build -ldflags "-s -w -X main.version=$(GIT_VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)" \
+		-o ../$(BINARY) ./cmd/kf
 
 dev: ensure-dist
 	@trap 'kill 0' INT TERM; \
