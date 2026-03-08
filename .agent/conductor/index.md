@@ -133,6 +133,7 @@ Navigation hub for project context.
 - **fix-spawner-verbose-flag_20260310003000Z** — Fix Agent Spawner — Add --verbose Flag for stream-json
 - **setup-prereq-be_20260310004000Z** — Setup Prerequisite Check Before Agent Spawning (Backend)
 - **setup-prereq-fe_20260310004001Z** — Setup Prerequisite Check — Dashboard UI (Frontend)
+- **cli-sqlite-migration_20260310005000Z** — Migrate CLI Commands from JSON Files to SQLite
 
 ## Getting Started
 

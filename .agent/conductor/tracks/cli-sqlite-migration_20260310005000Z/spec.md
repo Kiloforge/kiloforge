@@ -1,0 +1,134 @@
+# Specification: Migrate CLI Commands from JSON Files to SQLite
+
+**Track ID:** cli-sqlite-migration_20260310005000Z
+**Type:** Refactor
+**Created:** 2026-03-10T00:50:00Z
+**Status:** Draft
+
+## Summary
+
+Complete the SQLite migration by replacing all `jsonfile` package usage in CLI commands with SQLite stores. The orchestrator daemon (`serve.go`) already uses SQLite, but 11 CLI commands still directly import `jsonfile` and read/write JSON files (`state.json`, `projects.json`, etc.), creating a split-brain data problem. After migration, delete the `jsonfile` package entirely.
+
+## Context
+
+Track `sqlite-storage-core_20260309140000Z` implemented the SQLite storage layer and wired it into the daemon, but left CLI commands untouched. This means:
+- `kf agents` reads `state.json` while the daemon writes to SQLite — **stale/missing data**
+- `kf projects` reads `projects.json` while the daemon writes to SQLite — **same problem**
+- `kf add` writes to `projects.json` but the daemon reads from SQLite — **data loss**
+- Two full storage implementations are maintained in parallel unnecessarily
+
+## Codebase Analysis
+
+### CLI commands still using jsonfile (11 files)
+
+1. **`add.go`** — `jsonfile.LoadProjectStore()`, `jsonfile.EnsureProjectDir()`
+2. **`agents.go`** — `jsonfile.LoadAgentStore()`
+3. **`attach.go`** — `jsonfile.LoadAgentStore()`
+4. **`cost.go`** — `jsonfile.LoadAgentStore()`, `*jsonfile.AgentStore` in function signatures
+5. **`dashboard.go`** — `jsonfile.LoadAgentStore()`, `jsonfile.LoadProjectStore()`
+6. **`escalated.go`** — `jsonfile.LoadProjectStore()`, `jsonfile.LoadPRTracking()`
+7. **`projects.go`** — `jsonfile.LoadProjectStore()`
+8. **`push.go`** — `jsonfile.LoadProjectStore()`
+9. **`status.go`** — `jsonfile.LoadAgentStore()`, `*jsonfile.AgentStore` in function signatures
+10. **`stop.go`** — `jsonfile.LoadAgentStore()`
+11. **`sync.go`** — `jsonfile.LoadProjectStore()`, `jsonfile.NewBoardStore()`
+
+### Pattern already established in serve.go
+
+`serve.go` (lines 73-85) shows the correct pattern:
+```go
+db, err := sqlite.Open(cfg.DataDir)
+// ...
+projectStore := sqlite.NewProjectStore(db)
+agentStore := sqlite.NewAgentStore(db)
+```
+
+CLI commands should follow the same pattern: open SQLite DB from `cfg.DataDir`, instantiate stores, use them.
+
+### jsonfile package to delete
+
+After migration, the entire `backend/internal/adapter/persistence/jsonfile/` directory can be deleted:
+- `agent_store.go` + `agent_store_test.go`
+- `project_store.go` + `project_store_test.go`
+- `board_store.go` + `board_store_test.go`
+- `pr_tracking_store.go` + `pr_tracking_test.go`
+
+### Port interfaces already defined
+
+All port interfaces exist and are implemented by both jsonfile and sqlite:
+- `port.AgentStore`
+- `port.ProjectStore`
+- `port.BoardStore`
+- `port.PRTrackingStore`
+
+CLI commands that reference concrete `*jsonfile.AgentStore` types should be changed to use the port interface instead.
+
+## Acceptance Criteria
+
+- [ ] All 11 CLI commands use `sqlite.Open()` + SQLite stores instead of `jsonfile.*`
+- [ ] No CLI command imports `jsonfile` package
+- [ ] Function signatures in `cost.go` and `status.go` use port interfaces, not concrete `*jsonfile.AgentStore`
+- [ ] `backend/internal/adapter/persistence/jsonfile/` directory is deleted
+- [ ] No remaining imports of the `jsonfile` package anywhere (grep confirms zero hits)
+- [ ] `make test` passes
+- [ ] `make build` succeeds
+- [ ] CLI commands (`kf agents`, `kf projects`, `kf status`, `kf cost`) read data written by the daemon correctly
+
+## Dependencies
+
+None.
+
+## Blockers
+
+None.
+
+## Conflict Risk
+
+- MEDIUM — touches 11 CLI command files. No pending tracks modify these files, but any new CLI commands added concurrently would need to use SQLite from the start.
+
+## Out of Scope
+
+- Data migration from existing JSON files to SQLite (daemon already handles its own data; CLI-written data in JSON files is ephemeral)
+- Changing the SQLite schema or store implementations
+- Adding new CLI commands
+
+## Technical Notes
+
+### Migration pattern for each CLI command
+
+Replace:
+```go
+import "backend/internal/adapter/persistence/jsonfile"
+
+store, err := jsonfile.LoadProjectStore(cfg.DataDir)
+```
+
+With:
+```go
+import "backend/internal/adapter/persistence/sqlite"
+
+db, err := sqlite.Open(cfg.DataDir)
+if err != nil { return err }
+defer db.Close()
+store := sqlite.NewProjectStore(db)
+```
+
+### Shared DB helper
+
+To avoid repeating `sqlite.Open(cfg.DataDir)` in every command, consider adding a helper to the CLI package:
+
+```go
+func openDB(cfg *config.Config) (*sqlite.DB, error) {
+    return sqlite.Open(cfg.DataDir)
+}
+```
+
+Each command calls `openDB`, defers `db.Close()`, and creates only the stores it needs.
+
+### Concrete type references
+
+`cost.go` and `status.go` use `*jsonfile.AgentStore` in helper function signatures. These must be changed to `port.AgentStore` (the interface) since the SQLite implementation satisfies the same interface.
+
+---
+
+_Generated by conductor-track-generator from prompt: "clean up obsolete jsonfile storage — complete SQLite migration"_

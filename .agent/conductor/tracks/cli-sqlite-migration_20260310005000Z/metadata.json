@@ -1,0 +1,16 @@
+{
+  "id": "cli-sqlite-migration_20260310005000Z",
+  "title": "Migrate CLI Commands from JSON Files to SQLite",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-10T00:50:00Z",
+  "updated": "2026-03-10T00:50:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 18,
+    "completed": 0
+  }
+}
