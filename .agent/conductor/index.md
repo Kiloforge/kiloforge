@@ -125,6 +125,7 @@ Navigation hub for project context.
 - **tracing-always-on-fe_20260309231001Z** — Remove Tracing Toggle UI (Frontend)
 - **fix-serve-interactive-agent_20260309232000Z** — Fix Interactive Agent Wiring in Serve Command (kf up)
 - **fix-skills-412-prompt_20260309233000Z** — Handle 412 Skills Missing with Install Prompt Instead of Error
+- **embedded-skills-default_20260309234000Z** — Embedded Skills as Default — Remove Repo Dependency
 
 ## Getting Started
 
