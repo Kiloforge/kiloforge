@@ -23,11 +23,11 @@ export function useTour() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (state: Partial<TourState>) =>
+    mutationFn: (body: { action: string; step?: number }) =>
       fetcher<TourState>("/api/tour", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state),
+        body: JSON.stringify(body),
       }),
     onSuccess: (data) => {
       queryClient.setQueryData<TourState>(queryKeys.tour, data);
@@ -35,26 +35,26 @@ export function useTour() {
   });
 
   const startTour = useCallback(() => {
-    updateMutation.mutate({ status: "active", current_step: 0 });
+    updateMutation.mutate({ action: "accept" });
   }, [updateMutation]);
 
   const advanceStep = useCallback(
     (step: number) => {
-      updateMutation.mutate({ status: "active", current_step: step });
+      updateMutation.mutate({ action: "advance", step });
     },
     [updateMutation],
   );
 
   const dismissTour = useCallback(() => {
-    updateMutation.mutate({ status: "dismissed" });
+    updateMutation.mutate({ action: "dismiss" });
   }, [updateMutation]);
 
   const completeTour = useCallback(() => {
-    updateMutation.mutate({ status: "completed" });
+    updateMutation.mutate({ action: "complete" });
   }, [updateMutation]);
 
   const restartTour = useCallback(() => {
-    updateMutation.mutate({ status: "pending", current_step: 0 });
+    updateMutation.mutate({ action: "accept" });
   }, [updateMutation]);
 
   return {
