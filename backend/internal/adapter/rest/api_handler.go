@@ -13,6 +13,7 @@ import (
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
+	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
@@ -56,6 +57,7 @@ type APIHandler struct {
 	lockMgr    *lock.Manager
 	projects   ProjectLister
 	projectMgr ProjectManager
+	gitSync    *gitadapter.GitSync
 	traceStore *tracing.Store
 	boardSvc   *service.NativeBoardService
 	eventBus   port.EventBus
@@ -71,6 +73,7 @@ type APIHandlerOpts struct {
 	LockMgr    *lock.Manager
 	Projects   ProjectLister
 	ProjectMgr ProjectManager
+	GitSync    *gitadapter.GitSync
 	TraceStore *tracing.Store
 	BoardSvc   *service.NativeBoardService
 	EventBus   port.EventBus
@@ -87,6 +90,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		lockMgr:    opts.LockMgr,
 		projects:   opts.Projects,
 		projectMgr: opts.ProjectMgr,
+		gitSync:    opts.GitSync,
 		traceStore: opts.TraceStore,
 		boardSvc:   opts.BoardSvc,
 		eventBus:   opts.EventBus,
@@ -929,6 +933,114 @@ func domainBoardToGen(b *domain.BoardState) gen.BoardState {
 		Columns: b.Columns,
 		Cards:   cards,
 	}
+}
+
+// PushProject implements gen.StrictServerInterface.
+func (h *APIHandler) PushProject(ctx context.Context, req gen.PushProjectRequestObject) (gen.PushProjectResponseObject, error) {
+	if h.gitSync == nil {
+		return gen.PushProject500JSONResponse{Error: "git sync not configured"}, nil
+	}
+	p, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.PushProject404JSONResponse{Error: fmt.Sprintf("project %q not found", req.Slug)}, nil
+	}
+	if req.Body == nil || req.Body.RemoteBranch == "" {
+		return gen.PushProject400JSONResponse{Error: "remote_branch is required"}, nil
+	}
+
+	result, err := h.gitSync.PushToRemote(ctx, p.ProjectDir, "main", req.Body.RemoteBranch, p.SSHKeyPath)
+	if err != nil {
+		return gen.PushProject500JSONResponse{Error: err.Error()}, nil
+	}
+
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewProjectUpdateEvent(map[string]any{
+			"slug":   p.Slug,
+			"action": "push",
+		}))
+	}
+
+	return gen.PushProject200JSONResponse{
+		Success:      result.Success,
+		LocalBranch:  result.LocalBranch,
+		RemoteBranch: result.RemoteBranch,
+	}, nil
+}
+
+// PullProject implements gen.StrictServerInterface.
+func (h *APIHandler) PullProject(ctx context.Context, req gen.PullProjectRequestObject) (gen.PullProjectResponseObject, error) {
+	if h.gitSync == nil {
+		return gen.PullProject500JSONResponse{Error: "git sync not configured"}, nil
+	}
+	p, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.PullProject404JSONResponse{Error: fmt.Sprintf("project %q not found", req.Slug)}, nil
+	}
+
+	remoteBranch := "main"
+	if req.Body != nil && req.Body.RemoteBranch != nil && *req.Body.RemoteBranch != "" {
+		remoteBranch = *req.Body.RemoteBranch
+	}
+
+	result, err := h.gitSync.PullFromRemote(ctx, p.ProjectDir, remoteBranch, p.SSHKeyPath)
+	if err != nil {
+		if strings.Contains(err.Error(), "diverged") {
+			return gen.PullProject409JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.PullProject500JSONResponse{Error: err.Error()}, nil
+	}
+
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewProjectUpdateEvent(map[string]any{
+			"slug":   p.Slug,
+			"action": "pull",
+		}))
+	}
+
+	return gen.PullProject200JSONResponse{
+		Success: result.Success,
+		NewHead: result.NewHead,
+	}, nil
+}
+
+// GetSyncStatus implements gen.StrictServerInterface.
+func (h *APIHandler) GetSyncStatus(ctx context.Context, req gen.GetSyncStatusRequestObject) (gen.GetSyncStatusResponseObject, error) {
+	if h.gitSync == nil {
+		return gen.GetSyncStatus500JSONResponse{Error: "git sync not configured"}, nil
+	}
+	p, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.GetSyncStatus404JSONResponse{Error: fmt.Sprintf("project %q not found", req.Slug)}, nil
+	}
+
+	status, err := h.gitSync.SyncStatus(ctx, p.ProjectDir, p.SSHKeyPath)
+	if err != nil {
+		return gen.GetSyncStatus500JSONResponse{Error: err.Error()}, nil
+	}
+
+	resp := gen.GetSyncStatus200JSONResponse{
+		LocalBranch: status.LocalBranch,
+		Ahead:       status.Ahead,
+		Behind:      status.Behind,
+		Status:      gen.SyncStatusResponseStatus(status.Status),
+	}
+	if status.RemoteURL != "" {
+		resp.RemoteUrl = &status.RemoteURL
+	}
+	return resp, nil
+}
+
+// findProject looks up a project by slug from the projects list.
+func (h *APIHandler) findProject(slug string) (domain.Project, bool) {
+	if h.projects == nil {
+		return domain.Project{}, false
+	}
+	for _, p := range h.projects.List() {
+		if p.Slug == slug {
+			return p, true
+		}
+	}
+	return domain.Project{}, false
 }
 
 func intPtr(v int) *int       { return &v }

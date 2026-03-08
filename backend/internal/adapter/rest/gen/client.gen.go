@@ -146,6 +146,19 @@ type ClientInterface interface {
 	// RemoveProject request
 	RemoveProject(ctx context.Context, slug string, params *RemoveProjectParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PullProjectWithBody request with any body
+	PullProjectWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PullProject(ctx context.Context, slug string, body PullProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PushProjectWithBody request with any body
+	PushProjectWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PushProject(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSyncStatus request
+	GetSyncStatus(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetQuota request
 	GetQuota(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -418,6 +431,66 @@ func (c *Client) AddProject(ctx context.Context, body AddProjectJSONRequestBody,
 
 func (c *Client) RemoveProject(ctx context.Context, slug string, params *RemoveProjectParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoveProjectRequest(c.Server, slug, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PullProjectWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPullProjectRequestWithBody(c.Server, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PullProject(ctx context.Context, slug string, body PullProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPullProjectRequest(c.Server, slug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PushProjectWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPushProjectRequestWithBody(c.Server, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PushProject(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPushProjectRequest(c.Server, slug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSyncStatus(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSyncStatusRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -1138,6 +1211,134 @@ func NewRemoveProjectRequest(server string, slug string, params *RemoveProjectPa
 	return req, nil
 }
 
+// NewPullProjectRequest calls the generic PullProject builder with application/json body
+func NewPullProjectRequest(server string, slug string, body PullProjectJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPullProjectRequestWithBody(server, slug, "application/json", bodyReader)
+}
+
+// NewPullProjectRequestWithBody generates requests for PullProject with any type of body
+func NewPullProjectRequestWithBody(server string, slug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/pull", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPushProjectRequest calls the generic PushProject builder with application/json body
+func NewPushProjectRequest(server string, slug string, body PushProjectJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPushProjectRequestWithBody(server, slug, "application/json", bodyReader)
+}
+
+// NewPushProjectRequestWithBody generates requests for PushProject with any type of body
+func NewPushProjectRequestWithBody(server string, slug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/push", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetSyncStatusRequest generates requests for GetSyncStatus
+func NewGetSyncStatusRequest(server string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/sync-status", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetQuotaRequest generates requests for GetQuota
 func NewGetQuotaRequest(server string) (*http.Request, error) {
 	var err error
@@ -1561,6 +1762,19 @@ type ClientWithResponsesInterface interface {
 	// RemoveProjectWithResponse request
 	RemoveProjectWithResponse(ctx context.Context, slug string, params *RemoveProjectParams, reqEditors ...RequestEditorFn) (*RemoveProjectResponse, error)
 
+	// PullProjectWithBodyWithResponse request with any body
+	PullProjectWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PullProjectResponse, error)
+
+	PullProjectWithResponse(ctx context.Context, slug string, body PullProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*PullProjectResponse, error)
+
+	// PushProjectWithBodyWithResponse request with any body
+	PushProjectWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PushProjectResponse, error)
+
+	PushProjectWithResponse(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*PushProjectResponse, error)
+
+	// GetSyncStatusWithResponse request
+	GetSyncStatusWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetSyncStatusResponse, error)
+
 	// GetQuotaWithResponse request
 	GetQuotaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQuotaResponse, error)
 
@@ -1939,6 +2153,80 @@ func (r RemoveProjectResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RemoveProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PullProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PullResult
+	JSON404      *ErrorResponse
+	JSON409      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PullProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PullProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PushProjectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PushResult
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PushProjectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PushProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSyncStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SyncStatusResponse
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSyncStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSyncStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2333,6 +2621,49 @@ func (c *ClientWithResponses) RemoveProjectWithResponse(ctx context.Context, slu
 		return nil, err
 	}
 	return ParseRemoveProjectResponse(rsp)
+}
+
+// PullProjectWithBodyWithResponse request with arbitrary body returning *PullProjectResponse
+func (c *ClientWithResponses) PullProjectWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PullProjectResponse, error) {
+	rsp, err := c.PullProjectWithBody(ctx, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePullProjectResponse(rsp)
+}
+
+func (c *ClientWithResponses) PullProjectWithResponse(ctx context.Context, slug string, body PullProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*PullProjectResponse, error) {
+	rsp, err := c.PullProject(ctx, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePullProjectResponse(rsp)
+}
+
+// PushProjectWithBodyWithResponse request with arbitrary body returning *PushProjectResponse
+func (c *ClientWithResponses) PushProjectWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PushProjectResponse, error) {
+	rsp, err := c.PushProjectWithBody(ctx, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePushProjectResponse(rsp)
+}
+
+func (c *ClientWithResponses) PushProjectWithResponse(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*PushProjectResponse, error) {
+	rsp, err := c.PushProject(ctx, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePushProjectResponse(rsp)
+}
+
+// GetSyncStatusWithResponse request returning *GetSyncStatusResponse
+func (c *ClientWithResponses) GetSyncStatusWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetSyncStatusResponse, error) {
+	rsp, err := c.GetSyncStatus(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSyncStatusResponse(rsp)
 }
 
 // GetQuotaWithResponse request returning *GetQuotaResponse
@@ -2963,6 +3294,140 @@ func ParseRemoveProjectResponse(rsp *http.Response) (*RemoveProjectResponse, err
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePullProjectResponse parses an HTTP response from a PullProjectWithResponse call
+func ParsePullProjectResponse(rsp *http.Response) (*PullProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PullProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PullResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePushProjectResponse parses an HTTP response from a PushProjectWithResponse call
+func ParsePushProjectResponse(rsp *http.Response) (*PushProjectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PushProjectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PushResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSyncStatusResponse parses an HTTP response from a GetSyncStatusWithResponse call
+func ParseGetSyncStatusResponse(rsp *http.Response) (*GetSyncStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSyncStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SyncStatusResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

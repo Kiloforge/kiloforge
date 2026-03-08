@@ -8,7 +8,9 @@ package gen
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -127,6 +129,33 @@ func (e MoveCardRequestToColumn) Valid() bool {
 	case MoveCardRequestToColumnInProgress:
 		return true
 	case MoveCardRequestToColumnInReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SyncStatusResponseStatus.
+const (
+	Ahead    SyncStatusResponseStatus = "ahead"
+	Behind   SyncStatusResponseStatus = "behind"
+	Diverged SyncStatusResponseStatus = "diverged"
+	Synced   SyncStatusResponseStatus = "synced"
+	Unknown  SyncStatusResponseStatus = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the SyncStatusResponseStatus enum.
+func (e SyncStatusResponseStatus) Valid() bool {
+	switch e {
+	case Ahead:
+		return true
+	case Behind:
+		return true
+	case Diverged:
+		return true
+	case Synced:
+		return true
+	case Unknown:
 		return true
 	default:
 		return false
@@ -309,6 +338,35 @@ type Project struct {
 	Slug         string  `json:"slug"`
 }
 
+// PullProjectRequest defines model for PullProjectRequest.
+type PullProjectRequest struct {
+	// RemoteBranch Remote branch to pull from (defaults to "main")
+	RemoteBranch *string `json:"remote_branch,omitempty"`
+}
+
+// PullResult defines model for PullResult.
+type PullResult struct {
+	// NewHead New HEAD commit hash after pull
+	NewHead string `json:"new_head"`
+	Success bool   `json:"success"`
+}
+
+// PushProjectRequest defines model for PushProjectRequest.
+type PushProjectRequest struct {
+	// Force Force push (not recommended)
+	Force *bool `json:"force,omitempty"`
+
+	// RemoteBranch Target branch name on the remote (e.g., "kf/main")
+	RemoteBranch string `json:"remote_branch"`
+}
+
+// PushResult defines model for PushResult.
+type PushResult struct {
+	LocalBranch  string `json:"local_branch"`
+	RemoteBranch string `json:"remote_branch"`
+	Success      bool   `json:"success"`
+}
+
 // QuotaAgentUsage defines model for QuotaAgentUsage.
 type QuotaAgentUsage struct {
 	AgentId             string `json:"agent_id"`
@@ -425,6 +483,18 @@ type SyncBoardResult struct {
 	Updated   int `json:"updated"`
 }
 
+// SyncStatusResponse defines model for SyncStatusResponse.
+type SyncStatusResponse struct {
+	Ahead       int                      `json:"ahead"`
+	Behind      int                      `json:"behind"`
+	LocalBranch string                   `json:"local_branch"`
+	RemoteUrl   *string                  `json:"remote_url,omitempty"`
+	Status      SyncStatusResponseStatus `json:"status"`
+}
+
+// SyncStatusResponseStatus defines model for SyncStatusResponse.Status.
+type SyncStatusResponseStatus string
+
 // TraceDetail defines model for TraceDetail.
 type TraceDetail struct {
 	Spans   []SpanInfo `json:"spans"`
@@ -502,6 +572,12 @@ type HeartbeatLockJSONRequestBody = LockHeartbeatRequest
 // AddProjectJSONRequestBody defines body for AddProject for application/json ContentType.
 type AddProjectJSONRequestBody = AddProjectRequest
 
+// PullProjectJSONRequestBody defines body for PullProject for application/json ContentType.
+type PullProjectJSONRequestBody = PullProjectRequest
+
+// PushProjectJSONRequestBody defines body for PushProject for application/json ContentType.
+type PushProjectJSONRequestBody = PushProjectRequest
+
 // UpdateSkillsJSONRequestBody defines body for UpdateSkills for application/json ContentType.
 type UpdateSkillsJSONRequestBody = SkillUpdateRequest
 
@@ -552,6 +628,15 @@ type ServerInterface interface {
 	// Remove a registered project
 	// (DELETE /api/projects/{slug})
 	RemoveProject(w http.ResponseWriter, r *http.Request, slug string, params RemoveProjectParams)
+	// Pull latest from upstream and fast-forward merge
+	// (POST /api/projects/{slug}/pull)
+	PullProject(w http.ResponseWriter, r *http.Request, slug string)
+	// Push local main to a remote branch
+	// (POST /api/projects/{slug}/push)
+	PushProject(w http.ResponseWriter, r *http.Request, slug string)
+	// Get ahead/behind sync status vs upstream
+	// (GET /api/projects/{slug}/sync-status)
+	GetSyncStatus(w http.ResponseWriter, r *http.Request, slug string)
 	// Get quota and cost usage
 	// (GET /api/quota)
 	GetQuota(w http.ResponseWriter, r *http.Request)
@@ -921,6 +1006,81 @@ func (siw *ServerInterfaceWrapper) RemoveProject(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// PullProject operation middleware
+func (siw *ServerInterfaceWrapper) PullProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PullProject(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PushProject operation middleware
+func (siw *ServerInterfaceWrapper) PushProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PushProject(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSyncStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetSyncStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSyncStatus(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetQuota operation middleware
 func (siw *ServerInterfaceWrapper) GetQuota(w http.ResponseWriter, r *http.Request) {
 
@@ -1227,6 +1387,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects", wrapper.ListProjects)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects", wrapper.AddProject)
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/projects/{slug}", wrapper.RemoveProject)
+	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/pull", wrapper.PullProject)
+	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/push", wrapper.PushProject)
+	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/sync-status", wrapper.GetSyncStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/api/quota", wrapper.GetQuota)
 	m.HandleFunc("GET "+options.BaseURL+"/api/skills", wrapper.GetSkillsStatus)
 	m.HandleFunc("POST "+options.BaseURL+"/api/skills/update", wrapper.UpdateSkills)
@@ -1721,6 +1884,131 @@ func (response RemoveProject500JSONResponse) VisitRemoveProjectResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PullProjectRequestObject struct {
+	Slug string `json:"slug"`
+	Body *PullProjectJSONRequestBody
+}
+
+type PullProjectResponseObject interface {
+	VisitPullProjectResponse(w http.ResponseWriter) error
+}
+
+type PullProject200JSONResponse PullResult
+
+func (response PullProject200JSONResponse) VisitPullProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PullProject404JSONResponse ErrorResponse
+
+func (response PullProject404JSONResponse) VisitPullProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PullProject409JSONResponse ErrorResponse
+
+func (response PullProject409JSONResponse) VisitPullProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PullProject500JSONResponse ErrorResponse
+
+func (response PullProject500JSONResponse) VisitPullProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PushProjectRequestObject struct {
+	Slug string `json:"slug"`
+	Body *PushProjectJSONRequestBody
+}
+
+type PushProjectResponseObject interface {
+	VisitPushProjectResponse(w http.ResponseWriter) error
+}
+
+type PushProject200JSONResponse PushResult
+
+func (response PushProject200JSONResponse) VisitPushProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PushProject400JSONResponse ErrorResponse
+
+func (response PushProject400JSONResponse) VisitPushProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PushProject404JSONResponse ErrorResponse
+
+func (response PushProject404JSONResponse) VisitPushProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PushProject500JSONResponse ErrorResponse
+
+func (response PushProject500JSONResponse) VisitPushProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSyncStatusRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetSyncStatusResponseObject interface {
+	VisitGetSyncStatusResponse(w http.ResponseWriter) error
+}
+
+type GetSyncStatus200JSONResponse SyncStatusResponse
+
+func (response GetSyncStatus200JSONResponse) VisitGetSyncStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSyncStatus404JSONResponse ErrorResponse
+
+func (response GetSyncStatus404JSONResponse) VisitGetSyncStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSyncStatus500JSONResponse ErrorResponse
+
+func (response GetSyncStatus500JSONResponse) VisitGetSyncStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetQuotaRequestObject struct {
 }
 
@@ -1981,6 +2269,15 @@ type StrictServerInterface interface {
 	// Remove a registered project
 	// (DELETE /api/projects/{slug})
 	RemoveProject(ctx context.Context, request RemoveProjectRequestObject) (RemoveProjectResponseObject, error)
+	// Pull latest from upstream and fast-forward merge
+	// (POST /api/projects/{slug}/pull)
+	PullProject(ctx context.Context, request PullProjectRequestObject) (PullProjectResponseObject, error)
+	// Push local main to a remote branch
+	// (POST /api/projects/{slug}/push)
+	PushProject(ctx context.Context, request PushProjectRequestObject) (PushProjectResponseObject, error)
+	// Get ahead/behind sync status vs upstream
+	// (GET /api/projects/{slug}/sync-status)
+	GetSyncStatus(ctx context.Context, request GetSyncStatusRequestObject) (GetSyncStatusResponseObject, error)
 	// Get quota and cost usage
 	// (GET /api/quota)
 	GetQuota(ctx context.Context, request GetQuotaRequestObject) (GetQuotaResponseObject, error)
@@ -2454,6 +2751,101 @@ func (sh *strictHandler) RemoveProject(w http.ResponseWriter, r *http.Request, s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemoveProjectResponseObject); ok {
 		if err := validResponse.VisitRemoveProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PullProject operation middleware
+func (sh *strictHandler) PullProject(w http.ResponseWriter, r *http.Request, slug string) {
+	var request PullProjectRequestObject
+
+	request.Slug = slug
+
+	var body PullProjectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PullProject(ctx, request.(PullProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PullProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PullProjectResponseObject); ok {
+		if err := validResponse.VisitPullProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PushProject operation middleware
+func (sh *strictHandler) PushProject(w http.ResponseWriter, r *http.Request, slug string) {
+	var request PushProjectRequestObject
+
+	request.Slug = slug
+
+	var body PushProjectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PushProject(ctx, request.(PushProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PushProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PushProjectResponseObject); ok {
+		if err := validResponse.VisitPushProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSyncStatus operation middleware
+func (sh *strictHandler) GetSyncStatus(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetSyncStatusRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSyncStatus(ctx, request.(GetSyncStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSyncStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSyncStatusResponseObject); ok {
+		if err := validResponse.VisitGetSyncStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

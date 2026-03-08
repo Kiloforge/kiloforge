@@ -15,6 +15,7 @@ import (
 	"kiloforge/internal/adapter/badge"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/dashboard"
+	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/jsonfile"
@@ -203,6 +204,7 @@ func (s *Server) Run(ctx context.Context) error {
 		LockMgr:    lockMgr,
 		Projects:   s._projects,
 		ProjectMgr: projectSvc,
+		GitSync:    gitadapter.New(),
 		TraceStore: s.traceStore,
 		BoardSvc:   s.boardSvc,
 		EventBus:   eventBus,

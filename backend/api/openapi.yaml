@@ -224,6 +224,126 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/projects/{slug}/push:
+    post:
+      operationId: pushProject
+      summary: Push local main to a remote branch
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushProjectRequest"
+      responses:
+        "200":
+          description: Push succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Push failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/projects/{slug}/pull:
+    post:
+      operationId: pullProject
+      summary: Pull latest from upstream and fast-forward merge
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PullProjectRequest"
+      responses:
+        "200":
+          description: Pull succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PullResult"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Branches have diverged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Pull failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/projects/{slug}/sync-status:
+    get:
+      operationId: getSyncStatus
+      summary: Get ahead/behind sync status vs upstream
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "200":
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncStatusResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Failed to get sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/ssh-keys:
     get:
       operationId: listSSHKeys
@@ -1165,3 +1285,60 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SkillDetail"
+
+    PushProjectRequest:
+      type: object
+      required: [remote_branch]
+      properties:
+        remote_branch:
+          type: string
+          description: Target branch name on the remote (e.g., "kf/main")
+        force:
+          type: boolean
+          default: false
+          description: Force push (not recommended)
+
+    PushResult:
+      type: object
+      required: [success, local_branch, remote_branch]
+      properties:
+        success:
+          type: boolean
+        local_branch:
+          type: string
+        remote_branch:
+          type: string
+
+    PullProjectRequest:
+      type: object
+      properties:
+        remote_branch:
+          type: string
+          default: "main"
+          description: Remote branch to pull from (defaults to "main")
+
+    PullResult:
+      type: object
+      required: [success, new_head]
+      properties:
+        success:
+          type: boolean
+        new_head:
+          type: string
+          description: New HEAD commit hash after pull
+
+    SyncStatusResponse:
+      type: object
+      required: [local_branch, ahead, behind, status]
+      properties:
+        local_branch:
+          type: string
+        remote_url:
+          type: string
+        ahead:
+          type: integer
+        behind:
+          type: integer
+        status:
+          type: string
+          enum: [synced, ahead, behind, diverged, unknown]
