@@ -5,20 +5,11 @@ import styles from "./AgentCard.module.css";
 
 interface Props {
   agent: Agent;
-  giteaURL: string;
   onViewLog: (agentId: string) => void;
 }
 
-export function AgentCard({ agent, giteaURL, onViewLog }: Props) {
-  const prMatch = agent.ref?.match(/^PR #(\d+)$/);
-  const refLink =
-    prMatch && giteaURL ? (
-      <a href={`${giteaURL}/-/pulls/${prMatch[1]}`} target="_blank" rel="noopener noreferrer">
-        {agent.ref}
-      </a>
-    ) : (
-      agent.ref || null
-    );
+export function AgentCard({ agent, onViewLog }: Props) {
+  const refLink = agent.ref || null;
 
   const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
   const cacheRead = agent.cache_read_tokens ?? 0;

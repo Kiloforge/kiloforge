@@ -98,7 +98,7 @@ export function OverviewPage({ agents, agentsLoading, quota, status, tracks, onV
         {agentsLoading ? (
           <p className={appStyles.empty}>Loading agents...</p>
         ) : (
-          <AgentGrid agents={agents} giteaURL={status?.gitea_url ?? ""} onViewLog={onViewLog} />
+          <AgentGrid agents={agents} onViewLog={onViewLog} />
         )}
       </section>
 

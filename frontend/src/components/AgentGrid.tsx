@@ -4,7 +4,6 @@ import styles from "./AgentGrid.module.css";
 
 interface Props {
   agents: Agent[];
-  giteaURL: string;
   onViewLog: (agentId: string) => void;
 }
 
@@ -28,7 +27,7 @@ function sortAgents(agents: Agent[]): Agent[] {
   });
 }
 
-export function AgentGrid({ agents, giteaURL, onViewLog }: Props) {
+export function AgentGrid({ agents, onViewLog }: Props) {
   if (agents.length === 0) {
     return <p className={styles.empty}>No agents running</p>;
   }
@@ -36,7 +35,7 @@ export function AgentGrid({ agents, giteaURL, onViewLog }: Props) {
   return (
     <div className={styles.grid}>
       {sortAgents(agents).map((agent) => (
-        <AgentCard key={agent.id} agent={agent} giteaURL={giteaURL} onViewLog={onViewLog} />
+        <AgentCard key={agent.id} agent={agent} onViewLog={onViewLog} />
       ))}
     </div>
   );

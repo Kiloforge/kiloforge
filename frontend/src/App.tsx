@@ -60,7 +60,7 @@ export default function App() {
         </div>
         <nav>
           {status?.gitea_url && (
-            <a href="/" target="_blank" rel="noopener noreferrer" className={styles.link}>
+            <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.link}>
               Gitea
             </a>
           )}
