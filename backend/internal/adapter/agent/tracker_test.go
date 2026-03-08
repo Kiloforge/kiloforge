@@ -77,12 +77,12 @@ func TestQuotaTracker_GetTotalUsage(t *testing.T) {
 	tracker.RecordEvent("agent-1", StreamEvent{
 		Type:    "result",
 		CostUSD: 0.05,
-		Usage:   &UsageData{InputTokens: 1000, OutputTokens: 500},
+		Usage:   &UsageData{InputTokens: 1000, OutputTokens: 500, CacheReadTokens: 200, CacheCreationTokens: 50},
 	})
 	tracker.RecordEvent("agent-2", StreamEvent{
 		Type:    "result",
 		CostUSD: 0.03,
-		Usage:   &UsageData{InputTokens: 800, OutputTokens: 300},
+		Usage:   &UsageData{InputTokens: 800, OutputTokens: 300, CacheReadTokens: 100, CacheCreationTokens: 25},
 	})
 
 	total := tracker.GetTotalUsage()
@@ -94,6 +94,12 @@ func TestQuotaTracker_GetTotalUsage(t *testing.T) {
 	}
 	if total.OutputTokens != 800 {
 		t.Errorf("OutputTokens: want 800, got %d", total.OutputTokens)
+	}
+	if total.CacheReadTokens != 300 {
+		t.Errorf("CacheReadTokens: want 300, got %d", total.CacheReadTokens)
+	}
+	if total.CacheCreationTokens != 75 {
+		t.Errorf("CacheCreationTokens: want 75, got %d", total.CacheCreationTokens)
 	}
 	if total.AgentCount != 2 {
 		t.Errorf("AgentCount: want 2, got %d", total.AgentCount)

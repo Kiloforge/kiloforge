@@ -44,9 +44,10 @@ func TestCheckQuota_RateLimited(t *testing.T) {
 	}
 }
 
-func TestCheckQuota_BudgetExceeded(t *testing.T) {
+func TestCheckQuota_BudgetIgnored(t *testing.T) {
 	t.Parallel()
 
+	// MaxSessionCostUSD is deprecated — budget should no longer block spawns.
 	tracker := NewQuotaTracker("")
 	tracker.RecordEvent("agent-1", StreamEvent{
 		Type:    "result",
@@ -59,29 +60,8 @@ func TestCheckQuota_BudgetExceeded(t *testing.T) {
 		tracker: tracker,
 	}
 
-	err := s.checkQuota()
-	if err == nil {
-		t.Fatal("expected error when budget exceeded")
-	}
-}
-
-func TestCheckQuota_UnderBudget(t *testing.T) {
-	t.Parallel()
-
-	tracker := NewQuotaTracker("")
-	tracker.RecordEvent("agent-1", StreamEvent{
-		Type:    "result",
-		CostUSD: 1.0,
-		Usage:   &UsageData{InputTokens: 10000},
-	})
-
-	s := &Spawner{
-		cfg:     &config.Config{MaxSessionCostUSD: 5.0},
-		tracker: tracker,
-	}
-
 	if err := s.checkQuota(); err != nil {
-		t.Errorf("should allow spawn under budget, got: %v", err)
+		t.Errorf("budget should be ignored (deprecated), got: %v", err)
 	}
 }
 
@@ -101,9 +81,10 @@ func TestSetTracer(t *testing.T) {
 	}
 }
 
-func TestCheckQuota_NoBudgetConfigured(t *testing.T) {
+func TestCheckQuota_HighCostAllowed(t *testing.T) {
 	t.Parallel()
 
+	// Budget enforcement is deprecated — high cost should not block spawns.
 	tracker := NewQuotaTracker("")
 	tracker.RecordEvent("agent-1", StreamEvent{
 		Type:    "result",
@@ -112,11 +93,11 @@ func TestCheckQuota_NoBudgetConfigured(t *testing.T) {
 	})
 
 	s := &Spawner{
-		cfg:     &config.Config{MaxSessionCostUSD: 0}, // no budget
+		cfg:     &config.Config{},
 		tracker: tracker,
 	}
 
 	if err := s.checkQuota(); err != nil {
-		t.Errorf("no budget limit should always allow spawn, got: %v", err)
+		t.Errorf("should always allow spawn (budget deprecated), got: %v", err)
 	}
 }

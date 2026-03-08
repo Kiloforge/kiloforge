@@ -270,14 +270,86 @@ func TestLockOperations(t *testing.T) {
 }
 
 func TestGetQuota(t *testing.T) {
-	h := newTestHandler(nil)
-	resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if _, ok := resp.(gen.GetQuota200JSONResponse); !ok {
-		t.Fatalf("expected 200, got %T", resp)
-	}
+	t.Run("nil quota", func(t *testing.T) {
+		h := NewAPIHandler(APIHandlerOpts{
+			Agents:   &stubAgentLister{},
+			LockMgr:  lock.New(""),
+			GiteaURL: "http://localhost:3000",
+		})
+		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r, ok := resp.(gen.GetQuota200JSONResponse)
+		if !ok {
+			t.Fatalf("expected 200, got %T", resp)
+		}
+		if r.EstimatedCostUsd != 0 {
+			t.Errorf("expected EstimatedCostUsd 0, got %f", r.EstimatedCostUsd)
+		}
+	})
+
+	t.Run("with usage", func(t *testing.T) {
+		quota := &stubQuotaReader{
+			total: agent.TotalUsage{
+				TotalCostUSD:        4.23,
+				InputTokens:         10000,
+				OutputTokens:        5000,
+				CacheReadTokens:     2000,
+				CacheCreationTokens: 500,
+				AgentCount:          2,
+			},
+			agentUsage: map[string]*agent.AgentUsage{
+				"a1": {
+					AgentID:             "a1",
+					TotalCostUSD:        2.50,
+					InputTokens:         6000,
+					OutputTokens:        3000,
+					CacheReadTokens:     1200,
+					CacheCreationTokens: 300,
+				},
+			},
+		}
+		h := NewAPIHandler(APIHandlerOpts{
+			Agents:   &stubAgentLister{agents: []domain.AgentInfo{{ID: "a1"}}},
+			Quota:    quota,
+			LockMgr:  lock.New(""),
+			GiteaURL: "http://localhost:3000",
+		})
+		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r, ok := resp.(gen.GetQuota200JSONResponse)
+		if !ok {
+			t.Fatalf("expected 200, got %T", resp)
+		}
+		if r.EstimatedCostUsd != 4.23 {
+			t.Errorf("EstimatedCostUsd: want 4.23, got %f", r.EstimatedCostUsd)
+		}
+		if r.InputTokens != 10000 {
+			t.Errorf("InputTokens: want 10000, got %d", r.InputTokens)
+		}
+		if r.CacheReadTokens != 2000 {
+			t.Errorf("CacheReadTokens: want 2000, got %d", r.CacheReadTokens)
+		}
+		if r.CacheCreationTokens != 500 {
+			t.Errorf("CacheCreationTokens: want 500, got %d", r.CacheCreationTokens)
+		}
+		if r.AgentCount != 2 {
+			t.Errorf("AgentCount: want 2, got %d", r.AgentCount)
+		}
+		if r.Agents == nil || len(*r.Agents) != 1 {
+			t.Fatal("expected 1 agent in breakdown")
+		}
+		au := (*r.Agents)[0]
+		if au.EstimatedCostUsd != 2.50 {
+			t.Errorf("agent EstimatedCostUsd: want 2.50, got %f", au.EstimatedCostUsd)
+		}
+		if au.CacheReadTokens != 1200 {
+			t.Errorf("agent CacheReadTokens: want 1200, got %d", au.CacheReadTokens)
+		}
+	})
 }
 
 func TestGetStatus(t *testing.T) {
