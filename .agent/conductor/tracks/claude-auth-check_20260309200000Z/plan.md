@@ -4,10 +4,10 @@
 
 ## Phase 1: Auth Check Implementation
 
-- [ ] Task 1.1: Create `backend/internal/adapter/prereq/auth.go` — `CheckClaudeAuth()` function with probe command, timeout, and stderr parsing
-- [ ] Task 1.2: Add `AuthError` type with `Message` and `Hint` fields, implement `error` interface
-- [ ] Task 1.3: Add process-level caching via `sync.Once` — `CheckClaudeAuthCached()` wrapper
-- [ ] Task 1.4: Write unit tests for `auth.go` — mock exec, test auth error detection, test timeout handling, test cache behavior
+- [x] Task 1.1: Create `backend/internal/adapter/prereq/auth.go` — `CheckClaudeAuth()` function with probe command, timeout, and stderr parsing
+- [x] Task 1.2: Add `AuthError` type with `Message` and `Hint` fields, implement `error` interface
+- [x] Task 1.3: Add process-level caching via `sync.Once` — `CheckClaudeAuthCached()` wrapper
+- [x] Task 1.4: Write unit tests for `auth.go` — mock exec, test auth error detection, test timeout handling, test cache behavior
 
 ## Phase 2: Spawner Integration
 
