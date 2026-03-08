@@ -81,6 +81,7 @@ Navigation hub for project context.
 - **ssh-key-selection_20260309100000Z** — Interactive SSH Key Selection for Add Command
 - **quota-reframe-be_20260309103000Z** — Reframe Quota System — Tokens and Rate Limits (Backend)
 - **quota-reframe-fe_20260309103001Z** — Reframe Quota System — Tokens and Rate Limits (Frontend)
+- **model-selection_20260309110000Z** — Configurable Model Selection with Opus Default
 
 ## Getting Started
 
