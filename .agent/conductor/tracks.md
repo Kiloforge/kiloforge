@@ -64,7 +64,7 @@
 | [x] | skill-preflight-check_20260309170000Z | Pre-flight Skill Validation Before Agent Spawning | 2026-03-09 | 2026-03-09 |
 | [ ] | fix-test-ci-pr-tracking_20260309173000Z | Fix CI Test Failure — PR Tracking Store References | 2026-03-09 | 2026-03-09 |
 | [ ] | admin-operations-ui_20260309173001Z | Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard | 2026-03-09 | 2026-03-09 |
-| [ ] | skill-ref-migration_20260309173002Z | Migrate All Skill References from conductor-* to kf-* | 2026-03-09 | 2026-03-09 |
+| [x] | skill-ref-migration_20260309173002Z | Migrate All Skill References from conductor-* to kf-* | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 

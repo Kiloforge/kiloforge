@@ -2,15 +2,15 @@
   "id": "skill-ref-migration_20260309173002Z",
   "title": "Migrate All Skill References from conductor-* to kf-*",
   "type": "chore",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T17:30:02Z",
-  "updated": "2026-03-09T17:30:02Z",
+  "updated": "2026-03-09T17:24:21Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }
