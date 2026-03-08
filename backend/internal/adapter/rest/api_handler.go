@@ -776,7 +776,7 @@ func lockToGen(l *lock.Lock) gen.LockInfo {
 
 // GetSkillsStatus implements gen.StrictServerInterface.
 func (h *APIHandler) GetSkillsStatus(_ context.Context, _ gen.GetSkillsStatusRequestObject) (gen.GetSkillsStatusResponseObject, error) {
-	if h.cfg == nil || h.cfg.SkillsRepo == "" {
+	if h.cfg == nil {
 		return gen.GetSkillsStatus200JSONResponse{
 			InstalledVersion: "",
 			UpdateAvailable:  false,
@@ -785,6 +785,28 @@ func (h *APIHandler) GetSkillsStatus(_ context.Context, _ gen.GetSkillsStatusReq
 	}
 
 	skillsDir := h.cfg.GetSkillsDir()
+
+	// When no repo is configured, report status of embedded skills.
+	if h.cfg.SkillsRepo == "" {
+		required := skills.AllRequiredSkills()
+		statuses := skills.CheckStatus(required, skillsDir, "")
+		embeddedLabel := "embedded"
+
+		resp := gen.SkillsStatus{
+			InstalledVersion: embeddedLabel,
+			UpdateAvailable:  false,
+			Repo:             &embeddedLabel,
+			Skills:           make([]gen.SkillDetail, 0, len(statuses)),
+		}
+		for _, s := range statuses {
+			resp.Skills = append(resp.Skills, gen.SkillDetail{
+				Name:     s.Name,
+				Modified: !s.Current && s.Installed,
+			})
+		}
+		return gen.GetSkillsStatus200JSONResponse(resp), nil
+	}
+
 	manifest, _ := skills.LoadManifest()
 	installed := skills.ListInstalled(skillsDir, manifest)
 
@@ -818,12 +840,26 @@ func (h *APIHandler) GetSkillsStatus(_ context.Context, _ gen.GetSkillsStatusReq
 
 // UpdateSkills implements gen.StrictServerInterface.
 func (h *APIHandler) UpdateSkills(_ context.Context, req gen.UpdateSkillsRequestObject) (gen.UpdateSkillsResponseObject, error) {
-	if h.cfg == nil || h.cfg.SkillsRepo == "" {
-		return gen.UpdateSkills400JSONResponse{Error: "no skills repo configured"}, nil
+	if h.cfg == nil {
+		return gen.UpdateSkills400JSONResponse{Error: "not initialized"}, nil
+	}
+
+	skillsDir := h.cfg.GetSkillsDir()
+
+	// When no repo is configured, re-extract from embedded assets.
+	if h.cfg.SkillsRepo == "" {
+		installed, err := skills.InstallAllEmbedded(skillsDir)
+		if err != nil {
+			return gen.UpdateSkills500JSONResponse{Error: fmt.Sprintf("install embedded: %v", err)}, nil
+		}
+		return gen.UpdateSkills200JSONResponse{
+			Version:        "embedded",
+			InstalledCount: len(installed),
+			Skills:         &installed,
+		}, nil
 	}
 
 	force := req.Body != nil && req.Body.Force != nil && *req.Body.Force
-	skillsDir := h.cfg.GetSkillsDir()
 
 	// Check latest release.
 	gh := skills.NewGitHubClient()
