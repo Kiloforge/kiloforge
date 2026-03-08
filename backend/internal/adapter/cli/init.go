@@ -67,7 +67,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("resolve config: %w", err)
 	}
 
-	// Resolve admin password: flag > saved config > generate random.
+	// Password lifecycle: generate → use in Configure() → display to user → discard.
+	// json_adapter.Save() strips the password from config.json using a copy.
+	// The password lives only in cfg.GiteaAdminPass for the duration of this function.
 	if cfg.GiteaAdminPass == "" {
 		cfg.GiteaAdminPass = auth.GeneratePassword(20)
 		fmt.Printf("==> Generated admin password\n")
