@@ -110,6 +110,31 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return runDryRun(db, proj, trackID)
 	}
 
+	// Check agent permissions consent.
+	consentStore := sqlite.NewConsentStore(db)
+	if !consentStore.HasAgentPermissionsConsent() {
+		fmt.Println()
+		fmt.Println("WARNING: Kiloforge agents run with --dangerously-skip-permissions.")
+		fmt.Println("This grants agents unrestricted access to tools (file read/write,")
+		fmt.Println("shell commands, etc.) within their worktree directory.")
+		fmt.Println()
+		fmt.Println("This is required for non-interactive agent operation.")
+		fmt.Print("\nDo you accept? [y/N] ")
+
+		answer, ok := readLineCtx(ctx)
+		if !ok {
+			return fmt.Errorf("aborted")
+		}
+		if answer != "y" && answer != "Y" && answer != "yes" {
+			return fmt.Errorf("agent spawning aborted — permissions not accepted")
+		}
+		if err := consentStore.RecordAgentPermissionsConsent(); err != nil {
+			return fmt.Errorf("save consent: %w", err)
+		}
+		fmt.Println("Consent recorded.")
+		fmt.Println()
+	}
+
 	// Initialize tracing for track lifecycle.
 	tracer, tracingShutdown := initTracing(ctx, cfg)
 	if tracingShutdown != nil {
