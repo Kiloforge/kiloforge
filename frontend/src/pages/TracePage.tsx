@@ -77,7 +77,26 @@ export function TracePage() {
                   {Object.entries(selected.attributes).map(([k, v]) => (
                     <tr key={k}>
                       <td style={{ color: "#4caf50", paddingRight: 12 }}>{k}</td>
-                      <td style={{ color: "#ccc" }}>{v}</td>
+                      <td style={{ color: "#ccc" }}>
+                        {k === "session.id" ? (
+                          <Link
+                            to={`/-/dashboard`}
+                            title={`Session: ${v}`}
+                            style={{ color: "#64b5f6", textDecoration: "none" }}
+                          >
+                            {v}
+                          </Link>
+                        ) : k === "track.id" ? (
+                          <span
+                            style={{ color: "#4caf50", cursor: "default" }}
+                            title={`Track: ${v}`}
+                          >
+                            {v}
+                          </span>
+                        ) : (
+                          v
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

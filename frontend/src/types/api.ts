@@ -125,6 +125,7 @@ export interface BoardCard {
   agent_status?: string;
   assigned_worker?: string;
   pr_number?: number;
+  trace_id?: string;
   moved_at: string;
   created_at: string;
 }

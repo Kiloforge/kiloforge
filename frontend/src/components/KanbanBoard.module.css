@@ -134,3 +134,14 @@
   font-size: 10px;
   color: var(--yellow);
 }
+
+.cardTrace {
+  font-size: 10px;
+  color: var(--green);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cardTrace:hover {
+  text-decoration: underline;
+}

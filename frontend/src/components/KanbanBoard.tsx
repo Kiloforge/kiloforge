@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { BoardState, BoardCard } from "../types/api";
 import styles from "./KanbanBoard.module.css";
 
@@ -127,6 +128,15 @@ function CardItem({ card, isDragging, onDragStart, onDragEnd }: CardItemProps) {
         <span className={styles.cardId}>{card.track_id}</span>
         {card.agent_status && (
           <span className={styles.cardAgent}>{card.agent_status}</span>
+        )}
+        {card.trace_id && (
+          <Link
+            to={`/traces/${card.trace_id}`}
+            className={styles.cardTrace}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Trace
+          </Link>
         )}
       </div>
     </div>

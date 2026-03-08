@@ -19,6 +19,7 @@ export function TraceList({ traces }: Props) {
       <thead>
         <tr style={{ color: "#888", textAlign: "left", borderBottom: "1px solid #333" }}>
           <th style={{ padding: "6px 8px" }}>Root Span</th>
+          <th style={{ padding: "6px 8px" }}>Track</th>
           <th style={{ padding: "6px 8px" }}>Spans</th>
           <th style={{ padding: "6px 8px" }}>Duration</th>
           <th style={{ padding: "6px 8px" }}>Started</th>
@@ -28,6 +29,9 @@ export function TraceList({ traces }: Props) {
         {traces.map((t) => {
           const duration =
             new Date(t.end_time).getTime() - new Date(t.start_time).getTime();
+          const trackId = t.root_name?.startsWith("track/")
+            ? t.root_name.slice(6)
+            : null;
           return (
             <tr key={t.trace_id} style={{ borderBottom: "1px solid #222" }}>
               <td style={{ padding: "6px 8px" }}>
@@ -37,6 +41,9 @@ export function TraceList({ traces }: Props) {
                 >
                   {t.root_name || t.trace_id.slice(0, 12)}
                 </Link>
+              </td>
+              <td style={{ padding: "6px 8px", color: "#888", fontSize: 11 }}>
+                {trackId || "\u2014"}
               </td>
               <td style={{ padding: "6px 8px", color: "#888" }}>{t.span_count}</td>
               <td style={{ padding: "6px 8px", color: "#888" }}>{duration}ms</td>
