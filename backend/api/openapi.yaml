@@ -153,6 +153,76 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Project"
+    post:
+      operationId: addProject
+      summary: Register a new project from a remote URL
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddProjectRequest"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: Invalid request (bad URL format)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Project already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/projects/{slug}:
+    delete:
+      operationId: removeProject
+      summary: Remove a registered project
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+        - name: cleanup
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, also delete Gitea repo and filesystem data
+      responses:
+        "204":
+          description: Project removed
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /-/api/tracks:
     get:
@@ -646,6 +716,17 @@ components:
           type: integer
         output_tokens:
           type: integer
+
+    AddProjectRequest:
+      type: object
+      required: [remote_url]
+      properties:
+        remote_url:
+          type: string
+          description: Git remote URL (SSH or HTTPS)
+        name:
+          type: string
+          description: Override project slug (defaults to repo name from URL)
 
     Project:
       type: object
