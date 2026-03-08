@@ -2,15 +2,15 @@
   "id": "fix-board-sync-ux-fe_20260310012001Z",
   "title": "Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)",
   "type": "bug",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T01:20:01Z",
   "updated": "2026-03-10T01:20:01Z",
   "phases": {
     "total": 3,
-    "completed": 0
+    "completed": 3
   },
   "tasks": {
     "total": 11,
-    "completed": 0
+    "completed": 11
   }
 }
