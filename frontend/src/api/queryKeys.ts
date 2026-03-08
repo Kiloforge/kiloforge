@@ -14,4 +14,5 @@ export const queryKeys = {
   sshKeys: ["sshKeys"] as const,
   tour: ["tour"] as const,
   tourDemoBoard: ["tour", "demo-board"] as const,
+  setupStatus: (slug: string) => ["setupStatus", slug] as const,
 };

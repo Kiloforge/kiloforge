@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
 import { useBoard } from "../hooks/useBoard";
@@ -14,8 +14,10 @@ import { AgentTerminal } from "../components/AgentTerminal";
 import { AdminPanel } from "../components/AdminPanel";
 import { ConsentDialog } from "../components/ConsentDialog";
 import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
+import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
 import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
+import { useSetupPrompt } from "../hooks/useSetupPrompt";
 import { useTourContextSafe } from "../components/tour/TourProvider";
 import { TOUR_STEPS } from "../components/tour/tourSteps";
 import appStyles from "../App.module.css";
@@ -34,9 +36,26 @@ export function ProjectPage() {
   const [prompt, setPrompt] = useState("");
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
+  const { data: setupStatus } = useQuery({
+    queryKey: queryKeys.setupStatus(slug ?? ""),
+    queryFn: () =>
+      fetcher<{ setup_complete: boolean; project_slug: string }>(
+        `/api/projects/${encodeURIComponent(slug!)}/setup-status`,
+      ),
+    enabled: !!slug,
+  });
+
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
+  const setupPrompt = useSetupPrompt();
   const tour = useTourContextSafe();
+
+  const handleSetupComplete = useCallback(() => {
+    if (slug) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
+    }
+    setupPrompt.handleSetupComplete();
+  }, [slug, queryClient, setupPrompt]);
 
   // Tour: auto-show prompt and prefill when on generate-tracks step
   const tourStep = tour?.isActive ? TOUR_STEPS[tour.currentStep] : null;
@@ -72,6 +91,8 @@ export function ProjectPage() {
         consent.requestConsent(() => handleGenerateTracks());
       } else if (err instanceof FetchError && err.status === 412) {
         skillsPrompt.requestInstall(() => handleGenerateTracks());
+      } else if (err instanceof FetchError && err.status === 428 && slug) {
+        setupPrompt.requestSetup(slug, () => handleGenerateTracks());
       }
     },
   });
@@ -142,6 +163,23 @@ export function ProjectPage() {
             </div>
           </div>
         </section>
+      )}
+
+      {setupStatus && !setupStatus.setup_complete && slug && (
+        <div className={styles.setupBanner}>
+          <span className={styles.setupBannerText}>
+            Kiloforge setup required — run setup to configure this project for track management.
+          </span>
+          <button
+            className={styles.setupBannerBtn}
+            onClick={() => setupPrompt.requestSetup(slug, () => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
+            })}
+            disabled={setupPrompt.starting}
+          >
+            Run Setup
+          </button>
+        </div>
       )}
 
       {project?.origin_remote && (
@@ -233,6 +271,17 @@ export function ProjectPage() {
           error={skillsPrompt.error}
           onInstall={skillsPrompt.install}
           onCancel={skillsPrompt.cancel}
+        />
+      )}
+      {setupPrompt.showDialog && (
+        <SetupRequiredDialog
+          projectSlug={setupPrompt.projectSlug}
+          agentId={setupPrompt.agentId}
+          starting={setupPrompt.starting}
+          error={setupPrompt.error}
+          onRunSetup={setupPrompt.startSetup}
+          onSetupComplete={handleSetupComplete}
+          onCancel={setupPrompt.cancel}
         />
       )}
 

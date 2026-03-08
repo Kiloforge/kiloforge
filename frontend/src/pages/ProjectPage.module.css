@@ -133,3 +133,37 @@
   color: var(--text);
   border-color: var(--text-dim);
 }
+
+.setupBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(229, 168, 75, 0.08);
+  border: 1px solid rgba(229, 168, 75, 0.25);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.setupBannerText {
+  font-size: 13px;
+  color: var(--amber, #e5a84b);
+  line-height: 1.4;
+}
+
+.setupBannerBtn {
+  background: var(--amber, #e5a84b);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.setupBannerBtn:hover {
+  opacity: 0.9;
+}
