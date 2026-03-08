@@ -15,6 +15,7 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/core/domain"
 )
@@ -39,10 +40,13 @@ func startTestServer(t *testing.T) *testServer {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	store, _ := jsonfile.LoadAgentStore(dir)
-	if store == nil {
-		store = &jsonfile.AgentStore{}
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
 	}
+	t.Cleanup(func() { db.Close() })
+	store := &jsonfile.AgentStore{}
+	prTracker := sqlite.NewPRTrackingStore(db)
 
 	// Find a random available port.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -70,7 +74,7 @@ func startTestServer(t *testing.T) *testServer {
 	gen.HandlerFromMux(strictHandler, mux)
 
 	// Webhook route.
-	srv := NewServer(cfg, reg, port)
+	srv := NewServer(cfg, reg, store, prTracker, port)
 	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	// Badge routes.

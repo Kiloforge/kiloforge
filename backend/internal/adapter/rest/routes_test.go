@@ -11,6 +11,7 @@ import (
 	"kiloforge/internal/adapter/dashboard"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/core/domain"
 )
@@ -65,7 +66,12 @@ func TestRouteRegistration(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 0)
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 0)
 
 	mux := buildMux(t, srv, nil)
 
@@ -109,7 +115,12 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 0)
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 0)
 	dash := dashboard.New(0, &stubAgentLister{}, nil, "http://localhost:3000", &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)
@@ -139,7 +150,12 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 0)
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 0)
 	dash := dashboard.New(0, &stubAgentLister{}, nil, "http://localhost:3000", &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)

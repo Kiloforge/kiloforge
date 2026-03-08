@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/core/domain"
@@ -27,7 +27,11 @@ func newTestServer() *Server {
 
 func newTestServerWithDir(dataDir string) *Server {
 	if dataDir == "" {
-		dataDir = "/tmp/kf-test-" + fmt.Sprintf("%d", os.Getpid())
+		var err error
+		dataDir, err = os.MkdirTemp("", "kf-test-data-*")
+		if err != nil {
+			panic(fmt.Sprintf("create test data dir: %v", err))
+		}
 	}
 
 	// Install embedded skills for validation to pass.
@@ -52,7 +56,11 @@ func newTestServerWithDir(dataDir string) *Server {
 		},
 	}
 	store := &jsonfile.AgentStore{}
-	prTracker := jsonfile.NewPRTrackingStoreAdapter(dataDir)
+	db, err := sqlite.Open(dataDir)
+	if err != nil {
+		panic(fmt.Sprintf("open test db: %v", err))
+	}
+	prTracker := sqlite.NewPRTrackingStore(db)
 	return NewServer(cfg, reg, store, prTracker, 3001)
 }
 
@@ -93,7 +101,11 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 		},
 	}
 	store := &jsonfile.AgentStore{}
-	prTracker := jsonfile.NewPRTrackingStoreAdapter(dataDir)
+	db, err := sqlite.Open(dataDir)
+	if err != nil {
+		panic(fmt.Sprintf("open test db: %v", err))
+	}
+	prTracker := sqlite.NewPRTrackingStore(db)
 	var client *gitea.Client
 	if giteaSrv != nil {
 		client = gitea.NewClientWithToken(giteaSrv.URL, "kiloforger", "test-token")
@@ -345,8 +357,7 @@ func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
 	}
 
 	// Verify tracking record created.
-	projectDir := filepath.Join(dir, "projects", "myapp")
-	tracking, err := jsonfile.LoadPRTracking(projectDir)
+	tracking, err := srv.prTracker.LoadPRTracking("myapp")
 	if err != nil {
 		t.Fatalf("LoadPRTracking: %v", err)
 	}
@@ -393,8 +404,6 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	})
 
 	// Create PR tracking.
-	projectDir := filepath.Join(dir, "projects", "myapp")
-	os.MkdirAll(projectDir, 0o755)
 	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
@@ -404,7 +413,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	jsonfile.SavePRTracking(tracking, projectDir)
+	srv.prTracker.SavePRTracking("myapp", tracking)
 
 	// Send approved review.
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
@@ -437,7 +446,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	}
 
 	// Tracking should be merged.
-	updated, _ := jsonfile.LoadPRTracking(projectDir)
+	updated, _ := srv.prTracker.LoadPRTracking("myapp")
 	if updated.Status != "merged" {
 		t.Errorf("status: want %q, got %q", "merged", updated.Status)
 	}
@@ -464,8 +473,6 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 		SessionID: "dev-session-456",
 	})
 
-	projectDir := filepath.Join(dir, "projects", "myapp")
-	os.MkdirAll(projectDir, 0o755)
 	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
@@ -475,7 +482,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	jsonfile.SavePRTracking(tracking, projectDir)
+	srv.prTracker.SavePRTracking("myapp", tracking)
 
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
 		"action":     "submitted",
@@ -494,7 +501,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 		t.Fatalf("expected 1 resume, got %d", len(spawner.resumeCalls))
 	}
 
-	updated, _ := jsonfile.LoadPRTracking(projectDir)
+	updated, _ := srv.prTracker.LoadPRTracking("myapp")
 	if updated.ReviewCycleCount != 1 {
 		t.Errorf("ReviewCycleCount: want 1, got %d", updated.ReviewCycleCount)
 	}
@@ -528,8 +535,6 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 		SessionID: "dev-session-456",
 	})
 
-	projectDir := filepath.Join(dir, "projects", "myapp")
-	os.MkdirAll(projectDir, 0o755)
 	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
@@ -540,7 +545,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "in-review",
 	}
-	jsonfile.SavePRTracking(tracking, projectDir)
+	srv.prTracker.SavePRTracking("myapp", tracking)
 
 	postWebhook(t, srv, "pull_request_review", map[string]any{
 		"action":     "submitted",
@@ -562,7 +567,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 	}
 
 	// Tracking should be escalated.
-	updated, _ := jsonfile.LoadPRTracking(projectDir)
+	updated, _ := srv.prTracker.LoadPRTracking("myapp")
 	if updated.Status != "escalated" {
 		t.Errorf("status: want %q, got %q", "escalated", updated.Status)
 	}
@@ -583,8 +588,6 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 		SessionID: "dev-session-456",
 	})
 
-	projectDir := filepath.Join(dir, "projects", "myapp")
-	os.MkdirAll(projectDir, 0o755)
 	tracking := &domain.PRTracking{
 		PRNumber:         5,
 		TrackID:          "my-track",
@@ -594,7 +597,7 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 		MaxReviewCycles:  3,
 		Status:           "changes-requested",
 	}
-	jsonfile.SavePRTracking(tracking, projectDir)
+	srv.prTracker.SavePRTracking("myapp", tracking)
 
 	postWebhook(t, srv, "pull_request", map[string]any{
 		"action":     "synchronize",
@@ -736,7 +739,12 @@ func TestNewServer_WithDashboard(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 3001, WithDashboard(nil, nil, "http://localhost:3000", &stubProjectLister{}))
 
 	if srv.dashboard == nil {
 		t.Fatal("expected dashboard to be set")
@@ -773,7 +781,12 @@ func TestNewServer_WithGiteaProxy(t *testing.T) {
 		Version:  1,
 		Projects: map[string]domain.Project{},
 	}
-	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, jsonfile.NewPRTrackingStoreAdapter(dir), 3001, WithGiteaProxy(backend.URL, "admin"))
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	srv := NewServer(cfg, reg, &jsonfile.AgentStore{}, sqlite.NewPRTrackingStore(db), 3001, WithGiteaProxy(backend.URL, "admin"))
 
 	if srv.giteaProxy == nil {
 		t.Fatal("expected giteaProxy to be set")
