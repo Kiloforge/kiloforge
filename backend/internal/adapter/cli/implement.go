@@ -35,11 +35,13 @@ Use --list to see available tracks for the resolved project.`,
 var (
 	flagImplementList    bool
 	flagImplementProject string
+	flagImplementDryRun  bool
 )
 
 func init() {
 	implementCmd.Flags().BoolVar(&flagImplementList, "list", false, "List available tracks")
 	implementCmd.Flags().StringVar(&flagImplementProject, "project", "", "Project slug (auto-detect from cwd if not set)")
+	implementCmd.Flags().BoolVar(&flagImplementDryRun, "dry-run", false, "Skip agent spawn; move board card to Done and mark track complete")
 }
 
 func runImplement(cmd *cobra.Command, args []string) error {
@@ -94,6 +96,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 	if found.Status == service.StatusInProgress {
 		return fmt.Errorf("track %q is already in progress", trackID)
+	}
+
+	// Dry-run mode: skip agent spawn, move board card to Done.
+	if flagImplementDryRun {
+		return runDryRun(cfg, proj, trackID)
 	}
 
 	// Initialize tracing for track lifecycle.
@@ -270,6 +277,24 @@ func resolveProject(reg *jsonfile.ProjectStore, slug string) (domain.Project, er
 		return domain.Project{}, fmt.Errorf("no project registered for %s — use 'kf add' or --project flag", cwd)
 	}
 	return proj, nil
+}
+
+func runDryRun(cfg *config.Config, proj domain.Project, trackID string) error {
+	fmt.Printf("Dry run: skipping agent spawn for track %q\n\n", trackID)
+
+	// Move board card to Done.
+	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	nativeBoardSvc := service.NewNativeBoardService(boardStore)
+	if result, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnDone); err == nil {
+		fmt.Printf("  Board:     %s → %s\n", result.FromColumn, result.ToColumn)
+	} else {
+		fmt.Printf("  Board:     (not on board: %v)\n", err)
+	}
+
+	fmt.Printf("  Worktree:  not acquired (dry run)\n")
+	fmt.Printf("  Agent:     not spawned (dry run)\n\n")
+	fmt.Printf("Done. Track %q marked complete via dry-run.\n", trackID)
+	return nil
 }
 
 func listTracks(proj domain.Project) error {
