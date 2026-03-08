@@ -1,9 +1,12 @@
 import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
 import { useBoard } from "../hooks/useBoard";
 import { useOriginSync } from "../hooks/useOriginSync";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher, FetchError } from "../api/fetcher";
 import { TrackList } from "../components/TrackList";
 import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
@@ -22,9 +25,9 @@ export function ProjectPage() {
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
 
+  const queryClient = useQueryClient();
   const [showPrompt, setShowPrompt] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [generating, setGenerating] = useState(false);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
   const consent = useConsent();
@@ -37,47 +40,58 @@ export function ProjectPage() {
     pull(remoteBranch);
   }, [pull]);
 
-  const handleGenerateTracks = useCallback(async () => {
-    if (!prompt.trim() || !slug) return;
-    setGenerating(true);
-    try {
-      const resp = await fetch("/api/tracks/generate", {
+  const generateMutation = useMutation({
+    mutationFn: (p: string) =>
+      fetcher<{ agent_id: string; ws_url: string }>("/api/tracks/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim(), project: slug }),
-      });
-      if (resp.status === 403) {
+        body: JSON.stringify({ prompt: p, project: slug }),
+      }),
+    onSuccess: (data) => {
+      setTerminalAgentId(data.agent_id);
+      setShowPrompt(false);
+      setPrompt("");
+    },
+    onError: (err) => {
+      if (err instanceof FetchError && err.status === 403) {
         consent.requestConsent(() => handleGenerateTracks());
-        return;
       }
-      if (resp.ok) {
-        const data = await resp.json() as { agent_id: string; ws_url: string };
-        setTerminalAgentId(data.agent_id);
-        setShowPrompt(false);
-        setPrompt("");
-      }
-    } finally {
-      setGenerating(false);
-    }
-  }, [prompt, slug, consent]);
+    },
+  });
 
-  const handleDeleteTrack = useCallback(async (trackId: string) => {
-    if (!slug) return;
-    await fetch(`/api/tracks/${encodeURIComponent(trackId)}?project=${encodeURIComponent(slug)}`, {
-      method: "DELETE",
-    });
-    refreshBoard();
-  }, [slug, refreshBoard]);
+  const handleGenerateTracks = useCallback(() => {
+    if (!prompt.trim() || !slug) return;
+    generateMutation.mutate(prompt.trim());
+  }, [prompt, slug, generateMutation, consent]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (trackId: string) =>
+      fetcher<void>(
+        `/api/tracks/${encodeURIComponent(trackId)}?project=${encodeURIComponent(slug!)}`,
+        { method: "DELETE" },
+      ),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+    },
+  });
+
+  const handleDeleteTrack = useCallback(
+    (trackId: string) => {
+      if (!slug) return;
+      deleteMutation.mutate(trackId);
+    },
+    [slug, deleteMutation],
+  );
 
   const handleTerminalClose = useCallback(() => {
     setTerminalAgentId(null);
-    refreshBoard();
-  }, [refreshBoard]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+  }, [queryClient, slug]);
 
   const handleAdminTerminalClose = useCallback(() => {
     setAdminAgentId(null);
-    refreshBoard();
-  }, [refreshBoard]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+  }, [queryClient, slug]);
 
   return (
     <>
@@ -157,10 +171,10 @@ export function ProjectPage() {
             <div className={styles.promptActions}>
               <button
                 className={styles.promptSubmit}
-                disabled={!prompt.trim() || generating}
+                disabled={!prompt.trim() || generateMutation.isPending}
                 onClick={handleGenerateTracks}
               >
-                {generating ? "Starting..." : "Generate"}
+                {generateMutation.isPending ? "Starting..." : "Generate"}
               </button>
               <button className={styles.promptCancel} onClick={() => { setShowPrompt(false); setPrompt(""); }}>
                 Cancel

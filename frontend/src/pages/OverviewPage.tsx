@@ -1,7 +1,10 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import type { Agent, QuotaResponse, Track, Project, SyncStatus } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 import { StatCards } from "../components/StatCards";
 import { AgentGrid } from "../components/AgentGrid";
 import { TrackList } from "../components/TrackList";
@@ -36,14 +39,10 @@ function trackCountsByStatus(tracks: Track[], slug: string) {
 }
 
 function SyncBadge({ slug }: { slug: string }) {
-  const [status, setStatus] = useState<SyncStatus | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/projects/${encodeURIComponent(slug)}/sync-status`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: SyncStatus | null) => setStatus(data))
-      .catch(() => {});
-  }, [slug]);
+  const { data: status = null } = useQuery({
+    queryKey: queryKeys.syncStatus(slug),
+    queryFn: () => fetcher<SyncStatus>(`/api/projects/${encodeURIComponent(slug)}/sync-status`).catch(() => null),
+  });
 
   if (!status) return <span className={styles.syncBadge} title="Sync unknown">&#x2500;</span>;
 

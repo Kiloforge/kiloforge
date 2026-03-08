@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { BoardState, SSEEventData } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 
 interface UseBoardResult {
   board: BoardState | null;
@@ -10,62 +13,54 @@ interface UseBoardResult {
 }
 
 export function useBoard(project?: string): UseBoardResult {
-  const [board, setBoard] = useState<BoardState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const key = queryKeys.board(project ?? "");
 
-  const fetchBoard = useCallback(() => {
-    if (!project) {
-      setLoading(false);
-      return;
-    }
-    fetch(`/api/board/${encodeURIComponent(project)}`)
-      .then((r) => r.json())
-      .then((data: BoardState) => {
-        setBoard(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [project]);
+  const { data: board = null, isLoading, refetch } = useQuery({
+    queryKey: key,
+    queryFn: () => fetcher<BoardState>(`/api/board/${encodeURIComponent(project!)}`),
+    enabled: !!project,
+    refetchInterval: 300_000,
+  });
 
-  useEffect(() => {
-    fetchBoard();
-    // Long-interval background sync as drift protection.
-    const interval = setInterval(fetchBoard, 300000);
-    return () => clearInterval(interval);
-  }, [fetchBoard]);
+  const handleBoardUpdate = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      const data = event.data as Record<string, unknown>;
+      if (data && "columns" in data && "cards" in data) {
+        queryClient.setQueryData<BoardState>(key, data as unknown as BoardState);
+        return;
+      }
+      if (data && "track_id" in data && "to_column" in data) {
+        queryClient.setQueryData<BoardState>(key, (prev) => {
+          if (!prev) return prev;
+          const trackId = data.track_id as string;
+          const card = prev.cards[trackId];
+          if (!card) return prev;
+          return {
+            ...prev,
+            cards: {
+              ...prev.cards,
+              [trackId]: { ...card, column: data.to_column as string },
+            },
+          };
+        });
+      }
+    },
+    [queryClient, key],
+  );
 
-  const handleBoardUpdate = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    const data = event.data as Record<string, unknown>;
-    // If the event contains full board state (columns + cards), replace entirely.
-    if (data && "columns" in data && "cards" in data) {
-      setBoard(data as unknown as BoardState);
-      return;
-    }
-    // If the event is a card move (track_id, from_column, to_column), update in place.
-    if (data && "track_id" in data && "to_column" in data) {
-      setBoard((prev) => {
-        if (!prev) return prev;
-        const trackId = data.track_id as string;
-        const card = prev.cards[trackId];
-        if (!card) return prev;
-        return {
-          ...prev,
-          cards: {
-            ...prev.cards,
-            [trackId]: { ...card, column: data.to_column as string },
-          },
-        };
-      });
-    }
-  }, []);
-
-  const moveCard = useCallback(
-    async (trackId: string, toColumn: string) => {
-      if (!project) return;
-
-      // Optimistic update.
-      setBoard((prev) => {
+  const moveMutation = useMutation({
+    mutationFn: ({ trackId, toColumn }: { trackId: string; toColumn: string }) =>
+      fetcher<void>(`/api/board/${encodeURIComponent(project!)}/move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ track_id: trackId, to_column: toColumn }),
+      }),
+    onMutate: async ({ trackId, toColumn }) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<BoardState>(key);
+      queryClient.setQueryData<BoardState>(key, (prev) => {
         if (!prev) return prev;
         const card = prev.cards[trackId];
         if (!card || card.column === toColumn) return prev;
@@ -77,25 +72,28 @@ export function useBoard(project?: string): UseBoardResult {
           },
         };
       });
-
-      try {
-        const resp = await fetch(
-          `/api/board/${encodeURIComponent(project)}/move`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ track_id: trackId, to_column: toColumn }),
-          },
-        );
-        if (!resp.ok) {
-          fetchBoard(); // Revert on error.
-        }
-      } catch {
-        fetchBoard(); // Revert on error.
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<BoardState>(key, context.previous);
       }
     },
-    [project, fetchBoard],
-  );
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: key });
+    },
+  });
 
-  return { board, loading, moveCard, refresh: fetchBoard, handleBoardUpdate };
+  const moveCard = async (trackId: string, toColumn: string) => {
+    if (!project) return;
+    await moveMutation.mutateAsync({ trackId, toColumn });
+  };
+
+  return {
+    board,
+    loading: isLoading,
+    moveCard,
+    refresh: () => { refetch(); },
+    handleBoardUpdate,
+  };
 }

@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useConsent } from "../hooks/useConsent";
+import { fetcher, FetchError } from "../api/fetcher";
 import { ConsentDialog } from "./ConsentDialog";
 import styles from "./AdminPanel.module.css";
 
@@ -19,40 +21,41 @@ const operations: { key: AdminOperation; label: string }[] = [
 
 export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
   const [error, setError] = useState<string | null>(null);
-  const [starting, setStarting] = useState<AdminOperation | null>(null);
   const consent = useConsent();
 
-  const handleRun = useCallback(
-    async (op: AdminOperation) => {
-      setError(null);
-      setStarting(op);
-      try {
-        const resp = await fetch("/api/admin/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            operation: op,
-            ...(projectSlug ? { project: projectSlug } : {}),
-          }),
-        });
-        if (resp.status === 403) {
-          consent.requestConsent(() => handleRun(op));
-          return;
-        }
-        if (!resp.ok) {
-          const data = (await resp.json()) as { error?: string };
-          setError(data.error ?? `Failed (${resp.status})`);
-          return;
-        }
-        const data = (await resp.json()) as { agent_id: string; ws_url: string };
-        onStartOperation(data.agent_id);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Request failed");
-      } finally {
-        setStarting(null);
+  const mutation = useMutation({
+    mutationFn: (op: AdminOperation) =>
+      fetcher<{ agent_id: string; ws_url: string }>("/api/admin/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          operation: op,
+          ...(projectSlug ? { project: projectSlug } : {}),
+        }),
+      }),
+    onSuccess: (data) => {
+      onStartOperation(data.agent_id);
+    },
+    onError: (err, op) => {
+      if (err instanceof FetchError && err.status === 403) {
+        consent.requestConsent(() => handleRun(op));
+        return;
+      }
+      if (err instanceof FetchError) {
+        const body = err.body as { error?: string };
+        setError(body?.error ?? `Failed (${err.status})`);
+      } else {
+        setError(err instanceof Error ? err.message : "Request failed");
       }
     },
-    [projectSlug, onStartOperation, consent],
+  });
+
+  const handleRun = useCallback(
+    (op: AdminOperation) => {
+      setError(null);
+      mutation.mutate(op);
+    },
+    [mutation, consent],
   );
 
   return (
@@ -62,10 +65,10 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
           <button
             key={op.key}
             className={styles.opBtn}
-            disabled={running || starting !== null}
+            disabled={running || mutation.isPending}
             onClick={() => handleRun(op.key)}
           >
-            {starting === op.key ? "Starting..." : op.label}
+            {mutation.isPending && mutation.variables === op.key ? "Starting..." : op.label}
           </button>
         ))}
       </div>

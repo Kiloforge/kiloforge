@@ -1,11 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Routes, Route } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import type { Agent, StatusResponse } from "./types/api";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
 import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
 import { useConsent } from "./hooks/useConsent";
+import { queryKeys } from "./api/queryKeys";
+import { fetcher } from "./api/fetcher";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
@@ -22,18 +25,14 @@ export default function App() {
   const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved } = useAgents();
   const { quota, handleQuotaUpdate } = useQuota();
   const { tracks, handleTrackUpdate, handleTrackRemoved } = useTracks();
-  const [status, setStatus] = useState<StatusResponse | null>(null);
+  const { data: status = null } = useQuery({
+    queryKey: queryKeys.status,
+    queryFn: () => fetcher<StatusResponse>("/api/status"),
+  });
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [spawningInteractive, setSpawningInteractive] = useState(false);
   const consent = useConsent();
-
-  useEffect(() => {
-    fetch("/api/status")
-      .then((r) => r.json())
-      .then((data: StatusResponse) => setStatus(data))
-      .catch(() => {});
-  }, []);
 
   const sseHandlers = useMemo(
     () => ({

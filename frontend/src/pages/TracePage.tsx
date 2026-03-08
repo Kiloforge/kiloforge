@@ -1,24 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import type { TraceDetail, SpanInfo } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 import { TraceTimeline } from "../components/TraceTimeline";
 
 export function TracePage() {
   const { traceId } = useParams<{ traceId: string }>();
-  const [trace, setTrace] = useState<TraceDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: trace, error: queryError } = useQuery({
+    queryKey: queryKeys.trace(traceId ?? ""),
+    queryFn: () => fetcher<TraceDetail>(`/api/traces/${traceId!}`),
+    enabled: !!traceId,
+  });
+  const error = queryError?.message ?? null;
   const [selected, setSelected] = useState<SpanInfo | null>(null);
-
-  useEffect(() => {
-    if (!traceId) return;
-    fetch(`/api/traces/${traceId}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Trace not found");
-        return r.json();
-      })
-      .then((data: TraceDetail) => setTrace(data))
-      .catch((err) => setError(err.message));
-  }, [traceId]);
 
   if (error) {
     return (
