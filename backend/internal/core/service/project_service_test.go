@@ -84,6 +84,51 @@ func (m *mockProjectStore) Save() error {
 	return m.saveErr
 }
 
+func TestProjectService_ListProjects(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	store.projects["app1"] = domain.Project{Slug: "app1"}
+	store.projects["app2"] = domain.Project{Slug: "app2"}
+
+	svc := NewProjectService(store, nil, ProjectServiceConfig{})
+	projects := svc.ListProjects()
+
+	if len(projects) != 2 {
+		t.Errorf("expected 2 projects, got %d", len(projects))
+	}
+}
+
+func TestProjectService_GetProject(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	store.projects["myapp"] = domain.Project{Slug: "myapp", RepoName: "myapp"}
+
+	svc := NewProjectService(store, nil, ProjectServiceConfig{})
+
+	t.Run("found", func(t *testing.T) {
+		p, err := svc.GetProject("myapp")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.Slug != "myapp" {
+			t.Errorf("expected slug myapp, got %s", p.Slug)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		_, err := svc.GetProject("nonexistent")
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		var notFound *ProjectNotFoundError
+		if !errors.As(err, &notFound) {
+			t.Errorf("expected ProjectNotFoundError, got %T: %v", err, err)
+		}
+	})
+}
+
 func TestProjectService_RemoveProject(t *testing.T) {
 	t.Parallel()
 

@@ -192,6 +192,20 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 	return result, nil
 }
 
+// ListProjects returns all registered projects.
+func (s *ProjectService) ListProjects() []domain.Project {
+	return s.store.List()
+}
+
+// GetProject returns a project by slug, or an error if not found.
+func (s *ProjectService) GetProject(slug string) (*domain.Project, error) {
+	p, ok := s.store.Get(slug)
+	if !ok {
+		return nil, &ProjectNotFoundError{Slug: slug}
+	}
+	return &p, nil
+}
+
 // RemoveProject deregisters a project. If cleanup is true, also deletes
 // the Gitea repo and local filesystem data.
 func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup bool) error {
