@@ -69,7 +69,7 @@
 | [x] | agent-random-names_20260309183000Z | Random Human-Friendly Agent Names | 2026-03-09 | 2026-03-09 |
 | [x] | goose-migrations_20260309184000Z | Migrate to Goose for Database Schema Migrations | 2026-03-09 | 2026-03-09 |
 | [x] | agent-permissions-consent_20260309190000Z | Agent Permissions Flag and User Consent | 2026-03-09 | 2026-03-09 |
-| [ ] | tanstack-query-migration_20260309193000Z | Migrate Frontend Data Fetching to TanStack Query | 2026-03-09 | 2026-03-09 |
+| [x] | tanstack-query-migration_20260309193000Z | Migrate Frontend Data Fetching to TanStack Query | 2026-03-09 | 2026-03-09 |
 | [x] | claude-auth-check_20260309200000Z | Claude CLI Authentication Check Before Agent Spawning | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
