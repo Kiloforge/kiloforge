@@ -2,15 +2,15 @@
   "id": "rebrand-kiloforge_20260309055250Z",
   "title": "Rebrand crelay to kiloforge (CLI: kf)",
   "type": "chore",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T05:52:50Z",
   "updated": "2026-03-09T05:52:50Z",
   "phases": {
     "total": 8,
-    "completed": 0
+    "completed": 8
   },
   "tasks": {
     "total": 35,
-    "completed": 0
+    "completed": 35
   }
 }
