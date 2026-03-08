@@ -1,0 +1,16 @@
+{
+  "id": "release-process_20260309153000Z",
+  "title": "Release Process with GoReleaser, GitHub Actions, and Homebrew",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T15:30:00Z",
+  "updated": "2026-03-09T15:30:00Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 18,
+    "completed": 0
+  }
+}

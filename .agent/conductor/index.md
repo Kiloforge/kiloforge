@@ -97,6 +97,7 @@ Navigation hub for project context.
 - **origin-sync-ui_20260309143001Z** — Origin Push/Pull Dashboard UI
 - **interactive-agent-be_20260309150000Z** — Interactive Agent Sessions via WebSocket (Backend)
 - **interactive-agent-fe_20260309150001Z** — Interactive Agent Terminal in Dashboard (Frontend)
+- **release-process_20260309153000Z** — Release Process with GoReleaser, GitHub Actions, and Homebrew
 
 ## Getting Started
 
