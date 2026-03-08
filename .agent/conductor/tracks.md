@@ -95,6 +95,7 @@
 | [x] | setup-prereq-be_20260310004000Z | Setup Prerequisite Check Before Agent Spawning (Backend) | 2026-03-10 | 2026-03-10 |
 | [x] | setup-prereq-fe_20260310004001Z | Setup Prerequisite Check — Dashboard UI (Frontend) | 2026-03-10 | 2026-03-10 |
 | [x] | cli-sqlite-migration_20260310005000Z | Migrate CLI Commands from JSON Files to SQLite | 2026-03-10 | 2026-03-10 |
+| [ ] | refactor-cli-thin-adapters_20260310010000Z | Refactor CLI Commands to Thin Adapters with Shared Service Layer | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 

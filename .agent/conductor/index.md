@@ -134,6 +134,7 @@ Navigation hub for project context.
 - **setup-prereq-be_20260310004000Z** — Setup Prerequisite Check Before Agent Spawning (Backend)
 - **setup-prereq-fe_20260310004001Z** — Setup Prerequisite Check — Dashboard UI (Frontend)
 - **cli-sqlite-migration_20260310005000Z** — Migrate CLI Commands from JSON Files to SQLite
+- **refactor-cli-thin-adapters_20260310010000Z** — Refactor CLI Commands to Thin Adapters with Shared Service Layer
 
 ## Getting Started
 

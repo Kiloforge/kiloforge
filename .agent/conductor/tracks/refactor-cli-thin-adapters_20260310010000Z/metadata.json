@@ -1,0 +1,16 @@
+{
+  "id": "refactor-cli-thin-adapters_20260310010000Z",
+  "title": "Refactor CLI Commands to Thin Adapters with Shared Service Layer",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-10T01:00:00Z",
+  "updated": "2026-03-10T01:00:00Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 21,
+    "completed": 0
+  }
+}
