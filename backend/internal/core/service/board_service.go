@@ -1,134 +1,87 @@
 package service
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"crelay/internal/core/domain"
-	"crelay/internal/core/port"
 )
 
-// Standard label definitions for track boards.
-var standardLabels = []struct {
-	Name  string
-	Color string
-}{
-	{"type:feature", "#0075ca"},
-	{"type:bug", "#e11d48"},
-	{"type:refactor", "#e4e669"},
-	{"type:chore", "#808080"},
-	{"status:suggested", "#d4d4d4"},
-	{"status:approved", "#22c55e"},
-	{"status:in-progress", "#f97316"},
-	{"status:in-review", "#a855f7"},
+// NativeBoardStore abstracts persistence for the native board.
+type NativeBoardStore interface {
+	GetBoard(slug string) (*domain.BoardState, error)
+	SaveBoard(slug string, board *domain.BoardState) error
 }
 
-// Standard kanban column names in order.
-var standardColumns = []string{
-	"Suggested",
-	"Approved",
-	"In Progress",
-	"In Review",
-	"Completed",
+// NativeBoardService manages the native track board.
+type NativeBoardService struct {
+	store NativeBoardStore
 }
 
-// BoardStore abstracts persistence for board config and track-issue mappings.
-type BoardStore interface {
-	GetBoardConfig(slug string) (*domain.BoardConfig, error)
-	SaveBoardConfig(slug string, cfg *domain.BoardConfig) error
-	GetTrackIssue(slug, trackID string) (*domain.TrackIssue, error)
-	SaveTrackIssue(slug string, ti domain.TrackIssue) error
-	ListTrackIssues(slug string) ([]domain.TrackIssue, error)
+// NewNativeBoardService creates a new NativeBoardService.
+func NewNativeBoardService(store NativeBoardStore) *NativeBoardService {
+	return &NativeBoardService{store: store}
 }
 
-// BoardService manages Gitea project board sync for conductor tracks.
-type BoardService struct {
-	gitea port.BoardGiteaClient
-	store BoardStore
-}
-
-// NewBoardService creates a new BoardService.
-func NewBoardService(gitea port.BoardGiteaClient, store BoardStore) *BoardService {
-	return &BoardService{gitea: gitea, store: store}
-}
-
-// SetupBoard creates a kanban board with standard labels and columns for a project.
-// Idempotent — returns existing config if board already exists.
-func (s *BoardService) SetupBoard(ctx context.Context, project domain.Project) (*domain.BoardConfig, error) {
-	// Check if already set up.
-	existing, err := s.store.GetBoardConfig(project.Slug)
+// GetBoard returns the board state for a project.
+// If no board exists yet, returns an empty board.
+func (s *NativeBoardService) GetBoard(slug string) (*domain.BoardState, error) {
+	board, err := s.store.GetBoard(slug)
 	if err != nil {
-		return nil, fmt.Errorf("check existing board: %w", err)
+		return nil, fmt.Errorf("get board: %w", err)
 	}
-	if existing != nil && existing.ProjectBoardID > 0 {
-		return existing, nil
+	if board == nil {
+		return domain.NewBoardState(), nil
+	}
+	return board, nil
+}
+
+// MoveCardResult holds the outcome of a card move.
+type MoveCardResult struct {
+	TrackID    string `json:"track_id"`
+	FromColumn string `json:"from_column"`
+	ToColumn   string `json:"to_column"`
+}
+
+// MoveCard moves a card to a new column.
+func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*MoveCardResult, error) {
+	if !domain.IsValidColumn(toColumn) {
+		return nil, fmt.Errorf("invalid column: %s", toColumn)
 	}
 
-	cfg := &domain.BoardConfig{
-		Columns: make(map[string]int),
-		Labels:  make(map[string]int),
-	}
-
-	// Create labels.
-	for _, l := range standardLabels {
-		id, err := s.gitea.EnsureLabel(ctx, project.RepoName, l.Name, l.Color)
-		if err != nil {
-			return nil, fmt.Errorf("ensure label %q: %w", l.Name, err)
-		}
-		cfg.Labels[l.Name] = id
-	}
-
-	// Check if project board already exists.
-	projects, err := s.gitea.ListProjects(ctx, project.RepoName)
+	board, err := s.store.GetBoard(slug)
 	if err != nil {
-		return nil, fmt.Errorf("list projects: %w", err)
+		return nil, fmt.Errorf("get board: %w", err)
 	}
-	for _, p := range projects {
-		if p.Title == "Tracks" {
-			cfg.ProjectBoardID = p.ID
-			break
-		}
+	if board == nil {
+		return nil, fmt.Errorf("no board for project %q", slug)
 	}
 
-	// Create board if not found.
-	if cfg.ProjectBoardID == 0 {
-		boardID, err := s.gitea.CreateProject(ctx, project.RepoName, "Tracks", "Conductor track board")
-		if err != nil {
-			return nil, fmt.Errorf("create project board: %w", err)
-		}
-		cfg.ProjectBoardID = boardID
+	card, ok := board.Cards[trackID]
+	if !ok {
+		return nil, fmt.Errorf("track %q not on board", trackID)
 	}
 
-	// Create columns (check existing first).
-	existingCols, err := s.gitea.ListColumns(ctx, cfg.ProjectBoardID)
-	if err != nil {
-		return nil, fmt.Errorf("list columns: %w", err)
-	}
-	existingColMap := make(map[string]int)
-	for _, col := range existingCols {
-		existingColMap[col.Title] = col.ID
+	fromColumn := card.Column
+	if fromColumn == toColumn {
+		return &MoveCardResult{TrackID: trackID, FromColumn: fromColumn, ToColumn: toColumn}, nil
 	}
 
-	for _, colName := range standardColumns {
-		if id, ok := existingColMap[colName]; ok {
-			cfg.Columns[columnKey(colName)] = id
-			continue
-		}
-		id, err := s.gitea.CreateColumn(ctx, cfg.ProjectBoardID, colName)
-		if err != nil {
-			return nil, fmt.Errorf("create column %q: %w", colName, err)
-		}
-		cfg.Columns[columnKey(colName)] = id
+	card.Column = toColumn
+	card.MovedAt = time.Now().Truncate(time.Second)
+	// Set position to end of column.
+	card.Position = len(board.CardsByColumn(toColumn))
+	board.Cards[trackID] = card
+
+	if err := s.store.SaveBoard(slug, board); err != nil {
+		return nil, fmt.Errorf("save board: %w", err)
 	}
 
-	if err := s.store.SaveBoardConfig(project.Slug, cfg); err != nil {
-		return nil, fmt.Errorf("save board config: %w", err)
-	}
-
-	return cfg, nil
+	return &MoveCardResult{
+		TrackID:    trackID,
+		FromColumn: fromColumn,
+		ToColumn:   toColumn,
+	}, nil
 }
 
 // SyncResult holds the results of a track sync operation.
@@ -138,209 +91,98 @@ type SyncResult struct {
 	Unchanged int
 }
 
-// PublishTrack creates a Gitea issue from a track and places it on the board.
-// Idempotent — skips if already published.
-func (s *BoardService) PublishTrack(ctx context.Context, project domain.Project, track TrackEntry, trackType, specContent string) error {
-	existing, err := s.store.GetTrackIssue(project.Slug, track.ID)
+// SyncFromTracks syncs the board from discovered tracks.
+func (s *NativeBoardService) SyncFromTracks(slug string, tracks []TrackEntry, trackTypes map[string]string) (*SyncResult, error) {
+	board, err := s.store.GetBoard(slug)
 	if err != nil {
-		return fmt.Errorf("check existing: %w", err)
+		return nil, fmt.Errorf("get board: %w", err)
 	}
-	if existing != nil {
-		return nil
-	}
-
-	cfg, err := s.store.GetBoardConfig(project.Slug)
-	if err != nil || cfg == nil {
-		return fmt.Errorf("board not set up for project %q", project.Slug)
-	}
-
-	// Build label list.
-	var labels []string
-	if trackType != "" {
-		labels = append(labels, "type:"+trackType)
-	}
-	statusLabel := StatusToColumn(track.Status)
-	if statusLabel != "" {
-		labels = append(labels, "status:"+track.Status)
-	}
-
-	// Create issue.
-	body := specContent
-	if body == "" {
-		body = track.Title
-	}
-	issueNum, err := s.gitea.CreateIssue(ctx, project.RepoName, track.Title, body, labels)
-	if err != nil {
-		return fmt.Errorf("create issue: %w", err)
-	}
-
-	// Place card in the appropriate column.
-	colName := StatusToColumn(track.Status)
-	colID, ok := cfg.Columns[columnKey(colName)]
-	if !ok {
-		colID = cfg.Columns["suggested"]
-	}
-
-	cardID, err := s.gitea.CreateCard(ctx, colID, issueNum)
-	if err != nil {
-		return fmt.Errorf("create card: %w", err)
-	}
-
-	return s.store.SaveTrackIssue(project.Slug, domain.TrackIssue{
-		TrackID:     track.ID,
-		IssueNumber: issueNum,
-		CardID:      cardID,
-		Column:      columnKey(colName),
-		LastSynced:  time.Now().Truncate(time.Second),
-	})
-}
-
-// SyncTracks diffs local tracks against published ones, creating or updating as needed.
-func (s *BoardService) SyncTracks(ctx context.Context, project domain.Project, tracks []TrackEntry, trackTypes map[string]string, specReader func(trackID string) string) (*SyncResult, error) {
-	cfg, err := s.store.GetBoardConfig(project.Slug)
-	if err != nil || cfg == nil {
-		return nil, fmt.Errorf("board not set up for project %q", project.Slug)
-	}
-
-	existing, err := s.store.ListTrackIssues(project.Slug)
-	if err != nil {
-		return nil, fmt.Errorf("list track issues: %w", err)
-	}
-	existingMap := make(map[string]domain.TrackIssue, len(existing))
-	for _, ti := range existing {
-		existingMap[ti.TrackID] = ti
+	if board == nil {
+		board = domain.NewBoardState()
 	}
 
 	result := &SyncResult{}
+	now := time.Now().Truncate(time.Second)
 
-	for _, track := range tracks {
-		ti, published := existingMap[track.ID]
+	for _, t := range tracks {
+		existing, exists := board.Cards[t.ID]
+		targetCol := statusToColumn(t.Status)
 
-		if !published {
-			// New track — publish it.
-			spec := ""
-			if specReader != nil {
-				spec = specReader(track.ID)
-			}
+		if !exists {
 			trackType := ""
 			if trackTypes != nil {
-				trackType = trackTypes[track.ID]
+				trackType = trackTypes[t.ID]
 			}
-			if err := s.PublishTrack(ctx, project, track, trackType, spec); err != nil {
-				return nil, fmt.Errorf("publish %s: %w", track.ID, err)
+			board.Cards[t.ID] = domain.BoardCard{
+				TrackID:   t.ID,
+				Title:     t.Title,
+				Type:      trackType,
+				Column:    targetCol,
+				Position:  len(board.CardsByColumn(targetCol)),
+				MovedAt:   now,
+				CreatedAt: now,
 			}
 			result.Created++
 			continue
 		}
 
-		// Check if column changed.
-		targetCol := columnKey(StatusToColumn(track.Status))
-		if ti.Column == targetCol {
-			result.Unchanged++
-			continue
+		if existing.Column != targetCol {
+			existing.Column = targetCol
+			existing.MovedAt = now
+			existing.Position = len(board.CardsByColumn(targetCol))
+			board.Cards[t.ID] = existing
+			result.Updated++
+		} else {
+			// Update title if changed.
+			if existing.Title != t.Title {
+				existing.Title = t.Title
+				board.Cards[t.ID] = existing
+				result.Updated++
+			} else {
+				result.Unchanged++
+			}
 		}
-
-		// Move card to new column.
-		colID, ok := cfg.Columns[targetCol]
-		if !ok {
-			result.Unchanged++
-			continue
-		}
-		if err := s.gitea.MoveCard(ctx, ti.CardID, colID); err != nil {
-			return nil, fmt.Errorf("move card for %s: %w", track.ID, err)
-		}
-
-		ti.Column = targetCol
-		ti.LastSynced = time.Now().Truncate(time.Second)
-		if err := s.store.SaveTrackIssue(project.Slug, ti); err != nil {
-			return nil, fmt.Errorf("update mapping for %s: %w", track.ID, err)
-		}
-		result.Updated++
 	}
 
+	if err := s.store.SaveBoard(slug, board); err != nil {
+		return nil, fmt.Errorf("save board: %w", err)
+	}
 	return result, nil
 }
 
-// ReadTrackSpec reads the spec.md for a track from the project directory.
-func ReadTrackSpec(projectDir, trackID string) string {
-	paths := []string{
-		filepath.Join(projectDir, ".agent", "conductor", "tracks", trackID, "spec.md"),
-		filepath.Join(projectDir, ".agent", "conductor", "tracks", "_archive", trackID, "spec.md"),
+// UpdateCardAgent updates the agent info on a board card.
+func (s *NativeBoardService) UpdateCardAgent(slug, trackID, agentID, agentStatus string) error {
+	board, err := s.store.GetBoard(slug)
+	if err != nil || board == nil {
+		return fmt.Errorf("get board: %w", err)
 	}
-	for _, p := range paths {
-		data, err := os.ReadFile(p)
-		if err == nil {
-			return string(data)
-		}
+
+	card, ok := board.Cards[trackID]
+	if !ok {
+		return nil // Track not on board, ignore.
 	}
-	return ""
+
+	card.AgentID = agentID
+	card.AgentStatus = agentStatus
+	board.Cards[trackID] = card
+
+	return s.store.SaveBoard(slug, board)
 }
 
-// StatusToColumn maps a track status to a kanban column name.
-func StatusToColumn(status string) string {
+// statusToColumn maps a track status from tracks.md to a board column.
+func statusToColumn(status string) string {
 	switch status {
 	case StatusPending:
-		return "Suggested"
+		return domain.ColumnBacklog
 	case StatusApproved:
-		return "Approved"
+		return domain.ColumnApproved
 	case StatusInProgress:
-		return "In Progress"
+		return domain.ColumnInProgress
 	case StatusInReview:
-		return "In Review"
+		return domain.ColumnInReview
 	case StatusComplete:
-		return "Completed"
+		return domain.ColumnDone
 	default:
-		return "Suggested"
-	}
-}
-
-// ColumnToStatus maps a kanban column name to a track status.
-func ColumnToStatus(column string) string {
-	switch column {
-	case "Suggested":
-		return StatusPending
-	case "Approved":
-		return StatusApproved
-	case "In Progress":
-		return StatusInProgress
-	case "In Review":
-		return StatusInReview
-	case "Completed":
-		return StatusComplete
-	default:
-		return StatusPending
-	}
-}
-
-// MoveCard moves a card to a different column on the Gitea board.
-func (s *BoardService) MoveCard(ctx context.Context, slug string, cardID, columnID int) error {
-	return s.gitea.MoveCard(ctx, cardID, columnID)
-}
-
-// CloseTrackIssue closes a Gitea issue for a track.
-func (s *BoardService) CloseTrackIssue(ctx context.Context, project domain.Project, issueNum int) error {
-	return s.gitea.UpdateIssue(ctx, project.RepoName, issueNum, "", "", "closed")
-}
-
-// ColumnKeyFromName normalizes a column name to a map key. Exported for use by board sync.
-func ColumnKeyFromName(name string) string {
-	return columnKey(name)
-}
-
-// columnKey normalizes a column name to a map key (lowercase, hyphens).
-func columnKey(name string) string {
-	switch name {
-	case "Suggested":
-		return "suggested"
-	case "Approved":
-		return "approved"
-	case "In Progress":
-		return "in_progress"
-	case "In Review":
-		return "in_review"
-	case "Completed":
-		return "completed"
-	default:
-		return "suggested"
+		return domain.ColumnBacklog
 	}
 }

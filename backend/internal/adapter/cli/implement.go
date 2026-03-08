@@ -10,7 +10,6 @@ import (
 
 	"crelay/internal/adapter/agent"
 	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/adapter/pool"
 	"crelay/internal/core/domain"
@@ -140,22 +139,12 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("save pool: %w", err)
 	}
 
-	// Move track card to In Progress on the board.
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
+	// Move track card to In Progress on the native board.
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
-	boardSvc := service.NewBoardService(client, boardStore)
-	boardCfg, _ := boardStore.GetBoardConfig(proj.Slug)
-	if boardCfg != nil {
-		ti, _ := boardStore.GetTrackIssue(proj.Slug, trackID)
-		if ti != nil {
-			colID, ok := boardCfg.Columns["in_progress"]
-			if ok && ti.Column != "in_progress" {
-				if err := boardSvc.MoveCard(ctx, proj.Slug, ti.CardID, colID); err == nil {
-					ti.Column = "in_progress"
-					_ = boardStore.SaveTrackIssue(proj.Slug, *ti)
-					fmt.Println("  Board:     → In Progress")
-				}
-			}
+	nativeBoardSvc := service.NewNativeBoardService(boardStore)
+	if moveResult, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnInProgress); err == nil {
+		if moveResult.FromColumn != moveResult.ToColumn {
+			fmt.Println("  Board:     → In Progress")
 		}
 	}
 

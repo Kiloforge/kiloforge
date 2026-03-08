@@ -10,13 +10,8 @@ import (
 )
 
 // ColumnOrder defines the priority ordering of board columns.
-var ColumnOrder = map[string]int{
-	"suggested":   0,
-	"approved":    1,
-	"in_progress": 2,
-	"in_review":   3,
-	"completed":   4,
-}
+// Delegates to domain.ColumnOrder for the canonical column names.
+var ColumnOrder = domain.ColumnOrder
 
 // LifecycleService handles agent lifecycle control driven by board state changes.
 type LifecycleService struct {
@@ -96,22 +91,12 @@ func (s *LifecycleService) HandleRejection(ctx context.Context, trackID string, 
 
 // IsBackwardMove returns true if toCol is earlier in the workflow than fromCol.
 func IsBackwardMove(fromCol, toCol string) bool {
-	fromOrd, fromOK := ColumnOrder[fromCol]
-	toOrd, toOK := ColumnOrder[toCol]
-	if !fromOK || !toOK {
-		return false
-	}
-	return toOrd < fromOrd
+	return domain.IsBackwardMove(fromCol, toCol)
 }
 
 // IsForwardMove returns true if toCol is later in the workflow than fromCol.
 func IsForwardMove(fromCol, toCol string) bool {
-	fromOrd, fromOK := ColumnOrder[fromCol]
-	toOrd, toOK := ColumnOrder[toCol]
-	if !fromOK || !toOK {
-		return false
-	}
-	return toOrd > fromOrd
+	return domain.IsForwardMove(fromCol, toCol)
 }
 
 func (s *LifecycleService) haltIfActive(agent *domain.AgentInfo, reason string) {

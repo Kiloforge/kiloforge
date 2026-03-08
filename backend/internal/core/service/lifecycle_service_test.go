@@ -22,11 +22,11 @@ func TestIsBackwardMove(t *testing.T) {
 		want     bool
 	}{
 		{"in_progress", "approved", true},
-		{"in_progress", "suggested", true},
+		{"in_progress", "backlog", true},
 		{"in_review", "in_progress", true},
 		{"in_review", "approved", true},
 		{"approved", "in_progress", false},
-		{"suggested", "approved", false},
+		{"backlog", "approved", false},
 		{"in_progress", "in_progress", false},
 		{"unknown", "approved", false},
 	}
@@ -47,7 +47,7 @@ func TestIsForwardMove(t *testing.T) {
 		want     bool
 	}{
 		{"approved", "in_progress", true},
-		{"suggested", "in_progress", true},
+		{"backlog", "in_progress", true},
 		{"in_progress", "approved", false},
 		{"in_progress", "in_progress", false},
 	}

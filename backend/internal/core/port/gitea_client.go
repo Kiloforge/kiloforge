@@ -12,17 +12,11 @@ type GiteaClient interface {
 	GetPRReviews(ctx context.Context, repo string, prNum int) ([]map[string]any, error)
 }
 
-// GiteaIssueClient extends GiteaClient with issue and project board operations.
+// GiteaIssueClient extends GiteaClient with issue management operations.
 type GiteaIssueClient interface {
 	GiteaClient
 
 	// Issue management
 	CreateIssue(ctx context.Context, repo, title, body string, labels []string) (int, error)
 	UpdateIssue(ctx context.Context, repo string, issueNum int, title, body, state string) error
-
-	// Project board management
-	CreateProject(ctx context.Context, repo, title, description string) (int, error)
-	CreateColumn(ctx context.Context, projectID int, title string) (int, error)
-	CreateCard(ctx context.Context, columnID, issueID int) (int, error)
-	MoveCard(ctx context.Context, cardID, columnID int) error
 }

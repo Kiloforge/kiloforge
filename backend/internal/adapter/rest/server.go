@@ -59,36 +59,6 @@ func WithTracing(store *tracing.Store) ServerOption {
 	}
 }
 
-// WithBoardSync enables webhook-driven board state synchronization.
-func WithBoardSync(boardSvc *service.BoardService, boardStore service.BoardStore) ServerOption {
-	return func(s *Server) {
-		var poolRet port.PoolReturner
-		if p, err := pool.Load(s.cfg.DataDir); err == nil && p != nil {
-			poolRet = &poolReturnerAdapter{pool: p, dataDir: s.cfg.DataDir}
-		}
-		lifecycle := service.NewLifecycleService(s.store, s.spawner, poolRet, s.logger)
-
-		bs := &boardSyncer{
-			svc:       boardSvc,
-			store:     boardStore,
-			lifecycle: lifecycle,
-			adminUser: s.cfg.GiteaAdminUser,
-			logger:    s.logger,
-		}
-		bs.commentFn = func(ctx context.Context, slug string, issueNum int, body string) {
-			_ = s.client.CommentOnPR(ctx, slug, issueNum, body)
-		}
-		bs.prLoader = func(slug string) (*domain.PRTracking, error) {
-			projectDir := filepath.Join(s.cfg.DataDir, "projects", slug)
-			return jsonfile.LoadPRTracking(projectDir)
-		}
-		bs.updateIssueFn = func(ctx context.Context, slug string, issueNum int, state string) {
-			_ = s.client.UpdateIssue(ctx, slug, issueNum, "", "", state)
-		}
-		s.boardSync = bs
-	}
-}
-
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg         *config.Config
@@ -101,7 +71,6 @@ type Server struct {
 	port        int
 	dashboard   *dashboard.Server
 	giteaProxy  http.Handler
-	boardSync   *boardSyncer
 	quotaReader QuotaReader
 	_projects   dashboard.ProjectLister
 	traceStore  *tracing.Store
@@ -351,19 +320,10 @@ func (s *Server) handleIssues(slug string, payload map[string]any) {
 		s.logger.Printf("[%s] Issue #%d edited: %q", slug, number, title)
 	case "closed":
 		s.logger.Printf("[%s] Issue #%d closed: %q", slug, number, title)
-		if s.boardSync != nil && !s.boardSync.isSelfTriggered(payload) {
-			s.boardSync.handleIssueClosed(context.Background(), slug, issue)
-		}
 	case "label_updated":
 		s.logger.Printf("[%s] Issue #%d labels updated: %q", slug, number, title)
-		if s.boardSync != nil && !s.boardSync.isSelfTriggered(payload) {
-			s.boardSync.handleLabelUpdated(context.Background(), slug, issue)
-		}
 	case "assigned":
 		s.logger.Printf("[%s] Issue #%d assigned: %q", slug, number, title)
-		if s.boardSync != nil && !s.boardSync.isSelfTriggered(payload) {
-			s.boardSync.handleIssueAssigned(context.Background(), slug, issue)
-		}
 	default:
 		s.logger.Printf("[%s] Issue #%d %s: %q", slug, number, action, title)
 	}
@@ -403,16 +363,6 @@ func (s *Server) handlePullRequest(slug string, payload map[string]any) {
 		s.logger.Printf("[%s] PR #%d opened: %q", slug, prNumber, prTitle)
 		s.createPRTracking(slug, prNumber, pr)
 		s.spawnReviewerForPR(slug, prNumber)
-		// Move track card to In Review.
-		if s.boardSync != nil {
-			head, _ := pr["head"].(map[string]any)
-			if head != nil {
-				trackID, _ := head["ref"].(string)
-				if trackID != "" {
-					s.boardSync.handlePROpened(context.Background(), slug, trackID, prNumber)
-				}
-			}
-		}
 	case "closed":
 		merged, _ := pr["merged"].(bool)
 		if merged {
@@ -568,11 +518,6 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 	// Save tracking.
 	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
-	}
-
-	// Move track card to Completed.
-	if s.boardSync != nil && tracking.TrackID != "" {
-		s.boardSync.handlePRMerged(context.Background(), slug, tracking.TrackID, tracking.PRNumber)
 	}
 
 	s.logger.Printf("[%s] PR #%d merged and cleaned up (track: %s)", slug, tracking.PRNumber, tracking.TrackID)

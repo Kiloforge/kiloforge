@@ -1,15 +1,12 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/signal"
 	"path/filepath"
 
 	"crelay/internal/adapter/config"
-	"crelay/internal/adapter/gitea"
 	"crelay/internal/adapter/persistence/jsonfile"
 	"crelay/internal/core/service"
 
@@ -18,10 +15,10 @@ import (
 
 var syncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "Sync conductor tracks to the Gitea project board",
+	Short: "Sync conductor tracks to the native board",
 	Long: `Discover tracks from a project's .agent/conductor/tracks.md and sync them
-to the corresponding Gitea project board. Creates issues for new tracks
-and moves cards for tracks that changed status.
+to the native track board. Creates cards for new tracks and updates columns
+for tracks that changed status.
 
 Examples:
   crelay sync --project myapp`,
@@ -39,9 +36,6 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--project is required")
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
 	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'crelay init' first")
@@ -56,10 +50,8 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project %q not found", flagSyncProject)
 	}
 
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-
 	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
-	boardSvc := service.NewBoardService(client, boardStore)
+	boardSvc := service.NewNativeBoardService(boardStore)
 
 	// Discover tracks.
 	tracks, err := service.DiscoverTracks(project.ProjectDir)
@@ -79,9 +71,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	// Sync.
-	result, err := boardSvc.SyncTracks(ctx, project, tracks, trackTypes, func(trackID string) string {
-		return service.ReadTrackSpec(project.ProjectDir, trackID)
-	})
+	result, err := boardSvc.SyncFromTracks(project.Slug, tracks, trackTypes)
 	if err != nil {
 		return fmt.Errorf("sync: %w", err)
 	}

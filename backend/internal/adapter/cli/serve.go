@@ -18,7 +18,6 @@ import (
 	"crelay/internal/adapter/rest"
 	"crelay/internal/adapter/skills"
 	"crelay/internal/adapter/tracing"
-	"crelay/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -103,12 +102,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 			opts = append(opts, rest.WithDashboard(store, tracker, "/", reg))
 		}
 	}
-
-	// Enable board sync.
-	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
-	boardClient := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	boardSvc := service.NewBoardService(boardClient, boardStore)
-	opts = append(opts, rest.WithBoardSync(boardSvc, boardStore))
 
 	// Start auto-update checker if enabled.
 	if cfg.SkillsRepo != "" && cfg.AutoUpdateSkills != nil && *cfg.AutoUpdateSkills {
