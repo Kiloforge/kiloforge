@@ -2,15 +2,15 @@
   "id": "fix-serve-interactive-agent_20260309232000Z",
   "title": "Fix Interactive Agent Wiring in Serve Command (kf up)",
   "type": "bug",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T23:20:00Z",
   "updated": "2026-03-09T23:20:00Z",
   "phases": {
     "total": 2,
-    "completed": 0
+    "completed": 2
   },
   "tasks": {
     "total": 5,
-    "completed": 0
+    "completed": 5
   }
 }
