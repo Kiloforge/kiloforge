@@ -11,18 +11,23 @@ import (
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/internal/adapter/persistence/jsonfile"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func newTestBoardStore(dir string) *jsonfile.BoardStore {
-	return jsonfile.NewBoardStore(dir)
+func newTestBoardStore(dir string) port.BoardStore {
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		panic(fmt.Sprintf("open test db: %v", err))
+	}
+	return sqlite.NewBoardStore(db)
 }
 
 // stubProjectLister implements ProjectLister for testing.
