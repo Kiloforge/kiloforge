@@ -87,6 +87,7 @@
 | [x] | fix-serve-interactive-agent_20260309232000Z | Fix Interactive Agent Wiring in Serve Command (kf up) | 2026-03-09 | 2026-03-09 |
 | [x] | fix-skills-412-prompt_20260309233000Z | Handle 412 Skills Missing with Install Prompt Instead of Error | 2026-03-09 | 2026-03-09 |
 | [x] | embedded-skills-default_20260309234000Z | Embedded Skills as Default — Remove Repo Dependency | 2026-03-09 | 2026-03-09 |
+| [ ] | tour-ux-improvements_20260309235000Z | Tour UX Improvements — State Transitions, Demo Data, and Example URL | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 
