@@ -409,6 +409,15 @@ type GetAgentLogParams struct {
 	Lines *int `form:"lines,omitempty" json:"lines,omitempty"`
 }
 
+// ListTracesParams defines parameters for ListTraces.
+type ListTracesParams struct {
+	// TrackId Filter traces by track ID attribute
+	TrackId *string `form:"track_id,omitempty" json:"track_id,omitempty"`
+
+	// SessionId Filter traces by session ID attribute
+	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
+}
+
 // ListTracksParams defines parameters for ListTracks.
 type ListTracksParams struct {
 	// Project Filter tracks by project slug
@@ -479,7 +488,7 @@ type ServerInterface interface {
 	GetStatus(w http.ResponseWriter, r *http.Request)
 	// List trace summaries
 	// (GET /-/api/traces)
-	ListTraces(w http.ResponseWriter, r *http.Request)
+	ListTraces(w http.ResponseWriter, r *http.Request, params ListTracesParams)
 	// Get trace detail with all spans
 	// (GET /-/api/traces/{traceId})
 	GetTrace(w http.ResponseWriter, r *http.Request, traceId string)
@@ -812,8 +821,29 @@ func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Requ
 // ListTraces operation middleware
 func (siw *ServerInterfaceWrapper) ListTraces(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTracesParams
+
+	// ------------- Optional query parameter "track_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "track_id", r.URL.Query(), &params.TrackId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "track_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "session_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "session_id", r.URL.Query(), &params.SessionId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "session_id", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListTraces(w, r)
+		siw.Handler.ListTraces(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1494,6 +1524,7 @@ func (response GetStatus500JSONResponse) VisitGetStatusResponse(w http.ResponseW
 }
 
 type ListTracesRequestObject struct {
+	Params ListTracesParams
 }
 
 type ListTracesResponseObject interface {
@@ -2080,8 +2111,10 @@ func (sh *strictHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListTraces operation middleware
-func (sh *strictHandler) ListTraces(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListTraces(w http.ResponseWriter, r *http.Request, params ListTracesParams) {
 	var request ListTracesRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListTraces(ctx, request.(ListTracesRequestObject))

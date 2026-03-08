@@ -41,11 +41,18 @@ type TraceSummary struct {
 type Store struct {
 	mu    sync.RWMutex
 	spans []SpanSummary
+
+	// Secondary indexes: attribute value → set of trace IDs.
+	trackIndex   map[string]map[string]struct{} // track.id → trace IDs
+	sessionIndex map[string]map[string]struct{} // session.id → trace IDs
 }
 
 // NewStore creates a new in-memory trace store.
 func NewStore() *Store {
-	return &Store{}
+	return &Store{
+		trackIndex:   make(map[string]map[string]struct{}),
+		sessionIndex: make(map[string]map[string]struct{}),
+	}
 }
 
 // Record adds a completed span to the store.
@@ -93,7 +100,24 @@ func (s *Store) Record(span sdktrace.ReadOnlySpan) {
 
 	s.mu.Lock()
 	s.spans = append(s.spans, summary)
+	s.indexSpan(summary)
 	s.mu.Unlock()
+}
+
+// indexSpan populates secondary indexes from span attributes. Must be called with mu held.
+func (s *Store) indexSpan(sp SpanSummary) {
+	if trackID, ok := sp.Attributes["track.id"]; ok && trackID != "" {
+		if s.trackIndex[trackID] == nil {
+			s.trackIndex[trackID] = make(map[string]struct{})
+		}
+		s.trackIndex[trackID][sp.TraceID] = struct{}{}
+	}
+	if sessionID, ok := sp.Attributes["session.id"]; ok && sessionID != "" {
+		if s.sessionIndex[sessionID] == nil {
+			s.sessionIndex[sessionID] = make(map[string]struct{})
+		}
+		s.sessionIndex[sessionID][sp.TraceID] = struct{}{}
+	}
 }
 
 // ListTraces returns unique trace summaries.
@@ -103,6 +127,65 @@ func (s *Store) ListTraces() []TraceSummary {
 
 	traces := make(map[string]*TraceSummary)
 	for _, sp := range s.spans {
+		t, ok := traces[sp.TraceID]
+		if !ok {
+			t = &TraceSummary{
+				TraceID:   sp.TraceID,
+				StartTime: sp.StartTime,
+				EndTime:   sp.EndTime,
+			}
+			traces[sp.TraceID] = t
+		}
+		t.SpanCount++
+		if sp.ParentID == "" {
+			t.RootName = sp.Name
+		}
+		if sp.StartTime.Before(t.StartTime) {
+			t.StartTime = sp.StartTime
+		}
+		if sp.EndTime.After(t.EndTime) {
+			t.EndTime = sp.EndTime
+		}
+	}
+
+	result := make([]TraceSummary, 0, len(traces))
+	for _, t := range traces {
+		result = append(result, *t)
+	}
+	return result
+}
+
+// FindByTrackID returns trace summaries for traces containing the given track.id attribute.
+func (s *Store) FindByTrackID(trackID string) []TraceSummary {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	traceIDs, ok := s.trackIndex[trackID]
+	if !ok {
+		return nil
+	}
+	return s.traceSummariesForIDs(traceIDs)
+}
+
+// FindBySessionID returns trace summaries for traces containing the given session.id attribute.
+func (s *Store) FindBySessionID(sessionID string) []TraceSummary {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	traceIDs, ok := s.sessionIndex[sessionID]
+	if !ok {
+		return nil
+	}
+	return s.traceSummariesForIDs(traceIDs)
+}
+
+// traceSummariesForIDs builds TraceSummary objects for the given trace IDs. Must be called with mu held.
+func (s *Store) traceSummariesForIDs(traceIDs map[string]struct{}) []TraceSummary {
+	traces := make(map[string]*TraceSummary)
+	for _, sp := range s.spans {
+		if _, ok := traceIDs[sp.TraceID]; !ok {
+			continue
+		}
 		t, ok := traces[sp.TraceID]
 		if !ok {
 			t = &TraceSummary{

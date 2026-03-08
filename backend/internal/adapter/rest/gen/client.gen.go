@@ -145,7 +145,7 @@ type ClientInterface interface {
 	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTraces request
-	ListTraces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListTraces(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTrace request
 	GetTrace(ctx context.Context, traceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -397,8 +397,8 @@ func (c *Client) GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListTraces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTracesRequest(c.Server)
+func (c *Client) ListTraces(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTracesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -994,7 +994,7 @@ func NewGetStatusRequest(server string) (*http.Request, error) {
 }
 
 // NewListTracesRequest generates requests for ListTraces
-func NewListTracesRequest(server string) (*http.Request, error) {
+func NewListTracesRequest(server string, params *ListTracesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -1010,6 +1010,44 @@ func NewListTracesRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.TrackId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "track_id", *params.TrackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.SessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_id", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -1229,7 +1267,7 @@ type ClientWithResponsesInterface interface {
 	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
 
 	// ListTracesWithResponse request
-	ListTracesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTracesResponse, error)
+	ListTracesWithResponse(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*ListTracesResponse, error)
 
 	// GetTraceWithResponse request
 	GetTraceWithResponse(ctx context.Context, traceId string, reqEditors ...RequestEditorFn) (*GetTraceResponse, error)
@@ -1860,8 +1898,8 @@ func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, reqEdit
 }
 
 // ListTracesWithResponse request returning *ListTracesResponse
-func (c *ClientWithResponses) ListTracesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTracesResponse, error) {
-	rsp, err := c.ListTraces(ctx, reqEditors...)
+func (c *ClientWithResponses) ListTracesWithResponse(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*ListTracesResponse, error) {
+	rsp, err := c.ListTraces(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

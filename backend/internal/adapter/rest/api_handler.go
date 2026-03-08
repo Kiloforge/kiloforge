@@ -546,11 +546,21 @@ func (h *APIHandler) UpdateSkills(_ context.Context, req gen.UpdateSkillsRequest
 }
 
 // ListTraces implements gen.StrictServerInterface.
-func (h *APIHandler) ListTraces(_ context.Context, _ gen.ListTracesRequestObject) (gen.ListTracesResponseObject, error) {
+func (h *APIHandler) ListTraces(_ context.Context, req gen.ListTracesRequestObject) (gen.ListTracesResponseObject, error) {
 	if h.traceStore == nil {
 		return gen.ListTraces200JSONResponse{}, nil
 	}
-	traces := h.traceStore.ListTraces()
+
+	var traces []tracing.TraceSummary
+	switch {
+	case req.Params.TrackId != nil && *req.Params.TrackId != "":
+		traces = h.traceStore.FindByTrackID(*req.Params.TrackId)
+	case req.Params.SessionId != nil && *req.Params.SessionId != "":
+		traces = h.traceStore.FindBySessionID(*req.Params.SessionId)
+	default:
+		traces = h.traceStore.ListTraces()
+	}
+
 	result := make(gen.ListTraces200JSONResponse, 0, len(traces))
 	for _, t := range traces {
 		result = append(result, gen.TraceSummary{

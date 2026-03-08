@@ -262,6 +262,19 @@ paths:
       operationId: listTraces
       summary: List trace summaries
       tags: [Traces]
+      parameters:
+        - name: track_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter traces by track ID attribute
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter traces by session ID attribute
       responses:
         "200":
           description: List of trace summaries
