@@ -3,6 +3,7 @@ package rest
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -37,6 +38,12 @@ type ProjectLister interface {
 	List() []domain.Project
 }
 
+// ProjectManager handles project add/remove operations.
+type ProjectManager interface {
+	AddProject(ctx context.Context, remoteURL, name string) (*service.AddProjectResult, error)
+	RemoveProject(ctx context.Context, slug string, cleanup bool) error
+}
+
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
@@ -44,6 +51,7 @@ type APIHandler struct {
 	quota      QuotaReader
 	lockMgr    *lock.Manager
 	projects   ProjectLister
+	projectMgr ProjectManager
 	traceStore *tracing.Store
 	boardSvc   *service.NativeBoardService
 	giteaURL   string
@@ -57,6 +65,7 @@ type APIHandlerOpts struct {
 	Quota      QuotaReader
 	LockMgr    *lock.Manager
 	Projects   ProjectLister
+	ProjectMgr ProjectManager
 	TraceStore *tracing.Store
 	BoardSvc   *service.NativeBoardService
 	GiteaURL   string
@@ -71,6 +80,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		quota:      opts.Quota,
 		lockMgr:    opts.LockMgr,
 		projects:   opts.Projects,
+		projectMgr: opts.ProjectMgr,
 		traceStore: opts.TraceStore,
 		boardSvc:   opts.BoardSvc,
 		giteaURL:   opts.GiteaURL,
@@ -222,6 +232,64 @@ func (h *APIHandler) ListProjects(_ context.Context, _ gen.ListProjectsRequestOb
 		result = append(result, proj)
 	}
 	return result, nil
+}
+
+// AddProject implements gen.StrictServerInterface.
+func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestObject) (gen.AddProjectResponseObject, error) {
+	if h.projectMgr == nil {
+		return gen.AddProject500JSONResponse{Error: "project management not configured"}, nil
+	}
+	if req.Body == nil || req.Body.RemoteUrl == "" {
+		return gen.AddProject400JSONResponse{Error: "remote_url is required"}, nil
+	}
+
+	name := ""
+	if req.Body.Name != nil {
+		name = *req.Body.Name
+	}
+
+	result, err := h.projectMgr.AddProject(ctx, req.Body.RemoteUrl, name)
+	if err != nil {
+		var existsErr *service.ProjectExistsError
+		if errors.As(err, &existsErr) {
+			return gen.AddProject409JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.AddProject400JSONResponse{Error: err.Error()}, nil
+	}
+
+	p := result.Project
+	resp := gen.AddProject201JSONResponse{
+		Slug:     p.Slug,
+		RepoName: p.RepoName,
+		Active:   p.Active,
+	}
+	if p.OriginRemote != "" {
+		resp.OriginRemote = &p.OriginRemote
+	}
+	return resp, nil
+}
+
+// RemoveProject implements gen.StrictServerInterface.
+func (h *APIHandler) RemoveProject(ctx context.Context, req gen.RemoveProjectRequestObject) (gen.RemoveProjectResponseObject, error) {
+	if h.projectMgr == nil {
+		return gen.RemoveProject500JSONResponse{Error: "project management not configured"}, nil
+	}
+
+	cleanup := false
+	if req.Params.Cleanup != nil {
+		cleanup = *req.Params.Cleanup
+	}
+
+	err := h.projectMgr.RemoveProject(ctx, req.Slug, cleanup)
+	if err != nil {
+		var notFound *service.ProjectNotFoundError
+		if errors.As(err, &notFound) {
+			return gen.RemoveProject404JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.RemoveProject500JSONResponse{Error: err.Error()}, nil
+	}
+
+	return gen.RemoveProject204Response{}, nil
 }
 
 // ListTracks implements gen.StrictServerInterface.

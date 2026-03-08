@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -473,10 +475,10 @@ func TestGetTrace_WithSpans(t *testing.T) {
 
 func TestListTraces_NilStore(t *testing.T) {
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		GiteaURL:   "http://localhost:3000",
+		Agents:  &stubAgentLister{},
+		Quota:   &stubQuotaReader{},
+		LockMgr: lock.New(""),
+		GiteaURL: "http://localhost:3000",
 	})
 	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
 	if err != nil {
@@ -485,5 +487,247 @@ func TestListTraces_NilStore(t *testing.T) {
 	r := resp.(gen.ListTraces200JSONResponse)
 	if len(r) != 0 {
 		t.Errorf("expected 0 traces, got %d", len(r))
+	}
+}
+
+// stubProjectManager implements ProjectManager for testing.
+type stubProjectManager struct {
+	addResult *service.AddProjectResult
+	addErr    error
+	removeErr error
+	removedSlug   string
+	removedCleanup bool
+}
+
+func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name string) (*service.AddProjectResult, error) {
+	if m.addErr != nil {
+		return nil, m.addErr
+	}
+	return m.addResult, nil
+}
+
+func (m *stubProjectManager) RemoveProject(_ context.Context, slug string, cleanup bool) error {
+	m.removedSlug = slug
+	m.removedCleanup = cleanup
+	return m.removeErr
+}
+
+func TestAddProject_Success(t *testing.T) {
+	t.Parallel()
+
+	mgr := &stubProjectManager{
+		addResult: &service.AddProjectResult{
+			Project: domain.Project{
+				Slug:         "myapp",
+				RepoName:     "myapp",
+				OriginRemote: "git@github.com:user/myapp.git",
+				Active:       true,
+			},
+		},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{},
+		ProjectMgr: mgr,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
+		Body: &gen.AddProjectJSONRequestBody{
+			RemoteUrl: "git@github.com:user/myapp.git",
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.AddProject201JSONResponse)
+	if !ok {
+		t.Fatalf("expected 201, got %T", resp)
+	}
+	if r.Slug != "myapp" {
+		t.Errorf("expected slug 'myapp', got %q", r.Slug)
+	}
+	if r.Active != true {
+		t.Error("expected active true")
+	}
+}
+
+func TestAddProject_Duplicate(t *testing.T) {
+	t.Parallel()
+
+	mgr := &stubProjectManager{
+		addErr: &service.ProjectExistsError{Slug: "myapp"},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: mgr,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
+		Body: &gen.AddProjectJSONRequestBody{
+			RemoteUrl: "git@github.com:user/myapp.git",
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.AddProject409JSONResponse); !ok {
+		t.Fatalf("expected 409, got %T", resp)
+	}
+}
+
+func TestAddProject_BadURL(t *testing.T) {
+	t.Parallel()
+
+	mgr := &stubProjectManager{
+		addErr: fmt.Errorf("invalid remote URL: /local/path"),
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: mgr,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
+		Body: &gen.AddProjectJSONRequestBody{
+			RemoteUrl: "/local/path",
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.AddProject400JSONResponse); !ok {
+		t.Fatalf("expected 400, got %T", resp)
+	}
+}
+
+func TestAddProject_MissingURL(t *testing.T) {
+	t.Parallel()
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: &stubProjectManager{},
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
+		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: ""},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.AddProject400JSONResponse); !ok {
+		t.Fatalf("expected 400, got %T", resp)
+	}
+}
+
+func TestRemoveProject_Success(t *testing.T) {
+	t.Parallel()
+
+	mgr := &stubProjectManager{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: mgr,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
+		Slug:   "myapp",
+		Params: gen.RemoveProjectParams{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.RemoveProject204Response); !ok {
+		t.Fatalf("expected 204, got %T", resp)
+	}
+	if mgr.removedSlug != "myapp" {
+		t.Errorf("expected slug 'myapp', got %q", mgr.removedSlug)
+	}
+}
+
+func TestRemoveProject_WithCleanup(t *testing.T) {
+	t.Parallel()
+
+	mgr := &stubProjectManager{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: mgr,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	cleanup := true
+	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
+		Slug:   "myapp",
+		Params: gen.RemoveProjectParams{Cleanup: &cleanup},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.RemoveProject204Response); !ok {
+		t.Fatalf("expected 204, got %T", resp)
+	}
+	if !mgr.removedCleanup {
+		t.Error("expected cleanup=true to be passed through")
+	}
+}
+
+func TestRemoveProject_NotFound(t *testing.T) {
+	t.Parallel()
+
+	mgr := &stubProjectManager{
+		removeErr: &service.ProjectNotFoundError{Slug: "nope"},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		ProjectMgr: mgr,
+		GiteaURL:   "http://localhost:3000",
+	})
+
+	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
+		Slug:   "nope",
+		Params: gen.RemoveProjectParams{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.RemoveProject404JSONResponse); !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+}
+
+func TestAddProject_NilManager(t *testing.T) {
+	t.Parallel()
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		GiteaURL: "http://localhost:3000",
+	})
+
+	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
+		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: "git@github.com:user/repo.git"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.AddProject500JSONResponse); !ok {
+		t.Fatalf("expected 500, got %T", resp)
 	}
 }
