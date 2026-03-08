@@ -44,6 +44,9 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 	if cfg.DashboardEnabled != nil {
 		t.Errorf("DashboardEnabled: want nil, got %v", *cfg.DashboardEnabled)
 	}
+	if cfg.Model != "opus" {
+		t.Errorf("Model: want %q, got %q", "opus", cfg.Model)
+	}
 }
 
 func TestDefaultsAdapter_ImplementsConfigProvider(t *testing.T) {

@@ -41,4 +41,5 @@ type AgentInfo struct {
 	SuspendedAt    *time.Time `json:"suspended_at,omitempty"`
 	ShutdownReason string     `json:"shutdown_reason,omitempty"`
 	ResumeError    string     `json:"resume_error,omitempty"`
+	Model          string     `json:"model,omitempty"`
 }

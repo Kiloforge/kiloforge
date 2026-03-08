@@ -18,6 +18,7 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		GiteaAdminUser:  os.Getenv("KF_GITEA_ADMIN_USER"),
 		GiteaAdminPass:  os.Getenv("KF_GITEA_ADMIN_PASS"),
 		GiteaAdminEmail: os.Getenv("KF_GITEA_ADMIN_EMAIL"),
+		Model:           os.Getenv("KF_MODEL"),
 	}
 
 	if v := os.Getenv("KF_GITEA_PORT"); v != "" {

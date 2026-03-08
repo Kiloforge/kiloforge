@@ -65,4 +65,10 @@ func overlay(dst, src *Config) {
 	if src.SkillsDir != "" {
 		dst.SkillsDir = src.SkillsDir
 	}
+	if src.TracingEnabled != nil {
+		dst.TracingEnabled = src.TracingEnabled
+	}
+	if src.Model != "" {
+		dst.Model = src.Model
+	}
 }

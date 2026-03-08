@@ -103,6 +103,19 @@ func TestEnvAdapter_OrchestratorPort(t *testing.T) {
 	}
 }
 
+func TestEnvAdapter_Model(t *testing.T) {
+	t.Setenv("KF_MODEL", "sonnet")
+
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Model != "sonnet" {
+		t.Errorf("Model: want %q, got %q", "sonnet", cfg.Model)
+	}
+}
+
 func TestEnvAdapter_InvalidPort_Ignored(t *testing.T) {
 	t.Setenv("KF_GITEA_PORT", "notanumber")
 

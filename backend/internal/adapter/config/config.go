@@ -30,6 +30,7 @@ type Config struct {
 	AutoUpdateSkills   *bool   `json:"auto_update_skills,omitempty"`
 	SkillsDir          string  `json:"skills_dir,omitempty"`
 	TracingEnabled     *bool   `json:"tracing_enabled,omitempty"`
+	Model              string  `json:"model,omitempty"`
 }
 
 // IsDashboardEnabled returns whether the dashboard is enabled.
