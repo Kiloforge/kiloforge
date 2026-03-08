@@ -1,20 +1,21 @@
 # Kiloforge
 
-**1,000x Productivity.** Forge code at the speed of thought with local AI swarms.
+**1,000x Productivity.** Forge code at the speed of thought with AI agent swarms.
 
-A local collaboration platform for AI agents and humans. Provides a fast, private workspace with a git forge (Gitea), a real-time monitoring dashboard, and orchestration tools for managing diverse agents at scale — all running efficiently on your machine.
+An orchestration platform for coordinating AI coding agents at scale. Runs a private git forge (Gitea), a real-time monitoring dashboard, and a relay server on your machine — while AI agents (Claude Code) work against cloud APIs to implement, review, and merge code autonomously.
 
 ## Why
 
-Working with multiple AI agents across multiple projects demands infrastructure that is fast, observable, and under your control. Remote forges add latency, rate limits, and cost. Kiloforge gives you:
+Coordinating multiple AI agents across multiple projects demands infrastructure that is observable, automated, and under your control. Kiloforge gives you:
 
-- **Fast, local-first** — zero network latency for git operations, webhooks, and agent coordination
-- **Human + AI collaboration** — Gitea for code review and PRs, plus a custom web dashboard for real-time agent monitoring, quota tracking, and log streaming
+- **Private infrastructure, cloud AI** — git forge, webhooks, and coordination run locally; AI agents use cloud APIs for the heavy lifting
+- **Human + AI collaboration** — Gitea for code review and PRs, plus a web dashboard for real-time agent monitoring, quota tracking, and log streaming
 - **Agent orchestration at scale** — spawn, monitor, throttle, suspend, and resume dozens of concurrent agents across multiple projects
 - **Session persistence** — gracefully shut down agents and auto-recover them on restart, with full session continuity
 - **Quota-aware** — track token usage and cost per agent/track, enforce budgets, and handle rate limits gracefully
+- **End-to-end tracing** — OpenTelemetry traces follow each track from claim through agent work, PR review, and merge
 - **Extensible** — scoped lock service, webhook relay, and REST APIs that agents and tools can build on
-- **Full control** — everything runs on your machine; only requires Git, Docker, and Claude Code
+- **Full control** — your code stays on your machine; only requires Git, Docker, and Claude Code
 
 ## Prerequisites
 
