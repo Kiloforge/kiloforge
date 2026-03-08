@@ -287,16 +287,37 @@ func (h *APIHandler) checkClaudeAuth(ctx context.Context) string {
 }
 
 // ListAgents implements gen.StrictServerInterface.
-func (h *APIHandler) ListAgents(_ context.Context, _ gen.ListAgentsRequestObject) (gen.ListAgentsResponseObject, error) {
+func (h *APIHandler) ListAgents(_ context.Context, req gen.ListAgentsRequestObject) (gen.ListAgentsResponseObject, error) {
 	if err := h.agents.Load(); err != nil {
 		return gen.ListAgents500JSONResponse{Error: "failed to load agent state"}, nil
 	}
 	agents := h.agents.Agents()
+	// Default: active=true — show active + recently finished (30 min TTL).
+	showAll := req.Params.Active != nil && !*req.Params.Active
+	if !showAll {
+		agents = filterActiveAgents(agents, time.Now().Add(-30*time.Minute))
+	}
 	result := make(gen.ListAgents200JSONResponse, 0, len(agents))
 	for _, a := range agents {
 		result = append(result, domainAgentToGen(a, h.quota))
 	}
 	return result, nil
+}
+
+// filterActiveAgents returns agents that are active (running/waiting) or
+// finished after the given cutoff time (display TTL).
+func filterActiveAgents(agents []domain.AgentInfo, cutoff time.Time) []domain.AgentInfo {
+	var filtered []domain.AgentInfo
+	for _, a := range agents {
+		if a.IsActive() {
+			filtered = append(filtered, a)
+			continue
+		}
+		if a.FinishedAt != nil && a.FinishedAt.After(cutoff) {
+			filtered = append(filtered, a)
+		}
+	}
+	return filtered
 }
 
 // SpawnInteractiveAgent implements gen.StrictServerInterface.
@@ -593,8 +614,12 @@ func (h *APIHandler) GetStatus(_ context.Context, _ gen.GetStatusRequestObject) 
 	}
 	agents := h.agents.Agents()
 	counts := make(map[string]int)
+	activeCount := 0
 	for _, a := range agents {
-		counts[a.Status]++
+		if a.IsActive() {
+			counts[a.Status]++
+			activeCount++
+		}
 	}
 
 	sseClients := 0
@@ -603,10 +628,11 @@ func (h *APIHandler) GetStatus(_ context.Context, _ gen.GetStatusRequestObject) 
 	}
 
 	resp := gen.StatusInfo{
-		GiteaUrl:    h.giteaURL,
-		AgentCounts: counts,
-		TotalAgents: len(agents),
-		SseClients:  sseClients,
+		GiteaUrl:     h.giteaURL,
+		AgentCounts:  counts,
+		ActiveAgents: activeCount,
+		TotalAgents:  len(agents),
+		SseClients:   sseClients,
 	}
 	if h.quota != nil {
 		rl := h.quota.IsRateLimited()
@@ -772,6 +798,9 @@ func domainAgentToGen(a domain.AgentInfo, quota QuotaReader) gen.Agent {
 	}
 	if a.SuspendedAt != nil {
 		g.SuspendedAt = a.SuspendedAt
+	}
+	if a.FinishedAt != nil {
+		g.FinishedAt = a.FinishedAt
 	}
 	if a.ShutdownReason != "" {
 		g.ShutdownReason = &a.ShutdownReason
