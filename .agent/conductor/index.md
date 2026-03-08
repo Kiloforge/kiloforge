@@ -85,6 +85,8 @@ Navigation hub for project context.
 - **agent-completion-callback_20260309112000Z** — Agent Completion Callback and Dry-Run Mode
 - **licensing_20260309113000Z** — Add Apache 2.0 License and Upstream Attribution
 - **fix-buildvcs-worktree_20260309114000Z** — Fix VCS Stamping in Git Worktrees
+- **fix-project-mgr-wiring_20260309120000Z** — Fix Project Manager Wiring in REST Server
+- **ssh-key-selection-ui_20260309120001Z** — SSH Key Selection in Project Add UI
 
 ## Getting Started
 
