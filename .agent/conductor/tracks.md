@@ -48,7 +48,7 @@
 | [x] | fix-buildvcs-worktree_20260309114000Z | Fix VCS Stamping in Git Worktrees | 2026-03-09 | 2026-03-09 |
 | [x] | fix-project-mgr-wiring_20260309120000Z | Fix Project Manager Wiring in REST Server | 2026-03-09 | 2026-03-09 |
 | [x] | ssh-key-selection-ui_20260309120001Z | SSH Key Selection in Project Add UI | 2026-03-09 | 2026-03-09 |
-| [ ] | gitea-proxy-authn_20260309123000Z | Passwordless Gitea Login via Reverse Proxy Authentication | 2026-03-09 | 2026-03-09 |
+| [x] | gitea-proxy-authn_20260309123000Z | Passwordless Gitea Login via Reverse Proxy Authentication | 2026-03-09 | 2026-03-09 |
 | [ ] | dashboard-root-routing-be_20260309130000Z | Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend) | 2026-03-09 | 2026-03-09 |
 | [ ] | dashboard-root-routing-fe_20260309130001Z | Dashboard Root Routing (Frontend) | 2026-03-09 | 2026-03-09 |
 
