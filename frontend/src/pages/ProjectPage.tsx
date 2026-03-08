@@ -45,6 +45,8 @@ export function ProjectPage() {
     enabled: !!slug,
   });
 
+  const setupIncomplete = setupStatus !== undefined && !setupStatus.setup_complete;
+
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const setupPrompt = useSetupPrompt();
@@ -206,13 +208,16 @@ export function ProjectPage() {
             <button
               className={styles.syncBtn}
               onClick={syncBoard}
-              disabled={syncing}
+              disabled={syncing || setupIncomplete}
+              title={setupIncomplete ? "Run kiloforge setup first" : undefined}
             >
               {syncing ? "Syncing..." : "Sync"}
             </button>
             <button
               className={styles.generateBtn}
-              onClick={() => setShowPrompt((v) => !v)}
+              onClick={() => { if (!setupIncomplete) setShowPrompt((v) => !v); }}
+              disabled={setupIncomplete}
+              title={setupIncomplete ? "Run kiloforge setup first" : undefined}
               data-tour="generate-tracks"
             >
               Generate Tracks
@@ -267,7 +272,16 @@ export function ProjectPage() {
         <AdminPanel
           projectSlug={slug}
           running={adminAgentId !== null}
+          disabled={setupIncomplete}
           onStartOperation={setAdminAgentId}
+          onSetupRequired={() => {
+            if (slug) setupPrompt.requestSetup(slug, () => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
+            });
+          }}
+          onSkillsRequired={() => {
+            skillsPrompt.requestInstall(() => {});
+          }}
         />
       </section>
 

@@ -10,7 +10,10 @@ type AdminOperation = "bulk-archive" | "compact-archive" | "report";
 interface Props {
   projectSlug?: string;
   running: boolean;
+  disabled?: boolean;
   onStartOperation: (agentId: string) => void;
+  onSetupRequired?: () => void;
+  onSkillsRequired?: () => void;
 }
 
 const operations: { key: AdminOperation; label: string }[] = [
@@ -19,7 +22,7 @@ const operations: { key: AdminOperation; label: string }[] = [
   { key: "report", label: "Generate Report" },
 ];
 
-export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
+export function AdminPanel({ projectSlug, running, disabled, onStartOperation, onSetupRequired, onSkillsRequired }: Props) {
   const [error, setError] = useState<string | null>(null);
   const consent = useConsent();
 
@@ -41,6 +44,14 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
         consent.requestConsent(() => handleRun(op));
         return;
       }
+      if (err instanceof FetchError && err.status === 412 && onSkillsRequired) {
+        onSkillsRequired();
+        return;
+      }
+      if (err instanceof FetchError && err.status === 428 && onSetupRequired) {
+        onSetupRequired();
+        return;
+      }
       if (err instanceof FetchError) {
         const body = err.body as { error?: string };
         setError(body?.error ?? `Failed (${err.status})`);
@@ -58,6 +69,8 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
     [mutation, consent],
   );
 
+  const isDisabled = disabled || running || mutation.isPending;
+
   return (
     <div className={styles.panel}>
       <div className={styles.actions}>
@@ -65,7 +78,8 @@ export function AdminPanel({ projectSlug, running, onStartOperation }: Props) {
           <button
             key={op.key}
             className={styles.opBtn}
-            disabled={running || mutation.isPending}
+            disabled={isDisabled}
+            title={disabled ? "Run kiloforge setup first" : undefined}
             onClick={() => handleRun(op.key)}
           >
             {mutation.isPending && mutation.variables === op.key ? "Starting..." : op.label}
