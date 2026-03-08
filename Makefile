@@ -12,14 +12,16 @@ ensure-dist:
 		echo '<!DOCTYPE html><html><body><p>Frontend not built. Run <code>make build</code>.</p></body></html>' > $(DIST_DIR)/index.html; \
 	fi
 
-build: build-frontend build-backend
+build:
+	$(MAKE) build-frontend
+	$(MAKE) build-backend
 
 build-frontend:
 	cd frontend && npm ci && npm run build
 
 build-backend: ensure-dist
 	@mkdir -p $(BIN_DIR)
-	cd backend && go build -o ../$(BINARY) ./cmd/crelay
+	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/crelay
 
 dev: ensure-dist
 	@trap 'kill 0' INT TERM; \
