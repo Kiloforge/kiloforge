@@ -1,5 +1,7 @@
 # Kiloforge
 
+**1,000x Productivity.** Forge code at the speed of thought with local AI swarms.
+
 A local collaboration platform for AI agents and humans. Provides a fast, private workspace with a git forge (Gitea), a real-time monitoring dashboard, and orchestration tools for managing diverse agents at scale — all running efficiently on your machine.
 
 ## Why
