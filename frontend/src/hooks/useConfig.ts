@@ -1,5 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ConfigResponse, UpdateConfigRequest } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 
 interface UseConfigResult {
   config: ConfigResponse | null;
@@ -9,44 +11,33 @@ interface UseConfigResult {
 }
 
 export function useConfig(): UseConfigResult {
-  const [config, setConfig] = useState<ConfigResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetch("/api/config")
-      .then((r) => r.json())
-      .then((data: ConfigResponse) => {
-        setConfig(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data: config = null, isLoading } = useQuery({
+    queryKey: queryKeys.config,
+    queryFn: () => fetcher<ConfigResponse>("/api/config"),
+  });
 
-  const updateConfig = useCallback(
-    async (req: UpdateConfigRequest): Promise<boolean> => {
-      setUpdating(true);
-      try {
-        const resp = await fetch("/api/config", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(req),
-        });
-        if (!resp.ok) {
-          setUpdating(false);
-          return false;
-        }
-        const data: ConfigResponse = await resp.json();
-        setConfig(data);
-        setUpdating(false);
-        return true;
-      } catch {
-        setUpdating(false);
-        return false;
-      }
+  const mutation = useMutation({
+    mutationFn: (req: UpdateConfigRequest) =>
+      fetcher<ConfigResponse>("/api/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData<ConfigResponse>(queryKeys.config, data);
     },
-    [],
-  );
+  });
 
-  return { config, loading, updating, updateConfig };
+  const updateConfig = async (req: UpdateConfigRequest): Promise<boolean> => {
+    try {
+      await mutation.mutateAsync(req);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  return { config, loading: isLoading, updating: mutation.isPending, updateConfig };
 }

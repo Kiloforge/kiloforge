@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { QuotaResponse, SSEEventData } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 
 interface UseQuotaResult {
   quota: QuotaResponse | null;
@@ -8,23 +11,23 @@ interface UseQuotaResult {
 }
 
 export function useQuota(): UseQuotaResult {
-  const [quota, setQuota] = useState<QuotaResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetch("/api/quota")
-      .then((r) => r.json())
-      .then((data: QuotaResponse) => {
-        setQuota(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data: quota = null, isLoading } = useQuery({
+    queryKey: queryKeys.quota,
+    queryFn: () => fetcher<QuotaResponse>("/api/quota"),
+  });
 
-  const handleQuotaUpdate = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    setQuota(event.data as QuotaResponse);
-  }, []);
+  const handleQuotaUpdate = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      queryClient.setQueryData<QuotaResponse>(
+        queryKeys.quota,
+        event.data as QuotaResponse,
+      );
+    },
+    [queryClient],
+  );
 
-  return { quota, loading, handleQuotaUpdate };
+  return { quota, loading: isLoading, handleQuotaUpdate };
 }

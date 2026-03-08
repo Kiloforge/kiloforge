@@ -1,5 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { TraceSummary, SSEEventData } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 
 interface UseTracesResult {
   traces: TraceSummary[];
@@ -8,33 +11,30 @@ interface UseTracesResult {
 }
 
 export function useTraces(): UseTracesResult {
-  const [traces, setTraces] = useState<TraceSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetch("/api/traces")
-      .then((r) => r.json())
-      .then((data: TraceSummary[]) => {
-        setTraces(data ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data: traces = [], isLoading } = useQuery({
+    queryKey: queryKeys.traces,
+    queryFn: () => fetcher<TraceSummary[]>("/api/traces").then((d) => d ?? []),
+  });
 
-  const handleTraceUpdate = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    const data = event.data as TraceSummary;
-    if (!data?.trace_id) return;
-    setTraces((prev) => {
-      const idx = prev.findIndex((t) => t.trace_id === data.trace_id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], ...data };
-        return next;
-      }
-      return [data, ...prev];
-    });
-  }, []);
+  const handleTraceUpdate = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      const data = event.data as TraceSummary;
+      if (!data?.trace_id) return;
+      queryClient.setQueryData<TraceSummary[]>(queryKeys.traces, (prev = []) => {
+        const idx = prev.findIndex((t) => t.trace_id === data.trace_id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...data };
+          return next;
+        }
+        return [data, ...prev];
+      });
+    },
+    [queryClient],
+  );
 
-  return { traces, loading, handleTraceUpdate };
+  return { traces, loading: isLoading, handleTraceUpdate };
 }

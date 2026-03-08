@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { Agent, SSEEventData } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 
 interface UseAgentsResult {
   agents: Agent[];
@@ -9,38 +12,40 @@ interface UseAgentsResult {
 }
 
 export function useAgents(): UseAgentsResult {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetch("/api/agents")
-      .then((r) => r.json())
-      .then((data: Agent[]) => {
-        setAgents(data || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data: agents = [], isLoading } = useQuery({
+    queryKey: queryKeys.agents,
+    queryFn: () => fetcher<Agent[]>("/api/agents").then((d) => d || []),
+  });
 
-  const handleAgentUpdate = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    const agent = event.data as Agent;
-    setAgents((prev) => {
-      const idx = prev.findIndex((a) => a.id === agent.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], ...agent };
-        return next;
-      }
-      return [...prev, agent];
-    });
-  }, []);
+  const handleAgentUpdate = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      const agent = event.data as Agent;
+      queryClient.setQueryData<Agent[]>(queryKeys.agents, (prev = []) => {
+        const idx = prev.findIndex((a) => a.id === agent.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...agent };
+          return next;
+        }
+        return [...prev, agent];
+      });
+    },
+    [queryClient],
+  );
 
-  const handleAgentRemoved = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    const { id } = event.data as { id: string };
-    setAgents((prev) => prev.filter((a) => a.id !== id));
-  }, []);
+  const handleAgentRemoved = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      const { id } = event.data as { id: string };
+      queryClient.setQueryData<Agent[]>(queryKeys.agents, (prev = []) =>
+        prev.filter((a) => a.id !== id),
+      );
+    },
+    [queryClient],
+  );
 
-  return { agents, loading, handleAgentUpdate, handleAgentRemoved };
+  return { agents, loading: isLoading, handleAgentUpdate, handleAgentRemoved };
 }
