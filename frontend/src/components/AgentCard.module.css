@@ -14,10 +14,16 @@
   align-items: center;
 }
 
-.id {
-  font-family: "SF Mono", "Fira Code", monospace;
-  font-size: 13px;
+.name {
+  font-size: 14px;
   font-weight: 600;
+  text-transform: lowercase;
+}
+
+.idRow {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .role {

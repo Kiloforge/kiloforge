@@ -20,9 +20,12 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <span className={styles.id}>{agent.id}</span>
+        <span className={styles.name}>{agent.name || agent.id}</span>
         <span className={`${styles.role} ${styles[agent.role] ?? ""}`}>{agent.role}</span>
       </div>
+      {agent.name && (
+        <div className={styles.idRow}>{agent.id}</div>
+      )}
       <div className={styles.header}>
         <StatusBadge status={agent.status} />
         {hasTokens && (
