@@ -41,6 +41,7 @@ Agents currently display as short UUID hashes (e.g., `dev-abc123f`) in the dashb
 - [ ] API returns name in agent JSON responses
 - [ ] Dashboard shows name prominently on agent cards (ID shown smaller/secondary)
 - [ ] Agent detail page (if exists) shows name as the heading
+- [ ] Trace timeline shows agent name on spans where an agent was active
 - [ ] `go test ./...` passes
 
 ## Dependencies

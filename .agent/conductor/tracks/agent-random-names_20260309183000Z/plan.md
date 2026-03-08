@@ -14,13 +14,18 @@
 - [ ] Task 2.2: Add `name TEXT NOT NULL DEFAULT ''` to SQLite agents table migration
 - [ ] Task 2.3: Update OpenAPI spec — add `name` field to Agent schema
 
-## Phase 3: Frontend Display
+## Phase 3: Trace Timeline Integration
 
-- [ ] Task 3.1: Update `AgentCard` component — show name as primary heading, ID as secondary subtitle
-- [ ] Task 3.2: Update agent detail page (if present) — show name as page heading
+- [ ] Task 3.1: Add `agent.name` attribute to OTel spans when agent is working on a track — set in spawner or tracing adapter
+- [ ] Task 3.2: Update trace timeline frontend component to display agent name label on spans where an agent was active
 
-## Phase 4: Verification
+## Phase 4: Frontend Display
 
-- [ ] Task 4.1: Verify `go test ./...` passes
-- [ ] Task 4.2: Verify frontend builds without errors
-- [ ] Task 4.3: Verify spawned agents display names in dashboard
+- [ ] Task 4.1: Update `AgentCard` component — show name as primary heading, ID as secondary subtitle
+- [ ] Task 4.2: Update agent detail page (if present) — show name as page heading
+
+## Phase 5: Verification
+
+- [ ] Task 5.1: Verify `go test ./...` passes
+- [ ] Task 5.2: Verify frontend builds without errors
+- [ ] Task 5.3: Verify spawned agents display names in dashboard and trace timeline
