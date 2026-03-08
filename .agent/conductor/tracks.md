@@ -25,7 +25,7 @@
 | [x] | research-otel-task-tracing_20260308233000Z | Research: OpenTelemetry for Task-Level Tracing and Token Metrics | 2026-03-08 | 2026-03-08 |
 | [x] | impl-otel-task-tracing_20260308233001Z | OpenTelemetry Task-Level Tracing and Token Metrics | 2026-03-08 | 2026-03-08 |
 | [x] | fix-init-build-bugs_20260308234000Z | Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping | 2026-03-08 | 2026-03-08 |
-| [ ] | fix-trace-timeline-unused-vars_20260308220100Z | Fix Unused Variable Errors in TraceTimeline | 2026-03-08 | 2026-03-08 |
+| [x] | fix-trace-timeline-unused-vars_20260308220100Z | Fix Unused Variable Errors in TraceTimeline | 2026-03-08 | 2026-03-08 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
