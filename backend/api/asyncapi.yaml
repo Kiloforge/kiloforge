@@ -342,13 +342,31 @@ components:
     QuotaPayload:
       type: object
       properties:
-        total_cost_usd:
+        input_tokens:
+          type: integer
+          description: Total input tokens across all agents.
+        output_tokens:
+          type: integer
+          description: Total output tokens across all agents.
+        cache_read_tokens:
+          type: integer
+          description: Total cache read tokens across all agents.
+        cache_creation_tokens:
+          type: integer
+          description: Total cache creation tokens across all agents.
+        estimated_cost_usd:
           type: number
           format: double
-          description: Total cost in USD across all agents.
+          description: Informational — API-equivalent cost estimate.
+        agent_count:
+          type: integer
+          description: Number of tracked agents.
         rate_limited:
           type: boolean
           description: Whether any agent is currently rate-limited.
+        retry_after_seconds:
+          type: integer
+          description: Seconds until rate limit expires (if rate_limited).
 
     GiteaIssuePayload:
       type: object

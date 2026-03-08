@@ -8,9 +8,11 @@ import (
 )
 
 type watcherState struct {
-	agents      map[string]string // id -> status
-	rateLimited bool
-	totalCost   float64
+	agents       map[string]string // id -> status
+	rateLimited  bool
+	totalCost    float64
+	inputTokens  int
+	outputTokens int
 }
 
 // StartWatcher launches the background state watcher goroutine.
@@ -65,9 +67,12 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 	if s.quota != nil {
 		total := s.quota.GetTotalUsage()
 		cur.totalCost = total.TotalCostUSD
+		cur.inputTokens = total.InputTokens
+		cur.outputTokens = total.OutputTokens
 		cur.rateLimited = s.quota.IsRateLimited()
 
-		if cur.totalCost != prev.totalCost || cur.rateLimited != prev.rateLimited {
+		if cur.totalCost != prev.totalCost || cur.rateLimited != prev.rateLimited ||
+			cur.inputTokens != prev.inputTokens || cur.outputTokens != prev.outputTokens {
 			s.hub.Publish(domain.NewQuotaUpdateEvent(s.quotaResponse()))
 		}
 	}
