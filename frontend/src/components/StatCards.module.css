@@ -25,6 +25,16 @@
   margin-top: 4px;
 }
 
+.sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.secondary {
+  color: var(--text-dim);
+}
+
 .danger {
   color: var(--red);
 }
