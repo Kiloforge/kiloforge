@@ -55,7 +55,8 @@ func NewProjectService(store ProjectStoreWriter, gitea ProjectGiteaClient, cfg P
 
 // AddProjectResult contains details about a newly added project.
 type AddProjectResult struct {
-	Project domain.Project
+	Project   domain.Project
+	EmptyRepo bool // true if the repo had no commits (push was skipped)
 }
 
 // AddProjectOpts contains optional parameters for AddProject.
@@ -69,7 +70,6 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
-	_ = opt
 	if !isRemoteURL(remoteURL) {
 		return nil, fmt.Errorf("invalid remote URL: %s", remoteURL)
 	}
@@ -88,8 +88,15 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		return nil, &ProjectExistsError{Slug: slug}
 	}
 
-	// Clone remote into managed directory.
+	// Clean up orphaned clone directory from a previous failed attempt.
 	cloneDir := filepath.Join(s.config.DataDir, "repos", slug)
+	if _, err := os.Stat(cloneDir); err == nil {
+		if _, registered := s.store.Get(slug); !registered {
+			os.RemoveAll(cloneDir)
+		}
+	}
+
+	// Clone remote into managed directory.
 	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "git", "clone", remoteURL, cloneDir)
 		if opt.SSHKeyPath != "" {
@@ -102,30 +109,51 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		}
 	}
 
+	// Track whether we created the Gitea repo (vs. pre-existing) for rollback.
+	giteaRepoCreated := false
+
 	// Create Gitea repo.
 	if err := s.gitea.CreateRepo(ctx, repoName); err != nil {
 		if !strings.Contains(err.Error(), "409") {
+			os.RemoveAll(cloneDir)
 			return nil, fmt.Errorf("create gitea repo: %w", err)
 		}
+	} else {
+		giteaRepoCreated = true
+	}
+
+	// rollback cleans up the Gitea repo (if we created it) and the clone dir.
+	rollback := func() {
+		if giteaRepoCreated {
+			_ = s.gitea.DeleteRepo(ctx, repoName)
+		}
+		os.RemoveAll(cloneDir)
 	}
 
 	// Add gitea remote and push.
 	giteaRemoteURL := fmt.Sprintf("%s/%s/%s.git", s.gitea.BaseURL(), s.config.GiteaAdminUser, repoName)
 	_ = exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "remove", "gitea").Run()
 	if err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "add", "gitea", giteaRemoteURL).Run(); err != nil {
+		rollback()
 		return nil, fmt.Errorf("add gitea remote: %w", err)
 	}
 
-	if out, err := exec.CommandContext(ctx, "git", "-C", cloneDir, "push", "-u", "gitea", "main").CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("push to gitea: %s: %w", string(out), err)
+	// Skip push for empty repos (no commits).
+	empty := !hasCommits(ctx, cloneDir)
+	if !empty {
+		if out, err := exec.CommandContext(ctx, "git", "-C", cloneDir, "push", "-u", "gitea", "main").CombinedOutput(); err != nil {
+			rollback()
+			return nil, fmt.Errorf("push to gitea: %s: %w", string(out), err)
+		}
 	}
 
-	// Create webhook.
+	// Create webhook (non-blocking — failure doesn't trigger rollback).
 	_ = s.gitea.CreateWebhook(ctx, repoName, s.config.OrchestratorPort)
 
 	// Create project data directory.
 	logsDir := filepath.Join(s.config.DataDir, "projects", slug, "logs")
 	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		rollback()
 		return nil, fmt.Errorf("create project dir: %w", err)
 	}
 
@@ -139,13 +167,19 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		Active:       true,
 	}
 	if err := s.store.Add(p); err != nil {
+		rollback()
 		return nil, fmt.Errorf("register project: %w", err)
 	}
 	if err := s.store.Save(); err != nil {
+		rollback()
 		return nil, fmt.Errorf("save registry: %w", err)
 	}
 
-	return &AddProjectResult{Project: p}, nil
+	result := &AddProjectResult{Project: p}
+	if empty {
+		result.EmptyRepo = true
+	}
+	return result, nil
 }
 
 // RemoveProject deregisters a project. If cleanup is true, also deletes
@@ -205,6 +239,11 @@ func isRemoteURL(arg string) bool {
 		return true
 	}
 	return false
+}
+
+// hasCommits returns true if the git repository at dir has at least one commit.
+func hasCommits(ctx context.Context, dir string) bool {
+	return exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "HEAD").Run() == nil
 }
 
 // repoNameFromURL extracts the repository name from a git remote URL.

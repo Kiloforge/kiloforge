@@ -114,8 +114,16 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Clone remote into managed directory.
+	// Clean up orphaned clone directory from a previous failed attempt.
 	cloneDir := filepath.Join(cfg.DataDir, "repos", slug)
+	if _, err := os.Stat(cloneDir); err == nil {
+		if _, registered := reg.Get(slug); !registered {
+			fmt.Printf("==> Removing orphaned clone directory: %s\n", cloneDir)
+			os.RemoveAll(cloneDir)
+		}
+	}
+
+	// Clone remote into managed directory.
 	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
 		fmt.Printf("==> Cloning %s...\n", remoteURL)
 		if err := cloneRepo(ctx, remoteURL, cloneDir, sshEnv); err != nil {
@@ -125,13 +133,29 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		fmt.Printf("==> Clone directory already exists: %s\n", cloneDir)
 	}
 
+	// Track whether we created the Gitea repo (vs. pre-existing) for rollback.
+	giteaRepoCreated := false
+
 	// Create Gitea repo using the remote repo name (not the slug).
 	fmt.Printf("==> Creating Gitea repo '%s'...\n", repoName)
 	if err := client.CreateRepo(ctx, repoName); err != nil {
 		if !strings.Contains(err.Error(), "409") {
+			os.RemoveAll(cloneDir)
 			return fmt.Errorf("create repo: %w", err)
 		}
 		fmt.Println("    Repo already exists in Gitea — continuing.")
+	} else {
+		giteaRepoCreated = true
+	}
+
+	// rollback cleans up the Gitea repo (if we created it) and the clone dir.
+	rollback := func() {
+		if giteaRepoCreated {
+			fmt.Println("==> Rolling back: deleting Gitea repo...")
+			_ = client.DeleteRepo(ctx, repoName)
+		}
+		fmt.Printf("==> Rolling back: removing clone directory %s\n", cloneDir)
+		os.RemoveAll(cloneDir)
 	}
 
 	// Add gitea remote to cloned repo.
@@ -139,17 +163,27 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Adding gitea remote...")
 	_ = exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "remove", "gitea").Run()
 	if err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "add", "gitea", giteaRemoteURL).Run(); err != nil {
+		rollback()
 		return fmt.Errorf("add gitea remote: %w", err)
 	}
 	fmt.Printf("    Remote: %s\n", giteaRemoteURL)
 
-	// Push main branch.
-	fmt.Println("==> Pushing to Gitea...")
-	pushCmd := exec.CommandContext(ctx, "git", "-C", cloneDir, "push", "-u", "gitea", "main")
-	pushCmd.Stdout = os.Stdout
-	pushCmd.Stderr = os.Stderr
-	if err := pushCmd.Run(); err != nil {
-		return fmt.Errorf("push to gitea: %w", err)
+	// Check if repo has commits — skip push for empty repos.
+	emptyRepo := exec.CommandContext(ctx, "git", "-C", cloneDir, "rev-parse", "HEAD").Run() != nil
+
+	if emptyRepo {
+		fmt.Println("==> Repository has no commits — skipping push to Gitea.")
+		fmt.Println("    Push commits to the repository and run 'kf sync' to update Gitea.")
+	} else {
+		// Push main branch.
+		fmt.Println("==> Pushing to Gitea...")
+		pushCmd := exec.CommandContext(ctx, "git", "-C", cloneDir, "push", "-u", "gitea", "main")
+		pushCmd.Stdout = os.Stdout
+		pushCmd.Stderr = os.Stderr
+		if err := pushCmd.Run(); err != nil {
+			rollback()
+			return fmt.Errorf("push to gitea: %w", err)
+		}
 	}
 
 	// Register SSH public key with Gitea if --ssh-key was given.
