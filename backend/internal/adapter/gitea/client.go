@@ -150,6 +150,43 @@ func (c *Client) CreateWebhook(ctx context.Context, repoName string, orchPort in
 	return err
 }
 
+// DeleteRepo deletes a repository via the API.
+func (c *Client) DeleteRepo(ctx context.Context, repoName string) error {
+	_, err := c.do(ctx, "DELETE", fmt.Sprintf("/api/v1/repos/%s/%s", c.username, repoName), nil)
+	return err
+}
+
+// ListWebhooks returns all webhooks for a repository.
+func (c *Client) ListWebhooks(ctx context.Context, repoName string) ([]map[string]any, error) {
+	data, err := c.do(ctx, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/hooks", c.username, repoName), nil)
+	if err != nil {
+		return nil, err
+	}
+	var result []map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// DeleteAllWebhooks removes all webhooks from a repository.
+func (c *Client) DeleteAllWebhooks(ctx context.Context, repoName string) error {
+	hooks, err := c.ListWebhooks(ctx, repoName)
+	if err != nil {
+		return fmt.Errorf("list webhooks: %w", err)
+	}
+	for _, hook := range hooks {
+		id, ok := hook["id"].(float64)
+		if !ok {
+			continue
+		}
+		if _, err := c.do(ctx, "DELETE", fmt.Sprintf("/api/v1/repos/%s/%s/hooks/%d", c.username, repoName, int64(id)), nil); err != nil {
+			return fmt.Errorf("delete webhook %d: %w", int64(id), err)
+		}
+	}
+	return nil
+}
+
 // CheckVersion calls the Gitea version API to verify the server is running.
 func (c *Client) CheckVersion(ctx context.Context) (string, error) {
 	data, err := c.do(ctx, "GET", "/api/v1/version", nil)

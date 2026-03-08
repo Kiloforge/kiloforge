@@ -232,6 +232,97 @@ func TestDeleteBranch(t *testing.T) {
 	}
 }
 
+func TestDeleteRepo_Success(t *testing.T) {
+	t.Parallel()
+
+	var gotPath, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	err := client.DeleteRepo(context.Background(), "myapp")
+	if err != nil {
+		t.Fatalf("DeleteRepo: %v", err)
+	}
+	if gotMethod != "DELETE" {
+		t.Errorf("method: want DELETE, got %s", gotMethod)
+	}
+	if gotPath != "/api/v1/repos/conductor/myapp" {
+		t.Errorf("path: want /api/v1/repos/conductor/myapp, got %s", gotPath)
+	}
+}
+
+func TestDeleteRepo_NotFound(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"message": "repo not found"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	err := client.DeleteRepo(context.Background(), "nonexistent")
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+}
+
+func TestListWebhooks(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/repos/conductor/myapp/hooks" || r.Method != "GET" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[{"id": 1}, {"id": 2}]`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	hooks, err := client.ListWebhooks(context.Background(), "myapp")
+	if err != nil {
+		t.Fatalf("ListWebhooks: %v", err)
+	}
+	if len(hooks) != 2 {
+		t.Errorf("expected 2 hooks, got %d", len(hooks))
+	}
+}
+
+func TestDeleteAllWebhooks(t *testing.T) {
+	t.Parallel()
+
+	deletedIDs := make(map[string]bool)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == "GET" && r.URL.Path == "/api/v1/repos/conductor/myapp/hooks":
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`[{"id": 10}, {"id": 20}]`))
+		case r.Method == "DELETE":
+			deletedIDs[r.URL.Path] = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "conductor", "pass")
+	err := client.DeleteAllWebhooks(context.Background(), "myapp")
+	if err != nil {
+		t.Fatalf("DeleteAllWebhooks: %v", err)
+	}
+	if len(deletedIDs) != 2 {
+		t.Errorf("expected 2 delete calls, got %d", len(deletedIDs))
+	}
+}
+
 func TestGetPRReviews(t *testing.T) {
 	t.Parallel()
 
