@@ -63,6 +63,9 @@ export function TraceTimeline({ spans, onSpanClick }: Props) {
             style={{ paddingLeft: `${depth * 16 + 4}px` }}
           >
             {span.name}
+            {span.attributes?.["agent.name"] && (
+              <span className={styles.agentName}> {span.attributes["agent.name"]}</span>
+            )}
           </span>
           <span className={styles.durationCol}>{span.duration_ms}ms</span>
           <span className={styles.barCol}>

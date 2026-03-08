@@ -64,6 +64,12 @@
   background: #f44336;
 }
 
+.agentName {
+  color: #7c9bf5;
+  font-style: italic;
+  font-size: 11px;
+}
+
 .empty {
   padding: 24px;
   text-align: center;
