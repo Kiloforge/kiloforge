@@ -1,0 +1,16 @@
+{
+  "id": "gitignore-frontend-dist_20260310000000Z",
+  "title": "Stop Committing Frontend Dist — Build Before Backend Instead",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-10T00:00:00Z",
+  "updated": "2026-03-10T00:00:00Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 6,
+    "completed": 0
+  }
+}

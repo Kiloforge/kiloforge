@@ -128,6 +128,7 @@ Navigation hub for project context.
 - **embedded-skills-default_20260309234000Z** — Embedded Skills as Default — Remove Repo Dependency
 - **tour-ux-improvements_20260309235000Z** — Tour UX Improvements — State Transitions, Demo Data, and Example URL
 - **fix-track-gen-project-init_20260309235500Z** — Auto-Initialize Conductor Artifacts Before Track Generation
+- **gitignore-frontend-dist_20260310000000Z** — Stop Committing Frontend Dist — Build Before Backend Instead
 
 ## Getting Started
 
