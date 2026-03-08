@@ -123,6 +123,7 @@ Navigation hub for project context.
 - **fix-project-sse-subscription_20260309230001Z** — Wire Project SSE Events in Dashboard Frontend
 - **tracing-always-on-be_20260309231000Z** — Remove Optional Tracing — Always-On (Backend)
 - **tracing-always-on-fe_20260309231001Z** — Remove Tracing Toggle UI (Frontend)
+- **fix-serve-interactive-agent_20260309232000Z** — Fix Interactive Agent Wiring in Serve Command (kf up)
 
 ## Getting Started
 
