@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
 import type { Project, AddProjectRequest, SSEEventData, SSHKeyInfo } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher, FetchError } from "../api/fetcher";
 
 interface UseProjectsResult {
   projects: Project[];
@@ -15,126 +18,118 @@ interface UseProjectsResult {
 }
 
 export function useProjects(): UseProjectsResult {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
+  const queryClient = useQueryClient();
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProjects = useCallback(() => {
-    fetch("/api/projects")
-      .then((r) => r.json())
-      .then((data: Project[]) => {
-        setProjects(data || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: () => fetcher<Project[]>("/api/projects").then((d) => d || []),
+  });
 
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
-  const handleProjectUpdate = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    const data = event.data as Project;
-    if (!data?.slug) return;
-    setProjects((prev) => {
-      const idx = prev.findIndex((p) => p.slug === data.slug);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], ...data };
-        return next;
-      }
-      return [...prev, data];
-    });
-  }, []);
-
-  const handleProjectRemoved = useCallback((raw: unknown) => {
-    const event = raw as SSEEventData;
-    const data = event.data as { slug: string };
-    if (!data?.slug) return;
-    setProjects((prev) => prev.filter((p) => p.slug !== data.slug));
-  }, []);
-
-  const addProject = useCallback(
-    async (req: AddProjectRequest): Promise<boolean> => {
-      setAdding(true);
-      setError(null);
-      try {
-        const resp = await fetch("/api/projects", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(req),
-        });
-        if (!resp.ok) {
-          const body = await resp.json().catch(() => ({ error: "Request failed" }));
-          setError(body.error || `Error ${resp.status}`);
-          setAdding(false);
-          return false;
-        }
-        // SSE will update the list; no need to refetch.
-        setAdding(false);
-        return true;
-      } catch {
+  const addMutation = useMutation({
+    mutationFn: (req: AddProjectRequest) =>
+      fetcher<Project>("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      }),
+    onError: (err) => {
+      if (err instanceof FetchError) {
+        const body = err.body as { error?: string };
+        setError(body?.error || `Error ${err.status}`);
+      } else {
         setError("Network error");
-        setAdding(false);
-        return false;
       }
     },
-    [],
+  });
+
+  const addProject = async (req: AddProjectRequest): Promise<boolean> => {
+    setError(null);
+    try {
+      await addMutation.mutateAsync(req);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const removeProject = async (slug: string, cleanup: boolean): Promise<boolean> => {
+    setRemoving(slug);
+    setError(null);
+    try {
+      const url = `/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
+      await fetcher<void>(url, { method: "DELETE" });
+      setRemoving(null);
+      return true;
+    } catch (err) {
+      if (err instanceof FetchError) {
+        const body = err.body as { error?: string };
+        setError(body?.error || `Error ${err.status}`);
+      } else {
+        setError("Network error");
+      }
+      setRemoving(null);
+      return false;
+    }
+  };
+
+  const handleProjectUpdate = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      const data = event.data as Project;
+      if (!data?.slug) return;
+      queryClient.setQueryData<Project[]>(queryKeys.projects, (prev = []) => {
+        const idx = prev.findIndex((p) => p.slug === data.slug);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...data };
+          return next;
+        }
+        return [...prev, data];
+      });
+    },
+    [queryClient],
   );
 
-  const removeProject = useCallback(
-    async (slug: string, cleanup: boolean): Promise<boolean> => {
-      setRemoving(slug);
-      setError(null);
-      try {
-        const url = `/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
-        const resp = await fetch(url, { method: "DELETE" });
-        if (!resp.ok) {
-          const body = await resp.json().catch(() => ({ error: "Request failed" }));
-          setError(body.error || `Error ${resp.status}`);
-          setRemoving(null);
-          return false;
-        }
-        // SSE will update the list; no need to refetch.
-        setRemoving(null);
-        return true;
-      } catch {
-        setError("Network error");
-        setRemoving(null);
-        return false;
-      }
+  const handleProjectRemoved = useCallback(
+    (raw: unknown) => {
+      const event = raw as SSEEventData;
+      const data = event.data as { slug: string };
+      if (!data?.slug) return;
+      queryClient.setQueryData<Project[]>(queryKeys.projects, (prev = []) =>
+        prev.filter((p) => p.slug !== data.slug),
+      );
     },
-    [],
+    [queryClient],
   );
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { projects, loading, adding, removing, error, addProject, removeProject, clearError, handleProjectUpdate, handleProjectRemoved };
+  return {
+    projects,
+    loading: isLoading,
+    adding: addMutation.isPending,
+    removing,
+    error,
+    addProject,
+    removeProject,
+    clearError,
+    handleProjectUpdate,
+    handleProjectRemoved,
+  };
 }
 
 export function useSSHKeys() {
-  const [keys, setKeys] = useState<SSHKeyInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: queryKeys.sshKeys,
+    queryFn: () => fetcher<{ keys: SSHKeyInfo[] }>("/api/ssh-keys").then((d) => d.keys || []),
+    enabled: false,
+  });
 
-  const fetchKeys = useCallback(() => {
-    if (fetched) return;
-    setLoading(true);
-    fetch("/api/ssh-keys")
-      .then((r) => r.json())
-      .then((data: { keys: SSHKeyInfo[] }) => {
-        setKeys(data.keys || []);
-        setFetched(true);
-        setLoading(false);
-      })
-      .catch(() => {
-        setFetched(true);
-        setLoading(false);
-      });
-  }, [fetched]);
-
-  return { keys, loading, fetchKeys };
+  return {
+    keys: data ?? [],
+    loading: isLoading,
+    fetchKeys: () => { refetch(); },
+  };
 }

@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SkillsStatus } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 
 interface UseSkillsStatusResult {
   status: SkillsStatus | null;
@@ -10,43 +12,35 @@ interface UseSkillsStatusResult {
 }
 
 export function useSkillsStatus(): UseSkillsStatusResult {
-  const [status, setStatus] = useState<SkillsStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchStatus = useCallback(() => {
-    fetch("/api/skills")
-      .then((r) => r.json())
-      .then((data: SkillsStatus) => {
-        setStatus(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data: status = null, isLoading, refetch } = useQuery({
+    queryKey: queryKeys.skills,
+    queryFn: () => fetcher<SkillsStatus>("/api/skills"),
+    refetchInterval: 60_000,
+  });
 
-  useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchStatus]);
-
-  const triggerUpdate = useCallback(async (force = false) => {
-    setUpdating(true);
-    try {
-      const resp = await fetch("/api/skills/update", {
+  const mutation = useMutation({
+    mutationFn: (force: boolean) =>
+      fetcher<void>("/api/skills/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ force }),
-      });
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.error || "Update failed");
-      }
-      fetchStatus();
-    } finally {
-      setUpdating(false);
-    }
-  }, [fetchStatus]);
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+    },
+  });
 
-  return { status, loading, updating, triggerUpdate, refresh: fetchStatus };
+  const triggerUpdate = async (force = false) => {
+    await mutation.mutateAsync(force);
+  };
+
+  return {
+    status,
+    loading: isLoading,
+    updating: mutation.isPending,
+    triggerUpdate,
+    refresh: () => { refetch(); },
+  };
 }
