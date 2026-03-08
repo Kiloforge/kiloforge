@@ -2,15 +2,15 @@
   "id": "origin-sync-ui_20260309143001Z",
   "title": "Origin Push/Pull Dashboard UI",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T14:30:01Z",
   "updated": "2026-03-09T14:30:01Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 10,
-    "completed": 0
+    "completed": 10
   }
 }
