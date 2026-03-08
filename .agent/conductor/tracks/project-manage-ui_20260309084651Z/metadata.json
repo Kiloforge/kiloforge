@@ -2,15 +2,15 @@
   "id": "project-manage-ui_20260309084651Z",
   "title": "Project Add/Remove Dashboard UI",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T08:46:51Z",
   "updated": "2026-03-09T08:46:51Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 15,
-    "completed": 0
+    "completed": 15
   }
 }
