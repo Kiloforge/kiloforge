@@ -1,0 +1,15 @@
+export const queryKeys = {
+  agents: ["agents"] as const,
+  agent: (id: string) => ["agents", id] as const,
+  board: (project: string) => ["board", project] as const,
+  config: ["config"] as const,
+  projects: ["projects"] as const,
+  quota: ["quota"] as const,
+  skills: ["skills"] as const,
+  traces: ["traces"] as const,
+  trace: (id: string) => ["traces", id] as const,
+  tracks: (project?: string) => ["tracks", project] as const,
+  syncStatus: (slug: string) => ["syncStatus", slug] as const,
+  status: ["status"] as const,
+  sshKeys: ["sshKeys"] as const,
+};
