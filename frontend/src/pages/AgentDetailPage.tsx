@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import type { Agent, LogResponse } from "../types/api";
+import { queryKeys } from "../api/queryKeys";
+import { fetcher } from "../api/fetcher";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
@@ -81,8 +84,13 @@ function TerminalBubble({ msg }: { msg: WSMessage }) {
 
 export function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data: agent, error: agentError } = useQuery({
+    queryKey: queryKeys.agent(id ?? ""),
+    queryFn: () => fetcher<Agent>(`/api/agents/${encodeURIComponent(id!)}`),
+    enabled: !!id,
+  });
+  const error = agentError?.message ?? null;
 
   // Log viewer state
   const [logLines, setLogLines] = useState<string[]>([]);
@@ -91,19 +99,7 @@ export function AgentDetailPage() {
   const logRef = useRef<HTMLPreElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Fetch agent data
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/agents/${encodeURIComponent(id)}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Agent not found");
-        return r.json();
-      })
-      .then((data: Agent) => setAgent(data))
-      .catch((err) => setError(err.message));
-  }, [id]);
-
-  // Fetch log data
+  // Fetch log data (keep as raw fetch — streaming log is not cache-friendly)
   useEffect(() => {
     if (!id) return;
     setLogLoading(true);

@@ -1,10 +1,12 @@
 export class FetchError extends Error {
-  constructor(
-    public status: number,
-    public body: unknown,
-  ) {
+  status: number;
+  body: unknown;
+
+  constructor(status: number, body: unknown) {
     super(`Request failed with status ${status}`);
     this.name = "FetchError";
+    this.status = status;
+    this.body = body;
   }
 }
 

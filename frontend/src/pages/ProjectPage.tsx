@@ -21,7 +21,7 @@ export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
-  const { board, loading: boardLoading, moveCard, refresh: refreshBoard } = useBoard(slug);
+  const { board, loading: boardLoading, moveCard } = useBoard(slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
 
