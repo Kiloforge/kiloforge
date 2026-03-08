@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -50,6 +51,7 @@ func CheckClaudeAuth(ctx context.Context) error {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "claude", "-p", ".", "--max-turns", "0")
+	cmd.Env = cleanClaudeEnv()
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -85,4 +87,17 @@ func CheckClaudeAuthCached(ctx context.Context) error {
 func ResetAuthCache() {
 	authCheckOnce = sync.Once{}
 	authCheckErr = nil
+}
+
+// cleanClaudeEnv returns os.Environ() with CLAUDECODE removed to prevent
+// "nested session" detection in child claude processes.
+func cleanClaudeEnv() []string {
+	var env []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDECODE=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	return env
 }

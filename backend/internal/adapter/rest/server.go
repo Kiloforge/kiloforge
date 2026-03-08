@@ -175,6 +175,7 @@ func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOp
 	}
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = opts.WorkDir
+	cmd.Env = agent.CleanClaudeEnv()
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start reviewer: %w", err)
 	}
@@ -191,6 +192,7 @@ func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOp
 func (d *defaultSpawner) ResumeDeveloper(ctx context.Context, sessionID, workDir string) error {
 	cmd := exec.CommandContext(ctx, "claude", "--resume", sessionID)
 	cmd.Dir = workDir
+	cmd.Env = agent.CleanClaudeEnv()
 	return cmd.Start()
 }
 

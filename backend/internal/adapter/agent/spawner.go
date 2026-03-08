@@ -75,6 +75,19 @@ func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker
 	return &Spawner{cfg: cfg, store: store, tracker: tracker, tracer: port.NoopTracer{}}
 }
 
+// CleanClaudeEnv returns os.Environ() with Claude-internal env vars removed
+// to prevent "nested session" detection in child claude processes.
+func CleanClaudeEnv() []string {
+	var env []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDECODE=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	return env
+}
+
 // SetTracer sets the distributed tracer for agent lifecycle spans.
 func (s *Spawner) SetTracer(t port.Tracer) {
 	if t != nil {
@@ -162,6 +175,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	}
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = projectDir
+	cmd.Env = CleanClaudeEnv()
 
 	lf, err := os.Create(logFile)
 	if err != nil {
@@ -264,6 +278,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 	}
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = workDir
+	cmd.Env = CleanClaudeEnv()
 
 	lf, err := os.Create(logFile)
 	if err != nil {
@@ -376,6 +391,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	}
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = workDir
+	cmd.Env = CleanClaudeEnv()
 
 	lf, err := os.Create(logFile)
 	if err != nil {
