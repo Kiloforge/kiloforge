@@ -345,4 +345,6 @@ The `make dev` target starts the Go backend on port 3001 and the Vite dev server
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
+
+This project includes derivative works of [gemini-conductor](https://github.com/goblinlordx/gemini-conductor) (MIT). See [NOTICE](NOTICE) for attribution.
