@@ -1,0 +1,16 @@
+{
+  "id": "tanstack-query-migration_20260309193000Z",
+  "title": "Migrate Frontend Data Fetching to TanStack Query",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-09T19:30:00Z",
+  "updated": "2026-03-09T19:30:00Z",
+  "phases": {
+    "total": 6,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 22,
+    "completed": 0
+  }
+}

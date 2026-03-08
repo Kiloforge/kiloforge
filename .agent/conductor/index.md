@@ -108,6 +108,7 @@ Navigation hub for project context.
 - **agent-random-names_20260309183000Z** — Random Human-Friendly Agent Names
 - **goose-migrations_20260309184000Z** — Migrate to Goose for Database Schema Migrations
 - **agent-permissions-consent_20260309190000Z** — Agent Permissions Flag and User Consent
+- **tanstack-query-migration_20260309193000Z** — Migrate Frontend Data Fetching to TanStack Query
 
 ## Getting Started
 
