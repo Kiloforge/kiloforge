@@ -155,15 +155,18 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
       <section className={appStyles.panel}>
         <div className={styles.sectionHeader}>
           <h2 className={appStyles.panelTitle}>Agents</h2>
-          {onSpawnInteractive && (
-            <button
-              className={styles.spawnBtn}
-              onClick={onSpawnInteractive}
-              disabled={spawningInteractive}
-            >
-              {spawningInteractive ? "Starting..." : "Start Interactive Agent"}
-            </button>
-          )}
+          <div className={styles.sectionActions}>
+            <Link to="/agents" className={styles.viewAllLink}>View all</Link>
+            {onSpawnInteractive && (
+              <button
+                className={styles.spawnBtn}
+                onClick={onSpawnInteractive}
+                disabled={spawningInteractive}
+              >
+                {spawningInteractive ? "Starting..." : "Start Interactive Agent"}
+              </button>
+            )}
+          </div>
         </div>
         <div className={styles.filterRow}>
           <div className={styles.filterGroup}>

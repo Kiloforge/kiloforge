@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Agent, StatusResponse } from "./types/api";
 import { useSSE } from "./hooks/useSSE";
@@ -23,6 +23,7 @@ import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay, TourComplete } from "./components/tour/TourOverlay";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AgentDetailPage } from "./pages/AgentDetailPage";
+import { AgentHistoryPage } from "./pages/AgentHistoryPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { TracePage } from "./pages/TracePage";
 import styles from "./App.module.css";
@@ -112,6 +113,7 @@ export default function App() {
           <AgentHistogram agents={agents} />
         </div>
         <nav>
+          <Link to="/agents" className={styles.link}>Agents</Link>
           {status?.gitea_url && (
             <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.link}>
               Gitea
@@ -137,6 +139,7 @@ export default function App() {
               />
             }
           />
+          <Route path="/agents" element={<AgentHistoryPage />} />
           <Route path="/agents/:id" element={<AgentDetailPage />} />
           <Route path="/projects/:slug" element={<ProjectPage />} />
           <Route path="/traces/:traceId" element={<TracePage />} />
