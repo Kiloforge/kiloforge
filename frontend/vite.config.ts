@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -18,5 +19,11 @@ export default defineConfig({
       '/health': 'http://localhost:4001',
       '/gitea': 'http://localhost:4001',
     },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.ts',
+    css: { modules: { classNameStrategy: 'non-scoped' } },
   },
 })
