@@ -21,7 +21,7 @@ build-frontend:
 
 build-backend: ensure-dist
 	@mkdir -p $(BIN_DIR)
-	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/kf
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) go build -o ../$(BINARY) ./cmd/kf
 
 dev: ensure-dist
 	@trap 'kill 0' INT TERM; \
