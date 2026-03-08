@@ -47,11 +47,11 @@ func TestMerge_PartialOverlays(t *testing.T) {
 	defaults := &testProvider{cfg: &Config{
 		GiteaPort:       3000,
 		DataDir:         "/default",
-		ContainerName:   "conductor-gitea",
+		ContainerName:   "kf-gitea",
 		GiteaImage:      "gitea/gitea:latest",
-		GiteaAdminUser:  "conductor",
-		GiteaAdminPass:  "conductor123",
-		GiteaAdminEmail: "conductor@local.dev",
+		GiteaAdminUser:  "kiloforger",
+		GiteaAdminPass:  "kiloforger123",
+		GiteaAdminEmail: "kiloforger@local.dev",
 	}}
 
 	jsonCfg := &testProvider{cfg: &Config{
@@ -81,11 +81,11 @@ func TestMerge_PartialOverlays(t *testing.T) {
 	if cfg.GiteaAdminPass != "env-secret" {
 		t.Errorf("GiteaAdminPass: want %q (env), got %q", "env-secret", cfg.GiteaAdminPass)
 	}
-	if cfg.GiteaAdminUser != "conductor" {
-		t.Errorf("GiteaAdminUser: want %q (defaults), got %q", "conductor", cfg.GiteaAdminUser)
+	if cfg.GiteaAdminUser != "kiloforger" {
+		t.Errorf("GiteaAdminUser: want %q (defaults), got %q", "kiloforger", cfg.GiteaAdminUser)
 	}
-	if cfg.ContainerName != "conductor-gitea" {
-		t.Errorf("ContainerName: want %q (defaults), got %q", "conductor-gitea", cfg.ContainerName)
+	if cfg.ContainerName != "kf-gitea" {
+		t.Errorf("ContainerName: want %q (defaults), got %q", "kf-gitea", cfg.ContainerName)
 	}
 }
 

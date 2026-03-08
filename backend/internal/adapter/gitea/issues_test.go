@@ -21,7 +21,7 @@ func TestCreateIssue_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	num, err := client.CreateIssue(context.Background(), "myapp", "test issue", "issue body", []string{"bug", "urgent"})
 	if err != nil {
 		t.Fatalf("CreateIssue: %v", err)
@@ -49,7 +49,7 @@ func TestCreateIssue_Error(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	_, err := client.CreateIssue(context.Background(), "myapp", "test", "", nil)
 	if err == nil {
 		t.Fatal("expected error on 500")
@@ -70,7 +70,7 @@ func TestUpdateIssue_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.UpdateIssue(context.Background(), "myapp", 5, "new title", "", "closed")
 	if err != nil {
 		t.Fatalf("UpdateIssue: %v", err)
@@ -103,7 +103,7 @@ func TestGetIssues_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	issues, err := client.GetIssues(context.Background(), "myapp", "open", []string{"bug"})
 	if err != nil {
 		t.Fatalf("GetIssues: %v", err)
@@ -128,7 +128,7 @@ func TestGetIssues_Empty(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	issues, err := client.GetIssues(context.Background(), "myapp", "", nil)
 	if err != nil {
 		t.Fatalf("GetIssues: %v", err)
@@ -155,7 +155,7 @@ func TestEnsureLabels_AllNew(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.EnsureLabels(context.Background(), "myapp", []LabelDef{
 		{Name: "track", Color: "#0075ca"},
 		{Name: "phase", Color: "#e4e669"},
@@ -185,7 +185,7 @@ func TestEnsureLabels_AllExisting(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.EnsureLabels(context.Background(), "myapp", []LabelDef{
 		{Name: "track", Color: "#0075ca"},
 		{Name: "phase", Color: "#e4e669"},
@@ -215,7 +215,7 @@ func TestEnsureLabels_SomeExisting(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.EnsureLabels(context.Background(), "myapp", []LabelDef{
 		{Name: "track", Color: "#0075ca"},
 		{Name: "phase", Color: "#e4e669"},

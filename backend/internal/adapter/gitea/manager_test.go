@@ -21,7 +21,7 @@ func TestConfigure_PreservesPassword(t *testing.T) {
 
 	cfg := &config.Config{
 		GiteaPort:      3000,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 		GiteaAdminPass: "secret-password-123",
 	}
 

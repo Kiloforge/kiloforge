@@ -79,7 +79,7 @@ func TestJSONAdapter_EmptyPasswordOmitted(t *testing.T) {
 		GiteaPort:      3000,
 		DataDir:        dir,
 		APIToken:       "tok-abc",
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 		GiteaAdminPass: "", // cleared after init
 	}
 
@@ -102,7 +102,7 @@ func TestJSONAdapter_OldConfigWithPassword_LoadsGracefully(t *testing.T) {
 
 	dir := t.TempDir()
 	// Simulate an old config that still has the password field.
-	data := []byte(`{"gitea_port":3000,"api_token":"tok-abc","gitea_admin_user":"conductor","gitea_admin_pass":"old-secret"}`)
+	data := []byte(`{"gitea_port":3000,"api_token":"tok-abc","gitea_admin_user":"kiloforger","gitea_admin_pass":"old-secret"}`)
 	if err := os.WriteFile(filepath.Join(dir, ConfigFileName), data, 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestJSONAdapter_Save_StripsPassword(t *testing.T) {
 	cfg := &Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 		GiteaAdminPass: "super-secret-pass", // non-empty password
 	}
 

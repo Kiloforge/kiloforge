@@ -18,11 +18,11 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 		GiteaPort:       4000,
 		OrchestratorPort: 4001,
 		DataDir:         filepath.Join(home, ".kiloforge"),
-		ContainerName:   "conductor-gitea",
+		ContainerName:   "kf-gitea",
 		GiteaImage:      "gitea/gitea:latest",
-		GiteaAdminUser:  "conductor",
+		GiteaAdminUser:  "kiloforger",
 		// GiteaAdminPass intentionally omitted — resolved via flag, saved config, or generated.
-		GiteaAdminEmail: "conductor@local.dev",
+		GiteaAdminEmail: "kiloforger@local.dev",
 		Model:           "opus",
 	}, nil
 }

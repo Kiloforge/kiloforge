@@ -31,7 +31,7 @@ func newTestServerWithDir(dataDir string) *Server {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dataDir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version: 1,
@@ -50,7 +50,7 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dataDir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version: 1,
@@ -63,9 +63,9 @@ func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSr
 	}
 	var client *gitea.Client
 	if giteaSrv != nil {
-		client = gitea.NewClientWithToken(giteaSrv.URL, "conductor", "test-token")
+		client = gitea.NewClientWithToken(giteaSrv.URL, "kiloforger", "test-token")
 	} else {
-		client = gitea.NewClientWithToken("http://localhost:3000", "conductor", "test-token")
+		client = gitea.NewClientWithToken("http://localhost:3000", "kiloforger", "test-token")
 	}
 	return newTestableServer(cfg, reg, spawner, client)
 }
@@ -697,7 +697,7 @@ func TestNewServer_WithDashboard(t *testing.T) {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version:  1,
@@ -734,7 +734,7 @@ func TestNewServer_WithGiteaProxy(t *testing.T) {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version:  1,

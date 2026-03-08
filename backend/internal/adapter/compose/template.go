@@ -16,7 +16,7 @@ type ComposeConfig struct {
 const composeTemplate = `services:
   gitea:
     image: gitea/gitea:latest
-    container_name: conductor-gitea
+    container_name: kf-gitea
     restart: unless-stopped
     ports:
       - "{{ .GiteaPort }}:3000"
@@ -25,7 +25,7 @@ const composeTemplate = `services:
       - gitea-data:/data
     environment:
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:{{ .OrchestratorPort }}/
+      - GITEA__server__ROOT_URL=http://localhost:{{ .OrchestratorPort }}/gitea/
       - GITEA__server__HTTP_PORT=3000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__service__DISABLE_REGISTRATION=true

@@ -21,8 +21,8 @@ func TestResolve_DefaultChain(t *testing.T) {
 	if cfg.GiteaPort != 4000 {
 		t.Errorf("GiteaPort: want 4000, got %d", cfg.GiteaPort)
 	}
-	if cfg.GiteaAdminUser != "conductor" {
-		t.Errorf("GiteaAdminUser: want %q, got %q", "conductor", cfg.GiteaAdminUser)
+	if cfg.GiteaAdminUser != "kiloforger" {
+		t.Errorf("GiteaAdminUser: want %q, got %q", "kiloforger", cfg.GiteaAdminUser)
 	}
 }
 
@@ -41,8 +41,8 @@ func TestResolve_WithFlags(t *testing.T) {
 		t.Errorf("GiteaPort: want 8080, got %d", cfg.GiteaPort)
 	}
 	// Defaults still fill in unset fields.
-	if cfg.GiteaAdminUser != "conductor" {
-		t.Errorf("GiteaAdminUser: want %q, got %q", "conductor", cfg.GiteaAdminUser)
+	if cfg.GiteaAdminUser != "kiloforger" {
+		t.Errorf("GiteaAdminUser: want %q, got %q", "kiloforger", cfg.GiteaAdminUser)
 	}
 }
 
@@ -77,7 +77,7 @@ func TestResolve_FullChain(t *testing.T) {
 		t.Errorf("APIToken: want %q (env), got %q", "env-tok", cfg.APIToken)
 	}
 	// Defaults fill in the rest.
-	if cfg.GiteaAdminUser != "conductor" {
-		t.Errorf("GiteaAdminUser: want %q (defaults), got %q", "conductor", cfg.GiteaAdminUser)
+	if cfg.GiteaAdminUser != "kiloforger" {
+		t.Errorf("GiteaAdminUser: want %q (defaults), got %q", "kiloforger", cfg.GiteaAdminUser)
 	}
 }

@@ -24,11 +24,11 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 	// Verify key fields are present.
 	checks := []string{
 		"gitea/gitea:latest",
-		"conductor-gitea",
+		"kf-gitea",
 		"3000:3000",
 		"gitea-data:/data",
 		"GITEA__security__INSTALL_LOCK=true",
-		"GITEA__server__ROOT_URL=http://localhost:3001/",
+		"GITEA__server__ROOT_URL=http://localhost:3001/gitea/",
 		"GITEA__database__DB_TYPE=sqlite3",
 		"GITEA__service__DISABLE_REGISTRATION=true",
 		"GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true",
@@ -64,21 +64,20 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 	if !strings.Contains(content, "4000:3000") {
 		t.Error("expected port mapping 4000:3000")
 	}
-	if !strings.Contains(content, "ROOT_URL=http://localhost:5000/") {
-		t.Error("expected ROOT_URL with orchestrator port 5000")
+	if !strings.Contains(content, "ROOT_URL=http://localhost:5000/gitea/") {
+		t.Error("expected ROOT_URL with orchestrator port 5000 and /gitea/ subpath")
 	}
 }
 
-// TestGenerateComposeFile_RootURLHasNoSubPath verifies ROOT_URL is at the
-// root path ("/"), not a sub-path like "/gitea/". Gitea generates all asset
-// and login URLs based on ROOT_URL, so a mismatch causes 404s.
-func TestGenerateComposeFile_RootURLHasNoSubPath(t *testing.T) {
+// TestGenerateComposeFile_RootURLHasGiteaSubPath verifies ROOT_URL uses the
+// /gitea/ sub-path, since Gitea is proxied at /gitea/ (not at /).
+func TestGenerateComposeFile_RootURLHasGiteaSubPath(t *testing.T) {
 	t.Parallel()
 
 	cfg := ComposeConfig{
-		GiteaPort: 3000,
+		GiteaPort:        3000,
 		OrchestratorPort: 3001,
-		DataDir:   "/home/user/.kiloforge",
+		DataDir:          "/home/user/.kiloforge",
 	}
 
 	data, err := GenerateComposeFile(cfg)
@@ -88,11 +87,7 @@ func TestGenerateComposeFile_RootURLHasNoSubPath(t *testing.T) {
 
 	content := string(data)
 
-	// ROOT_URL must end with just "/" — no sub-path like "/gitea/".
-	if strings.Contains(content, "ROOT_URL=http://localhost:3001/gitea/") {
-		t.Error("ROOT_URL must not have /gitea/ sub-path — Gitea is the catch-all proxy at /")
-	}
-	if !strings.Contains(content, "ROOT_URL=http://localhost:3001/\n") {
-		t.Error("ROOT_URL should be http://localhost:PORT/ with no sub-path")
+	if !strings.Contains(content, "ROOT_URL=http://localhost:3001/gitea/") {
+		t.Error("ROOT_URL must have /gitea/ sub-path — Gitea is proxied at /gitea/")
 	}
 }

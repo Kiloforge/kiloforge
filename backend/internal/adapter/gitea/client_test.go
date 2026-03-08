@@ -122,7 +122,7 @@ func TestCommentOnPR(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.CommentOnPR(context.Background(), "myapp", 5, "Review cycle limit reached.")
 	if err != nil {
 		t.Fatalf("CommentOnPR: %v", err)
@@ -157,7 +157,7 @@ func TestAddLabel(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.AddLabel(context.Background(), "myapp", 5, "needs-human-review")
 	if err != nil {
 		t.Fatalf("AddLabel: %v", err)
@@ -179,7 +179,7 @@ func TestMergePR_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.MergePR(context.Background(), "myapp", 3, "merge")
 	if err != nil {
 		t.Fatalf("MergePR: %v", err)
@@ -201,7 +201,7 @@ func TestMergePR_Conflict(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.MergePR(context.Background(), "myapp", 3, "merge")
 	if err == nil {
 		t.Fatal("expected error on merge conflict")
@@ -219,7 +219,7 @@ func TestDeleteBranch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.DeleteBranch(context.Background(), "myapp", "feature-branch")
 	if err != nil {
 		t.Fatalf("DeleteBranch: %v", err)
@@ -243,7 +243,7 @@ func TestDeleteRepo_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.DeleteRepo(context.Background(), "myapp")
 	if err != nil {
 		t.Fatalf("DeleteRepo: %v", err)
@@ -265,7 +265,7 @@ func TestDeleteRepo_NotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.DeleteRepo(context.Background(), "nonexistent")
 	if err == nil {
 		t.Fatal("expected error on 404")
@@ -284,7 +284,7 @@ func TestListWebhooks(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	hooks, err := client.ListWebhooks(context.Background(), "myapp")
 	if err != nil {
 		t.Fatalf("ListWebhooks: %v", err)
@@ -313,7 +313,7 @@ func TestDeleteAllWebhooks(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	err := client.DeleteAllWebhooks(context.Background(), "myapp")
 	if err != nil {
 		t.Fatalf("DeleteAllWebhooks: %v", err)
@@ -335,7 +335,7 @@ func TestGetPRReviews(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL, "conductor", "pass")
+	client := NewClient(srv.URL, "kiloforger", "pass")
 	reviews, err := client.GetPRReviews(context.Background(), "myapp", 5)
 	if err != nil {
 		t.Fatalf("GetPRReviews: %v", err)

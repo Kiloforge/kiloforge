@@ -33,7 +33,7 @@ func startTestServer(t *testing.T) *testServer {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version:  1,

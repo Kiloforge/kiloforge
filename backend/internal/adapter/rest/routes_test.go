@@ -59,7 +59,7 @@ func TestRouteRegistration(t *testing.T) {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version:  1,
@@ -103,7 +103,7 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version:  1,
@@ -133,7 +133,7 @@ func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
 	cfg := &config.Config{
 		GiteaPort:      3000,
 		DataDir:        dir,
-		GiteaAdminUser: "conductor",
+		GiteaAdminUser: "kiloforger",
 	}
 	reg := &jsonfile.ProjectStore{
 		Version:  1,
