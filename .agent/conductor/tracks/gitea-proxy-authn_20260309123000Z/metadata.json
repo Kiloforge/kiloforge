@@ -1,0 +1,16 @@
+{
+  "id": "gitea-proxy-authn_20260309123000Z",
+  "title": "Passwordless Gitea Login via Reverse Proxy Authentication",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-09T12:30:00Z",
+  "updated": "2026-03-09T12:30:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 9,
+    "completed": 0
+  }
+}

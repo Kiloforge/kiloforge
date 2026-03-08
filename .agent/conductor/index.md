@@ -87,6 +87,9 @@ Navigation hub for project context.
 - **fix-buildvcs-worktree_20260309114000Z** — Fix VCS Stamping in Git Worktrees
 - **fix-project-mgr-wiring_20260309120000Z** — Fix Project Manager Wiring in REST Server
 - **ssh-key-selection-ui_20260309120001Z** — SSH Key Selection in Project Add UI
+- **gitea-proxy-authn_20260309123000Z** — Passwordless Gitea Login via Reverse Proxy Authentication
+- **dashboard-root-routing-be_20260309130000Z** — Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)
+- **dashboard-root-routing-fe_20260309130001Z** — Dashboard Root Routing (Frontend)
 
 ## Getting Started
 
