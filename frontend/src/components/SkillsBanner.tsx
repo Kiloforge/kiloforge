@@ -6,15 +6,12 @@ export function SkillsBanner() {
 
   if (loading || !status) return null;
 
-  // No repo configured — nothing to show.
-  if (!status.repo) return null;
-
   // No skills installed yet.
-  if (status.skills.length === 0 && status.repo) {
+  if (status.skills.length === 0) {
     return (
       <div className={`${styles.banner} ${styles.warn}`}>
         <span className={styles.message}>
-          Skills repo configured ({status.repo}) but no skills installed.
+          No skills installed. Install to enable agent spawning and track generation.
         </span>
         <button
           className={styles.btn}
