@@ -1,0 +1,16 @@
+{
+  "id": "setup-gate-fe_20260310234711Z",
+  "title": "Disable Agent Actions Until Setup Complete (Frontend)",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-10T23:47:11Z",
+  "updated": "2026-03-10T23:47:11Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}

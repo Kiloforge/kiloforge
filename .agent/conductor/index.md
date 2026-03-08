@@ -140,6 +140,8 @@ Navigation hub for project context.
 - **fix-project-delete-refresh_20260310013000Z** — Fix Project Delete — Refresh List and Close Modal
 - **agent-display-ttl-be_20260310014000Z** — Agent Display TTL and History API (Backend)
 - **agent-display-ttl-fe_20260310014001Z** — Agent Display TTL and History Page (Frontend)
+- **setup-gate-be_20260310234710Z** — Gate All Agent Endpoints Behind Setup Check (Backend)
+- **setup-gate-fe_20260310234711Z** — Disable Agent Actions Until Setup Complete (Frontend)
 
 ## Getting Started
 
