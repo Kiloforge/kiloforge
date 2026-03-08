@@ -13,7 +13,7 @@ export function useAgents(): UseAgentsResult {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/-/api/agents")
+    fetch("/api/agents")
       .then((r) => r.json())
       .then((data: Agent[]) => {
         setAgents(data || []);

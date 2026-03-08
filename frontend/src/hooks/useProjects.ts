@@ -22,7 +22,7 @@ export function useProjects(): UseProjectsResult {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = useCallback(() => {
-    fetch("/-/api/projects")
+    fetch("/api/projects")
       .then((r) => r.json())
       .then((data: Project[]) => {
         setProjects(data || []);
@@ -62,7 +62,7 @@ export function useProjects(): UseProjectsResult {
       setAdding(true);
       setError(null);
       try {
-        const resp = await fetch("/-/api/projects", {
+        const resp = await fetch("/api/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(req),
@@ -90,7 +90,7 @@ export function useProjects(): UseProjectsResult {
       setRemoving(slug);
       setError(null);
       try {
-        const url = `/-/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
+        const url = `/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
         const resp = await fetch(url, { method: "DELETE" });
         if (!resp.ok) {
           const body = await resp.json().catch(() => ({ error: "Request failed" }));
@@ -123,7 +123,7 @@ export function useSSHKeys() {
   const fetchKeys = useCallback(() => {
     if (fetched) return;
     setLoading(true);
-    fetch("/-/api/ssh-keys")
+    fetch("/api/ssh-keys")
       .then((r) => r.json())
       .then((data: { keys: SSHKeyInfo[] }) => {
         setKeys(data.keys || []);

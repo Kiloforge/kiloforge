@@ -15,7 +15,7 @@ export function useSkillsStatus(): UseSkillsStatusResult {
   const [updating, setUpdating] = useState(false);
 
   const fetchStatus = useCallback(() => {
-    fetch("/-/api/skills")
+    fetch("/api/skills")
       .then((r) => r.json())
       .then((data: SkillsStatus) => {
         setStatus(data);
@@ -33,7 +33,7 @@ export function useSkillsStatus(): UseSkillsStatusResult {
   const triggerUpdate = useCallback(async (force = false) => {
     setUpdating(true);
     try {
-      const resp = await fetch("/-/api/skills/update", {
+      const resp = await fetch("/api/skills/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ force }),

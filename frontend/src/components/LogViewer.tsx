@@ -16,7 +16,7 @@ export function LogViewer({ agentId, onClose }: Props) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/-/api/agents/${encodeURIComponent(agentId)}/log?lines=200`)
+    fetch(`/api/agents/${encodeURIComponent(agentId)}/log?lines=200`)
       .then((r) => r.json())
       .then((data: LogResponse) => {
         setLines(data.lines || []);
@@ -41,7 +41,7 @@ export function LogViewer({ agentId, onClose }: Props) {
     }
 
     const es = new EventSource(
-      `/-/api/agents/${encodeURIComponent(agentId)}/log?lines=200&follow=true`,
+      `/api/agents/${encodeURIComponent(agentId)}/log?lines=200&follow=true`,
     );
     eventSourceRef.current = es;
 

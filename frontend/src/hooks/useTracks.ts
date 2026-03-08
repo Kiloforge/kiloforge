@@ -14,8 +14,8 @@ export function useTracks(project?: string): UseTracksResult {
 
   useEffect(() => {
     const url = project
-      ? `/-/api/tracks?project=${encodeURIComponent(project)}`
-      : "/-/api/tracks";
+      ? `/api/tracks?project=${encodeURIComponent(project)}`
+      : "/api/tracks";
     fetch(url)
       .then((r) => r.json())
       .then((data: Track[]) => {

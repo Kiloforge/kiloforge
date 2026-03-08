@@ -11,7 +11,7 @@ export function TracePage() {
 
   useEffect(() => {
     if (!traceId) return;
-    fetch(`/-/api/traces/${traceId}`)
+    fetch(`/api/traces/${traceId}`)
       .then((r) => {
         if (!r.ok) throw new Error("Trace not found");
         return r.json();
@@ -23,7 +23,7 @@ export function TracePage() {
   if (error) {
     return (
       <div style={{ padding: 24 }}>
-        <Link to="/-/dashboard">&larr; Back</Link>
+        <Link to="/">&larr; Back</Link>
         <p style={{ color: "#f44336" }}>{error}</p>
       </div>
     );
@@ -41,7 +41,7 @@ export function TracePage() {
   return (
     <div style={{ padding: "16px 24px" }}>
       <div style={{ marginBottom: 16 }}>
-        <Link to="/-/dashboard" style={{ color: "#888" }}>&larr; Dashboard</Link>
+        <Link to="/" style={{ color: "#888" }}>&larr; Dashboard</Link>
       </div>
 
       <h2 style={{ margin: "0 0 4px" }}>
@@ -80,7 +80,7 @@ export function TracePage() {
                       <td style={{ color: "#ccc" }}>
                         {k === "session.id" ? (
                           <Link
-                            to={`/-/dashboard`}
+                            to={`/`}
                             title={`Session: ${v}`}
                             style={{ color: "#64b5f6", textDecoration: "none" }}
                           >

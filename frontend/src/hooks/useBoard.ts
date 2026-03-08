@@ -18,7 +18,7 @@ export function useBoard(project?: string): UseBoardResult {
       setLoading(false);
       return;
     }
-    fetch(`/-/api/board/${encodeURIComponent(project)}`)
+    fetch(`/api/board/${encodeURIComponent(project)}`)
       .then((r) => r.json())
       .then((data: BoardState) => {
         setBoard(data);
@@ -80,7 +80,7 @@ export function useBoard(project?: string): UseBoardResult {
 
       try {
         const resp = await fetch(
-          `/-/api/board/${encodeURIComponent(project)}/move`,
+          `/api/board/${encodeURIComponent(project)}/move`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

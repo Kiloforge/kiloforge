@@ -12,7 +12,7 @@ export function useTraces(): UseTracesResult {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/-/api/traces")
+    fetch("/api/traces")
       .then((r) => r.json())
       .then((data: TraceSummary[]) => {
         setTraces(data ?? []);

@@ -12,7 +12,7 @@ export function useQuota(): UseQuotaResult {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/-/api/quota")
+    fetch("/api/quota")
       .then((r) => r.json())
       .then((data: QuotaResponse) => {
         setQuota(data);

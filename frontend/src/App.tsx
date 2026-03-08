@@ -22,7 +22,7 @@ export default function App() {
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/-/api/status")
+    fetch("/api/status")
       .then((r) => r.json())
       .then((data: StatusResponse) => setStatus(data))
       .catch(() => {});
@@ -39,7 +39,7 @@ export default function App() {
     [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved],
   );
 
-  const connectionState = useSSE("/-/events", sseHandlers);
+  const connectionState = useSSE("/events", sseHandlers);
 
   const handleViewLog = useCallback((agentId: string) => {
     setLogAgentId(agentId);

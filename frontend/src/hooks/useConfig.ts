@@ -14,7 +14,7 @@ export function useConfig(): UseConfigResult {
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    fetch("/-/api/config")
+    fetch("/api/config")
       .then((r) => r.json())
       .then((data: ConfigResponse) => {
         setConfig(data);
@@ -27,7 +27,7 @@ export function useConfig(): UseConfigResult {
     async (req: UpdateConfigRequest): Promise<boolean> => {
       setUpdating(true);
       try {
-        const resp = await fetch("/-/api/config", {
+        const resp = await fetch("/api/config", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(req),
