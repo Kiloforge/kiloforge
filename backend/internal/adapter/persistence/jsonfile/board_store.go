@@ -7,7 +7,10 @@ import (
 	"path/filepath"
 
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
+
+var _ port.BoardStore = (*BoardStore)(nil)
 
 // BoardStore persists native board state per project.
 type BoardStore struct {
