@@ -75,6 +75,30 @@ func TestConfig_IsDashboardEnabled(t *testing.T) {
 	}
 }
 
+func TestConfig_IsTracingEnabled(t *testing.T) {
+	t.Parallel()
+
+	// nil means enabled (default true).
+	cfg := &Config{}
+	if !cfg.IsTracingEnabled() {
+		t.Error("nil TracingEnabled should return true")
+	}
+
+	// Explicit true.
+	tr := true
+	cfg.TracingEnabled = &tr
+	if !cfg.IsTracingEnabled() {
+		t.Error("true TracingEnabled should return true")
+	}
+
+	// Explicit false.
+	f := false
+	cfg.TracingEnabled = &f
+	if cfg.IsTracingEnabled() {
+		t.Error("false TracingEnabled should return false")
+	}
+}
+
 func TestConfig_NoProjectFields(t *testing.T) {
 	t.Parallel()
 

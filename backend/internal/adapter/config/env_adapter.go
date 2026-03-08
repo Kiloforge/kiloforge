@@ -40,5 +40,12 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		}
 	}
 
+	if v := os.Getenv("KF_TRACING_ENABLED"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err == nil {
+			cfg.TracingEnabled = &b
+		}
+	}
+
 	return cfg, nil
 }

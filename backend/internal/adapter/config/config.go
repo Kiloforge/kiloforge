@@ -52,10 +52,10 @@ func (c *Config) GetSkillsDir() string {
 }
 
 // IsTracingEnabled returns whether OTel tracing is enabled.
-// Defaults to false when TracingEnabled is nil.
+// Defaults to true when TracingEnabled is nil.
 func (c *Config) IsTracingEnabled() bool {
 	if c.TracingEnabled == nil {
-		return false
+		return true
 	}
 	return *c.TracingEnabled
 }

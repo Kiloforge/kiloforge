@@ -116,6 +116,22 @@ func TestEnvAdapter_Model(t *testing.T) {
 	}
 }
 
+func TestEnvAdapter_TracingEnabled(t *testing.T) {
+	t.Setenv("KF_TRACING_ENABLED", "false")
+
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.TracingEnabled == nil {
+		t.Fatal("TracingEnabled: want non-nil")
+	}
+	if *cfg.TracingEnabled != false {
+		t.Errorf("TracingEnabled: want false, got %v", *cfg.TracingEnabled)
+	}
+}
+
 func TestEnvAdapter_InvalidPort_Ignored(t *testing.T) {
 	t.Setenv("KF_GITEA_PORT", "notanumber")
 
