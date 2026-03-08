@@ -36,6 +36,7 @@ dev: ensure-dist
 
 test: ensure-dist
 	cd backend && go test -race ./...
+	cd frontend && npm test -- --run
 
 test-smoke: ensure-dist
 	cd backend && go test -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
@@ -45,6 +46,7 @@ test-integration: ensure-dist
 
 test-all: ensure-dist
 	cd backend && go test -race -tags=integration ./...
+	cd frontend && npm test -- --run
 
 test-coverage: ensure-dist
 	cd backend && go test -race -coverprofile=coverage.out ./...
