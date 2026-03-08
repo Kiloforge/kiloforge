@@ -48,15 +48,15 @@ A track qualifies for auto-approve when ALL of these are true:
 
 ### Skill file location
 
-The skill is installed globally at `~/.claude/skills/conductor-track-generator/SKILL.md`. The `kf-skills-source` track created embedded copies in the repo. Both locations should be updated, but since the global skill is what's actually loaded at runtime, the primary change is there.
+The kf-branded skills are embedded in the repo at `backend/internal/adapter/skills/embedded/`. The track generator skill is at:
 
-Since this track modifies a conductor skill (not application code), the developer should update:
-1. The global skill at `~/.claude/skills/conductor-track-generator/SKILL.md`
-2. The embedded source copy (if it exists in the repo under `.agent/conductor/skills/` or similar)
+- **`backend/internal/adapter/skills/embedded/kf-track-generator/SKILL.md`** — the in-repo source of truth
+
+This is the file to modify. The global `~/.claude/skills/conductor-track-generator/SKILL.md` is installed from here (or manually) — the repo copy is canonical.
 
 ## Acceptance Criteria
 
-- [ ] Track generator skill (SKILL.md) updated with auto-approve logic in Phase 4 (Review & Approval)
+- [ ] In-repo track generator skill (`backend/internal/adapter/skills/embedded/kf-track-generator/SKILL.md`) updated with auto-approve logic in Phase 4 (Review & Approval)
 - [ ] When generating research-only tracks, the generator auto-approves and skips the review prompt
 - [ ] Auto-approve output includes a clear notice: "Auto-approved (non-code research track)"
 - [ ] Mixed batches (research + code tracks) still require review for the full batch — no partial auto-approve
