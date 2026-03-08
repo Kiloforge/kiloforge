@@ -19,7 +19,6 @@ interface UseProjectsResult {
 
 export function useProjects(): UseProjectsResult {
   const queryClient = useQueryClient();
-  const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { data: projects = [], isLoading } = useQuery({
@@ -54,22 +53,30 @@ export function useProjects(): UseProjectsResult {
     }
   };
 
-  const removeProject = async (slug: string, cleanup: boolean): Promise<boolean> => {
-    setRemoving(slug);
-    setError(null);
-    try {
+  const removeMutation = useMutation({
+    mutationFn: async ({ slug, cleanup }: { slug: string; cleanup: boolean }) => {
       const url = `/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
       await fetcher<void>(url, { method: "DELETE" });
-      setRemoving(null);
-      return true;
-    } catch (err) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects });
+    },
+    onError: (err) => {
       if (err instanceof FetchError) {
         const body = err.body as { error?: string };
         setError(body?.error || `Error ${err.status}`);
       } else {
         setError("Network error");
       }
-      setRemoving(null);
+    },
+  });
+
+  const removeProject = async (slug: string, cleanup: boolean): Promise<boolean> => {
+    setError(null);
+    try {
+      await removeMutation.mutateAsync({ slug, cleanup });
+      return true;
+    } catch {
       return false;
     }
   };
@@ -110,7 +117,7 @@ export function useProjects(): UseProjectsResult {
     projects,
     loading: isLoading,
     adding: addMutation.isPending,
-    removing,
+    removing: removeMutation.isPending ? (removeMutation.variables?.slug ?? null) : null,
     error,
     addProject,
     removeProject,
