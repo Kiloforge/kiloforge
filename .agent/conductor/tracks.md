@@ -30,6 +30,7 @@
 | [x] | impl-native-track-board_20260308235001Z | Native Track Board with Dashboard Kanban and Agent Lifecycle | 2026-03-08 | 2026-03-08 |
 | [x] | fix-init-password-display_20260308235500Z | Fix Init Password Display | 2026-03-08 | 2026-03-08 |
 | [x] | rebrand-kiloforge_20260309055250Z | Rebrand crelay to Kiloforge (CLI: kf) | 2026-03-09 | 2026-03-09 |
+| [ ] | track-lifecycle-tracing_20260309062329Z | Track Lifecycle Tracing with OTel | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /conductor-new-track -->
 
