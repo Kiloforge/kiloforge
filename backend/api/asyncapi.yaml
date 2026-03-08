@@ -23,6 +23,22 @@ channels:
         $ref: '#/components/messages/AgentRemoved'
       quotaUpdate:
         $ref: '#/components/messages/QuotaUpdate'
+      trackUpdate:
+        $ref: '#/components/messages/TrackUpdate'
+      trackRemoved:
+        $ref: '#/components/messages/TrackRemoved'
+      boardUpdate:
+        $ref: '#/components/messages/BoardUpdate'
+      traceUpdate:
+        $ref: '#/components/messages/TraceUpdate'
+      projectUpdate:
+        $ref: '#/components/messages/ProjectUpdate'
+      projectRemoved:
+        $ref: '#/components/messages/ProjectRemoved'
+      lockUpdate:
+        $ref: '#/components/messages/LockUpdate'
+      lockReleased:
+        $ref: '#/components/messages/LockReleased'
 
   giteaWebhook:
     address: /webhook
@@ -49,6 +65,14 @@ operations:
       - $ref: '#/channels/sseEvents/messages/agentUpdate'
       - $ref: '#/channels/sseEvents/messages/agentRemoved'
       - $ref: '#/channels/sseEvents/messages/quotaUpdate'
+      - $ref: '#/channels/sseEvents/messages/trackUpdate'
+      - $ref: '#/channels/sseEvents/messages/trackRemoved'
+      - $ref: '#/channels/sseEvents/messages/boardUpdate'
+      - $ref: '#/channels/sseEvents/messages/traceUpdate'
+      - $ref: '#/channels/sseEvents/messages/projectUpdate'
+      - $ref: '#/channels/sseEvents/messages/projectRemoved'
+      - $ref: '#/channels/sseEvents/messages/lockUpdate'
+      - $ref: '#/channels/sseEvents/messages/lockReleased'
 
   consumeWebhook:
     action: receive
@@ -92,6 +116,123 @@ components:
       contentType: application/json
       payload:
         $ref: '#/components/schemas/QuotaPayload'
+
+    TrackUpdate:
+      name: track_update
+      title: Track Update
+      summary: Emitted when a track's status or metadata changes.
+      contentType: application/json
+      payload:
+        type: object
+        required: [id, status]
+        properties:
+          id:
+            type: string
+          title:
+            type: string
+          status:
+            type: string
+          project:
+            type: string
+
+    TrackRemoved:
+      name: track_removed
+      title: Track Removed
+      summary: Emitted when a track is deleted or archived.
+      contentType: application/json
+      payload:
+        type: object
+        required: [id]
+        properties:
+          id:
+            type: string
+
+    BoardUpdate:
+      name: board_update
+      title: Board Update
+      summary: Emitted when a board card moves between columns.
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          track_id:
+            type: string
+          from_column:
+            type: string
+          to_column:
+            type: string
+
+    TraceUpdate:
+      name: trace_update
+      title: Trace Update
+      summary: Emitted when a new trace span is recorded.
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          trace_id:
+            type: string
+          span_id:
+            type: string
+          name:
+            type: string
+
+    ProjectUpdate:
+      name: project_update
+      title: Project Update
+      summary: Emitted when a project is added or modified.
+      contentType: application/json
+      payload:
+        type: object
+        required: [slug]
+        properties:
+          slug:
+            type: string
+          repo_name:
+            type: string
+          active:
+            type: boolean
+
+    ProjectRemoved:
+      name: project_removed
+      title: Project Removed
+      summary: Emitted when a project is removed.
+      contentType: application/json
+      payload:
+        type: object
+        required: [slug]
+        properties:
+          slug:
+            type: string
+
+    LockUpdate:
+      name: lock_update
+      title: Lock Update
+      summary: Emitted when a lock is acquired or renewed.
+      contentType: application/json
+      payload:
+        type: object
+        required: [scope, holder]
+        properties:
+          scope:
+            type: string
+          holder:
+            type: string
+          expires_at:
+            type: string
+            format: date-time
+
+    LockReleased:
+      name: lock_released
+      title: Lock Released
+      summary: Emitted when a lock is released.
+      contentType: application/json
+      payload:
+        type: object
+        required: [scope]
+        properties:
+          scope:
+            type: string
 
     GiteaIssueEvent:
       name: gitea_issue
