@@ -13,23 +13,29 @@ export interface Agent {
   shutdown_reason?: string;
   resume_error?: string;
   uptime_seconds?: number;
-  cost_usd?: number;
+  estimated_cost_usd?: number;
   input_tokens?: number;
   output_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
   model?: string;
 }
 
 export interface QuotaAgent {
   agent_id: string;
-  cost_usd: number;
+  estimated_cost_usd: number;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
 }
 
 export interface QuotaResponse {
-  total_cost_usd: number;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
+  estimated_cost_usd: number;
   agent_count: number;
   rate_limited: boolean;
   retry_after_seconds?: number;
@@ -60,7 +66,7 @@ export interface StatusResponse {
   agent_counts: Record<string, number>;
   total_agents: number;
   sse_clients: number;
-  total_cost_usd?: number;
+  estimated_cost_usd?: number;
   rate_limited?: boolean;
 }
 
