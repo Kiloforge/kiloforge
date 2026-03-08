@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/-/',
+  base: '/',
   build: {
     outDir: '../backend/internal/adapter/dashboard/dist',
     emptyOutDir: true,
@@ -11,12 +11,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/-/api': 'http://localhost:4001',
-      '/-/events': 'http://localhost:4001',
+      '/api': 'http://localhost:4001',
+      '/events': 'http://localhost:4001',
+      '/ws': 'http://localhost:4001',
       '/webhook': 'http://localhost:4001',
       '/health': 'http://localhost:4001',
       '/gitea': 'http://localhost:4001',
-      '/-/locks': 'http://localhost:4001',
     },
   },
 })
