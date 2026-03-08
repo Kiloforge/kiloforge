@@ -660,12 +660,17 @@ components:
           type: string
         uptime_seconds:
           type: integer
-        cost_usd:
+        estimated_cost_usd:
           type: number
           format: double
+          description: Informational — API-equivalent cost estimate
         input_tokens:
           type: integer
         output_tokens:
+          type: integer
+        cache_read_tokens:
+          type: integer
+        cache_creation_tokens:
           type: integer
 
     AgentLog:
@@ -683,20 +688,25 @@ components:
 
     QuotaInfo:
       type: object
-      required: [total_cost_usd, rate_limited]
+      required: [input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, rate_limited, estimated_cost_usd, agent_count]
       properties:
-        total_cost_usd:
-          type: number
-          format: double
         input_tokens:
           type: integer
         output_tokens:
           type: integer
-        agent_count:
+        cache_read_tokens:
+          type: integer
+        cache_creation_tokens:
           type: integer
         rate_limited:
           type: boolean
         retry_after_seconds:
+          type: integer
+        estimated_cost_usd:
+          type: number
+          format: double
+          description: Informational — API-equivalent cost estimate
+        agent_count:
           type: integer
         agents:
           type: array
@@ -705,16 +715,21 @@ components:
 
     QuotaAgentUsage:
       type: object
-      required: [agent_id, cost_usd, input_tokens, output_tokens]
+      required: [agent_id, estimated_cost_usd, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens]
       properties:
         agent_id:
           type: string
-        cost_usd:
+        estimated_cost_usd:
           type: number
           format: double
+          description: Informational — API-equivalent cost estimate
         input_tokens:
           type: integer
         output_tokens:
+          type: integer
+        cache_read_tokens:
+          type: integer
+        cache_creation_tokens:
           type: integer
 
     AddProjectRequest:
@@ -771,9 +786,10 @@ components:
           type: integer
         rate_limited:
           type: boolean
-        total_cost_usd:
+        estimated_cost_usd:
           type: number
           format: double
+          description: Informational — API-equivalent cost estimate
 
     LockInfo:
       type: object

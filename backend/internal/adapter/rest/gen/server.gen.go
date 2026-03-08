@@ -165,22 +165,26 @@ type AddProjectRequest struct {
 
 // Agent defines model for Agent.
 type Agent struct {
-	CostUsd        *float64    `json:"cost_usd,omitempty"`
-	Id             string      `json:"id"`
-	InputTokens    *int        `json:"input_tokens,omitempty"`
-	LogFile        *string     `json:"log_file,omitempty"`
-	OutputTokens   *int        `json:"output_tokens,omitempty"`
-	Pid            int         `json:"pid"`
-	Ref            string      `json:"ref"`
-	Role           AgentRole   `json:"role"`
-	SessionId      *string     `json:"session_id,omitempty"`
-	ShutdownReason *string     `json:"shutdown_reason,omitempty"`
-	StartedAt      time.Time   `json:"started_at"`
-	Status         AgentStatus `json:"status"`
-	SuspendedAt    *time.Time  `json:"suspended_at,omitempty"`
-	UpdatedAt      time.Time   `json:"updated_at"`
-	UptimeSeconds  *int        `json:"uptime_seconds,omitempty"`
-	WorktreeDir    *string     `json:"worktree_dir,omitempty"`
+	CacheCreationTokens *int `json:"cache_creation_tokens,omitempty"`
+	CacheReadTokens     *int `json:"cache_read_tokens,omitempty"`
+
+	// EstimatedCostUsd Informational — API-equivalent cost estimate
+	EstimatedCostUsd *float64    `json:"estimated_cost_usd,omitempty"`
+	Id               string      `json:"id"`
+	InputTokens      *int        `json:"input_tokens,omitempty"`
+	LogFile          *string     `json:"log_file,omitempty"`
+	OutputTokens     *int        `json:"output_tokens,omitempty"`
+	Pid              int         `json:"pid"`
+	Ref              string      `json:"ref"`
+	Role             AgentRole   `json:"role"`
+	SessionId        *string     `json:"session_id,omitempty"`
+	ShutdownReason   *string     `json:"shutdown_reason,omitempty"`
+	StartedAt        time.Time   `json:"started_at"`
+	Status           AgentStatus `json:"status"`
+	SuspendedAt      *time.Time  `json:"suspended_at,omitempty"`
+	UpdatedAt        time.Time   `json:"updated_at"`
+	UptimeSeconds    *int        `json:"uptime_seconds,omitempty"`
+	WorktreeDir      *string     `json:"worktree_dir,omitempty"`
 }
 
 // AgentRole defines model for Agent.Role.
@@ -297,21 +301,29 @@ type Project struct {
 
 // QuotaAgentUsage defines model for QuotaAgentUsage.
 type QuotaAgentUsage struct {
-	AgentId      string  `json:"agent_id"`
-	CostUsd      float64 `json:"cost_usd"`
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
+	AgentId             string `json:"agent_id"`
+	CacheCreationTokens int    `json:"cache_creation_tokens"`
+	CacheReadTokens     int    `json:"cache_read_tokens"`
+
+	// EstimatedCostUsd Informational — API-equivalent cost estimate
+	EstimatedCostUsd float64 `json:"estimated_cost_usd"`
+	InputTokens      int     `json:"input_tokens"`
+	OutputTokens     int     `json:"output_tokens"`
 }
 
 // QuotaInfo defines model for QuotaInfo.
 type QuotaInfo struct {
-	AgentCount        *int               `json:"agent_count,omitempty"`
-	Agents            *[]QuotaAgentUsage `json:"agents,omitempty"`
-	InputTokens       *int               `json:"input_tokens,omitempty"`
-	OutputTokens      *int               `json:"output_tokens,omitempty"`
-	RateLimited       bool               `json:"rate_limited"`
-	RetryAfterSeconds *int               `json:"retry_after_seconds,omitempty"`
-	TotalCostUsd      float64            `json:"total_cost_usd"`
+	AgentCount          int                `json:"agent_count"`
+	Agents              *[]QuotaAgentUsage `json:"agents,omitempty"`
+	CacheCreationTokens int                `json:"cache_creation_tokens"`
+	CacheReadTokens     int                `json:"cache_read_tokens"`
+
+	// EstimatedCostUsd Informational — API-equivalent cost estimate
+	EstimatedCostUsd  float64 `json:"estimated_cost_usd"`
+	InputTokens       int     `json:"input_tokens"`
+	OutputTokens      int     `json:"output_tokens"`
+	RateLimited       bool    `json:"rate_limited"`
+	RetryAfterSeconds *int    `json:"retry_after_seconds,omitempty"`
 }
 
 // SkillDetail defines model for SkillDetail.
@@ -371,12 +383,14 @@ type SpanInfo struct {
 
 // StatusInfo defines model for StatusInfo.
 type StatusInfo struct {
-	AgentCounts  map[string]int `json:"agent_counts"`
-	GiteaUrl     string         `json:"gitea_url"`
-	RateLimited  *bool          `json:"rate_limited,omitempty"`
-	SseClients   int            `json:"sse_clients"`
-	TotalAgents  int            `json:"total_agents"`
-	TotalCostUsd *float64       `json:"total_cost_usd,omitempty"`
+	AgentCounts map[string]int `json:"agent_counts"`
+
+	// EstimatedCostUsd Informational — API-equivalent cost estimate
+	EstimatedCostUsd *float64 `json:"estimated_cost_usd,omitempty"`
+	GiteaUrl         string   `json:"gitea_url"`
+	RateLimited      *bool    `json:"rate_limited,omitempty"`
+	SseClients       int      `json:"sse_clients"`
+	TotalAgents      int      `json:"total_agents"`
 }
 
 // SyncBoardResult defines model for SyncBoardResult.
