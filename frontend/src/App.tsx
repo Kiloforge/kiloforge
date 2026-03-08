@@ -8,6 +8,7 @@ import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
 import { useProjects } from "./hooks/useProjects";
 import { useConsent } from "./hooks/useConsent";
+import { useSkillsPrompt } from "./hooks/useSkillsPrompt";
 import { queryKeys } from "./api/queryKeys";
 import { fetcher, FetchError } from "./api/fetcher";
 import { ConnectionStatus } from "./components/ConnectionStatus";
@@ -16,6 +17,7 @@ import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
+import { SkillsInstallDialog } from "./components/SkillsInstallDialog";
 import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay, TourComplete } from "./components/tour/TourOverlay";
@@ -37,6 +39,7 @@ export default function App() {
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const consent = useConsent();
+  const skillsPrompt = useSkillsPrompt();
 
   const sseHandlers = useMemo(
     () => ({
@@ -78,6 +81,8 @@ export default function App() {
     onError: (err) => {
       if (err instanceof FetchError && err.status === 403) {
         consent.requestConsent(() => spawnMutation.mutate());
+      } else if (err instanceof FetchError && err.status === 412) {
+        skillsPrompt.requestInstall(() => spawnMutation.mutate());
       }
     },
   });
@@ -132,6 +137,14 @@ export default function App() {
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
       {terminalAgentId && <AgentTerminal agentId={terminalAgentId} onClose={handleCloseTerminal} />}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
+      {skillsPrompt.showDialog && (
+        <SkillsInstallDialog
+          updating={skillsPrompt.updating}
+          error={skillsPrompt.error}
+          onInstall={skillsPrompt.install}
+          onCancel={skillsPrompt.cancel}
+        />
+      )}
       <TourComplete />
     </TourProvider>
   );

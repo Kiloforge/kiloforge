@@ -13,7 +13,9 @@ import { SyncPanel } from "../components/SyncPanel";
 import { AgentTerminal } from "../components/AgentTerminal";
 import { AdminPanel } from "../components/AdminPanel";
 import { ConsentDialog } from "../components/ConsentDialog";
+import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { useConsent } from "../hooks/useConsent";
+import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useTourContextSafe } from "../components/tour/TourProvider";
 import { TOUR_STEPS } from "../components/tour/tourSteps";
 import appStyles from "../App.module.css";
@@ -33,6 +35,7 @@ export function ProjectPage() {
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
   const consent = useConsent();
+  const skillsPrompt = useSkillsPrompt();
   const tour = useTourContextSafe();
 
   // Tour: auto-show prompt and prefill when on generate-tracks step
@@ -67,6 +70,8 @@ export function ProjectPage() {
     onError: (err) => {
       if (err instanceof FetchError && err.status === 403) {
         consent.requestConsent(() => handleGenerateTracks());
+      } else if (err instanceof FetchError && err.status === 412) {
+        skillsPrompt.requestInstall(() => handleGenerateTracks());
       }
     },
   });
@@ -222,6 +227,14 @@ export function ProjectPage() {
       )}
 
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
+      {skillsPrompt.showDialog && (
+        <SkillsInstallDialog
+          updating={skillsPrompt.updating}
+          error={skillsPrompt.error}
+          onInstall={skillsPrompt.install}
+          onCancel={skillsPrompt.cancel}
+        />
+      )}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>
