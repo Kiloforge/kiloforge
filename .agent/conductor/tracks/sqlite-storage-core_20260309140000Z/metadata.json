@@ -2,15 +2,15 @@
   "id": "sqlite-storage-core_20260309140000Z",
   "title": "SQLite Storage Layer — Core Schema and Migration",
   "type": "refactor",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T14:00:00Z",
-  "updated": "2026-03-09T14:00:00Z",
+  "updated": "2026-03-09T15:30:00Z",
   "phases": {
     "total": 7,
-    "completed": 0
+    "completed": 7
   },
   "tasks": {
     "total": 30,
-    "completed": 0
+    "completed": 30
   }
 }
