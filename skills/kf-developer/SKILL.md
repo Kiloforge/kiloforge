@@ -437,14 +437,14 @@ The merge lock supports two modes: **HTTP** (via kiloforge lock API) with automa
 **Setup — determine lock mode and define helpers:**
 
 ```bash
-RELAY_URL="${KF_RELAY_URL:-http://localhost:3001}"
+ORCH_URL="${KF_ORCH_URL:-http://localhost:3001}"
 HOLDER="$(basename $(pwd))"  # e.g., "developer-1"
 LOCK_MODE=""
 HEARTBEAT_PID=""
 
-# Check if relay lock API is available
-is_relay_running() {
-  curl -sf "$RELAY_URL/health" -o /dev/null 2>/dev/null
+# Check if orchestrator lock API is available
+is_orch_running() {
+  curl -sf "$ORCH_URL/health" -o /dev/null 2>/dev/null
 }
 
 # Release lock (call on ANY failure after acquire)
@@ -454,7 +454,7 @@ release_lock() {
     HEARTBEAT_PID=""
   fi
   if [ "$LOCK_MODE" = "http" ]; then
-    curl -sf -X DELETE "$RELAY_URL/-/api/locks/merge" \
+    curl -sf -X DELETE "$ORCH_URL/-/api/locks/merge" \
       -H "Content-Type: application/json" \
       -d "{\"holder\": \"$HOLDER\"}" 2>/dev/null || true
   elif [ "$LOCK_MODE" = "mkdir" ]; then
@@ -468,7 +468,7 @@ start_heartbeat() {
   if [ "$LOCK_MODE" = "http" ]; then
     while true; do
       sleep 30
-      curl -sf -X POST "$RELAY_URL/-/api/locks/merge/heartbeat" \
+      curl -sf -X POST "$ORCH_URL/-/api/locks/merge/heartbeat" \
         -H "Content-Type: application/json" \
         -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120}" 2>/dev/null || true
     done &
@@ -480,9 +480,9 @@ start_heartbeat() {
 **Without `--auto-merge`:** Try once. If the lock is held, report and **HALT** — wait for the user to say "merge" to retry.
 
 ```bash
-if is_relay_running; then
+if is_orch_running; then
   # HTTP mode — non-blocking (timeout_seconds: 0)
-  if curl -sf -X POST "$RELAY_URL/-/api/locks/merge/acquire" \
+  if curl -sf -X POST "$ORCH_URL/-/api/locks/merge/acquire" \
     -H "Content-Type: application/json" \
     -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120, \"timeout_seconds\": 0}" \
     -o /dev/null 2>/dev/null; then
@@ -504,7 +504,7 @@ else
   fi
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $HOLDER" > "$LOCK_DIR/info" 2>/dev/null
   LOCK_MODE="mkdir"
-  echo "Merge lock acquired (mkdir fallback — relay unavailable)"
+  echo "Merge lock acquired (mkdir fallback — orchestrator unavailable)"
 fi
 start_heartbeat
 ```
@@ -512,9 +512,9 @@ start_heartbeat
 **With `--auto-merge`:** Use blocking acquire. HTTP mode uses server-side long-poll (timeout_seconds: 300). mkdir mode uses a polling loop:
 
 ```bash
-if is_relay_running; then
+if is_orch_running; then
   # HTTP mode — blocking with server-side long-poll
-  if curl -sf -X POST "$RELAY_URL/-/api/locks/merge/acquire" \
+  if curl -sf -X POST "$ORCH_URL/-/api/locks/merge/acquire" \
     -H "Content-Type: application/json" \
     -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120, \"timeout_seconds\": 300}" \
     --max-time 310 -o /dev/null 2>/dev/null; then
@@ -648,16 +648,16 @@ Developer is ready for next track.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `KF_RELAY_URL` | `http://localhost:3001` | Relay server URL for HTTP lock API |
+| `KF_ORCH_URL` | `http://localhost:3001` | Orchestrator URL for HTTP lock API |
 
 ## Merge Lock Modes
 
 The merge lock uses dual-mode acquisition:
 
-1. **HTTP mode** — Preferred when kiloforge relay is running. Uses TTL (120s), heartbeat (every 30s), and server-side long-poll for `--auto-merge`. Crash recovery via automatic TTL expiry.
-2. **mkdir mode** — Fallback when relay is unreachable. Uses `$(git rev-parse --git-common-dir)/merge.lock` directory. No TTL — requires manual cleanup on crashes.
+1. **HTTP mode** — Preferred when kiloforge orchestrator is running. Uses TTL (120s), heartbeat (every 30s), and server-side long-poll for `--auto-merge`. Crash recovery via automatic TTL expiry.
+2. **mkdir mode** — Fallback when orchestrator is unreachable. Uses `$(git rev-parse --git-common-dir)/merge.lock` directory. No TTL — requires manual cleanup on crashes.
 
-Detection is automatic: if `curl -sf $RELAY_URL/health` succeeds, HTTP mode is used.
+Detection is automatic: if `curl -sf $ORCH_URL/health` succeeds, HTTP mode is used.
 
 ## Critical Rules
 
