@@ -79,6 +79,7 @@
 | [x] | fix-tour-api-mismatch_20260309223000Z | Fix Tour API Request Body Mismatch | 2026-03-09 | 2026-03-09 |
 | [x] | error-toast-notifications_20260309223001Z | Error Toast Notifications in Dashboard | 2026-03-09 | 2026-03-09 |
 | [x] | fix-gitea-push-auth_20260309224000Z | Fix Gitea Push Authentication — Embed Credentials in Remote URL | 2026-03-09 | 2026-03-09 |
+| [ ] | frontend-test-infra_20260309225000Z | Frontend Test Infrastructure and Makefile Integration | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 

@@ -118,6 +118,7 @@ Navigation hub for project context.
 - **fix-tour-api-mismatch_20260309223000Z** — Fix Tour API Request Body Mismatch
 - **error-toast-notifications_20260309223001Z** — Error Toast Notifications in Dashboard
 - **fix-gitea-push-auth_20260309224000Z** — Fix Gitea Push Authentication — Embed Credentials in Remote URL
+- **frontend-test-infra_20260309225000Z** — Frontend Test Infrastructure and Makefile Integration
 
 ## Getting Started
 
