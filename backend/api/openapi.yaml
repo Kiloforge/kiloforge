@@ -27,6 +27,13 @@ paths:
       operationId: listAgents
       summary: List all agents
       tags: [Agents]
+      parameters:
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: If true (default), return only active agents + recently finished (30 min). If false, return all agents.
       responses:
         "200":
           description: List of agents
@@ -1228,6 +1235,9 @@ components:
         suspended_at:
           type: string
           format: date-time
+        finished_at:
+          type: string
+          format: date-time
         shutdown_reason:
           type: string
         uptime_seconds:
@@ -1366,7 +1376,7 @@ components:
 
     StatusInfo:
       type: object
-      required: [gitea_url, agent_counts, total_agents, sse_clients]
+      required: [gitea_url, agent_counts, total_agents, active_agents, sse_clients]
       properties:
         gitea_url:
           type: string
@@ -1374,8 +1384,13 @@ components:
           type: object
           additionalProperties:
             type: integer
+          description: Counts by status (active statuses only)
         total_agents:
           type: integer
+          description: Total number of agents in history
+        active_agents:
+          type: integer
+          description: Number of currently active agents (running, waiting)
         sse_clients:
           type: integer
         rate_limited:
