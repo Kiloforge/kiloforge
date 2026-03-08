@@ -102,7 +102,7 @@
 | [x] | agent-display-ttl-be_20260310014000Z | Agent Display TTL and History API (Backend) | 2026-03-10 | 2026-03-10 |
 | [x] | agent-display-ttl-fe_20260310014001Z | Agent Display TTL and History Page (Frontend) | 2026-03-10 | 2026-03-10 |
 | [x] | setup-gate-be_20260310234710Z | Gate All Agent Endpoints Behind Setup Check (Backend) | 2026-03-10 | 2026-03-10 |
-| [ ] | setup-gate-fe_20260310234711Z | Disable Agent Actions Until Setup Complete (Frontend) | 2026-03-10 | 2026-03-10 |
+| [x] | setup-gate-fe_20260310234711Z | Disable Agent Actions Until Setup Complete (Frontend) | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 
