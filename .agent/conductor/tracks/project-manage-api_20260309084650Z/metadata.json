@@ -2,15 +2,15 @@
   "id": "project-manage-api_20260309084650Z",
   "title": "Project Add/Remove REST API",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T08:46:50Z",
   "updated": "2026-03-09T08:46:50Z",
   "phases": {
     "total": 6,
-    "completed": 0
+    "completed": 6
   },
   "tasks": {
     "total": 20,
-    "completed": 0
+    "completed": 20
   }
 }
