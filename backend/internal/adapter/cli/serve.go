@@ -114,6 +114,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	consentStore := sqlite.NewConsentStore(db)
 	opts = append(opts, rest.WithConsent(consentStore))
 
+	// Wire tour store for guided tour API.
+	tourStore := sqlite.NewTourStore(db)
+	opts = append(opts, rest.WithTourStore(tourStore))
+
 	// Start auto-update checker if enabled.
 	if cfg.SkillsRepo != "" && cfg.AutoUpdateSkills != nil && *cfg.AutoUpdateSkills {
 		updater := skills.NewAutoUpdater(cfg.SkillsRepo, cfg.GetSkillsDir())

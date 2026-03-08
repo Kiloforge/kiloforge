@@ -17,6 +17,7 @@ import (
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/proxy"
 	"kiloforge/internal/adapter/skills"
@@ -87,6 +88,13 @@ func WithConsent(checker ConsentChecker) ServerOption {
 	}
 }
 
+// WithTourStore enables guided tour API endpoints.
+func WithTourStore(store *sqlite.TourStore) ServerOption {
+	return func(s *Server) {
+		s.tourStore = store
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -115,6 +123,7 @@ type Server struct {
 	interSpawner  InteractiveSpawner
 	wsSessions    *wsAdapter.SessionManager
 	consent       ConsentChecker
+	tourStore     *sqlite.TourStore
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -243,6 +252,12 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 	badgeHandler := badge.NewHandler(s.store, prLoader)
 	badgeHandler.RegisterRoutes(mux)
+
+	// Guided tour endpoints (manual routes, not OpenAPI).
+	if s.tourStore != nil {
+		tourHandler := NewTourHandler(s.tourStore)
+		tourHandler.RegisterRoutes(mux)
+	}
 
 	// Mount dashboard non-API routes (SSE, HTML pages, SPA static).
 	if s.dashboard != nil {
