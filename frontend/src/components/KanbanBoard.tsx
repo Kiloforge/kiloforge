@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { BoardState, BoardCard } from "../types/api";
+import { useTourContextSafe } from "./tour/TourProvider";
+import { TOUR_STEPS } from "./tour/tourSteps";
 import styles from "./KanbanBoard.module.css";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -26,6 +28,7 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardProps) {
+  const tour = useTourContextSafe();
   const [dragTrackId, setDragTrackId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [confirmReject, setConfirmReject] = useState<string | null>(null);
@@ -58,13 +61,20 @@ export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardPro
     e.preventDefault();
     if (dragTrackId && board.cards[dragTrackId]?.column !== col) {
       onMoveCard(dragTrackId, col);
+      // Tour: detect drag to approved during move-card step
+      if (tour?.isActive && col === "approved") {
+        const step = TOUR_STEPS[tour.currentStep];
+        if (step?.id === "move-card") {
+          tour.completeTour();
+        }
+      }
     }
     setDragTrackId(null);
     setDropTarget(null);
   };
 
   return (
-    <div className={styles.board}>
+    <div className={styles.board} data-tour="kanban-board">
       {board.columns.map((col) => {
         const cards = cardsByColumn(col);
         const isOver = dropTarget === col;
@@ -87,12 +97,13 @@ export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardPro
               <span className={styles.columnCount}>{cards.length}</span>
             </div>
             <div className={styles.cards}>
-              {cards.map((card) => (
+              {cards.map((card, idx) => (
                 <CardItem
                   key={card.track_id}
                   card={card}
                   isDragging={dragTrackId === card.track_id}
                   isBacklog={col === "backlog"}
+                  dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
                   confirmingReject={confirmReject === card.track_id}
                   onDragStart={() => handleDragStart(card.track_id)}
                   onDragEnd={handleDragEnd}
@@ -118,6 +129,7 @@ interface CardItemProps {
   isDragging: boolean;
   isBacklog: boolean;
   confirmingReject: boolean;
+  dataTour?: string;
   onDragStart: () => void;
   onDragEnd: () => void;
   onApprove: () => void;
@@ -126,13 +138,14 @@ interface CardItemProps {
   onCancelReject: () => void;
 }
 
-function CardItem({ card, isDragging, isBacklog, confirmingReject, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
+function CardItem({ card, isDragging, isBacklog, confirmingReject, dataTour, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
   return (
     <div
       className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isBacklog ? styles.cardBacklog : ""}`}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      data-tour={dataTour}
     >
       <div className={styles.cardHeader}>
         {card.type && <span className={styles.cardType}>{card.type}</span>}

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTracks } from "../hooks/useTracks";
@@ -14,6 +14,8 @@ import { AgentTerminal } from "../components/AgentTerminal";
 import { AdminPanel } from "../components/AdminPanel";
 import { ConsentDialog } from "../components/ConsentDialog";
 import { useConsent } from "../hooks/useConsent";
+import { useTourContextSafe } from "../components/tour/TourProvider";
+import { TOUR_STEPS } from "../components/tour/tourSteps";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -31,6 +33,16 @@ export function ProjectPage() {
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
   const consent = useConsent();
+  const tour = useTourContextSafe();
+
+  // Tour: auto-show prompt and prefill when on generate-tracks step
+  const tourStep = tour?.isActive ? TOUR_STEPS[tour.currentStep] : null;
+  useEffect(() => {
+    if (tourStep?.id === "generate-tracks" && !showPrompt) {
+      setShowPrompt(true);
+      setPrompt("Add user authentication with login, registration, and password reset");
+    }
+  }, [tourStep?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePush = useCallback((remoteBranch: string) => {
     push({ remote_branch: remoteBranch });
@@ -144,12 +156,13 @@ export function ProjectPage() {
         </section>
       )}
 
-      <section className={appStyles.panel}>
+      <section className={appStyles.panel} data-tour="board-section">
         <div className={styles.boardHeader}>
           <h2 className={appStyles.panelTitle}>Board</h2>
           <button
             className={styles.generateBtn}
             onClick={() => setShowPrompt((v) => !v)}
+            data-tour="generate-tracks"
           >
             Generate Tracks
           </button>

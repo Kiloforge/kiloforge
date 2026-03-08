@@ -11,6 +11,8 @@ import { TrackList } from "../components/TrackList";
 import { TraceList } from "../components/TraceList";
 import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
+import { useTourContextSafe } from "../components/tour/TourProvider";
+import { TOUR_STEPS } from "../components/tour/tourSteps";
 import { useTraces } from "../hooks/useTraces";
 import { useConfig } from "../hooks/useConfig";
 import styles from "./OverviewPage.module.css";
@@ -71,7 +73,7 @@ interface ProjectRowProps {
 function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   const counts = trackCountsByStatus(tracks, project.slug);
   return (
-    <div className={styles.projectRow}>
+    <div className={styles.projectRow} data-tour="project-card">
       <Link to={`/projects/${project.slug}`} className={styles.projectLink}>
         <span className={styles.projectSlug}>{project.slug}</span>
         {project.origin_remote && (
@@ -107,9 +109,23 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
   const { config, loading: configLoading, updating: configUpdating, updateConfig } = useConfig();
+  const tour = useTourContextSafe();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  // Wrap addProject to advance tour after successful add
+  const handleAddProject = useCallback(async (req: Parameters<typeof addProject>[0]) => {
+    const ok = await addProject(req);
+    if (ok && tour?.isActive) {
+      const step = TOUR_STEPS[tour.currentStep];
+      if (step?.id === "add-project") {
+        tour.setDemoProjectSlug(req.name ?? req.remote_url.replace(/.*\//, "").replace(/\.git$/, ""));
+        tour.nextStep();
+      }
+    }
+    return ok;
+  }, [addProject, tour]);
 
   const filteredAgents = useMemo(() => {
     return agents.filter((a) => {
@@ -188,7 +204,7 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Projects</h2>
-        <AddProjectForm adding={adding} error={error} onAdd={addProject} onClearError={clearError} />
+        <AddProjectForm adding={adding} error={error} onAdd={handleAddProject} onClearError={clearError} />
         {projectsLoading ? (
           <p className={appStyles.empty}>Loading projects...</p>
         ) : projects.length === 0 ? (
