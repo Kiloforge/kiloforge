@@ -75,7 +75,7 @@
 | [x] | guided-tour-fe_20260309203001Z | Guided Tour Overlay with Simulated Onboarding Flow (Frontend) | 2026-03-09 | 2026-03-09 |
 | [x] | fix-stale-frontend-build_20260309210000Z | Fix Stale Frontend Build — Rebuild dist with Correct Base Path | 2026-03-09 | 2026-03-09 |
 | [x] | fix-add-empty-repo-cleanup_20260309213000Z | Fix kf add for Empty Repos and Add Rollback on Failure | 2026-03-09 | 2026-03-09 |
-| [ ] | track-gen-auto-approve_20260309220000Z | Track Generator Auto-Approve for Non-Code Tracks | 2026-03-09 | 2026-03-09 |
+| [x] | track-gen-auto-approve_20260309220000Z | Track Generator Auto-Approve for Non-Code Tracks | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->
 
