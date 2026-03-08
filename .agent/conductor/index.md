@@ -114,6 +114,7 @@ Navigation hub for project context.
 - **guided-tour-fe_20260309203001Z** — Guided Tour Overlay with Simulated Onboarding Flow (Frontend)
 - **fix-stale-frontend-build_20260309210000Z** — Fix Stale Frontend Build — Rebuild dist with Correct Base Path
 - **fix-add-empty-repo-cleanup_20260309213000Z** — Fix kf add for Empty Repos and Add Rollback on Failure
+- **track-gen-auto-approve_20260309220000Z** — Track Generator Auto-Approve for Non-Code Tracks
 
 ## Getting Started
 
