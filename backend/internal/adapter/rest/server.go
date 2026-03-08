@@ -136,6 +136,7 @@ func newTestableServer(cfg *config.Config, registry *jsonfile.ProjectStore, spaw
 		prService: service.NewPRService(client, spawner, logger),
 		logger:    logger,
 		port:      3001,
+		tracer:    defaultTracer,
 	}
 }
 
@@ -532,6 +533,25 @@ func (s *Server) handlePullRequestReview(slug string, payload map[string]any) {
 func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, projectDir string) {
 	s.logger.Printf("[%s] PR #%d approved — merging and cleaning up", slug, tracking.PRNumber)
 
+	// Reconstruct trace context for merge spans.
+	ctx := context.Background()
+	var mergeSpan port.SpanEnder
+	if tracking.TrackID != "" && s.boardSvc != nil {
+		if storedTraceID, ok := s.boardSvc.GetTraceID(slug, tracking.TrackID); ok {
+			ctx, mergeSpan = s.tracer.StartSpanWithTraceID(ctx, storedTraceID, "track.merge",
+				port.StringAttr("track.id", tracking.TrackID),
+				port.IntAttr("pr.number", tracking.PRNumber),
+			)
+		}
+	}
+	if mergeSpan == nil {
+		_, mergeSpan = s.tracer.StartSpan(ctx, "track.merge",
+			port.StringAttr("track.id", tracking.TrackID),
+			port.IntAttr("pr.number", tracking.PRNumber),
+		)
+	}
+	defer mergeSpan.End()
+
 	tracking.Status = "approved"
 	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
@@ -557,10 +577,13 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 		MergeMethod: "merge",
 	}
 
+	mergeSpan.AddEvent("pr.merge")
 	if err := service.MergeAndCleanup(context.Background(), opts); err != nil {
 		s.logger.Printf("[%s] Error in merge/cleanup: %v", slug, err)
+		mergeSpan.SetError(err)
 		return
 	}
+	mergeSpan.AddEvent("agents.cleanup")
 
 	// Save tracking.
 	if err := jsonfile.SavePRTracking(tracking, projectDir); err != nil {
@@ -574,6 +597,7 @@ func (s *Server) handleReviewApproved(slug string, tracking *domain.PRTracking, 
 		}
 	}
 
+	mergeSpan.AddEvent("track.completed")
 	s.logger.Printf("[%s] PR #%d merged and cleaned up (track: %s)", slug, tracking.PRNumber, tracking.TrackID)
 }
 
