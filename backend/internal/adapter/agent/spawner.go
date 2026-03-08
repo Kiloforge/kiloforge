@@ -132,6 +132,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	info := domain.AgentInfo{
 		ID:          agentID,
+		Name:        GenerateName(),
 		Role:        "reviewer",
 		Ref:         fmt.Sprintf("PR #%d", prNumber),
 		Status:      "running",
@@ -175,6 +176,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	_, span := s.tracer.StartSpan(ctx, "agent/reviewer",
 		port.StringAttr("agent.id", agentID),
+		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "reviewer"),
 		port.StringAttr("agent.ref", info.Ref),
 		port.IntAttr("agent.pid", cmd.Process.Pid),
@@ -229,6 +231,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 
 	info := domain.AgentInfo{
 		ID:          agentID,
+		Name:        GenerateName(),
 		Role:        "developer",
 		Ref:         opts.TrackID,
 		Status:      "running",
@@ -272,6 +275,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 
 	_, span := s.tracer.StartSpan(ctx, "agent/developer",
 		port.StringAttr("agent.id", agentID),
+		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "developer"),
 		port.StringAttr("agent.ref", opts.TrackID),
 		port.IntAttr("agent.pid", cmd.Process.Pid),
@@ -333,6 +337,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 
 	info := domain.AgentInfo{
 		ID:          agentID,
+		Name:        GenerateName(),
 		Role:        "interactive",
 		Ref:         ref,
 		Status:      "running",
@@ -385,6 +390,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 
 	_, span := s.tracer.StartSpan(ctx, "agent/interactive",
 		port.StringAttr("agent.id", agentID),
+		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "interactive"),
 		port.IntAttr("agent.pid", cmd.Process.Pid),
 		port.StringAttr("session.id", sessionID),

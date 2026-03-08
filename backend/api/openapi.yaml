@@ -991,6 +991,9 @@ components:
       properties:
         id:
           type: string
+        name:
+          type: string
+          description: Random human-friendly display name
         role:
           type: string
           enum: [developer, reviewer, interactive]

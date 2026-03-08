@@ -15,6 +15,7 @@ type migration struct {
 // migrations is the ordered list of schema migrations.
 var migrations = []migration{
 	{version: 1, sql: migrationV1},
+	{version: 2, sql: migrationV2},
 }
 
 // Migrate runs all pending migrations, creating the schema_version table if needed.
@@ -182,4 +183,8 @@ CREATE INDEX idx_traces_session ON traces(session_id);
 CREATE INDEX idx_agents_status ON agents(status);
 CREATE INDEX idx_agents_ref ON agents(ref);
 CREATE INDEX idx_board_project ON board_cards(project_slug);
+`
+
+const migrationV2 = `
+ALTER TABLE agents ADD COLUMN name TEXT NOT NULL DEFAULT '';
 `

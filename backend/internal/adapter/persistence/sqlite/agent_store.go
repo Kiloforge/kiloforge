@@ -32,7 +32,7 @@ func (s *AgentStore) Save() error { return nil }
 
 func (s *AgentStore) Agents() []domain.AgentInfo {
 	rows, err := s.db.Query(
-		`SELECT id, role, ref, status, session_id, pid, worktree_dir, log_file,
+		`SELECT id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
 		        started_at, updated_at, suspended_at, shutdown_reason, resume_error, model
 		 FROM agents ORDER BY started_at DESC`)
 	if err != nil {
@@ -50,10 +50,10 @@ func (s *AgentStore) AddAgent(info domain.AgentInfo) {
 	}
 	s.db.Exec(
 		`INSERT OR REPLACE INTO agents
-		 (id, role, ref, status, session_id, pid, worktree_dir, log_file,
+		 (id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
 		  started_at, updated_at, suspended_at, shutdown_reason, resume_error, model)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		info.ID, info.Role, info.Ref, info.Status, info.SessionID, info.PID,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		info.ID, info.Name, info.Role, info.Ref, info.Status, info.SessionID, info.PID,
 		info.WorktreeDir, info.LogFile,
 		info.StartedAt.Format(time.RFC3339), info.UpdatedAt.Format(time.RFC3339),
 		suspAt, info.ShutdownReason, info.ResumeError, info.Model,
@@ -62,7 +62,7 @@ func (s *AgentStore) AddAgent(info domain.AgentInfo) {
 
 func (s *AgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	rows, err := s.db.Query(
-		`SELECT id, role, ref, status, session_id, pid, worktree_dir, log_file,
+		`SELECT id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
 		        started_at, updated_at, suspended_at, shutdown_reason, resume_error, model
 		 FROM agents WHERE id = ? OR id LIKE ?`, idPrefix, idPrefix+"%")
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *AgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 
 func (s *AgentStore) FindByRef(ref string) *domain.AgentInfo {
 	rows, err := s.db.Query(
-		`SELECT id, role, ref, status, session_id, pid, worktree_dir, log_file,
+		`SELECT id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
 		        started_at, updated_at, suspended_at, shutdown_reason, resume_error, model
 		 FROM agents WHERE ref = ? ORDER BY started_at DESC LIMIT 1`, ref)
 	if err != nil {
@@ -127,7 +127,7 @@ func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 		args[i] = st
 	}
 	rows, err := s.db.Query(
-		`SELECT id, role, ref, status, session_id, pid, worktree_dir, log_file,
+		`SELECT id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
 		        started_at, updated_at, suspended_at, shutdown_reason, resume_error, model
 		 FROM agents WHERE status IN (`+placeholders+`) ORDER BY started_at DESC`, args...)
 	if err != nil {
@@ -144,7 +144,7 @@ func scanAgents(rows *sql.Rows) []domain.AgentInfo {
 		var startedAt, updatedAt string
 		var suspendedAt *string
 		if err := rows.Scan(
-			&a.ID, &a.Role, &a.Ref, &a.Status, &a.SessionID, &a.PID,
+			&a.ID, &a.Name, &a.Role, &a.Ref, &a.Status, &a.SessionID, &a.PID,
 			&a.WorktreeDir, &a.LogFile,
 			&startedAt, &updatedAt, &suspendedAt, &a.ShutdownReason, &a.ResumeError, &a.Model,
 		); err != nil {

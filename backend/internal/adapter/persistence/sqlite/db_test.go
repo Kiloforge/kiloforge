@@ -20,8 +20,8 @@ func TestOpen_CreatesDBAndMigrates(t *testing.T) {
 	if err := db.QueryRow("SELECT MAX(version) FROM schema_version").Scan(&version); err != nil {
 		t.Fatalf("query schema_version: %v", err)
 	}
-	if version != 1 {
-		t.Errorf("schema version: want 1, got %d", version)
+	if version != len(migrations) {
+		t.Errorf("schema version: want %d, got %d", len(migrations), version)
 	}
 
 	// Verify key tables exist.
@@ -54,8 +54,8 @@ func TestOpen_IdempotentMigration(t *testing.T) {
 	if err := db2.QueryRow("SELECT MAX(version) FROM schema_version").Scan(&version); err != nil {
 		t.Fatalf("query schema_version: %v", err)
 	}
-	if version != 1 {
-		t.Errorf("schema version: want 1, got %d", version)
+	if version != len(migrations) {
+		t.Errorf("schema version: want %d, got %d", len(migrations), version)
 	}
 }
 
