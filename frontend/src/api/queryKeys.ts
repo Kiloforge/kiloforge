@@ -1,5 +1,5 @@
 export const queryKeys = {
-  agents: ["agents"] as const,
+  agents: (active?: boolean) => active === false ? ["agents", "all"] as const : ["agents", "active"] as const,
   agent: (id: string) => ["agents", id] as const,
   board: (project: string) => ["board", project] as const,
   config: ["config"] as const,

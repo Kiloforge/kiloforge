@@ -11,19 +11,23 @@ interface UseAgentsResult {
   handleAgentRemoved: (raw: unknown) => void;
 }
 
-export function useAgents(): UseAgentsResult {
+export function useAgents(active = true): UseAgentsResult {
   const queryClient = useQueryClient();
+  const qk = queryKeys.agents(active ? undefined : false);
 
   const { data: agents = [], isLoading } = useQuery({
-    queryKey: queryKeys.agents,
-    queryFn: () => fetcher<Agent[]>("/api/agents").then((d) => d || []),
+    queryKey: qk,
+    queryFn: () =>
+      fetcher<Agent[]>(`/api/agents${active ? "" : "?active=false"}`).then(
+        (d) => d || [],
+      ),
   });
 
   const handleAgentUpdate = useCallback(
     (raw: unknown) => {
       const event = raw as SSEEventData;
       const agent = event.data as Agent;
-      queryClient.setQueryData<Agent[]>(queryKeys.agents, (prev = []) => {
+      queryClient.setQueryData<Agent[]>(qk, (prev = []) => {
         const idx = prev.findIndex((a) => a.id === agent.id);
         if (idx >= 0) {
           const next = [...prev];
@@ -33,18 +37,18 @@ export function useAgents(): UseAgentsResult {
         return [...prev, agent];
       });
     },
-    [queryClient],
+    [queryClient, qk],
   );
 
   const handleAgentRemoved = useCallback(
     (raw: unknown) => {
       const event = raw as SSEEventData;
       const { id } = event.data as { id: string };
-      queryClient.setQueryData<Agent[]>(queryKeys.agents, (prev = []) =>
+      queryClient.setQueryData<Agent[]>(qk, (prev = []) =>
         prev.filter((a) => a.id !== id),
       );
     },
-    [queryClient],
+    [queryClient, qk],
   );
 
   return { agents, loading: isLoading, handleAgentUpdate, handleAgentRemoved };

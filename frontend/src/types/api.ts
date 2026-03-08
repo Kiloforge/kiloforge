@@ -10,6 +10,7 @@ export interface Agent {
   log_file: string;
   started_at: string;
   updated_at: string;
+  finished_at?: string;
   suspended_at?: string;
   shutdown_reason?: string;
   resume_error?: string;

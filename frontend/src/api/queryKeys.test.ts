@@ -3,7 +3,7 @@ import { queryKeys } from "./queryKeys";
 
 describe("queryKeys", () => {
   it("returns static keys for simple queries", () => {
-    expect(queryKeys.agents).toEqual(["agents"]);
+    expect(queryKeys.agents()).toEqual(["agents", "active"]);
     expect(queryKeys.config).toEqual(["config"]);
     expect(queryKeys.projects).toEqual(["projects"]);
     expect(queryKeys.quota).toEqual(["quota"]);
