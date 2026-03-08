@@ -105,6 +105,7 @@ Navigation hub for project context.
 - **admin-operations-ui_20260309173001Z** — Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard
 - **skill-ref-migration_20260309173002Z** — Migrate All Skill References from conductor-* to kf-*
 - **agent-list-monitoring-ui_20260309180000Z** — Agent List with Role/Track Links and Monitoring View
+- **agent-random-names_20260309183000Z** — Random Human-Friendly Agent Names
 
 ## Getting Started
 
