@@ -138,6 +138,8 @@ Navigation hub for project context.
 - **fix-board-sync-ux-be_20260310012000Z** — Fix Board Sync and SSE Events (Backend)
 - **fix-board-sync-ux-fe_20260310012001Z** — Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)
 - **fix-project-delete-refresh_20260310013000Z** — Fix Project Delete — Refresh List and Close Modal
+- **agent-display-ttl-be_20260310014000Z** — Agent Display TTL and History API (Backend)
+- **agent-display-ttl-fe_20260310014001Z** — Agent Display TTL and History Page (Frontend)
 
 ## Getting Started
 
