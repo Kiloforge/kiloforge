@@ -17,6 +17,39 @@ Coordinating multiple AI agents across multiple projects demands infrastructure 
 - **Extensible** — scoped lock service, webhook relay, and REST APIs that agents and tools can build on
 - **Full control** — your code stays on your machine; only requires Git, Docker, and Claude Code
 
+## Installation
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap Goblinlordx/tap
+brew install kf
+```
+
+### Binary Download
+
+Download the latest release from [GitHub Releases](https://github.com/Goblinlordx/crelay/releases). Archives are available for:
+
+| OS | Arch | Archive |
+|----|------|---------|
+| macOS | Intel | `kf_*_darwin_amd64.tar.gz` |
+| macOS | Apple Silicon | `kf_*_darwin_arm64.tar.gz` |
+| Linux | x86_64 | `kf_*_linux_amd64.tar.gz` |
+| Linux | ARM64 | `kf_*_linux_arm64.tar.gz` |
+| Windows | x86_64 | `kf_*_windows_amd64.zip` |
+| Windows | ARM64 | `kf_*_windows_arm64.zip` |
+
+Extract and place `kf` in your `PATH`.
+
+### Build from Source
+
+```bash
+git clone https://github.com/Goblinlordx/crelay.git
+cd crelay
+make build
+# Binary at .build/kf
+```
+
 ## Prerequisites
 
 - **Git** — `git` command available in PATH
@@ -342,6 +375,27 @@ make clean
 ```
 
 The `make dev` target starts the Go backend on port 3001 and the Vite dev server on port 5173. The Vite dev server proxies API calls to the backend, so you can develop the frontend with hot reload while hitting real backend endpoints.
+
+## Releasing
+
+Releases are automated via GoReleaser and GitHub Actions.
+
+```bash
+# Tag a release
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+This triggers the release workflow which builds binaries for all platforms, creates a GitHub Release with checksums, and updates the Homebrew tap.
+
+**Required GitHub secrets:**
+- `HOMEBREW_TAP_TOKEN` — PAT with write access to the `Goblinlordx/homebrew-tap` repo
+
+To test locally:
+
+```bash
+make release-local   # goreleaser --snapshot --clean
+```
 
 ## License
 
