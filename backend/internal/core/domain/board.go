@@ -60,6 +60,7 @@ type BoardCard struct {
 	AgentStatus    string    `json:"agent_status,omitempty"`
 	AssignedWorker string    `json:"assigned_worker,omitempty"`
 	PRNumber       int       `json:"pr_number,omitempty"`
+	TraceID        string    `json:"trace_id,omitempty"`
 	MovedAt        time.Time `json:"moved_at"`
 	CreatedAt      time.Time `json:"created_at"`
 }

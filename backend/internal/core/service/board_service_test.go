@@ -196,6 +196,45 @@ func TestNativeBoardService_SyncFromTracks_UpdateExisting(t *testing.T) {
 	}
 }
 
+func TestNativeBoardService_StoreAndGetTraceID(t *testing.T) {
+	t.Parallel()
+	store := newMockNativeBoardStore()
+	now := time.Now().Truncate(time.Second)
+	store.boards["myapp"] = &domain.BoardState{
+		Columns: domain.BoardColumns,
+		Cards: map[string]domain.BoardCard{
+			"track-1": {TrackID: "track-1", Column: domain.ColumnInProgress, MovedAt: now},
+		},
+	}
+	svc := service.NewNativeBoardService(store)
+
+	// Initially no trace ID.
+	_, ok := svc.GetTraceID("myapp", "track-1")
+	if ok {
+		t.Error("expected no trace ID initially")
+	}
+
+	// Store a trace ID.
+	if err := svc.StoreTraceID("myapp", "track-1", "abc123"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Retrieve it.
+	traceID, ok := svc.GetTraceID("myapp", "track-1")
+	if !ok {
+		t.Fatal("expected trace ID to be stored")
+	}
+	if traceID != "abc123" {
+		t.Errorf("trace ID: want %q, got %q", "abc123", traceID)
+	}
+
+	// Non-existent track returns false.
+	_, ok = svc.GetTraceID("myapp", "nonexistent")
+	if ok {
+		t.Error("expected false for nonexistent track")
+	}
+}
+
 func TestDomainBoard_IsValidColumn(t *testing.T) {
 	t.Parallel()
 	if !domain.IsValidColumn("backlog") {

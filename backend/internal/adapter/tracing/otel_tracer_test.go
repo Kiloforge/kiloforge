@@ -134,6 +134,52 @@ func TestOTelTracer_ParentChild(t *testing.T) {
 	}
 }
 
+func TestOTelTracer_StartSpanWithTraceID(t *testing.T) {
+	exp := setupTestTracer(t)
+	tracer := NewOTelTracer()
+
+	// Create a span in a known trace.
+	_, rootSpan := tracer.StartSpan(context.Background(), "track/root")
+	rootSpan.End()
+
+	rootSpans := exp.GetSpans()
+	traceID := rootSpans[0].SpanContext.TraceID().String()
+
+	// Start a new span joining that trace.
+	_, childSpan := tracer.StartSpanWithTraceID(context.Background(), traceID, "webhook/pr",
+		port.StringAttr("pr.number", "42"),
+	)
+	childSpan.End()
+
+	allSpans := exp.GetSpans()
+	if len(allSpans) != 2 {
+		t.Fatalf("expected 2 spans, got %d", len(allSpans))
+	}
+
+	// The child span should share the same trace ID as the root.
+	if allSpans[1].SpanContext.TraceID().String() != traceID {
+		t.Errorf("child trace ID %q != root trace ID %q",
+			allSpans[1].SpanContext.TraceID(), traceID)
+	}
+}
+
+func TestOTelTracer_StartSpanWithTraceID_InvalidFallback(t *testing.T) {
+	exp := setupTestTracer(t)
+	tracer := NewOTelTracer()
+
+	// Invalid trace ID should fall back to creating a new trace.
+	_, span := tracer.StartSpanWithTraceID(context.Background(), "not-a-hex-id", "fallback-span")
+	span.End()
+
+	spans := exp.GetSpans()
+	if len(spans) != 1 {
+		t.Fatalf("expected 1 span, got %d", len(spans))
+	}
+	if spans[0].Name != "fallback-span" {
+		t.Errorf("expected span name 'fallback-span', got %q", spans[0].Name)
+	}
+}
+
 func TestOTelTracer_ImplementsInterface(t *testing.T) {
 	var _ port.Tracer = (*OTelTracer)(nil)
 }

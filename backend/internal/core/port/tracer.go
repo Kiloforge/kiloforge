@@ -7,6 +7,11 @@ type Tracer interface {
 	// StartSpan starts a new span with the given name and returns the updated
 	// context. The returned SpanEnder must be called to end the span.
 	StartSpan(ctx context.Context, name string, attrs ...SpanAttr) (context.Context, SpanEnder)
+
+	// StartSpanWithTraceID starts a new span that joins an existing trace
+	// identified by the hex-encoded traceID. Used to continue a trace
+	// across process boundaries (e.g., CLI → server via stored trace ID).
+	StartSpanWithTraceID(ctx context.Context, traceID, name string, attrs ...SpanAttr) (context.Context, SpanEnder)
 }
 
 // SpanEnder ends a span. SetAttributes and AddEvent can be called before End.
@@ -42,6 +47,10 @@ func Float64Attr(key string, value float64) SpanAttr {
 type NoopTracer struct{}
 
 func (NoopTracer) StartSpan(ctx context.Context, _ string, _ ...SpanAttr) (context.Context, SpanEnder) {
+	return ctx, noopSpan{}
+}
+
+func (NoopTracer) StartSpanWithTraceID(ctx context.Context, _, _ string, _ ...SpanAttr) (context.Context, SpanEnder) {
 	return ctx, noopSpan{}
 }
 

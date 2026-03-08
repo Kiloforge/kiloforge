@@ -32,6 +32,22 @@ func (t *OTelTracer) StartSpan(ctx context.Context, name string, attrs ...port.S
 	return ctx, &otelSpan{span: span}
 }
 
+func (t *OTelTracer) StartSpanWithTraceID(ctx context.Context, traceID, name string, attrs ...port.SpanAttr) (context.Context, port.SpanEnder) {
+	tid, err := trace.TraceIDFromHex(traceID)
+	if err != nil {
+		// Fall back to a new trace if the ID is invalid.
+		return t.StartSpan(ctx, name, attrs...)
+	}
+	// Create a remote span context so new spans join the existing trace.
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    tid,
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	})
+	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+	return t.StartSpan(ctx, name, attrs...)
+}
+
 type otelSpan struct {
 	span trace.Span
 }

@@ -169,6 +169,39 @@ func (s *NativeBoardService) UpdateCardAgent(slug, trackID, agentID, agentStatus
 	return s.store.SaveBoard(slug, board)
 }
 
+// StoreTraceID persists the OTel trace ID on a board card.
+func (s *NativeBoardService) StoreTraceID(slug, trackID, traceID string) error {
+	board, err := s.store.GetBoard(slug)
+	if err != nil || board == nil {
+		return fmt.Errorf("get board: %w", err)
+	}
+
+	card, ok := board.Cards[trackID]
+	if !ok {
+		return nil
+	}
+
+	card.TraceID = traceID
+	board.Cards[trackID] = card
+
+	return s.store.SaveBoard(slug, board)
+}
+
+// GetTraceID returns the OTel trace ID stored on a board card.
+func (s *NativeBoardService) GetTraceID(slug, trackID string) (string, bool) {
+	board, err := s.store.GetBoard(slug)
+	if err != nil || board == nil {
+		return "", false
+	}
+
+	card, ok := board.Cards[trackID]
+	if !ok || card.TraceID == "" {
+		return "", false
+	}
+
+	return card.TraceID, true
+}
+
 // statusToColumn maps a track status from tracks.md to a board column.
 func statusToColumn(status string) string {
 	switch status {
