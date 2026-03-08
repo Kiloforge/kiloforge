@@ -7,11 +7,13 @@
 
 ## Summary
 
-Update all remaining "crelay" references in conductor track metadata, specs, plans, and registry files to reflect the kiloforge rebrand. This covers both archived and active track documents — purely cosmetic metadata changes with zero code impact.
+Update all remaining "crelay" references in conductor track metadata, specs, plans, and registry files to reflect the kiloforge rebrand, and reconcile historical records with the existing kf tracking state. This covers both archived and active track documents — purely cosmetic metadata changes with zero code impact.
 
 ## Context
 
 The main codebase rebrand (`rebrand-kiloforge_20260309055250Z`) was completed successfully, but it explicitly excluded historical conductor records ("Renaming archived conductor track titles — leave as-is"). This track completes the rebrand by updating those remaining references for consistency.
+
+**Important:** The repo already has `kf setup` completed — conductor artifacts (`product.md`, `tech-stack.md`, `index.md`, etc.) already use "kiloforge" naming. This track must merge historical record updates into the existing kf tracking state rather than conflicting with it. The developer should read the current state of all conductor files before making changes, and preserve any kf-era content that has been added since the rebrand.
 
 ### Scope
 
@@ -61,6 +63,7 @@ All changes are in `.agent/conductor/` — Markdown and JSON metadata files only
 - [ ] All spec.md / plan.md content updated
 - [ ] Track IDs unchanged
 - [ ] No git history rewriting
+- [ ] Existing kf-era conductor state (product.md, tech-stack.md, workflow.md, etc.) is preserved — no regressions from the merge
 
 ## Dependencies
 

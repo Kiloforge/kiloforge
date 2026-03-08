@@ -2,6 +2,11 @@
 
 **Track ID:** rebrand-historical-records_20260309063900Z
 
+## Phase 0: Pre-flight — Reconcile with Existing kf State
+
+- [ ] Task 0.1: Read current conductor state files (`product.md`, `tech-stack.md`, `index.md`, `tracks.md`, `workflow.md`) — these already use kf/kiloforge naming from prior setup. Note their current content to avoid overwriting.
+- [ ] Task 0.2: Inventory all "crelay" references across `.agent/conductor/` — categorize by file type (archived tracks, active tracks, registry files) and replacement type (CLI command, product name, env var, path)
+
 ## Phase 1: Archived Track Metadata Titles
 
 - [ ] Task 1.1: Update metadata.json title in `add-project-command_20260307122000Z` — "crelay add" → "kf add"
@@ -36,3 +41,4 @@
 - [ ] Task 5.1: Run case-insensitive grep for "crelay" across all `.agent/conductor/` files — should return zero matches
 - [ ] Task 5.2: Verify all metadata.json files are valid JSON
 - [ ] Task 5.3: Verify track IDs are unchanged in all files
+- [ ] Task 5.4: Verify existing kf-era conductor files (`product.md`, `tech-stack.md`, `workflow.md`) are unchanged — no regressions from the merge
