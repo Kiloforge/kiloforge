@@ -45,6 +45,7 @@ type APIHandler struct {
 	lockMgr    *lock.Manager
 	projects   ProjectLister
 	traceStore *tracing.Store
+	boardSvc   *service.NativeBoardService
 	giteaURL   string
 	sseClients func() int
 	cfg        *config.Config
@@ -57,6 +58,7 @@ type APIHandlerOpts struct {
 	LockMgr    *lock.Manager
 	Projects   ProjectLister
 	TraceStore *tracing.Store
+	BoardSvc   *service.NativeBoardService
 	GiteaURL   string
 	SSEClients func() int
 	Cfg        *config.Config
@@ -70,6 +72,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		lockMgr:    opts.LockMgr,
 		projects:   opts.Projects,
 		traceStore: opts.TraceStore,
+		boardSvc:   opts.BoardSvc,
 		giteaURL:   opts.GiteaURL,
 		sseClients: opts.SSEClients,
 		cfg:        opts.Cfg,
@@ -617,6 +620,110 @@ func (h *APIHandler) GetTrace(_ context.Context, req gen.GetTraceRequestObject) 
 		TraceId: req.TraceId,
 		Spans:   genSpans,
 	}, nil
+}
+
+// GetBoard implements gen.StrictServerInterface.
+func (h *APIHandler) GetBoard(_ context.Context, req gen.GetBoardRequestObject) (gen.GetBoardResponseObject, error) {
+	if h.boardSvc == nil {
+		return gen.GetBoard500JSONResponse{Error: "board service not configured"}, nil
+	}
+	board, err := h.boardSvc.GetBoard(req.Project)
+	if err != nil {
+		return gen.GetBoard500JSONResponse{Error: err.Error()}, nil
+	}
+	return gen.GetBoard200JSONResponse(domainBoardToGen(board)), nil
+}
+
+// MoveCard implements gen.StrictServerInterface.
+func (h *APIHandler) MoveCard(_ context.Context, req gen.MoveCardRequestObject) (gen.MoveCardResponseObject, error) {
+	if h.boardSvc == nil {
+		return gen.MoveCard500JSONResponse{Error: "board service not configured"}, nil
+	}
+	if req.Body == nil {
+		return gen.MoveCard400JSONResponse{Error: "request body required"}, nil
+	}
+	result, err := h.boardSvc.MoveCard(req.Project, req.Body.TrackId, string(req.Body.ToColumn))
+	if err != nil {
+		return gen.MoveCard400JSONResponse{Error: err.Error()}, nil
+	}
+	return gen.MoveCard200JSONResponse{
+		TrackId:    result.TrackID,
+		FromColumn: result.FromColumn,
+		ToColumn:   result.ToColumn,
+	}, nil
+}
+
+// SyncBoard implements gen.StrictServerInterface.
+func (h *APIHandler) SyncBoard(_ context.Context, req gen.SyncBoardRequestObject) (gen.SyncBoardResponseObject, error) {
+	if h.boardSvc == nil {
+		return gen.SyncBoard500JSONResponse{Error: "board service not configured"}, nil
+	}
+	if h.projects == nil {
+		return gen.SyncBoard400JSONResponse{Error: "no projects configured"}, nil
+	}
+
+	// Find project.
+	var projectDir string
+	for _, p := range h.projects.List() {
+		if p.Slug == req.Project {
+			projectDir = p.ProjectDir
+			break
+		}
+	}
+	if projectDir == "" {
+		return gen.SyncBoard400JSONResponse{Error: fmt.Sprintf("project %q not found", req.Project)}, nil
+	}
+
+	tracks, err := service.DiscoverTracks(projectDir)
+	if err != nil {
+		return gen.SyncBoard500JSONResponse{Error: fmt.Sprintf("discover tracks: %v", err)}, nil
+	}
+
+	result, err := h.boardSvc.SyncFromTracks(req.Project, tracks, nil)
+	if err != nil {
+		return gen.SyncBoard500JSONResponse{Error: err.Error()}, nil
+	}
+
+	return gen.SyncBoard200JSONResponse{
+		Created:   result.Created,
+		Updated:   result.Updated,
+		Unchanged: result.Unchanged,
+	}, nil
+}
+
+// domainBoardToGen converts a domain.BoardState to the generated BoardState.
+func domainBoardToGen(b *domain.BoardState) gen.BoardState {
+	cards := make(map[string]gen.BoardCard, len(b.Cards))
+	for id, c := range b.Cards {
+		card := gen.BoardCard{
+			TrackId:   c.TrackID,
+			Title:     c.Title,
+			Column:    gen.BoardCardColumn(c.Column),
+			Position:  c.Position,
+			MovedAt:   c.MovedAt,
+			CreatedAt: c.CreatedAt,
+		}
+		if c.Type != "" {
+			card.Type = &c.Type
+		}
+		if c.AgentID != "" {
+			card.AgentId = &c.AgentID
+		}
+		if c.AgentStatus != "" {
+			card.AgentStatus = &c.AgentStatus
+		}
+		if c.AssignedWorker != "" {
+			card.AssignedWorker = &c.AssignedWorker
+		}
+		if c.PRNumber != 0 {
+			card.PrNumber = &c.PRNumber
+		}
+		cards[id] = card
+	}
+	return gen.BoardState{
+		Columns: b.Columns,
+		Cards:   cards,
+	}
 }
 
 func intPtr(v int) *int       { return &v }

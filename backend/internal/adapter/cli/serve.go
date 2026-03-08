@@ -18,6 +18,7 @@ import (
 	"crelay/internal/adapter/rest"
 	"crelay/internal/adapter/skills"
 	"crelay/internal/adapter/tracing"
+	"crelay/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -102,6 +103,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 			opts = append(opts, rest.WithDashboard(store, tracker, "/", reg))
 		}
 	}
+
+	// Enable native board service.
+	boardStore := jsonfile.NewBoardStore(cfg.DataDir)
+	boardSvc := service.NewNativeBoardService(boardStore)
+	opts = append(opts, rest.WithBoardService(boardSvc))
 
 	// Start auto-update checker if enabled.
 	if cfg.SkillsRepo != "" && cfg.AutoUpdateSkills != nil && *cfg.AutoUpdateSkills {

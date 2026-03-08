@@ -79,6 +79,60 @@ func (e AgentStatus) Valid() bool {
 	}
 }
 
+// Defines values for BoardCardColumn.
+const (
+	BoardCardColumnApproved   BoardCardColumn = "approved"
+	BoardCardColumnBacklog    BoardCardColumn = "backlog"
+	BoardCardColumnDone       BoardCardColumn = "done"
+	BoardCardColumnInProgress BoardCardColumn = "in_progress"
+	BoardCardColumnInReview   BoardCardColumn = "in_review"
+)
+
+// Valid indicates whether the value is a known member of the BoardCardColumn enum.
+func (e BoardCardColumn) Valid() bool {
+	switch e {
+	case BoardCardColumnApproved:
+		return true
+	case BoardCardColumnBacklog:
+		return true
+	case BoardCardColumnDone:
+		return true
+	case BoardCardColumnInProgress:
+		return true
+	case BoardCardColumnInReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MoveCardRequestToColumn.
+const (
+	MoveCardRequestToColumnApproved   MoveCardRequestToColumn = "approved"
+	MoveCardRequestToColumnBacklog    MoveCardRequestToColumn = "backlog"
+	MoveCardRequestToColumnDone       MoveCardRequestToColumn = "done"
+	MoveCardRequestToColumnInProgress MoveCardRequestToColumn = "in_progress"
+	MoveCardRequestToColumnInReview   MoveCardRequestToColumn = "in_review"
+)
+
+// Valid indicates whether the value is a known member of the MoveCardRequestToColumn enum.
+func (e MoveCardRequestToColumn) Valid() bool {
+	switch e {
+	case MoveCardRequestToColumnApproved:
+		return true
+	case MoveCardRequestToColumnBacklog:
+		return true
+	case MoveCardRequestToColumnDone:
+		return true
+	case MoveCardRequestToColumnInProgress:
+		return true
+	case MoveCardRequestToColumnInReview:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TrackStatus.
 const (
 	Complete   TrackStatus = "complete"
@@ -133,6 +187,30 @@ type AgentLog struct {
 	Total   int      `json:"total"`
 }
 
+// BoardCard defines model for BoardCard.
+type BoardCard struct {
+	AgentId        *string         `json:"agent_id,omitempty"`
+	AgentStatus    *string         `json:"agent_status,omitempty"`
+	AssignedWorker *string         `json:"assigned_worker,omitempty"`
+	Column         BoardCardColumn `json:"column"`
+	CreatedAt      time.Time       `json:"created_at"`
+	MovedAt        time.Time       `json:"moved_at"`
+	Position       int             `json:"position"`
+	PrNumber       *int            `json:"pr_number,omitempty"`
+	Title          string          `json:"title"`
+	TrackId        string          `json:"track_id"`
+	Type           *string         `json:"type,omitempty"`
+}
+
+// BoardCardColumn defines model for BoardCard.Column.
+type BoardCardColumn string
+
+// BoardState defines model for BoardState.
+type BoardState struct {
+	Cards   map[string]BoardCard `json:"cards"`
+	Columns []string             `json:"columns"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -182,6 +260,22 @@ type LockReleaseRequest struct {
 // LockReleasedResponse defines model for LockReleasedResponse.
 type LockReleasedResponse struct {
 	Released bool `json:"released"`
+}
+
+// MoveCardRequest defines model for MoveCardRequest.
+type MoveCardRequest struct {
+	ToColumn MoveCardRequestToColumn `json:"to_column"`
+	TrackId  string                  `json:"track_id"`
+}
+
+// MoveCardRequestToColumn defines model for MoveCardRequest.ToColumn.
+type MoveCardRequestToColumn string
+
+// MoveCardResult defines model for MoveCardResult.
+type MoveCardResult struct {
+	FromColumn string `json:"from_column"`
+	ToColumn   string `json:"to_column"`
+	TrackId    string `json:"track_id"`
 }
 
 // Project defines model for Project.
@@ -276,6 +370,13 @@ type StatusInfo struct {
 	TotalCostUsd *float64       `json:"total_cost_usd,omitempty"`
 }
 
+// SyncBoardResult defines model for SyncBoardResult.
+type SyncBoardResult struct {
+	Created   int `json:"created"`
+	Unchanged int `json:"unchanged"`
+	Updated   int `json:"updated"`
+}
+
 // TraceDetail defines model for TraceDetail.
 type TraceDetail struct {
 	Spans   []SpanInfo `json:"spans"`
@@ -314,6 +415,9 @@ type ListTracksParams struct {
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
+// MoveCardJSONRequestBody defines body for MoveCard for application/json ContentType.
+type MoveCardJSONRequestBody = MoveCardRequest
+
 // ReleaseLockJSONRequestBody defines body for ReleaseLock for application/json ContentType.
 type ReleaseLockJSONRequestBody = LockReleaseRequest
 
@@ -337,6 +441,15 @@ type ServerInterface interface {
 	// Get recent log lines for an agent
 	// (GET /-/api/agents/{id}/log)
 	GetAgentLog(w http.ResponseWriter, r *http.Request, id string, params GetAgentLogParams)
+	// Get board state for a project
+	// (GET /-/api/board/{project})
+	GetBoard(w http.ResponseWriter, r *http.Request, project string)
+	// Move a board card to a different column
+	// (POST /-/api/board/{project}/move)
+	MoveCard(w http.ResponseWriter, r *http.Request, project string)
+	// Sync board from conductor tracks
+	// (POST /-/api/board/{project}/sync)
+	SyncBoard(w http.ResponseWriter, r *http.Request, project string)
 	// List all active locks
 	// (GET /-/api/locks)
 	ListLocks(w http.ResponseWriter, r *http.Request)
@@ -453,6 +566,81 @@ func (siw *ServerInterfaceWrapper) GetAgentLog(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAgentLog(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBoard operation middleware
+func (siw *ServerInterfaceWrapper) GetBoard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "project" -------------
+	var project string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project", r.PathValue("project"), &project, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBoard(w, r, project)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MoveCard operation middleware
+func (siw *ServerInterfaceWrapper) MoveCard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "project" -------------
+	var project string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project", r.PathValue("project"), &project, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MoveCard(w, r, project)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SyncBoard operation middleware
+func (siw *ServerInterfaceWrapper) SyncBoard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "project" -------------
+	var project string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project", r.PathValue("project"), &project, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SyncBoard(w, r, project)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -824,6 +1012,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/agents", wrapper.ListAgents)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/agents/{id}", wrapper.GetAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/agents/{id}/log", wrapper.GetAgentLog)
+	m.HandleFunc("GET "+options.BaseURL+"/-/api/board/{project}", wrapper.GetBoard)
+	m.HandleFunc("POST "+options.BaseURL+"/-/api/board/{project}/move", wrapper.MoveCard)
+	m.HandleFunc("POST "+options.BaseURL+"/-/api/board/{project}/sync", wrapper.SyncBoard)
 	m.HandleFunc("GET "+options.BaseURL+"/-/api/locks", wrapper.ListLocks)
 	m.HandleFunc("DELETE "+options.BaseURL+"/-/api/locks/{scope}", wrapper.ReleaseLock)
 	m.HandleFunc("POST "+options.BaseURL+"/-/api/locks/{scope}/acquire", wrapper.AcquireLock)
@@ -949,6 +1140,103 @@ func (response GetAgentLog404JSONResponse) VisitGetAgentLogResponse(w http.Respo
 type GetAgentLog500JSONResponse ErrorResponse
 
 func (response GetAgentLog500JSONResponse) VisitGetAgentLogResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBoardRequestObject struct {
+	Project string `json:"project"`
+}
+
+type GetBoardResponseObject interface {
+	VisitGetBoardResponse(w http.ResponseWriter) error
+}
+
+type GetBoard200JSONResponse BoardState
+
+func (response GetBoard200JSONResponse) VisitGetBoardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBoard500JSONResponse ErrorResponse
+
+func (response GetBoard500JSONResponse) VisitGetBoardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MoveCardRequestObject struct {
+	Project string `json:"project"`
+	Body    *MoveCardJSONRequestBody
+}
+
+type MoveCardResponseObject interface {
+	VisitMoveCardResponse(w http.ResponseWriter) error
+}
+
+type MoveCard200JSONResponse MoveCardResult
+
+func (response MoveCard200JSONResponse) VisitMoveCardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MoveCard400JSONResponse ErrorResponse
+
+func (response MoveCard400JSONResponse) VisitMoveCardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MoveCard500JSONResponse ErrorResponse
+
+func (response MoveCard500JSONResponse) VisitMoveCardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SyncBoardRequestObject struct {
+	Project string `json:"project"`
+}
+
+type SyncBoardResponseObject interface {
+	VisitSyncBoardResponse(w http.ResponseWriter) error
+}
+
+type SyncBoard200JSONResponse SyncBoardResult
+
+func (response SyncBoard200JSONResponse) VisitSyncBoardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SyncBoard400JSONResponse ErrorResponse
+
+func (response SyncBoard400JSONResponse) VisitSyncBoardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SyncBoard500JSONResponse ErrorResponse
+
+func (response SyncBoard500JSONResponse) VisitSyncBoardResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -1300,6 +1588,15 @@ type StrictServerInterface interface {
 	// Get recent log lines for an agent
 	// (GET /-/api/agents/{id}/log)
 	GetAgentLog(ctx context.Context, request GetAgentLogRequestObject) (GetAgentLogResponseObject, error)
+	// Get board state for a project
+	// (GET /-/api/board/{project})
+	GetBoard(ctx context.Context, request GetBoardRequestObject) (GetBoardResponseObject, error)
+	// Move a board card to a different column
+	// (POST /-/api/board/{project}/move)
+	MoveCard(ctx context.Context, request MoveCardRequestObject) (MoveCardResponseObject, error)
+	// Sync board from conductor tracks
+	// (POST /-/api/board/{project}/sync)
+	SyncBoard(ctx context.Context, request SyncBoardRequestObject) (SyncBoardResponseObject, error)
 	// List all active locks
 	// (GET /-/api/locks)
 	ListLocks(ctx context.Context, request ListLocksRequestObject) (ListLocksResponseObject, error)
@@ -1440,6 +1737,91 @@ func (sh *strictHandler) GetAgentLog(w http.ResponseWriter, r *http.Request, id 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAgentLogResponseObject); ok {
 		if err := validResponse.VisitGetAgentLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBoard operation middleware
+func (sh *strictHandler) GetBoard(w http.ResponseWriter, r *http.Request, project string) {
+	var request GetBoardRequestObject
+
+	request.Project = project
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBoard(ctx, request.(GetBoardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBoard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBoardResponseObject); ok {
+		if err := validResponse.VisitGetBoardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MoveCard operation middleware
+func (sh *strictHandler) MoveCard(w http.ResponseWriter, r *http.Request, project string) {
+	var request MoveCardRequestObject
+
+	request.Project = project
+
+	var body MoveCardJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MoveCard(ctx, request.(MoveCardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MoveCard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MoveCardResponseObject); ok {
+		if err := validResponse.VisitMoveCardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SyncBoard operation middleware
+func (sh *strictHandler) SyncBoard(w http.ResponseWriter, r *http.Request, project string) {
+	var request SyncBoardRequestObject
+
+	request.Project = project
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SyncBoard(ctx, request.(SyncBoardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SyncBoard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SyncBoardResponseObject); ok {
+		if err := validResponse.VisitSyncBoardResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

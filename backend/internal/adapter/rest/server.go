@@ -59,6 +59,13 @@ func WithTracing(store *tracing.Store) ServerOption {
 	}
 }
 
+// WithBoardService enables native board API endpoints.
+func WithBoardService(svc *service.NativeBoardService) ServerOption {
+	return func(s *Server) {
+		s.boardSvc = svc
+	}
+}
+
 // Server handles incoming webhooks from registered projects.
 type Server struct {
 	cfg         *config.Config
@@ -74,6 +81,7 @@ type Server struct {
 	quotaReader QuotaReader
 	_projects   dashboard.ProjectLister
 	traceStore  *tracing.Store
+	boardSvc    *service.NativeBoardService
 }
 
 // NewServer creates a relay server with multi-project routing via the registry.
@@ -169,6 +177,7 @@ func (s *Server) Run(ctx context.Context) error {
 		LockMgr:    lockMgr,
 		Projects:   s._projects,
 		TraceStore: s.traceStore,
+		BoardSvc:   s.boardSvc,
 		GiteaURL:   s.cfg.GiteaURL(),
 		SSEClients: sseClients,
 		Cfg:        s.cfg,

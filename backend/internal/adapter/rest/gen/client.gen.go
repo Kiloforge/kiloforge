@@ -98,6 +98,17 @@ type ClientInterface interface {
 	// GetAgentLog request
 	GetAgentLog(ctx context.Context, id string, params *GetAgentLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetBoard request
+	GetBoard(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MoveCardWithBody request with any body
+	MoveCardWithBody(ctx context.Context, project string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MoveCard(ctx context.Context, project string, body MoveCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SyncBoard request
+	SyncBoard(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListLocks request
 	ListLocks(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -172,6 +183,54 @@ func (c *Client) GetAgent(ctx context.Context, id string, reqEditors ...RequestE
 
 func (c *Client) GetAgentLog(ctx context.Context, id string, params *GetAgentLogParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAgentLogRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBoard(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBoardRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MoveCardWithBody(ctx context.Context, project string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMoveCardRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MoveCard(ctx context.Context, project string, body MoveCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMoveCardRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SyncBoard(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSyncBoardRequest(c.Server, project)
 	if err != nil {
 		return nil, err
 	}
@@ -496,6 +555,121 @@ func NewGetAgentLogRequest(server string, id string, params *GetAgentLogParams) 
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetBoardRequest generates requests for GetBoard
+func NewGetBoardRequest(server string, project string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/board/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewMoveCardRequest calls the generic MoveCard builder with application/json body
+func NewMoveCardRequest(server string, project string, body MoveCardJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMoveCardRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewMoveCardRequestWithBody generates requests for MoveCard with any type of body
+func NewMoveCardRequestWithBody(server string, project string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/board/%s/move", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSyncBoardRequest generates requests for SyncBoard
+func NewSyncBoardRequest(server string, project string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/-/api/board/%s/sync", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1008,6 +1182,17 @@ type ClientWithResponsesInterface interface {
 	// GetAgentLogWithResponse request
 	GetAgentLogWithResponse(ctx context.Context, id string, params *GetAgentLogParams, reqEditors ...RequestEditorFn) (*GetAgentLogResponse, error)
 
+	// GetBoardWithResponse request
+	GetBoardWithResponse(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*GetBoardResponse, error)
+
+	// MoveCardWithBodyWithResponse request with any body
+	MoveCardWithBodyWithResponse(ctx context.Context, project string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MoveCardResponse, error)
+
+	MoveCardWithResponse(ctx context.Context, project string, body MoveCardJSONRequestBody, reqEditors ...RequestEditorFn) (*MoveCardResponse, error)
+
+	// SyncBoardWithResponse request
+	SyncBoardWithResponse(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*SyncBoardResponse, error)
+
 	// ListLocksWithResponse request
 	ListLocksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocksResponse, error)
 
@@ -1123,6 +1308,77 @@ func (r GetAgentLogResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetAgentLogResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBoardResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BoardState
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBoardResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBoardResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type MoveCardResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MoveCardResult
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r MoveCardResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MoveCardResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SyncBoardResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SyncBoardResult
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SyncBoardResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SyncBoardResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1455,6 +1711,41 @@ func (c *ClientWithResponses) GetAgentLogWithResponse(ctx context.Context, id st
 	return ParseGetAgentLogResponse(rsp)
 }
 
+// GetBoardWithResponse request returning *GetBoardResponse
+func (c *ClientWithResponses) GetBoardWithResponse(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*GetBoardResponse, error) {
+	rsp, err := c.GetBoard(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBoardResponse(rsp)
+}
+
+// MoveCardWithBodyWithResponse request with arbitrary body returning *MoveCardResponse
+func (c *ClientWithResponses) MoveCardWithBodyWithResponse(ctx context.Context, project string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MoveCardResponse, error) {
+	rsp, err := c.MoveCardWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMoveCardResponse(rsp)
+}
+
+func (c *ClientWithResponses) MoveCardWithResponse(ctx context.Context, project string, body MoveCardJSONRequestBody, reqEditors ...RequestEditorFn) (*MoveCardResponse, error) {
+	rsp, err := c.MoveCard(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMoveCardResponse(rsp)
+}
+
+// SyncBoardWithResponse request returning *SyncBoardResponse
+func (c *ClientWithResponses) SyncBoardWithResponse(ctx context.Context, project string, reqEditors ...RequestEditorFn) (*SyncBoardResponse, error) {
+	rsp, err := c.SyncBoard(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSyncBoardResponse(rsp)
+}
+
 // ListLocksWithResponse request returning *ListLocksResponse
 func (c *ClientWithResponses) ListLocksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocksResponse, error) {
 	rsp, err := c.ListLocks(ctx, reqEditors...)
@@ -1718,6 +2009,119 @@ func ParseGetAgentLogResponse(rsp *http.Response) (*GetAgentLogResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBoardResponse parses an HTTP response from a GetBoardWithResponse call
+func ParseGetBoardResponse(rsp *http.Response) (*GetBoardResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBoardResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BoardState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMoveCardResponse parses an HTTP response from a MoveCardWithResponse call
+func ParseMoveCardResponse(rsp *http.Response) (*MoveCardResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MoveCardResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MoveCardResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSyncBoardResponse parses an HTTP response from a SyncBoardWithResponse call
+func ParseSyncBoardResponse(rsp *http.Response) (*SyncBoardResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SyncBoardResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SyncBoardResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

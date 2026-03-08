@@ -298,6 +298,102 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /-/api/board/{project}:
+    get:
+      operationId: getBoard
+      summary: Get board state for a project
+      tags: [Board]
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "200":
+          description: Board state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardState"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/board/{project}/move:
+    post:
+      operationId: moveCard
+      summary: Move a board card to a different column
+      tags: [Board]
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveCardRequest"
+      responses:
+        "200":
+          description: Card moved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoveCardResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /-/api/board/{project}/sync:
+    post:
+      operationId: syncBoard
+      summary: Sync board from conductor tracks
+      tags: [Board]
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncBoardResult"
+        "400":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /-/api/locks:
     get:
       operationId: listLocks
@@ -716,6 +812,81 @@ components:
           type: object
           additionalProperties:
             type: string
+
+    BoardState:
+      type: object
+      required: [columns, cards]
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        cards:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/BoardCard"
+
+    BoardCard:
+      type: object
+      required: [track_id, title, column, position, moved_at, created_at]
+      properties:
+        track_id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        column:
+          type: string
+          enum: [backlog, approved, in_progress, in_review, done]
+        position:
+          type: integer
+        agent_id:
+          type: string
+        agent_status:
+          type: string
+        assigned_worker:
+          type: string
+        pr_number:
+          type: integer
+        moved_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    MoveCardRequest:
+      type: object
+      required: [track_id, to_column]
+      properties:
+        track_id:
+          type: string
+        to_column:
+          type: string
+          enum: [backlog, approved, in_progress, in_review, done]
+
+    MoveCardResult:
+      type: object
+      required: [track_id, from_column, to_column]
+      properties:
+        track_id:
+          type: string
+        from_column:
+          type: string
+        to_column:
+          type: string
+
+    SyncBoardResult:
+      type: object
+      required: [created, updated, unchanged]
+      properties:
+        created:
+          type: integer
+        updated:
+          type: integer
+        unchanged:
+          type: integer
 
     LockReleasedResponse:
       type: object
