@@ -15,6 +15,8 @@ import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
+import { TourProvider } from "./components/tour/TourProvider";
+import { TourOverlay, TourComplete } from "./components/tour/TourOverlay";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AgentDetailPage } from "./pages/AgentDetailPage";
 import { ProjectPage } from "./pages/ProjectPage";
@@ -80,7 +82,8 @@ export default function App() {
   }, [spawnMutation]);
 
   return (
-    <>
+    <TourProvider>
+      <TourOverlay />
       <SkillsBanner />
       <header className={styles.header}>
         <div className={styles.headerLeft}>
@@ -123,6 +126,7 @@ export default function App() {
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
       {terminalAgentId && <AgentTerminal agentId={terminalAgentId} onClose={handleCloseTerminal} />}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
-    </>
+      <TourComplete />
+    </TourProvider>
   );
 }

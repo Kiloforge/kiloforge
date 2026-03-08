@@ -12,4 +12,6 @@ export const queryKeys = {
   syncStatus: (slug: string) => ["syncStatus", slug] as const,
   status: ["status"] as const,
   sshKeys: ["sshKeys"] as const,
+  tour: ["tour"] as const,
+  tourDemoBoard: ["tour", "demo-board"] as const,
 };
