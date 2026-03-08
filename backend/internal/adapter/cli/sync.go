@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -36,25 +34,16 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--project is required")
 	}
 
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
+	defer rt.Close()
 
-	db, err := openDB(cfg)
+	project, err := rt.Projects.GetProject(flagSyncProject)
 	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-
-	reg := sqlite.NewProjectStore(db)
-	project, ok := reg.Get(flagSyncProject)
-	if !ok {
 		return fmt.Errorf("project %q not found", flagSyncProject)
 	}
-
-	boardStore := sqlite.NewBoardStore(db)
-	boardSvc := service.NewNativeBoardService(boardStore)
 
 	// Discover tracks.
 	tracks, err := service.DiscoverTracks(project.ProjectDir)
@@ -74,7 +63,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	// Sync.
-	result, err := boardSvc.SyncFromTracks(project.Slug, tracks, trackTypes)
+	result, err := rt.Board.SyncFromTracks(project.Slug, tracks, trackTypes)
 	if err != nil {
 		return fmt.Errorf("sync: %w", err)
 	}

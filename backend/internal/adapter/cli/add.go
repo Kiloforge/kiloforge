@@ -3,19 +3,15 @@ package cli
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
-	"kiloforge/internal/adapter/persistence/sqlite"
-	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -72,7 +68,6 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	// Resolve SSH key path.
 	var sshKeyPath string
-	var sshEnv []string
 	if flagAddSSHKey != "" {
 		// Explicit --ssh-key flag: use as-is.
 		sshKeyPath, err = expandPath(flagAddSSHKey)
@@ -86,12 +81,6 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		// SSH remote without --ssh-key: discover and prompt.
 		sshKeyPath = discoverAndSelectSSHKey()
 	}
-	if sshKeyPath != "" {
-		sshEnv = []string{
-			fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", sshKeyPath),
-		}
-	}
-
 	// Load global config, verify Gitea is initialized and running.
 	cfg, err := config.Resolve()
 	if err != nil {
@@ -103,99 +92,43 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Gitea is not running — run 'kf init' or 'kf up' first")
 	}
 
-	// Open database and load registry.
-	db, err := openDB(cfg)
+	// Open database and wire up project service.
+	rt, err := NewCLIRuntimeFromConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
-	defer db.Close()
-	reg := sqlite.NewProjectStore(db)
-	if p, ok := reg.Get(slug); ok {
+	defer rt.Close()
+
+	// Build a project service with the real Gitea client for add operations.
+	projectSvc := service.NewProjectService(
+		rt.Projects.Store(),
+		client,
+		service.ProjectServiceConfig{
+			DataDir:          cfg.DataDir,
+			OrchestratorPort: cfg.OrchestratorPort,
+			GiteaAdminUser:   cfg.GiteaAdminUser,
+			APIToken:         cfg.APIToken,
+		},
+	)
+
+	if p, err := rt.Projects.GetProject(slug); err == nil {
 		fmt.Printf("Project %q is already registered.\n", slug)
 		fmt.Printf("  Path:   %s\n", p.ProjectDir)
 		fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, p.RepoName)
 		return nil
 	}
 
-	// Clean up orphaned clone directory from a previous failed attempt.
-	cloneDir := filepath.Join(cfg.DataDir, "repos", slug)
-	if _, err := os.Stat(cloneDir); err == nil {
-		if _, registered := reg.Get(slug); !registered {
-			fmt.Printf("==> Removing orphaned clone directory: %s\n", cloneDir)
-			os.RemoveAll(cloneDir)
-		}
-	}
-
-	// Clone remote into managed directory.
-	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
-		fmt.Printf("==> Cloning %s...\n", remoteURL)
-		if err := cloneRepo(ctx, remoteURL, cloneDir, sshEnv); err != nil {
-			return fmt.Errorf("clone: %w", err)
-		}
-	} else {
-		fmt.Printf("==> Clone directory already exists: %s\n", cloneDir)
-	}
-
-	// Track whether we created the Gitea repo (vs. pre-existing) for rollback.
-	giteaRepoCreated := false
-
-	// Create Gitea repo using the remote repo name (not the slug).
-	fmt.Printf("==> Creating Gitea repo '%s'...\n", repoName)
-	if err := client.CreateRepo(ctx, repoName); err != nil {
-		if !strings.Contains(err.Error(), "409") {
-			os.RemoveAll(cloneDir)
-			return fmt.Errorf("create repo: %w", err)
-		}
-		fmt.Println("    Repo already exists in Gitea — continuing.")
-	} else {
-		giteaRepoCreated = true
-	}
-
-	// rollback cleans up the Gitea repo (if we created it) and the clone dir.
-	rollback := func() {
-		if giteaRepoCreated {
-			fmt.Println("==> Rolling back: deleting Gitea repo...")
-			_ = client.DeleteRepo(ctx, repoName)
-		}
-		fmt.Printf("==> Rolling back: removing clone directory %s\n", cloneDir)
-		os.RemoveAll(cloneDir)
-	}
-
-	// Add gitea remote to cloned repo (embed API token for HTTP auth).
-	giteaBaseURL := cfg.GiteaURL() // e.g. http://localhost:4000
-	displayRemoteURL := fmt.Sprintf("%s/%s/%s.git", giteaBaseURL, cfg.GiteaAdminUser, repoName)
-	parsedURL, err := url.Parse(displayRemoteURL)
+	fmt.Printf("==> Adding project %q from %s...\n", slug, remoteURL)
+	result, err := projectSvc.AddProject(ctx, remoteURL, flagAddName, service.AddProjectOpts{
+		SSHKeyPath: sshKeyPath,
+	})
 	if err != nil {
-		rollback()
-		return fmt.Errorf("parse gitea URL: %w", err)
+		return fmt.Errorf("add project: %w", err)
 	}
-	parsedURL.User = url.UserPassword(cfg.GiteaAdminUser, cfg.APIToken)
-	giteaRemoteURL := parsedURL.String()
 
-	fmt.Println("==> Adding gitea remote...")
-	_ = exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "remove", "gitea").Run()
-	if err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "add", "gitea", giteaRemoteURL).Run(); err != nil {
-		rollback()
-		return fmt.Errorf("add gitea remote: %w", err)
-	}
-	fmt.Printf("    Remote: %s\n", displayRemoteURL)
-
-	// Check if repo has commits — skip push for empty repos.
-	emptyRepo := exec.CommandContext(ctx, "git", "-C", cloneDir, "rev-parse", "HEAD").Run() != nil
-
-	if emptyRepo {
+	if result.EmptyRepo {
 		fmt.Println("==> Repository has no commits — skipping push to Gitea.")
 		fmt.Println("    Push commits to the repository and run 'kf sync' to update Gitea.")
-	} else {
-		// Push main branch.
-		fmt.Println("==> Pushing to Gitea...")
-		pushCmd := exec.CommandContext(ctx, "git", "-C", cloneDir, "push", "-u", "gitea", "main")
-		pushCmd.Stdout = os.Stdout
-		pushCmd.Stderr = os.Stderr
-		if err := pushCmd.Run(); err != nil {
-			rollback()
-			return fmt.Errorf("push to gitea: %w", err)
-		}
 	}
 
 	// Register SSH public key with Gitea if --ssh-key was given.
@@ -212,57 +145,16 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create webhook.
-	fmt.Println("==> Registering webhook...")
-	if err := client.CreateWebhook(ctx, repoName, cfg.OrchestratorPort); err != nil {
-		fmt.Printf("    Warning: webhook creation failed: %v\n", err)
-		fmt.Println("    (Webhook can be added later when the orchestrator is running)")
-	}
-
-	// Create project data directory for logs.
-	logsDir := filepath.Join(cfg.DataDir, "projects", slug, "logs")
-	if err := os.MkdirAll(logsDir, 0o755); err != nil {
-		return fmt.Errorf("create project dir: %w", err)
-	}
-
-	// Register project in database.
-	p := domain.Project{
-		Slug:         slug,
-		RepoName:     repoName,
-		ProjectDir:   cloneDir,
-		OriginRemote: remoteURL,
-		SSHKeyPath:   sshKeyPath,
-		RegisteredAt: time.Now().Truncate(time.Second),
-		Active:       true,
-	}
-	if err := reg.Add(p); err != nil {
-		return fmt.Errorf("register project: %w", err)
-	}
-	if err := reg.Save(); err != nil {
-		return fmt.Errorf("save registry: %w", err)
-	}
-
+	p := result.Project
 	fmt.Println()
-	fmt.Printf("Project '%s' registered!\n", slug)
-	fmt.Printf("  Path:   %s\n", cloneDir)
-	fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, repoName)
-	fmt.Printf("  Origin: %s\n", remoteURL)
+	fmt.Printf("Project '%s' registered!\n", p.Slug)
+	fmt.Printf("  Path:   %s\n", p.ProjectDir)
+	fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, p.RepoName)
+	fmt.Printf("  Origin: %s\n", p.OriginRemote)
 	fmt.Println()
 	fmt.Println("View registered projects with 'kf projects'.")
 
 	return nil
-}
-
-// cloneRepo clones a remote git repository into destDir.
-// extraEnv is appended to the command's environment (e.g., GIT_SSH_COMMAND).
-func cloneRepo(ctx context.Context, remoteURL, destDir string, extraEnv []string) error {
-	cmd := exec.CommandContext(ctx, "git", "clone", remoteURL, destDir)
-	if len(extraEnv) > 0 {
-		cmd.Env = append(os.Environ(), extraEnv...)
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 // expandPath expands a leading ~/ to the user's home directory.

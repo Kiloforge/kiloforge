@@ -7,8 +7,7 @@ import (
 
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
-	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -26,28 +25,17 @@ func init() {
 }
 
 func runCost(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
 	}
-
-	tracker := agent.NewQuotaTracker(cfg.DataDir)
-	if err := tracker.Load(); err != nil {
-		return fmt.Errorf("load quota data: %w", err)
-	}
-
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	store := sqlite.NewAgentStore(db)
+	defer rt.Close()
 
 	if flagCostJSON {
-		return printCostJSON(tracker, store)
+		return printCostJSON(rt.Quota, rt.Agents)
 	}
 
-	return printCostTable(tracker, store, cfg)
+	return printCostTable(rt.Quota, rt.Agents, rt.Cfg)
 }
 
 type costEntry struct {
@@ -58,10 +46,10 @@ type costEntry struct {
 	CostUSD  float64 `json:"cost_usd"`
 }
 
-func printCostJSON(tracker *agent.QuotaTracker, store port.AgentStore) error {
+func printCostJSON(tracker *agent.QuotaTracker, agentSvc *service.AgentService) error {
 	total := tracker.GetTotalUsage()
 	var entries []costEntry
-	for _, a := range store.Agents() {
+	for _, a := range agentSvc.ListAgents() {
 		usage := tracker.GetAgentUsage(a.ID)
 		if usage == nil {
 			continue
@@ -87,7 +75,7 @@ func printCostJSON(tracker *agent.QuotaTracker, store port.AgentStore) error {
 	return enc.Encode(out)
 }
 
-func printCostTable(tracker *agent.QuotaTracker, store port.AgentStore, cfg *config.Config) error {
+func printCostTable(tracker *agent.QuotaTracker, agentSvc *service.AgentService, cfg *config.Config) error {
 	total := tracker.GetTotalUsage()
 
 	if total.AgentCount == 0 {
@@ -104,7 +92,7 @@ func printCostTable(tracker *agent.QuotaTracker, store port.AgentStore, cfg *con
 	fmt.Printf("Agents:      %d\n", total.AgentCount)
 	fmt.Println()
 
-	for _, a := range store.Agents() {
+	for _, a := range agentSvc.ListAgents() {
 		usage := tracker.GetAgentUsage(a.ID)
 		if usage == nil {
 			continue

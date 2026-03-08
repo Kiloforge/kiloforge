@@ -3,9 +3,6 @@ package cli
 import (
 	"fmt"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
-
 	"github.com/spf13/cobra"
 )
 
@@ -18,36 +15,15 @@ var stopCmd = &cobra.Command{
 }
 
 func runStop(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	defer rt.Close()
 
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	store := sqlite.NewAgentStore(db)
-
-	agentID := args[0]
-	agent, err := store.FindAgent(agentID)
+	agent, err := rt.Agents.StopAgent(args[0])
 	if err != nil {
 		return err
-	}
-
-	if agent.Status != "running" && agent.Status != "waiting" {
-		fmt.Printf("Agent %s is not running (status: %s)\n", agentID, agent.Status)
-		return nil
-	}
-
-	if err := store.HaltAgent(agentID); err != nil {
-		return fmt.Errorf("halt agent: %w", err)
-	}
-
-	store.UpdateStatus(agentID, "stopped")
-	if err := store.Save(); err != nil {
-		return fmt.Errorf("save state: %w", err)
 	}
 
 	fmt.Printf("Agent %s stopped.\n", agent.ID[:8])

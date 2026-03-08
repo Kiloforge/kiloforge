@@ -6,9 +6,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,19 +22,13 @@ func init() {
 }
 
 func runAgents(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
 	}
+	defer rt.Close()
 
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	store := sqlite.NewAgentStore(db)
-
-	agents := store.Agents()
+	agents := rt.Agents.ListAgents()
 
 	if flagAgentsJSON {
 		enc := json.NewEncoder(os.Stdout)

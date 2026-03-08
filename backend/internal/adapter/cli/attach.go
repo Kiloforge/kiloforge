@@ -3,9 +3,6 @@ package cli
 import (
 	"fmt"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
-
 	"github.com/spf13/cobra"
 )
 
@@ -22,23 +19,19 @@ manual guidance.`,
 }
 
 func runAttach(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	defer rt.Close()
 
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	store := sqlite.NewAgentStore(db)
-
-	agentID := args[0]
-	agent, err := store.FindAgent(agentID)
+	// Get the agent first to display info before halting.
+	agent, err := rt.Agents.GetAgent(args[0])
 	if err != nil {
 		return err
 	}
+
+	wasRunning := agent.Status == "running" && agent.PID > 0
 
 	fmt.Printf("Agent:     %s (%s)\n", agent.ID[:8], agent.Role)
 	fmt.Printf("Status:    %s\n", agent.Status)
@@ -46,7 +39,7 @@ func runAttach(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Worktree:  %s\n", agent.WorktreeDir)
 	fmt.Println()
 
-	if agent.Status == "running" {
+	if wasRunning {
 		fmt.Println("This agent is currently running. It will be sent SIGINT to pause it.")
 		fmt.Printf("After it stops, resume with:\n\n")
 	} else {
@@ -56,16 +49,11 @@ func runAttach(cmd *cobra.Command, args []string) error {
 	resumeCmd := fmt.Sprintf("cd %s && claude --resume %s", agent.WorktreeDir, agent.SessionID)
 	fmt.Printf("  %s\n\n", resumeCmd)
 
-	// If agent is running, signal it to stop.
-	if agent.Status == "running" && agent.PID > 0 {
-		if err := store.HaltAgent(agentID); err != nil {
+	if wasRunning {
+		if _, err := rt.Agents.AttachAgent(args[0]); err != nil {
 			fmt.Printf("Warning: could not halt agent: %v\n", err)
 			fmt.Println("You may need to stop it manually before resuming.")
 		} else {
-			store.UpdateStatus(agentID, "halted")
-			if err := store.Save(); err != nil {
-				fmt.Printf("Warning: could not save state: %v\n", err)
-			}
 			fmt.Println("Agent halted. You can now resume it with the command above.")
 		}
 	}

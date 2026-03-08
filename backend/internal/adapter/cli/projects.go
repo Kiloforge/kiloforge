@@ -5,9 +5,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
-
 	"github.com/spf13/cobra"
 )
 
@@ -18,19 +15,13 @@ var projectsCmd = &cobra.Command{
 }
 
 func runProjects(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
+	defer rt.Close()
 
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	reg := sqlite.NewProjectStore(db)
-
-	projects := reg.List()
+	projects := rt.Projects.ListProjects()
 	if len(projects) == 0 {
 		fmt.Println("No projects registered.")
 		fmt.Println()

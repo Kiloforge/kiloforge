@@ -192,6 +192,11 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 	return result, nil
 }
 
+// Store returns the underlying project store writer.
+func (s *ProjectService) Store() ProjectStoreWriter {
+	return s.store
+}
+
 // ListProjects returns all registered projects.
 func (s *ProjectService) ListProjects() []domain.Project {
 	return s.store.List()

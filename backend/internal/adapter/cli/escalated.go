@@ -5,9 +5,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
-
 	"github.com/spf13/cobra"
 )
 
@@ -19,42 +16,13 @@ var escalatedCmd = &cobra.Command{
 }
 
 func runEscalated(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
+	defer rt.Close()
 
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	reg := sqlite.NewProjectStore(db)
-	prTracker := sqlite.NewPRTrackingStore(db)
-
-	type escalatedPR struct {
-		slug    string
-		pr      int
-		trackID string
-		cycles  int
-	}
-
-	var escalated []escalatedPR
-
-	for _, proj := range reg.List() {
-		tracking, err := prTracker.LoadPRTracking(proj.Slug)
-		if err != nil {
-			continue
-		}
-		if tracking.Status == "escalated" {
-			escalated = append(escalated, escalatedPR{
-				slug:    proj.Slug,
-				pr:      tracking.PRNumber,
-				trackID: tracking.TrackID,
-				cycles:  tracking.ReviewCycleCount,
-			})
-		}
-	}
+	escalated := rt.Agents.GetEscalated()
 
 	if len(escalated) == 0 {
 		fmt.Println("No escalated PRs.")
@@ -65,7 +33,7 @@ func runEscalated(cmd *cobra.Command, args []string) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "PROJECT\tPR#\tTRACK\tCYCLES")
 	for _, e := range escalated {
-		fmt.Fprintf(w, "%s\t#%d\t%s\t%d\n", e.slug, e.pr, e.trackID, e.cycles)
+		fmt.Fprintf(w, "%s\t#%d\t%s\t%d\n", e.Slug, e.PR, e.TrackID, e.Cycles)
 	}
 	return w.Flush()
 }

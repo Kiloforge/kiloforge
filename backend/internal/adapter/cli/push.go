@@ -8,8 +8,6 @@ import (
 	"os/signal"
 	"strings"
 
-	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/core/domain"
 
 	"github.com/spf13/cobra"
@@ -50,28 +48,22 @@ func runPush(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	cfg, err := config.Resolve()
+	rt, err := NewCLIRuntime()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
-
-	db, err := openDB(cfg)
-	if err != nil {
-		return fmt.Errorf("open database: %w", err)
-	}
-	defer db.Close()
-	reg := sqlite.NewProjectStore(db)
+	defer rt.Close()
 
 	if flagPushAll {
-		return pushAll(ctx, reg.List())
+		return pushAll(ctx, rt.Projects.ListProjects())
 	}
 
-	project, ok := reg.Get(args[0])
-	if !ok {
+	project, err := rt.Projects.GetProject(args[0])
+	if err != nil {
 		return fmt.Errorf("project %q not found", args[0])
 	}
 
-	return pushProject(ctx, project, flagPushBranch)
+	return pushProject(ctx, *project, flagPushBranch)
 }
 
 func pushAll(ctx context.Context, projects []domain.Project) error {

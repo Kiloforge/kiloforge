@@ -9,9 +9,8 @@ import (
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
-	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pidfile"
-	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -74,17 +73,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Println("Dashboard:   disabled")
 	}
 
-	// Load quota tracker data.
-	tracker := agent.NewQuotaTracker(cfg.DataDir)
-	if err := tracker.Load(); err == nil {
-		printQuotaStatus(tracker, cfg)
-	}
-
-	// Load agent store for per-agent breakdown.
-	if db, err := openDB(cfg); err == nil {
-		defer db.Close()
-		store := sqlite.NewAgentStore(db)
-		printAgentCosts(tracker, store)
+	// Load quota and agent data via runtime.
+	if rt, err := NewCLIRuntimeFromConfig(cfg); err == nil {
+		defer rt.Close()
+		printQuotaStatus(rt.Quota, cfg)
+		printAgentCosts(rt.Quota, rt.Agents)
 	}
 
 	if composeInfo != "" {
@@ -114,8 +107,8 @@ func printQuotaStatus(tracker *agent.QuotaTracker, cfg *config.Config) {
 		formatTokens(total.InputTokens), formatTokens(total.OutputTokens), total.AgentCount)
 }
 
-func printAgentCosts(tracker *agent.QuotaTracker, store port.AgentStore) {
-	agents := store.Agents()
+func printAgentCosts(tracker *agent.QuotaTracker, agentSvc *service.AgentService) {
+	agents := agentSvc.ListAgents()
 	if len(agents) == 0 {
 		return
 	}
