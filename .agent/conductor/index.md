@@ -67,6 +67,7 @@ Navigation hub for project context.
 - **fix-init-build-bugs_20260308234000Z** — Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping
 - **research-native-track-board_20260308235000Z** — Research: Native Track Board in crelay Dashboard
 - **impl-native-track-board_20260308235001Z** — Native Track Board with Dashboard Kanban and Agent Lifecycle
+- **fix-init-password-display_20260308235500Z** — Fix Init Password Display
 
 ## Getting Started
 
