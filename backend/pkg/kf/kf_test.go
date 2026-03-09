@@ -494,3 +494,142 @@ func TestClientFullLifecycle(t *testing.T) {
 		t.Errorf("unexpected progress: %+v", stats)
 	}
 }
+
+// --- Project metadata tests ---
+
+func TestParseQuickLinks(t *testing.T) {
+	content := `# Quick Links
+#
+# Comments
+- [Product Definition](./product.md)
+- [Tech Stack](./tech-stack.md)
+- [Go Style Guide](./code_styleguides/go.md)
+`
+	links := kf.ParseQuickLinks(content)
+	if len(links) != 3 {
+		t.Fatalf("expected 3 links, got %d", len(links))
+	}
+	if links[0].Label != "Product Definition" || links[0].Path != "./product.md" {
+		t.Errorf("link 0: %+v", links[0])
+	}
+	if links[2].Label != "Go Style Guide" || links[2].Path != "./code_styleguides/go.md" {
+		t.Errorf("link 2: %+v", links[2])
+	}
+}
+
+func TestReadStyleGuides(t *testing.T) {
+	dir := t.TempDir()
+	sgDir := filepath.Join(dir, "code_styleguides")
+	os.MkdirAll(sgDir, 0o755)
+	os.WriteFile(filepath.Join(sgDir, "go.md"), []byte("# Go Style\nUse gofmt."), 0o644)
+	os.WriteFile(filepath.Join(sgDir, "python.md"), []byte("# Python Style\nUse black."), 0o644)
+	os.WriteFile(filepath.Join(sgDir, "not-md.txt"), []byte("skip me"), 0o644)
+
+	guides, err := kf.ReadStyleGuides(sgDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(guides) != 2 {
+		t.Fatalf("expected 2 guides, got %d", len(guides))
+	}
+	// Sorted by ReadDir (alphabetical)
+	if guides[0].Name != "go" || !strings.Contains(guides[0].Content, "gofmt") {
+		t.Errorf("guide 0: %+v", guides[0])
+	}
+	if guides[1].Name != "python" || !strings.Contains(guides[1].Content, "black") {
+		t.Errorf("guide 1: %+v", guides[1])
+	}
+}
+
+func TestReadStyleGuidesNotFound(t *testing.T) {
+	guides, err := kf.ReadStyleGuides("/nonexistent/dir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if guides != nil {
+		t.Errorf("expected nil, got %v", guides)
+	}
+}
+
+func TestGetProjectInfo(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(filepath.Join(kfDir, "code_styleguides"), 0o755)
+	os.MkdirAll(filepath.Join(kfDir, "tracks"), 0o755)
+
+	os.WriteFile(filepath.Join(kfDir, "product.md"), []byte("# Product\nMy app"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "product-guidelines.md"), []byte("# Guidelines\nBe good"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "tech-stack.md"), []byte("# Tech\nGo + React"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "workflow.md"), []byte("# Workflow\nTrunk-based"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "quick-links.md"), []byte("- [Product](./product.md)\n- [Tech](./tech-stack.md)\n"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "code_styleguides", "go.md"), []byte("# Go\nUse gofmt"), 0o644)
+
+	client := kf.NewClient(kfDir)
+	info, err := client.GetProjectInfo()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(info.Product, "My app") {
+		t.Errorf("product: %q", info.Product)
+	}
+	if !strings.Contains(info.ProductGuidelines, "Be good") {
+		t.Errorf("guidelines: %q", info.ProductGuidelines)
+	}
+	if !strings.Contains(info.TechStack, "Go + React") {
+		t.Errorf("tech stack: %q", info.TechStack)
+	}
+	if !strings.Contains(info.Workflow, "Trunk-based") {
+		t.Errorf("workflow: %q", info.Workflow)
+	}
+	if len(info.QuickLinks) != 2 {
+		t.Errorf("expected 2 quick links, got %d", len(info.QuickLinks))
+	}
+	if len(info.StyleGuides) != 1 || info.StyleGuides[0].Name != "go" {
+		t.Errorf("style guides: %+v", info.StyleGuides)
+	}
+}
+
+func TestGetProjectInfoMissingProduct(t *testing.T) {
+	dir := t.TempDir()
+	client := kf.NewClient(dir)
+	_, err := client.GetProjectInfo()
+	if err == nil {
+		t.Fatal("expected error for missing product.md")
+	}
+}
+
+func TestGetTrackSummary(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(filepath.Join(kfDir, "tracks"), 0o755)
+
+	registry := `track-a_20260101Z: {"title":"A","status":"pending","type":"feature","created":"2026-01-01","updated":"2026-01-01"}
+track-b_20260102Z: {"title":"B","status":"completed","type":"bug","created":"2026-01-02","updated":"2026-01-02"}
+track-c_20260103Z: {"title":"C","status":"in-progress","type":"feature","created":"2026-01-03","updated":"2026-01-03"}
+track-d_20260104Z: {"title":"D","status":"archived","type":"chore","created":"2026-01-04","updated":"2026-01-04"}
+track-e_20260105Z: {"title":"E","status":"pending","type":"feature","created":"2026-01-05","updated":"2026-01-05"}
+`
+	os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte(registry), 0o644)
+
+	client := kf.NewClient(kfDir)
+	summary, err := client.GetTrackSummary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Total != 5 {
+		t.Errorf("total: %d", summary.Total)
+	}
+	if summary.Pending != 2 {
+		t.Errorf("pending: %d", summary.Pending)
+	}
+	if summary.InProgress != 1 {
+		t.Errorf("in-progress: %d", summary.InProgress)
+	}
+	if summary.Completed != 1 {
+		t.Errorf("completed: %d", summary.Completed)
+	}
+	if summary.Archived != 1 {
+		t.Errorf("archived: %d", summary.Archived)
+	}
+}
