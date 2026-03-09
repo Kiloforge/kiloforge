@@ -123,7 +123,7 @@
 | [x] | refactor-error-standardization_20260310041003Z | Standardize Domain Sentinel Errors and Store Returns | 2026-03-10 | 2026-03-10 |
 | [x] | refactor-cli-business-logic_20260310041004Z | Extract Business Logic from CLI Commands to Services | 2026-03-10 | 2026-03-10 |
 | [ ] | fix-ws-context-lifecycle_20260310041005Z | Fix WebSocket Session Context and Graceful Shutdown | 2026-03-10 | 2026-03-10 |
-| [ ] | frontend-test-hooks_20260310041006Z | Frontend Test Coverage — Critical Hooks | 2026-03-10 | 2026-03-10 |
+| [x] | frontend-test-hooks_20260310041006Z | Frontend Test Coverage — Critical Hooks | 2026-03-10 | 2026-03-10 |
 | [ ] | frontend-test-pages_20260310041007Z | Frontend Test Coverage — Pages and Components | 2026-03-10 | 2026-03-10 |
 | [ ] | refactor-domain-types-cleanup_20260310041008Z | Consolidate Domain Types and Frontend Component Cleanup | 2026-03-10 | 2026-03-10 |
 

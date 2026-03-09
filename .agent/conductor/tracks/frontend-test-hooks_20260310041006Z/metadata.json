@@ -2,15 +2,15 @@
   "id": "frontend-test-hooks_20260310041006Z",
   "title": "Frontend Test Coverage — Critical Hooks",
   "type": "chore",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T04:10:06Z",
   "updated": "2026-03-10T04:10:06Z",
   "phases": {
     "total": 2,
-    "completed": 0
+    "completed": 2
   },
   "tasks": {
     "total": 8,
-    "completed": 0
+    "completed": 8
   }
 }
