@@ -110,7 +110,7 @@
 
 | [x] | sdk-agent-migration-be_20260310014147Z | Migrate Agent Spawner to Claude Agent SDK (Backend) | 2026-03-10 | 2026-03-10 |
 | [x] | sdk-agent-migration-fe_20260310014148Z | Structured Agent Terminal Display (Frontend) | 2026-03-10 | 2026-03-10 |
-| [ ] | agent-lifecycle-be_20260310030000Z | Agent Lifecycle Management — Stop, Resume, Delete (Backend) | 2026-03-10 | 2026-03-10 |
+| [x] | agent-lifecycle-be_20260310030000Z | Agent Lifecycle Management — Stop, Resume, Delete (Backend) | 2026-03-10 | 2026-03-10 |
 | [ ] | agent-lifecycle-fe_20260310030001Z | Agent Lifecycle Management — Stop, Resume, Delete (Frontend) | 2026-03-10 | 2026-03-10 |
 | [ ] | navbar-design-polish_20260310033000Z | Navigation Bar Design Polish and Agent Status Popover | 2026-03-10 | 2026-03-10 |
 | [ ] | fix-quota-display_20260310033001Z | Fix Token and Cost Display — Bridge QuotaTracker to API | 2026-03-10 | 2026-03-10 |

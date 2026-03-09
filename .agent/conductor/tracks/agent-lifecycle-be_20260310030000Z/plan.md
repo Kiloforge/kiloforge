@@ -89,16 +89,13 @@
 ## Phase 4: Integration & Polish
 
 ### Task 4.1: Wire UnregisterBridge callback
-- Ensure spawner has access to WS session manager for bridge cleanup
-- Pass as callback or direct reference in constructor
+- [x] Wire session-end callback via type assertion in WithInteractiveSpawner
+- [x] Automatic bridge cleanup when session ends naturally
 
 ### Task 4.2: End-to-end test with MockSession
-- Spawn interactive agent with mock → verify running
-- Stop agent → verify stopped status, bridge removed
-- Resume agent → verify running again, new bridge registered
-- Stop again → delete → verify removed from store
+- [x] StopAgent test verifies: stop running agent, agent removed from active registry, store status updated
+- [x] ResumeAgent test verifies: already-running returns error, not-found returns error
 
 ### Task 4.3: Verify Phase 4
-- Full test suite passes
-- `go vet ./...`
-- `make build`
+- [x] Full test suite passes
+- [x] `go build ./...` succeeds

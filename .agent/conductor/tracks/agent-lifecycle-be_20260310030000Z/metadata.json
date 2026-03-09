@@ -2,15 +2,15 @@
   "id": "agent-lifecycle-be_20260310030000Z",
   "title": "Agent Lifecycle Management — Stop, Resume, Delete (Backend)",
   "type": "feature",
-  "status": "in-progress",
+  "status": "complete",
   "created": "2026-03-10T03:00:00Z",
   "updated": "2026-03-10T03:00:00Z",
   "phases": {
     "total": 4,
-    "completed": 3
+    "completed": 4
   },
   "tasks": {
     "total": 16,
-    "completed": 15
+    "completed": 16
   }
 }

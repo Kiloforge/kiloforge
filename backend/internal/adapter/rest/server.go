@@ -73,11 +73,22 @@ func WithBoardService(svc *service.NativeBoardService) ServerOption {
 	}
 }
 
+// SessionEndCallbackSetter can register a callback for session end events.
+type SessionEndCallbackSetter interface {
+	SetSessionEndCallback(fn agent.SessionEndCallback)
+}
+
 // WithInteractiveSpawner enables interactive agent spawning with WebSocket support.
 func WithInteractiveSpawner(spawner InteractiveSpawner) ServerOption {
 	return func(s *Server) {
 		s.interSpawner = spawner
 		s.wsSessions = wsAdapter.NewSessionManager()
+		// Wire session-end callback for automatic bridge cleanup.
+		if setter, ok := spawner.(SessionEndCallbackSetter); ok {
+			setter.SetSessionEndCallback(func(agentID string) {
+				s.wsSessions.UnregisterBridge(agentID)
+			})
+		}
 	}
 }
 
@@ -239,6 +250,7 @@ func (s *Server) Run(ctx context.Context) error {
 		InterSpawner: s.interSpawner,
 		WSSessions:   s.wsSessions,
 		Consent:      s.consent,
+		AgentRemover: s.store,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
