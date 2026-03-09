@@ -489,7 +489,7 @@ type SetupStatusResponse struct {
 	// ProjectSlug The project slug
 	ProjectSlug string `json:"project_slug"`
 
-	// SetupComplete Whether conductor setup is complete for this project
+	// SetupComplete Whether kiloforge setup is complete for this project
 	SetupComplete bool `json:"setup_complete"`
 }
 

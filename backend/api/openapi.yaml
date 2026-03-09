@@ -1402,7 +1402,7 @@ components:
       properties:
         setup_complete:
           type: boolean
-          description: Whether conductor setup is complete for this project
+          description: Whether kiloforge setup is complete for this project
         project_slug:
           type: string
           description: The project slug
