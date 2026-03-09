@@ -1,0 +1,16 @@
+{
+  "id": "e2e-merge-lock_20260309194838Z",
+  "title": "E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T19:48:38Z",
+  "updated": "2026-03-09T19:48:38Z",
+  "phases": {
+    "total": 6,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 19,
+    "completed": 0
+  }
+}

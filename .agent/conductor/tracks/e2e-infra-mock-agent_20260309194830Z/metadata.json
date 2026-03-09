@@ -1,0 +1,16 @@
+{
+  "id": "e2e-infra-mock-agent_20260309194830Z",
+  "title": "E2E Test Infrastructure and Mock Agent Binary",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T19:48:30Z",
+  "updated": "2026-03-09T19:48:30Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 15,
+    "completed": 0
+  }
+}

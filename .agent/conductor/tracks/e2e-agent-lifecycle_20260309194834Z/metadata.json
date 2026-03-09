@@ -1,0 +1,16 @@
+{
+  "id": "e2e-agent-lifecycle_20260309194834Z",
+  "title": "E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T19:48:34Z",
+  "updated": "2026-03-09T19:48:34Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 18,
+    "completed": 0
+  }
+}

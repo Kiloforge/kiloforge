@@ -1,0 +1,16 @@
+{
+  "id": "e2e-project-management_20260309194832Z",
+  "title": "E2E Tests: Project Management — Add, Remove, Setup, and Sync Status",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T19:48:32Z",
+  "updated": "2026-03-09T19:48:32Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 16,
+    "completed": 0
+  }
+}

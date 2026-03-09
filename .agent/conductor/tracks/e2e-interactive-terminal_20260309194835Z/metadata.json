@@ -1,0 +1,16 @@
+{
+  "id": "e2e-interactive-terminal_20260309194835Z",
+  "title": "E2E Tests: Interactive Agent Terminal via WebSocket",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T19:48:35Z",
+  "updated": "2026-03-09T19:48:35Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 16,
+    "completed": 0
+  }
+}

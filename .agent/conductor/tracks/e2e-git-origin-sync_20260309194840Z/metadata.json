@@ -1,0 +1,16 @@
+{
+  "id": "e2e-git-origin-sync_20260309194840Z",
+  "title": "E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling",
+  "type": "chore",
+  "status": "pending",
+  "created": "2026-03-09T19:48:40Z",
+  "updated": "2026-03-09T19:48:40Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 16,
+    "completed": 0
+  }
+}

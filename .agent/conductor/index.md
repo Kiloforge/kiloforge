@@ -167,6 +167,18 @@ Navigation hub for project context.
 - **branch-diff-view-be_20260310050000Z** — Branch Diff View API (Backend)
 - **branch-diff-view-fe_20260310050001Z** — Branch Diff View with Agent Discuss Button (Frontend)
 - **virtual-list-fe_20260310050002Z** — Virtualized Windowed List Component (Frontend)
+- **e2e-infra-mock-agent_20260309194830Z** — E2E Test Infrastructure and Mock Agent Binary
+- **e2e-health-preflight-onboarding_20260309194831Z** — E2E Tests: Health Check, Preflight Validation, and Onboarding Flow
+- **e2e-project-management_20260309194832Z** — E2E Tests: Project Management — Add, Remove, Setup, and Sync Status
+- **e2e-track-management_20260309194833Z** — E2E Tests: Track Management — List, Detail, Generate, and Delete
+- **e2e-agent-lifecycle_20260309194834Z** — E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete
+- **e2e-interactive-terminal_20260309194835Z** — E2E Tests: Interactive Agent Terminal via WebSocket
+- **e2e-kanban-board_20260309194836Z** — E2E Tests: Kanban Board — View, Move, Sync, and Column Transitions
+- **e2e-sse-realtime_20260309194837Z** — E2E Tests: Real-Time SSE Updates — Connection, Events, and Reconnection
+- **e2e-merge-lock_20260309194838Z** — E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict
+- **e2e-distributed-tracing_20260309194839Z** — E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline
+- **e2e-git-origin-sync_20260309194840Z** — E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling
+- **e2e-quota-usage_20260309194841Z** — E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estimates
 
 ## Getting Started
 
