@@ -138,6 +138,113 @@ func startE2EServer(t *testing.T) *e2eServer {
 	}
 }
 
+// startE2EServerWithAgentRemover is like startE2EServer but wires up
+// the AgentRemover so DELETE /api/agents/{id} works.
+func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
+	t.Helper()
+
+	mockBin := buildMockAgentBinary(t)
+	dir := t.TempDir()
+	cfg := &config.Config{
+		GiteaPort:      3000,
+		DataDir:        dir,
+		GiteaAdminUser: "kiloforger",
+	}
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	reg := sqlite.NewProjectStore(db)
+	store := sqlite.NewAgentStore(db)
+	prTracker := sqlite.NewPRTrackingStore(db)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mux := http.NewServeMux()
+
+	lockMgr := lock.New(dir)
+	lockMgr.StartReaper(ctx)
+
+	projectMgr := newE2EProjectManager(reg)
+
+	apiHandler := NewAPIHandler(APIHandlerOpts{
+		Agents:       store,
+		LockMgr:      lockMgr,
+		Projects:     reg,
+		ProjectMgr:   projectMgr,
+		GiteaURL:     cfg.GiteaURL(),
+		AgentRemover: store, // Wire up remover for delete tests.
+	})
+	strictHandler := gen.NewStrictHandler(apiHandler, nil)
+	gen.HandlerFromMux(strictHandler, mux)
+
+	srv := NewServer(cfg, reg, store, prTracker, port)
+	mux.HandleFunc("/webhook", srv.handleWebhook)
+
+	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }
+	badgeHandler := badge.NewHandler(store, prLoader)
+	badgeHandler.RegisterRoutes(mux)
+
+	httpSrv := &http.Server{
+		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
+		Handler: mux,
+	}
+
+	go func() {
+		<-ctx.Done()
+		httpSrv.Shutdown(context.Background())
+	}()
+
+	go func() {
+		if err := httpSrv.ListenAndServe(); err != http.ErrServerClosed {
+			t.Logf("server error: %v", err)
+		}
+	}()
+
+	url := fmt.Sprintf("http://127.0.0.1:%d", port)
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if resp, err := http.Get(url + "/health"); err == nil {
+			resp.Body.Close()
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Cleanup(cancel)
+
+	return &e2eServer{
+		URL:          url,
+		MockAgentBin: mockBin,
+		DataDir:      dir,
+		cancel:       cancel,
+		db:           db,
+		projects:     reg,
+		agents:       store,
+	}
+}
+
+// writeTestLogFile creates a log file at the given path with the given content.
+func writeTestLogFile(t *testing.T, path, content string) {
+	t.Helper()
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir for log: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write log file: %v", err)
+	}
+}
+
 // seedTestData populates the test server with sample data for E2E tests.
 func seedTestData(t *testing.T, srv *e2eServer) {
 	t.Helper()
