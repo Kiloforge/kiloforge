@@ -643,7 +643,7 @@ func TestAddProject_Duplicate(t *testing.T) {
 	t.Parallel()
 
 	mgr := &stubProjectManager{
-		addErr: &service.ProjectExistsError{Slug: "myapp"},
+		addErr: fmt.Errorf("project myapp: %w", domain.ErrProjectExists),
 	}
 	h := NewAPIHandler(APIHandlerOpts{
 		Agents:     &stubAgentLister{},
@@ -774,7 +774,7 @@ func TestRemoveProject_NotFound(t *testing.T) {
 	t.Parallel()
 
 	mgr := &stubProjectManager{
-		removeErr: &service.ProjectNotFoundError{Slug: "nope"},
+		removeErr: fmt.Errorf("project nope: %w", domain.ErrProjectNotFound),
 	}
 	h := NewAPIHandler(APIHandlerOpts{
 		Agents:     &stubAgentLister{},

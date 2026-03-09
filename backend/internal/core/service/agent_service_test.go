@@ -30,7 +30,7 @@ func (s *stubAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 			return &s.agents[i], nil
 		}
 	}
-	return nil, fmt.Errorf("agent not found: %s", idPrefix)
+	return nil, fmt.Errorf("agent %s: %w", idPrefix, domain.ErrAgentNotFound)
 }
 
 func (s *stubAgentStore) UpdateStatus(idPrefix, status string) error {
@@ -51,7 +51,7 @@ func (s *stubAgentStore) RemoveAgent(id string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("agent not found: %s", id)
+	return fmt.Errorf("agent %s: %w", id, domain.ErrAgentNotFound)
 }
 
 // stubProjectStoreForAgent implements port.ProjectStore for testing.
@@ -82,7 +82,7 @@ type stubPRTrackingStore struct {
 func (s *stubPRTrackingStore) LoadPRTracking(slug string) (*domain.PRTracking, error) {
 	t, ok := s.tracking[slug]
 	if !ok {
-		return nil, fmt.Errorf("not found")
+		return nil, fmt.Errorf("pr tracking for %s: %w", slug, domain.ErrPRTrackingNotFound)
 	}
 	return t, nil
 }

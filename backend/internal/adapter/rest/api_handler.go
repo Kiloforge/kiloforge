@@ -626,8 +626,7 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 
 	result, err := h.projectMgr.AddProject(ctx, req.Body.RemoteUrl, name, opts...)
 	if err != nil {
-		var existsErr *service.ProjectExistsError
-		if errors.As(err, &existsErr) {
+		if errors.Is(err, domain.ErrProjectExists) {
 			return gen.AddProject409JSONResponse{Error: err.Error()}, nil
 		}
 		return gen.AddProject400JSONResponse{Error: err.Error()}, nil
@@ -665,8 +664,7 @@ func (h *APIHandler) RemoveProject(ctx context.Context, req gen.RemoveProjectReq
 
 	err := h.projectMgr.RemoveProject(ctx, req.Slug, cleanup)
 	if err != nil {
-		var notFound *service.ProjectNotFoundError
-		if errors.As(err, &notFound) {
+		if errors.Is(err, domain.ErrProjectNotFound) {
 			return gen.RemoveProject404JSONResponse{Error: err.Error()}, nil
 		}
 		return gen.RemoveProject500JSONResponse{Error: err.Error()}, nil

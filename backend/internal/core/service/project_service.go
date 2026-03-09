@@ -241,23 +241,6 @@ func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup
 	return nil
 }
 
-// ProjectExistsError indicates a project with the given slug already exists.
-type ProjectExistsError struct {
-	Slug string
-}
-
-func (e *ProjectExistsError) Error() string {
-	return fmt.Sprintf("project %q already exists", e.Slug)
-}
-
-// ProjectNotFoundError indicates a project with the given slug was not found.
-type ProjectNotFoundError struct {
-	Slug string
-}
-
-func (e *ProjectNotFoundError) Error() string {
-	return fmt.Sprintf("project %q not found", e.Slug)
-}
 
 // isRemoteURL returns true if the argument looks like a git remote URL.
 func isRemoteURL(arg string) bool {
