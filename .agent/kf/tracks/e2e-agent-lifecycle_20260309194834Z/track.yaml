@@ -3,7 +3,7 @@ title: E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete
 type: chore
 status: pending
 created: 2026-03-09T19:48:34Z
-updated: 2026-03-09T19:48:34Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the full agent lifecycle: spawning developer/reviewer agents via the mock agent binary, monitoring status transitions, viewing logs, stopping/resuming/deleting agents, covering happy path, edge cases, and expected failures.
   context: |
@@ -90,47 +90,47 @@ plan:
   - phase: Spawn Tests
     tasks:
       - text: Spawn developer agent — navigate to dashboard, click spawn, select developer role, verify agent appears in list with "running" status
-        done: false
+        done: true
       - text: Spawn reviewer agent — spawn with reviewer role, verify agent appears with correct role badge and "running" status
-        done: false
+        done: true
       - text: Spawn with mock agent failure — configure mock to exit non-zero immediately, verify agent transitions to "failed" status in UI
-        done: false
+        done: true
       - text: Spawn validation errors — attempt spawn with missing project, missing prompt, invalid role; verify error messages display correctly
-        done: false
+        done: true
   - phase: Monitoring Tests
     tasks:
       - text: Agent list display — spawn multiple agents, verify all appear in the agent list/grid with correct status, role, and project info
-        done: false
+        done: true
       - text: Agent detail page — click an agent in the list, verify detail page shows role, track ref, session ID, started-at timestamp, and current status
-        done: false
+        done: true
       - text: Log viewer — navigate to agent detail, verify log viewer shows streamed output text from mock agent events (content_block_delta text)
-        done: false
+        done: true
   - phase: Status Transition Tests
     tasks:
       - text: Running to completed — spawn agent with default mock config, wait for completion, verify status changes from "running" to "completed" in UI
-        done: false
+        done: true
       - text: Running to failed — spawn agent with `MOCK_AGENT_EXIT_CODE=1`, verify status changes to "failed" with error indication
-        done: false
+        done: true
       - text: Mock agent exits with different codes — test exit codes 1, 2, 137 (SIGKILL); verify each produces "failed" status with appropriate indication
-        done: false
+        done: true
       - text: Status updates in real-time — spawn agent with slow delay (`MOCK_AGENT_DELAY=2000`), verify status badge updates without page refresh (SSE-driven)
-        done: false
+        done: true
   - phase: Lifecycle Action Tests
     tasks:
       - text: Stop agent — spawn a long-running agent, click stop button, verify status transitions to "stopped" and stop button is replaced by appropriate controls
-        done: false
+        done: true
       - text: Resume agent — suspend an agent, click resume, verify status returns to "running" and output resumes in log viewer
-        done: false
+        done: true
       - text: Delete agent — stop an agent, click delete, confirm deletion dialog, verify agent removed from list entirely
-        done: false
+        done: true
       - text: Lifecycle edge cases — stop an already-stopped agent (expect no-op or error toast), resume a non-suspended agent (expect error), rapid spawn then immediate stop
-        done: false
+        done: true
   - phase: History and Filtering Tests
     tasks:
       - text: Agent history page — navigate to history page, verify all agents (including completed/failed) are listed in reverse chronological order
-        done: false
+        done: true
       - text: Filter by status — use status filter dropdown, verify only agents with selected status appear (test with "completed", "failed", "running")
-        done: false
+        done: true
       - text: Filter by role — use role filter, verify only agents with selected role appear (test with "developer", "reviewer")
-        done: false
-extra: "{}"
+        done: true
+extra: {}
