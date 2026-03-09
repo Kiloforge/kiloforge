@@ -320,7 +320,7 @@ func TestHandleWebhook_PROpened_CreatesTracking(t *testing.T) {
 	srv := newTestServerWithSpawner(dir, spawner, nil)
 
 	// Add a developer agent to state so the tracking can find it.
-	srv.store.AddAgent(domain.AgentInfo{
+	_ = srv.store.AddAgent(domain.AgentInfo{
 		ID:          "dev-agent-123",
 		Role:        "developer",
 		Ref:         "my-track_20260101Z",
@@ -384,7 +384,7 @@ func TestReviewApproved_MergesAndCleans(t *testing.T) {
 	srv := newTestServerWithSpawner(dir, spawner, giteaSrv)
 
 	// Set up developer agent.
-	srv.store.AddAgent(domain.AgentInfo{
+	_ = srv.store.AddAgent(domain.AgentInfo{
 		ID:        "dev-agent-123",
 		Role:      "developer",
 		Ref:       "my-track",
@@ -454,7 +454,7 @@ func TestReviewChangesRequested_ResumesDeveloper(t *testing.T) {
 	spawner := &fakeSpawner{}
 	srv := newTestServerWithSpawner(dir, spawner, nil)
 
-	srv.store.AddAgent(domain.AgentInfo{
+	_ = srv.store.AddAgent(domain.AgentInfo{
 		ID:        "dev-agent-123",
 		Role:      "developer",
 		Ref:       "my-track",
@@ -516,7 +516,7 @@ func TestReviewCycleLimit_Escalates(t *testing.T) {
 
 	srv := newTestServerWithSpawner(dir, spawner, giteaSrv)
 
-	srv.store.AddAgent(domain.AgentInfo{
+	_ = srv.store.AddAgent(domain.AgentInfo{
 		ID:        "dev-agent-123",
 		Role:      "developer",
 		Ref:       "my-track",
@@ -569,7 +569,7 @@ func TestPRSynchronize_SpawnsReviewer(t *testing.T) {
 	spawner := &fakeSpawner{}
 	srv := newTestServerWithSpawner(dir, spawner, nil)
 
-	srv.store.AddAgent(domain.AgentInfo{
+	_ = srv.store.AddAgent(domain.AgentInfo{
 		ID:        "dev-agent-123",
 		Role:      "developer",
 		Ref:       "my-track",

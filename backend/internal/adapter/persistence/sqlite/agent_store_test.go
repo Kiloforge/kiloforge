@@ -21,7 +21,9 @@ func TestAgentStore_AddAndFind(t *testing.T) {
 		StartedAt: time.Now().Truncate(time.Second),
 		UpdatedAt: time.Now().Truncate(time.Second),
 	}
-	store.AddAgent(info)
+	if err := store.AddAgent(info); err != nil {
+		t.Fatalf("AddAgent: %v", err)
+	}
 
 	got, err := store.FindAgent("agent-abc123")
 	if err != nil {
@@ -40,10 +42,12 @@ func TestAgentStore_FindByPrefix(t *testing.T) {
 	db := openTestDB(t)
 	store := NewAgentStore(db)
 
-	store.AddAgent(domain.AgentInfo{
+	if err := store.AddAgent(domain.AgentInfo{
 		ID: "agent-abc123", Role: "developer", Ref: "t1", Status: "running",
 		StartedAt: time.Now(), UpdatedAt: time.Now(),
-	})
+	}); err != nil {
+		t.Fatalf("AddAgent: %v", err)
+	}
 
 	got, err := store.FindAgent("agent-abc")
 	if err != nil {
@@ -59,12 +63,16 @@ func TestAgentStore_UpdateStatus(t *testing.T) {
 	db := openTestDB(t)
 	store := NewAgentStore(db)
 
-	store.AddAgent(domain.AgentInfo{
+	if err := store.AddAgent(domain.AgentInfo{
 		ID: "agent-upd", Role: "developer", Ref: "t1", Status: "running",
 		StartedAt: time.Now(), UpdatedAt: time.Now(),
-	})
+	}); err != nil {
+		t.Fatalf("AddAgent: %v", err)
+	}
 
-	store.UpdateStatus("agent-upd", "halted")
+	if err := store.UpdateStatus("agent-upd", "halted"); err != nil {
+		t.Fatalf("UpdateStatus: %v", err)
+	}
 
 	got, err := store.FindAgent("agent-upd")
 	if err != nil {
@@ -80,9 +88,9 @@ func TestAgentStore_AgentsByStatus(t *testing.T) {
 	db := openTestDB(t)
 	store := NewAgentStore(db)
 
-	store.AddAgent(domain.AgentInfo{ID: "a1", Role: "developer", Ref: "t1", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
-	store.AddAgent(domain.AgentInfo{ID: "a2", Role: "developer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
-	store.AddAgent(domain.AgentInfo{ID: "a3", Role: "reviewer", Ref: "t3", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a1", Role: "developer", Ref: "t1", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a2", Role: "developer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a3", Role: "reviewer", Ref: "t3", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
 
 	running := store.AgentsByStatus("running")
 	if len(running) != 2 {
@@ -95,8 +103,8 @@ func TestAgentStore_FindByRef(t *testing.T) {
 	db := openTestDB(t)
 	store := NewAgentStore(db)
 
-	store.AddAgent(domain.AgentInfo{ID: "old", Role: "developer", Ref: "track-1", Status: "halted", StartedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), UpdatedAt: time.Now()})
-	store.AddAgent(domain.AgentInfo{ID: "new", Role: "developer", Ref: "track-1", Status: "running", StartedAt: time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "old", Role: "developer", Ref: "track-1", Status: "halted", StartedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "new", Role: "developer", Ref: "track-1", Status: "running", StartedAt: time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC), UpdatedAt: time.Now()})
 
 	got := store.FindByRef("track-1")
 	if got == nil {
@@ -112,8 +120,8 @@ func TestAgentStore_Agents(t *testing.T) {
 	db := openTestDB(t)
 	store := NewAgentStore(db)
 
-	store.AddAgent(domain.AgentInfo{ID: "a1", Role: "developer", Ref: "t1", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
-	store.AddAgent(domain.AgentInfo{ID: "a2", Role: "reviewer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a1", Role: "developer", Ref: "t1", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a2", Role: "reviewer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
 
 	all := store.Agents()
 	if len(all) != 2 {

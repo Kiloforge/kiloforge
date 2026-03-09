@@ -73,7 +73,7 @@ func (s *LifecycleService) HandleRejection(ctx context.Context, trackID string, 
 		status := agent.Status
 		if status == string(domain.AgentStatusRunning) || status == string(domain.AgentStatusWaiting) || status == "waiting-review" || status == string(domain.AgentStatusHalted) {
 			_ = s.agents.HaltAgent(agent.ID)
-			s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusStopped))
+			_ = s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusStopped))
 			if a := s.agents.FindByRef(trackID); a != nil {
 				a.ShutdownReason = "track-rejected"
 			}
@@ -127,20 +127,20 @@ func (s *LifecycleService) resumeDeveloper(ctx context.Context, trackID string) 
 		return false, fmt.Sprintf("agent not halted (status: %s)", agent.Status)
 	}
 	if agent.SessionID == "" {
-		s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusResumeFailed))
+		_ = s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusResumeFailed))
 		_ = s.agents.Save()
 		return false, "no session to resume"
 	}
 	if agent.WorktreeDir != "" {
 		if _, err := os.Stat(agent.WorktreeDir); os.IsNotExist(err) {
-			s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusResumeFailed))
+			_ = s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusResumeFailed))
 			_ = s.agents.Save()
 			return false, "worktree not found"
 		}
 	}
 
 	if err := s.spawner.ResumeDeveloper(ctx, agent.SessionID, agent.WorktreeDir); err != nil {
-		s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusResumeFailed))
+		_ = s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusResumeFailed))
 		if a := s.agents.FindByRef(trackID); a != nil {
 			a.ResumeError = err.Error()
 		}
@@ -148,7 +148,7 @@ func (s *LifecycleService) resumeDeveloper(ctx context.Context, trackID string) 
 		return false, fmt.Sprintf("resume failed: %v", err)
 	}
 
-	s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusRunning))
+	_ = s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusRunning))
 	if a := s.agents.FindByRef(trackID); a != nil {
 		a.ShutdownReason = ""
 	}
