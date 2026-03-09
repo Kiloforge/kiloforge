@@ -215,6 +215,16 @@ func (s *Store) traceSummariesForIDs(traceIDs map[string]struct{}) []TraceSummar
 	return result
 }
 
+// SeedSpan inserts a pre-built SpanSummary directly (bypassing OTel).
+// Used for E2E test seeding.
+func (s *Store) SeedSpan(span SpanSummary) error {
+	s.mu.Lock()
+	s.spans = append(s.spans, span)
+	s.indexSpan(span)
+	s.mu.Unlock()
+	return nil
+}
+
 // GetTrace returns all spans for a given trace ID.
 func (s *Store) GetTrace(traceID string) []SpanSummary {
 	s.mu.RLock()

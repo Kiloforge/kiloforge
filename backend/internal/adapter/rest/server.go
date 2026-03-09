@@ -216,6 +216,11 @@ func (s *Server) Run(ctx context.Context) error {
 	// Manual routes: webhook is Gitea-defined, not our API spec.
 	mux.HandleFunc("POST /webhook", s.handleWebhook)
 
+	// Trace seeding endpoint for E2E tests.
+	if writer, ok := s.traceStore.(tracing.TraceWriter); ok {
+		mux.HandleFunc("POST /api/traces", handleSeedTrace(writer))
+	}
+
 	// Lock service (shared with generated API handler).
 	lockMgr := lock.New(s.cfg.DataDir)
 	lockMgr.StartReaper(ctx)

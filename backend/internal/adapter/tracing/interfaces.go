@@ -18,3 +18,9 @@ type TraceReader interface {
 type SpanRecorder interface {
 	Record(span sdktrace.ReadOnlySpan) error
 }
+
+// TraceWriter supports direct insertion of span summaries without going through OTel.
+// Used for E2E test seeding.
+type TraceWriter interface {
+	SeedSpan(span SpanSummary) error
+}
