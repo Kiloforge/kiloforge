@@ -1,25 +1,20 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
-import { useBoard } from "../hooks/useBoard";
-import { useOriginSync } from "../hooks/useOriginSync";
 import { queryKeys } from "../api/queryKeys";
-import { fetcher, FetchError } from "../api/fetcher";
+import { fetcher } from "../api/fetcher";
 import { TrackList } from "../components/TrackList";
-import { KanbanBoard } from "../components/KanbanBoard";
-import { SyncPanel } from "../components/SyncPanel";
-import { AgentTerminal } from "../components/AgentTerminal";
-import { AdminPanel } from "../components/AdminPanel";
 import { ConsentDialog } from "../components/ConsentDialog";
 import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
 import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
-import { useTourContextSafe } from "../components/tour/TourProvider";
-import { TOUR_STEPS } from "../components/tour/tourSteps";
+import { SyncContainer } from "../containers/SyncContainer";
+import { BoardContainer } from "../containers/BoardContainer";
+import { AdminContainer } from "../containers/AdminContainer";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -27,15 +22,9 @@ export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
-  const { board, loading: boardLoading, moveCard, syncBoard, syncing } = useBoard(slug);
-  const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
 
   const queryClient = useQueryClient();
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [prompt, setPrompt] = useState("");
-  const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
-  const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
   const { data: setupStatus } = useQuery({
     queryKey: queryKeys.setupStatus(slug ?? ""),
     queryFn: () =>
@@ -68,7 +57,6 @@ export function ProjectPage() {
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const setupPrompt = useSetupPrompt();
-  const tour = useTourContextSafe();
 
   const handleSetupComplete = useCallback(() => {
     if (slug) {
@@ -76,80 +64,6 @@ export function ProjectPage() {
     }
     setupPrompt.handleSetupComplete();
   }, [slug, queryClient, setupPrompt]);
-
-  // Tour: auto-show prompt and prefill when on generate-tracks step
-  const tourStep = tour?.isActive ? TOUR_STEPS[tour.currentStep] : null;
-  useEffect(() => {
-    if (tourStep?.id === "generate-tracks" && !showPrompt) {
-      setShowPrompt(true);
-      setPrompt("Add user authentication with login, registration, and password reset");
-    }
-  }, [tourStep?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handlePush = useCallback((remoteBranch: string) => {
-    push({ remote_branch: remoteBranch });
-  }, [push]);
-
-  const handlePull = useCallback((remoteBranch?: string) => {
-    pull(remoteBranch);
-  }, [pull]);
-
-  const generateMutation = useMutation({
-    mutationFn: (p: string) =>
-      fetcher<{ agent_id: string; ws_url: string }>("/api/tracks/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: p, project: slug }),
-      }),
-    onSuccess: (data) => {
-      setTerminalAgentId(data.agent_id);
-      setShowPrompt(false);
-      setPrompt("");
-    },
-    onError: (err) => {
-      if (err instanceof FetchError && err.status === 403) {
-        consent.requestConsent(() => handleGenerateTracks());
-      } else if (err instanceof FetchError && err.status === 412) {
-        skillsPrompt.requestInstall(() => handleGenerateTracks());
-      } else if (err instanceof FetchError && err.status === 428 && slug) {
-        setupPrompt.requestSetup(slug, () => handleGenerateTracks());
-      }
-    },
-  });
-
-  const handleGenerateTracks = useCallback(() => {
-    if (!prompt.trim() || !slug) return;
-    generateMutation.mutate(prompt.trim());
-  }, [prompt, slug, generateMutation, consent]);
-
-  const deleteMutation = useMutation({
-    mutationFn: (trackId: string) =>
-      fetcher<void>(
-        `/api/tracks/${encodeURIComponent(trackId)}?project=${encodeURIComponent(slug!)}`,
-        { method: "DELETE" },
-      ),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
-    },
-  });
-
-  const handleDeleteTrack = useCallback(
-    (trackId: string) => {
-      if (!slug) return;
-      deleteMutation.mutate(trackId);
-    },
-    [slug, deleteMutation],
-  );
-
-  const handleTerminalClose = useCallback(() => {
-    setTerminalAgentId(null);
-    queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
-  }, [queryClient, slug]);
-
-  const handleAdminTerminalClose = useCallback(() => {
-    setAdminAgentId(null);
-    queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
-  }, [queryClient, slug]);
 
   return (
     <>
@@ -218,98 +132,24 @@ export function ProjectPage() {
         </div>
       )}
 
-      {project?.origin_remote && (
-        <section className={appStyles.panel}>
-          <h2 className={appStyles.panelTitle}>Origin Sync</h2>
-          <SyncPanel
-            syncStatus={syncStatus}
-            loading={syncLoading}
-            pushing={pushing}
-            pulling={pulling}
-            error={syncError}
-            onPush={handlePush}
-            onPull={handlePull}
-            onRefresh={refreshSync}
-            onClearError={clearSyncError}
-          />
-        </section>
-      )}
+      {project?.origin_remote && slug && <SyncContainer slug={slug} />}
 
-      <section className={appStyles.panel} data-tour="board-section">
-        <div className={styles.boardHeader}>
-          <h2 className={appStyles.panelTitle}>Board</h2>
-          <div className={styles.boardActions}>
-            <button
-              className={styles.syncBtn}
-              onClick={syncBoard}
-              disabled={syncing || actionsDisabled}
-              title={disabledReason}
-            >
-              {syncing ? "Syncing..." : "Sync"}
-            </button>
-            <button
-              className={styles.generateBtn}
-              onClick={() => { if (!actionsDisabled) setShowPrompt((v) => !v); }}
-              disabled={actionsDisabled}
-              title={disabledReason}
-              data-tour="generate-tracks"
-            >
-              Generate Tracks
-            </button>
-          </div>
-        </div>
-        {showPrompt && (
-          <div className={styles.promptForm}>
-            <textarea
-              className={styles.promptInput}
-              placeholder="Describe the features or changes you want to generate tracks for..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  handleGenerateTracks();
-                }
-              }}
-            />
-            <div className={styles.promptActions}>
-              <button
-                className={styles.promptSubmit}
-                disabled={!prompt.trim() || generateMutation.isPending}
-                onClick={handleGenerateTracks}
-              >
-                {generateMutation.isPending ? "Starting..." : "Generate"}
-              </button>
-              <button className={styles.promptCancel} onClick={() => { setShowPrompt(false); setPrompt(""); }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-        {boardLoading ? (
-          <p className={appStyles.empty}>Loading board...</p>
-        ) : (
-          <KanbanBoard
-            board={board ?? { columns: ["backlog", "approved", "in_progress", "in_review", "done"], cards: {} }}
-            projectSlug={slug}
-            onMoveCard={moveCard}
-            onDeleteTrack={handleDeleteTrack}
-          />
-        )}
-      </section>
-
-      {terminalAgentId && (
-        <AgentTerminal agentId={terminalAgentId} onClose={handleTerminalClose} />
-      )}
-
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Admin Operations</h2>
-        <AdminPanel
-          projectSlug={slug}
-          running={adminAgentId !== null}
-          disabled={actionsDisabled}
+      {slug && (
+        <BoardContainer
+          slug={slug}
+          actionsDisabled={actionsDisabled}
           disabledReason={disabledReason}
-          onStartOperation={setAdminAgentId}
+          onConsentRequired={(retry) => consent.requestConsent(retry)}
+          onSkillsRequired={(retry) => skillsPrompt.requestInstall(retry)}
+          onSetupRequired={(s, retry) => setupPrompt.requestSetup(s, retry)}
+        />
+      )}
+
+      {slug && (
+        <AdminContainer
+          slug={slug}
+          actionsDisabled={actionsDisabled}
+          disabledReason={disabledReason}
           onSetupRequired={() => {
             if (slug) setupPrompt.requestSetup(slug, () => {
               queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
@@ -321,10 +161,6 @@ export function ProjectPage() {
             });
           }}
         />
-      </section>
-
-      {adminAgentId && (
-        <AgentTerminal agentId={adminAgentId} onClose={handleAdminTerminalClose} />
       )}
 
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
