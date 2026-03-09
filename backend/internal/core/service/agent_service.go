@@ -78,24 +78,16 @@ func (s *AgentService) AttachAgent(idPrefix string) (*domain.AgentInfo, error) {
 	return agent, nil
 }
 
-// EscalatedItem represents a PR that has been escalated.
-type EscalatedItem struct {
-	Slug    string
-	PR      int
-	TrackID string
-	Cycles  int
-}
-
 // GetEscalated returns all PRs that have been escalated across all projects.
-func (s *AgentService) GetEscalated() []EscalatedItem {
-	var items []EscalatedItem
+func (s *AgentService) GetEscalated() []domain.EscalatedItem {
+	var items []domain.EscalatedItem
 	for _, proj := range s.projects.List() {
 		tracking, err := s.prTracker.LoadPRTracking(proj.Slug)
 		if err != nil {
 			continue
 		}
 		if tracking.Status == "escalated" {
-			items = append(items, EscalatedItem{
+			items = append(items, domain.EscalatedItem{
 				Slug:    proj.Slug,
 				PR:      tracking.PRNumber,
 				TrackID: tracking.TrackID,
