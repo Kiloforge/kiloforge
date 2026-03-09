@@ -89,9 +89,23 @@ const (
 
 // Defines values for TrackStatus.
 const (
-	Complete   TrackStatus = "complete"
-	InProgress TrackStatus = "in-progress"
-	Pending    TrackStatus = "pending"
+	TrackStatusComplete   TrackStatus = "complete"
+	TrackStatusInProgress TrackStatus = "in-progress"
+	TrackStatusPending    TrackStatus = "pending"
+)
+
+// Defines values for TrackConflictRisk.
+const (
+	High   TrackConflictRisk = "high"
+	Low    TrackConflictRisk = "low"
+	Medium TrackConflictRisk = "medium"
+)
+
+// Defines values for TrackDependencyStatus.
+const (
+	TrackDependencyStatusComplete   TrackDependencyStatus = "complete"
+	TrackDependencyStatusInProgress TrackDependencyStatus = "in-progress"
+	TrackDependencyStatusPending    TrackDependencyStatus = "pending"
 )
 
 // AddProjectRequest defines model for AddProjectRequest.
@@ -632,6 +646,14 @@ type TraceSummary struct {
 
 // Track defines model for Track.
 type Track struct {
+	// ConflictCount Number of active conflict risk pairs
+	ConflictCount *int `json:"conflict_count,omitempty"`
+
+	// DepsCount Number of dependencies this track has
+	DepsCount *int `json:"deps_count,omitempty"`
+
+	// DepsMet Number of dependencies that are completed
+	DepsMet *int        `json:"deps_met,omitempty"`
 	Id      string      `json:"id"`
 	Project *string     `json:"project,omitempty"`
 	Status  TrackStatus `json:"status"`
@@ -641,13 +663,37 @@ type Track struct {
 // TrackStatus defines model for Track.Status.
 type TrackStatus string
 
+// TrackConflict defines model for TrackConflict.
+type TrackConflict struct {
+	Note       *string           `json:"note,omitempty"`
+	Risk       TrackConflictRisk `json:"risk"`
+	TrackId    string            `json:"track_id"`
+	TrackTitle *string           `json:"track_title,omitempty"`
+}
+
+// TrackConflictRisk defines model for TrackConflict.Risk.
+type TrackConflictRisk string
+
+// TrackDependency defines model for TrackDependency.
+type TrackDependency struct {
+	Id     string                `json:"id"`
+	Status TrackDependencyStatus `json:"status"`
+	Title  *string               `json:"title,omitempty"`
+}
+
+// TrackDependencyStatus defines model for TrackDependency.Status.
+type TrackDependencyStatus string
+
 // TrackDetail defines model for TrackDetail.
 type TrackDetail struct {
+	Conflicts *[]TrackConflict `json:"conflicts,omitempty"`
+
 	// CreatedAt ISO 8601 timestamp
-	CreatedAt       *string `json:"created_at,omitempty"`
-	Id              string  `json:"id"`
-	PhasesCompleted *int    `json:"phases_completed,omitempty"`
-	PhasesTotal     *int    `json:"phases_total,omitempty"`
+	CreatedAt       *string            `json:"created_at,omitempty"`
+	Dependencies    *[]TrackDependency `json:"dependencies,omitempty"`
+	Id              string             `json:"id"`
+	PhasesCompleted *int               `json:"phases_completed,omitempty"`
+	PhasesTotal     *int               `json:"phases_total,omitempty"`
 
 	// Plan Raw markdown content of plan.md
 	Plan *string `json:"plan,omitempty"`

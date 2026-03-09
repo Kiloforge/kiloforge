@@ -1680,6 +1680,15 @@ components:
           enum: [complete, in-progress, pending]
         project:
           type: string
+        deps_count:
+          type: integer
+          description: Number of dependencies this track has
+        deps_met:
+          type: integer
+          description: Number of dependencies that are completed
+        conflict_count:
+          type: integer
+          description: Number of active conflict risk pairs
 
     TrackDetail:
       type: object
@@ -1714,6 +1723,40 @@ components:
         updated_at:
           type: string
           description: ISO 8601 timestamp
+        dependencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackDependency"
+        conflicts:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackConflict"
+
+    TrackDependency:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [complete, in-progress, pending]
+
+    TrackConflict:
+      type: object
+      required: [track_id, risk]
+      properties:
+        track_id:
+          type: string
+        track_title:
+          type: string
+        risk:
+          type: string
+          enum: [high, medium, low]
+        note:
+          type: string
 
     StatusInfo:
       type: object
