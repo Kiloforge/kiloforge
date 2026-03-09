@@ -4,22 +4,22 @@
 
 ## Phase 1: Preflight Query
 
-- [ ] Task 1.1: Add `preflight` query key to `queryKeys.ts`
-- [ ] Task 1.2: Add preflight query to ProjectPage — fetch `GET /api/preflight`
-- [ ] Task 1.3: Derive `skillsMissing`, `setupIncomplete`, `actionsDisabled`, and `disabledReason` from preflight + setupStatus
+- [x] Task 1.1: Add `preflight` query key to `queryKeys.ts`
+- [x] Task 1.2: Add preflight query to ProjectPage — fetch `GET /api/preflight`
+- [x] Task 1.3: Derive `skillsMissing`, `setupIncomplete`, `actionsDisabled`, and `disabledReason` from preflight + setupStatus
 
 ## Phase 2: Button Gating Update
 
-- [ ] Task 2.1: Update "Generate Tracks" and "Sync" button disabled state to use `actionsDisabled` instead of `setupIncomplete`
-- [ ] Task 2.2: Update button tooltips to use `disabledReason` instead of hardcoded "Run kiloforge setup first"
-- [ ] Task 2.3: Update setup banner to show skills-missing state vs setup-incomplete state with appropriate action buttons
-- [ ] Task 2.4: Add `disabledReason` prop to AdminPanel — replace hardcoded tooltip string
+- [x] Task 2.1: Update "Generate Tracks" and "Sync" button disabled state to use `actionsDisabled` instead of `setupIncomplete`
+- [x] Task 2.2: Update button tooltips to use `disabledReason` instead of hardcoded "Run kiloforge setup first"
+- [x] Task 2.3: Update setup banner to show skills-missing state vs setup-incomplete state with appropriate action buttons
+- [x] Task 2.4: Add `disabledReason` prop to AdminPanel — replace hardcoded tooltip string
 
 ## Phase 3: Cache Invalidation
 
-- [ ] Task 3.1: Invalidate `preflight` query after skills install completes
-- [ ] Task 3.2: Invalidate `setupStatus` query after setup completes (already done — verify still works)
+- [x] Task 3.1: Invalidate `preflight` query after skills install completes
+- [x] Task 3.2: Invalidate `setupStatus` query after setup completes (already done — verify still works)
 
 ## Phase 4: Verification
 
-- [ ] Task 4.1: `npm run build` succeeds with no errors
+- [x] Task 4.1: `npm run build` succeeds with no errors

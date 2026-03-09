@@ -104,7 +104,7 @@
 | [x] | setup-gate-be_20260310234710Z | Gate All Agent Endpoints Behind Setup Check (Backend) | 2026-03-10 | 2026-03-10 |
 | [x] | setup-gate-fe_20260310234711Z | Disable Agent Actions Until Setup Complete (Frontend) | 2026-03-10 | 2026-03-10 |
 | [x] | fix-skill-prereq-be_20260310000644Z | Fix Skill Prerequisite Chain — Rename and Required List (Backend) | 2026-03-10 | 2026-03-10 |
-| [ ] | fix-skill-prereq-fe_20260310000645Z | Fix Skill Prerequisite Chain — Frontend Proactive Gating | 2026-03-10 | 2026-03-10 |
+| [x] | fix-skill-prereq-fe_20260310000645Z | Fix Skill Prerequisite Chain — Frontend Proactive Gating | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 
