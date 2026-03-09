@@ -128,7 +128,7 @@
 | [x] | refactor-domain-types-cleanup_20260310041008Z | Consolidate Domain Types and Frontend Component Cleanup | 2026-03-10 | 2026-03-10 |
 | [ ] | branch-diff-view-be_20260310050000Z | Branch Diff View API (Backend) | 2026-03-10 | 2026-03-10 |
 | [ ] | branch-diff-view-fe_20260310050001Z | Branch Diff View with Agent Discuss Button (Frontend) | 2026-03-10 | 2026-03-10 |
-| [ ] | virtual-list-fe_20260310050002Z | Virtualized Windowed List Component (Frontend) | 2026-03-10 | 2026-03-10 |
+| [x] | virtual-list-fe_20260310050002Z | Virtualized Windowed List Component (Frontend) | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 
