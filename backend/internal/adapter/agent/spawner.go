@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"kiloforge/internal/adapter/config"
@@ -59,6 +60,10 @@ func (s *Spawner) ValidateSkills(role, workDir string) error {
 // It receives the agent ID, ref (track ID), and final status.
 type CompletionCallback func(agentID, ref, status string)
 
+// SessionEndCallback is called when an interactive agent session ends.
+// Used to clean up resources like WS bridges.
+type SessionEndCallback func(agentID string)
+
 // Spawner manages Claude agent lifecycle.
 type Spawner struct {
 	cfg                *config.Config
@@ -66,6 +71,10 @@ type Spawner struct {
 	tracker            *QuotaTracker
 	tracer             port.Tracer
 	completionCallback CompletionCallback
+	sessionEndCallback SessionEndCallback
+
+	activeMu     sync.RWMutex
+	activeAgents map[string]*InteractiveAgent
 }
 
 // CleanClaudeEnv returns os.Environ() with Claude-internal env vars removed
@@ -86,7 +95,21 @@ func CleanClaudeEnv() []string {
 
 // NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
 func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker) *Spawner {
-	return &Spawner{cfg: cfg, store: store, tracker: tracker, tracer: port.NoopTracer{}}
+	return &Spawner{
+		cfg:          cfg,
+		store:        store,
+		tracker:      tracker,
+		tracer:       port.NoopTracer{},
+		activeAgents: make(map[string]*InteractiveAgent),
+	}
+}
+
+// GetActiveAgent returns a running interactive agent by ID.
+func (s *Spawner) GetActiveAgent(id string) (*InteractiveAgent, bool) {
+	s.activeMu.RLock()
+	defer s.activeMu.RUnlock()
+	a, ok := s.activeAgents[id]
+	return a, ok
 }
 
 // SetTracer sets the distributed tracer for agent lifecycle spans.
@@ -99,6 +122,12 @@ func (s *Spawner) SetTracer(t port.Tracer) {
 // SetCompletionCallback sets the function called when an agent process exits.
 func (s *Spawner) SetCompletionCallback(fn CompletionCallback) {
 	s.completionCallback = fn
+}
+
+// SetSessionEndCallback sets the function called when an interactive session ends.
+// Typically used to call SessionManager.UnregisterBridge.
+func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
+	s.sessionEndCallback = fn
 }
 
 // onCompletion invokes the completion callback if set.
@@ -398,21 +427,38 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		return session.Query(ctx, text, s.tracker, agentID, span)
 	}
 
-	// Monitor session lifecycle in background.
-	go s.monitorSDKSession(agentID, ref, session, span)
-
-	return &InteractiveAgent{
+	ia := &InteractiveAgent{
 		Info:       info,
 		Stdin:      inputHandler,
 		Output:     session.Output(),
 		Done:       session.done,
 		sdkSession: session,
-	}, nil
+	}
+
+	// Register in active agents map.
+	s.activeMu.Lock()
+	s.activeAgents[agentID] = ia
+	s.activeMu.Unlock()
+
+	// Monitor session lifecycle in background.
+	go s.monitorSDKSession(agentID, ref, session, span)
+
+	return ia, nil
 }
 
 // monitorSDKSession waits for the SDK session to end and updates agent state.
 func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, span port.SpanEnder) {
 	<-session.ctx.Done()
+
+	// Remove from active agents registry.
+	s.activeMu.Lock()
+	delete(s.activeAgents, agentID)
+	s.activeMu.Unlock()
+
+	// Clean up WS bridge.
+	if s.sessionEndCallback != nil {
+		s.sessionEndCallback(agentID)
+	}
 
 	span.AddEvent("agent.completed")
 	span.End()

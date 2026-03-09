@@ -13,19 +13,18 @@
 - [x] Return error if agent not found
 
 ### Task 1.3: Add active session registry to Spawner
-- Add `activeAgents map[string]*InteractiveAgent` field with mutex
-- Register in `SpawnInteractive()` after successful spawn
-- Deregister in `monitorSDKSession()` on completion
-- Add `GetActiveAgent(id string) (*InteractiveAgent, bool)` method
+- [x] Add `activeAgents map[string]*InteractiveAgent` field with mutex
+- [x] Register in `SpawnInteractive()` after successful spawn
+- [x] Deregister in `monitorSDKSession()` on completion
+- [x] Add `GetActiveAgent(id string) (*InteractiveAgent, bool)` method
 
 ### Task 1.4: Fix UnregisterBridge memory leak
-- Call `wsSessions.UnregisterBridge(agentID)` in `monitorSDKSession()` after session ends
-- Pass `SessionManager` reference to spawner (or use callback)
+- [x] Call `SessionEndCallback` in `monitorSDKSession()` after session ends
+- [x] Add `SetSessionEndCallback` to spawner for bridge cleanup
 
 ### Task 1.5: Verify Phase 1
-- `go build ./...`
-- Existing tests pass
-- `go vet ./...`
+- [x] `go build ./...`
+- [x] Existing tests pass
 
 ## Phase 2: Spawner Stop & Resume Methods
 
