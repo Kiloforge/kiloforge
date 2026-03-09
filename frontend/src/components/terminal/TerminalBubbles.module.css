@@ -1,0 +1,222 @@
+/* Shared terminal bubble styles */
+
+.message {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.messageIcon {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.messageContent {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-width: 0;
+  flex: 1;
+}
+
+/* User input */
+.userMessage .messageIcon {
+  background: var(--green);
+  color: var(--bg);
+}
+
+/* Agent text */
+.agentMessage .messageIcon {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Tool use */
+.toolMessage .messageIcon {
+  background: rgba(232, 148, 74, 0.2);
+  color: var(--orange, #e8944a);
+}
+
+.toolHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolName {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange, #e8944a);
+  background: rgba(232, 148, 74, 0.1);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.toolId {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.toolInput {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 6px 0 0;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.toggleBtn:hover {
+  opacity: 0.8;
+}
+
+/* Thinking */
+.thinkingMessage .messageIcon {
+  background: rgba(160, 160, 180, 0.15);
+  color: var(--text-dim);
+}
+
+.thinkingText {
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* Turn separator */
+.turnSeparator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.turnSeparator::before,
+.turnSeparator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.turnLabel {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Turn end summary */
+.turnEndSummary {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: "SF Mono", "Fira Code", monospace;
+  padding: 2px 0 4px;
+}
+
+/* System messages */
+.systemMessage .messageIcon {
+  background: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+}
+
+.systemSubtype {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+
+.systemData {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.systemWarning .messageIcon {
+  background: rgba(232, 200, 74, 0.15);
+  color: var(--yellow, #e8c84a);
+}
+
+.systemError .messageIcon {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.systemInfo .messageIcon {
+  background: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+}
+
+/* Status */
+.statusMessage {
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.statusText {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* Error */
+.errorMessage .messageIcon {
+  background: var(--red);
+  color: var(--bg);
+}
+
+/* Code blocks */
+.codeBlock {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin: 6px 0;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.codeBlock code {
+  font-family: inherit;
+}
+
+.inlineCode {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+}
