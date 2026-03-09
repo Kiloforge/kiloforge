@@ -2,7 +2,7 @@
 name: kf-report
 description: Generate comprehensive project timeline, velocity, SLOC, track
   summary, and cost estimate reports from kiloforge tracks and git history.
-  Outputs markdown reports to .agent/conductor/_reports/.
+  Outputs markdown reports to .agent/kf/_reports/.
 metadata:
   argument-hint: "[--timeline] [--velocity] [--tracks] [--phases] [--sloc] [--costs] [--full] [--detailed] [--since YYYY-MM-DD] [--until YYYY-MM-DD]"
   allowed-tools: Read Glob Grep Bash Write
@@ -12,7 +12,7 @@ metadata:
 
 Generate strict, reproducible project reports in **markdown format**: timeline with daily activity, development velocity, track summary, project phases, SLOC analysis, and multi-model cost estimates. All data is collected from git history and kiloforge track artifacts.
 
-Reports are written to `.agent/conductor/_reports/` as markdown files.
+Reports are written to `.agent/kf/_reports/` as markdown files.
 
 ## Use this skill when
 
@@ -28,8 +28,8 @@ Reports are written to `.agent/conductor/_reports/` as markdown files.
 ## Pre-flight Checks
 
 1. Verify Kiloforge is initialized:
-   - Check `.agent/conductor/product.md` exists
-   - Check `.agent/conductor/tracks.md` exists
+   - Check `.agent/kf/product.md` exists
+   - Check `.agent/kf/tracks.yaml` exists
    - If missing: Display error and suggest running `/kf-setup` first
 
 2. Verify git repository:
@@ -43,22 +43,22 @@ Reports are written to `.agent/conductor/_reports/` as markdown files.
    - Store as `$SINCE` and `$UNTIL` (YYYY-MM-DD format)
 
 4. Detect compacted archives:
-   - Check if `.agent/conductor/archive-compactions.md` exists
+   - Check if `.agent/kf/archive-compactions.md` exists
    - If it exists, read it and parse the compaction table(s):
      - Extract each row: `Commit`, `Date`, `Completed`, `Uncompleted`, `First Created`, `Last Created`, `First Completed`, `Last Completed`
      - Store as `$COMPACTION_POINTS` array for use in subsequent sections
    - For each compaction point, recover track metadata from git history:
      ```bash
-     git ls-tree --name-only {COMMIT_SHA} .agent/conductor/tracks/_archive/
+     git ls-tree --name-only {COMMIT_SHA} .agent/kf/tracks/_archive/
      ```
    - For each track directory found, recover its metadata:
      ```bash
-     git show {COMMIT_SHA}:.agent/conductor/tracks/_archive/{trackId}/metadata.json
+     git show {COMMIT_SHA}:.agent/kf/tracks/_archive/{trackId}/metadata.json
      ```
    - Store recovered metadata in `$COMPACTED_TRACKS` array with fields: trackId, status, type, created, updated, tasks.total, tasks.completed, compaction_commit
-   - Also recover the tracks.md index at that point for track titles:
+   - Also recover the tracks.yaml index at that point for track titles:
      ```bash
-     git show {COMMIT_SHA}:.agent/conductor/tracks.md
+     git show {COMMIT_SHA}:.agent/kf/tracks.yaml
      ```
 
 5. Determine report sections:
@@ -72,10 +72,10 @@ Reports are written to `.agent/conductor/_reports/` as markdown files.
 
 7. Ensure output directory exists:
    ```bash
-   mkdir -p .agent/conductor/_reports
+   mkdir -p .agent/kf/_reports
    ```
 
-8. Read product name from `.agent/conductor/product.md` (the `## Project Name` field).
+8. Read product name from `.agent/kf/product.md` (the `## Project Name` field).
 
 ---
 
@@ -84,16 +84,16 @@ Reports are written to `.agent/conductor/_reports/` as markdown files.
 All reports are rendered as **GitHub-flavored markdown** and written to a file:
 
 ```
-.agent/conductor/_reports/{YYYY-MM-DD}-full-report.md
+.agent/kf/_reports/{YYYY-MM-DD}-full-report.md
 ```
 
 If a section-specific flag is used instead of `--full`, use the section name:
 
 ```
-.agent/conductor/_reports/{YYYY-MM-DD}-timeline.md
-.agent/conductor/_reports/{YYYY-MM-DD}-velocity.md
-.agent/conductor/_reports/{YYYY-MM-DD}-sloc.md
-.agent/conductor/_reports/{YYYY-MM-DD}-costs.md
+.agent/kf/_reports/{YYYY-MM-DD}-timeline.md
+.agent/kf/_reports/{YYYY-MM-DD}-velocity.md
+.agent/kf/_reports/{YYYY-MM-DD}-sloc.md
+.agent/kf/_reports/{YYYY-MM-DD}-costs.md
 ```
 
 After writing the file, display the report content to the user AND confirm the file path.
@@ -120,7 +120,7 @@ git log --all --format='%ad' --date=format:'%Y-%m-%d' --grep='mark track' | sort
 
 **Step 3: Read track metadata for completion dates**
 
-For each track in `.agent/conductor/tracks/` and `_archive/`, plus `$COMPACTED_TRACKS` from pre-flight step 4:
+For each track in `.agent/kf/tracks/` and `_archive/`, plus `$COMPACTED_TRACKS` from pre-flight step 4:
 - Extract `created`, `updated`, `status`
 - Deduplicate by trackId
 
@@ -228,15 +228,26 @@ Group into phases with: name, date range, bullet-point highlights, commit count.
 
 ### Data Collection Procedure
 
-**Step 1:** Read `.agent/conductor/tracks.md` and parse status markers: `[x]`, `[~]`, `[ ]`, `[future]`
+**Step 1:** Read `.agent/kf/tracks.yaml` and parse status field from JSON values: `completed`, `in-progress`, `pending`, `archived`
 
-**Step 2:** Count on-disk archived tracks: `ls -d .agent/conductor/tracks/_archive/*/ 2>/dev/null | wc -l`
+**Step 2:** Count on-disk archived tracks: `ls -d .agent/kf/tracks/_archive/*/ 2>/dev/null | wc -l`
 
 **Step 3:** Count compacted tracks from `$COMPACTION_POINTS` (pre-flight step 4)
 
-**Step 4:** For active/pending tracks, read `metadata.json` and `plan.md` for task progress
+**Step 4:** For active/pending tracks, query progress via CLI:
+```bash
+.agent/kf/bin/kf-track list --active --json
+.agent/kf/bin/kf-track-content progress {trackId}
+```
 
-**Step 5:** Detect blockers — scan `spec.md` and `plan.md` for `BLOCKED:`, `depends on`, `dependency`
+**Step 5:** Detect blockers — check dependency graph via CLI:
+```bash
+.agent/kf/bin/kf-track deps list
+```
+Also scan track specs for `BLOCKED:`, `depends on`, `dependency` keywords:
+```bash
+.agent/kf/bin/kf-track-content show {trackId} --section spec
+```
 
 ### Output Template
 
@@ -534,7 +545,7 @@ Built in **{N} calendar days** with **{N} commits** across **{N} active days**.
 Write the complete report to:
 
 ```
-.agent/conductor/_reports/{YYYY-MM-DD}-full-report.md
+.agent/kf/_reports/{YYYY-MM-DD}-full-report.md
 ```
 
 If a report for today already exists, overwrite it (reports are regenerated snapshots, not append-only).
@@ -553,7 +564,7 @@ Display error: `This report requires git commit history. Ensure you are in a git
 
 ### No Tracks Found
 
-Display warning: `No tracks found in .agent/conductor/tracks/. Track Summary and Phases sections will be empty. Timeline, Velocity, SLOC, and Costs can still be generated.`
+Display warning: `No tracks found in .agent/kf/tracks/. Track Summary and Phases sections will be empty. Timeline, Velocity, SLOC, and Costs can still be generated.`
 
 ### scc Not Available
 
@@ -570,13 +581,13 @@ Then use the manual git ls-files + grep fallback for SLOC, and compute COCOMO ma
 - For repos with > 1000 commits, batch git log operations rather than per-file queries
 - Use Python one-liners via `python3 -c "..."` for aggregation that would be complex in awk/sed
 - SLOC: prefer `scc` — it is fast, accurate, and gives COCOMO for free
-- **Compacted archive recovery**: `git show` calls are expensive. Recover ALL needed files (metadata.json, plan.md) per compacted track in a single batch during pre-flight, then reuse across sections. Do NOT re-run `git show` per section.
+- **Compacted archive recovery**: `git show` calls are expensive. Recover ALL needed files (track.yaml) per compacted track in a single batch during pre-flight, then reuse across sections. Do NOT re-run `git show` per section.
 - Cache intermediate results: if generating a full report, reuse git log data across sections rather than re-querying
 
 ## Critical Rules
 
 1. **Output markdown** — All reports use GitHub-flavored markdown with tables, headers, blockquotes, and bold emphasis. No ASCII box-drawing.
-2. **Write to file** — Always write the report to `.agent/conductor/_reports/` AND display it to the user.
+2. **Write to file** — Always write the report to `.agent/kf/_reports/` AND display it to the user.
 3. **Follow data collection procedures** — Do not improvise; use the specified git commands and aggregation methods.
 4. **Use `scc` for SLOC** — Prefer `scc` over manual counting. Only fall back to manual if `scc` is unavailable.
 5. **Include all 5 cost models** — COCOMO, FPA, Parametric, Analogy, and AI-Assisted. Always include the Aggregate Cost Summary.

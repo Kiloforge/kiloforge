@@ -88,19 +88,19 @@ Extract:
 
 Read project standards and track spec to review against:
 
-1. **Track spec** (from main or the PR branch):
+1. **Track spec** (via CLI):
    ```bash
-   git show main:.agent/conductor/tracks/{trackId}/spec.md
+   .agent/kf/bin/kf-track-content show {trackId} --section spec
    ```
 2. **Track plan:**
    ```bash
-   git show main:.agent/conductor/tracks/{trackId}/plan.md
+   .agent/kf/bin/kf-track-content show {trackId} --section plan
    ```
-3. **Product context:** `.agent/conductor/product.md`
-4. **Product guidelines:** `.agent/conductor/product-guidelines.md` (if exists)
-5. **Tech stack:** `.agent/conductor/tech-stack.md`
-6. **Workflow rules:** `.agent/conductor/workflow.md`
-7. **Code style guides:** `.agent/conductor/code_styleguides/` (if present)
+3. **Product context:** `.agent/kf/product.md`
+4. **Product guidelines:** `.agent/kf/product-guidelines.md` (if exists)
+5. **Tech stack:** `.agent/kf/tech-stack.md`
+6. **Workflow rules:** `.agent/kf/workflow.md`
+7. **Code style guides:** `.agent/kf/code_styleguides/` (if present)
 
 Output the compaction anchor:
 ```
@@ -159,7 +159,7 @@ Evaluate the PR against these criteria:
 
 #### Track Completeness
 - Are all tasks in the plan marked complete?
-- Are kiloforge artifacts (tracks.md, metadata.json, plan.md) properly updated?
+- Are kiloforge artifacts (tracks.yaml, track.yaml) properly updated?
 
 ### Step 7 — Determine review outcome
 
