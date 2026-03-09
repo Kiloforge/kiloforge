@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
 import { useTracks } from "../hooks/useTracks";
+import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "./StatusBadge";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import styles from "./AgentCard.module.css";
@@ -14,6 +15,7 @@ interface Props {
 export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   const refLink = agent.ref || null;
   const { tracks } = useTracks();
+  const { stop, resume, del } = useAgentActions();
   const matchedTrack = refLink ? tracks.find((t) => t.id === refLink) : null;
   const projectSlug = matchedTrack?.project ?? null;
 
@@ -67,6 +69,41 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
         {agent.log_file && (
           <button className={styles.btn} onClick={() => onViewLog(agent.id)}>
             View Log
+          </button>
+        )}
+        {canStop(agent) && (
+          <button
+            className={`${styles.btn} ${styles.btnDanger}`}
+            onClick={() => stop.mutate(agent.id)}
+            disabled={stop.isPending}
+          >
+            {stop.isPending ? "Stopping..." : "Stop"}
+          </button>
+        )}
+        {canResume(agent) && (
+          <button
+            className={`${styles.btn} ${styles.btnSuccess}`}
+            onClick={() => {
+              resume.mutate(agent.id, {
+                onSuccess: () => onAttach?.(agent.id),
+              });
+            }}
+            disabled={resume.isPending}
+          >
+            {resume.isPending ? "Resuming..." : "Resume"}
+          </button>
+        )}
+        {canDelete(agent) && (
+          <button
+            className={`${styles.btn} ${styles.btnDanger}`}
+            onClick={() => {
+              if (window.confirm(`Delete agent "${agent.name || agent.id}"?`)) {
+                del.mutate(agent.id);
+              }
+            }}
+            disabled={del.isPending}
+          >
+            {del.isPending ? "Deleting..." : "Delete"}
           </button>
         )}
       </div>

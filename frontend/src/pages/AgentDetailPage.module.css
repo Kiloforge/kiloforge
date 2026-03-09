@@ -41,6 +41,53 @@
   font-size: 14px;
 }
 
+/* Action bar */
+.actionBar {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionDanger {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.actionDanger:hover:not(:disabled) {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.actionSuccess {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.actionSuccess:hover:not(:disabled) {
+  background: rgba(108, 200, 108, 0.15);
+  color: var(--green);
+}
+
 /* Metadata grid */
 .metaGrid {
   background: var(--surface);

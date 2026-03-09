@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
 import { useAgents } from "../hooks/useAgents";
+import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatUSD, formatUptime } from "../utils/format";
 import styles from "./AgentHistoryPage.module.css";
@@ -62,6 +63,7 @@ export function AgentHistoryPage() {
                 <th>Uptime</th>
                 <th>Cost</th>
                 <th>Updated</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +90,8 @@ function formatRelativeTime(iso: string): string {
 }
 
 function AgentRow({ agent }: { agent: Agent }) {
+  const { stop, resume, del } = useAgentActions();
+
   return (
     <tr className={styles.row}>
       <td>
@@ -105,6 +109,39 @@ function AgentRow({ agent }: { agent: Agent }) {
       <td>{agent.uptime_seconds != null ? formatUptime(agent.uptime_seconds) : "-"}</td>
       <td>{agent.estimated_cost_usd != null ? formatUSD(agent.estimated_cost_usd) : "-"}</td>
       <td className={styles.dim}>{agent.updated_at ? formatRelativeTime(agent.updated_at) : "-"}</td>
+      <td className={styles.rowActions}>
+        {canStop(agent) && (
+          <button
+            className={`${styles.rowBtn} ${styles.rowBtnDanger}`}
+            onClick={() => stop.mutate(agent.id)}
+            disabled={stop.isPending}
+          >
+            Stop
+          </button>
+        )}
+        {canResume(agent) && (
+          <button
+            className={`${styles.rowBtn} ${styles.rowBtnSuccess}`}
+            onClick={() => resume.mutate(agent.id)}
+            disabled={resume.isPending}
+          >
+            Resume
+          </button>
+        )}
+        {canDelete(agent) && (
+          <button
+            className={`${styles.rowBtn} ${styles.rowBtnDanger}`}
+            onClick={() => {
+              if (window.confirm(`Delete agent "${agent.name || agent.id}"?`)) {
+                del.mutate(agent.id);
+              }
+            }}
+            disabled={del.isPending}
+          >
+            Delete
+          </button>
+        )}
+      </td>
     </tr>
   );
 }

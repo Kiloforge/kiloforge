@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { Agent, LogResponse } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
@@ -10,6 +10,7 @@ import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../hooks/useAgentWebSocket";
 import { MessageDispatch } from "../components/terminal";
 import { useTracks } from "../hooks/useTracks";
+import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import styles from "./AgentDetailPage.module.css";
 
 function ConnectionDot({ status }: { status: WSConnectionState }) {
@@ -24,8 +25,10 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
 
 export function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const { tracks } = useTracks();
+  const { stop, resume, del } = useAgentActions();
 
   const { data: agent, error: agentError } = useQuery({
     queryKey: queryKeys.agent(id ?? ""),
@@ -112,6 +115,42 @@ export function AgentDetailPage() {
         <h2 className={styles.title}>
           Agent <span className={styles.agentId}>{agent.name || agent.id}</span>
         </h2>
+      </div>
+
+      <div className={styles.actionBar}>
+        {canStop(agent) && (
+          <button
+            className={`${styles.actionBtn} ${styles.actionDanger}`}
+            onClick={() => stop.mutate(agent.id)}
+            disabled={stop.isPending}
+          >
+            {stop.isPending ? "Stopping..." : "Stop"}
+          </button>
+        )}
+        {canResume(agent) && (
+          <button
+            className={`${styles.actionBtn} ${styles.actionSuccess}`}
+            onClick={() => resume.mutate(agent.id)}
+            disabled={resume.isPending}
+          >
+            {resume.isPending ? "Resuming..." : "Resume"}
+          </button>
+        )}
+        {canDelete(agent) && (
+          <button
+            className={`${styles.actionBtn} ${styles.actionDanger}`}
+            onClick={() => {
+              if (window.confirm(`Delete agent "${agent.name || agent.id}"?`)) {
+                del.mutate(agent.id, {
+                  onSuccess: () => navigate("/"),
+                });
+              }
+            }}
+            disabled={del.isPending}
+          >
+            {del.isPending ? "Deleting..." : "Delete"}
+          </button>
+        )}
       </div>
 
       <div className={styles.metaGrid}>

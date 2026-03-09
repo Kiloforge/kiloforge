@@ -107,3 +107,28 @@
   background: var(--border);
   color: var(--text);
 }
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnDanger {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.btnSuccess {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btnSuccess:hover:not(:disabled) {
+  background: rgba(108, 200, 108, 0.15);
+  color: var(--green);
+}

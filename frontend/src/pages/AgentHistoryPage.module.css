@@ -119,3 +119,49 @@
   color: var(--text-dim);
   font-size: 12px;
 }
+
+.rowActions {
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.rowBtn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.rowBtn:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+}
+
+.rowBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rowBtnDanger {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.rowBtnDanger:hover:not(:disabled) {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.rowBtnSuccess {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.rowBtnSuccess:hover:not(:disabled) {
+  background: rgba(108, 200, 108, 0.15);
+  color: var(--green);
+}
