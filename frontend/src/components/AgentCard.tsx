@@ -66,6 +66,11 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
             Attach
           </button>
         )}
+        {agent.worktree_dir && (
+          <Link to={`/agents/${agent.id}#diff`} className={styles.btn}>
+            View Diff
+          </Link>
+        )}
         {agent.log_file && (
           <button className={styles.btn} onClick={() => onViewLog(agent.id)}>
             View Log

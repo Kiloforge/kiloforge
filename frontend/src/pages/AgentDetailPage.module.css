@@ -158,6 +158,21 @@
   font-size: 11px;
 }
 
+/* Section title */
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+/* Diff section */
+.diffSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
 /* Log section */
 .logSection {
   background: var(--surface);

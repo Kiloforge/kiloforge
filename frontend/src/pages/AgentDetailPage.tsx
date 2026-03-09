@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { Agent, LogResponse } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
@@ -9,6 +9,7 @@ import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../hooks/useAgentWebSocket";
 import { MessageDispatch } from "../components/terminal";
+import { DiffView } from "../components/diff/DiffView";
 import { useTracks } from "../hooks/useTracks";
 import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import styles from "./AgentDetailPage.module.css";
@@ -26,6 +27,8 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
 export function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const diffRef = useRef<HTMLDivElement>(null);
 
   const { tracks } = useTracks();
   const { stop, resume, del } = useAgentActions();
@@ -43,6 +46,13 @@ export function AgentDetailPage() {
   const [following, setFollowing] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Scroll to diff section if hash is #diff
+  useEffect(() => {
+    if (location.hash === "#diff") {
+      diffRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [location.hash, agent]);
 
   // Fetch log data (keep as raw fetch — streaming log is not cache-friendly)
   useEffect(() => {
@@ -107,6 +117,8 @@ export function AgentDetailPage() {
   const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
   const cacheRead = agent.cache_read_tokens ?? 0;
   const cacheCreate = agent.cache_creation_tokens ?? 0;
+  const matchedTrack = agent.ref ? tracks.find((t) => t.id === agent.ref) : null;
+  const projectSlug = matchedTrack?.project ?? null;
 
   return (
     <div className={styles.page}>
@@ -168,24 +180,20 @@ export function AgentDetailPage() {
             <span>{agent.model}</span>
           </div>
         )}
-        {agent.ref && (() => {
-          const matchedTrack = tracks.find((t) => t.id === agent.ref);
-          const projectSlug = matchedTrack?.project;
-          return (
-            <div className={styles.metaItem}>
-              <span className={styles.metaLabel}>Track</span>
-              <span className={styles.refValue}>
-                {agent.ref}
-                {projectSlug && (
-                  <>
-                    {" "}
-                    <Link to={`/projects/${projectSlug}`} className={styles.boardLink}>View on Board</Link>
-                  </>
-                )}
-              </span>
-            </div>
-          );
-        })()}
+        {agent.ref && (
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Track</span>
+            <span className={styles.refValue}>
+              {agent.ref}
+              {projectSlug && (
+                <>
+                  {" "}
+                  <Link to={`/projects/${projectSlug}`} className={styles.boardLink}>View on Board</Link>
+                </>
+              )}
+            </span>
+          </div>
+        )}
         {agent.uptime_seconds != null && (
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>Uptime</span>
@@ -226,6 +234,20 @@ export function AgentDetailPage() {
         )}
       </div>
 
+      {agent.worktree_dir && projectSlug && (
+        <div ref={diffRef} className={styles.diffSection} id="diff">
+          <h3 className={styles.sectionTitle}>Branch Diff</h3>
+          <DiffView
+            slug={projectSlug}
+            branch={agent.ref}
+            onDiscuss={agent.role === "interactive" ? () => {
+              const termEl = document.getElementById("terminal");
+              termEl?.scrollIntoView({ behavior: "smooth" });
+            } : undefined}
+          />
+        </div>
+      )}
+
       <div className={styles.logSection}>
         <div className={styles.logHeader}>
           <h3>Log Output</h3>
@@ -239,7 +261,7 @@ export function AgentDetailPage() {
         </pre>
       </div>
 
-      {agent.role === "interactive" && id && <TerminalSection agentId={id} />}
+      {agent.role === "interactive" && id && <div id="terminal"><TerminalSection agentId={id} /></div>}
     </div>
   );
 }
