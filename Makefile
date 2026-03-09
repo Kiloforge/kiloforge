@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-smoke test-all clean gen-api verify-codegen release-local
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean gen-api verify-codegen release-local
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
@@ -43,6 +43,10 @@ test-smoke: ensure-dist
 
 test-integration: ensure-dist
 	cd backend && go test -race -tags=integration ./...
+
+test-e2e: ensure-dist
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go test -race -tags=e2e -run 'TestE2E' -count=1 ./internal/adapter/rest/ -v
 
 test-all: ensure-dist
 	cd backend && go test -race -tags=integration ./...

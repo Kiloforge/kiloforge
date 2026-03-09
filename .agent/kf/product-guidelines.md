@@ -13,3 +13,25 @@ Professional and technical. Documentation and CLI output should be precise, deta
 5. **Schema-first APIs** — All inter-process and client-server communication is defined by machine-readable schemas (OpenAPI for REST/HTTP, AsyncAPI for events/streams) before implementation. Server stubs, client code, and models are generated from schemas, never hand-written. No new HTTP endpoint may be added without first updating the OpenAPI schema. No new event or message type may be added without first updating the AsyncAPI schema.
 6. **Makefile as build entry point** — All builds, tests, and code generation go through the Makefile. See `code_styleguides/build.md` for conventions on frontend embedding, output directories, and VCS stamping.
 7. **Thin adapters, shared domain logic** — CLI commands and REST handlers are thin adapters that convert input into domain commands/queries and dispatch to the service layer. Business logic lives exclusively in `core/service/`. Adapters never access stores directly — they receive services via constructor injection. This ensures consistent behavior regardless of entry point (CLI, API, webhook). When adding a new operation, implement it as a service method first, then wire it from both CLI and API adapters.
+
+## E2E Testing Requirements
+
+All agents building UI functionality **must** develop automated E2E tests using the Playwright MCP plugin. E2E tests ensure the full stack (Go backend + React frontend + SQLite) works together correctly.
+
+### Mandatory coverage
+
+- **Happy path** — Primary user flows must be tested end-to-end via Playwright browser automation.
+- **Edge cases** — Empty states, error responses, and boundary conditions must be covered.
+- **Expected failures** — Verify error handling surfaces correctly in the UI.
+
+### Mock agent binary
+
+Agent-related flows must use the mock agent binary (`backend/internal/adapter/agent/testdata/mock-agent/`) instead of a real Claude API key. Configure mock behavior via environment variables (`MOCK_AGENT_EVENTS`, `MOCK_AGENT_DELAY`, `MOCK_AGENT_EXIT_CODE`, `MOCK_AGENT_INTERACTIVE`, `MOCK_AGENT_FAIL_AFTER`).
+
+### Conventions
+
+- E2E test files live in `frontend/e2e/` with `.spec.ts` extension.
+- Import fixtures from `./fixtures` (not `@playwright/test` directly).
+- Backend E2E helpers use `//go:build e2e` tag — skipped by `go test ./...`.
+- Run via `make test-e2e`.
+- See `frontend/e2e/README.md` for full documentation.
