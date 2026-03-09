@@ -111,9 +111,11 @@ export default function App() {
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>kiloforge</h1>
           <ConnectionStatus state={connectionState} />
+          <span className={styles.headerDivider} />
+          <span className={styles.headerLabel}>Agents</span>
           <AgentHistogram agents={agents} />
         </div>
-        <nav>
+        <nav className={styles.nav}>
           <Link to="/agents" className={styles.link}>Agents</Link>
           {status?.gitea_url && (
             <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.link}>

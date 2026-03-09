@@ -14,20 +14,46 @@
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
   margin: 0;
+  color: var(--accent);
+}
+
+.headerDivider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
+
+.headerLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .link {
-  color: var(--accent);
+  color: var(--text-dim);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
 }
 
 .link:hover {
-  text-decoration: underline;
+  background: var(--border);
+  color: var(--text);
 }
 
 .main {
