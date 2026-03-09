@@ -41,7 +41,7 @@ e2e-interactive-terminal_20260309194835Z: {"title":"E2E Tests: Interactive Agent
 e2e-kanban-board_20260309194836Z: {"title":"E2E Tests: Kanban Board — View, Move, Sync, and Column Transitions","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-merge-lock_20260309194838Z: {"title":"E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-project-management_20260309194832Z: {"title":"E2E Tests: Project Management — Add, Remove, Setup, and Sync Status","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-quota-usage_20260309194841Z: {"title":"E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estimates","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-quota-usage_20260309194841Z: {"title":"E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estimates","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-sse-realtime_20260309194837Z: {"title":"E2E Tests: Real-Time SSE Updates — Connection, Events, and Reconnection","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-track-management_20260309194833Z: {"title":"E2E Tests: Track Management — List, Detail, Generate, and Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 embedded-skills-default_20260309234000Z: {"title":"Embedded Skills as Default — Remove Repo Dependency","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
