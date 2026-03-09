@@ -2,15 +2,16 @@
   "id": "project-documentation_20260310034000Z",
   "title": "Project Documentation with Author's Foreword",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T03:40:00Z",
-  "updated": "2026-03-10T03:40:00Z",
+  "updated": "2026-03-10T05:00:00Z",
+  "completedAt": "2026-03-10T05:00:00Z",
   "phases": {
     "total": 2,
-    "completed": 0
+    "completed": 2
   },
   "tasks": {
     "total": 8,
-    "completed": 0
+    "completed": 8
   }
 }
