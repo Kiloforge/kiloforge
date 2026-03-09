@@ -35,6 +35,3 @@
 
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-e2e-sse-realtime_20260309194837Z:
-  - e2e-infra-mock-agent_20260309194830Z
