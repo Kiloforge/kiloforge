@@ -3,7 +3,7 @@ title: E2E Tests: Project Management — Add, Remove, Setup, and Sync Status
 type: chore
 status: pending
 created: 2026-03-09T19:48:32Z
-updated: 2026-03-09T19:48:32Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the project lifecycle: adding projects via remote URL, removing projects with cleanup, project setup wizard, and Git sync status display, covering happy path, edge cases, and expected failures.
   context: |
@@ -102,43 +102,43 @@ plan:
   - phase: Add Project Tests
     tasks:
       - text: Create `frontend/e2e/project-add.spec.ts` — test add project with valid HTTPS URL (`https://github.com/user/repo.git`), verify project appears in project list, verify project detail page accessible
-        done: false
+        done: true
       - text: Test add project with valid SSH URL — submit `git@github.com:user/repo.git`, verify project created, verify SSH URL displayed correctly in project detail
-        done: false
+        done: true
       - text: Test add project form validation — submit empty URL (verify validation error), submit invalid URL like `not-a-url` (verify validation error), verify submit button disabled while invalid
-        done: false
+        done: true
       - text: Test duplicate project handling — add a project, attempt to add same URL again, verify error toast appears with "already exists" message, verify original project unchanged
-        done: false
+        done: true
   - phase: Remove Project Tests
     tasks:
       - text: Create `frontend/e2e/project-remove.spec.ts` — test remove project happy path: seed a project, click delete button, verify confirmation dialog appears, confirm deletion, verify project removed from list
-        done: false
+        done: true
       - text: Test remove project with cleanup — seed a project, click delete, check "clean up local data" checkbox in confirmation dialog, confirm, verify project and local data removed
-        done: false
+        done: true
       - text: Test cancel remove — seed a project, click delete, verify confirmation dialog, click cancel, verify project still in list and unchanged
-        done: false
+        done: true
   - phase: Setup Status Tests
     tasks:
       - text: Create `frontend/e2e/project-status.spec.ts` — test project with complete setup: seed fully configured project, verify setup status shows "complete" on project detail page
-        done: false
+        done: true
       - text: Test project with incomplete setup — seed project missing configuration steps, verify setup status shows "incomplete" with list of missing steps
-        done: false
+        done: true
       - text: Test setup status transitions — start with incomplete project, complete a setup step via API, verify status updates in UI (poll or SSE-driven)
-        done: false
+        done: true
   - phase: Sync Status Tests
     tasks:
       - text: Test sync status display — seed projects with different sync states (synced, ahead, behind, diverged), navigate to project list, verify each project shows correct sync badge color and label
-        done: false
+        done: true
       - text: Test sync status on project detail page — navigate to individual project, verify detailed sync info including commit counts (e.g., "2 commits ahead")
-        done: false
+        done: true
       - text: Test sync status refresh — trigger a sync status refresh (button click or page reload), verify status updates if underlying state changed
-        done: false
+        done: true
   - phase: Edge and Failure Cases
     tasks:
       - text: Test unreachable URL handling — attempt to add project with URL `https://example.com/nonexistent-repo.git`, verify API returns error, verify error toast shows user-friendly message, verify no phantom project created
-        done: false
+        done: true
       - text: Test API error toast display — mock various API error responses (400, 404, 500), verify each shows an appropriate toast notification with descriptive message, verify toasts auto-dismiss
-        done: false
+        done: true
       - text: Test concurrent operations — add two projects simultaneously, verify both succeed or one fails gracefully; delete a project while another add is in progress, verify no corruption
-        done: false
-extra: "{}"
+        done: true
+extra: {}
