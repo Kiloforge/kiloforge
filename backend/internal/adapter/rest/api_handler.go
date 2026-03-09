@@ -695,12 +695,20 @@ func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObje
 			continue
 		}
 		for _, t := range tracks {
-			result = append(result, gen.Track{
+			track := gen.Track{
 				Id:      t.ID,
 				Title:   t.Title,
 				Status:  gen.TrackStatus(t.Status),
 				Project: &p.Slug,
-			})
+			}
+			if t.DepsCount > 0 {
+				track.DepsCount = &t.DepsCount
+				track.DepsMet = &t.DepsMet
+			}
+			if t.ConflictCount > 0 {
+				track.ConflictCount = &t.ConflictCount
+			}
+			result = append(result, track)
 		}
 	}
 	if result == nil {
@@ -1817,6 +1825,29 @@ func (h *APIHandler) GetTrackDetail(_ context.Context, req gen.GetTrackDetailReq
 	}
 	if detail.UpdatedAt != "" {
 		resp.UpdatedAt = &detail.UpdatedAt
+	}
+	if len(detail.Dependencies) > 0 {
+		deps := make([]gen.TrackDependency, len(detail.Dependencies))
+		for i, d := range detail.Dependencies {
+			deps[i] = gen.TrackDependency{
+				Id:     d.ID,
+				Title:  &d.Title,
+				Status: gen.TrackDependencyStatus(d.Status),
+			}
+		}
+		resp.Dependencies = &deps
+	}
+	if len(detail.Conflicts) > 0 {
+		conflicts := make([]gen.TrackConflict, len(detail.Conflicts))
+		for i, c := range detail.Conflicts {
+			conflicts[i] = gen.TrackConflict{
+				TrackId:    c.TrackID,
+				TrackTitle: &c.TrackTitle,
+				Risk:       gen.TrackConflictRisk(c.Risk),
+				Note:       &c.Note,
+			}
+		}
+		resp.Conflicts = &conflicts
 	}
 
 	return gen.GetTrackDetail200JSONResponse(resp), nil
