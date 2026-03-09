@@ -19,4 +19,5 @@ export const queryKeys = {
   trackDetail: (trackId: string, project: string) => ["tracks", trackId, project] as const,
   projectDiff: (slug: string, branch: string) => ["projectDiff", slug, branch] as const,
   projectBranches: (slug: string) => ["projectBranches", slug] as const,
+  projectMetadata: (slug: string) => ["projectMetadata", slug] as const,
 };

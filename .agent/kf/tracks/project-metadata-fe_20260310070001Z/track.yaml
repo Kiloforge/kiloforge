@@ -1,49 +1,49 @@
 id: project-metadata-fe_20260310070001Z
-title: "Project Metadata UI — Browse Product, Guidelines, Tech Stack, and Style Guides"
+title: Project Metadata UI — Browse Product, Guidelines, Tech Stack, and Style Guides
 type: feature
 status: pending
-created: "2026-03-10T07:00:01Z"
-updated: "2026-03-10T07:00:01Z"
+created: 2026-03-10T07:00:01Z
+updated: 2026-03-09
 spec:
   summary: Build a read-only project metadata page in the dashboard that displays the product definition, guidelines, tech stack, workflow, and code style guides fetched from the new metadata API, with markdown rendering and tabbed navigation.
   context: |
     The backend will serve all project metadata via `GET /api/projects/{slug}/metadata` (from the BE track). The frontend needs a new page/section where users can browse this content. The content is read-only — users who want to modify it discuss changes with an agent.
-
+    
     The existing ProjectPage already shows project-level info (board, tracks, sync). The metadata view should integrate naturally — either as a new tab/section on ProjectPage or as a linked sub-page.
   codebase_analysis: |
     ### Existing patterns
-
+    
     - **Pages**: `src/pages/ProjectPage.tsx` is the project detail page with board, sync panel, admin ops
     - **Routing**: React Router v7 in `App.tsx`, project routes at `/projects/:slug`
     - **Data fetching**: TanStack Query hooks in `src/hooks/`, query keys in `src/api/queryKeys.ts`
     - **Styling**: CSS Modules, CSS variables in `index.css`, no component library
     - **Markdown**: `src/components/terminal/MarkdownContent.tsx` already renders markdown (uses it for agent terminal output)
     - **Types**: `src/types/api.ts` defines all API response interfaces
-
+    
     ### TrackDetailPage as reference
-
+    
     `TrackDetailPage.tsx` shows a pattern for rendering structured content:
     - Metadata header (ID, type, dates)
     - Collapsible sections for spec fields
     - Progress visualization
-
+    
     The metadata page should follow similar patterns but with tabbed navigation across the different metadata files.
-
+    
     ### No existing metadata hook
-
+    
     A new `useProjectMetadata` hook is needed to fetch from the new endpoint. Follow the same pattern as `useTracks`, `useProjects`, etc.
   acceptance_criteria:
-    - "New metadata section accessible from ProjectPage (tab or prominent link)"
-    - "Displays product definition with markdown rendering"
-    - "Displays product guidelines with markdown rendering"
-    - "Displays tech stack with markdown rendering"
-    - "Displays workflow document with markdown rendering (if present)"
-    - "Displays code style guides with tabbed navigation by language name"
-    - "Shows track summary stats (pending, in-progress, completed, archived, total)"
-    - "Shows quick links as clickable navigation"
-    - "Gracefully handles missing optional fields (guidelines, workflow may be empty)"
-    - "Shows appropriate message when kf is not initialized for the project"
-    - "Loading and error states handled consistently with existing pages"
+    - New metadata section accessible from ProjectPage (tab or prominent link)
+    - Displays product definition with markdown rendering
+    - Displays product guidelines with markdown rendering
+    - Displays tech stack with markdown rendering
+    - Displays workflow document with markdown rendering (if present)
+    - Displays code style guides with tabbed navigation by language name
+    - Shows track summary stats (pending, in-progress, completed, archived, total)
+    - Shows quick links as clickable navigation
+    - Gracefully handles missing optional fields (guidelines, workflow may be empty)
+    - Shows appropriate message when kf is not initialized for the project
+    - Loading and error states handled consistently with existing pages
   out_of_scope: |
     - Editing metadata content from the UI (read-only — users discuss changes with agents)
     - Search within metadata content
@@ -51,13 +51,13 @@ spec:
     - Backend API (handled by project-metadata-be track)
   technical_notes: |
     ### Route
-
+    
     Add as a sub-route or tab on the project page. Suggested approach: tabbed navigation on ProjectPage with existing content as "Board" tab and new metadata as "Project Info" tab.
-
+    
     Alternatively, a linked sub-page at `/projects/:slug/info`.
-
+    
     ### Data fetching
-
+    
     New hook `useProjectMetadata.ts`:
     ```typescript
     export function useProjectMetadata(slug: string) {
@@ -67,20 +67,20 @@ spec:
       });
     }
     ```
-
+    
     ### TypeScript types
-
+    
     ```typescript
     interface QuickLink {
       label: string;
       path: string;
     }
-
+    
     interface StyleGuide {
       name: string;
       content: string;
     }
-
+    
     interface TrackSummary {
       total: number;
       pending: number;
@@ -88,7 +88,7 @@ spec:
       completed: number;
       archived: number;
     }
-
+    
     interface ProjectMetadata {
       product: string;
       product_guidelines?: string;
@@ -99,32 +99,32 @@ spec:
       track_summary: TrackSummary;
     }
     ```
-
+    
     ### Markdown rendering
-
+    
     Reuse the existing `MarkdownContent` component from `src/components/terminal/MarkdownContent.tsx`. If it's tightly coupled to terminal styling, extract the markdown rendering logic into a shared utility.
-
+    
     ### UI layout
-
+    
     Suggested layout for the metadata view:
     1. **Header**: Project name + track summary stats (like StatCards)
     2. **Quick links**: Horizontal pill/chip list
     3. **Content tabs**: Product | Guidelines | Tech Stack | Workflow | Style Guides
     4. **Tab content**: Rendered markdown in a clean reading panel
     5. **Style guides sub-tabs**: If multiple guides, show language tabs (Go, Python, etc.)
-
+    
     ### Styling
-
+    
     Follow existing CSS Module patterns. Use same CSS variables for consistency. The content area should have comfortable reading width and typography for long-form markdown.
 plan:
   - phase: Types and Hook
     tasks:
       - text: Add ProjectMetadata, QuickLink, StyleGuide, TrackSummary interfaces to src/types/api.ts
-        done: false
+        done: true
       - text: Add projectMetadata query key to src/api/queryKeys.ts
-        done: false
+        done: true
       - text: Create src/hooks/useProjectMetadata.ts with useQuery hook fetching GET /api/projects/{slug}/metadata
-        done: false
+        done: true
   - phase: Metadata View Component
     tasks:
       - text: Create src/components/ProjectMetadataView.tsx with tabbed layout for Product, Guidelines, Tech Stack, Workflow, Style Guides sections

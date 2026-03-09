@@ -259,3 +259,31 @@ export interface BranchInfo {
   track_id?: string;
   status: string;
 }
+
+export interface QuickLink {
+  label: string;
+  path: string;
+}
+
+export interface StyleGuideEntry {
+  name: string;
+  content: string;
+}
+
+export interface TrackSummary {
+  total: number;
+  pending: number;
+  in_progress: number;
+  completed: number;
+  archived: number;
+}
+
+export interface ProjectMetadata {
+  product: string;
+  product_guidelines?: string;
+  tech_stack: string;
+  workflow?: string;
+  quick_links: QuickLink[];
+  style_guides?: StyleGuideEntry[];
+  track_summary: TrackSummary;
+}
