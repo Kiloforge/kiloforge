@@ -567,20 +567,41 @@ If lock held: report and **HALT** (wait for other worker to finish, then retry).
 
 ```bash
 if ! git rebase main; then
-  git rebase --abort 2>/dev/null || true
-  release_lock
-  echo "REBASE FAILED — lock released"
-  exit 1
+  echo "Rebase conflict detected — resolving track state files..."
 fi
-echo "Rebase succeeded"
 ```
 
-On conflict: This likely means a track state conflict. Release lock, report the conflicting files, and **HALT**. The generator should:
-1. Abort the rebase
-2. Reset to main (`git reset --hard main`)
-3. Re-read main's track state
-4. Re-apply only the new track additions (not status changes to existing tracks)
-5. Recommit and retry the merge
+**On conflict — simplified resolution for track state files:**
+
+Track state files (`tracks.yaml`, `deps.yaml`, `conflicts.yaml`) are append/update structures where main's version is always ground truth (it reflects all other workers' completions). Accept main's version, then re-apply your additions via CLI:
+
+```bash
+# Accept main's version of all track state files
+git checkout --theirs .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml 2>/dev/null
+git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml 2>/dev/null
+
+# Continue the rebase (repeat if multiple conflicting commits)
+git rebase --continue
+```
+
+After rebase completes, re-apply the architect's additions:
+
+```bash
+# Re-register each new track that was part of this generation
+.agent/kf/bin/kf-track add <id> --title "..." --type <type>
+# Re-add dependencies if any
+.agent/kf/bin/kf-track deps add <id> <dep-id>
+# Re-add conflict pairs if any
+.agent/kf/bin/kf-track conflicts add <a> <b> <risk> "note"
+
+# Amend the last commit with re-applied changes
+git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml
+git commit --amend --no-edit
+```
+
+If a **non-state file** conflicts (e.g., per-track `track.yaml`), that is a genuine conflict — release lock, report, and **HALT**.
+
+If rebase still fails after resolution: `release_lock`, report, **HALT**.
 
 #### 12c. Fast-forward merge into main
 
@@ -646,7 +667,7 @@ The architect is responsible for maintaining track state correctness. This means
 1. **Never overwrite existing track states** — if a track was `[~]` or `[x]` on main, do not reset it to `[ ]`
 2. **Always read from main before writing** — use `git show main:<path>` to get current state
 3. **New tracks only** — the generator adds new `[ ]` entries; it never modifies existing entries
-4. **Conflict resolution favors main** — if rebase conflicts on `tracks.yaml`, main's version of existing entries wins; our new entries are appended
+4. **Conflict resolution favors main** — on rebase conflict, accept main's track state files (`tracks.yaml`, `deps.yaml`, `conflicts.yaml`) via `git checkout --theirs`, then re-apply additions via CLI (see Step 12b)
 
 ---
 

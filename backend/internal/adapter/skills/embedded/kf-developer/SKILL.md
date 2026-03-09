@@ -589,15 +589,37 @@ start_heartbeat
 
 ```bash
 if ! git rebase ${PRIMARY_BRANCH}; then
-  git rebase --abort 2>/dev/null || true
-  release_lock
-  echo "REBASE FAILED — lock released"
-  exit 1
+  echo "Rebase conflict detected — resolving track state files..."
 fi
-echo "Rebase succeeded"
 ```
 
-On conflict: lock released automatically. Report and **HALT**.
+**On conflict — simplified resolution for track state files:**
+
+Track state files (`tracks.yaml`, `deps.yaml`, `conflicts.yaml`) are append/update structures where the primary branch's version is always ground truth (it reflects all other workers' completions). Accept theirs, then re-apply your changes via CLI:
+
+```bash
+# Accept primary branch's version of all track state files
+git checkout --theirs .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml 2>/dev/null
+git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml 2>/dev/null
+
+# Continue the rebase (repeat if multiple conflicting commits)
+git rebase --continue
+```
+
+After rebase completes, re-apply the developer's track state changes:
+
+```bash
+# Re-mark track complete (updates tracks.yaml, prunes deps.yaml and conflicts.yaml)
+.agent/kf/bin/kf-track update {trackId} --status completed
+
+# Amend the last commit with re-applied changes
+git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml
+git commit --amend --no-edit
+```
+
+If a **non-state file** conflicts (e.g., source code files), that is a genuine conflict — release lock, report, and **HALT**.
+
+If rebase still fails after resolution: call `release_lock`, report, **HALT**.
 
 #### 11c. Post-rebase verification
 
@@ -669,7 +691,8 @@ Developer is ready for next track.
 | Kiloforge not initialized  | Suggest `/kf-setup`, **HALT**                     |
 | Verification failure       | Report details, offer fix/retry/wait                     |
 | Merge lock held            | Report, wait for other worker                            |
-| Rebase conflict            | Abort rebase, release lock, report, **HALT**             |
+| Rebase conflict (state files) | Accept theirs, continue rebase, re-apply via CLI     |
+| Rebase conflict (source code) | Release lock, report, **HALT**                       |
 | Post-rebase verify failure | Release lock, report, offer fix/retry/abort              |
 | Merge not fast-forwardable | Release lock, offer re-rebase or abort                   |
 

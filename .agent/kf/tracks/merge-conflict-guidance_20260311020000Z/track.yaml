@@ -1,51 +1,50 @@
 id: merge-conflict-guidance_20260311020000Z
-title: "Simplify merge conflict resolution in kf-architect and kf-developer skills"
+title: Simplify merge conflict resolution in kf-architect and kf-developer skills
 type: chore
 status: pending
 created: 2026-03-10
-updated: 2026-03-10
+updated: 2026-03-09
 spec:
-  summary: |
-    Update merge conflict procedures in kf-architect and kf-developer skills to use a simple, deterministic strategy: on rebase conflict in track state files (tracks.yaml, deps.yaml, conflicts.yaml), always accept the remote (main) version, then re-apply your own changes using the CLI tools.
+  summary: Update merge conflict procedures in kf-architect and kf-developer skills to use a simple, deterministic strategy: on rebase conflict in track state files (tracks.yaml, deps.yaml, conflicts.yaml), always accept the remote (main) version, then re-apply your own changes using the CLI tools.
   context: |
     When multiple agents work in parallel, rebase conflicts on tracks.yaml and deps.yaml are extremely common. Main advances continuously as other developers complete tracks — each completion modifies tracks.yaml (status→completed) and deps.yaml (entry removal). The current skill instructions tell agents to abort, reset to main, and manually re-create their commits, which is error-prone and wastes context.
-
+    
     The simpler strategy: during rebase, accept main's version of all track state files (they represent ground truth — other workers' completions), then re-apply your own additions using the CLI. For an architect, this means re-running `kf-track add`. For a developer, this typically means re-running `kf-track update --status completed` and letting deps cleanup happen naturally.
-
+    
     This pattern was validated repeatedly in practice during this session — every rebase conflict was resolved this way.
   codebase_analysis: |
     ### Files to update
-
+    
     **kf-architect skill** (both copies):
     - `backend/internal/adapter/skills/embedded/kf-architect/SKILL.md` — Step 12b (rebase section)
     - `~/.claude/skills/kf-architect/SKILL.md`
     - Current guidance: "abort rebase, reset to main, re-read state, re-apply additions, recommit, retry"
     - New guidance: "on conflict, accept theirs for state files, git add, continue rebase, then re-apply via CLI"
-
+    
     **kf-developer skill** (both copies):
     - `backend/internal/adapter/skills/embedded/kf-developer/SKILL.md` — merge phase
     - `~/.claude/skills/kf-developer/SKILL.md`
     - Same pattern: accept main's state files, continue rebase, re-mark track complete via CLI
-
+    
     ### Conflict-prone files
     - `.agent/kf/tracks.yaml` — modified by every track completion/status change
     - `.agent/kf/tracks/deps.yaml` — modified when tracks complete (entries pruned)
     - `.agent/kf/tracks/conflicts.yaml` — modified when tracks complete (pairs cleaned)
-
+    
     ### CLI tools for re-applying changes
     - `kf-track add <id> --title "..." --type ...` — re-register a new track (architect)
     - `kf-track update <id> --status completed` — re-mark track complete (developer)
     - `kf-track deps add <id> <dep-id>` — re-add dependency entry
     - `kf-track conflicts add <a> <b> <risk> "note"` — re-add conflict pair
-
+    
     ### Resolution procedure
-
+    
     ```bash
     # During rebase, when conflict occurs on track state files:
     git checkout --theirs .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml
     git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml
     git rebase --continue
-
+    
     # Then re-apply your changes via CLI:
     # For architect: re-register the new track(s)
     .agent/kf/bin/kf-track add <id> --title "..." --type ... --deps "..."
@@ -56,40 +55,40 @@ spec:
     git commit --amend --no-edit
     ```
   acceptance_criteria:
-    - "kf-architect SKILL.md Step 12b replaced with simplified conflict resolution: accept theirs + re-apply via CLI"
-    - "kf-developer SKILL.md merge phase updated with same simplified conflict resolution procedure"
-    - "Both skills include the exact bash commands for the resolution procedure"
-    - "Both embedded and global (~/.claude/skills/) copies updated and verified in sync"
-    - "Old abort-reset-rewrite guidance removed"
+    - kf-architect SKILL.md Step 12b replaced with simplified conflict resolution: accept theirs + re-apply via CLI
+    - kf-developer SKILL.md merge phase updated with same simplified conflict resolution procedure
+    - Both skills include the exact bash commands for the resolution procedure
+    - Both embedded and global (~/.claude/skills/) copies updated and verified in sync
+    - Old abort-reset-rewrite guidance removed
   out_of_scope: |
     - Automating conflict resolution in the CLI tools themselves
     - Changes to kf-track or kf-track-content CLI scripts
     - Changes to other skills (kf-implement, kf-reviewer, kf-report do not merge to main)
   technical_notes: |
     ### Why "accept theirs" is always correct for track state files
-
+    
     Track state files (tracks.yaml, deps.yaml, conflicts.yaml) are append/update structures:
     - **tracks.yaml**: Each line is an independent track entry. Main's version has the latest statuses for ALL tracks. Your changes only add new entries or update YOUR track's status.
     - **deps.yaml**: Main's version has the latest pruned graph. Your changes only add new entries.
     - **conflicts.yaml**: Same pattern — main has latest cleaned pairs, you only add new ones.
-
+    
     Accepting main's version preserves all other workers' state changes. Re-applying via CLI tools ensures your additions are correctly merged without manual YAML editing.
-
+    
     ### Edge case: track.yaml (per-track content file)
     Per-track files under `.agent/kf/tracks/<id>/track.yaml` should NOT conflict because each track has its own directory. If they do conflict (rare — would mean two agents editing the same track), that's a genuine conflict requiring manual resolution.
 plan:
-  - phase: "Skill updates"
+  - phase: Skill updates
     tasks:
-      - text: "Update kf-architect SKILL.md Step 12b — replace abort-reset-rewrite with accept-theirs + re-apply-via-CLI procedure, include exact bash commands"
-        done: false
-      - text: "Update kf-developer SKILL.md merge phase — add same simplified conflict resolution procedure with developer-specific re-apply commands (kf-track update --status completed)"
-        done: false
-      - text: "Copy updated kf-architect SKILL.md to ~/.claude/skills/kf-architect/SKILL.md and verify in sync"
-        done: false
-      - text: "Copy updated kf-developer SKILL.md to ~/.claude/skills/kf-developer/SKILL.md and verify in sync"
-        done: false
-  - phase: "Verification"
+      - text: Update kf-architect SKILL.md Step 12b — replace abort-reset-rewrite with accept-theirs + re-apply-via-CLI procedure, include exact bash commands
+        done: true
+      - text: Update kf-developer SKILL.md merge phase — add same simplified conflict resolution procedure with developer-specific re-apply commands (kf-track update --status completed)
+        done: true
+      - text: Copy updated kf-architect SKILL.md to ~/.claude/skills/kf-architect/SKILL.md and verify in sync
+        done: true
+      - text: Copy updated kf-developer SKILL.md to ~/.claude/skills/kf-developer/SKILL.md and verify in sync
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Diff embedded vs global copies of both skills to confirm they are identical"
-        done: false
+      - text: Diff embedded vs global copies of both skills to confirm they are identical
+        done: true
 extra: {}
