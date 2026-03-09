@@ -1,9 +1,11 @@
-import type { Agent } from "../types/api";
+import { useMemo } from "react";
+import type { Agent, Track } from "../types/api";
 import { AgentCard } from "./AgentCard";
 import styles from "./AgentGrid.module.css";
 
 interface Props {
   agents: Agent[];
+  tracks?: Track[];
   onViewLog: (agentId: string) => void;
   onAttach?: (agentId: string) => void;
 }
@@ -28,7 +30,16 @@ function sortAgents(agents: Agent[]): Agent[] {
   });
 }
 
-export function AgentGrid({ agents, onViewLog, onAttach }: Props) {
+export function AgentGrid({ agents, tracks, onViewLog, onAttach }: Props) {
+  const trackProjectMap = useMemo(() => {
+    if (!tracks) return new Map<string, string>();
+    const map = new Map<string, string>();
+    for (const t of tracks) {
+      if (t.project) map.set(t.id, t.project);
+    }
+    return map;
+  }, [tracks]);
+
   if (agents.length === 0) {
     return <p className={styles.empty}>No agents running</p>;
   }
@@ -36,7 +47,13 @@ export function AgentGrid({ agents, onViewLog, onAttach }: Props) {
   return (
     <div className={styles.grid}>
       {sortAgents(agents).map((agent) => (
-        <AgentCard key={agent.id} agent={agent} onViewLog={onViewLog} onAttach={onAttach} />
+        <AgentCard
+          key={agent.id}
+          agent={agent}
+          onViewLog={onViewLog}
+          onAttach={onAttach}
+          projectSlug={agent.ref ? trackProjectMap.get(agent.ref) : undefined}
+        />
       ))}
     </div>
   );
