@@ -66,10 +66,11 @@ type ImplementTracingProvider interface {
 // track validation, consent, worktree acquisition, agent spawning,
 // and board state transitions.
 type ImplementService struct {
-	consent  ImplementConsentStore
-	board    *NativeBoardService
-	dataDir  string
-	model    string
+	consent     ImplementConsentStore
+	board       *NativeBoardService
+	trackReader port.TrackReader
+	dataDir     string
+	model       string
 }
 
 // NewImplementService creates a new ImplementService.
@@ -80,16 +81,17 @@ func NewImplementService(
 	model string,
 ) *ImplementService {
 	return &ImplementService{
-		consent:  consent,
-		board:    board,
-		dataDir:  dataDir,
-		model:    model,
+		consent:     consent,
+		board:       board,
+		trackReader: NewTrackReader(),
+		dataDir:     dataDir,
+		model:       model,
 	}
 }
 
 // ValidateTrack checks that a track exists in the project and is in pending status.
 func (s *ImplementService) ValidateTrack(projectDir, trackID string) (*port.TrackEntry, error) {
-	tracks, err := DiscoverTracks(projectDir)
+	tracks, err := s.trackReader.DiscoverTracks(projectDir)
 	if err != nil {
 		return nil, fmt.Errorf("discover tracks: %w", err)
 	}
@@ -194,7 +196,7 @@ func (e *TrackInProgressError) Error() string {
 
 // ListPendingTracks returns tracks with pending status in the given project.
 func (s *ImplementService) ListPendingTracks(projectDir string) ([]port.TrackEntry, error) {
-	tracks, err := DiscoverTracks(projectDir)
+	tracks, err := s.trackReader.DiscoverTracks(projectDir)
 	if err != nil {
 		return nil, fmt.Errorf("discover tracks: %w", err)
 	}

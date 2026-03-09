@@ -22,22 +22,18 @@ func (s *stubConsentStore) RecordAgentPermissionsConsent() error {
 func TestImplementService_ValidateTrack(t *testing.T) {
 	t.Parallel()
 
-	// Create a temp project dir with tracks.md.
+	// Create a temp project dir with kf tracks.yaml.
 	projectDir := t.TempDir()
-	conductorDir := filepath.Join(projectDir, ".agent", "conductor")
-	if err := os.MkdirAll(conductorDir, 0o755); err != nil {
+	kfDir := filepath.Join(projectDir, ".agent", "kf")
+	if err := os.MkdirAll(kfDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	tracksContent := `# Tracks Registry
-
-| Status | Track ID | Title | Created | Updated |
-| ------ | -------- | ----- | ------- | ------- |
-| [ ] | pending-track_123Z | Pending Track | 2026-03-10 | 2026-03-10 |
-| [x] | complete-track_456Z | Complete Track | 2026-03-10 | 2026-03-10 |
-| [~] | inprogress-track_789Z | In Progress Track | 2026-03-10 | 2026-03-10 |
+	tracksContent := `pending-track_123Z: {"title":"Pending Track","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+complete-track_456Z: {"title":"Complete Track","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+inprogress-track_789Z: {"title":"In Progress Track","status":"in-progress","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 `
-	if err := os.WriteFile(filepath.Join(conductorDir, "tracks.md"), []byte(tracksContent), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte(tracksContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -116,20 +112,16 @@ func TestImplementService_ListPendingTracks(t *testing.T) {
 	t.Parallel()
 
 	projectDir := t.TempDir()
-	conductorDir := filepath.Join(projectDir, ".agent", "conductor")
-	if err := os.MkdirAll(conductorDir, 0o755); err != nil {
+	kfDir := filepath.Join(projectDir, ".agent", "kf")
+	if err := os.MkdirAll(kfDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	tracksContent := `# Tracks Registry
-
-| Status | Track ID | Title | Created | Updated |
-| ------ | -------- | ----- | ------- | ------- |
-| [ ] | pending-1_123Z | First Pending | 2026-03-10 | 2026-03-10 |
-| [x] | complete-1_456Z | Complete One | 2026-03-10 | 2026-03-10 |
-| [ ] | pending-2_789Z | Second Pending | 2026-03-10 | 2026-03-10 |
+	tracksContent := `complete-1_456Z: {"title":"Complete One","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+pending-1_123Z: {"title":"First Pending","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+pending-2_789Z: {"title":"Second Pending","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 `
-	if err := os.WriteFile(filepath.Join(conductorDir, "tracks.md"), []byte(tracksContent), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte(tracksContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
