@@ -312,6 +312,50 @@ describe("VirtualList", () => {
     act(() => { ref.current!.scrollToIndex(99, { align: "end" }); });
   });
 
+  it("handles 10,000+ items with bounded DOM node count", async () => {
+    const items = makeItems(10000);
+
+    await renderAndFlush(
+      <VirtualList
+        items={items}
+        estimateSize={() => 40}
+        renderItem={(item) => <div>{item}</div>}
+        overscan={5}
+        style={{ height: 200 }}
+      />,
+    );
+
+    // DOM should have a bounded number of item nodes, not 10,000
+    const rendered = document.querySelectorAll("[data-index]");
+    expect(rendered.length).toBeGreaterThan(0);
+    expect(rendered.length).toBeLessThan(50); // ~5 visible + 5 overscan = ~10
+    // Verify total height is correct: 10000 * 40 = 400000
+    const inner = document.querySelector("[data-virtual-list] > div") as HTMLElement;
+    expect(inner.style.height).toBe("400000px");
+  });
+
+  it("handles variable-height items via estimateSize", async () => {
+    const items = ["short", "medium length text here", "a very long line of text that would be much taller"];
+    const estimateSize = (i: number) => [30, 60, 120][i];
+
+    await renderAndFlush(
+      <VirtualList
+        items={items}
+        estimateSize={estimateSize}
+        renderItem={(item) => <div>{item}</div>}
+        style={{ height: 200 }}
+      />,
+    );
+
+    // All 3 items should be visible
+    expect(screen.getByText("short")).toBeInTheDocument();
+    expect(screen.getByText("medium length text here")).toBeInTheDocument();
+    // After measureElement fires, items get measured height (40px each from mock)
+    const inner = document.querySelector("[data-virtual-list] > div") as HTMLElement;
+    const totalHeight = parseInt(inner.style.height, 10);
+    expect(totalHeight).toBeGreaterThan(0);
+  });
+
   it("calls onScrollStateChange callback on scroll", async () => {
     const onScrollStateChange = vi.fn();
 
@@ -331,5 +375,48 @@ describe("VirtualList", () => {
     });
 
     expect(onScrollStateChange).toHaveBeenCalled();
+  });
+
+  it("integration: renders terminal-style messages through VirtualList", async () => {
+    // Simulate WSMessage-like objects rendered through VirtualList
+    interface MockMessage {
+      type: string;
+      text: string;
+    }
+    const messages: MockMessage[] = [
+      { type: "text", text: "Hello from agent" },
+      { type: "tool_use", text: "Running file search..." },
+      { type: "input", text: "User typed this" },
+      { type: "thinking", text: "Analyzing the codebase..." },
+      { type: "text", text: "Here is the result of my analysis." },
+    ];
+
+    const renderMessage = (msg: MockMessage, index: number) => (
+      <div data-testid={`msg-${index}`} data-type={msg.type}>
+        <span>{msg.type === "input" ? "you" : "kf"}</span>
+        <div>{msg.text}</div>
+      </div>
+    );
+
+    // Variable height: text=60, tool_use=80, thinking=100, input=50
+    const estimateSize = (i: number) => {
+      const sizes: Record<string, number> = { text: 60, tool_use: 80, thinking: 100, input: 50 };
+      return sizes[messages[i].type] ?? 60;
+    };
+
+    await renderAndFlush(
+      <VirtualList
+        items={messages}
+        estimateSize={estimateSize}
+        renderItem={renderMessage}
+        autoFollow
+        style={{ height: 400 }}
+      />,
+    );
+
+    // All 5 messages should render (total height fits in container)
+    expect(screen.getByTestId("msg-0")).toHaveTextContent("Hello from agent");
+    expect(screen.getByTestId("msg-2")).toHaveTextContent("User typed this");
+    expect(screen.getByTestId("msg-4")).toHaveTextContent("Here is the result");
   });
 });
