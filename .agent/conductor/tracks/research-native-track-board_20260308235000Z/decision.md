@@ -1,4 +1,4 @@
-# Decision: Native Track Board in crelay Dashboard
+# Decision: Native Track Board in kiloforge Dashboard
 
 **Track ID:** research-native-track-board_20260308235000Z
 **Date:** 2026-03-08
@@ -8,14 +8,14 @@
 
 ## Context
 
-crelay currently uses Gitea's project board as the kanban UI for track lifecycle. Column transitions on the Gitea board trigger webhooks, which the relay processes to drive agent lifecycle (spawn, halt, resume, terminate). This works but introduces architectural coupling:
+kiloforge currently uses Gitea's project board as the kanban UI for track lifecycle. Column transitions on the Gitea board trigger webhooks, which the relay processes to drive agent lifecycle (spawn, halt, resume, terminate). This works but introduces architectural coupling:
 
 1. **Gitea dependency** — The board is only available when Gitea is running
 2. **Indirect state** — Track state lives in tracks.md, board state lives in Gitea, and the mapping lives in board.json — three sources of truth
 3. **Webhook latency** — Board → webhook → relay → agent lifecycle adds unnecessary round-trips for what should be a local operation
-4. **Limited UI** — Gitea's project board is generic; it can't show crelay-specific info (agent status, cost, session IDs)
+4. **Limited UI** — Gitea's project board is generic; it can't show kiloforge-specific info (agent status, cost, session IDs)
 
-The goal: own the board in crelay's dashboard, make column transitions drive agent lifecycle directly via API calls, and simplify the architecture.
+The goal: own the board in kiloforge's dashboard, make column transitions drive agent lifecycle directly via API calls, and simplify the architecture.
 
 ---
 
@@ -62,11 +62,11 @@ The goal: own the board in crelay's dashboard, make column transitions drive age
 
 ### Option A: Augment tracks.md (Rejected)
 
-Tracks.md is a markdown file parsed by both crelay and conductor skills. Adding board-specific fields (assignee, column history, timestamps) would complicate the format and create merge conflicts in multi-worker scenarios.
+Tracks.md is a markdown file parsed by both kiloforge and conductor skills. Adding board-specific fields (assignee, column history, timestamps) would complicate the format and create merge conflicts in multi-worker scenarios.
 
 ### Option B: SQLite (Rejected for now)
 
-SQLite would be the right choice at scale, but crelay currently uses JSON file persistence for all state (agents, board config, projects). Introducing SQLite just for the board creates an inconsistent persistence story. Revisit when migrating all state to SQLite.
+SQLite would be the right choice at scale, but kiloforge currently uses JSON file persistence for all state (agents, board config, projects). Introducing SQLite just for the board creates an inconsistent persistence story. Revisit when migrating all state to SQLite.
 
 ### Option C: JSON file per project (Recommended)
 
@@ -228,7 +228,7 @@ These integrate with the existing `SSEHub.Broadcast()` mechanism.
 
 - **Pros**: Zero bundle cost, no dependency
 - **Cons**: Poor mobile support, no animation, accessibility requires manual implementation, inconsistent across browsers
-- **Fit**: Only viable for desktop-only tool (which crelay is), but UX would feel dated
+- **Fit**: Only viable for desktop-only tool (which kiloforge is), but UX would feel dated
 
 ### Recommendation: **@hello-pangea/dnd**
 
@@ -295,7 +295,7 @@ It provides the best out-of-box kanban experience with minimal code. The declara
 2. Remove Gitea board adapter, port, and domain types
 3. Remove label-based webhook handling (keep PR event handling)
 4. Remove board config from project persistence
-5. Update `crelay add` to skip board setup
+5. Update `kf add` to skip board setup
 
 ### Coexistence
 

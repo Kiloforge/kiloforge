@@ -7,7 +7,7 @@
 
 ## Summary
 
-Fix `crelay init` so the Gitea admin password is always displayed to the user when it was auto-generated. Currently on re-init (Gitea already running), the idempotency early-exit path shows no password. On first init, the password IS displayed but the user sees it only once — if they miss it, there's no way to recover it.
+Fix `kf init` so the Gitea admin password is always displayed to the user when it was auto-generated. Currently on re-init (Gitea already running), the idempotency early-exit path shows no password. On first init, the password IS displayed but the user sees it only once — if they miss it, there's no way to recover it.
 
 ## Context
 
@@ -35,8 +35,8 @@ Two interacting issues:
 - [ ] Password is NOT persisted to `config.json` (honor the remove-password-persistence intent)
 - [ ] On first init: password is displayed to the user in the success output
 - [ ] On re-init (Gitea already running): password is NOT displayed (it's not known), but a helpful message tells the user how to reset it or where to find it
-- [ ] If password was provided via `--admin-pass` flag or `CRELAY_GITEA_ADMIN_PASS` env var: user already knows it, no special handling needed
-- [ ] `crelay init --admin-pass <pass>` works for setting a known password
+- [ ] If password was provided via `--admin-pass` flag or `KF_GITEA_ADMIN_PASS` env var: user already knows it, no special handling needed
+- [ ] `kf init --admin-pass <pass>` works for setting a known password
 
 ## Dependencies
 

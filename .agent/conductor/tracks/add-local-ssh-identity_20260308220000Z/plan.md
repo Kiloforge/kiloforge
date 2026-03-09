@@ -49,7 +49,7 @@
 ### Task 3.1: Update git operations to use stored SSH env
 - [x] `cloneRepo()` accepts extraEnv; `GitSSHEnv()` available for future use
 
-### Task 3.2: Update `crelay projects` output
+### Task 3.2: Update `kf projects` output
 - [x] **File:** `backend/internal/adapter/cli/projects.go`
 - Shows SSH key path in project listing (or "(default)" if none)
 

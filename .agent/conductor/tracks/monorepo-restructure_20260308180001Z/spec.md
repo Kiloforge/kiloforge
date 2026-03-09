@@ -15,17 +15,17 @@ The current dashboard is a vanilla JS/CSS/HTML app embedded via `//go:embed stat
 
 ## Codebase Analysis
 
-- **Current structure:** Go module at root (`go.mod` with `module crelay`), all code under `cmd/`, `internal/`, `docs/`
+- **Current structure:** Go module at root (`go.mod` with `module kiloforge`), all code under `cmd/`, `internal/`, `docs/`
 - **Current embed:** `internal/adapter/dashboard/embed.go` embeds `static/*` (3 files: index.html, app.js, style.css)
-- **Go module:** `module crelay`, Go 1.24.4, deps: cobra, uuid only
+- **Go module:** `module kiloforge`, Go 1.24.4, deps: cobra, uuid only
 - **No existing build pipeline:** Makefile exists but is minimal
-- **Import paths:** ~40+ files use `crelay/internal/...` imports — all must be updated if module path changes
+- **Import paths:** ~40+ files use `kiloforge/internal/...` imports — all must be updated if module path changes
 - **Dashboard routes:** `RegisterRoutes(mux)` mounts `/api/*`, `/events`, `/` on the relay server mux
 - **Unified server:** Single port (3001) serves webhooks, dashboard, lock service, and Gitea proxy
 
 ## Acceptance Criteria
 
-- [ ] Go code lives under `backend/` with `backend/go.mod` (module path: `crelay`)
+- [ ] Go code lives under `backend/` with `backend/go.mod` (module path: `kiloforge`)
 - [ ] React/Vite/TypeScript app lives under `frontend/`
 - [ ] `make build` builds frontend first, copies dist to backend embed dir, then builds Go binary
 - [ ] Single binary serves the React app at `/` via `go:embed`
@@ -55,9 +55,9 @@ None — this is a foundational restructure that other tracks build on.
 ### Directory Layout
 
 ```
-crelay/
+kiloforge/
 ├── backend/
-│   ├── cmd/crelay/
+│   ├── cmd/kiloforge/
 │   ├── internal/
 │   │   ├── adapter/
 │   │   │   ├── dashboard/
@@ -116,7 +116,7 @@ export default defineConfig({
 
 ### Import Path Handling
 
-The Go module path stays `crelay` — only the `go.mod` file location changes to `backend/go.mod`. All internal imports remain `crelay/internal/...` unchanged. The `go.work` at root references `./backend`.
+The Go module path stays `kiloforge` — only the `go.mod` file location changes to `backend/go.mod`. All internal imports remain `kiloforge/internal/...` unchanged. The `go.work` at root references `./backend`.
 
 ---
 

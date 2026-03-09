@@ -11,7 +11,7 @@ Parse stream-json output from spawned CC agents to extract token usage, cost met
 
 ## Context
 
-Crelay spawns multiple CC agents as child processes with `--output-format stream-json`. The stream-json output contains structured events including token usage, cost data, and error information. Currently the spawner goroutine writes this output to log files but does not parse it. We need a tracker that aggregates usage across all active workers to enable quota-aware agent management.
+Kiloforge spawns multiple CC agents as child processes with `--output-format stream-json`. The stream-json output contains structured events including token usage, cost data, and error information. Currently the spawner goroutine writes this output to log files but does not parse it. We need a tracker that aggregates usage across all active workers to enable quota-aware agent management.
 
 ## Codebase Analysis
 

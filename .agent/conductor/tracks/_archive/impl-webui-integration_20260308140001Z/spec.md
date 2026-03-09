@@ -7,7 +7,7 @@
 
 ## Summary
 
-Integrate the web dashboard into the crelay CLI lifecycle: add `dashboard_port` config, optionally start dashboard alongside relay in `crelay up`, add standalone `crelay dashboard` command, and wire Gitea links into the UI.
+Integrate the web dashboard into the kiloforge CLI lifecycle: add `dashboard_port` config, optionally start dashboard alongside relay in `kf up`, add standalone `kf dashboard` command, and wire Gitea links into the UI.
 
 ## Context
 
@@ -15,7 +15,7 @@ The dashboard server (track `impl-webui-server_20260308140000Z`) exists as a sta
 
 ## Codebase Analysis
 
-- **`crelay up`**: `internal/cli/up.go` — starts Gitea via compose, then runs relay server in foreground
+- **`kf up`**: `internal/cli/up.go` — starts Gitea via compose, then runs relay server in foreground
 - **Config**: `internal/config/` — port/adapter resolution with defaults, JSON, env, flags
 - **Relay server**: runs on `RelayPort` (3001), blocks on `ListenAndServe()`
 - **Dashboard server**: `internal/dashboard/` (from track 1) — runs on its own port, needs store + tracker
@@ -23,22 +23,22 @@ The dashboard server (track `impl-webui-server_20260308140000Z`) exists as a sta
 ### Integration points
 
 1. **Config**: add `DashboardPort` field (default: 3002), `DashboardEnabled` bool (default: true)
-2. **`crelay up`**: start dashboard server in a goroutine alongside relay server
-3. **`crelay dashboard`**: standalone command to start only the dashboard (for when relay is already running)
-4. **`crelay status`**: print dashboard URL when running
+2. **`kf up`**: start dashboard server in a goroutine alongside relay server
+3. **`kf dashboard`**: standalone command to start only the dashboard (for when relay is already running)
+4. **`kf status`**: print dashboard URL when running
 
 ## Acceptance Criteria
 
 - [ ] `DashboardPort` config field with default 3002, resolved via defaults→JSON→env→flags chain
 - [ ] `DashboardEnabled` config field with default true
-- [ ] `CRELAY_DASHBOARD_PORT` and `CRELAY_DASHBOARD_ENABLED` env vars supported
-- [ ] `crelay up` starts dashboard server alongside relay when enabled
+- [ ] `KF_DASHBOARD_PORT` and `KF_DASHBOARD_ENABLED` env vars supported
+- [ ] `kf up` starts dashboard server alongside relay when enabled
 - [ ] Dashboard and relay run concurrently (goroutines), both shut down on SIGINT
-- [ ] `crelay dashboard` command starts only the dashboard server (reads state from files)
-- [ ] `crelay status` shows dashboard URL when enabled
+- [ ] `kf dashboard` command starts only the dashboard server (reads state from files)
+- [ ] `kf status` shows dashboard URL when enabled
 - [ ] Dashboard links to Gitea PRs using configured `GiteaURL`
 - [ ] Dashboard links to Gitea repos for each registered project
-- [ ] `--no-dashboard` flag on `crelay up` to disable dashboard
+- [ ] `--no-dashboard` flag on `kf up` to disable dashboard
 - [ ] Unit tests for config resolution
 - [ ] All existing tests pass, build succeeds
 
@@ -66,7 +66,7 @@ None
 
 ## Technical Notes
 
-### `crelay up` integration
+### `kf up` integration
 
 ```go
 // In up.go Run function:
@@ -87,7 +87,7 @@ relaySrv := relay.NewServer(cfg, registry, cfg.RelayPort)
 return relaySrv.Run(ctx)
 ```
 
-### `crelay dashboard` command
+### `kf dashboard` command
 
 ```go
 var dashboardCmd = &cobra.Command{

@@ -34,12 +34,12 @@
 - [x] Save BoardConfig to disk
 - [x] Idempotent — skip if board already exists
 
-### Task 2.2: Integrate board setup into `crelay add`
+### Task 2.2: Integrate board setup into `kf add`
 - [x] After creating Gitea repo and webhook, call `BoardService.SetupBoard()`
 - [x] Store BoardConfig in project's data directory
 - [x] Log board creation URL
 
-### Task 2.3: Add `crelay board` CLI command
+### Task 2.3: Add `kf board` CLI command
 - [x] Show board status for a project (board URL, column counts)
 - [x] `--setup` flag to re-run board setup if needed
 - [x] Default to current project if `--project` not specified
@@ -68,8 +68,8 @@
 - [x] Fall back to `.agent/conductor/tracks/_archive/{trackID}/spec.md`
 - [x] If no spec found, use track title as body
 
-### Task 3.4: Implement `crelay sync` CLI command
-- [x] `crelay sync [--project slug]` — sync tracks to Gitea board
+### Task 3.4: Implement `kf sync` CLI command
+- [x] `kf sync [--project slug]` — sync tracks to Gitea board
 - [x] Discover tracks from project directory
 - [x] Call SyncTracks
 - [x] Print sync results (created N, updated N, unchanged N)

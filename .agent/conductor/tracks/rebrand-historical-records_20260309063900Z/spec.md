@@ -7,7 +7,7 @@
 
 ## Summary
 
-Update all remaining "crelay" references in conductor track metadata, specs, plans, and registry files to reflect the kiloforge rebrand, and reconcile historical records with the existing kf tracking state. This covers both archived and active track documents — purely cosmetic metadata changes with zero code impact.
+Update all remaining "kiloforge" references in conductor track metadata, specs, plans, and registry files to reflect the kiloforge rebrand, and reconcile historical records with the existing kf tracking state. This covers both archived and active track documents — purely cosmetic metadata changes with zero code impact.
 
 ## Context
 
@@ -21,7 +21,7 @@ All changes are in `.agent/conductor/` — Markdown and JSON metadata files only
 
 | Category | Estimated References | Files |
 |----------|---------------------|-------|
-| Archived track metadata.json titles | 4 tracks with "crelay" in title | 4 |
+| Archived track metadata.json titles | 4 tracks with "kiloforge" in title | 4 |
 | Archived track spec.md / plan.md content | ~255 references | ~50 files |
 | Active track spec.md / plan.md content | ~182 references | ~30 files |
 | tracks.md completed entry titles | Historical titles | 1 |
@@ -35,30 +35,30 @@ All changes are in `.agent/conductor/` — Markdown and JSON metadata files only
 
 ## Codebase Analysis
 
-**Archived tracks with "crelay" in titles (metadata.json):**
-1. `add-project-command_20260307122000Z` — "Implement 'crelay add' Command..."
-2. `implement-command_20260307125001Z` — "'crelay implement' Command..."
-3. `fix-add-remote-url_20260307130000Z` — "Fix 'crelay add' to Accept Remote URLs"
-4. `impl-conductor-lock-migration_20260308150001Z` — "Migrate Conductor Skills to Use crelay Lock API"
+**Archived tracks with "kiloforge" in titles (metadata.json):**
+1. `add-project-command_20260307122000Z` — "Implement 'kf add' Command..."
+2. `implement-command_20260307125001Z` — "'kf implement' Command..."
+3. `fix-add-remote-url_20260307130000Z` — "Fix 'kf add' to Accept Remote URLs"
+4. `impl-conductor-lock-migration_20260308150001Z` — "Migrate Conductor Skills to Use kiloforge Lock API"
 
 **Content patterns to replace:**
-- `crelay init` → `kf init`
-- `crelay add` → `kf add`
-- `crelay up` / `crelay down` → `kf up` / `kf down`
-- `crelay destroy` → `kf destroy`
-- `crelay implement` → `kf implement`
-- `crelay status` → `kf status`
-- `~/.crelay/` → `~/.kiloforge/`
-- `CRELAY_*` env vars → `KF_*`
-- "crelay" (product name) → "kiloforge" or "Kiloforge"
+- `kf init` → `kf init`
+- `kf add` → `kf add`
+- `kf up` / `kf down` → `kf up` / `kf down`
+- `kf destroy` → `kf destroy`
+- `kf implement` → `kf implement`
+- `kf status` → `kf status`
+- `~/.kiloforge/` → `~/.kiloforge/`
+- `KF_*` env vars → `KF_*`
+- "kiloforge" (product name) → "kiloforge" or "Kiloforge"
 
 **Safety:** Track IDs, cross-track dependency references, and file paths all use timestamp-based IDs — none reference the product name. This is purely a text find-replace in documentation.
 
 ## Acceptance Criteria
 
-- [ ] Zero "crelay" references remain in `.agent/conductor/tracks/` (both archived and active)
-- [ ] Zero "crelay" references remain in `.agent/conductor/tracks.md`
-- [ ] Zero "crelay" references remain in `.agent/conductor/index.md`
+- [ ] Zero "kiloforge" references remain in `.agent/conductor/tracks/` (both archived and active)
+- [ ] Zero "kiloforge" references remain in `.agent/conductor/tracks.md`
+- [ ] Zero "kiloforge" references remain in `.agent/conductor/index.md`
 - [ ] All `metadata.json` title fields updated
 - [ ] All spec.md / plan.md content updated
 - [ ] Track IDs unchanged
@@ -86,9 +86,9 @@ None — only modifies `.agent/conductor/` metadata files.
 ## Technical Notes
 
 - **Bulk find-replace** is safe here since all files are Markdown/JSON documentation
-- **Case sensitivity matters:** handle `crelay` (lowercase), `Crelay` (title case), `CRELAY` (upper case for env vars) separately
-- **Context-aware replacement:** `crelay` as a CLI command → `kf`, `crelay` as a product name → "kiloforge"
-- **Verify after:** grep `-ri crelay .agent/conductor/tracks/` should return zero matches
+- **Case sensitivity matters:** handle `kiloforge` (lowercase), `Kiloforge` (title case), `KF` (upper case for env vars) separately
+- **Context-aware replacement:** `kiloforge` as a CLI command → `kf`, `kiloforge` as a product name → "kiloforge"
+- **Verify after:** grep `-ri kiloforge .agent/conductor/tracks/` should return zero matches
 
 ---
 

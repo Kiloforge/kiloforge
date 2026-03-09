@@ -19,5 +19,5 @@
 - First init without flag → password generated, displayed, NOT in config.json ✓
 - Re-init without flag → "password not stored" message, suggests --admin-pass ✓
 - Init with --admin-pass → password displayed on both first and re-init ✓
-- Init with CRELAY_GITEA_ADMIN_PASS env → same as flag behavior ✓
+- Init with KF_GITEA_ADMIN_PASS env → same as flag behavior ✓
 - Run test suite ✓ (make test + make build pass)

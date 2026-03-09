@@ -40,7 +40,7 @@ API Error: Rate limit reached
 
 ### 1.4 Key finding
 
-CC does **not** exit cleanly on persistent rate limits. It either retries indefinitely or hangs. There is no configurable retry limit or timeout for rate-limit retries. This is a significant concern for crelay's multi-agent spawning — a single rate-limited agent could become a zombie process consuming system resources.
+CC does **not** exit cleanly on persistent rate limits. It either retries indefinitely or hangs. There is no configurable retry limit or timeout for rate-limit retries. This is a significant concern for kiloforge's multi-agent spawning — a single rate-limited agent could become a zombie process consuming system resources.
 
 ---
 
@@ -119,7 +119,7 @@ The result message includes:
 
 ### 2.6 Known issue
 
-CC CLI can hang indefinitely after sending the final `{"type":"result","subtype":"success"}` event in stream-json mode — the process remains running with stdout open, never exiting cleanly (GitHub issue #25629). This must be handled with a timeout in crelay's agent monitor goroutine.
+CC CLI can hang indefinitely after sending the final `{"type":"result","subtype":"success"}` event in stream-json mode — the process remains running with stdout open, never exiting cleanly (GitHub issue #25629). This must be handled with a timeout in kiloforge's agent monitor goroutine.
 
 ---
 
@@ -171,7 +171,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 
 ### 3.5 Propagation to child processes
 
-OTel env vars (`OTEL_EXPORTER_OTLP_ENDPOINT`, etc.) are standard environment variables. When crelay spawns CC via `exec.CommandContext`, these env vars **can be passed through** to the child process via `cmd.Env`. Each spawned agent will independently export to the configured OTLP endpoint.
+OTel env vars (`OTEL_EXPORTER_OTLP_ENDPOINT`, etc.) are standard environment variables. When kiloforge spawns CC via `exec.CommandContext`, these env vars **can be passed through** to the child process via `cmd.Env`. Each spawned agent will independently export to the configured OTLP endpoint.
 
 ### 3.6 Per-worker collection feasibility
 
@@ -256,7 +256,7 @@ Use **OTel events as the primary data source** and stream-json `result` messages
    - Options: OpenTelemetry Collector, VictoriaMetrics, or simple file-based collector
    - Minimal footprint: just needs to aggregate and expose data
 
-2. **Quota Tracker Service** (new component in crelay)
+2. **Quota Tracker Service** (new component in kiloforge)
    - Reads aggregated metrics from collector
    - Tracks per-worker and aggregate token/cost usage
    - Exposes simple API for relay server to query
@@ -301,7 +301,7 @@ If OTel infrastructure is too heavy, a lighter approach:
 1. Parse stream-json output in the existing agent monitor goroutine (`spawner.go:87-101`)
 2. Extract `result` messages for cost/usage at session end
 3. Use `--max-budget-usd` per agent as a hard cap
-4. Track cumulative cost in crelay's state store
+4. Track cumulative cost in kiloforge's state store
 
 **Tradeoffs:**
 - No real-time visibility (only at session end)
@@ -318,7 +318,7 @@ If OTel infrastructure is too heavy, a lighter approach:
 | Level | Trigger | Action |
 |-------|---------|--------|
 | **Normal** | < 70% of daily budget | No action |
-| **Warning** | 70-85% of daily budget | Log warning, notify user via `crelay status` |
+| **Warning** | 70-85% of daily budget | Log warning, notify user via `kf status` |
 | **Throttle** | 85-95% of daily budget | Delay new agent spawns, prefer Sonnet over Opus |
 | **Pause** | > 95% of daily budget OR 3+ 429s in 5min | Pause all new spawns, notify user |
 | **Emergency** | Persistent 429 across all workers | Kill non-essential agents, preserve only critical work |
@@ -326,7 +326,7 @@ If OTel infrastructure is too heavy, a lighter approach:
 ### 6.2 Worker queuing/backoff
 
 When in **Throttle** state:
-- New `crelay implement` commands are queued (FIFO)
+- New `kf implement` commands are queued (FIFO)
 - Queue depth limit: 5 tracks (reject with error beyond this)
 - Existing agents continue running
 - Check every 60s if budget has recovered (new billing window)
@@ -334,12 +334,12 @@ When in **Throttle** state:
 When in **Pause** state:
 - All queued spawns held
 - Existing agents continue but with `--max-budget-usd` reduced
-- User must explicitly `crelay resume` to unblock
+- User must explicitly `kf resume` to unblock
 
 ### 6.3 User notification
 
 ```
-$ crelay status
+$ kf status
 QUOTA STATUS: WARNING (78% of daily budget consumed)
 
 Active Workers:
@@ -404,7 +404,7 @@ type SessionCost struct {
 ### 7.3 Reporting interface
 
 ```
-$ crelay cost
+$ kiloforge cost
 Track                          Cost      Tokens   Status
 auth_feature_20260307          $4.23     267K     in-progress
 api_refactor_20260307          $1.89     112K     in-progress
@@ -412,7 +412,7 @@ review_cycle_20260306          $0.92      58K     complete
 ────────────────────────────────────────────────────
 Total (today)                  $7.04     437K
 
-$ crelay cost --track auth_feature_20260307
+$ kiloforge cost --track auth_feature_20260307
 Track: auth_feature_20260307
 Total Cost: $4.23
 
@@ -429,7 +429,7 @@ Sessions:
 ### 8.1 Cannot test inside nested CC session
 
 CC prevents nested sessions (`CLAUDECODE` env var check). This means:
-- Cannot empirically verify rate-limit retry behavior from within crelay's dev workflow
+- Cannot empirically verify rate-limit retry behavior from within kiloforge's dev workflow
 - Must rely on documentation, GitHub issues, and external testing
 - Recommendation: create a standalone test script outside CC for empirical validation
 
@@ -442,7 +442,7 @@ CC prevents nested sessions (`CLAUDECODE` env var check). This means:
 ### 8.3 CC stream-json hang bug
 
 - CC can hang after emitting the final result event (issue #25629)
-- Crelay's monitor goroutine must implement a timeout after receiving a `result` event
+- Kiloforge's monitor goroutine must implement a timeout after receiving a `result` event
 - Recommended: 30s timeout after result event, then SIGTERM → SIGKILL
 
 ### 8.4 OTel export retry loop on 429
@@ -467,8 +467,8 @@ CC prevents nested sessions (`CLAUDECODE` env var check). This means:
 - Parse stream-json `result` messages in spawner monitor goroutine
 - Extract `total_cost_usd` and `usage` on agent completion
 - Store per-track cost in state store
-- Add `--max-budget-usd` flag to `crelay implement` (passed through to CC)
-- Add `crelay cost` command for reporting
+- Add `--max-budget-usd` flag to `kf implement` (passed through to CC)
+- Add `kf cost` command for reporting
 - Handle stream-json hang with post-result timeout
 
 **Effort:** ~1-2 tracks (feature + tests)
@@ -483,7 +483,7 @@ CC prevents nested sessions (`CLAUDECODE` env var check). This means:
 - Set per-worker `OTEL_RESOURCE_ATTRIBUTES` for attribution
 - Build quota tracker service that reads from collector
 - Implement threshold-based degradation (warning/throttle/pause)
-- Real-time `crelay status` with quota information
+- Real-time `kf status` with quota information
 - Alert on 429 patterns via `api_error` events
 
 **Effort:** ~3-4 tracks

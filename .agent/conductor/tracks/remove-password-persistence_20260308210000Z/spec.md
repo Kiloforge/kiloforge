@@ -7,11 +7,11 @@
 
 ## Summary
 
-Clear `GiteaAdminPass` from the saved config after `crelay init` creates the API token. Post-init, all Gitea API calls use token auth only — the plaintext password should never persist on disk.
+Clear `GiteaAdminPass` from the saved config after `kf init` creates the API token. Post-init, all Gitea API calls use token auth only — the plaintext password should never persist on disk.
 
 ## Context
 
-Currently, `crelay init` generates a random admin password, uses it to create the Gitea admin user and an API token, then saves both the password and token to `~/.crelay/config.json`. Every post-init command (`up`, `status`, `add`, etc.) creates a `NewClient(url, user, password)` and then calls `SetToken()` if a token exists. The password persists unnecessarily as plaintext on disk.
+Currently, `kf init` generates a random admin password, uses it to create the Gitea admin user and an API token, then saves both the password and token to `~/.kiloforge/config.json`. Every post-init command (`up`, `status`, `add`, etc.) creates a `NewClient(url, user, password)` and then calls `SetToken()` if a token exists. The password persists unnecessarily as plaintext on disk.
 
 ## Codebase Analysis
 
@@ -21,17 +21,17 @@ Currently, `crelay init` generates a random admin password, uses it to create th
 - **`init.go:65-66`** — Password generated if empty, saved to config
 - **`init.go:135`** — Password printed to stdout during init (useful for manual Gitea access)
 - **11 call sites** across CLI commands (`up.go`, `status.go`, `add.go`, `sync.go`, `board.go`, `implement.go`, `down.go`, `serve.go`, `server.go`) all follow the pattern: `NewClient(url, user, pass)` then `SetToken(token)` — the password is never actually used post-init because the token is always set
-- **`env_adapter.go:19`** — `CRELAY_GITEA_ADMIN_PASS` env var support
+- **`env_adapter.go:19`** — `KF_GITEA_ADMIN_PASS` env var support
 - **`flags_adapter.go:14`** — `WithGiteaAdminPass` flag option
 
 ## Acceptance Criteria
 
-- [ ] After `crelay init` succeeds and saves config, `config.json` does NOT contain `gitea_admin_pass`
+- [ ] After `kf init` succeeds and saves config, `config.json` does NOT contain `gitea_admin_pass`
 - [ ] All post-init commands (`up`, `down`, `status`, `add`, `sync`, `board`, `implement`, `serve`) work with token-only auth
 - [ ] `NewClient` has a token-based constructor for post-init usage (no password parameter needed)
-- [ ] `crelay init` still prints the password to stdout so users can manually log into Gitea if needed
-- [ ] `crelay init --admin-pass` flag still works for initial setup
-- [ ] Password is still accepted via `CRELAY_GITEA_ADMIN_PASS` env var for init
+- [ ] `kf init` still prints the password to stdout so users can manually log into Gitea if needed
+- [ ] `kf init --admin-pass` flag still works for initial setup
+- [ ] Password is still accepted via `KF_GITEA_ADMIN_PASS` env var for init
 - [ ] Existing `config.json` files with a password field are handled gracefully (field ignored post-init)
 - [ ] All existing tests pass
 

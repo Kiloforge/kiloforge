@@ -90,7 +90,7 @@ None.
 ## Conflict Risk
 
 - **kf-skills-source_20260309063859Z** — LOW. Skills reference `KF_RELAY_URL` which this track renames to `KF_ORCH_URL`. If skills track completes first, the skill files will need updating. If this track completes first, the skills track should use `KF_ORCH_URL` directly. Either ordering works — just one extra find-replace.
-- **rebrand-historical-records_20260309063900Z** — LOW. Both touch `.agent/conductor/` docs but different content ("crelay" vs "relay").
+- **rebrand-historical-records_20260309063900Z** — LOW. Both touch `.agent/conductor/` docs but different content ("kiloforge" vs "relay").
 
 ## Out of Scope
 

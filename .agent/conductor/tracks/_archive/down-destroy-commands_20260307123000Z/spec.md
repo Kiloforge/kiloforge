@@ -7,11 +7,11 @@
 
 ## Summary
 
-Add `crelay up` (start Gitea) and `crelay down` (stop Gitea) as the daily start/stop cycle. Keep `crelay init` for first-time setup. Refactor `crelay destroy` to require confirmation before deleting all data.
+Add `kf up` (start Gitea) and `kf down` (stop Gitea) as the daily start/stop cycle. Keep `kf init` for first-time setup. Refactor `kf destroy` to require confirmation before deleting all data.
 
 ## Context
 
-Currently `crelay init` handles first-time setup and `crelay destroy` tears everything down. Missing from the CLI is a simple start/stop cycle for daily use. After initial setup, users want `up`/`down` — not re-running `init` or using `destroy`. The three-tier model:
+Currently `kf init` handles first-time setup and `kf destroy` tears everything down. Missing from the CLI is a simple start/stop cycle for daily use. After initial setup, users want `up`/`down` — not re-running `init` or using `destroy`. The three-tier model:
 
 - `init` — one-time setup (generate compose file, create admin, first start)
 - `up` / `down` — daily start/stop cycle (non-destructive)
@@ -26,17 +26,17 @@ Currently `crelay init` handles first-time setup and `crelay destroy` tears ever
 
 ## Acceptance Criteria
 
-- [ ] `crelay up` starts the Gitea stack if initialized and not running
-- [ ] `crelay up` errors with "run 'crelay init' first" if not initialized (no config/compose file)
-- [ ] `crelay up` is a no-op if already running ("Gitea is already running")
-- [ ] `crelay down` stops the Gitea stack without removing containers or data
-- [ ] `crelay down` is idempotent — safe to run when already stopped
-- [ ] `crelay destroy` prints a critical warning and requires typing "yes" to confirm
-- [ ] `crelay destroy --force` skips the confirmation prompt
-- [ ] `crelay destroy` removes containers, volumes, data directory, and config
+- [ ] `kf up` starts the Gitea stack if initialized and not running
+- [ ] `kf up` errors with "run 'kf init' first" if not initialized (no config/compose file)
+- [ ] `kf up` is a no-op if already running ("Gitea is already running")
+- [ ] `kf down` stops the Gitea stack without removing containers or data
+- [ ] `kf down` is idempotent — safe to run when already stopped
+- [ ] `kf destroy` prints a critical warning and requires typing "yes" to confirm
+- [ ] `kf destroy --force` skips the confirmation prompt
+- [ ] `kf destroy` removes containers, volumes, data directory, and config
 - [ ] Old `--data` flag on destroy is removed
 - [ ] Compose runner has a `Stop()` method
-- [ ] `crelay init` updated: success message says "use 'crelay down' to stop, 'crelay up' to restart"
+- [ ] `kf init` updated: success message says "use 'kf down' to stop, 'kf up' to restart"
 - [ ] README and docs updated
 
 ## Dependencies
@@ -45,7 +45,7 @@ None
 
 ## Out of Scope
 
-- Per-project removal (future `crelay remove` command)
+- Per-project removal (future `kf remove` command)
 - Selective data deletion
 
 ## Technical Notes
@@ -54,38 +54,38 @@ None
 
 | Command | When to use | What it does | Destructive? |
 |---------|-------------|-------------|-------------|
-| `crelay init` | Once, first time | Generate compose file, create admin user, start Gitea | No |
-| `crelay up` | Daily | `docker compose up -d` (start existing stack) | No |
-| `crelay down` | Daily | `docker compose stop` (stop, keep containers) | No |
-| `crelay destroy` | Rarely | `docker compose down -v`, delete `~/.crelay/` | YES |
+| `kf init` | Once, first time | Generate compose file, create admin user, start Gitea | No |
+| `kf up` | Daily | `docker compose up -d` (start existing stack) | No |
+| `kf down` | Daily | `docker compose stop` (stop, keep containers) | No |
+| `kf destroy` | Rarely | `docker compose down -v`, delete `~/.kiloforge/` | YES |
 
-### `crelay up`
+### `kf up`
 ```
-$ crelay up
+$ kf up
 ==> Starting Gitea...
     Gitea running at http://localhost:3000
 ```
 
 Thin wrapper: load config → detect compose → `runner.Up()` → wait ready → print URL. Errors if not initialized.
 
-### `crelay down`
+### `kf down`
 ```
-$ crelay down
+$ kf down
 ==> Stopping Gitea...
     Gitea stopped.
 
-Restart with: crelay up
+Restart with: kf up
 ```
 
-### `crelay destroy`
+### `kf destroy`
 ```
-$ crelay destroy
+$ kf destroy
 
   WARNING: This will permanently delete:
     - Gitea server and all repositories
     - All project registrations
     - All agent state and logs
-    - Data directory: ~/.crelay/
+    - Data directory: ~/.kiloforge/
 
   This action cannot be undone.
 
@@ -93,7 +93,7 @@ $ crelay destroy
 
 ==> Removing Gitea containers and volumes...
 ==> Removing data directory...
-Done. All crelay data has been destroyed.
+Done. All kiloforge data has been destroyed.
 ```
 
 ---

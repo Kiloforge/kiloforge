@@ -43,7 +43,7 @@ After the monorepo restructure (`monorepo-restructure_20260308180001Z`), the fro
 - [ ] Track listing: ID, title, status with appropriate styling
 - [ ] System status: Gitea URL, agent histogram, SSE client count
 - [ ] Responsive layout (works on desktop, reasonable on tablet)
-- [ ] Dark theme consistent with crelay branding
+- [ ] Dark theme consistent with kiloforge branding
 - [ ] TypeScript strict mode, no `any` types in component props
 - [ ] `npm run build` produces optimized bundle under 500KB gzipped
 

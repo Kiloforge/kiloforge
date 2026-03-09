@@ -15,13 +15,13 @@
 - [x] Call dashboard.RegisterRoutes on relay's mux
 - [x] Start dashboard's watchState goroutine from relay's Run
 
-### Task 1.3: Update `crelay up` to use single server
+### Task 1.3: Update `kf up` to use single server
 - [x] Remove separate dashboard goroutine from up.go
 - [x] Pass dashboard dependencies (AgentStore, QuotaTracker) to relay server constructor
 - [x] Print single URL instead of separate relay/dashboard URLs
 - [x] Keep `--no-dashboard` flag (skips mounting dashboard routes)
 
-### Task 1.4: Update `crelay dashboard` standalone command
+### Task 1.4: Update `kf dashboard` standalone command
 - [x] Dashboard standalone still creates its own HTTP server
 - [x] Uses dashboard.Server.Run() directly (unchanged behavior)
 
@@ -52,8 +52,8 @@
 
 ### Task 3.2: Update documentation and output
 - [x] Update README architecture diagram (one server, one port)
-- [x] Update `crelay status` output to show single URL
-- [x] Update `crelay up` output messages
+- [x] Update `kf status` output to show single URL
+- [x] Update `kf up` output messages
 
 ### Task 3.3: Full build and test
 - [x] `go build -buildvcs=false ./...`

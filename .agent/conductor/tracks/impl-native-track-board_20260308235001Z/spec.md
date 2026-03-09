@@ -7,11 +7,11 @@
 
 ## Summary
 
-Replace Gitea's project board as the source of truth for track lifecycle with a crelay-native board service. Dashboard provides a kanban UI with drag-and-drop column transitions that directly drive agent lifecycle. Gitea continues to handle git hosting, PRs, and code review.
+Replace Gitea's project board as the source of truth for track lifecycle with a kiloforge-native board service. Dashboard provides a kanban UI with drag-and-drop column transitions that directly drive agent lifecycle. Gitea continues to handle git hosting, PRs, and code review.
 
 ## Acceptance Criteria
 
-- [ ] crelay-native board service manages track column state (no Gitea board dependency)
+- [ ] kiloforge-native board service manages track column state (no Gitea board dependency)
 - [ ] Board state persisted locally (survives relay restarts)
 - [ ] Dashboard shows kanban board per project with drag-and-drop
 - [ ] Column transitions trigger agent lifecycle (spawn, halt, resume, terminate)

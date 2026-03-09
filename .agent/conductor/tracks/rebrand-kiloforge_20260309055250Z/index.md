@@ -1,4 +1,4 @@
-# Track: Rebrand crelay to kiloforge (CLI: kf)
+# Track: Rebrand kiloforge to kiloforge (CLI: kf)
 
 **ID:** rebrand-kiloforge_20260309055250Z
 **Status:** Pending

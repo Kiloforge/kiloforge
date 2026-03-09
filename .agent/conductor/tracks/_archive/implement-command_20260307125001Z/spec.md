@@ -1,4 +1,4 @@
-# Specification: 'crelay implement' Command — Spawn Developer Agent
+# Specification: 'kf implement' Command — Spawn Developer Agent
 
 **Track ID:** implement-command_20260307125001Z
 **Type:** Feature
@@ -7,16 +7,16 @@
 
 ## Summary
 
-Implement `crelay implement <track-id>` to approve a track and spawn a Claude Code developer agent in a pooled worktree. The agent implements the track, creates a PR on Gitea, tags it with session/track metadata, and pauses. This is the entry point for the agent orchestration lifecycle.
+Implement `kf implement <track-id>` to approve a track and spawn a Claude Code developer agent in a pooled worktree. The agent implements the track, creates a PR on Gitea, tags it with session/track metadata, and pauses. This is the entry point for the agent orchestration lifecycle.
 
 ## Context
 
-See `docs/design-agent-orchestration.md` Sections 3-4. The implement command bridges the conductor track system with crelay's agent spawning. It acquires a worktree from the pool, spawns a developer agent, and records state for the relay to manage the review cycle.
+See `docs/design-agent-orchestration.md` Sections 3-4. The implement command bridges the conductor track system with kiloforge's agent spawning. It acquires a worktree from the pool, spawns a developer agent, and records state for the relay to manage the review cycle.
 
 ## Acceptance Criteria
 
-- [ ] `crelay implement <track-id>` acquires a worktree, spawns a developer agent
-- [ ] `crelay implement --list` shows tracks available for implementation (pending status)
+- [ ] `kf implement <track-id>` acquires a worktree, spawns a developer agent
+- [ ] `kf implement --list` shows tracks available for implementation (pending status)
 - [ ] Developer agent runs `/conductor-developer <track-id>` in the worktree
 - [ ] Agent spawned with a generated session ID, output streamed to log file
 - [ ] Agent state recorded: agent_id, session_id, track_id, worktree, role=developer, status=running

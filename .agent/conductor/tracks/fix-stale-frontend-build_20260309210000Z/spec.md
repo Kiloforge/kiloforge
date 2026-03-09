@@ -42,7 +42,7 @@ Add a build verification step: after building, check that `dist/index.html` does
 - [ ] `dist/index.html` references `/assets/...` (not `/-/assets/...`)
 - [ ] Dashboard loads at `http://localhost:<port>/` without MIME type errors
 - [ ] All JS/CSS assets serve with correct Content-Type headers
-- [ ] Title in `index.html` says "Kiloforge" (not "crelay dashboard")
+- [ ] Title in `index.html` says "Kiloforge" (not "kiloforge dashboard")
 - [ ] `npm run build` succeeds without errors
 - [ ] Commit the rebuilt dist artifacts
 

@@ -9,36 +9,36 @@
 - Runs `docker compose stop` — stops containers without removing them
 - Tests: verify correct command is built
 
-### Task 1.2: Implement `crelay up` command [x]
+### Task 1.2: Implement `kf up` command [x]
 - Create `internal/cli/up.go`
-- Loads config — errors if not found ("run 'crelay init' first")
+- Loads config — errors if not found ("run 'kf init' first")
 - Detects compose runner
 - Checks if Gitea is already running (via API) — if so, print and exit
 - Calls `runner.Up()` → waits for Gitea ready → prints URL
 - Flags: none (ports/dirs come from saved config)
 - Register in root.go
 
-### Task 1.3: Implement `crelay down` command [x]
+### Task 1.3: Implement `kf down` command [x]
 - Create `internal/cli/down.go`
 - Loads config, detects compose runner, calls `runner.Stop()`
-- Prints success message with restart hint (`crelay up`)
+- Prints success message with restart hint (`kf up`)
 - If Gitea is already stopped, print "Gitea is not running" and exit cleanly
 - Register in root.go
 
-### Task 1.4: Update `crelay init` success message [x]
-- Change the post-init message to reference `crelay down` / `crelay up` for the stop/start cycle
+### Task 1.4: Update `kf init` success message [x]
+- Change the post-init message to reference `kf down` / `kf up` for the stop/start cycle
 - Remove "(coming soon)" references if still present
 
 ### Verification 1
-- [x] `crelay up` starts Gitea when initialized
-- [x] `crelay up` errors when not initialized
-- [x] `crelay down` stops Gitea without data loss
-- [x] `crelay up` restarts after `down`
+- [x] `kf up` starts Gitea when initialized
+- [x] `kf up` errors when not initialized
+- [x] `kf down` stops Gitea without data loss
+- [x] `kf up` restarts after `down`
 - [x] Tests pass
 
 ## Phase 2: Destroy Refactor and Docs
 
-### Task 2.1: Rewrite `crelay destroy` with confirmation [x]
+### Task 2.1: Rewrite `kf destroy` with confirmation [x]
 - Rewrite `internal/cli/destroy.go`
 - Remove `--data` flag (destroy always deletes everything)
 - Add `--force` flag to skip confirmation
@@ -58,7 +58,7 @@
 - Full cycle: init → down → up → down → destroy --force
 
 ### Verification 2
-- [x] `crelay destroy` shows warning and requires confirmation
-- [x] `crelay destroy --force` skips prompt
+- [x] `kf destroy` shows warning and requires confirmation
+- [x] `kf destroy --force` skips prompt
 - [x] All docs updated with up/down/destroy
 - [x] Build and tests pass

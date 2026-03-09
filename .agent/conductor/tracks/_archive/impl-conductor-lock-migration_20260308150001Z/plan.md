@@ -1,4 +1,4 @@
-# Implementation Plan: Migrate Conductor Skills to Use crelay Lock API
+# Implementation Plan: Migrate Conductor Skills to Use kiloforge Lock API
 
 **Track ID:** impl-conductor-lock-migration_20260308150001Z
 
@@ -17,7 +17,7 @@
 - [x] Add heartbeat during rebase + verification + merge section
 - [x] Update `--auto-merge` to use HTTP long-poll timeout when relay available
 - [x] Keep mkdir fallback for when relay is not running
-- [x] Document `CRELAY_RELAY_URL` env var
+- [x] Document `KF_RELAY_URL` env var
 
 ### Task 1.3: Update conductor-track-generator SKILL.md
 - [x] Replace mkdir lock acquire with `acquire_lock` helper
@@ -54,7 +54,7 @@
 
 ### Task 3.1: Update skill documentation
 - [x] Both skills document the dual-mode lock mechanism
-- [x] Document `CRELAY_RELAY_URL` configuration
+- [x] Document `KF_RELAY_URL` configuration
 - [x] Document TTL and heartbeat behavior
 - [x] Document fallback behavior clearly
 

@@ -7,11 +7,11 @@
 
 ## Summary
 
-Fix the dashboard to read tracks from registered projects (via `projects.json`) instead of from `os.Getwd()`. After `crelay destroy`, the dashboard should show no tracks. Tracks should be grouped by project.
+Fix the dashboard to read tracks from registered projects (via `projects.json`) instead of from `os.Getwd()`. After `kf destroy`, the dashboard should show no tracks. Tracks should be grouped by project.
 
 ## Context
 
-The dashboard currently gets its `projectDir` from `os.Getwd()` in `serve.go:85`. This means it reads `.agent/conductor/tracks.md` from whatever directory `crelay up` was run in — typically the crelay repo itself. This shows crelay's own conductor development tracks, not the tracks of projects registered via `crelay add`. After a fresh `crelay destroy && crelay init`, the dashboard still shows tracks because it reads from CWD.
+The dashboard currently gets its `projectDir` from `os.Getwd()` in `serve.go:85`. This means it reads `.agent/conductor/tracks.md` from whatever directory `kf up` was run in — typically the kiloforge repo itself. This shows kiloforge's own conductor development tracks, not the tracks of projects registered via `kf add`. After a fresh `kf destroy && kf init`, the dashboard still shows tracks because it reads from CWD.
 
 ## Codebase Analysis
 
@@ -29,8 +29,8 @@ The dashboard currently gets its `projectDir` from `os.Getwd()` in `serve.go:85`
 
 - [ ] Dashboard reads tracks from all registered projects in `projects.json`
 - [ ] Tracks are returned with a `project` field identifying which project they belong to
-- [ ] After `crelay destroy && crelay init` (no projects), dashboard shows no tracks
-- [ ] After `crelay add <remote>`, dashboard shows that project's tracks (if any)
+- [ ] After `kf destroy && kf init` (no projects), dashboard shows no tracks
+- [ ] After `kf add <remote>`, dashboard shows that project's tracks (if any)
 - [ ] Multiple registered projects each show their own tracks
 - [ ] The `/-/api/tracks` endpoint response includes project slug per track
 - [ ] The `/-/api/projects` endpoint returns list of registered projects
@@ -73,7 +73,7 @@ None (but benefits from add-local-ssh-identity_20260308220000Z being done first 
 4. Add `project` field to track type
 5. Add `/-/api/projects` fetch hook for the projects list
 6. Dashboard layout: overview shows a "Projects" section listing all registered projects with track counts. Clicking a project navigates to `/projects/:slug` showing full track details.
-7. Handle empty state (no projects → "No projects registered — run `crelay add <remote>`" message)
+7. Handle empty state (no projects → "No projects registered — run `kf add <remote>`" message)
 8. SPA fallback already handled by backend's `spaFileServer` — direct URL navigation works out of the box
 
 **API response change:**

@@ -16,7 +16,7 @@
 ## Phase 2: Smoke Tests (4 tasks)
 
 ### Task 2.1: Add binary build smoke test
-- [x] `cmd/crelay/main_test.go` verifies binary compiles
+- [x] `cmd/kiloforge/main_test.go` verifies binary compiles
 
 ### Task 2.2: Add route registration smoke test
 - [x] `rest/routes_test.go` exercises full ServeMux setup with all options

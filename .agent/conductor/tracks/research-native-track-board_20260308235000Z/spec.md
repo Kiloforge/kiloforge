@@ -1,4 +1,4 @@
-# Specification: Research — Native Track Board in crelay Dashboard
+# Specification: Research — Native Track Board in kiloforge Dashboard
 
 **Track ID:** research-native-track-board_20260308235000Z
 **Type:** Research
@@ -7,7 +7,7 @@
 
 ## Summary
 
-Design a crelay-native track board that replaces Gitea's project board as the source of truth for track lifecycle. The dashboard provides a kanban UI where column transitions directly drive agent lifecycle — same board-driven model, but owned by crelay instead of Gitea.
+Design a kiloforge-native track board that replaces Gitea's project board as the source of truth for track lifecycle. The dashboard provides a kanban UI where column transitions directly drive agent lifecycle — same board-driven model, but owned by kiloforge instead of Gitea.
 
 ## Research Questions
 

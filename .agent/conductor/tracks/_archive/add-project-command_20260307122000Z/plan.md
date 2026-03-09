@@ -1,4 +1,4 @@
-# Implementation Plan: Implement 'crelay add' Command for Project Registration
+# Implementation Plan: Implement 'kf add' Command for Project Registration
 
 **Track ID:** add-project-command_20260307122000Z
 
@@ -17,7 +17,7 @@ Build the data layer for tracking registered projects.
 - Tests: load/save round-trip, add duplicate errors, find by dir
 
 ### Task 1.2: Create project data directory helper [x]
-- Add `EnsureProjectDir(dataDir, slug string) error` to create `~/.crelay/projects/<slug>/logs/`
+- Add `EnsureProjectDir(dataDir, slug string) error` to create `~/.kiloforge/projects/<slug>/logs/`
 - Tests: verify directory structure created
 
 ### Verification 1
@@ -27,7 +27,7 @@ Build the data layer for tracking registered projects.
 
 ## Phase 2: Add Command
 
-Implement the core `crelay add` CLI command.
+Implement the core `kf add` CLI command.
 
 ### Task 2.1: Implement origin remote detection [x]
 - Create helper function `detectOriginRemote(ctx context.Context, repoPath string) (string, error)`
@@ -35,9 +35,9 @@ Implement the core `crelay add` CLI command.
 - Returns empty string (not error) if no origin remote exists
 - Tests: mock git command behavior
 
-### Task 2.2: Implement `crelay add` command [x]
+### Task 2.2: Implement `kf add` command [x]
 - Create `internal/cli/add.go`
-- Command: `crelay add [repo-path]` — defaults to cwd if no arg
+- Command: `kf add [repo-path]` — defaults to cwd if no arg
 - Flags: `--name` (override slug), `--origin` (override origin remote URL)
 - Flow:
   1. Resolve repo path (arg or cwd)
@@ -57,7 +57,7 @@ Implement the core `crelay add` CLI command.
 
 ### Task 2.3: Handle idempotency and error cases [x]
 - Already registered: print message and exit cleanly (not an error)
-- Gitea not running: error with "run 'crelay init' first"
+- Gitea not running: error with "run 'kf init' first"
 - Not a git repo: error with clear message
 - No origin remote: warn but continue
 - Gitea repo already exists (409 conflict): continue gracefully (repo may exist from prior run)
@@ -65,11 +65,11 @@ Implement the core `crelay add` CLI command.
 
 ### Task 2.4: Register add command in root.go [x]
 - Add `rootCmd.AddCommand(addCmd)` in `internal/cli/root.go`
-- Update the `init` command's success message to reference `crelay add <path>` instead of "(coming soon)"
+- Update the `init` command's success message to reference `kf add <path>` instead of "(coming soon)"
 
 ### Verification 2
-- [x] `crelay add <path>` creates repo, remote, webhook, and registers project
-- [x] `crelay add` with no args uses cwd
+- [x] `kf add <path>` creates repo, remote, webhook, and registers project
+- [x] `kf add` with no args uses cwd
 - [x] `--name` and `--origin` flags work
 - [x] Idempotent: re-running is a no-op
 - [x] Errors clearly for: no Gitea, not a git repo
@@ -77,11 +77,11 @@ Implement the core `crelay add` CLI command.
 
 ## Phase 3: Projects List Command
 
-### Task 3.1: Implement `crelay projects` command [x]
+### Task 3.1: Implement `kf projects` command [x]
 - Create `internal/cli/projects.go`
 - Lists all registered projects from projects.json
 - Table output: `SLUG  PATH  ORIGIN  REGISTERED  STATUS`
-- If no projects: print helpful message directing to `crelay add`
+- If no projects: print helpful message directing to `kf add`
 - Register in root.go
 
 ### Task 3.2: Add relay port to global config [x]
@@ -91,16 +91,16 @@ Implement the core `crelay add` CLI command.
 - If RelayPort is 0 in saved config (legacy), default to 3001
 
 ### Verification 3
-- [x] `crelay projects` displays registered projects
+- [x] `kf projects` displays registered projects
 - [x] Empty registry shows helpful message
 - [x] RelayPort available for webhook creation
 
 ## Phase 4: Documentation and Cleanup
 
 ### Task 4.1: Update README.md [x]
-- Add `crelay add` to Commands section with flags and example output
-- Add `crelay projects` to Commands section
-- Update Quick Start to show full flow: `crelay init` → `crelay add .`
+- Add `kf add` to Commands section with flags and example output
+- Add `kf projects` to Commands section
+- Update Quick Start to show full flow: `kf init` → `kf add .`
 - Add section explaining the origin bridging concept (work locally, push back later)
 - Update Architecture diagram to show multi-project model
 

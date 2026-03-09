@@ -36,7 +36,7 @@
 ### Task 2.3: Design per-track cost tracking
 - [x] Define cost attribution model (per agent, per track, per session)
 - [x] Design storage format and reporting interface
-- [x] Consider: `crelay status` showing cost per active track
+- [x] Consider: `kf status` showing cost per active track
 
 ## Phase 3: Documentation and Proposal (2 tasks)
 

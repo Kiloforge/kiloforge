@@ -30,7 +30,7 @@
 - Download tarball to temp file
 - Extract and identify skill directories (contain SKILL.md)
 - Copy atomically: extract to temp dir, then rename to final location
-- After install, compute and store SHA-256 checksums in `~/.crelay/skills-manifest.json`
+- After install, compute and store SHA-256 checksums in `~/.kiloforge/skills-manifest.json`
 - Return list of installed skills
 
 [x] Task 2.2: Create modification detector
@@ -62,15 +62,15 @@
 
 [x] Task 3.1: Create skills command group
 - **File:** `backend/internal/adapter/cli/skills.go`
-- `crelay skills update` — check for newer version, detect modifications, ask for confirmation, install
-- `crelay skills update --force` — skip modification check / confirmation
-- `crelay skills list` — show installed skills with version and modification status
+- `kf skills update` — check for newer version, detect modifications, ask for confirmation, install
+- `kf skills update --force` — skip modification check / confirmation
+- `kf skills list` — show installed skills with version and modification status
 - Register in root.go
 
 [x] Task 3.2: Add --repo and auto-update flags
 - **File:** `backend/internal/adapter/cli/skills.go`
-- `crelay skills --repo owner/repo` — set source repo in config
-- `crelay skills --auto-update` / `--no-auto-update` — toggle config flag
+- `kf skills --repo owner/repo` — set source repo in config
+- `kf skills --auto-update` / `--no-auto-update` — toggle config flag
 
 [x] Task 3.3: Offer skills install during init
 - **File:** `backend/internal/adapter/cli/init.go`
@@ -145,6 +145,6 @@
 [x] Phase 7: Documentation (1 task)
 
 [x] Task 7.1: Update README with skills commands
-- Add `crelay skills` section to README command reference
-- Document initial setup: `crelay skills --repo owner/conductor-skills && crelay skills update`
+- Add `kf skills` section to README command reference
+- Document initial setup: `kf skills --repo owner/conductor-skills && kiloforge skills update`
 - Mention dashboard skill management as alternative to CLI

@@ -1,4 +1,4 @@
-# Implementation Plan: 'crelay implement' Command — Spawn Developer Agent
+# Implementation Plan: 'kf implement' Command — Spawn Developer Agent
 
 **Track ID:** implement-command_20260307125001Z
 
@@ -20,7 +20,7 @@
 ### Task 1.3: Implement PR tracking data model
 - [x] Create `internal/orchestration/tracking.go`
 - [x] `PRTracking` struct with all required fields
-- [x] Load/Save to `~/.crelay/projects/<slug>/pr-tracking.json`
+- [x] Load/Save to `~/.kiloforge/projects/<slug>/pr-tracking.json`
 - [x] Tests: load/save round-trip
 
 ### Verification 1
@@ -31,7 +31,7 @@
 
 ## Phase 2: Implement Command
 
-### Task 2.1: Create `crelay implement` command
+### Task 2.1: Create `kf implement` command
 - [x] Create `internal/cli/implement.go`
 - [x] Accepts `<track-id>` argument
 - [x] `--list` flag shows available tracks
@@ -52,8 +52,8 @@
 - [x] Branch name = track ID convention used by conductor-developer
 
 ### Verification 2
-- [x] `crelay implement <track-id>` spawns developer in worktree
-- [x] `crelay implement --list` shows available tracks
+- [x] `kf implement <track-id>` spawns developer in worktree
+- [x] `kf implement --list` shows available tracks
 - [x] PR creation triggers tracking record
 - [x] Developer status updated to waiting-review
 - [x] Tests pass
@@ -69,7 +69,7 @@
 - [x] Commands load agent state from global DataDir
 
 ### Task 3.3: Update README and docs
-- [x] Document `crelay implement` command
+- [x] Document `kf implement` command
 - [x] Document agents, logs, stop, attach commands
 - [x] Updated data directory structure
 

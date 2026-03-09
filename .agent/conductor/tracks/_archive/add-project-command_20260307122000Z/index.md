@@ -1,4 +1,4 @@
-# Track: Implement 'crelay add' Command for Project Registration
+# Track: Implement 'kf add' Command for Project Registration
 
 **ID:** add-project-command_20260307122000Z
 **Status:** Pending

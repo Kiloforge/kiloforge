@@ -21,7 +21,7 @@
 
 ### Verification 2
 - [x] JSON adapter reads/writes correctly
-- [x] Env adapter reads all CRELAY_* vars
+- [x] Env adapter reads all KF_* vars
 - [x] Flags adapter only returns explicitly set values
 - [x] All adapter tests pass
 

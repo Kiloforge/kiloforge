@@ -1,4 +1,4 @@
-# Specification: Migrate Conductor Skills to Use crelay Lock API
+# Specification: Migrate Conductor Skills to Use kiloforge Lock API
 
 **Track ID:** impl-conductor-lock-migration_20260308150001Z
 **Type:** Chore
@@ -7,11 +7,11 @@
 
 ## Summary
 
-Update conductor-developer and conductor-track-generator skills to use the crelay HTTP lock API when the relay server is available, with automatic fallback to the existing mkdir-based mechanism when it is not. No breaking changes to default behavior.
+Update conductor-developer and conductor-track-generator skills to use the kiloforge HTTP lock API when the relay server is available, with automatic fallback to the existing mkdir-based mechanism when it is not. No breaking changes to default behavior.
 
 ## Context
 
-The crelay relay server now provides an HTTP-based scoped lock service (track `impl-lock-service_20260308150000Z`) with TTL, heartbeat, and crash recovery. Conductor skills currently use `mkdir` at `$(git rev-parse --git-common-dir)/merge.lock` for merge serialization. This migration:
+The kiloforge relay server now provides an HTTP-based scoped lock service (track `impl-lock-service_20260308150000Z`) with TTL, heartbeat, and crash recovery. Conductor skills currently use `mkdir` at `$(git rev-parse --git-common-dir)/merge.lock` for merge serialization. This migration:
 - Prefers the HTTP lock API when relay is reachable
 - Falls back to mkdir when relay is not running (e.g., standalone conductor usage)
 - Adds heartbeat during long merge operations
@@ -42,7 +42,7 @@ rm -rf "$LOCK_DIR"
 
 ```bash
 # Try HTTP lock first, fall back to mkdir
-RELAY_URL="${CRELAY_RELAY_URL:-http://localhost:3001}"
+RELAY_URL="${KF_RELAY_URL:-http://localhost:3001}"
 HOLDER="$(basename $(pwd))"  # e.g., "developer-1", "track-generator-1"
 
 acquire_lock() {
@@ -82,7 +82,7 @@ release_lock() {
 - [ ] conductor-developer SKILL.md updated with HTTP lock acquire/release
 - [ ] conductor-track-generator SKILL.md updated with HTTP lock acquire/release
 - [ ] Automatic fallback to mkdir when relay is unreachable
-- [ ] `CRELAY_RELAY_URL` env var for configuring relay endpoint (default: `http://localhost:3001`)
+- [ ] `KF_RELAY_URL` env var for configuring relay endpoint (default: `http://localhost:3001`)
 - [ ] Lock holder derived from worktree folder name (e.g., `developer-1`)
 - [ ] Heartbeat sent during long operations (rebase, test verification)
 - [ ] TTL set to 120 seconds with heartbeat every 30 seconds during merge
@@ -101,7 +101,7 @@ None
 
 ## Conflict Risk
 
-- **LOW** — Modifies skill `.md` files only (`~/.claude/skills/conductor-developer/SKILL.md` and `~/.claude/skills/conductor-track-generator/SKILL.md`). These are not in the crelay repo — they're user-level skill configurations. No conflict with any pending tracks.
+- **LOW** — Modifies skill `.md` files only (`~/.claude/skills/conductor-developer/SKILL.md` and `~/.claude/skills/conductor-track-generator/SKILL.md`). These are not in the kiloforge repo — they're user-level skill configurations. No conflict with any pending tracks.
 
 ## Out of Scope
 

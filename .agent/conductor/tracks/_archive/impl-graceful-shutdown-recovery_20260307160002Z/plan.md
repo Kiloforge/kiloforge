@@ -58,7 +58,7 @@
 ### Task 3.3: Integrate recovery into relay startup
 - [x] In `cli/up.go`: before starting relay, call `RecoverAll()`
 - [x] Print user-facing summary
-- [x] `crelay agents` shows `resume-failed` agents with reason in INFO column
+- [x] `kf agents` shows `resume-failed` agents with reason in INFO column
 
 ### Task 3.4: Write recovery tests
 - [x] Test: all suspended agents resume successfully

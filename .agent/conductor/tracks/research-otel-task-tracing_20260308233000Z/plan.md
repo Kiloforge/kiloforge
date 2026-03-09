@@ -9,7 +9,7 @@
 - [x] Jaeger all-in-one selected (single Docker container, OTLP native, rich UI)
 
 ### Task 1.3: Assess performance overhead
-- [x] Negligible at crelay's scale (~200 spans/session, <1MB memory)
+- [x] Negligible at kiloforge's scale (~200 spans/session, <1MB memory)
 
 ## Phase 2: Trace Model Design (3 tasks)
 

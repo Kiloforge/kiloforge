@@ -7,11 +7,11 @@
 
 ## Summary
 
-Rewrite `crelay init` to use docker-compose (supporting both `docker compose` v2 and `docker-compose` v1/Colima) for starting a global Gitea instance. Separate the init flow from project-specific registration (future `crelay add` track). Update `destroy`, `status`, config schema, and README.
+Rewrite `kf init` to use docker-compose (supporting both `docker compose` v2 and `docker-compose` v1/Colima) for starting a global Gitea instance. Separate the init flow from project-specific registration (future `kf add` track). Update `destroy`, `status`, config schema, and README.
 
 ## Context
 
-Currently `crelay init` does everything in one command: starts Gitea via raw `docker run`, creates admin user/token/repo, adds git remote, pushes code, registers webhooks, and starts the relay. For the global Gitea model, `init` should only set up the Gitea server — project registration becomes a separate concern. Docker Compose replaces the fragile multi-flag `docker run` approach and enables future service additions.
+Currently `kf init` does everything in one command: starts Gitea via raw `docker run`, creates admin user/token/repo, adds git remote, pushes code, registers webhooks, and starts the relay. For the global Gitea model, `init` should only set up the Gitea server — project registration becomes a separate concern. Docker Compose replaces the fragile multi-flag `docker run` approach and enables future service additions.
 
 ## Codebase Analysis
 
@@ -25,16 +25,16 @@ Currently `crelay init` does everything in one command: starts Gitea via raw `do
 
 ## Acceptance Criteria
 
-- [ ] `crelay init` starts Gitea via docker-compose and the Gitea web UI is accessible at `http://localhost:<port>`
+- [ ] `kf init` starts Gitea via docker-compose and the Gitea web UI is accessible at `http://localhost:<port>`
 - [ ] Both `docker compose` (v2) and `docker-compose` (v1) CLI variants are detected and used correctly
 - [ ] Admin user is created and API token is generated and stored in global config
-- [ ] `crelay init` is idempotent — running it again when Gitea is already running is a no-op with a friendly message
-- [ ] `crelay destroy` tears down via `docker compose down` (with optional `--volumes` for data cleanup)
-- [ ] `crelay status` correctly reports Gitea status using compose-aware checks
-- [ ] Global config (`~/.crelay/config.json`) stores only global state (ports, token, data dir) — no project-specific fields
+- [ ] `kf init` is idempotent — running it again when Gitea is already running is a no-op with a friendly message
+- [ ] `kf destroy` tears down via `docker compose down` (with optional `--volumes` for data cleanup)
+- [ ] `kf status` correctly reports Gitea status using compose-aware checks
+- [ ] Global config (`~/.kiloforge/config.json`) stores only global state (ports, token, data dir) — no project-specific fields
 - [ ] A `docker-compose.yml` is generated in the data directory with the Gitea service definition
 - [ ] README is updated with clear setup instructions, prerequisites, and what `init` does
-- [ ] `crelay init` does NOT do any project-specific setup (no repo creation, no git remote, no webhook, no relay start)
+- [ ] `kf init` does NOT do any project-specific setup (no repo creation, no git remote, no webhook, no relay start)
 - [ ] Works on macOS with both Docker Desktop and Colima
 
 ## Dependencies
@@ -44,10 +44,10 @@ Currently `crelay init` does everything in one command: starts Gitea via raw `do
 
 ## Out of Scope
 
-- Project registration (`crelay add` — separate future track)
-- Relay server startup (will be a separate command or part of `crelay add`)
-- Webhook registration (project-specific, part of `crelay add`)
-- Git remote management (project-specific, part of `crelay add`)
+- Project registration (`kf add` — separate future track)
+- Relay server startup (will be a separate command or part of `kf add`)
+- Webhook registration (project-specific, part of `kf add`)
+- Git remote management (project-specific, part of `kf add`)
 - Multi-project state tracking
 - TUI dashboard
 
@@ -61,7 +61,7 @@ Implement a `compose.Runner` that:
 4. Returns clear error if neither is available
 
 ### Compose File
-Generate a `docker-compose.yml` in `~/.crelay/` with:
+Generate a `docker-compose.yml` in `~/.kiloforge/` with:
 - Gitea service (image, ports, volumes, environment)
 - Named volume for data persistence
 - Health check definition
@@ -74,7 +74,7 @@ Generate a `docker-compose.yml` in `~/.crelay/` with:
 
 ### Init Flow (new)
 1. Detect docker compose CLI variant
-2. Create `~/.crelay/` data directory
+2. Create `~/.kiloforge/` data directory
 3. Generate `docker-compose.yml`
 4. Run `docker compose up -d`
 5. Wait for Gitea health check

@@ -7,7 +7,7 @@
 
 ## Summary
 
-Use the centralized quota tracker to implement spawn throttling when approaching rate limits, graceful backoff on 429 errors, cost-per-track reporting in `crelay status`, and user notifications when quota is running low.
+Use the centralized quota tracker to implement spawn throttling when approaching rate limits, graceful backoff on 429 errors, cost-per-track reporting in `kf status`, and user notifications when quota is running low.
 
 ## Context
 
@@ -25,9 +25,9 @@ With the quota tracker providing real-time token/cost metrics and rate limit det
 
 - [ ] Pre-spawn quota check: refuse to spawn if `tracker.IsRateLimited()`, report retry-after time
 - [ ] Spawn queue: if rate limited during webhook-triggered spawn, queue and retry after backoff
-- [ ] `crelay status` shows per-agent token usage and estimated cost
-- [ ] `crelay status` shows aggregate usage across all agents
-- [ ] `crelay status` shows rate limit status (ok / throttled / limited)
+- [ ] `kf status` shows per-agent token usage and estimated cost
+- [ ] `kf status` shows aggregate usage across all agents
+- [ ] `kf status` shows rate limit status (ok / throttled / limited)
 - [ ] Warning output when aggregate usage exceeds configurable threshold
 - [ ] Budget configuration: optional `max_cost_usd` in config, enforced at spawn time
 - [ ] Agent failure on 429 triggers re-queue rather than marking as "failed"

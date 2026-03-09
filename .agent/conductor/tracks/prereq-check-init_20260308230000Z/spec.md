@@ -7,11 +7,11 @@
 
 ## Summary
 
-Add a prerequisite check at the start of `crelay init` that verifies all required tools (Git, Docker/Docker Compose, Claude Code) are available before proceeding. If any are missing, display platform-specific installation instructions and exit.
+Add a prerequisite check at the start of `kf init` that verifies all required tools (Git, Docker/Docker Compose, Claude Code) are available before proceeding. If any are missing, display platform-specific installation instructions and exit.
 
 ## Context
 
-`crelay init` currently dives straight into Docker Compose detection (`compose.Detect()`) and fails with an opaque error if Docker isn't available. There's no check for `git` or `claude` at all — those failures surface later during `crelay add` or `crelay implement` with confusing "command not found" errors. A user-friendly init should validate everything upfront.
+`kf init` currently dives straight into Docker Compose detection (`compose.Detect()`) and fails with an opaque error if Docker isn't available. There's no check for `git` or `claude` at all — those failures surface later during `kf add` or `kf implement` with confusing "command not found" errors. A user-friendly init should validate everything upfront.
 
 ## Codebase Analysis
 
@@ -23,7 +23,7 @@ Add a prerequisite check at the start of `crelay init` that verifies all require
 
 ## Acceptance Criteria
 
-- [ ] `crelay init` checks for `git`, `docker` (with compose), and `claude` before doing anything else
+- [ ] `kf init` checks for `git`, `docker` (with compose), and `claude` before doing anything else
 - [ ] Each missing tool shows the tool name, why it's needed, and platform-specific install instructions
 - [ ] macOS instructions include Homebrew commands where applicable
 - [ ] Linux instructions include apt/dnf package names
@@ -50,10 +50,10 @@ None
 
 | Tool | Check | Needed For |
 |------|-------|------------|
-| `git` | `exec.LookPath("git")` | `crelay add`, worktree management |
+| `git` | `exec.LookPath("git")` | `kf add`, worktree management |
 | `docker` | `exec.LookPath("docker")` | Gitea container lifecycle |
 | `docker compose` or `docker-compose` | existing `compose.Detect()` logic | Compose file management |
-| `claude` | `exec.LookPath("claude")` | Agent spawning (`crelay implement`) |
+| `claude` | `exec.LookPath("claude")` | Agent spawning (`kf implement`) |
 
 **Platform-specific instructions (examples):**
 

@@ -7,7 +7,7 @@
 
 ## Summary
 
-Audit and fix the project's testing infrastructure, then add integration/smoke tests that catch startup failures, route registration panics, and cross-package regressions. The recent `ServeMux` route conflict panic on `crelay up` went completely undetected — no test exercises server startup or route registration.
+Audit and fix the project's testing infrastructure, then add integration/smoke tests that catch startup failures, route registration panics, and cross-package regressions. The recent `ServeMux` route conflict panic on `kf up` went completely undetected — no test exercises server startup or route registration.
 
 ## Context
 
@@ -15,7 +15,7 @@ The project has 42 test files and 296 unit tests, but every test uses mocks in i
 
 1. The test suite doesn't even run cleanly
 2. No test verifies that the application can build and start
-3. No test catches route registration conflicts (the exact bug that crashed `crelay up`)
+3. No test catches route registration conflicts (the exact bug that crashed `kf up`)
 4. 20+ CLI commands have zero test coverage
 
 ## Codebase Analysis — Test Audit Results
@@ -42,7 +42,7 @@ The project has 42 test files and 296 unit tests, but every test uses mocks in i
 ### Packages without tests
 - `internal/core/port/` — interfaces only (acceptable)
 - `internal/core/testutil/` — test helpers (acceptable)
-- `cmd/crelay/` — entry point (not acceptable — needs smoke test)
+- `cmd/kiloforge/` — entry point (not acceptable — needs smoke test)
 
 ### Test infrastructure
 - Mock library: `internal/core/testutil/mocks.go` — good, comprehensive
@@ -93,10 +93,10 @@ Option 2 is simplest; option 1 is most correct.
 
 ### Smoke test approach
 ```go
-// backend/cmd/crelay/main_test.go
+// backend/cmd/kiloforge/main_test.go
 func TestBinaryBuilds(t *testing.T) {
     cmd := exec.Command("go", "build", "-o", "/dev/null", ".")
-    cmd.Dir = "../../cmd/crelay"
+    cmd.Dir = "../../cmd/kiloforge"
     if err := cmd.Run(); err != nil {
         t.Fatalf("binary build failed: %v", err)
     }

@@ -11,7 +11,7 @@ Add a standalone web dashboard server that provides real-time visibility into ag
 
 ## Context
 
-Crelay currently operates as a pure CLI tool with a webhook relay server. All monitoring requires CLI commands (`crelay status`, `crelay agents`, `crelay logs`). A web dashboard would provide real-time visibility without polling CLI commands, especially valuable when multiple agents are running concurrently.
+Kiloforge currently operates as a pure CLI tool with a webhook relay server. All monitoring requires CLI commands (`kf status`, `kf agents`, `kf logs`). A web dashboard would provide real-time visibility without polling CLI commands, especially valuable when multiple agents are running concurrently.
 
 The dashboard is an **additive, read-only observer** — it reads existing state files (state.json, quota-usage.json, pr-tracking.json) and exposes them via a web interface with live updates via SSE.
 

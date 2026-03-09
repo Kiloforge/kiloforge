@@ -19,7 +19,7 @@ The README currently lists Go 1.24+ and Node.js 18+ as prerequisites alongside D
 - The binary embeds the frontend (`//go:embed dist/*`), so Node.js is only needed at build time
 - Go is only needed to compile the binary
 - Docker is needed at runtime for Gitea
-- Claude Code CLI is needed at runtime for agent spawning (`crelay implement`)
+- Claude Code CLI is needed at runtime for agent spawning (`kf implement`)
 
 ## Acceptance Criteria
 

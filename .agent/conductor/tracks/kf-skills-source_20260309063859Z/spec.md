@@ -7,7 +7,7 @@
 
 ## Summary
 
-Copy the 14 conductor skills into the repo as kiloforge-branded source artifacts under `skills/`. Rebrand all references from "conductor-" prefix to "kf-" prefix, replace "crelay" with "kiloforge"/"kf", and update env var references from `CRELAY_*` to `KF_*`. These source files become the canonical distribution artifacts that the existing skill installer packages and deploys.
+Copy the 14 conductor skills into the repo as kiloforge-branded source artifacts under `skills/`. Rebrand all references from "conductor-" prefix to "kf-" prefix, replace "kiloforge" with "kiloforge"/"kf", and update env var references from `KF_*` to `KF_*`. These source files become the canonical distribution artifacts that the existing skill installer packages and deploys.
 
 ## Context
 
@@ -42,15 +42,15 @@ The conductor skills currently live only in `~/.claude/skills/conductor-*/` as l
 |--------|-------|
 | `conductor-` prefix in dir/skill names | `kf-` prefix |
 | `/conductor-developer` (slash command) | `/kf-developer` |
-| `CRELAY_RELAY_URL` | `KF_RELAY_URL` |
-| "crelay" in descriptions/docs | "kiloforge" or "kf" |
-| "crelay lock API" | "kiloforge lock API" |
-| "crelay relay" | "kiloforge relay" |
+| `KF_RELAY_URL` | `KF_RELAY_URL` |
+| "kiloforge" in descriptions/docs | "kiloforge" or "kf" |
+| "kiloforge lock API" | "kiloforge lock API" |
+| "kiloforge relay" | "kiloforge relay" |
 
 ## Codebase Analysis
 
 **Skill source location:** `~/.claude/skills/conductor-*/SKILL.md` (14 skills)
-- Only 2 skills reference "crelay" in content: `conductor-developer` and `conductor-track-generator` (merge lock sections)
+- Only 2 skills reference "kiloforge" in content: `conductor-developer` and `conductor-track-generator` (merge lock sections)
 - All 14 use `conductor-` prefix in YAML frontmatter `name:` field and directory names
 - 1 skill (`conductor-manage`) has a `resources/` subdirectory
 
@@ -69,8 +69,8 @@ The conductor skills currently live only in `~/.claude/skills/conductor-*/` as l
 - [ ] `skills/` directory exists at repo root with all 14 rebranded skills
 - [ ] Each skill directory is named `kf-{function}` (e.g., `skills/kf-developer/SKILL.md`)
 - [ ] YAML frontmatter `name:` field matches directory name in every SKILL.md
-- [ ] All `CRELAY_RELAY_URL` references replaced with `KF_RELAY_URL`
-- [ ] All "crelay" text references replaced with "kiloforge" or "kf" as appropriate
+- [ ] All `KF_RELAY_URL` references replaced with `KF_RELAY_URL`
+- [ ] All "kiloforge" text references replaced with "kiloforge" or "kf" as appropriate
 - [ ] All `/conductor-*` slash command references updated to `/kf-*`
 - [ ] Cross-skill references updated (e.g., "use `/conductor-setup` first" → "use `/kf-setup` first")
 - [ ] `conductor-manage/resources/` subdirectory copied to `kf-manage/resources/`

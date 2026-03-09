@@ -7,7 +7,7 @@
 - [x] Task 1.1: Run `npm install` in `frontend/` to ensure dependencies are current
 - [x] Task 1.2: Run `npm run build` to regenerate `dist/` with `base: '/'` paths
 - [x] Task 1.3: Verify `dist/index.html` references `/assets/...` (not `/-/assets/...`)
-- [x] Task 1.4: Verify `index.html` title is "Kiloforge" (not "crelay dashboard")
+- [x] Task 1.4: Verify `index.html` title is "Kiloforge" (not "kiloforge dashboard")
 
 ## Phase 2: Verification
 

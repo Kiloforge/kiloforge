@@ -24,12 +24,12 @@ Currently the relay server blocks the terminal via `srv.ListenAndServe()` in the
 
 ## Acceptance Criteria
 
-- [ ] `crelay up` starts the relay as a background daemon and returns immediately
-- [ ] `crelay down` stops both the relay daemon and Gitea
-- [ ] `crelay destroy` stops relay daemon before tearing down Gitea
+- [ ] `kf up` starts the relay as a background daemon and returns immediately
+- [ ] `kf down` stops both the relay daemon and Gitea
+- [ ] `kf destroy` stops relay daemon before tearing down Gitea
 - [ ] PID file written to `$DataDir/relay.pid` on start, removed on stop
-- [ ] `crelay up` detects if relay is already running (via PID file + process check) and skips restart
-- [ ] `crelay status` shows relay daemon state (running/stopped + PID)
+- [ ] `kf up` detects if relay is already running (via PID file + process check) and skips restart
+- [ ] `kf status` shows relay daemon state (running/stopped + PID)
 - [ ] Relay daemon logs to `$DataDir/relay.log` (rotatable)
 - [ ] Graceful shutdown on SIGTERM/SIGINT — drains HTTP connections, saves agent state
 - [ ] If relay crashes, stale PID file is detected and cleaned up on next `up`
@@ -55,7 +55,7 @@ None.
 ## Technical Notes
 
 ### Daemon approach
-Use `os/exec` to re-exec the crelay binary with a `serve` subcommand (internal/hidden). The `up` command spawns `crelay serve` as a detached background process, writes PID file, and exits.
+Use `os/exec` to re-exec the kiloforge binary with a `serve` subcommand (internal/hidden). The `up` command spawns `kf serve` as a detached background process, writes PID file, and exits.
 
 ### PID file lifecycle
 1. On start: check existing PID file → verify process alive → skip or clean stale

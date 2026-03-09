@@ -7,7 +7,7 @@
 
 ## Summary
 
-Serve dynamic SVG status badges from the crelay backend that reflect real-time agent state. Badges work universally — anywhere an agent is referenced (track issues, PRs, comments, dashboards). Each badge type resolves to the relevant agent(s) and links to a frontend detail page with live SSE updates.
+Serve dynamic SVG status badges from the kiloforge backend that reflect real-time agent state. Badges work universally — anywhere an agent is referenced (track issues, PRs, comments, dashboards). Each badge type resolves to the relevant agent(s) and links to a frontend detail page with live SSE updates.
 
 ## Context
 

@@ -50,7 +50,7 @@
 
 ### Task 3.1: Create HTML dashboard layout
 - [x] Create `internal/dashboard/static/index.html`
-- [x] Header: crelay logo/name, Gitea link, system status indicator
+- [x] Header: kiloforge logo/name, Gitea link, system status indicator
 - [x] Main area: agent cards grid, quota bar, track progress
 - [x] Footer: connection status (SSE connected/disconnected)
 

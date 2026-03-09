@@ -20,7 +20,7 @@
 
 ## Phase 2: Cost Reporting in CLI (3 tasks)
 
-### Task 2.1: Extend `crelay status` with quota info
+### Task 2.1: Extend `kf status` with quota info
 - [x] Load tracker data (from file if relay not running, from memory if available)
 - [x] Display aggregate token usage and estimated cost
 - [x] Display rate limit status: OK / throttled / limited
@@ -32,7 +32,7 @@
 
 ### Task 2.3: Write status output tests
 - [x] Table-driven tests for formatting edge cases (zero usage, very large numbers)
-- [x] Added `crelay cost` command with --json support
+- [x] Added `kf cost` command with --json support
 
 ## Phase 3: Budget Enforcement (3 tasks)
 

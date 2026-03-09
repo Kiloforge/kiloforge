@@ -1,4 +1,4 @@
-# Specification: Rebrand crelay to kiloforge (CLI: kf)
+# Specification: Rebrand kiloforge to kiloforge (CLI: kf)
 
 **Track ID:** rebrand-kiloforge_20260309055250Z
 **Type:** Chore
@@ -7,11 +7,11 @@
 
 ## Summary
 
-Rename the product from "crelay" to "kiloforge" with the CLI binary becoming "kf". This is a full rebrand covering the Go module path, binary name, environment variables, data directory, frontend strings, API specs, and documentation.
+Rename the product from "kiloforge" to "kiloforge" with the CLI binary becoming "kf". This is a full rebrand covering the Go module path, binary name, environment variables, data directory, frontend strings, API specs, and documentation.
 
 ## Context
 
-The product has outgrown the "crelay" name (which reflected its original webhook-relay focus). "kiloforge" better represents what the product has become — a full development orchestration forge. The CLI shorthand "kf" is simpler and faster to type than "crelay".
+The product has outgrown the "kiloforge" name (which reflected its original webhook-relay focus). "kiloforge" better represents what the product has become — a full development orchestration forge. The CLI shorthand "kf" is simpler and faster to type than "kiloforge".
 
 ## Codebase Analysis
 
@@ -19,9 +19,9 @@ The product has outgrown the "crelay" name (which reflected its original webhook
 
 | Category | References | Files |
 |----------|-----------|-------|
-| Go module imports (`"crelay/..."`)) | 186 | 68 |
-| Environment variables (`CRELAY_*`) | 24 | 3 |
-| Data directory paths (`~/.crelay`) | 78 | 15+ |
+| Go module imports (`"kiloforge/..."`)) | 186 | 68 |
+| Environment variables (`KF_*`) | 24 | 3 |
+| Data directory paths (`~/.kiloforge`) | 78 | 15+ |
 | CLI command name (cobra root) | 2 | 1 |
 | Frontend strings (title, help) | 3 | 3 |
 | API spec titles | 2 | 2 |
@@ -32,14 +32,14 @@ The product has outgrown the "crelay" name (which reflected its original webhook
 
 | Before | After |
 |--------|-------|
-| `module crelay` | `module kiloforge` |
-| `cmd/crelay/` | `cmd/kf/` |
-| `crelay` (binary) | `kf` (binary) |
-| `CRELAY_*` env vars | `KF_*` env vars |
-| `~/.crelay/` | `~/.kiloforge/` |
-| `crelay` (cobra Use) | `kf` |
-| `<title>crelay dashboard</title>` | `<title>kiloforge</title>` |
-| `Crelay API` (OpenAPI) | `Kiloforge API` |
+| `module kiloforge` | `module kiloforge` |
+| `cmd/kiloforge/` | `cmd/kf/` |
+| `kiloforge` (binary) | `kf` (binary) |
+| `KF_*` env vars | `KF_*` env vars |
+| `~/.kiloforge/` | `~/.kiloforge/` |
+| `kiloforge` (cobra Use) | `kf` |
+| `<title>kiloforge dashboard</title>` | `<title>kiloforge</title>` |
+| `Kiloforge API` (OpenAPI) | `Kiloforge API` |
 
 **Critical constraint:** The Go module rename must be atomic — go.mod + all import paths must change in one commit or the project won't compile.
 
@@ -71,20 +71,20 @@ None — no other pending tracks exist.
 
 ## Out of Scope
 
-- Migration tooling for existing `~/.crelay/` data directories (separate track if needed)
+- Migration tooling for existing `~/.kiloforge/` data directories (separate track if needed)
 - Git remote/repo URL renames (that's a hosting concern, not codebase)
 - Renaming archived conductor track titles (historical record — leave as-is)
 - Backward compatibility shims for old env var names
 
 ## Technical Notes
 
-- **Go module rename:** Change `go.mod` module line, then bulk find-replace all `"crelay/` imports to `"kiloforge/`
-- **Directory rename:** `cmd/crelay/` → `cmd/kf/` (the binary name, not the module name)
+- **Go module rename:** Change `go.mod` module line, then bulk find-replace all `"kiloforge/` imports to `"kiloforge/`
+- **Directory rename:** `cmd/kiloforge/` → `cmd/kf/` (the binary name, not the module name)
 - **Env var prefix:** Use `KF_` (short, matches CLI name) rather than `KILOFORGE_` (too long)
-- **Data dir:** `~/.kiloforge/` — no migration from `~/.crelay/` in this track
+- **Data dir:** `~/.kiloforge/` — no migration from `~/.kiloforge/` in this track
 - **Makefile:** Update `BINARY` and build paths
-- **Case sensitivity:** Handle `crelay` (lowercase), `Crelay` (title case), and `CRELAY` (upper case) separately
-- **Conductor skills:** The skills reference `CRELAY_RELAY_URL` env var — this changes to `KF_RELAY_URL`. Update skill files accordingly.
+- **Case sensitivity:** Handle `kiloforge` (lowercase), `Kiloforge` (title case), and `KF` (upper case) separately
+- **Conductor skills:** The skills reference `KF_RELAY_URL` env var — this changes to `KF_RELAY_URL`. Update skill files accordingly.
 
 ---
 

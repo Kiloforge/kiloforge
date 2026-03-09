@@ -11,7 +11,7 @@ Implement graceful shutdown of all active CC agents (preserving session IDs), au
 
 ## Context
 
-Crelay spawns CC agents as child processes. When the relay shuts down, agents are killed without ceremony. Session IDs are stored in `state.json` but nothing uses them for auto-recovery. CC supports `claude --resume <sessionID>` for session restoration — already used in `ResumeDeveloper()` during review cycles.
+Kiloforge spawns CC agents as child processes. When the relay shuts down, agents are killed without ceremony. Session IDs are stored in `state.json` but nothing uses them for auto-recovery. CC supports `claude --resume <sessionID>` for session restoration — already used in `ResumeDeveloper()` during review cycles.
 
 ## Codebase Analysis
 
@@ -19,19 +19,19 @@ Crelay spawns CC agents as child processes. When the relay shuts down, agents ar
 - **Existing halt**: `Store.HaltAgent()` sends SIGINT
 - **Session persistence**: `AgentInfo.SessionID` already in `state.json`
 - **Shutdown signals**: `cli/up.go` and `cli/init.go` use `signal.NotifyContext` for SIGINT but no agent cleanup
-- **`crelay stop`**: Stops individual agent, prints resume command — no batch stop
-- **`crelay down`**: Stops Docker compose only, no agent shutdown
+- **`kf stop`**: Stops individual agent, prints resume command — no batch stop
+- **`kf down`**: Stops Docker compose only, no agent shutdown
 
 ## Acceptance Criteria
 
-- [ ] On relay shutdown (SIGINT/`crelay down`): all running agents receive SIGINT with configurable timeout
+- [ ] On relay shutdown (SIGINT/`kf down`): all running agents receive SIGINT with configurable timeout
 - [ ] Agents that were `running` at shutdown get status `suspended` (not `stopped` or `failed`)
-- [ ] On relay startup (`crelay up`): detect `suspended` agents and auto-resume them
+- [ ] On relay startup (`kf up`): detect `suspended` agents and auto-resume them
 - [ ] Resume uses existing `claude --resume <sessionID>` mechanism
 - [ ] Resume respects agent role: developers resume in worktree dir, reviewers in project dir
 - [ ] Failed resumes: status set to `resume-failed` with error reason stored in AgentInfo
 - [ ] User-facing output on startup: "Restoring agents... 3/4 restored, 1 failed: session expired"
-- [ ] `crelay status` shows suspended/resume-failed agents with actionable info
+- [ ] `kf status` shows suspended/resume-failed agents with actionable info
 - [ ] Shutdown timeout configurable (default: 10 seconds), force-kill after timeout
 - [ ] Worktree validation before resume: check worktree still exists and branch is intact
 - [ ] Unit tests for shutdown cascade logic

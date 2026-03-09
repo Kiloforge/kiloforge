@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Integrate OpenTelemetry distributed tracing into crelay to provide per-task token metrics, task timelines, and end-to-end visibility. Use the stable Go SDK with Jaeger all-in-one for visualization, keeping the existing QuotaTracker for operational decisions.
+Integrate OpenTelemetry distributed tracing into kiloforge to provide per-task token metrics, task timelines, and end-to-end visibility. Use the stable Go SDK with Jaeger all-in-one for visualization, keeping the existing QuotaTracker for operational decisions.
 
 ---
 
@@ -166,14 +166,14 @@ jaeger:
 
 ## 6. Performance Assessment
 
-For crelay's scale (5-10 agents, ~50 tasks per session):
+For kiloforge's scale (5-10 agents, ~50 tasks per session):
 
 - **Span volume:** ~100-200 spans per session (trivial)
 - **Memory overhead:** OTel SDK batches spans in memory, ~1KB per span → <1MB total
 - **CPU overhead:** Negligible — span creation is <1μs, batch export is async
 - **Network:** OTLP HTTP batch export every 5s — a few KB per batch
 
-**Conclusion:** Zero performance concern at this scale. OTel is designed for high-throughput services processing millions of spans. crelay's workload is orders of magnitude below that.
+**Conclusion:** Zero performance concern at this scale. OTel is designed for high-throughput services processing millions of spans. kiloforge's workload is orders of magnitude below that.
 
 ---
 

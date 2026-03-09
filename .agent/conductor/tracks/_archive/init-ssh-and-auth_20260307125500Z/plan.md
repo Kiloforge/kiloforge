@@ -15,7 +15,7 @@
 - [x] Field already existed on Config struct from config refactor
 
 ### Task 1.3: Implement password resolution in init
-- [x] Add `--admin-pass` flag to `crelay init`
+- [x] Add `--admin-pass` flag to `kf init`
 - [x] Resolution: flag > saved config > generate random
 - [x] Save resolved password to config
 - [x] Print password in init success output

@@ -19,10 +19,10 @@ Developer agents need isolated working directories. Creating and destroying work
 - [ ] `Acquire()` returns an idle worktree or creates one if pool < max
 - [ ] `Prepare(worktree, trackID)` resets to main and creates implementation branch
 - [ ] `Return(worktree)` resets to main, deletes implementation branch, marks idle
-- [ ] Pool state persisted in `~/.crelay/pool.json`
-- [ ] `crelay pool` command shows pool status (idle/in-use worktrees)
+- [ ] Pool state persisted in `~/.kiloforge/pool.json`
+- [ ] `kf pool` command shows pool status (idle/in-use worktrees)
 - [ ] Worktrees created under the project directory (e.g., `worker-1/`, `worker-2/`)
-- [ ] Pool initialization: `crelay init` or first `Acquire()` creates initial worktrees
+- [ ] Pool initialization: `kf init` or first `Acquire()` creates initial worktrees
 - [ ] Graceful handling: acquire when all in-use returns clear error
 
 ## Dependencies

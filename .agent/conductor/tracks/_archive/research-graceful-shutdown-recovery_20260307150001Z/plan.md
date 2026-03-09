@@ -29,7 +29,7 @@
 - [x] Define signal cascade: relay receives SIGINT → agents receive SIGINT → wait → force kill
 - [x] Define timeout per agent and total shutdown timeout
 - [x] Design state snapshot: persist "was-running" flag distinct from "running"
-- [x] Consider: `crelay down` vs ctrl-c vs process kill scenarios
+- [x] Consider: `kf down` vs ctrl-c vs process kill scenarios
 
 ### Task 2.2: Design auto-resume on startup
 - [x] Define startup sequence: relay starts → reads state → identifies resumable agents → resumes

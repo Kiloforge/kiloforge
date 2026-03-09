@@ -39,7 +39,7 @@
 
 ### Task 2.7: Move cli package
 - [x] `git mv internal/cli internal/adapter/cli`
-- [x] Update all imports (including `cmd/crelay/main.go`)
+- [x] Update all imports (including `cmd/kiloforge/main.go`)
 
 ### Task 2.8: Move relay package to adapter/rest
 - [x] `git mv internal/relay internal/adapter/rest`

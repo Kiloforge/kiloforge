@@ -33,7 +33,7 @@
 ## Phase 3: Daemon Spawning in `up` (4 tasks)
 
 ### Task 3.1: Refactor `up` to spawn daemon
-- [x] Replace blocking server with daemon spawn via `crelay serve`
+- [x] Replace blocking server with daemon spawn via `kf serve`
 
 ### Task 3.2: Add relay-already-running detection
 - [x] PID file check, stale cleanup, skip if running

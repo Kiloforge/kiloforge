@@ -7,17 +7,17 @@
 
 ## Summary
 
-Add `--ssh-key` flag to `crelay add` for multi-identity SSH support. Store the SSH command per-project and use it for all git operations. Fix Gitea repo naming to match the remote repo name.
+Add `--ssh-key` flag to `kf add` for multi-identity SSH support. Store the SSH command per-project and use it for all git operations. Fix Gitea repo naming to match the remote repo name.
 
 ## Context
 
-Users may have multiple SSH identities configured via git's `includeIf "gitdir:"` conditional includes. When crelay clones a repo into `~/.crelay/repos/<slug>/`, the clone directory doesn't match the user's conditional include paths, so the wrong SSH identity gets used. The user needs a way to specify which SSH key to use per-project.
+Users may have multiple SSH identities configured via git's `includeIf "gitdir:"` conditional includes. When kiloforge clones a repo into `~/.kiloforge/repos/<slug>/`, the clone directory doesn't match the user's conditional include paths, so the wrong SSH identity gets used. The user needs a way to specify which SSH key to use per-project.
 
 Additionally, the Gitea repo name currently uses the derived slug, but it should match the actual remote repo name for clarity.
 
 ## Codebase Analysis
 
-- **`cli/add.go:93`** — clones into `~/.crelay/repos/<slug>/` using bare `git clone` (no SSH identity control)
+- **`cli/add.go:93`** — clones into `~/.kiloforge/repos/<slug>/` using bare `git clone` (no SSH identity control)
 - **`cli/add.go:104`** — creates Gitea repo with slug name, should use remote repo name
 - **`domain/project.go`** — `Project` struct has `Slug`, `RepoName`, `OriginRemote` fields but no SSH config
 - **`cli/add.go:181-186`** — `cloneRepo()` uses bare `exec.CommandContext("git", "clone", ...)` — no env vars
@@ -27,13 +27,13 @@ Additionally, the Gitea repo name currently uses the derived slug, but it should
 
 ## Acceptance Criteria
 
-- [ ] `crelay add <remote> --ssh-key ~/.ssh/id_ed25519_goblinlordx` clones using that SSH key
+- [ ] `kf add <remote> --ssh-key ~/.ssh/id_ed25519_goblinlordx` clones using that SSH key
 - [ ] The SSH command is stored in the project record (`projects.json`)
 - [ ] All subsequent git operations for the project (fetch, push to origin) use the stored SSH command
 - [ ] Without `--ssh-key`, the system default SSH is used (current behavior preserved)
 - [ ] Gitea repo name matches the remote repo name (not the slug, unless overridden with `--name`)
 - [ ] The specified SSH public key (`.pub` counterpart) is registered with Gitea if not already present
-- [ ] `crelay projects` displays the SSH key path if one is configured
+- [ ] `kf projects` displays the SSH key path if one is configured
 - [ ] Existing projects without SSH config continue to work
 
 ## Dependencies

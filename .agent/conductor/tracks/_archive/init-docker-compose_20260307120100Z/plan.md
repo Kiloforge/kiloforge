@@ -58,7 +58,7 @@ Replace the init flow with compose-based Gitea startup.
 - Remove `Start()` method (replaced by compose runner)
 - Keep `waitReady()` (still needed to poll Gitea API after compose up)
 - Keep `Configure()` but update `docker exec` to use compose runner's `Exec()` method
-- Remove `SetupGitRemote()` (project-specific, moves to future `crelay add`)
+- Remove `SetupGitRemote()` (project-specific, moves to future `kf add`)
 - Update `NewManager` to accept compose runner
 
 ### Task 3.3: Integration test for init flow
@@ -67,9 +67,9 @@ Replace the init flow with compose-based Gitea startup.
 - If Docker not available in CI, mark as integration test with build tag
 
 ### Verification 3
-- [x] `crelay init` starts Gitea via docker-compose
+- [x] `kf init` starts Gitea via docker-compose
 - [x] Gitea web UI accessible at configured port
-- [x] Running `crelay init` again is idempotent
+- [x] Running `kf init` again is idempotent
 - [x] No project-specific operations in init
 
 ## Phase 4: Update Destroy and Status
@@ -89,18 +89,18 @@ Make destroy and status compose-aware.
 - Remove relay and agent status for now (will return with project context)
 
 ### Verification 4
-- [x] `crelay destroy` tears down via compose
-- [x] `crelay destroy --data` removes volumes and data
-- [x] `crelay status` correctly reports Gitea state
+- [x] `kf destroy` tears down via compose
+- [x] `kf destroy --data` removes volumes and data
+- [x] `kf status` correctly reports Gitea state
 
 ## Phase 5: README and Documentation
 
 ### Task 5.1: Update README.md
 - Update Prerequisites section (add docker-compose requirement note for Colima users)
-- Rewrite Quick Start to show the new `crelay init` flow
+- Rewrite Quick Start to show the new `kf init` flow
 - Update Commands section: `init`, `status`, `destroy` with new behavior
 - Remove references to project-specific init behavior (repo, remote, webhook)
-- Add note that project registration (`crelay add`) is coming
+- Add note that project registration (`kf add`) is coming
 - Update Architecture diagram to show global Gitea model
 - Update Data Directory section with compose file
 
@@ -112,11 +112,11 @@ Make destroy and status compose-aware.
 ### Task 5.3: Temporarily disable project-specific CLI commands
 - Comment out or gate `agents`, `logs`, `attach`, `stop` command registration in `root.go`
 - These commands depend on project context that no longer exists in global config
-- Add TODO comments noting they'll be restored with `crelay add` track
+- Add TODO comments noting they'll be restored with `kf add` track
 - Keep the source files — just don't register the commands
 
 ### Verification 5
 - [x] README accurately describes current behavior
-- [x] `crelay --help` shows only working commands (init, status, destroy)
+- [x] `kf --help` shows only working commands (init, status, destroy)
 - [x] Docs are consistent with implementation
 - [x] Project builds and all tests pass

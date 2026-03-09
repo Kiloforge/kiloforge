@@ -7,11 +7,11 @@
 
 ## Summary
 
-Investigate how OpenTelemetry (OTel) distributed tracing can be integrated into crelay to provide per-task token metrics, task timelines, and end-to-end visibility into the conductor workflow — from track assignment through agent execution to PR merge.
+Investigate how OpenTelemetry (OTel) distributed tracing can be integrated into kiloforge to provide per-task token metrics, task timelines, and end-to-end visibility into the conductor workflow — from track assignment through agent execution to PR merge.
 
 ## Context
 
-crelay already tracks per-agent token usage (cost, input/output/cache tokens) via the `QuotaTracker`, and broadcasts state changes via SSE. However, there's no timeline view showing how long each task took, no per-task (as opposed to per-agent) cost breakdown, and no structured way to correlate events across the relay → agent → webhook pipeline. OpenTelemetry's distributed tracing model (traces → spans → attributes) maps naturally onto conductor's workflow: a track is a trace, each task/phase is a span, and token usage is span attributes.
+kiloforge already tracks per-agent token usage (cost, input/output/cache tokens) via the `QuotaTracker`, and broadcasts state changes via SSE. However, there's no timeline view showing how long each task took, no per-task (as opposed to per-agent) cost breakdown, and no structured way to correlate events across the relay → agent → webhook pipeline. OpenTelemetry's distributed tracing model (traces → spans → attributes) maps naturally onto conductor's workflow: a track is a trace, each task/phase is a span, and token usage is span attributes.
 
 ## Codebase Analysis
 
@@ -33,7 +33,7 @@ crelay already tracks per-agent token usage (cost, input/output/cache tokens) vi
    - Task → Child span (with token metrics as attributes)
    - Agent spawn/stop → Span events
    - Webhook events → Span events or linked spans
-3. **Context propagation** — crelay spawns `claude` as a subprocess. Can we pass trace context via env vars or command-line args? Or do we treat the agent as an opaque black box and create spans around the subprocess boundary?
+3. **Context propagation** — kiloforge spawns `claude` as a subprocess. Can we pass trace context via env vars or command-line args? Or do we treat the agent as an opaque black box and create spans around the subprocess boundary?
 4. **Token metrics as OTel metrics vs span attributes** — Should per-task token counts be OTel Metrics (counters/histograms for aggregation) or span attributes (for per-invocation visibility)? Or both?
 5. **Local collector vs embedded** — For a local dev tool, is running an OTel Collector (e.g., via Docker alongside Gitea) acceptable? Or should we use an in-process exporter (e.g., export spans to SQLite or JSON)?
 6. **Visualization** — What's the lightest way to visualize traces? Jaeger all-in-one via Docker? Grafana Tempo? A custom trace timeline view in the dashboard?
@@ -47,7 +47,7 @@ crelay already tracks per-agent token usage (cost, input/output/cache tokens) vi
 - [ ] Evaluate context propagation options for subprocess agents
 - [ ] Recommend exporter strategy (local collector vs embedded)
 - [ ] Recommend visualization approach (existing tool vs custom dashboard)
-- [ ] Assess performance overhead for crelay's scale
+- [ ] Assess performance overhead for kiloforge's scale
 - [ ] Determine relationship between OTel and existing QuotaTracker
 - [ ] Produce a decision document with recommended approach and trade-offs
 

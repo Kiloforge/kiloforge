@@ -27,7 +27,7 @@
 ### Task 2.2: Audit all interactive prompts in init flow for context cancellation
 - **Files:** `backend/internal/adapter/cli/init.go`, `skills.go`, any other files with `fmt.Scanln` or `bufio.Scanner`
 - Ensure every blocking read respects context cancellation
-- Verify Ctrl+C works at every stage of `crelay init`
+- Verify Ctrl+C works at every stage of `kf init`
 
 ## Phase 3: Verification (1 task)
 
@@ -35,5 +35,5 @@
 - `make build` with working frontend → succeeds, produces binary with real dashboard
 - `make build` with broken frontend (e.g., introduce TS error) → fails immediately
 - `make build-backend` standalone → succeeds with ensure-dist stub (dev convenience)
-- `crelay init` → Ctrl+C at each interactive prompt → clean exit
+- `kf init` → Ctrl+C at each interactive prompt → clean exit
 - Run existing test suite: `make test`

@@ -7,27 +7,27 @@
 
 ## Summary
 
-Add a `crelay push` command that pushes changes from the internal clone (`~/.crelay/repos/<slug>/`) back to the project's origin remote, using the stored SSH identity.
+Add a `kf push` command that pushes changes from the internal clone (`~/.kiloforge/repos/<slug>/`) back to the project's origin remote, using the stored SSH identity.
 
 ## Context
 
-When `crelay add <remote>` registers a project, the repo is cloned into `~/.crelay/repos/<slug>/`. Development happens against this internal clone (agents work in worktrees, PRs go through Gitea). But there's no way to push changes back to the original remote (GitHub, GitLab, etc.). Users need a command to bridge the internal clone back to the origin.
+When `kf add <remote>` registers a project, the repo is cloned into `~/.kiloforge/repos/<slug>/`. Development happens against this internal clone (agents work in worktrees, PRs go through Gitea). But there's no way to push changes back to the original remote (GitHub, GitLab, etc.). Users need a command to bridge the internal clone back to the origin.
 
-The existing `crelay sync` command syncs conductor tracks to a Gitea board — it does NOT sync git changes to the origin remote. This new command fills that gap.
+The existing `kf sync` command syncs conductor tracks to a Gitea board — it does NOT sync git changes to the origin remote. This new command fills that gap.
 
 ## Codebase Analysis
 
 - **`cli/add.go:147`** — `OriginRemote` is stored on the project record
 - **`domain/project.go`** — `Project` has `OriginRemote string` and (after add-local-ssh-identity track) `SSHKeyPath string`
-- **`cli/sync.go`** — existing `crelay sync` syncs tracks to Gitea board, NOT to origin remote
+- **`cli/sync.go`** — existing `kf sync` syncs tracks to Gitea board, NOT to origin remote
 - **`cli/add.go:115-118`** — adds `gitea` remote to clone; `origin` remote is the original source
 - **No existing mechanism** to push from internal clone back to origin
 
 ## Acceptance Criteria
 
-- [ ] `crelay push <slug>` pushes the main branch from internal clone to origin remote
-- [ ] `crelay push <slug> --branch <name>` pushes a specific branch
-- [ ] `crelay push --all` pushes all projects' main branches
+- [ ] `kf push <slug>` pushes the main branch from internal clone to origin remote
+- [ ] `kf push <slug> --branch <name>` pushes a specific branch
+- [ ] `kf push --all` pushes all projects' main branches
 - [ ] Uses stored SSH identity (from `--ssh-key` at add time) for git operations
 - [ ] Reports success/failure per project
 - [ ] Warns if the internal clone has unpushed changes vs origin (ahead/behind)
@@ -39,18 +39,18 @@ The existing `crelay sync` command syncs conductor tracks to a Gitea board — i
 
 ## Out of Scope
 
-- Pulling from origin (fetch/merge) — could be a separate `crelay pull` command
+- Pulling from origin (fetch/merge) — could be a separate `kf pull` command
 - Conflict resolution — if push fails due to divergence, report error and let user handle
 - Bidirectional sync — this is push-only
-- Renaming from `sync` — existing `crelay sync` stays for board sync
+- Renaming from `sync` — existing `kf sync` stays for board sync
 
 ## Technical Notes
 
 **Command design:**
 ```bash
-crelay push myapp                    # push main branch to origin
-crelay push myapp --branch feature-x # push specific branch
-crelay push --all                    # push all projects' main branches
+kiloforge push myapp                    # push main branch to origin
+kiloforge push myapp --branch feature-x # push specific branch
+kiloforge push --all                    # push all projects' main branches
 ```
 
 **Implementation:**

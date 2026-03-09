@@ -6,7 +6,7 @@
 
 ### Task 1.1: Design global vs per-project separation [x]
 - Define what is "global" (Gitea instance, relay server, ports) vs "per-project" (repo, webhooks, agents, state)
-- Propose data directory structure: `~/.crelay/` global vs per-project
+- Propose data directory structure: `~/.kiloforge/` global vs per-project
 - Consider: should the relay be global too, or per-project?
 - **Output:** Architecture diagram / description
 
@@ -31,7 +31,7 @@
 ## Phase 2: Workflow & Integration Research
 
 ### Task 2.1: Design project onboarding flow [x]
-- What happens when user runs `crelay add` in a project directory?
+- What happens when user runs `kf add` in a project directory?
 - Steps: create repo in Gitea, add git remote, create webhook, register in config
 - Handle: project already registered, project dir moved, repo name conflicts
 - **Output:** Onboarding flow document
@@ -58,7 +58,7 @@
 ## Phase 3: Migration & Final Report
 
 ### Task 3.1: Design migration path [x]
-- How does existing single-project crelay upgrade to multi-project?
+- How does existing single-project kf upgrade to multi-project?
 - Auto-detect old config format and migrate
 - Preserve existing Gitea data and agent state
 - **Output:** Migration strategy

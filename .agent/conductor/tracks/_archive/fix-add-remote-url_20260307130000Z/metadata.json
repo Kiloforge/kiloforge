@@ -1,6 +1,6 @@
 {
   "id": "fix-add-remote-url_20260307130000Z",
-  "title": "Fix 'crelay add' to Accept Remote URLs",
+  "title": "Fix 'kf add' to Accept Remote URLs",
   "type": "bug",
   "status": "complete",
   "created": "2026-03-07T13:00:00Z",

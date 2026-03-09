@@ -73,7 +73,7 @@
 
 ## Phase 3: CLI and Integration
 
-### Task 3.1: Implement `crelay escalated` command [x]
+### Task 3.1: Implement `kf escalated` command [x]
 - Create `internal/cli/escalated.go`
 - Shows PRs that hit review cycle limit
 - Table: `PROJECT  PR#  TRACK  CYCLES  ESCALATED_AT`
@@ -90,7 +90,7 @@
 - Update architecture diagram with review cycle flow
 
 ### Verification 3
-- [x] `crelay escalated` shows escalated PRs
+- [x] `kf escalated` shows escalated PRs
 - [x] Full review cycle works end-to-end
 - [x] Docs updated
 - [x] Build and tests pass

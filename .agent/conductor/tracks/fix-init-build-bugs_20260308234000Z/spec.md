@@ -7,11 +7,11 @@
 
 ## Summary
 
-Fix three related bugs: (1) Ctrl+C doesn't cancel `crelay init` when blocked on `fmt.Scanln()`, (2) frontend build failures don't stop the overall build, and (3) backend build fails due to VCS stamping in worktree setup.
+Fix three related bugs: (1) Ctrl+C doesn't cancel `kf init` when blocked on `fmt.Scanln()`, (2) frontend build failures don't stop the overall build, and (3) backend build fails due to VCS stamping in worktree setup.
 
 ## Context
 
-Users cannot cleanly interrupt `crelay init` with Ctrl+C if it reaches an interactive prompt (e.g., skills install). The build system has two issues: frontend build failures are silently ignored (a stub HTML placeholder masks the problem), and backend builds fail in worktree setups because Go's VCS stamping can't find git tags.
+Users cannot cleanly interrupt `kf init` with Ctrl+C if it reaches an interactive prompt (e.g., skills install). The build system has two issues: frontend build failures are silently ignored (a stub HTML placeholder masks the problem), and backend builds fail in worktree setups because Go's VCS stamping can't find git tags.
 
 ## Codebase Analysis
 
@@ -32,13 +32,13 @@ Users cannot cleanly interrupt `crelay init` with Ctrl+C if it reaches an intera
 
 ### Bug 3: VCS stamping failure
 
-- **`Makefile:22`** — `cd backend && go build -o ../$(BINARY) ./cmd/crelay` — no `-buildvcs=false`
+- **`Makefile:22`** — `cd backend && go build -o ../$(BINARY) ./cmd/kiloforge` — no `-buildvcs=false`
 - In worktree setups (bare repo + worktrees), `git describe --tags` fails with exit 128 (no tags)
 - Go 1.18+ enables VCS stamping by default, which queries git and fails
 
 ## Acceptance Criteria
 
-- [ ] Ctrl+C cleanly cancels `crelay init` at any point, including during interactive prompts
+- [ ] Ctrl+C cleanly cancels `kf init` at any point, including during interactive prompts
 - [ ] `offerSkillsInstall()` receives context and uses context-aware input reading (not bare `fmt.Scanln`)
 - [ ] `make build` fails immediately if `build-frontend` fails — no fallback to stub HTML
 - [ ] `ensure-dist` target removed or only used for `make build-backend` (dev convenience), not for `make build`
@@ -85,7 +85,7 @@ build:
 **Bug 3 fix — Makefile:**
 ```makefile
 build-backend: ensure-dist
-	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/crelay
+	cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/kiloforge
 ```
 
 ---

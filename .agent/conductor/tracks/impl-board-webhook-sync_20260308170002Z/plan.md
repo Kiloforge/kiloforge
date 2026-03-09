@@ -30,7 +30,7 @@
 ## Phase 2: Bidirectional Sync (3 tasks)
 
 ### Task 2.1: Update implement command for board sync
-- [x] After spawning developer in `crelay implement`, look up TrackIssue
+- [x] After spawning developer in `kf implement`, look up TrackIssue
 - [x] Move card to "In Progress" column
 - [x] Update labels: add `status:in-progress`, remove `status:approved`/`status:suggested`
 - [x] Post comment on issue: "Developer agent spawned — implementation started"

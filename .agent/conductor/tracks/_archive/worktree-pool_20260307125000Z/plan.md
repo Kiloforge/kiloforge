@@ -60,7 +60,7 @@
 
 ## Phase 3: CLI and Integration
 
-### Task 3.1: Implement `crelay pool` command [x]
+### Task 3.1: Implement `kf pool` command [x]
 - Create `internal/cli/pool.go`
 - Table output: `NAME  STATUS  TRACK  AGENT  ACQUIRED`
 - Register in root.go
@@ -68,14 +68,14 @@
 
 ### Task 3.2: Pool initialization [x]
 - Pool created on first `Acquire()` if pool.json doesn't exist
-- Or explicitly via `crelay pool --init` (optional)
+- Or explicitly via `kf pool --init` (optional)
 - Default max size from config or flag
 
 ### Task 3.3: Update docs [x]
 - Document pool concept in README
-- Add `crelay pool` to commands docs
+- Add `kf pool` to commands docs
 
 ### Verification 3
-- [x] `crelay pool` displays worktree status
+- [x] `kf pool` displays worktree status
 - [x] Pool auto-initializes on first use
 - [x] Build and tests pass

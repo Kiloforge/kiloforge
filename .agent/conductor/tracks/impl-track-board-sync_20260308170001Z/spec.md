@@ -42,11 +42,11 @@ Note: We can keep `[ ]` for suggested (backward compatible) and introduce `[!]` 
 - [ ] `domain.TrackIssue` — maps trackID ↔ Gitea issue number with sync metadata
 - [ ] `jsonfile.BoardStore` — persistence for board config and track-issue mappings
 - [ ] `service.BoardService.SetupBoard()` — create 5-column kanban + standard labels on Gitea
-- [ ] Board setup integrated into `crelay add` — automatic on project registration
+- [ ] Board setup integrated into `kf add` — automatic on project registration
 - [ ] `service.BoardService.PublishTrack()` — create Gitea issue from track, place in correct column
 - [ ] `service.BoardService.SyncTracks()` — diff local tracks vs published, create/update as needed
-- [ ] `crelay sync [--project slug]` CLI command — publish tracks to board
-- [ ] `crelay board [--project slug]` CLI command — show board status
+- [ ] `kf sync [--project slug]` CLI command — publish tracks to board
+- [ ] `kf board [--project slug]` CLI command — show board status
 - [ ] Track spec content used as issue body (markdown)
 - [ ] Track type mapped to label (type:feature, type:bug, etc.)
 - [ ] Track status mapped to kanban column position
@@ -100,7 +100,7 @@ func (s *BoardService) PublishTrack(ctx context.Context, project domain.Project,
 ### Sync command flow
 
 ```go
-// crelay sync
+// kiloforge sync
 func runSync(cmd *cobra.Command, args []string) error {
     // 1. Load project registry
     // 2. For each project (or specified --project):
@@ -115,7 +115,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 ### BoardConfig persistence
 
 ```json
-// ~/.crelay/projects/<slug>/board.json
+// ~/.kiloforge/projects/<slug>/board.json
 {
   "project_id": 1,
   "columns": {

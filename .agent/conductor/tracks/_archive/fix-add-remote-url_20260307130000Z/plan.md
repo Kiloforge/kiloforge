@@ -1,4 +1,4 @@
-# Implementation Plan: Fix 'crelay add' to Accept Remote URLs
+# Implementation Plan: Fix 'kf add' to Accept Remote URLs
 
 **Track ID:** fix-add-remote-url_20260307130000Z
 
@@ -47,8 +47,8 @@
 - Test: error on invalid URL
 
 ### Verification 1
-- [x] `crelay add git@github.com:user/repo.git` clones and registers
-- [x] `crelay add https://github.com/user/repo.git` clones and registers
+- [x] `kf add git@github.com:user/repo.git` clones and registers
+- [x] `kf add https://github.com/user/repo.git` clones and registers
 - [x] Slug derived from URL, not directory name
 - [x] `--name` flag overrides derived slug
 - [x] `--origin` flag removed
@@ -58,9 +58,9 @@
 ## Phase 3: Update Docs and Help Text
 
 ### Task 3.1: Update command help and README [x]
-- Update `crelay add` usage examples in README
+- Update `kf add` usage examples in README
 - Update `docs/commands.md` if it exists
-- Ensure `crelay add --help` shows correct usage
+- Ensure `kf add --help` shows correct usage
 
 ### Verification 2
 - [x] Help text accurate

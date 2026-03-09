@@ -7,7 +7,7 @@
 
 ## Summary
 
-During `crelay init`, auto-register the user's SSH public key with the Gitea conductor user for git-over-SSH support. Generate a random admin password unless explicitly provided via `--admin-pass` flag or already saved in config from a previous init. Store the password in global config for reuse.
+During `kf init`, auto-register the user's SSH public key with the Gitea conductor user for git-over-SSH support. Generate a random admin password unless explicitly provided via `--admin-pass` flag or already saved in config from a previous init. Store the password in global config for reuse.
 
 ## Context
 

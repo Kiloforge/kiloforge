@@ -9,7 +9,7 @@
 - [x] Move `cmd/`, `internal/`, `docs/` into `backend/`
 - [x] Move `go.mod`, `go.sum` into `backend/`
 - [x] Move `Makefile` to root (will be rewritten)
-- [x] Verify no import path changes needed (module stays `crelay`)
+- [x] Verify no import path changes needed (module stays `kiloforge`)
 
 ### Task 1.2: Update root go.work
 - [x] Create `go.work` at project root: `use ./backend`
@@ -40,14 +40,14 @@
 - [x] Verify `npm run dev` starts dev server
 - [x] Verify `npm run build` produces `dist/` output
 
-### Task 2.2: Configure Vite for crelay
+### Task 2.2: Configure Vite for kiloforge
 - [x] Set `build.outDir` to `../backend/internal/adapter/dashboard/dist`
 - [x] Set `build.emptyOutDir: true`
 - [x] Configure dev proxy for all backend routes (`/api/*`, `/events`, `/webhook`, `/health`, `/gitea/*`, `/locks/*`)
 - [x] Set dev server port (e.g., 5173) to avoid conflict with backend 3001
 
 ### Task 2.3: Add minimal placeholder app
-- [x] Create a simple `App.tsx` that shows "crelay dashboard" heading
+- [x] Create a simple `App.tsx` that shows "kiloforge dashboard" heading
 - [x] Fetch `/api/status` on mount to verify proxy works
 - [x] Display connection status (connected/disconnected)
 - [x] This placeholder will be replaced by the react-dashboard track
@@ -62,20 +62,20 @@
 ### Task 3.1: Create root Makefile
 - [x] `make build` — builds frontend then backend, outputs single binary
 - [x] `make build-frontend` — `cd frontend && npm ci && npm run build`
-- [x] `make build-backend` — `cd backend && go build -buildvcs=false -o ../bin/crelay ./cmd/crelay`
+- [x] `make build-backend` — `cd backend && go build -buildvcs=false -o ../bin/kiloforge ./cmd/kiloforge`
 - [x] `make dev` — starts both frontend dev server and backend in parallel
 - [x] `make test` — runs Go tests
 - [x] `make clean` — removes build artifacts
 
 ### Task 3.2: Dev mode launcher
-- [x] `make dev` runs: `cd backend && go run ./cmd/crelay up` in background + `cd frontend && npm run dev`
+- [x] `make dev` runs: `cd backend && go run ./cmd/kf up` in background + `cd frontend && npm run dev`
 - [x] Or: use a simple shell script `scripts/dev.sh` that manages both processes
 - [x] Frontend dev server on 5173, backend on 3001
 - [x] Ctrl+C kills both processes
 
 ### Task 3.3: Verify single-binary deployment
-- [x] `make build` produces `bin/crelay`
-- [x] Run `bin/crelay up` — verify dashboard serves React app at `http://localhost:3001/`
+- [x] `make build` produces `bin/kiloforge`
+- [x] Run `bin/kf up` — verify dashboard serves React app at `http://localhost:3001/`
 - [x] Verify all API endpoints work through the embedded app
 - [x] Verify Gitea proxy still works at `/gitea/`
 

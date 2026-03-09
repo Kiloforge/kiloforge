@@ -11,7 +11,7 @@ Investigate the architecture for a single global Gitea server instance that can 
 
 ## Context
 
-Currently, crelay is designed around a single project: one Gitea container, one repo, one config, one state file. The user wants to run a single Gitea instance that serves as the forge for multiple projects, each with their own repos, webhooks, and agent pools. This is a fundamental architectural shift from "crelay is a project tool" to "crelay is a workstation tool."
+Currently, kiloforge is designed around a single project: one Gitea container, one repo, one config, one state file. The user wants to run a single Gitea instance that serves as the forge for multiple projects, each with their own repos, webhooks, and agent pools. This is a fundamental architectural shift from "kiloforge is a project tool" to "kiloforge is a workstation tool."
 
 ## Codebase Analysis
 
@@ -26,7 +26,7 @@ Currently, crelay is designed around a single project: one Gitea container, one 
 
 - [ ] Document produced: proposed architecture for global Gitea + multi-project model
 - [ ] Document produced: config/state schema evolution (single-project to multi-project)
-- [ ] Document produced: project onboarding flow (`crelay add` or similar)
+- [ ] Document produced: project onboarding flow (`kf add` or similar)
 - [ ] Document produced: webhook routing strategy (how relay maps events to correct project/agents)
 - [ ] Document produced: CLI command structure changes (init vs add vs remove)
 - [ ] Document produced: migration path from current single-project model
@@ -45,13 +45,13 @@ None (but findings will inform docker-compose track since compose file may need 
 ## Technical Notes
 
 Key questions to answer:
-1. **Global Gitea lifecycle** — Who starts it? `crelay init` once, or auto-start on first `crelay add`?
+1. **Global Gitea lifecycle** — Who starts it? `kf init` once, or auto-start on first `kf add`?
 2. **Project isolation** — Separate Gitea orgs per project? Or flat repo namespace?
 3. **Relay routing** — Single relay for all projects? Or one relay per project? Webhook payload includes repo info.
-4. **Config split** — Global config (`~/.crelay/config.json` for Gitea/relay) vs project config (`.crelay.json` in project dir)?
+4. **Config split** — Global config (`~/.kiloforge/config.json` for Gitea/relay) vs project config (`.kiloforge.json` in project dir)?
 5. **State model** — Add project ID to agent records? Separate state files per project?
-6. **CLI UX** — `crelay init` (global setup) + `crelay add` (register project) + `crelay remove` (unregister)?
-7. **Data dir structure** — `~/.crelay/projects/{name}/` for per-project state?
+6. **CLI UX** — `kf init` (global setup) + `kf add` (register project) + `kf remove` (unregister)?
+7. **Data dir structure** — `~/.kiloforge/projects/{name}/` for per-project state?
 
 ---
 

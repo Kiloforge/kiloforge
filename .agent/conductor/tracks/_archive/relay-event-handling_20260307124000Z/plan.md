@@ -30,14 +30,14 @@
 
 ## Phase 3: Relay Lifecycle Integration
 
-### Task 3.1: Integrate relay into `crelay up` [x]
-### Task 3.2: Integrate relay into `crelay init` [x]
+### Task 3.1: Integrate relay into `kf up` [x]
+### Task 3.2: Integrate relay into `kf init` [x]
 ### Task 3.3: Update call sites for new NewServer signature [x]
 ### Task 3.4: Update README and docs [x]
 
 ### Verification 3
-- [x] `crelay up` starts Gitea + relay
-- [x] `crelay init` ends with relay running
+- [x] `kf up` starts Gitea + relay
+- [x] `kf init` ends with relay running
 - [x] Relay logs events from registered projects
 - [x] README documents event handling
 - [x] Build and tests pass

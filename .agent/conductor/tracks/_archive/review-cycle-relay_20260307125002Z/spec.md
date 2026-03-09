@@ -11,7 +11,7 @@ Implement the webhook-driven orchestration cycle between developer and reviewer 
 
 ## Context
 
-See `docs/design-agent-orchestration.md` Sections 4-5. This is the core relay logic that makes crelay an orchestrator rather than just a spawner. The relay mediates the conversation between developer and reviewer through Gitea PRs and webhooks.
+See `docs/design-agent-orchestration.md` Sections 4-5. This is the core relay logic that makes kiloforge an orchestrator rather than just a spawner. The relay mediates the conversation between developer and reviewer through Gitea PRs and webhooks.
 
 ## Acceptance Criteria
 
@@ -23,7 +23,7 @@ See `docs/design-agent-orchestration.md` Sections 4-5. This is the core relay lo
 - [ ] When cycle count >= max (default 3): PR labeled `needs-human-review`, agents stopped, comment posted
 - [ ] Reviewer session ID recorded in PR tracking
 - [ ] Developer session ID used for `claude --resume` on developer resume
-- [ ] `crelay escalated` command shows PRs that hit the cycle limit
+- [ ] `kf escalated` command shows PRs that hit the cycle limit
 - [ ] Configurable max review cycles via config or flag
 
 ## Dependencies
@@ -40,7 +40,7 @@ See `docs/design-agent-orchestration.md` Sections 4-5. This is the core relay lo
 
 ### Webhook Event → Action Mapping
 
-| Event | Action | crelay Response |
+| Event | Action | kiloforge Response |
 |-------|--------|----------------|
 | `pull_request.opened` | PR created by developer | Spawn reviewer, mark dev as waiting-review |
 | `pull_request_review` (approved) | Reviewer approved | Resume developer for merge |

@@ -7,15 +7,15 @@
 
 ## Summary
 
-Add a mechanism for crelay to fetch the latest conductor skills from a GitHub repo, install them into projects, and optionally auto-update when new releases are available. Detects local modifications and asks for confirmation before overwriting.
+Add a mechanism for kiloforge to fetch the latest conductor skills from a GitHub repo, install them into projects, and optionally auto-update when new releases are available. Detects local modifications and asks for confirmation before overwriting.
 
 ## Context
 
-Conductor skills (track-generator, developer, reviewer, etc.) are currently manually maintained in `~/.claude/skills/`. There's no versioning, no update mechanism, and no way to ensure all users have the same skill versions. Moving skills to a standalone GitHub repo enables versioned releases, and crelay can manage fetching and updating them.
+Conductor skills (track-generator, developer, reviewer, etc.) are currently manually maintained in `~/.claude/skills/`. There's no versioning, no update mechanism, and no way to ensure all users have the same skill versions. Moving skills to a standalone GitHub repo enables versioned releases, and kiloforge can manage fetching and updating them.
 
 ## Codebase Analysis
 
-- **No existing skill management** in crelay — skills are manually placed in `~/.claude/skills/`
+- **No existing skill management** in kiloforge — skills are manually placed in `~/.claude/skills/`
 - **Claude Code skills** live in `~/.claude/skills/<skill-name>/SKILL.md` (user-level) or can be project-level
 - **`cli/init.go`** — natural place to offer skill installation on first setup
 - **`cli/serve.go`** — relay daemon could check for updates periodically
@@ -30,14 +30,14 @@ Conductor skills (track-generator, developer, reviewer, etc.) are currently manu
 
 ## Acceptance Criteria
 
-- [ ] `crelay skills update` is the primary command — fetches latest release and installs/updates skills to `~/.claude/skills/`
+- [ ] `kf skills update` is the primary command — fetches latest release and installs/updates skills to `~/.claude/skills/`
 - [ ] Before overwriting, detects locally modified skills (compares against last-installed checksums) and warns the user with a list of what will be overwritten
 - [ ] User must confirm with `--force` or interactive prompt to overwrite modified skills
 - [ ] Unmodified skills are updated silently
-- [ ] `crelay skills list` shows installed skills with their versions and modification status
-- [ ] `crelay skills --repo <owner/repo>` configures the source repo (stored in global config)
+- [ ] `kf skills list` shows installed skills with their versions and modification status
+- [ ] `kf skills --repo <owner/repo>` configures the source repo (stored in global config)
 - [ ] Version tracking: installed version and per-file checksums are recorded so update checks are fast and modification detection works
-- [ ] `crelay init` offers to install skills if not present (interactive prompt)
+- [ ] `kf init` offers to install skills if not present (interactive prompt)
 - [ ] Auto-update option: configurable in `config.json` (`"auto_update_skills": true`)
 - [ ] When auto-update is enabled, the relay daemon checks for updates periodically (e.g., daily) — this is a simple HTTP call to GitHub + file copy, no Claude Code agents or token usage involved. Notifies the user that an update is available; does NOT auto-install if local modifications are detected
 - [ ] Skills are installed atomically (download to temp, then move) — no partial installs
@@ -60,7 +60,7 @@ Conductor skills (track-generator, developer, reviewer, etc.) are currently manu
 
 - Private repo support (auth tokens) — can be added later
 - Per-project skill versions (all projects share global skills for now)
-- Skill authoring or publishing from crelay
+- Skill authoring or publishing from kiloforge
 - Migrating existing skills from `~/.claude/skills/` — manual backup is the user's responsibility
 
 ## Technical Notes
@@ -84,16 +84,16 @@ Conductor skills (track-generator, developer, reviewer, etc.) are currently manu
 
 **CLI commands:**
 ```
-crelay skills update               # check for newer version, show changes, ask for confirmation
-crelay skills update --force       # update without confirmation (skip modification check)
-crelay skills list                 # show installed skills + versions + modification status
-crelay skills --repo owner/repo    # set the source repo
-crelay skills --auto-update        # toggle auto-update on
-crelay skills --no-auto-update     # toggle auto-update off
+kiloforge skills update               # check for newer version, show changes, ask for confirmation
+kiloforge skills update --force       # update without confirmation (skip modification check)
+kiloforge skills list                 # show installed skills + versions + modification status
+kiloforge skills --repo owner/repo    # set the source repo
+kiloforge skills --auto-update        # toggle auto-update on
+kiloforge skills --no-auto-update     # toggle auto-update off
 ```
 
 **Modification detection:**
-- On install/update, store SHA-256 checksums of each installed file in `~/.crelay/skills-manifest.json`
+- On install/update, store SHA-256 checksums of each installed file in `~/.kiloforge/skills-manifest.json`
 - On next update, hash current files and compare against stored checksums
 - Modified files are listed with a warning: "The following skills have local modifications that will be overwritten:"
 - User confirms interactively, or uses `--force` to skip
@@ -102,7 +102,7 @@ crelay skills --no-auto-update     # toggle auto-update off
 1. On startup, and then every 24h, check latest release tag (single HTTP GET to GitHub API)
 2. If newer than installed and no local modifications: download tarball and install (pure file I/O)
 3. If local modifications detected: log notice, do not install
-4. This is entirely handled by crelay's Go code — no Claude Code invocation, no token consumption
+4. This is entirely handled by kiloforge's Go code — no Claude Code invocation, no token consumption
 
 **GitHub API (no auth for public repos):**
 ```

@@ -10,7 +10,7 @@
 
 1. [CC Session Resume Behavior](#1-cc-session-resume-behavior)
 2. [Signal Handling](#2-signal-handling)
-3. [Current Crelay State Analysis](#3-current-crelay-state-analysis)
+3. [Current Kiloforge State Analysis](#3-current-kiloforge-state-analysis)
 4. [Architecture Design: Graceful Shutdown](#4-architecture-design-graceful-shutdown)
 5. [Architecture Design: Auto-Resume on Startup](#5-architecture-design-auto-resume-on-startup)
 6. [State Persistence Format](#6-state-persistence-format)
@@ -133,7 +133,7 @@ On failed resume:
 - Session may or may not be resumable depending on file integrity
 - Should be used only as last resort after timeout
 
-**Key finding:** Both SIGINT and SIGTERM preserve session state. SIGINT is the preferred signal for crelay because:
+**Key finding:** Both SIGINT and SIGTERM preserve session state. SIGINT is the preferred signal for kiloforge because:
 1. It's what CC is designed to handle (Ctrl+C equivalent)
 2. It allows CC to finish writing the current `.jsonl` entry
 3. It's already what `HaltAgent()` uses
@@ -164,7 +164,7 @@ On failed resume:
 
 ---
 
-## 3. Current Crelay State Analysis
+## 3. Current Kiloforge State Analysis
 
 ### 3.1 What Already Works
 
@@ -183,7 +183,7 @@ On failed resume:
 
 | Gap | Impact | Priority |
 |-----|--------|----------|
-| No shutdown hook on relay server | Agents orphaned on `crelay down` / Ctrl+C | High |
+| No shutdown hook on relay server | Agents orphaned on `kf down` / Ctrl+C | High |
 | No agent termination on relay stop | Agents run forever as zombies | High |
 | No resume-on-startup logic | Manual recovery needed after restart | High |
 | No "was-running" vs "running" distinction | Can't tell if agent is alive or stale | Medium |
@@ -194,7 +194,7 @@ On failed resume:
 ### 3.3 Current Shutdown Flow
 
 ```
-User: Ctrl+C on `crelay up`
+User: Ctrl+C on `kf up`
   ↓
 signal.NotifyContext cancels ctx
   ↓
@@ -218,7 +218,7 @@ State: STALE (agents show "running" but relay is gone)
 ### 4.1 Signal Cascade Design
 
 ```
-Trigger (Ctrl+C / crelay down / SIGTERM)
+Trigger (Ctrl+C / kf down / SIGTERM)
   ↓
 Phase 1: Stop accepting new work (< 1 second)
   - Close HTTP listener (no new webhooks)
@@ -252,9 +252,9 @@ Done — process exits
 
 | Trigger | Behavior |
 |---------|----------|
-| `Ctrl+C` on `crelay up` | Full cascade (phases 1-5) |
-| `crelay down` | Full cascade, then `docker compose stop` |
-| `crelay destroy` | Full cascade, then `docker compose down --volumes` + delete DataDir |
+| `Ctrl+C` on `kf up` | Full cascade (phases 1-5) |
+| `kf down` | Full cascade, then `docker compose stop` |
+| `kf destroy` | Full cascade, then `docker compose down --volumes` + delete DataDir |
 | `kill <relay-pid>` (SIGTERM) | Same as Ctrl+C (signal.NotifyContext catches both) |
 | `kill -9 <relay-pid>` | No cascade — agents orphaned. Detect on next startup via stale PIDs. |
 | Machine crash / power loss | Same as kill -9 — stale state, recover on startup |
@@ -382,7 +382,7 @@ func processAlive(pid int) bool {
 ### 5.1 Startup Sequence
 
 ```
-crelay up
+kf up
   ↓
 Load state.json
   ↓
@@ -487,7 +487,7 @@ func validateResumePrereqs(agent state.AgentInfo) error {
 
 **On startup with suspended agents:**
 ```
-$ crelay up
+$ kf up
 Starting Gitea... already running.
 Starting relay server on :3001
 
@@ -502,7 +502,7 @@ Listening for webhooks...
 
 **On startup with no suspended agents:**
 ```
-$ crelay up
+$ kf up
 Starting Gitea... already running.
 Starting relay server on :3001
 Listening for webhooks...
@@ -512,14 +512,14 @@ Listening for webhooks...
 
 **On startup with stale agents (unclean shutdown):**
 ```
-$ crelay up
+$ kf up
 Starting Gitea... already running.
 Starting relay server on :3001
 
 ⚠ Detected unclean shutdown — recovering agents...
   ✓ Developer [track-abc] — recovered (session 9d498e3a)
   ✗ Developer [track-def] — stale: PID 12345 not running, session corrupt
-Recovered 1/2 agents (1 failed — run 'crelay agents' for details)
+Recovered 1/2 agents (1 failed — run 'kf agents' for details)
 
 Listening for webhooks...
 ```
@@ -663,7 +663,7 @@ On resume attempt:
 
 5. **No concurrent resume**: A session cannot be resumed by two processes simultaneously. If a stale PID check is wrong (race condition), two CC instances may conflict.
 
-### 8.2 Crelay-Level Risks
+### 8.2 Kiloforge-Level Risks
 
 1. **PID reuse**: Unix PIDs are recycled. A stale PID in state.json might match a different process. Mitigation: check process name or use process groups.
 
@@ -697,7 +697,7 @@ Based on this research, I recommend splitting implementation into two tracks:
 - Add `processAlive()` helper
 - Add "suspended" and "force-killed" agent statuses
 - Extend `state.json` with shutdown metadata
-- Update `crelay down` and `crelay destroy` to trigger cascade
+- Update `kf down` and `kf destroy` to trigger cascade
 - Add atomic file write for state.json
 - Tests for shutdown sequence
 
@@ -708,7 +708,7 @@ Based on this research, I recommend splitting implementation into two tracks:
 ### Track 2: Auto-Resume on Startup (estimated: 6-8 tasks)
 
 **Scope:**
-- Add startup resume logic to `crelay up`
+- Add startup resume logic to `kf up`
 - Implement prerequisite validation (worktree exists, session file exists)
 - Add resume prioritization (developers > reviewers)
 - Implement stale agent detection (PID alive check)
@@ -755,9 +755,9 @@ Where sanitized_path = working_directory
 
 Example:
 ```
-Working dir: /Users/ben/dev/crelay-wt/worker-1
-Session dir: ~/.claude/projects/-Users-ben-dev-crelay-wt-worker-1/
-Session file: ~/.claude/projects/-Users-ben-dev-crelay-wt-worker-1/abc123.jsonl
+Working dir: /Users/ben/dev/kiloforge-wt/worker-1
+Session dir: ~/.claude/projects/-Users-ben-dev-kiloforge-wt-worker-1/
+Session file: ~/.claude/projects/-Users-ben-dev-kiloforge-wt-worker-1/abc123.jsonl
 ```
 
 ## Appendix C: Exit Codes

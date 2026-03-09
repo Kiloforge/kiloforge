@@ -14,7 +14,7 @@ Handle Gitea issue and label webhook events to keep the kanban board in sync wit
 Track 2 establishes one-way sync: tracks → Gitea issues on a kanban board. This track closes the loop with bidirectional sync:
 
 1. **Board → Track**: User moves a card from "Suggested" to "Approved" on the Gitea board → track state updates
-2. **System → Board**: `crelay implement` spawns a developer → issue moves to "In Progress"; PR created → "In Review"; PR merged → "Completed"
+2. **System → Board**: `kf implement` spawns a developer → issue moves to "In Progress"; PR created → "In Review"; PR merged → "Completed"
 
 The relay server already handles issue webhook events but only logs them. This track adds meaningful actions to those handlers.
 
@@ -34,7 +34,7 @@ The relay server already handles issue webhook events but only logs them. This t
 | `issues` → `label_updated` (status:approved added) | Update track state | Move card to Approved column |
 | `issues` → `closed` | Mark track complete | Move card to Completed column |
 | `issues` → `assigned` | Mark track in-progress | Move card to In Progress column |
-| `crelay implement <track-id>` | System action | Move issue to In Progress, assign |
+| `kf implement <track-id>` | System action | Move issue to In Progress, assign |
 | PR opened (linked to track issue) | System action | Move issue to In Review |
 | PR merged (review approved) | System action | Move issue to Completed, close |
 
@@ -43,7 +43,7 @@ The relay server already handles issue webhook events but only logs them. This t
 - [ ] `handleIssues()` label_updated → detect status label changes, move card to matching column
 - [ ] `handleIssues()` closed → move card to Completed column
 - [ ] `handleIssues()` assigned → move card to In Progress column (if currently in Suggested/Approved)
-- [ ] `crelay implement` updates Gitea issue — moves to In Progress, updates labels
+- [ ] `kf implement` updates Gitea issue — moves to In Progress, updates labels
 - [ ] PR creation links to track issue — moves to In Review column
 - [ ] PR merge closes track issue — moves to Completed column
 - [ ] Board config loaded in relay server startup
@@ -108,7 +108,7 @@ When a developer creates a PR, the PR body or branch name contains the track ID.
 ### Implement command integration
 
 ```go
-// In crelay implement:
+// In kf implement:
 // After spawning developer agent:
 // 1. Look up TrackIssue for this track ID
 // 2. Move card to "In Progress" column

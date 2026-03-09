@@ -1,4 +1,4 @@
-# Track: Fix 'crelay add' to Accept Remote URLs
+# Track: Fix 'kf add' to Accept Remote URLs
 
 **ID:** fix-add-remote-url_20260307130000Z
 **Status:** Pending

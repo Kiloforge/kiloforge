@@ -7,7 +7,7 @@
 
 ## Summary
 
-Wire up the relay server to receive and handle webhook events from registered projects. Add issue event support (opened, edited, closed, commented). Make the relay multi-project aware by routing events via repo name from the webhook payload. Integrate relay startup into `crelay up`. For now, event handlers log events with structured output — agent spawning in response to events is a future track.
+Wire up the relay server to receive and handle webhook events from registered projects. Add issue event support (opened, edited, closed, commented). Make the relay multi-project aware by routing events via repo name from the webhook payload. Integrate relay startup into `kf up`. For now, event handlers log events with structured output — agent spawning in response to events is a future track.
 
 ## Context
 
@@ -25,12 +25,12 @@ This track establishes the relay as the central event bus for all registered pro
 - **`internal/gitea/client.go:CreateWebhook()`** — Registers events: `pull_request`, `pull_request_review`, `pull_request_comment`, `push`. Missing: `issues`, `issue_comment`.
 - **`internal/cli/root.go`** — No relay start command registered. The relay was previously started as part of `init` (blocking), then removed.
 - **`internal/agent/spawner.go`** — `SpawnReviewer()` and `SpawnDeveloper()` exist but are tightly coupled. Event-to-action mapping is a future concern.
-- **Project registry** — At `~/.crelay/projects.json` (from add-project-command track). Contains slug, repo name, project dir, origin remote per project.
+- **Project registry** — At `~/.kiloforge/projects.json` (from add-project-command track). Contains slug, repo name, project dir, origin remote per project.
 
 ## Acceptance Criteria
 
-- [ ] `crelay up` starts both Gitea AND the relay server (relay runs in foreground, blocking)
-- [ ] `crelay down` stops Gitea; relay stops via Ctrl+C or when Gitea is unavailable
+- [ ] `kf up` starts both Gitea AND the relay server (relay runs in foreground, blocking)
+- [ ] `kf down` stops Gitea; relay stops via Ctrl+C or when Gitea is unavailable
 - [ ] Webhook registration (`CreateWebhook`) includes `issues` and `issue_comment` events
 - [ ] Relay handles `issues` events: opened, edited, closed, label_updated, assigned
 - [ ] Relay handles `issue_comment` events: created
@@ -72,7 +72,7 @@ Update `CreateWebhook()` to include:
 
 ### Multi-Project Routing
 
-Every Gitea webhook payload includes `repository.name` (e.g., `"crelay"`) and `repository.full_name` (e.g., `"conductor/crelay"`). The relay uses this to look up the project:
+Every Gitea webhook payload includes `repository.name` (e.g., `"kiloforge"`) and `repository.full_name` (e.g., `"conductor/kiloforge"`). The relay uses this to look up the project:
 
 ```go
 func (s *Server) resolveProject(payload map[string]any) (*project.Project, bool) {
@@ -97,7 +97,7 @@ NewServer(cfg, registry, port)
 
 ### Relay Lifecycle
 
-`crelay up` starts Gitea (compose up), then runs relay in foreground (blocking). Ctrl+C stops the relay. Gitea stays running via compose. `crelay down` stops Gitea.
+`kf up` starts Gitea (compose up), then runs relay in foreground (blocking). Ctrl+C stops the relay. Gitea stays running via compose. `kf down` stops Gitea.
 
 ### Event Handler Logging Format
 

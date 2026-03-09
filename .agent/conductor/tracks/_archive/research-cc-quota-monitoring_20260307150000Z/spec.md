@@ -11,7 +11,7 @@ Investigate approaches for monitoring Claude Code quota usage across concurrent 
 
 ## Context
 
-Crelay spawns multiple Claude Code agents as child processes (`claude -p ... --session-id ... --output-format stream-json`). Each agent consumes API quota independently. Currently there is no visibility into quota consumption, no detection of rate limiting, and no graceful handling when quota is exhausted. Workers simply fail or hang.
+Kiloforge spawns multiple Claude Code agents as child processes (`claude -p ... --session-id ... --output-format stream-json`). Each agent consumes API quota independently. Currently there is no visibility into quota consumption, no detection of rate limiting, and no graceful handling when quota is exhausted. Workers simply fail or hang.
 
 ## Codebase Analysis
 

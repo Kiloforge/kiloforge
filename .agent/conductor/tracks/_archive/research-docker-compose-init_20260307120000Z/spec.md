@@ -11,7 +11,7 @@ Investigate replacing the raw `docker run` approach in `internal/gitea/manager.g
 
 ## Context
 
-The current `crelay init` command starts Gitea via a hardcoded `docker run` command with ~10 flags (ports, volumes, env vars). This is fragile, hard to extend (e.g., adding services like a reverse proxy), and doesn't leverage docker-compose's declarative model. Colima users on macOS often have only the v1 `docker-compose` binary, so both CLI variants must be supported.
+The current `kf init` command starts Gitea via a hardcoded `docker run` command with ~10 flags (ports, volumes, env vars). This is fragile, hard to extend (e.g., adding services like a reverse proxy), and doesn't leverage docker-compose's declarative model. Colima users on macOS often have only the v1 `docker-compose` binary, so both CLI variants must be supported.
 
 ## Codebase Analysis
 
@@ -45,9 +45,9 @@ None
 
 Key areas to investigate:
 1. **CLI detection** — `docker compose version` vs `docker-compose version`, fallback order
-2. **Compose file generation** — Should crelay generate a `docker-compose.yml` at init time or ship a template?
+2. **Compose file generation** — Should kiloforge generate a `docker-compose.yml` at init time or ship a template?
 3. **Volume and network management** — Named volumes vs bind mounts, custom networks
-4. **Compose file location** — In project dir, in `~/.crelay/`, or in data dir?
+4. **Compose file location** — In project dir, in `~/.kiloforge/`, or in data dir?
 5. **`docker compose up -d` vs `docker compose start`** — Lifecycle semantics
 6. **Colima quirks** — `host.docker.internal` support, volume mount performance, known issues
 

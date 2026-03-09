@@ -7,10 +7,10 @@
 ### Task 1.1: Add dashboard config fields
 - [x] Add `DashboardPort` (default: 3002) and `DashboardEnabled` (default: true) to config struct
 - [x] Add defaults adapter, JSON adapter, env adapter entries
-- [x] Support `CRELAY_DASHBOARD_PORT` and `CRELAY_DASHBOARD_ENABLED` env vars
+- [x] Support `KF_DASHBOARD_PORT` and `KF_DASHBOARD_ENABLED` env vars
 - [x] Add `--dashboard-port` and `--no-dashboard` flags
 
-### Task 1.2: Create `crelay dashboard` command
+### Task 1.2: Create `kf dashboard` command
 - [x] Create `internal/cli/dashboard.go`
 - [x] Standalone command that starts only the dashboard server
 - [x] Loads state and tracker from files, runs on configured port
@@ -22,13 +22,13 @@
 
 ## Phase 2: Startup Integration (3 tasks)
 
-### Task 2.1: Start dashboard alongside relay in `crelay up`
+### Task 2.1: Start dashboard alongside relay in `kf up`
 - [x] When `DashboardEnabled` is true, start dashboard server in goroutine
 - [x] Pass shared store and tracker instances to dashboard
 - [x] Both servers shut down on context cancellation
 - [x] Print dashboard URL in startup output
 
-### Task 2.2: Update `crelay status` with dashboard info
+### Task 2.2: Update `kf status` with dashboard info
 - [x] Show dashboard URL when enabled
 - [x] Show dashboard running/stopped status
 
@@ -41,7 +41,7 @@
 ## Phase 3: Verification (2 tasks)
 
 ### Task 3.1: Integration test
-- [x] Start `crelay up` with dashboard enabled
+- [x] Start `kf up` with dashboard enabled
 - [x] Verify both relay and dashboard respond on their ports
 - [x] Verify dashboard shows Gitea links
 - [x] Verify `--no-dashboard` flag disables dashboard

@@ -11,7 +11,7 @@ Consolidate the relay server (:3001) and dashboard server (:3002) into a single 
 
 ## Context
 
-Currently crelay exposes three separate ports:
+Currently kiloforge exposes three separate ports:
 - **:3000** — Gitea (Docker, git forge UI)
 - **:3001** — Relay (webhooks, health, lock API)
 - **:3002** — Dashboard (agent monitoring, quota, SSE, static UI)
@@ -47,9 +47,9 @@ This is confusing — users must remember multiple ports. Consolidating into a s
 - [ ] Dashboard routes mounted on the same mux (no separate :3002 server)
 - [ ] Reverse proxy to Gitea under `/gitea/` path prefix
 - [ ] Gitea sub-path configured so its internal links work under `/gitea/`
-- [ ] `crelay up` starts one server instead of two
+- [ ] `kf up` starts one server instead of two
 - [ ] Remove `DashboardPort` config (no longer needed) — keep `--no-dashboard` flag
-- [ ] `crelay dashboard` standalone command still works (runs unified server without Gitea/relay start)
+- [ ] `kf dashboard` standalone command still works (runs unified server without Gitea/relay start)
 - [ ] All existing relay endpoints unchanged (webhook, health, locks)
 - [ ] All existing dashboard endpoints unchanged (agents, quota, tracks, SSE)
 - [ ] Unit tests for route registration and proxy behavior

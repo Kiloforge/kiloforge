@@ -32,8 +32,8 @@ internal/relay/      → adapter/rest/
 internal/state/      → Split later (track 2)
 ```
 
-- Module path: `crelay` (go.mod)
-- All imports use `crelay/internal/<pkg>` — must update to `crelay/internal/adapter/<pkg>` or `crelay/internal/core/<pkg>`
+- Module path: `kiloforge` (go.mod)
+- All imports use `kiloforge/internal/<pkg>` — must update to `kiloforge/internal/adapter/<pkg>` or `kiloforge/internal/core/<pkg>`
 
 ## Acceptance Criteria
 
@@ -72,7 +72,7 @@ None (all existing tracks are complete)
 
 ## Technical Notes
 
-This is a pure move+rename refactor. No logic changes. The key risk is broken imports — every `crelay/internal/<old>` reference must be updated to `crelay/internal/adapter/<new>`.
+This is a pure move+rename refactor. No logic changes. The key risk is broken imports — every `kiloforge/internal/<old>` reference must be updated to `kiloforge/internal/adapter/<new>`.
 
 Steps:
 1. Create `internal/core/{domain,port,service}` directories with `doc.go`

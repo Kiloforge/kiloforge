@@ -1,6 +1,6 @@
 {
   "id": "add-project-command_20260307122000Z",
-  "title": "Implement 'crelay add' Command for Project Registration",
+  "title": "Implement 'kf add' Command for Project Registration",
   "type": "feature",
   "status": "complete",
   "created": "2026-03-07T12:20:00Z",

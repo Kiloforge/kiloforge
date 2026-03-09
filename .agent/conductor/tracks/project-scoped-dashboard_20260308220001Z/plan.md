@@ -101,7 +101,7 @@
 - Shows agents grid, stat cards (existing content)
 - Shows "Projects" section: list of projects with track count summary (pending/in-progress/complete)
 - Each project is a link to `/projects/:slug`
-- Empty state: "No projects registered — run `crelay add <remote>`"
+- Empty state: "No projects registered — run `kf add <remote>`"
 
 ### Task 4.4: Create ProjectPage component
 - **File:** `frontend/src/pages/ProjectPage.tsx`
@@ -119,8 +119,8 @@
 ## Phase 5: Verification (2 tasks)
 
 ### Task 5.1: End-to-end verification
-- Start `crelay up` with no projects → dashboard shows empty projects section
-- `crelay add <remote>` → dashboard shows the project
+- Start `kf up` with no projects → dashboard shows empty projects section
+- `kf add <remote>` → dashboard shows the project
 - Navigate to `/-/projects/<slug>` → see that project's tracks
 - Browser back → returns to overview
 - Direct URL paste → loads correct page

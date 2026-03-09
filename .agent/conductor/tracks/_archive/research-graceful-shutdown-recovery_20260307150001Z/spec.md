@@ -11,8 +11,8 @@ Investigate how to gracefully shut down all active Claude Code agents (preservin
 
 ## Context
 
-Crelay spawns multiple CC agents as long-running child processes. Currently:
-- Shutting down the relay (ctrl-c, `crelay down`) kills child processes without session preservation
+Kiloforge spawns multiple CC agents as long-running child processes. Currently:
+- Shutting down the relay (ctrl-c, `kf down`) kills child processes without session preservation
 - Session IDs are stored in `state.json` but there's no resume-on-startup logic
 - No mechanism to snapshot agent progress (which phase/task they were on)
 - No graceful shutdown signal cascade to agents

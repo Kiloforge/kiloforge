@@ -7,11 +7,11 @@
 
 ## Summary
 
-Instrument crelay with OpenTelemetry distributed tracing to provide per-task token metrics, task timelines, and end-to-end visibility across the conductor workflow. Enables developers to see exactly how long each task took, how many tokens it consumed, and where time was spent.
+Instrument kiloforge with OpenTelemetry distributed tracing to provide per-task token metrics, task timelines, and end-to-end visibility across the conductor workflow. Enables developers to see exactly how long each task took, how many tokens it consumed, and where time was spent.
 
 ## Context
 
-crelay orchestrates Claude Code agents to implement conductor tracks. Each track has phases and tasks, each task involves an agent invocation that consumes tokens and time. Today, the `QuotaTracker` records aggregate per-agent costs, but there's no way to see:
+kiloforge orchestrates Claude Code agents to implement conductor tracks. Each track has phases and tasks, each task involves an agent invocation that consumes tokens and time. Today, the `QuotaTracker` records aggregate per-agent costs, but there's no way to see:
 - How long each task took (timeline view)
 - Per-task token breakdown (not just per-agent aggregate)
 - End-to-end flow from track assignment → agent spawn → task completion → PR merge
@@ -34,23 +34,23 @@ OpenTelemetry provides the standard for this: traces map to tracks, spans map to
 
 ## Acceptance Criteria
 
-- [ ] OTel SDK integrated into crelay with configured trace provider and OTLP exporter
+- [ ] OTel SDK integrated into kiloforge with configured trace provider and OTLP exporter
 - [ ] Each track implementation produces a trace with spans for phases and tasks
 - [ ] Per-task spans include attributes: `tokens.input`, `tokens.output`, `tokens.cache_read`, `cost_usd`, `agent.role`, `agent.id`
 - [ ] Agent lifecycle events (spawn, suspend, resume, complete, fail) recorded as span events
 - [ ] Webhook events (PR opened, review submitted, etc.) recorded as span events on the relevant trace
 - [ ] Task duration is accurately captured (span start = task claimed, span end = task completed)
 - [ ] Observability server (Jaeger all-in-one per research) added to docker-compose, starts alongside Gitea
-- [ ] Observability UI reverse-proxied through crelay's unified server (e.g., `/-/tracing/`)
-- [ ] crelay dashboard links to the observability UI for trace drill-down
-- [ ] `crelay init` provisions the observability server alongside Gitea
-- [ ] `crelay up`/`down` manages the observability server lifecycle alongside Gitea
+- [ ] Observability UI reverse-proxied through kiloforge's unified server (e.g., `/-/tracing/`)
+- [ ] kiloforge dashboard links to the observability UI for trace drill-down
+- [ ] `kf init` provisions the observability server alongside Gitea
+- [ ] `kf up`/`down` manages the observability server lifecycle alongside Gitea
 - [ ] Dashboard includes a task timeline visualization showing spans with duration and token cost
 - [ ] `/-/api/traces` endpoint returns trace data for dashboard consumption (defined in OpenAPI spec)
 - [ ] Tracing is **optional and opt-out** — enabled by default but can be disabled:
-  - `crelay init --no-tracing` skips the observability server in docker-compose
-  - `CRELAY_TRACING_ENABLED=false` env var disables at runtime
-  - `crelay config set tracing_enabled false` CLI command to update config
+  - `kf init --no-tracing` skips the observability server in docker-compose
+  - `KF_TRACING_ENABLED=false` env var disables at runtime
+  - `kf config set tracing_enabled false` CLI command to update config
   - Dashboard settings page allows toggling tracing on/off
 - [ ] When tracing is disabled: no OTel SDK initialization, no spans emitted, observability server not started
 - [ ] When tracing is re-enabled: observability server started, OTel SDK initialized, new spans flow immediately
@@ -106,18 +106,18 @@ type Tracer interface {
 
 **CLI config management:**
 ```
-crelay config set tracing_enabled true|false
-crelay config get tracing_enabled
+kiloforge config set tracing_enabled true|false
+kiloforge config get tracing_enabled
 ```
 
 **Init flag:**
 ```
-crelay init --no-tracing    # skip observability server, set tracing_enabled=false
+kf init --no-tracing    # skip observability server, set tracing_enabled=false
 ```
 
 **Env var override:**
 ```
-CRELAY_TRACING_ENABLED=false crelay up   # runtime override
+KF_TRACING_ENABLED=false kf up   # runtime override
 ```
 
 **Docker Compose addition:**

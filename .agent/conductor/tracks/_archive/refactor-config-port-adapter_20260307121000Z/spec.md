@@ -19,7 +19,7 @@ The current `internal/config/config.go` couples config reading, writing, and def
 - **Constants (lines 10-17):** `ContainerName`, `GiteaImage`, `GiteaAdminUser`, `GiteaAdminPass`, `GiteaAdminEmail`, `ConfigFileName` — all hardcoded, not overridable
 - **Config struct (lines 19-24):** `GiteaPort`, `DataDir`, `APIToken`, `ComposeFile`
 - **Methods:** `GiteaURL()`, `Save()`, `Load()`, `LoadFrom()`
-- **No defaults logic** — defaults are scattered across CLI flag definitions in `init.go` (`--gitea-port 3000`, `--data-dir ~/.crelay`)
+- **No defaults logic** — defaults are scattered across CLI flag definitions in `init.go` (`--gitea-port 3000`, `--data-dir ~/.kiloforge`)
 
 ### Call sites (10 files)
 - **`config.Load()`** — called in: `status.go`, `destroy.go`, `logs.go`, `stop.go`, `agents.go`, `attach.go` (7 times)
@@ -35,8 +35,8 @@ The current `internal/config/config.go` couples config reading, writing, and def
 
 - [ ] `ConfigPort` interface defined with method(s) to resolve config values
 - [ ] Defaults adapter returns hardcoded fallback values for all fields
-- [ ] JSON file adapter reads from `~/.crelay/config.json` (and supports `Save()` for persistence)
-- [ ] Env var adapter reads from `CRELAY_*` environment variables (e.g., `CRELAY_GITEA_PORT`, `CRELAY_DATA_DIR`, `CRELAY_API_TOKEN`, `CRELAY_GITEA_IMAGE`, etc.)
+- [ ] JSON file adapter reads from `~/.kiloforge/config.json` (and supports `Save()` for persistence)
+- [ ] Env var adapter reads from `KF_*` environment variables (e.g., `KF_GITEA_PORT`, `KF_DATA_DIR`, `KF_API_TOKEN`, `KF_GITEA_IMAGE`, etc.)
 - [ ] Flags adapter reads from Cobra flag values when explicitly set by the user
 - [ ] Merger chains adapters in priority order: flags > env > JSON > defaults
 - [ ] Previously hardcoded constants (`ContainerName`, `GiteaImage`, `GiteaAdminUser`, `GiteaAdminPass`, `GiteaAdminEmail`) are now configurable fields resolved through the adapter chain
@@ -55,7 +55,7 @@ None
 - YAML or TOML config file support
 - Config validation beyond type correctness
 - Config file watching / hot reload
-- Project-level config (future `crelay add` track)
+- Project-level config (future `kf add` track)
 - CLI flag definitions themselves (those stay in `internal/cli/` — the flags adapter just reads their values)
 
 ## Technical Notes
@@ -111,15 +111,15 @@ type Config struct {
 
 | Field | Env Var | Example |
 |-------|---------|---------|
-| GiteaPort | `CRELAY_GITEA_PORT` | `4000` |
-| DataDir | `CRELAY_DATA_DIR` | `/opt/crelay` |
-| APIToken | `CRELAY_API_TOKEN` | `abc123` |
-| ComposeFile | `CRELAY_COMPOSE_FILE` | `/path/to/compose.yml` |
-| ContainerName | `CRELAY_CONTAINER_NAME` | `my-gitea` |
-| GiteaImage | `CRELAY_GITEA_IMAGE` | `gitea/gitea:1.21` |
-| GiteaAdminUser | `CRELAY_GITEA_ADMIN_USER` | `admin` |
-| GiteaAdminPass | `CRELAY_GITEA_ADMIN_PASS` | `s3cret` |
-| GiteaAdminEmail | `CRELAY_GITEA_ADMIN_EMAIL` | `admin@example.com` |
+| GiteaPort | `KF_GITEA_PORT` | `4000` |
+| DataDir | `KF_DATA_DIR` | `/opt/kiloforge` |
+| APIToken | `KF_API_TOKEN` | `abc123` |
+| ComposeFile | `KF_COMPOSE_FILE` | `/path/to/compose.yml` |
+| ContainerName | `KF_CONTAINER_NAME` | `my-gitea` |
+| GiteaImage | `KF_GITEA_IMAGE` | `gitea/gitea:1.21` |
+| GiteaAdminUser | `KF_GITEA_ADMIN_USER` | `admin` |
+| GiteaAdminPass | `KF_GITEA_ADMIN_PASS` | `s3cret` |
+| GiteaAdminEmail | `KF_GITEA_ADMIN_EMAIL` | `admin@example.com` |
 
 ### Merger Logic
 

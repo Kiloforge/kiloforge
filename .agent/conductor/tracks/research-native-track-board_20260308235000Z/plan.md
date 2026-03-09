@@ -1,4 +1,4 @@
-# Implementation Plan: Research — Native Track Board in crelay Dashboard
+# Implementation Plan: Research — Native Track Board in kiloforge Dashboard
 
 ## Phase 1: State Machine and Storage Design (3 tasks)
 

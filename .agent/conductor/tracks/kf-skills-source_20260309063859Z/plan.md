@@ -18,10 +18,10 @@
 
 ## Phase 3: Content Rebrand — Environment Variables and API References
 
-- [x] Task 3.1: Replace `CRELAY_RELAY_URL` with `KF_RELAY_URL` in `kf-developer/SKILL.md`
-- [x] Task 3.2: Replace `CRELAY_RELAY_URL` with `KF_RELAY_URL` in `kf-track-generator/SKILL.md`
-- [x] Task 3.3: Replace "crelay lock API" / "crelay relay" with "kiloforge lock API" / "kiloforge relay" in both files
-- [x] Task 3.4: Search all skill files for any remaining `CRELAY_` or `crelay` references and update
+- [x] Task 3.1: Replace `KF_RELAY_URL` with `KF_RELAY_URL` in `kf-developer/SKILL.md`
+- [x] Task 3.2: Replace `KF_RELAY_URL` with `KF_RELAY_URL` in `kf-track-generator/SKILL.md`
+- [x] Task 3.3: Replace "kiloforge lock API" / "kiloforge relay" with "kiloforge lock API" / "kiloforge relay" in both files
+- [x] Task 3.4: Search all skill files for any remaining `KF_` or `kiloforge` references and update
 
 ## Phase 4: Content Rebrand — Slash Commands and Cross-References
 
@@ -33,7 +33,7 @@
 ## Phase 5: Verification
 
 - [x] Task 5.1: Grep all files under `skills/` for remaining "conductor-" prefix references — zero found
-- [x] Task 5.2: Grep all files under `skills/` for remaining "CRELAY_" references — zero found
-- [x] Task 5.3: Grep all files under `skills/` for remaining "crelay" references — zero found
+- [x] Task 5.2: Grep all files under `skills/` for remaining "KF_" references — zero found
+- [x] Task 5.3: Grep all files under `skills/` for remaining "kiloforge" references — zero found
 - [x] Task 5.4: Verify each SKILL.md has valid YAML frontmatter with correct `name:` matching directory name
 - [x] Task 5.5: Verify directory count is 14 with no missing skills

@@ -26,7 +26,7 @@ See `docs/design-agent-orchestration.md` Section 6. This is the final stage of t
 - [ ] Reviewer agent already terminated (from review-cycle track)
 - [ ] Track status updated to complete in conductor artifacts
 - [ ] PR tracking status updated to merged
-- [ ] `crelay agents` shows agents as completed after cleanup
+- [ ] `kf agents` shows agents as completed after cleanup
 
 ## Dependencies
 
