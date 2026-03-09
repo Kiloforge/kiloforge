@@ -1,0 +1,16 @@
+{
+  "id": "branch-diff-view-be_20260310050000Z",
+  "title": "Branch Diff View API (Backend)",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-10T05:00:00Z",
+  "updated": "2026-03-10T05:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 12,
+    "completed": 0
+  }
+}

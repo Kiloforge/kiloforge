@@ -199,7 +199,7 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
         {agentsLoading ? (
           <p className={appStyles.empty}>Loading agents...</p>
         ) : (
-          <AgentGrid agents={filteredAgents} tracks={tracks} onViewLog={onViewLog} onAttach={onAttach} />
+          <AgentGrid agents={filteredAgents} onViewLog={onViewLog} onAttach={onAttach} />
         )}
       </section>
 

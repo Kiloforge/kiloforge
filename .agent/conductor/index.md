@@ -164,6 +164,9 @@ Navigation hub for project context.
 - **frontend-test-hooks_20260310041006Z** — Frontend Test Coverage — Critical Hooks
 - **frontend-test-pages_20260310041007Z** — Frontend Test Coverage — Pages and Components
 - **refactor-domain-types-cleanup_20260310041008Z** — Consolidate Domain Types and Frontend Component Cleanup
+- **branch-diff-view-be_20260310050000Z** — Branch Diff View API (Backend)
+- **branch-diff-view-fe_20260310050001Z** — Branch Diff View with Agent Discuss Button (Frontend)
+- **virtual-list-fe_20260310050002Z** — Virtualized Windowed List Component (Frontend)
 
 ## Getting Started
 

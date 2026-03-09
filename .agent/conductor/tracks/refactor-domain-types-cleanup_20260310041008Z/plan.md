@@ -5,47 +5,47 @@
 ## Phase 1: Move Domain Types from Service to Domain
 
 ### Task 1.1: Move TrackEntry, TrackDetail, ProgressCount to domain/
-- [x] Create `domain/track.go` with `TrackEntry`, `TrackDetail`, `ProgressCount` types
-- [x] Update `port/track_reader.go` to re-export via type aliases
-- [x] All references continue to work via backward-compatible aliases
+- Create `domain/track.go` with `TrackEntry`, `TrackDetail`, `ProgressCount` types
+- Update `service/track_service.go` to import from domain
+- Update all references in adapters (rest, cli, dashboard)
 
 ### Task 1.2: Move EscalatedItem to domain/
-- [x] Create `domain/escalation.go` with `EscalatedItem` type
-- [x] Update `service/agent_service.go` to import from domain
-- [x] All references updated
+- Create `domain/escalation.go` with `EscalatedItem` type
+- Update `service/agent_service.go` to import from domain
+- Update all references
 
 ### Task 1.3: Verify backend compiles and tests pass
-- [x] `go build ./...` passes
-- [x] No service layer defines business entity types
+- `go test ./... -race` passes
+- No service layer defines business entity types
 
 ### Task 1.4: Verify Phase 1
-- [x] Backend compiles clean
+- `make test` passes
 
 ## Phase 2: Frontend Component Cleanup
 
 ### Task 2.1: Split ProjectPage into sub-containers
-- [x] Extract `BoardContainer` — manages useBoard, KanbanBoard rendering
-- [x] Extract `SyncContainer` — manages useOriginSync, SyncPanel rendering
-- [x] Extract `AdminContainer` — manages admin operations
-- [x] ProjectPage reduced from 361 to 197 lines
+- Extract `BoardContainer` — manages useBoard, KanbanBoard rendering
+- Extract `SyncContainer` — manages useOriginSync, SyncPanel rendering
+- Extract `AdminContainer` — manages admin operations
+- ProjectPage becomes layout/tab router importing sub-containers
 
 ### Task 2.2: Fix AgentCard data fetching
-- [x] Remove `useTracks()` call from AgentCard
-- [x] Add `projectSlug?: string | null` prop
-- [x] Update AgentGrid to compute track-to-project mapping and pass via props
-- [x] Update OverviewPage to pass tracks to AgentGrid
+- Remove `useTracks()` call from AgentCard
+- Add `trackTitle?: string` and `projectSlug?: string` props
+- Update parent components (AgentGrid, pages) to pass data via props
 
 ### Task 2.3: Verify frontend builds and tests pass
-- [x] `tsc -b --noEmit` succeeds
-- [x] `npm test` passes (139 tests)
+- `npm run build` succeeds (TypeScript check)
+- `npm test` passes
+- Visual spot check: pages render correctly
 
 ### Task 2.4: Verify Phase 2
-- [x] `make build` passes (full stack)
+- `make test` passes (full stack)
 
 ## Phase 3: Final Verification
 
 ### Task 3.1: Cross-check all changes
-- [x] No business entities remain defined in service/ (EscalatedItem moved)
-- [x] ProjectPage reduced from 361 to 197 lines
-- [x] AgentCard has no data-fetching hook calls
-- [x] Full build passes
+- Verify no business entities remain defined in service/
+- Verify ProjectPage is under 150 lines
+- Verify AgentCard has no hook calls
+- Run full test suite

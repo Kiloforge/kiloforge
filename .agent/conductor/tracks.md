@@ -126,6 +126,9 @@
 | [x] | frontend-test-hooks_20260310041006Z | Frontend Test Coverage — Critical Hooks | 2026-03-10 | 2026-03-10 |
 | [x] | frontend-test-pages_20260310041007Z | Frontend Test Coverage — Pages and Components | 2026-03-10 | 2026-03-10 |
 | [x] | refactor-domain-types-cleanup_20260310041008Z | Consolidate Domain Types and Frontend Component Cleanup | 2026-03-10 | 2026-03-10 |
+| [ ] | branch-diff-view-be_20260310050000Z | Branch Diff View API (Backend) | 2026-03-10 | 2026-03-10 |
+| [ ] | branch-diff-view-fe_20260310050001Z | Branch Diff View with Agent Discuss Button (Frontend) | 2026-03-10 | 2026-03-10 |
+| [ ] | virtual-list-fe_20260310050002Z | Virtualized Windowed List Component (Frontend) | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
+import { useTracks } from "../hooks/useTracks";
 import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "./StatusBadge";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
@@ -9,12 +10,14 @@ interface Props {
   agent: Agent;
   onViewLog: (agentId: string) => void;
   onAttach?: (agentId: string) => void;
-  projectSlug?: string | null;
 }
 
-export function AgentCard({ agent, onViewLog, onAttach, projectSlug }: Props) {
+export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   const refLink = agent.ref || null;
+  const { tracks } = useTracks();
   const { stop, resume, del } = useAgentActions();
+  const matchedTrack = refLink ? tracks.find((t) => t.id === refLink) : null;
+  const projectSlug = matchedTrack?.project ?? null;
 
   const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
   const cacheRead = agent.cache_read_tokens ?? 0;

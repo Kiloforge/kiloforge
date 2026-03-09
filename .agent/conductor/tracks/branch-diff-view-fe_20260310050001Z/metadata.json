@@ -1,0 +1,16 @@
+{
+  "id": "branch-diff-view-fe_20260310050001Z",
+  "title": "Branch Diff View with Agent Discuss Button (Frontend)",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-10T05:00:01Z",
+  "updated": "2026-03-10T05:00:01Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 14,
+    "completed": 0
+  }
+}
