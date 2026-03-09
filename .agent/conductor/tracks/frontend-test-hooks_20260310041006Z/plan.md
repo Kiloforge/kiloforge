@@ -31,7 +31,7 @@
 
 ## Phase 2: Data Mutation Hook Tests
 
-### Task 2.1: Test useProjects
+### Task 2.1: Test useProjects [x]
 - Create `src/hooks/useProjects.test.ts`
 - Test: fetches project list on mount
 - Test: addProject mutation sends correct request, invalidates cache
@@ -39,20 +39,20 @@
 - Test: SSE event handler updates query data
 - Test: error handling shows toast
 
-### Task 2.2: Test useBoard
+### Task 2.2: Test useBoard [x]
 - Create `src/hooks/useBoard.test.ts`
 - Test: fetches board state for project
 - Test: moveCard optimistic update applies immediately
 - Test: moveCard rollback on server error
 - Test: syncBoard mutation triggers refetch
 
-### Task 2.3: Test useOriginSync
+### Task 2.3: Test useOriginSync [x]
 - Create `src/hooks/useOriginSync.test.ts`
 - Test: fetchSyncStatus returns ahead/behind counts
 - Test: push mutation sends correct request
 - Test: pull mutation sends correct request
 - Test: error handling for push/pull failures
 
-### Task 2.4: Verify Phase 2
+### Task 2.4: Verify Phase 2 [x]
 - `npm test` passes, all new tests green
 - `make test-frontend` passes
