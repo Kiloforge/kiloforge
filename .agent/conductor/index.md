@@ -146,6 +146,8 @@ Navigation hub for project context.
 - **fix-skill-prereq-fe_20260310000645Z** — Fix Skill Prerequisite Chain — Frontend Proactive Gating
 - **track-detail-view-be_20260309001726Z** — Track Detail View API
 - **track-detail-view-fe_20260309001727Z** — Track Detail View UI
+- **sdk-agent-migration-be_20260310014147Z** — Migrate Agent Spawner to Claude Agent SDK (Backend)
+- **sdk-agent-migration-fe_20260310014148Z** — Structured Agent Terminal Display (Frontend)
 
 ## Getting Started
 

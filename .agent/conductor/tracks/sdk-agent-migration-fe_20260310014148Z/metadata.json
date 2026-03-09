@@ -1,0 +1,16 @@
+{
+  "id": "sdk-agent-migration-fe_20260310014148Z",
+  "title": "Structured Agent Terminal Display (Frontend)",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-10T01:41:48Z",
+  "updated": "2026-03-10T01:41:48Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 12,
+    "completed": 0
+  }
+}

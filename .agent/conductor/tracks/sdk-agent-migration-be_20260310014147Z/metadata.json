@@ -1,0 +1,16 @@
+{
+  "id": "sdk-agent-migration-be_20260310014147Z",
+  "title": "Migrate Agent Spawner to Claude Agent SDK (Backend)",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-10T01:41:47Z",
+  "updated": "2026-03-10T01:41:47Z",
+  "phases": {
+    "total": 5,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 17,
+    "completed": 0
+  }
+}
