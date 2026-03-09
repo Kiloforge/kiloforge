@@ -7,7 +7,7 @@ metadata:
 
 # Implement Track
 
-Execute tasks from a track's implementation plan, following the workflow rules defined in `.agent/conductor/workflow.md`.
+Execute tasks from a track's implementation plan, following the workflow rules defined in `.agent/kf/workflow.md`.
 
 ## Use this skill when
 
@@ -24,18 +24,17 @@ Execute tasks from a track's implementation plan, following the workflow rules d
 - Clarify goals, constraints, and required inputs.
 - Apply relevant best practices and validate outcomes.
 - Provide actionable steps and verification.
-- If detailed examples are required, open `resources/implementation-playbook.md`.
 
 ## Pre-flight Checks
 
 1. Verify Kiloforge is initialized:
-   - Check `.agent/conductor/product.md` exists
-   - Check `.agent/conductor/workflow.md` exists
-   - Check `.agent/conductor/tracks.md` exists
+   - Check `.agent/kf/product.md` exists
+   - Check `.agent/kf/workflow.md` exists
+   - Check `.agent/kf/tracks.yaml` exists
    - If missing: Display error and suggest running `/kf-setup` first
 
 2. Load workflow configuration:
-   - Read `.agent/conductor/workflow.md`
+   - Read `.agent/kf/workflow.md`
    - Parse TDD strictness level
    - Parse commit strategy
    - Parse verification checkpoint rules
@@ -44,20 +43,25 @@ Execute tasks from a track's implementation plan, following the workflow rules d
 
 ### If argument provided:
 
-- Validate track exists: `.agent/conductor/tracks/{argument}/plan.md`
+- Validate track exists:
+  ```bash
+  .agent/kf/bin/kf-track get {argument}
+  ```
 - If not found: Search for partial matches, suggest corrections
 
 ### If no argument:
 
-1. Read `.agent/conductor/tracks.md`
-2. Parse for incomplete tracks (status `[ ]` or `[~]`)
-3. Display selection menu:
+1. List available tracks:
+   ```bash
+   .agent/kf/bin/kf-track list --active
+   ```
+2. Display selection menu:
 
    ```
    Select a track to implement:
 
    In Progress:
-   1. [~] auth_20250115100000Z - User Authentication (Phase 2, Task 3)
+   1. [~] auth_20250115100000Z - User Authentication
 
    Pending:
    2. [ ] nav-fix_20250114081500Z - Navigation Bug Fix
@@ -70,47 +74,45 @@ Execute tasks from a track's implementation plan, following the workflow rules d
 
 Load all relevant context for implementation:
 
-1. Track documents:
-   - `.agent/conductor/tracks/{trackId}/spec.md` - Requirements
-   - `.agent/conductor/tracks/{trackId}/plan.md` - Task list
-   - `.agent/conductor/tracks/{trackId}/metadata.json` - Progress state
+1. Track documents (via CLI):
+   ```bash
+   .agent/kf/bin/kf-track-content show {trackId} --section spec
+   .agent/kf/bin/kf-track-content show {trackId} --section plan
+   .agent/kf/bin/kf-track-content progress {trackId}
+   ```
 
 2. Project context:
-   - `.agent/conductor/product.md` - Product understanding
-   - `.agent/conductor/tech-stack.md` - Technical constraints
-   - `.agent/conductor/workflow.md` - Process rules
+   - `.agent/kf/product.md` - Product understanding
+   - `.agent/kf/tech-stack.md` - Technical constraints
+   - `.agent/kf/workflow.md` - Process rules
 
 3. Code style (if exists):
-   - `.agent/conductor/code_styleguides/{language}.md`
+   - `.agent/kf/code_styleguides/{language}.md`
 
 ## Track Status Update
 
 Update track to in-progress:
 
-1. In `.agent/conductor/tracks.md`:
-   - Change `[ ]` to `[~]` for this track
-
-2. In `.agent/conductor/tracks/{trackId}/metadata.json`:
-   - Set `status: "in_progress"`
-   - Update `updated` timestamp
+```bash
+.agent/kf/bin/kf-track update {trackId} --status in-progress
+```
 
 ## Task Execution Loop
 
-For each incomplete task in plan.md (marked with `[ ]`):
+For each incomplete task (check via `.agent/kf/bin/kf-track-content progress {trackId}`):
 
 ### 1. Task Identification
 
-Parse plan.md to find next incomplete task:
+Find the next incomplete task:
+```bash
+.agent/kf/bin/kf-track-content progress {trackId}
+```
 
-- Look for lines matching `- [ ] Task X.Y: {description}`
-- Track current phase from structure
+Look for the first task not yet marked done.
 
 ### 2. Task Start
 
-Mark task as in-progress:
-
-- Update plan.md: Change `[ ]` to `[~]` for current task
-- Announce: "Starting Task X.Y: {description}"
+Announce: "Starting Task X.Y: {description}"
 
 ### 3. TDD Workflow (if TDD enabled in workflow.md)
 
@@ -161,27 +163,28 @@ git add -A
 git commit -m "{commit_prefix}: {task description} ({trackId})"
 ```
 
-**Update plan.md:**
-
-- Change `[~]` to `[x]` for completed task
-- Commit plan update:
+**Mark task done via CLI:**
 
 ```bash
-git add .agent/conductor/tracks/{trackId}/plan.md
-git commit -m "chore: mark task X.Y complete ({trackId})"
+.agent/kf/bin/kf-track-content task {trackId} X.Y --done
 ```
 
-**Update metadata.json:**
+Commit the track update:
 
-- Increment `tasks.completed`
-- Update `updated` timestamp
+```bash
+git add .agent/kf/tracks/{trackId}/
+git commit -m "chore: mark task X.Y complete ({trackId})"
+```
 
 ### 6. Phase Completion Check
 
 After each task, check if phase is complete:
 
-- Parse plan.md for phase structure
-- If all tasks in current phase are `[x]`:
+```bash
+.agent/kf/bin/kf-track-content progress {trackId}
+```
+
+If all tasks in current phase are done:
 
 **Run phase verification:**
 
@@ -189,8 +192,8 @@ After each task, check if phase is complete:
 Phase {N} complete. Running verification...
 ```
 
-- Execute verification tasks listed for the phase
-- Run full test suite: `npm test` / `pytest` / etc.
+- Execute verification commands from workflow.md
+- Run full test suite
 
 **Report and wait for approval:**
 
@@ -266,26 +269,19 @@ All tasks complete. Running final verification...
 ```
 
 - Run full test suite
-- Check all acceptance criteria from spec.md
+- Check all acceptance criteria from spec
 - Generate verification report
 
 ### 2. Update Track Status
 
-In `.agent/conductor/tracks.md`:
+```bash
+.agent/kf/bin/kf-track update {trackId} --status completed
+```
 
-- Change `[~]` to `[x]` for this track
-- Update the "Updated" column
-
-In `.agent/conductor/tracks/{trackId}/metadata.json`:
-
-- Set `status: "complete"`
-- Set `phases.completed` to total
-- Set `tasks.completed` to total
-- Update `updated` timestamp
-
-In `.agent/conductor/tracks/{trackId}/plan.md`:
-
-- Update header status to `[x] Complete`
+Verify completion:
+```bash
+.agent/kf/bin/kf-track-content progress {trackId}
+```
 
 ### 3. Documentation Sync Offer
 
@@ -293,8 +289,8 @@ In `.agent/conductor/tracks/{trackId}/plan.md`:
 Track complete! Would you like to sync documentation?
 
 This will update:
-- .agent/conductor/product.md (if new features added)
-- .agent/conductor/tech-stack.md (if new dependencies added)
+- .agent/kf/product.md (if new features added)
+- .agent/kf/tech-stack.md (if new dependencies added)
 - README.md (if applicable)
 
 1. Yes, sync documentation
@@ -307,7 +303,7 @@ This will update:
 Track {trackId} is complete.
 
 Cleanup options:
-1. Archive - Move to .agent/conductor/tracks/_archive/
+1. Archive - Move to .agent/kf/tracks/_archive/
 2. Delete - Remove track directory
 3. Keep - Leave as-is
 ```
@@ -329,43 +325,16 @@ Next steps:
 - Run /kf-new-track for next feature
 ```
 
-## Progress Tracking
-
-Maintain progress in `metadata.json` throughout:
-
-```json
-{
-  "id": "auth_20250115100000Z",
-  "title": "User Authentication",
-  "type": "feature",
-  "status": "in_progress",
-  "created": "2025-01-15T10:00:00Z",
-  "updated": "2025-01-15T14:30:00Z",
-  "current_phase": 2,
-  "current_task": "2.3",
-  "phases": {
-    "total": 3,
-    "completed": 1
-  },
-  "tasks": {
-    "total": 12,
-    "completed": 7
-  },
-  "commits": [
-    "abc1234: feat: add login form (auth_20250115100000Z)",
-    "def5678: feat: add password validation (auth_20250115100000Z)"
-  ]
-}
-```
-
 ## Resumption
 
 If implementation is paused and resumed:
 
-1. Load `metadata.json` for current state
-2. Find current task from `current_task` field
-3. Check if task is `[~]` in plan.md
-4. Ask user:
+1. Check current progress:
+   ```bash
+   .agent/kf/bin/kf-track-content progress {trackId}
+   ```
+2. Find current incomplete task
+3. Ask user:
 
    ```
    Resuming track: {title}
@@ -383,6 +352,6 @@ If implementation is paused and resumed:
 1. **NEVER skip verification checkpoints** - Always wait for user approval between phases
 2. **STOP on any failure** - Do not attempt to continue past errors
 3. **Follow workflow.md strictly** - TDD, commit strategy, and verification rules are mandatory
-4. **Keep plan.md updated** - Task status must reflect actual progress
+4. **Use CLI tools for track updates** - Use `kf-track` and `kf-track-content` for all status and progress updates
 5. **Commit frequently** - Each task completion should be committed
-6. **Track all commits** - Record commit hashes in metadata.json for potential revert
+6. **Use kf-track-content for progress** - Never parse plan files manually; use `kf-track-content progress` instead
