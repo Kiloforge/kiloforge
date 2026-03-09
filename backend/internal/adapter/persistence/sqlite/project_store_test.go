@@ -26,9 +26,9 @@ func TestProjectStore_AddAndGet(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, ok := store.Get("myproject")
-	if !ok {
-		t.Fatal("Get: not found")
+	got, err := store.Get("myproject")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
 	}
 	if got.Slug != p.Slug {
 		t.Errorf("Slug: want %q, got %q", p.Slug, got.Slug)
@@ -68,7 +68,7 @@ func TestProjectStore_Remove(t *testing.T) {
 	if err := store.Remove("rm-me"); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if _, ok := store.Get("rm-me"); ok {
+	if _, err := store.Get("rm-me"); err == nil {
 		t.Error("Get after Remove: should not find")
 	}
 }

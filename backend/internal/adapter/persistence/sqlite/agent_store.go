@@ -80,7 +80,7 @@ func (s *AgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 
 	agents := scanAgents(rows)
 	if len(agents) == 0 {
-		return nil, fmt.Errorf("agent not found: %s", idPrefix)
+		return nil, fmt.Errorf("agent %s: %w", idPrefix, domain.ErrAgentNotFound)
 	}
 	return &agents[0], nil
 }
@@ -143,7 +143,7 @@ func (s *AgentStore) RemoveAgent(id string) error {
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return fmt.Errorf("agent not found: %s", id)
+		return fmt.Errorf("agent %s: %w", id, domain.ErrAgentNotFound)
 	}
 	return nil
 }

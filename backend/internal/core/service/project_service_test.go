@@ -51,9 +51,12 @@ func newMockProjectStore() *mockProjectStore {
 	return &mockProjectStore{projects: map[string]domain.Project{}}
 }
 
-func (m *mockProjectStore) Get(slug string) (domain.Project, bool) {
+func (m *mockProjectStore) Get(slug string) (domain.Project, error) {
 	p, ok := m.projects[slug]
-	return p, ok
+	if !ok {
+		return domain.Project{}, domain.ErrProjectNotFound
+	}
+	return p, nil
 }
 
 func (m *mockProjectStore) List() []domain.Project {
@@ -122,9 +125,8 @@ func TestProjectService_GetProject(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		var notFound *ProjectNotFoundError
-		if !errors.As(err, &notFound) {
-			t.Errorf("expected ProjectNotFoundError, got %T: %v", err, err)
+		if !errors.Is(err, domain.ErrProjectNotFound) {
+			t.Errorf("expected ErrProjectNotFound, got: %v", err)
 		}
 	})
 }
@@ -145,7 +147,7 @@ func TestProjectService_RemoveProject(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if _, exists := store.Get("myapp"); exists {
+	if _, err := store.Get("myapp"); err == nil {
 		t.Error("project should have been removed from store")
 	}
 }
@@ -165,9 +167,8 @@ func TestProjectService_RemoveProject_NotFound(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	var notFound *ProjectNotFoundError
-	if !errors.As(err, &notFound) {
-		t.Errorf("expected ProjectNotFoundError, got %T: %v", err, err)
+	if !errors.Is(err, domain.ErrProjectNotFound) {
+		t.Errorf("expected ErrProjectNotFound, got: %v", err)
 	}
 }
 
@@ -211,9 +212,8 @@ func TestProjectService_AddProject_DuplicateSlug(t *testing.T) {
 		t.Fatal("expected error for duplicate")
 	}
 
-	var existsErr *ProjectExistsError
-	if !errors.As(err, &existsErr) {
-		t.Errorf("expected ProjectExistsError, got %T: %v", err, err)
+	if !errors.Is(err, domain.ErrProjectExists) {
+		t.Errorf("expected ErrProjectExists, got: %v", err)
 	}
 }
 

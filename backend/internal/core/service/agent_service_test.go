@@ -59,13 +59,13 @@ type stubProjectStoreForAgent struct {
 	projects []domain.Project
 }
 
-func (s *stubProjectStoreForAgent) Get(slug string) (domain.Project, bool) {
+func (s *stubProjectStoreForAgent) Get(slug string) (domain.Project, error) {
 	for _, p := range s.projects {
 		if p.Slug == slug {
-			return p, true
+			return p, nil
 		}
 	}
-	return domain.Project{}, false
+	return domain.Project{}, domain.ErrProjectNotFound
 }
 func (s *stubProjectStoreForAgent) List() []domain.Project                    { return s.projects }
 func (s *stubProjectStoreForAgent) Add(_ domain.Project) error               { return nil }

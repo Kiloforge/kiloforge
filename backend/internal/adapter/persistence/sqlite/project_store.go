@@ -21,7 +21,7 @@ func NewProjectStore(db *sql.DB) *ProjectStore {
 	return &ProjectStore{db: db}
 }
 
-func (s *ProjectStore) Get(slug string) (domain.Project, bool) {
+func (s *ProjectStore) Get(slug string) (domain.Project, error) {
 	var p domain.Project
 	var regAt string
 	var active int
@@ -30,11 +30,14 @@ func (s *ProjectStore) Get(slug string) (domain.Project, bool) {
 		 FROM projects WHERE slug = ?`, slug,
 	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active)
 	if err != nil {
-		return domain.Project{}, false
+		if err == sql.ErrNoRows {
+			return domain.Project{}, fmt.Errorf("project %s: %w", slug, domain.ErrProjectNotFound)
+		}
+		return domain.Project{}, fmt.Errorf("get project %s: %w", slug, err)
 	}
 	p.RegisteredAt, _ = time.Parse(time.RFC3339, regAt)
 	p.Active = active != 0
-	return p, true
+	return p, nil
 }
 
 func (s *ProjectStore) List() []domain.Project {

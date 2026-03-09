@@ -24,7 +24,7 @@ type ProjectGiteaClient interface {
 
 // ProjectStoreWriter provides read/write access to the project registry.
 type ProjectStoreWriter interface {
-	Get(slug string) (domain.Project, bool)
+	Get(slug string) (domain.Project, error)
 	List() []domain.Project
 	Add(p domain.Project) error
 	Remove(slug string) error
@@ -86,14 +86,14 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		slug = name
 	}
 
-	if _, exists := s.store.Get(slug); exists {
-		return nil, &ProjectExistsError{Slug: slug}
+	if _, err := s.store.Get(slug); err == nil {
+		return nil, fmt.Errorf("project %s: %w", slug, domain.ErrProjectExists)
 	}
 
 	// Clean up orphaned clone directory from a previous failed attempt.
 	cloneDir := filepath.Join(s.config.DataDir, "repos", slug)
 	if _, err := os.Stat(cloneDir); err == nil {
-		if _, registered := s.store.Get(slug); !registered {
+		if _, err := s.store.Get(slug); err != nil {
 			os.RemoveAll(cloneDir)
 		}
 	}
@@ -204,9 +204,9 @@ func (s *ProjectService) ListProjects() []domain.Project {
 
 // GetProject returns a project by slug, or an error if not found.
 func (s *ProjectService) GetProject(slug string) (*domain.Project, error) {
-	p, ok := s.store.Get(slug)
-	if !ok {
-		return nil, &ProjectNotFoundError{Slug: slug}
+	p, err := s.store.Get(slug)
+	if err != nil {
+		return nil, err
 	}
 	return &p, nil
 }
@@ -214,9 +214,9 @@ func (s *ProjectService) GetProject(slug string) (*domain.Project, error) {
 // RemoveProject deregisters a project. If cleanup is true, also deletes
 // the Gitea repo and local filesystem data.
 func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup bool) error {
-	p, exists := s.store.Get(slug)
-	if !exists {
-		return &ProjectNotFoundError{Slug: slug}
+	p, err := s.store.Get(slug)
+	if err != nil {
+		return err
 	}
 
 	if cleanup {

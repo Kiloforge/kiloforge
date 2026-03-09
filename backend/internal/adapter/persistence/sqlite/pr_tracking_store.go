@@ -35,6 +35,9 @@ func (s *PRTrackingStore) LoadPRTracking(slug string) (*domain.PRTracking, error
 		&t.ReviewCycleCount, &t.MaxReviewCycles, &t.Status,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("pr tracking for %s: %w", slug, domain.ErrPRTrackingNotFound)
+		}
 		return nil, fmt.Errorf("load pr tracking: %w", err)
 	}
 	return &t, nil

@@ -306,8 +306,8 @@ func extractTraceID(ctx context.Context) string {
 
 func resolveProject(reg port.ProjectStore, slug string) (domain.Project, error) {
 	if slug != "" {
-		proj, ok := reg.Get(slug)
-		if !ok {
+		proj, err := reg.Get(slug)
+		if err != nil {
 			return domain.Project{}, fmt.Errorf("project %q not found — use 'kf add' to register", slug)
 		}
 		return proj, nil
