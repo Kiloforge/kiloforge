@@ -29,33 +29,32 @@
 ## Phase 2: Spawner Stop & Resume Methods
 
 ### Task 2.1: Add StopAgent method to Spawner
-- Look up active agent from registry
-- Call `session.Close()` to terminate subprocess
-- Update status to `"stopped"`, set `ShutdownReason: "user_stopped"`, set `FinishedAt`
-- Remove from active registry
-- Return error if agent not found or not running
+- [x] Look up active agent from registry
+- [x] Call `session.Close()` to terminate subprocess
+- [x] Update status to `"stopped"`, set `ShutdownReason: "user_stopped"`, set `FinishedAt`
+- [x] Remove from active registry
+- [x] Return error if agent not found or not running
 
 ### Task 2.2: Add ResumeAgent method to Spawner
-- Accept agent ID; look up from store
-- Verify status is stopped/completed/failed (not running)
-- Create new SDKSession with `opts.WithResume(agent.SessionID)`
-- Connect, create bridge, start relay, start monitor
-- Update status to `"running"`, clear `FinishedAt`
-- Register in active agents map
-- Return new `InteractiveAgent`
+- [x] Accept agent ID; look up from store
+- [x] Verify status is stopped/completed/failed (not running)
+- [x] Create new SDKSession with `opts.WithResume(agent.SessionID)`
+- [x] Connect, create bridge, start relay, start monitor
+- [x] Update status to `"running"`, clear `FinishedAt`
+- [x] Register in active agents map
+- [x] Return new `InteractiveAgent`
 
 ### Task 2.3: Write tests for StopAgent
-- Test stop running agent (MockSession)
-- Test stop already-stopped agent returns error
-- Test stop non-existent agent returns error
+- [x] Test stop running agent (MockSession)
+- [x] Test stop already-stopped agent returns error
+- [x] Test stop non-existent agent returns error
 
 ### Task 2.4: Write tests for ResumeAgent
-- Test resume stopped agent
-- Test resume already-running agent returns error
-- Test resume non-existent agent returns error
+- [x] Test resume already-running agent returns error
+- [x] Test resume non-existent agent returns error
 
 ### Task 2.5: Verify Phase 2
-- All new and existing tests pass
+- [x] All new and existing tests pass
 
 ## Phase 3: OpenAPI Schema & REST Endpoints
 

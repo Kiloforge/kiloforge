@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -346,6 +347,100 @@ func TestExtractUsageInfo(t *testing.T) {
 	}
 	if info.CacheCreationTokens != 10 {
 		t.Errorf("CacheCreationTokens = %d, want 10", info.CacheCreationTokens)
+	}
+}
+
+func TestStopAgent_NotRunning(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{}, &stubAgentStore{}, nil)
+	err := s.StopAgent("nonexistent")
+	if err == nil {
+		t.Fatal("expected error for non-running agent")
+	}
+	if err.Error() != "agent not running: nonexistent" {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestStopAgent_Running(t *testing.T) {
+	t.Parallel()
+
+	store := &stubAgentStore{
+		agents: []domain.AgentInfo{
+			{ID: "agent-1", Status: "running", SessionID: "sess-1"},
+		},
+	}
+	s := NewSpawner(&config.Config{}, store, nil)
+
+	// Create a mock SDK session.
+	ctx, cancel := context.WithCancel(context.Background())
+	session := &SDKSession{
+		ctx:    ctx,
+		cancel: cancel,
+		output: make(chan []byte, 10),
+		done:   make(chan struct{}),
+	}
+
+	ia := &InteractiveAgent{
+		Info:       store.agents[0],
+		Done:       session.done,
+		sdkSession: session,
+	}
+
+	s.activeMu.Lock()
+	s.activeAgents["agent-1"] = ia
+	s.activeMu.Unlock()
+
+	err := s.StopAgent("agent-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify removed from active agents.
+	if _, ok := s.GetActiveAgent("agent-1"); ok {
+		t.Error("agent should have been removed from active registry")
+	}
+
+	// Verify store status updated.
+	agent, _ := store.FindAgent("agent-1")
+	if agent.Status != "stopped" {
+		t.Errorf("status = %q, want %q", agent.Status, "stopped")
+	}
+}
+
+func TestResumeAgent_NotFound(t *testing.T) {
+	t.Parallel()
+
+	store := &stubAgentStore{}
+	s := NewSpawner(&config.Config{}, store, nil)
+	_, err := s.ResumeAgent(context.Background(), "nonexistent")
+	if err == nil {
+		t.Fatal("expected error for non-existent agent")
+	}
+}
+
+func TestResumeAgent_AlreadyRunning(t *testing.T) {
+	t.Parallel()
+
+	store := &stubAgentStore{
+		agents: []domain.AgentInfo{
+			{ID: "agent-1", Status: "running"},
+		},
+	}
+	s := NewSpawner(&config.Config{}, store, nil)
+
+	// Register as active.
+	s.activeMu.Lock()
+	s.activeAgents["agent-1"] = &InteractiveAgent{}
+	s.activeMu.Unlock()
+
+	_, err := s.ResumeAgent(context.Background(), "agent-1")
+	if err == nil {
+		t.Fatal("expected error for already-running agent")
+	}
+	if err.Error() != "agent already running: agent-1" {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 

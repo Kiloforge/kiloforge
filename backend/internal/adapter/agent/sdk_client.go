@@ -62,6 +62,39 @@ func NewSDKSession(ctx context.Context, workDir, model, logFilePath string) (*SD
 	}, nil
 }
 
+// NewSDKSessionWithResume creates an SDK session that resumes a previous session.
+func NewSDKSessionWithResume(ctx context.Context, workDir, model, logFilePath, sessionID string) (*SDKSession, error) {
+	opts := types.NewClaudeAgentOptions().
+		WithCWD(workDir).
+		WithDangerouslySkipPermissions(true).
+		WithAllowDangerouslySkipPermissions(true).
+		WithVerbose(true).
+		WithResume(sessionID)
+
+	if model != "" {
+		opts = opts.WithModel(model)
+	}
+
+	if logFilePath != "" {
+		opts = opts.WithCustomStderrLogFile(logFilePath)
+	}
+
+	client, err := claude.NewClient(ctx, opts)
+	if err != nil {
+		return nil, fmt.Errorf("create SDK client: %w", err)
+	}
+
+	sessionCtx, cancel := context.WithCancel(ctx)
+
+	return &SDKSession{
+		client: client,
+		ctx:    sessionCtx,
+		cancel: cancel,
+		output: make(chan []byte, 100),
+		done:   make(chan struct{}),
+	}, nil
+}
+
 // Connect establishes the SDK connection to the Claude CLI.
 func (s *SDKSession) Connect(ctx context.Context) error {
 	return s.client.Connect(ctx)
@@ -158,7 +191,9 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 // Close terminates the SDK session.
 func (s *SDKSession) Close() {
 	s.cancel()
-	_ = s.client.Close(s.ctx)
+	if s.client != nil {
+		_ = s.client.Close(s.ctx)
+	}
 	close(s.output)
 	close(s.done)
 	if s.logFile != nil {

@@ -446,6 +446,129 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	return ia, nil
 }
 
+// StopAgent stops a running interactive agent.
+func (s *Spawner) StopAgent(id string) error {
+	s.activeMu.Lock()
+	ia, ok := s.activeAgents[id]
+	if ok {
+		delete(s.activeAgents, id)
+	}
+	s.activeMu.Unlock()
+
+	if !ok {
+		return fmt.Errorf("agent not running: %s", id)
+	}
+
+	// Close the SDK session (cancels context, closes output channel).
+	ia.sdkSession.Close()
+
+	// Update store.
+	now := time.Now()
+	s.store.UpdateStatus(id, "stopped")
+	agent, err := s.store.FindAgent(id)
+	if err == nil {
+		agent.ShutdownReason = "user_stopped"
+		agent.FinishedAt = &now
+		s.store.AddAgent(*agent) // upsert
+	}
+	_ = s.store.Save()
+
+	return nil
+}
+
+// ResumeAgent resumes a stopped/completed/failed interactive agent session.
+func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent, error) {
+	// Check not already running.
+	s.activeMu.RLock()
+	_, running := s.activeAgents[id]
+	s.activeMu.RUnlock()
+	if running {
+		return nil, fmt.Errorf("agent already running: %s", id)
+	}
+
+	agent, err := s.store.FindAgent(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if agent.IsActive() {
+		return nil, fmt.Errorf("agent already running: %s", id)
+	}
+
+	if err := s.checkAuth(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.checkQuota(); err != nil {
+		return nil, fmt.Errorf("spawn blocked: %w", err)
+	}
+
+	workDir := agent.WorktreeDir
+	if workDir == "" {
+		workDir, _ = os.Getwd()
+	}
+
+	model := agent.Model
+	if model == "" {
+		model = s.cfg.Model
+	}
+
+	logFile := agent.LogFile
+
+	// Create SDK session with resume.
+	session, err := NewSDKSessionWithResume(ctx, workDir, model, logFile, agent.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("create resumed SDK session: %w", err)
+	}
+
+	// Open log file for append.
+	lf, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		session.Close()
+		return nil, fmt.Errorf("open log file: %w", err)
+	}
+	session.SetLogFile(lf)
+
+	// Connect to Claude CLI.
+	if err := session.Connect(ctx); err != nil {
+		lf.Close()
+		session.Close()
+		return nil, fmt.Errorf("SDK connect: %w", err)
+	}
+
+	// Update agent status.
+	s.store.UpdateStatus(id, "running")
+	_ = s.store.Save()
+
+	_, span := s.tracer.StartSpan(ctx, "agent/interactive-resume",
+		port.StringAttr("agent.id", id),
+		port.StringAttr("agent.role", agent.Role),
+		port.StringAttr("session.id", agent.SessionID),
+	)
+	span.AddEvent("agent.resumed")
+
+	inputHandler := func(text string) error {
+		return session.Query(ctx, text, s.tracker, id, span)
+	}
+
+	ia := &InteractiveAgent{
+		Info:       *agent,
+		Stdin:      inputHandler,
+		Output:     session.Output(),
+		Done:       session.done,
+		sdkSession: session,
+	}
+	ia.Info.Status = "running"
+	ia.Info.FinishedAt = nil
+
+	s.activeMu.Lock()
+	s.activeAgents[id] = ia
+	s.activeMu.Unlock()
+
+	go s.monitorSDKSession(id, agent.Ref, session, span)
+
+	return ia, nil
+}
+
 // monitorSDKSession waits for the SDK session to end and updates agent state.
 func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, span port.SpanEnder) {
 	<-session.ctx.Done()
