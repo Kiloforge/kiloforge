@@ -1253,3 +1253,106 @@ func TestGetProjectBranches(t *testing.T) {
 		}
 	})
 }
+
+func TestGetProjectMetadata_HappyPath(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// Create a project directory with kf metadata.
+	projDir := filepath.Join(dir, "myproject")
+	kfDir := filepath.Join(projDir, ".agent", "kf")
+	os.MkdirAll(filepath.Join(kfDir, "code_styleguides"), 0o755)
+
+	os.WriteFile(filepath.Join(kfDir, "product.md"), []byte("# My Product"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "product-guidelines.md"), []byte("# Guidelines"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "tech-stack.md"), []byte("# Tech Stack\nGo 1.24"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "workflow.md"), []byte("# Workflow"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "quick-links.md"), []byte("- [Product](./product.md)\n- [Tech](./tech-stack.md)"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "code_styleguides", "go.md"), []byte("# Go Style"), 0o644)
+	os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte("t1: {\"title\":\"Track 1\",\"status\":\"completed\",\"type\":\"feature\",\"created\":\"2026-01-01\",\"updated\":\"2026-01-01\"}\nt2: {\"title\":\"Track 2\",\"status\":\"pending\",\"type\":\"chore\",\"created\":\"2026-01-01\",\"updated\":\"2026-01-01\"}\n"), 0o644)
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{
+			{Slug: "myproject", ProjectDir: projDir},
+		}},
+	})
+
+	resp, err := h.GetProjectMetadata(context.Background(), gen.GetProjectMetadataRequestObject{Slug: "myproject"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetProjectMetadata200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.Product != "# My Product" {
+		t.Errorf("product = %q, want %q", r.Product, "# My Product")
+	}
+	if r.ProductGuidelines == nil || *r.ProductGuidelines != "# Guidelines" {
+		t.Errorf("product_guidelines = %v, want %q", r.ProductGuidelines, "# Guidelines")
+	}
+	if r.TechStack != "# Tech Stack\nGo 1.24" {
+		t.Errorf("tech_stack = %q", r.TechStack)
+	}
+	if r.Workflow == nil || *r.Workflow != "# Workflow" {
+		t.Errorf("workflow = %v", r.Workflow)
+	}
+	if len(r.QuickLinks) != 2 {
+		t.Errorf("quick_links count = %d, want 2", len(r.QuickLinks))
+	}
+	if r.StyleGuides == nil || len(*r.StyleGuides) != 1 {
+		t.Fatalf("style_guides count = %v, want 1", r.StyleGuides)
+	}
+	if (*r.StyleGuides)[0].Name != "go" {
+		t.Errorf("style_guides[0].name = %q, want %q", (*r.StyleGuides)[0].Name, "go")
+	}
+	if r.TrackSummary.Total != 2 {
+		t.Errorf("track_summary.total = %d, want 2", r.TrackSummary.Total)
+	}
+	if r.TrackSummary.Completed != 1 {
+		t.Errorf("track_summary.completed = %d, want 1", r.TrackSummary.Completed)
+	}
+	if r.TrackSummary.Pending != 1 {
+		t.Errorf("track_summary.pending = %d, want 1", r.TrackSummary.Pending)
+	}
+}
+
+func TestGetProjectMetadata_ProjectNotFound(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{{Slug: "other"}}},
+	})
+
+	resp, err := h.GetProjectMetadata(context.Background(), gen.GetProjectMetadataRequestObject{Slug: "nonexistent"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.GetProjectMetadata404JSONResponse); !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+}
+
+func TestGetProjectMetadata_KFNotInitialized(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	projDir := filepath.Join(dir, "emptyproject")
+	os.MkdirAll(projDir, 0o755)
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{
+			{Slug: "emptyproject", ProjectDir: projDir},
+		}},
+	})
+
+	resp, err := h.GetProjectMetadata(context.Background(), gen.GetProjectMetadataRequestObject{Slug: "emptyproject"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetProjectMetadata404JSONResponse)
+	if !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+	if r.Error == "" {
+		t.Error("expected error message for uninitialized kf")
+	}
+}

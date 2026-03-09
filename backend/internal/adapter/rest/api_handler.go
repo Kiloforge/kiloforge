@@ -17,6 +17,7 @@ import (
 	"kiloforge/internal/adapter/prereq"
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
+	"kiloforge/pkg/kf"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
@@ -1920,6 +1921,68 @@ func (h *APIHandler) checkSkillsForRole(role, workDir string) *gen.SkillsMissing
 		Error:         fmt.Sprintf("required skills not installed: %d missing", len(missing)),
 		MissingSkills: missingItems,
 	}
+}
+
+// GetProjectMetadata implements gen.StrictServerInterface.
+func (h *APIHandler) GetProjectMetadata(_ context.Context, req gen.GetProjectMetadataRequestObject) (gen.GetProjectMetadataResponseObject, error) {
+	proj, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.GetProjectMetadata404JSONResponse{Error: "project not found"}, nil
+	}
+
+	kfClient := kf.NewClientFromProject(proj.ProjectDir)
+	if !kfClient.IsInitialized() {
+		return gen.GetProjectMetadata404JSONResponse{Error: "kiloforge not initialized for this project"}, nil
+	}
+
+	info, err := kfClient.GetProjectInfo()
+	if err != nil {
+		return gen.GetProjectMetadata404JSONResponse{Error: fmt.Sprintf("failed to read project metadata: %v", err)}, nil
+	}
+
+	trackSummary, err := kfClient.GetTrackSummary()
+	if err != nil {
+		trackSummary = &kf.TrackSummary{}
+	}
+
+	resp := gen.GetProjectMetadata200JSONResponse{
+		Product:   info.Product,
+		TechStack: info.TechStack,
+		TrackSummary: gen.TrackSummary{
+			Total:      trackSummary.Total,
+			Pending:    trackSummary.Pending,
+			InProgress: trackSummary.InProgress,
+			Completed:  trackSummary.Completed,
+			Archived:   trackSummary.Archived,
+		},
+	}
+
+	if info.ProductGuidelines != "" {
+		resp.ProductGuidelines = &info.ProductGuidelines
+	}
+	if info.Workflow != "" {
+		resp.Workflow = &info.Workflow
+	}
+
+	for _, link := range info.QuickLinks {
+		resp.QuickLinks = append(resp.QuickLinks, gen.QuickLink{
+			Label: link.Label,
+			Path:  link.Path,
+		})
+	}
+	if resp.QuickLinks == nil {
+		resp.QuickLinks = []gen.QuickLink{}
+	}
+
+	if len(info.StyleGuides) > 0 {
+		guides := make([]gen.StyleGuideEntry, len(info.StyleGuides))
+		for i, sg := range info.StyleGuides {
+			guides[i] = gen.StyleGuideEntry{Name: sg.Name, Content: sg.Content}
+		}
+		resp.StyleGuides = &guides
+	}
+
+	return resp, nil
 }
 
 // GetProjectSetupStatus implements gen.StrictServerInterface.
