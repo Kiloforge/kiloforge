@@ -2,10 +2,30 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 export type WSConnectionState = "connecting" | "connected" | "disconnected" | "reconnecting";
 
+export type WSMessageType =
+  | "output" | "input" | "status" | "error"
+  | "turn_start" | "text" | "tool_use" | "thinking" | "turn_end" | "system";
+
+export interface WSUsageInfo {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
+}
+
 export interface WSMessage {
-  type: "output" | "input" | "status" | "error";
+  type: WSMessageType;
   text: string;
   timestamp: Date;
+  turnId?: string;
+  toolName?: string;
+  toolId?: string;
+  toolInput?: Record<string, unknown>;
+  thinking?: string;
+  costUsd?: number;
+  usage?: WSUsageInfo;
+  subtype?: string;
+  data?: Record<string, unknown>;
 }
 
 interface ServerMessage {
@@ -14,6 +34,15 @@ interface ServerMessage {
   status?: string;
   message?: string;
   exit_code?: number;
+  turn_id?: string;
+  tool_name?: string;
+  tool_id?: string;
+  input?: Record<string, unknown>;
+  thinking?: string;
+  cost_usd?: number;
+  usage?: WSUsageInfo;
+  subtype?: string;
+  data?: Record<string, unknown>;
 }
 
 export function useAgentWebSocket(agentId: string | null) {
@@ -44,7 +73,63 @@ export function useAgentWebSocket(agentId: string | null) {
 
         switch (msg.type) {
           case "output":
-            setMessages((prev) => [...prev, { type: "output", text: msg.text ?? "", timestamp: now }]);
+            // Backward compat: treat legacy output as text
+            setMessages((prev) => [...prev, { type: "text", text: msg.text ?? "", timestamp: now }]);
+            break;
+          case "text":
+            setMessages((prev) => [...prev, {
+              type: "text",
+              text: msg.text ?? "",
+              turnId: msg.turn_id,
+              timestamp: now,
+            }]);
+            break;
+          case "turn_start":
+            setMessages((prev) => [...prev, {
+              type: "turn_start",
+              text: "",
+              turnId: msg.turn_id,
+              timestamp: now,
+            }]);
+            break;
+          case "turn_end":
+            setMessages((prev) => [...prev, {
+              type: "turn_end",
+              text: "",
+              turnId: msg.turn_id,
+              costUsd: msg.cost_usd,
+              usage: msg.usage,
+              timestamp: now,
+            }]);
+            break;
+          case "tool_use":
+            setMessages((prev) => [...prev, {
+              type: "tool_use",
+              text: msg.tool_name ?? "",
+              turnId: msg.turn_id,
+              toolName: msg.tool_name,
+              toolId: msg.tool_id,
+              toolInput: msg.input,
+              timestamp: now,
+            }]);
+            break;
+          case "thinking":
+            setMessages((prev) => [...prev, {
+              type: "thinking",
+              text: "",
+              thinking: msg.thinking,
+              turnId: msg.turn_id,
+              timestamp: now,
+            }]);
+            break;
+          case "system":
+            setMessages((prev) => [...prev, {
+              type: "system",
+              text: "",
+              subtype: msg.subtype,
+              data: msg.data,
+              timestamp: now,
+            }]);
             break;
           case "status":
             setAgentStatus(msg.status ?? null);
