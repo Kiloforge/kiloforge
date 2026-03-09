@@ -41,8 +41,9 @@ type Server struct {
 	projects   ProjectLister
 	hub        *SSEHub
 	eventBus   port.EventBus
-	traceStore tracing.TraceReader
-	mux        *http.ServeMux
+	traceStore  tracing.TraceReader
+	trackReader port.TrackReader
+	mux         *http.ServeMux
 }
 
 // New creates a dashboard server. If eventBus is nil, a new SSEHub is created
@@ -129,6 +130,11 @@ func (s *Server) EventBus() port.EventBus {
 // SetTraceStore sets the trace store for watcher-driven trace events.
 func (s *Server) SetTraceStore(store tracing.TraceReader) {
 	s.traceStore = store
+}
+
+// SetTrackReader sets the track reader for track discovery.
+func (s *Server) SetTrackReader(reader port.TrackReader) {
+	s.trackReader = reader
 }
 
 func (s *Server) routes() {

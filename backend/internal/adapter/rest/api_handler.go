@@ -81,8 +81,9 @@ type APIHandler struct {
 	projectMgr ProjectManager
 	gitSync    *gitadapter.GitSync
 	traceStore tracing.TraceReader
-	boardSvc   *service.NativeBoardService
-	eventBus   port.EventBus
+	boardSvc     port.BoardService
+	trackReader  port.TrackReader
+	eventBus     port.EventBus
 	giteaURL      string
 	sseClients    func() int
 	cfg           *config.Config
@@ -104,7 +105,8 @@ type APIHandlerOpts struct {
 	ProjectMgr    ProjectManager
 	GitSync       *gitadapter.GitSync
 	TraceStore    tracing.TraceReader
-	BoardSvc      *service.NativeBoardService
+	BoardSvc      port.BoardService
+	TrackReader   port.TrackReader
 	EventBus      port.EventBus
 	GiteaURL      string
 	SSEClients    func() int
@@ -126,6 +128,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		gitSync:      opts.GitSync,
 		traceStore:   opts.TraceStore,
 		boardSvc:     opts.BoardSvc,
+		trackReader:  opts.TrackReader,
 		eventBus:     opts.EventBus,
 		giteaURL:     opts.GiteaURL,
 		sseClients:   opts.SSEClients,
@@ -686,7 +689,7 @@ func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObje
 		if req.Params.Project != nil && *req.Params.Project != p.Slug {
 			continue
 		}
-		tracks, err := service.DiscoverTracks(p.ProjectDir)
+		tracks, err := h.trackReader.DiscoverTracks(p.ProjectDir)
 		if err != nil {
 			continue
 		}
@@ -1186,7 +1189,7 @@ func (h *APIHandler) GetBoard(_ context.Context, req gen.GetBoardRequestObject) 
 	// Auto-sync if board is empty (first load or after reset).
 	if len(board.Cards) == 0 {
 		if proj, ok := h.findProject(req.Project); ok {
-			tracks, discoverErr := service.DiscoverTracks(proj.ProjectDir)
+			tracks, discoverErr := h.trackReader.DiscoverTracks(proj.ProjectDir)
 			if discoverErr == nil && len(tracks) > 0 {
 				result, syncErr := h.boardSvc.SyncFromTracks(req.Project, tracks, nil)
 				if syncErr == nil && (result.Created > 0 || result.Updated > 0) {
@@ -1249,7 +1252,7 @@ func (h *APIHandler) SyncBoard(_ context.Context, req gen.SyncBoardRequestObject
 		return gen.SyncBoard400JSONResponse{Error: fmt.Sprintf("project %q not found", req.Project)}, nil
 	}
 
-	tracks, err := service.DiscoverTracks(projectDir)
+	tracks, err := h.trackReader.DiscoverTracks(projectDir)
 	if err != nil {
 		return gen.SyncBoard500JSONResponse{Error: fmt.Sprintf("discover tracks: %v", err)}, nil
 	}
@@ -1494,7 +1497,7 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		go func() {
 			<-ia.Done
 			projectDir := workDir
-			tracks, err := service.DiscoverTracks(projectDir)
+			tracks, err := h.trackReader.DiscoverTracks(projectDir)
 			if err != nil {
 				return
 			}
@@ -1635,7 +1638,7 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 
 		// Auto-sync board after archive operations.
 		if adminArchiveOps[req.Body.Operation] && projectSlug != "" && h.boardSvc != nil {
-			tracks, err := service.DiscoverTracks(workDir)
+			tracks, err := h.trackReader.DiscoverTracks(workDir)
 			if err != nil {
 				return
 			}
@@ -1679,7 +1682,7 @@ func (h *APIHandler) GetTrackDetail(_ context.Context, req gen.GetTrackDetailReq
 	}
 
 	conductorDir := filepath.Join(projectDir, ".agent", "conductor")
-	detail, err := service.GetTrackDetail(conductorDir, req.TrackId)
+	detail, err := h.trackReader.GetTrackDetail(conductorDir, req.TrackId)
 	if err != nil {
 		return gen.GetTrackDetail404JSONResponse{Error: err.Error()}, nil
 	}

@@ -45,7 +45,9 @@ type ServerOption func(*Server)
 func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
 	return func(s *Server) {
 		hub := dashboard.NewSSEHub()
-		s.dashboard = dashboard.New(0, agents, quota, giteaURL, projects, hub)
+		d := dashboard.New(0, agents, quota, giteaURL, projects, hub)
+		d.SetTrackReader(service.NewTrackReader())
+		s.dashboard = d
 		s.quotaReader = quota
 		s._projects = projects
 	}
@@ -67,7 +69,7 @@ func WithTracing(store tracing.TraceReader) ServerOption {
 }
 
 // WithBoardService enables native board API endpoints.
-func WithBoardService(svc *service.NativeBoardService) ServerOption {
+func WithBoardService(svc port.BoardService) ServerOption {
 	return func(s *Server) {
 		s.boardSvc = svc
 	}
@@ -129,7 +131,7 @@ type Server struct {
 	quotaReader QuotaReader
 	_projects   dashboard.ProjectLister
 	traceStore    tracing.TraceReader
-	boardSvc      *service.NativeBoardService
+	boardSvc      port.BoardService
 	tracer        port.Tracer
 	interSpawner  InteractiveSpawner
 	wsSessions    *wsAdapter.SessionManager
@@ -243,6 +245,7 @@ func (s *Server) Run(ctx context.Context) error {
 		GitSync:      gitadapter.New(),
 		TraceStore:   s.traceStore,
 		BoardSvc:     s.boardSvc,
+		TrackReader:  service.NewTrackReader(),
 		EventBus:     eventBus,
 		GiteaURL:     s.cfg.GiteaURL(),
 		SSEClients:   sseClients,

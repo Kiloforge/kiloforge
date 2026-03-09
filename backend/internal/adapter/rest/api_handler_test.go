@@ -829,11 +829,12 @@ func TestGetBoard_AutoSyncOnEmpty(t *testing.T) {
 
 	spy := &spyEventBus{}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:   &stubAgentLister{},
-		Quota:    &stubQuotaReader{},
-		LockMgr:  lock.New(""),
-		BoardSvc: boardSvc,
-		EventBus: spy,
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		BoardSvc:    boardSvc,
+		TrackReader: service.NewTrackReader(),
+		EventBus:    spy,
 		Projects: &stubProjectLister{projects: []domain.Project{
 			{Slug: "proj", ProjectDir: projectDir},
 		}},

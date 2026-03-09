@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"kiloforge/internal/core/domain"
-	"kiloforge/internal/core/service"
 )
 
 type watcherState struct {
@@ -84,7 +83,7 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 	cur.tracks = make(map[string]string)
 	if s.projects != nil {
 		for _, p := range s.projects.List() {
-			tracks, err := service.DiscoverTracks(p.ProjectDir)
+			tracks, err := s.trackReader.DiscoverTracks(p.ProjectDir)
 			if err != nil {
 				continue
 			}

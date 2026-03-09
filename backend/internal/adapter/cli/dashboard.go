@@ -59,6 +59,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 
 	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, cfg.GiteaURL(), reg, nil)
 	srv.SetTraceStore(traceStore)
+	srv.SetTrackReader(service.NewTrackReader())
 
 	// Create interactive agent spawner and WebSocket session manager.
 	spawner := agent.NewSpawner(cfg, store, tracker)
