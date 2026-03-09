@@ -812,19 +812,15 @@ func TestGetBoard_AutoSyncOnEmpty(t *testing.T) {
 	dir := t.TempDir()
 	boardSvc := service.NewNativeBoardService(newTestBoardStore(dir))
 
-	// Create a project directory with tracks.md containing a track.
+	// Create a project directory with kf tracks.yaml containing a track.
 	projectDir := t.TempDir()
-	tracksDir := filepath.Join(projectDir, ".agent", "conductor")
-	if err := os.MkdirAll(tracksDir, 0o755); err != nil {
+	kfDir := filepath.Join(projectDir, ".agent", "kf")
+	if err := os.MkdirAll(kfDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	tracksMd := `# Tracks Registry
-
-| Status | Track ID | Title | Created | Updated |
-| ------ | -------- | ----- | ------- | ------- |
-| [ ] | my-track_20260310Z | My Test Track | 2026-03-10 | 2026-03-10 |
+	tracksYaml := `my-track_20260310Z: {"title":"My Test Track","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 `
-	if err := os.WriteFile(filepath.Join(tracksDir, "tracks.md"), []byte(tracksMd), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte(tracksYaml), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -1,6 +1,6 @@
 package port
 
-// TrackEntry represents a parsed track from tracks.md.
+// TrackEntry represents a parsed track from the registry.
 type TrackEntry struct {
 	ID     string
 	Title  string
@@ -27,8 +27,10 @@ type ProgressCount struct {
 	Completed int
 }
 
-// TrackReader discovers and reads track information from the filesystem.
+// TrackReader discovers and reads track information.
 type TrackReader interface {
 	DiscoverTracks(projectDir string) ([]TrackEntry, error)
-	GetTrackDetail(conductorDir, trackID string) (*TrackDetail, error)
+	GetTrackDetail(projectDir, trackID string) (*TrackDetail, error)
+	RemoveTrack(projectDir, trackID string) error
+	IsInitialized(projectDir string) bool
 }
