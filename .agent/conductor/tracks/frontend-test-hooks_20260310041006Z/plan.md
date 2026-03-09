@@ -4,7 +4,7 @@
 
 ## Phase 1: WebSocket and SSE Hook Tests
 
-### Task 1.1: Create test helpers for WebSocket and SSE mocks
+### Task 1.1: Create test helpers for WebSocket and SSE mocks [~]
 - Create `src/test/mocks/websocket.ts` with MockWebSocket class
 - Create `src/test/mocks/eventsource.ts` with MockEventSource class
 - Create `src/test/helpers.tsx` with QueryClient wrapper for `renderHook()`
