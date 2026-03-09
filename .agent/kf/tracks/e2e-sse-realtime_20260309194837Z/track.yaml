@@ -146,11 +146,11 @@ plan:
   - phase: Track and Board Event Tests
     tasks:
       - text: `track_update` list refresh — change a track's status via API, verify the track list in the UI updates to reflect the new status without page refresh
-        done: false
+        done: true
       - text: `board_update` card move — move a kanban card via API, verify the board UI moves the card to the new column without page refresh
-        done: false
+        done: true
       - text: Track removal — remove a track via API, verify the track disappears from the track list UI without page refresh
-        done: false
+        done: true
   - phase: Project and Lock Event Tests
     tasks:
       - text: `project_update` and `project_removed` — update a project via API, verify project list refreshes; delete a project, verify it disappears from the list
