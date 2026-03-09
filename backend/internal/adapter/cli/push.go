@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -54,8 +55,10 @@ func runPush(cmd *cobra.Command, args []string) error {
 	}
 	defer rt.Close()
 
+	syncSvc := service.NewGitSyncService(&execGitRunner{})
+
 	if flagPushAll {
-		return pushAll(ctx, rt.Projects.ListProjects())
+		return pushAll(ctx, rt.Projects.ListProjects(), syncSvc)
 	}
 
 	project, err := rt.Projects.GetProject(args[0])
@@ -63,10 +66,10 @@ func runPush(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project %q not found", args[0])
 	}
 
-	return pushProject(ctx, *project, flagPushBranch)
+	return pushProject(ctx, *project, flagPushBranch, syncSvc)
 }
 
-func pushAll(ctx context.Context, projects []domain.Project) error {
+func pushAll(ctx context.Context, projects []domain.Project, syncSvc *service.GitSyncService) error {
 	if len(projects) == 0 {
 		fmt.Println("No projects registered.")
 		return nil
@@ -78,7 +81,7 @@ func pushAll(ctx context.Context, projects []domain.Project) error {
 			continue
 		}
 		fmt.Printf("==> Pushing %s (main → origin)...\n", p.Slug)
-		if err := pushProject(ctx, p, "main"); err != nil {
+		if err := pushProject(ctx, p, "main", syncSvc); err != nil {
 			fmt.Printf("    FAILED: %v\n", err)
 			failures = append(failures, p.Slug)
 		}
@@ -90,54 +93,42 @@ func pushAll(ctx context.Context, projects []domain.Project) error {
 	return nil
 }
 
-func pushProject(ctx context.Context, p domain.Project, branch string) error {
+func pushProject(ctx context.Context, p domain.Project, branch string, syncSvc *service.GitSyncService) error {
 	if p.OriginRemote == "" {
 		return fmt.Errorf("no origin remote configured for project %q", p.Slug)
 	}
 
-	// Fetch origin to check ahead/behind status.
-	fetchCmd := gitCmd(ctx, p, "fetch", "origin", branch)
-	if out, err := fetchCmd.CombinedOutput(); err != nil {
-		fmt.Printf("    Warning: fetch failed: %s\n", strings.TrimSpace(string(out)))
-	} else {
-		// Check ahead/behind.
-		revList := gitCmd(ctx, p, "rev-list", "--left-right", "--count",
-			fmt.Sprintf("origin/%s...%s", branch, branch))
-		if out, err := revList.Output(); err == nil {
-			parts := strings.Fields(strings.TrimSpace(string(out)))
-			if len(parts) == 2 {
-				behind, ahead := parts[0], parts[1]
-				if behind != "0" || ahead != "0" {
-					fmt.Printf("    Status: %s ahead, %s behind origin/%s\n", ahead, behind, branch)
-				}
-				if behind != "0" {
-					fmt.Printf("    Warning: origin has new commits — push may fail if branches diverge\n")
-				}
-			}
+	sshEnv := p.GitSSHEnv()
+
+	// Check sync status via service.
+	status, err := syncSvc.CheckSyncStatus(ctx, p.ProjectDir, sshEnv, branch)
+	if err != nil {
+		fmt.Printf("    Warning: %v\n", err)
+	} else if status.Behind != 0 || status.Ahead != 0 {
+		fmt.Printf("    Status: %d ahead, %d behind origin/%s\n", status.Ahead, status.Behind, branch)
+		if status.Behind != 0 {
+			fmt.Printf("    Warning: origin has new commits — push may fail if branches diverge\n")
 		}
 	}
 
-	// Push.
-	pushCmd := gitCmd(ctx, p, "push", "origin", branch)
-	pushCmd.Stdout = os.Stdout
-	pushCmd.Stderr = os.Stderr
-	if err := pushCmd.Run(); err != nil {
-		if strings.Contains(err.Error(), "non-fast-forward") {
-			return fmt.Errorf("origin has diverged — pull and resolve conflicts first")
-		}
-		return fmt.Errorf("push failed: %w", err)
+	// Push via service.
+	if err := syncSvc.PushBranch(ctx, p.ProjectDir, sshEnv, branch); err != nil {
+		return err
 	}
 
 	fmt.Printf("    Pushed %s → origin/%s\n", branch, branch)
 	return nil
 }
 
-// gitCmd creates a git command for the project's clone directory with SSH env if configured.
-func gitCmd(ctx context.Context, p domain.Project, args ...string) *exec.Cmd {
-	fullArgs := append([]string{"-C", p.ProjectDir}, args...)
+// execGitRunner implements service.GitCommandRunner using exec.Command.
+type execGitRunner struct{}
+
+func (r *execGitRunner) RunGitCommand(ctx context.Context, dir string, sshEnv []string, args ...string) (string, error) {
+	fullArgs := append([]string{"-C", dir}, args...)
 	cmd := exec.CommandContext(ctx, "git", fullArgs...)
-	if sshEnv := p.GitSSHEnv(); len(sshEnv) > 0 {
+	if len(sshEnv) > 0 {
 		cmd.Env = append(os.Environ(), sshEnv...)
 	}
-	return cmd
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }

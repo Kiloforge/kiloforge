@@ -7,6 +7,7 @@ import (
 
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/skills"
+	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
 )
@@ -53,26 +54,25 @@ func runSkillsConfig(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	changed := false
-	if repo != "" {
-		cfg.SkillsRepo = repo
-		changed = true
-		fmt.Printf("Skills repo set to: %s\n", repo)
+	svc := newSkillsService(cfg)
+	result, err := svc.UpdateConfig(service.SkillsConfigUpdate{
+		Repo:         &repo,
+		AutoUpdate:   &autoUpdate,
+		NoAutoUpdate: &noAutoUpdate,
+	})
+	if err != nil {
+		return err
 	}
-	if autoUpdate {
-		v := true
-		cfg.AutoUpdateSkills = &v
-		changed = true
-		fmt.Println("Auto-update enabled")
+
+	if result.RepoChanged {
+		fmt.Printf("Skills repo set to: %s\n", result.NewRepo)
 	}
-	if noAutoUpdate {
-		v := false
-		cfg.AutoUpdateSkills = &v
-		changed = true
-		fmt.Println("Auto-update disabled")
-	}
-	if changed {
-		return cfg.Save()
+	if result.AutoUpdateChanged {
+		if result.AutoUpdateEnabled {
+			fmt.Println("Auto-update enabled")
+		} else {
+			fmt.Println("Auto-update disabled")
+		}
 	}
 	return nil
 }
@@ -82,79 +82,54 @@ func runSkillsUpdate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
-	if cfg.SkillsRepo == "" {
-		return fmt.Errorf("no skills repo configured — run 'kf skills --repo owner/repo' first")
-	}
 
+	svc := newSkillsService(cfg)
 	force, _ := cmd.Flags().GetBool("force")
-	skillsDir := cfg.GetSkillsDir()
 
-	// Check latest release.
-	gh := skills.NewGitHubClient()
-	rel, err := gh.LatestRelease(cfg.SkillsRepo)
+	checkResult, err := svc.CheckForUpdates()
 	if err != nil {
-		return fmt.Errorf("check for updates: %w", err)
+		return err
 	}
 
-	if cfg.SkillsVersion != "" && !skills.IsNewer(cfg.SkillsVersion, rel.TagName) {
-		fmt.Printf("Skills are up to date (%s)\n", cfg.SkillsVersion)
+	if checkResult.UpToDate {
+		fmt.Printf("Skills are up to date (%s)\n", checkResult.CurrentVersion)
 		return nil
 	}
 
-	fmt.Printf("New version available: %s → %s\n", cfg.SkillsVersion, rel.TagName)
+	fmt.Printf("New version available: %s → %s\n", checkResult.CurrentVersion, checkResult.NewVersion)
 
-	// Check for modifications.
-	if !force {
-		manifest, _ := skills.LoadManifest()
-		modified := skills.DetectModified(skillsDir, manifest)
-		if len(modified) > 0 {
-			fmt.Println("\nThe following skills have local modifications that will be overwritten:")
-			for _, m := range modified {
-				fmt.Printf("  • %s (%d files changed)\n", m.Name, len(m.Files))
-			}
-			fmt.Print("\nContinue? [y/N] ")
-			var answer string
-			fmt.Scanln(&answer)
-			if answer != "y" && answer != "Y" {
-				fmt.Println("Update cancelled. Use --force to skip this check.")
-				return nil
-			}
+	// Prompt for modified skills confirmation (CLI concern).
+	if !force && len(checkResult.Modified) > 0 {
+		fmt.Println("\nThe following skills have local modifications that will be overwritten:")
+		for _, m := range checkResult.Modified {
+			fmt.Printf("  • %s (%d files changed)\n", m.Name, len(m.Files))
+		}
+		fmt.Print("\nContinue? [y/N] ")
+		var answer string
+		fmt.Scanln(&answer)
+		if answer != "y" && answer != "Y" {
+			fmt.Println("Update cancelled. Use --force to skip this check.")
+			return nil
 		}
 	}
 
-	// Install.
 	fmt.Printf("Installing skills from %s...\n", cfg.SkillsRepo)
-	inst := skills.NewInstaller()
-	installed, err := inst.Install(rel.TarballURL, skillsDir)
+	installResult, err := svc.InstallUpdate(checkResult.Release)
 	if err != nil {
-		return fmt.Errorf("install skills: %w", err)
+		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+		if installResult == nil {
+			return err
+		}
 	}
 
-	// Update manifest.
-	checksums, _ := skills.ComputeChecksums(skillsDir)
-	manifest := &skills.Manifest{
-		Version:   rel.TagName,
-		Checksums: checksums,
-	}
-	if err := manifest.Save(); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not save manifest: %v\n", err)
-	}
-
-	// Update config version.
-	cfg.SkillsVersion = rel.TagName
-	if err := cfg.Save(); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not save config: %v\n", err)
-	}
-
-	fmt.Printf("Installed %d skills (version %s):\n", len(installed), rel.TagName)
-	for _, s := range installed {
+	fmt.Printf("Installed %d skills (version %s):\n", len(installResult.Installed), installResult.Version)
+	for _, s := range installResult.Installed {
 		fmt.Printf("  • %s\n", s.Name)
 	}
 	return nil
 }
 
 // readLineCtx reads a line from stdin, respecting context cancellation.
-// Returns the input string, or empty string if cancelled.
 func readLineCtx(ctx context.Context) (string, bool) {
 	ch := make(chan string, 1)
 	go func() {
@@ -175,7 +150,6 @@ func readLineCtx(ctx context.Context) (string, bool) {
 // but no skills are installed yet. Falls back to embedded install when no repo.
 func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 	if cfg.SkillsRepo == "" {
-		// No repo configured — use embedded skills silently.
 		installEmbeddedSkills(cfg)
 		return
 	}
@@ -197,35 +171,27 @@ func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
 		return
 	}
 
-	gh := skills.NewGitHubClient()
-	rel, err := gh.LatestRelease(cfg.SkillsRepo)
+	svc := newSkillsService(cfg)
+	checkResult, err := svc.CheckForUpdates()
 	if err != nil {
 		fmt.Printf("Warning: could not check for skills: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Installing skills %s...\n", rel.TagName)
-	inst := skills.NewInstaller()
-	result, err := inst.Install(rel.TarballURL, skillsDir)
+	fmt.Printf("Installing skills %s...\n", checkResult.NewVersion)
+	installResult, err := svc.InstallUpdate(checkResult.Release)
 	if err != nil {
 		fmt.Printf("Warning: skills installation failed: %v\n", err)
 		return
 	}
 
-	checksums, _ := skills.ComputeChecksums(skillsDir)
-	m := &skills.Manifest{Version: rel.TagName, Checksums: checksums}
-	m.Save()
-	cfg.SkillsVersion = rel.TagName
-	cfg.Save()
-
-	fmt.Printf("Installed %d skills:\n", len(result))
-	for _, s := range result {
+	fmt.Printf("Installed %d skills:\n", len(installResult.Installed))
+	for _, s := range installResult.Installed {
 		fmt.Printf("  • %s\n", s.Name)
 	}
 }
 
 // installEmbeddedSkills auto-installs all embedded skills without prompting.
-// Skips skills that are already installed and up to date (hash match).
 func installEmbeddedSkills(cfg *config.Config) {
 	skillsDir := cfg.GetSkillsDir()
 	installed, err := skills.InstallAllEmbedded(skillsDir)
@@ -249,9 +215,8 @@ func runSkillsList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	skillsDir := cfg.GetSkillsDir()
-	manifest, _ := skills.LoadManifest()
-	installed := skills.ListInstalled(skillsDir, manifest)
+	svc := newSkillsService(cfg)
+	installed, version, dir := svc.ListInstalledSkills()
 
 	if len(installed) == 0 {
 		fmt.Println("No skills installed.")
@@ -263,7 +228,7 @@ func runSkillsList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("Skills (version: %s, dir: %s):\n", cfg.SkillsVersion, skillsDir)
+	fmt.Printf("Skills (version: %s, dir: %s):\n", version, dir)
 	for _, s := range installed {
 		status := "✓"
 		if s.Modified {
