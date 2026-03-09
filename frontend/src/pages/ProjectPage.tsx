@@ -291,6 +291,7 @@ export function ProjectPage() {
         ) : (
           <KanbanBoard
             board={board ?? { columns: ["backlog", "approved", "in_progress", "in_review", "done"], cards: {} }}
+            projectSlug={slug}
             onMoveCard={moveCard}
             onDeleteTrack={handleDeleteTrack}
           />
@@ -352,7 +353,7 @@ export function ProjectPage() {
         {tracksLoading ? (
           <p className={appStyles.empty}>Loading tracks...</p>
         ) : (
-          <TrackList tracks={tracks} />
+          <TrackList tracks={tracks} projectSlug={slug} />
         )}
       </section>
     </>

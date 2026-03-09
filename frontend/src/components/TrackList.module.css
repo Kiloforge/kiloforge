@@ -10,6 +10,13 @@
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s;
+}
+
+.row:hover {
+  background: var(--hover);
 }
 
 .row:last-child {

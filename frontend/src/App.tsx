@@ -26,6 +26,7 @@ import { AgentDetailPage } from "./pages/AgentDetailPage";
 import { AgentHistoryPage } from "./pages/AgentHistoryPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { TracePage } from "./pages/TracePage";
+import { TrackDetailPage } from "./pages/TrackDetailPage";
 import styles from "./App.module.css";
 
 export default function App() {
@@ -142,6 +143,7 @@ export default function App() {
           <Route path="/agents" element={<AgentHistoryPage />} />
           <Route path="/agents/:id" element={<AgentDetailPage />} />
           <Route path="/projects/:slug" element={<ProjectPage />} />
+          <Route path="/projects/:slug/tracks/:trackId" element={<TrackDetailPage />} />
           <Route path="/traces/:traceId" element={<TracePage />} />
         </Routes>
       </main>

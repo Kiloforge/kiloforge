@@ -23,11 +23,12 @@ const COLUMN_COLORS: Record<string, string> = {
 
 interface KanbanBoardProps {
   board: BoardState;
+  projectSlug?: string;
   onMoveCard: (trackId: string, toColumn: string) => void;
   onDeleteTrack?: (trackId: string) => void;
 }
 
-export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardProps) {
+export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack }: KanbanBoardProps) {
   const tour = useTourContextSafe();
   const [dragTrackId, setDragTrackId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -101,6 +102,7 @@ export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardPro
                 <CardItem
                   key={card.track_id}
                   card={card}
+                  projectSlug={projectSlug}
                   isDragging={dragTrackId === card.track_id}
                   isBacklog={col === "backlog"}
                   dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
@@ -126,6 +128,7 @@ export function KanbanBoard({ board, onMoveCard, onDeleteTrack }: KanbanBoardPro
 
 interface CardItemProps {
   card: BoardCard;
+  projectSlug?: string;
   isDragging: boolean;
   isBacklog: boolean;
   confirmingReject: boolean;
@@ -138,7 +141,7 @@ interface CardItemProps {
   onCancelReject: () => void;
 }
 
-function CardItem({ card, isDragging, isBacklog, confirmingReject, dataTour, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, dataTour, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
   return (
     <div
       className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isBacklog ? styles.cardBacklog : ""}`}
@@ -154,7 +157,17 @@ function CardItem({ card, isDragging, isBacklog, confirmingReject, dataTour, onD
           <span className={styles.cardPR}>PR #{card.pr_number}</span>
         )}
       </div>
-      <div className={styles.cardTitle}>{card.title}</div>
+      <div className={styles.cardTitle}>
+        {projectSlug ? (
+          <Link
+            to={`/projects/${projectSlug}/tracks/${card.track_id}`}
+            className={styles.cardTitleLink}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {card.title}
+          </Link>
+        ) : card.title}
+      </div>
       <div className={styles.cardMeta}>
         <span className={styles.cardId}>{card.track_id}</span>
         {card.agent_status && (

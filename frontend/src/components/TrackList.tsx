@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { Track } from "../types/api";
 import styles from "./TrackList.module.css";
 
@@ -12,22 +13,48 @@ function statusIcon(status: string): string {
   }
 }
 
-export function TrackList({ tracks }: { tracks: Track[] }) {
+interface TrackListProps {
+  tracks: Track[];
+  projectSlug?: string;
+}
+
+export function TrackList({ tracks, projectSlug }: TrackListProps) {
   if (tracks.length === 0) {
     return <p className={styles.empty}>No tracks found</p>;
   }
 
   return (
     <div className={styles.list}>
-      {tracks.map((track) => (
-        <div key={track.id} className={styles.row}>
-          <span className={`${styles.status} ${styles[track.status] ?? ""}`}>
-            {statusIcon(track.status)}
-          </span>
-          <span className={styles.id}>{track.id}</span>
-          <span className={styles.title}>{track.title}</span>
-        </div>
-      ))}
+      {tracks.map((track) => {
+        const slug = projectSlug || track.project;
+        const content = (
+          <>
+            <span className={`${styles.status} ${styles[track.status] ?? ""}`}>
+              {statusIcon(track.status)}
+            </span>
+            <span className={styles.id}>{track.id}</span>
+            <span className={styles.title}>{track.title}</span>
+          </>
+        );
+
+        if (slug) {
+          return (
+            <Link
+              key={track.id}
+              to={`/projects/${slug}/tracks/${track.id}`}
+              className={styles.row}
+            >
+              {content}
+            </Link>
+          );
+        }
+
+        return (
+          <div key={track.id} className={styles.row}>
+            {content}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -36,4 +36,8 @@ describe("queryKeys", () => {
   it("syncStatus() produces scoped key", () => {
     expect(queryKeys.syncStatus("my-slug")).toEqual(["syncStatus", "my-slug"]);
   });
+
+  it("trackDetail() produces scoped key", () => {
+    expect(queryKeys.trackDetail("track-1", "my-project")).toEqual(["tracks", "track-1", "my-project"]);
+  });
 });

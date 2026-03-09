@@ -51,6 +51,21 @@ export interface Track {
   project?: string;
 }
 
+export interface TrackDetail {
+  id: string;
+  title: string;
+  status: string;
+  type?: string;
+  spec?: string;
+  plan?: string;
+  phases_total?: number;
+  phases_completed?: number;
+  tasks_total?: number;
+  tasks_completed?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Project {
   slug: string;
   repo_name: string;

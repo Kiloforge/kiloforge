@@ -16,4 +16,5 @@ export const queryKeys = {
   tourDemoBoard: ["tour", "demo-board"] as const,
   setupStatus: (slug: string) => ["setupStatus", slug] as const,
   preflight: ["preflight"] as const,
+  trackDetail: (trackId: string, project: string) => ["tracks", trackId, project] as const,
 };
