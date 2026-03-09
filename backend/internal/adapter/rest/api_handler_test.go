@@ -577,14 +577,14 @@ func TestListTraces_NilStore(t *testing.T) {
 
 // stubProjectManager implements ProjectManager for testing.
 type stubProjectManager struct {
-	addResult *service.AddProjectResult
+	addResult *domain.AddProjectResult
 	addErr    error
 	removeErr error
 	removedSlug   string
 	removedCleanup bool
 }
 
-func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name string, _ ...service.AddProjectOpts) (*service.AddProjectResult, error) {
+func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name string, _ ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
 	if m.addErr != nil {
 		return nil, m.addErr
 	}
@@ -601,7 +601,7 @@ func TestAddProject_Success(t *testing.T) {
 	t.Parallel()
 
 	mgr := &stubProjectManager{
-		addResult: &service.AddProjectResult{
+		addResult: &domain.AddProjectResult{
 			Project: domain.Project{
 				Slug:         "myapp",
 				RepoName:     "myapp",
@@ -948,7 +948,7 @@ func TestAddProject_EmitsProjectUpdate(t *testing.T) {
 	t.Parallel()
 	spy := &spyEventBus{}
 	mgr := &stubProjectManager{
-		addResult: &service.AddProjectResult{
+		addResult: &domain.AddProjectResult{
 			Project: domain.Project{Slug: "myapp", RepoName: "myapp", Active: true},
 		},
 	}
@@ -1026,9 +1026,9 @@ func TestAddProject_NilManager(t *testing.T) {
 func TestAddProject_WithSSHKey(t *testing.T) {
 	t.Parallel()
 
-	var capturedOpts []service.AddProjectOpts
+	var capturedOpts []domain.AddProjectOpts
 	mgr := &stubProjectManager{
-		addResult: &service.AddProjectResult{
+		addResult: &domain.AddProjectResult{
 			Project: domain.Project{
 				Slug:     "myapp",
 				RepoName: "myapp",

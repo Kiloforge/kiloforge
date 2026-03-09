@@ -48,7 +48,7 @@ type ProjectLister interface {
 
 // ProjectManager handles project add/remove operations.
 type ProjectManager interface {
-	AddProject(ctx context.Context, remoteURL, name string, opts ...service.AddProjectOpts) (*service.AddProjectResult, error)
+	AddProject(ctx context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
 }
 
@@ -619,9 +619,9 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 		name = *req.Body.Name
 	}
 
-	var opts []service.AddProjectOpts
+	var opts []domain.AddProjectOpts
 	if req.Body.SshKey != nil && *req.Body.SshKey != "" {
-		opts = append(opts, service.AddProjectOpts{SSHKeyPath: *req.Body.SshKey})
+		opts = append(opts, domain.AddProjectOpts{SSHKeyPath: *req.Body.SshKey})
 	}
 
 	result, err := h.projectMgr.AddProject(ctx, req.Body.RemoteUrl, name, opts...)

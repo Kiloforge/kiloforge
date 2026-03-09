@@ -11,6 +11,7 @@ import (
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
+	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -119,7 +120,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("==> Adding project %q from %s...\n", slug, remoteURL)
-	result, err := projectSvc.AddProject(ctx, remoteURL, flagAddName, service.AddProjectOpts{
+	result, err := projectSvc.AddProject(ctx, remoteURL, flagAddName, domain.AddProjectOpts{
 		SSHKeyPath: sshKeyPath,
 	})
 	if err != nil {

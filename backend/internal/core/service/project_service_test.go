@@ -83,6 +83,24 @@ func (m *mockProjectStore) Remove(slug string) error {
 	return nil
 }
 
+func (m *mockProjectStore) FindByRepoName(name string) (domain.Project, bool) {
+	for _, p := range m.projects {
+		if p.RepoName == name {
+			return p, true
+		}
+	}
+	return domain.Project{}, false
+}
+
+func (m *mockProjectStore) FindByDir(dir string) (domain.Project, bool) {
+	for _, p := range m.projects {
+		if p.ProjectDir == dir {
+			return p, true
+		}
+	}
+	return domain.Project{}, false
+}
+
 func (m *mockProjectStore) Save() error {
 	return m.saveErr
 }

@@ -11,25 +11,8 @@ import (
 	"time"
 
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
-
-// ProjectGiteaClient abstracts the Gitea operations needed by ProjectService.
-type ProjectGiteaClient interface {
-	CreateRepo(ctx context.Context, name string) error
-	CreateWebhook(ctx context.Context, repoName string, orchPort int) error
-	DeleteRepo(ctx context.Context, repoName string) error
-	DeleteAllWebhooks(ctx context.Context, repoName string) error
-	BaseURL() string
-}
-
-// ProjectStoreWriter provides read/write access to the project registry.
-type ProjectStoreWriter interface {
-	Get(slug string) (domain.Project, error)
-	List() []domain.Project
-	Add(p domain.Project) error
-	Remove(slug string) error
-	Save() error
-}
 
 // ProjectServiceConfig holds configuration needed by ProjectService.
 type ProjectServiceConfig struct {
@@ -41,13 +24,13 @@ type ProjectServiceConfig struct {
 
 // ProjectService handles project registration and removal.
 type ProjectService struct {
-	store  ProjectStoreWriter
-	gitea  ProjectGiteaClient
+	store  port.ProjectStore
+	gitea  port.ProjectGiteaClient
 	config ProjectServiceConfig
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store ProjectStoreWriter, gitea ProjectGiteaClient, cfg ProjectServiceConfig) *ProjectService {
+func NewProjectService(store port.ProjectStore, gitea port.ProjectGiteaClient, cfg ProjectServiceConfig) *ProjectService {
 	return &ProjectService{
 		store:  store,
 		gitea:  gitea,
@@ -55,20 +38,9 @@ func NewProjectService(store ProjectStoreWriter, gitea ProjectGiteaClient, cfg P
 	}
 }
 
-// AddProjectResult contains details about a newly added project.
-type AddProjectResult struct {
-	Project   domain.Project
-	EmptyRepo bool // true if the repo had no commits (push was skipped)
-}
-
-// AddProjectOpts contains optional parameters for AddProject.
-type AddProjectOpts struct {
-	SSHKeyPath string // Path to SSH private key for cloning.
-}
-
 // AddProject registers a new project from a remote URL.
-func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string, opts ...AddProjectOpts) (*AddProjectResult, error) {
-	var opt AddProjectOpts
+func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
+	var opt domain.AddProjectOpts
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
@@ -185,15 +157,15 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		return nil, fmt.Errorf("save registry: %w", err)
 	}
 
-	result := &AddProjectResult{Project: p}
+	result := &domain.AddProjectResult{Project: p}
 	if empty {
 		result.EmptyRepo = true
 	}
 	return result, nil
 }
 
-// Store returns the underlying project store writer.
-func (s *ProjectService) Store() ProjectStoreWriter {
+// Store returns the underlying project store.
+func (s *ProjectService) Store() port.ProjectStore {
 	return s.store
 }
 

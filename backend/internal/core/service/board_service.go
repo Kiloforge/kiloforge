@@ -5,21 +5,16 @@ import (
 	"time"
 
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
-
-// NativeBoardStore abstracts persistence for the native board.
-type NativeBoardStore interface {
-	GetBoard(slug string) (*domain.BoardState, error)
-	SaveBoard(slug string, board *domain.BoardState) error
-}
 
 // NativeBoardService manages the native track board.
 type NativeBoardService struct {
-	store NativeBoardStore
+	store port.BoardStore
 }
 
 // NewNativeBoardService creates a new NativeBoardService.
-func NewNativeBoardService(store NativeBoardStore) *NativeBoardService {
+func NewNativeBoardService(store port.BoardStore) *NativeBoardService {
 	return &NativeBoardService{store: store}
 }
 

@@ -26,6 +26,17 @@ type Project struct {
 	Active       bool      `json:"active"`
 }
 
+// AddProjectOpts contains optional parameters for adding a project.
+type AddProjectOpts struct {
+	SSHKeyPath string // Path to SSH private key for cloning.
+}
+
+// AddProjectResult contains details about a newly added project.
+type AddProjectResult struct {
+	Project   Project
+	EmptyRepo bool // true if the repo had no commits (push was skipped)
+}
+
 // GitSSHEnv returns environment variables for git commands to use the
 // project's configured SSH key. Returns nil if no SSH key is configured.
 func (p Project) GitSSHEnv() []string {
