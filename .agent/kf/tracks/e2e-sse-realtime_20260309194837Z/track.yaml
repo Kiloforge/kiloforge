@@ -3,7 +3,7 @@ title: E2E Tests: Real-Time SSE Updates — Connection, Events, and Reconnection
 type: chore
 status: pending
 created: 2026-03-09T19:48:37Z
-updated: 2026-03-09T19:48:37Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the Server-Sent Events stream: establishing connection, receiving typed events (agent, quota, track, board, project, lock, trace), UI reactivity to events, and reconnection behavior, covering happy path, edge cases, and expected failures.
   context: |
@@ -130,11 +130,11 @@ plan:
   - phase: Connection Tests
     tasks:
       - text: SSE connects on dashboard load — navigate to dashboard, verify the SSE connection is established (check connection indicator shows "connected")
-        done: false
+        done: true
       - text: Connection indicator UI — verify the connection indicator component renders with correct visual state (green/connected), and verify it changes to disconnected state when SSE drops
-        done: false
+        done: true
       - text: Connection headers — verify the SSE request includes correct headers (`Accept: text/event-stream`) and the response has correct content type
-        done: false
+        done: true
   - phase: Agent Event Tests
     tasks:
       - text: `agent_update` UI reaction — spawn an agent via API, verify the agent list in the dashboard updates to show the new agent without a page refresh
@@ -169,4 +169,4 @@ plan:
         done: false
       - text: Server restart during connection — restart the test server while SSE is connected, verify disconnection is detected, auto-reconnect occurs after server is back, and dashboard state is refreshed
         done: false
-extra: "{}"
+extra: {}
