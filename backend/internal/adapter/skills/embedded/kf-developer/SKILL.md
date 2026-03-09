@@ -2,7 +2,7 @@
 name: kf-developer
 description: Receive a track ID, validate it is an active unclaimed track, then implement it following the kiloforge workflow. Worker role in the track generation => approval => push to worker pipeline.
 metadata:
-  argument-hint: "<track-id> [--auto-merge] [--with-review]"
+  argument-hint: "<track-id> [--disable-auto-merge] [--with-review]"
 ---
 
 # Kiloforge Developer
@@ -33,9 +33,9 @@ ACTIVE ROLE: kf-developer — track {trackId} — skill at ~/.claude/skills/kf-d
 
 This line is designed to survive compaction summaries. If you see it in your context but can no longer recall the full workflow, re-read the skill file before continuing. For project-specific values, re-read only what you need:
 
-- Verification commands: `.agent/conductor/workflow.md`
-- Track list/statuses: `.agent/conductor/tracks.md`
-- Track progress: `tracks/{trackId}/plan.md`
+- Verification commands: `.agent/kf/workflow.md`
+- Track list/statuses: `.agent/kf/bin/kf-track list`
+- Track progress: `.agent/kf/bin/kf-track-content progress {trackId}`
 - Main worktree path: `git worktree list`
 
 ---
@@ -73,7 +73,7 @@ ERROR: Track ID required.
 
 Usage: /kf-developer <track-id>
 
-To see available tracks, check .agent/conductor/tracks.md or run /kf-architect to create new ones.
+To see available tracks, run `.agent/kf/bin/kf-track list` or /kf-architect to create new ones.
 ```
 
 **HALT.**
@@ -82,37 +82,37 @@ To see available tracks, check .agent/conductor/tracks.md or run /kf-architect t
 
 Check these files exist (read from main):
 ```bash
-git show main:.agent/conductor/product.md > /dev/null 2>&1
-git show main:.agent/conductor/workflow.md > /dev/null 2>&1
-git show main:.agent/conductor/tracks.md > /dev/null 2>&1
+git show main:.agent/kf/product.md > /dev/null 2>&1
+git show main:.agent/kf/workflow.md > /dev/null 2>&1
+git show main:.agent/kf/tracks.yaml > /dev/null 2>&1
 ```
 
 If missing: Display error and suggest `/kf-setup`. **HALT.**
 
 ### Step 3 — Validate track exists and is claimable
 
-1. **Check track directory exists on main:**
+1. **Check track exists on main:**
    ```bash
-   git show main:.agent/conductor/tracks/{trackId}/spec.md > /dev/null 2>&1
+   git show main:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
    ```
    If not found:
    ```
    ERROR: Track not found — {trackId}
 
-   The track .agent/conductor/tracks/{trackId}/ does not exist on main.
+   The track .agent/kf/tracks/{trackId}/ does not exist on main.
    This track ID may be incorrect, or the track may not have been merged to main yet.
 
    Available tracks (from main):
-   {list incomplete tracks from `git show main:.agent/conductor/tracks.md`}
+   {output from `.agent/kf/bin/kf-track list --active`}
    ```
    **HALT.**
 
-2. **Check track status on main:**
+2. **Check track status on main** using `kf-track`:
    ```bash
-   git show main:.agent/conductor/tracks.md
+   .agent/kf/bin/kf-track get {trackId}
    ```
 
-   - If track is marked `[x]` (complete):
+   - If track status is `completed`:
      ```
      ERROR: Track already complete — {trackId}
 
@@ -120,7 +120,7 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
      ```
      **HALT.**
 
-   - If track is marked `[~]` (in progress), check if another worker has it:
+   - If track is marked `in-progress`, check if another worker has it:
 
 3. **Check if another worker has claimed it:**
    ```bash
@@ -143,19 +143,38 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
 
 4. **Check track has required files on main:**
    ```bash
-   git show main:.agent/conductor/tracks/{trackId}/spec.md > /dev/null 2>&1
-   git show main:.agent/conductor/tracks/{trackId}/plan.md > /dev/null 2>&1
+   git show main:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
    ```
-   If either is missing:
+   If missing:
    ```
    ERROR: Track incomplete — {trackId}
 
-   Missing required files on main:
-   - {list missing files}
-
+   Missing track.yaml on main.
    This track may need to be regenerated via /kf-architect.
    ```
    **HALT.**
+
+5. **Check dependency graph — all prerequisites must be completed:**
+   ```bash
+   git show main:.agent/kf/tracks/deps.yaml 2>/dev/null
+   ```
+
+   Run the dependency check:
+   ```bash
+   .agent/kf/bin/kf-track deps check {trackId}
+   ```
+
+   If the command exits non-zero (BLOCKED), it will list unmet dependencies:
+   ```
+   ERROR: Dependencies not met — {trackId}
+
+   {output from kf-track deps check}
+
+   Wait for these tracks to complete, or ask the architect to restructure dependencies.
+   ```
+   **HALT.**
+
+   If `deps.yaml` does not exist, skip this check (backwards compatibility).
 
 ### Step 4 — Enter developer mode
 
@@ -165,9 +184,9 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
 ================================================================================
 
 Track:    {trackId}
-Title:    {title from metadata.json or spec.md}
+Title:    {title from track.yaml}
 Type:     {type}
-Tasks:    {total tasks from plan.md}
+Tasks:    {total tasks from track.yaml plan}
 Phases:   {total phases}
 
 Beginning implementation:
@@ -206,20 +225,31 @@ Branch naming: `{type}/{trackId}` where type comes from metadata (e.g., `feature
 
 ### Step 6 — Load workflow configuration
 
-Read `.agent/conductor/workflow.md` and parse:
+Read `.agent/kf/workflow.md` and parse:
 - Verification commands (e.g., `make test`, `make e2e`)
 - TDD strictness level
 - Commit strategy
 
 ### Step 7 — Load track context
 
-Read all track files (now from the working tree, which is based on main):
-- `.agent/conductor/tracks/{trackId}/spec.md`
-- `.agent/conductor/tracks/{trackId}/plan.md`
-- `.agent/conductor/tracks/{trackId}/metadata.json`
-- `.agent/conductor/product.md`
-- `.agent/conductor/tech-stack.md`
-- `.agent/conductor/code_styleguides/` (if present)
+Load track context via CLI (now from the working tree, which is based on main):
+```bash
+# Full track content
+.agent/kf/bin/kf-track-content show {trackId}
+
+# Or section by section for large tracks:
+.agent/kf/bin/kf-track-content show {trackId} --section spec
+.agent/kf/bin/kf-track-content show {trackId} --section plan
+.agent/kf/bin/kf-track-content progress {trackId}
+
+# Check conflict risk with other active tracks
+.agent/kf/bin/kf-track conflicts list {trackId}
+```
+
+Also read project context:
+- `.agent/kf/product.md`
+- `.agent/kf/tech-stack.md`
+- `.agent/kf/code_styleguides/` (if present)
 
 ---
 
@@ -232,8 +262,8 @@ Follow the exact same implementation workflow as `/kf-implement`:
 - Execute each task in the plan sequentially
 - Follow TDD workflow if configured in `workflow.md`
 - Commit after each task completion using the commit strategy from `workflow.md`
-- Update `plan.md` task markers: `[ ]` -> `[~]` -> `[x]`
-- Update `metadata.json` as tasks complete
+- Update task completion via CLI: `.agent/kf/bin/kf-track-content task {trackId} <phase>.<task> --done`
+- Check progress: `.agent/kf/bin/kf-track-content progress {trackId}`
 - Run phase verification at the end of each phase
 - **Do NOT pause between phases** — proceed continuously through all phases without waiting for user approval
 
@@ -241,12 +271,14 @@ Follow the exact same implementation workflow as `/kf-implement`:
 
 After all tasks are done, update all tracking files and commit:
 
-1. `.agent/conductor/tracks.md` — change `[ ]` or `[~]` to `[x]`
-2. `.agent/conductor/tracks/{trackId}/plan.md` — ensure all tasks `[x]`
-3. `.agent/conductor/tracks/{trackId}/metadata.json` — set `status: "complete"`
+1. **Update track status** using `kf-track` (updates `tracks.yaml`, prunes `deps.yaml`, and cleans `conflicts.yaml` automatically):
+   ```bash
+   .agent/kf/bin/kf-track update {trackId} --status completed
+   ```
+2. Verify all tasks are marked done: `.agent/kf/bin/kf-track-content progress {trackId}`
 
 ```bash
-git add .agent/conductor/tracks.md .agent/conductor/tracks/{trackId}/
+git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/conflicts.yaml .agent/kf/tracks/{trackId}/
 git commit -m "chore: mark track {trackId} complete"
 ```
 
@@ -404,9 +436,11 @@ Manual intervention required.
 
 ## Phase 5: Merge
 
-### Step 10 — Report completion and wait (or auto-merge)
+### Step 10 — Report completion and merge (or wait)
 
-If `--auto-merge` was **not** provided (and `--with-review` was not used or review is already approved):
+By default, auto-merge is enabled — proceed directly to the merge sequence after implementation completes.
+
+If `--disable-auto-merge` **was** provided (and `--with-review` was not used or review is already approved):
 
 ```
 ================================================================================
@@ -422,13 +456,13 @@ Ready to merge. Say "merge" to begin the lock -> rebase -> verify -> merge seque
 
 **Wait for explicit "merge" command before proceeding.**
 
-If `--auto-merge` **was** provided: skip the pause and proceed directly to the merge sequence.
+If `--disable-auto-merge` was **not** provided (default): skip the pause and proceed directly to the merge sequence.
 
 If `--with-review` **was** provided and review is approved: proceed directly to the merge sequence (review approval implies merge authorization).
 
 ### Step 11 — Merge sequence
 
-When the user says "merge" (or immediately if `--auto-merge` / post-review-approval), execute the full merge protocol:
+When the user says "merge" (or immediately if auto-merge is enabled (default) / post-review-approval), execute the full merge protocol:
 
 #### 11a. Acquire merge lock
 
@@ -477,39 +511,9 @@ start_heartbeat() {
 }
 ```
 
-**Without `--auto-merge`:** Try once. If the lock is held, report and **HALT** — wait for the user to say "merge" to retry.
+**CRITICAL: NEVER force-remove another worker's lock.** Do not `rm -rf` the lock directory or force-release an HTTP lock held by another worker. The lock exists to coordinate merges — removing it risks corrupting the merge of the worker that holds it. If the lock appears stale, report it and wait for user instructions. Only the lock holder or the user may release it.
 
-```bash
-if is_orch_running; then
-  # HTTP mode — non-blocking (timeout_seconds: 0)
-  if curl -sf -X POST "$ORCH_URL/-/api/locks/merge/acquire" \
-    -H "Content-Type: application/json" \
-    -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120, \"timeout_seconds\": 0}" \
-    -o /dev/null 2>/dev/null; then
-    LOCK_MODE="http"
-    echo "Merge lock acquired (HTTP)"
-  else
-    echo "MERGE LOCK HELD — Another worker is currently merging."
-    echo "Say 'merge' to retry."
-    exit 1
-  fi
-else
-  # mkdir fallback
-  LOCK_DIR="$(git rev-parse --git-common-dir)/merge.lock"
-  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    echo "MERGE LOCK HELD — Another worker is currently merging."
-    echo "Lock info: $(cat "$LOCK_DIR/info" 2>/dev/null || echo 'unknown')"
-    echo "Say 'merge' to retry."
-    exit 1
-  fi
-  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $HOLDER" > "$LOCK_DIR/info" 2>/dev/null
-  LOCK_MODE="mkdir"
-  echo "Merge lock acquired (mkdir fallback — orchestrator unavailable)"
-fi
-start_heartbeat
-```
-
-**With `--auto-merge`:** Use blocking acquire. HTTP mode uses server-side long-poll (timeout_seconds: 300). mkdir mode uses a polling loop:
+**Default (auto-merge enabled):** Use blocking acquire. HTTP mode uses server-side long-poll (timeout_seconds: 300). mkdir mode uses a polling loop:
 
 ```bash
 if is_orch_running; then
@@ -542,6 +546,38 @@ start_heartbeat
 ```
 
 Run this as a single bash command with an appropriate timeout (e.g., 300 seconds). The HTTP long-poll replaces the sleep loop for faster acquisition.
+
+**With `--disable-auto-merge`:** Try once. If the lock is held, report and **HALT** — wait for the user to say "merge" to retry.
+
+```bash
+if is_orch_running; then
+  # HTTP mode — non-blocking (timeout_seconds: 0)
+  if curl -sf -X POST "$ORCH_URL/-/api/locks/merge/acquire" \
+    -H "Content-Type: application/json" \
+    -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120, \"timeout_seconds\": 0}" \
+    -o /dev/null 2>/dev/null; then
+    LOCK_MODE="http"
+    echo "Merge lock acquired (HTTP)"
+  else
+    echo "MERGE LOCK HELD — Another worker is currently merging."
+    echo "Say 'merge' to retry."
+    exit 1
+  fi
+else
+  # mkdir fallback
+  LOCK_DIR="$(git rev-parse --git-common-dir)/merge.lock"
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo "MERGE LOCK HELD — Another worker is currently merging."
+    echo "Lock info: $(cat "$LOCK_DIR/info" 2>/dev/null || echo 'unknown')"
+    echo "Say 'merge' to retry."
+    exit 1
+  fi
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $HOLDER" > "$LOCK_DIR/info" 2>/dev/null
+  LOCK_MODE="mkdir"
+  echo "Merge lock acquired (mkdir fallback — orchestrator unavailable)"
+fi
+start_heartbeat
+```
 
 **From this point: call `release_lock` on ANY failure.**
 
@@ -639,10 +675,10 @@ Developer is ready for next track.
 
 | Flag | Effect |
 |------|--------|
-| (none) | Default: implement, pause for "merge" command, merge |
-| `--auto-merge` | Skip merge pause; poll merge lock if held |
+| (none) | Default: implement, auto-merge (poll merge lock if held) |
+| `--disable-auto-merge` | Pause after implementation; wait for explicit "merge" command |
 | `--with-review` | After implementation: push, create PR, wait for review, then merge. Review approval implies merge authorization |
-| `--auto-merge --with-review` | Both: review cycle runs, and after approval merge proceeds without pause and polls lock |
+| `--disable-auto-merge --with-review` | Review cycle runs, and after approval pause for explicit "merge" command |
 
 ## Environment Variables
 
@@ -664,7 +700,7 @@ Detection is automatic: if `curl -sf $ORCH_URL/health` succeeds, HTTP mode is us
 1. **ALWAYS validate before implementing** — never start work on an invalid or claimed track
 2. **ALWAYS read track state from main** — use `git show main:<path>`, not local working tree
 3. **NEVER push to remote unless `--with-review`** — without review flag, all branches are local only
-4. **NEVER auto-merge unless `--auto-merge` or post-review-approval** — wait for explicit "merge" command
+4. **Auto-merge is the default** — only pause for explicit "merge" command when `--disable-auto-merge` is provided
 5. **ALWAYS verify after rebase** — full verification after rebase, before merge
 6. **ALWAYS use --ff-only** — clean fast-forward merges only
 7. **ONE merge at a time** — enforce via cross-worktree merge lock (HTTP preferred, mkdir fallback)
@@ -673,3 +709,4 @@ Detection is automatic: if `curl -sf $ORCH_URL/health` succeeds, HTTP mode is us
 10. **Return to home branch** — always checkout back to `developer-*` branch after merge
 11. **Clean up remote on merge** — if `--with-review`, delete remote branch and close PR after merge
 12. **ALWAYS send heartbeat** — start heartbeat after lock acquire, stop after release
+13. **NEVER force-remove another worker's lock** — if the merge lock is held, HALT and wait for user instructions. Do not `rm -rf` the lock directory or force-release HTTP locks held by others.
