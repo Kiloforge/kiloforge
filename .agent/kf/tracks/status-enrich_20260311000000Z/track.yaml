@@ -102,9 +102,9 @@ plan:
   - phase: Skill documentation update
     tasks:
       - text: Update backend/internal/adapter/skills/embedded/kf-status/SKILL.md Step 2 to document new output sections (Deps column, CLAIMED/AVAILABLE/BLOCKED labels, Conflict Risk section)
-        done: false
+        done: true
       - text: Copy updated SKILL.md to ~/.claude/skills/kf-status/SKILL.md and verify both are in sync
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run kf-track status --ref main and verify all new sections render correctly with current project data

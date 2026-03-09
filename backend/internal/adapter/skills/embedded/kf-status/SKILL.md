@@ -40,9 +40,14 @@ The `kf-track status` command generates the full factual status report:
 
 This outputs all **data** sections:
 - **Overall Progress** — track counts, task counts, progress bar
-- **Active Tracks** — table with per-track task completion percentages
-- **Current Focus** — in-progress tracks with next pending task
+- **Active Tracks** — table with per-track task completion, deps count, and enriched status labels:
+  - `CLAIMED` — in-progress tracks (actively being worked by a developer)
+  - `AVAILABLE` — pending tracks with all dependencies satisfied (ready to claim)
+  - `BLOCKED` — pending tracks with unmet dependencies
+  - **Deps column** — shows `N/M met` or `no deps` per track
+- **Current Focus** — claimed tracks with next pending task
 - **Ready to Start** — pending tracks with all dependencies satisfied
+- **Conflict Risk** — active conflict pairs from `conflicts.yaml`, showing risk level and notes (only appears when active pairs exist)
 - **Blocked** — pending tracks with unmet dependencies and their current statuses
 
 ### Step 3 — Assess and recommend
