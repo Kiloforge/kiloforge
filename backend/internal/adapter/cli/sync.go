@@ -1,20 +1,18 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"kiloforge/internal/core/service"
+	"kiloforge/pkg/kf"
 
 	"github.com/spf13/cobra"
 )
 
 var syncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "Sync conductor tracks to the native board",
-	Long: `Discover tracks from a project's .agent/conductor/tracks.md and sync them
+	Short: "Sync kf tracks to the native board",
+	Long: `Discover tracks from a project's .agent/kf/tracks.yaml and sync them
 to the native track board. Creates cards for new tracks and updates columns
 for tracks that changed status.
 
@@ -45,8 +43,9 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project %q not found", flagSyncProject)
 	}
 
-	// Discover tracks.
-	tracks, err := service.DiscoverTracks(project.ProjectDir)
+	// Discover tracks via kf SDK.
+	reader := service.NewTrackReader()
+	tracks, err := reader.DiscoverTracks(project.ProjectDir)
 	if err != nil {
 		return fmt.Errorf("discover tracks: %w", err)
 	}
@@ -56,10 +55,13 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Build track types map from metadata.json files.
+	// Build track types map from kf SDK.
+	client := kf.NewClientFromProject(project.ProjectDir)
 	trackTypes := make(map[string]string)
 	for _, t := range tracks {
-		trackTypes[t.ID] = readTrackType(project.ProjectDir, t.ID)
+		if entry, err := client.GetTrackEntry(t.ID); err == nil {
+			trackTypes[t.ID] = entry.Type
+		}
 	}
 
 	// Sync.
@@ -74,20 +76,4 @@ func runSync(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Unchanged: %d\n", result.Unchanged)
 
 	return nil
-}
-
-// readTrackType reads the track type from metadata.json.
-func readTrackType(projectDir, trackID string) string {
-	path := filepath.Join(projectDir, ".agent", "conductor", "tracks", trackID, "metadata.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	var meta struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(data, &meta); err != nil {
-		return ""
-	}
-	return meta.Type
 }
