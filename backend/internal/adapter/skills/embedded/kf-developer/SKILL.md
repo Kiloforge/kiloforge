@@ -101,38 +101,30 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
 
 ### Step 3 — Validate track exists and is claimable
 
-1. **Check track exists on primary branch:**
+1. **Check track exists and get its status:**
    ```bash
-   git show ${PRIMARY_BRANCH}:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
+   .agent/kf/bin/kf-track get {trackId}
    ```
-   If not found:
+   If not found (exits non-zero):
    ```
    ERROR: Track not found — {trackId}
 
-   The track .agent/kf/tracks/{trackId}/ does not exist on ${PRIMARY_BRANCH}.
-   This track ID may be incorrect, or the track may not have been merged yet.
-
-   Available tracks (from ${PRIMARY_BRANCH}):
+   Available tracks:
    {output from `.agent/kf/bin/kf-track list --active`}
    ```
    **HALT.**
 
-2. **Check track status on primary branch** using `kf-track`:
-   ```bash
-   .agent/kf/bin/kf-track get {trackId}
+   If track status is `completed`:
    ```
+   ERROR: Track already complete — {trackId}
 
-   - If track status is `completed`:
-     ```
-     ERROR: Track already complete — {trackId}
+   This track has already been implemented and marked complete on ${PRIMARY_BRANCH}.
+   ```
+   **HALT.**
 
-     This track has already been implemented and marked complete on ${PRIMARY_BRANCH}.
-     ```
-     **HALT.**
+   If track is marked `in-progress`, check if another worker has it.
 
-   - If track is marked `in-progress`, check if another worker has it:
-
-3. **Check if another worker has claimed it:**
+2. **Check if another worker has claimed it:**
    ```bash
    git worktree list
    git branch --list 'feature/*' 'bug/*' 'chore/*' 'refactor/*'
@@ -151,23 +143,7 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
    ```
    **HALT.**
 
-4. **Check track has required files on primary branch:**
-   ```bash
-   git show ${PRIMARY_BRANCH}:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
-   ```
-   If missing:
-   ```
-   ERROR: Track incomplete — {trackId}
-
-   Missing track.yaml on ${PRIMARY_BRANCH}.
-   This track may need to be regenerated via /kf-architect.
-   ```
-   **HALT.**
-
-5. **Check dependency graph — all prerequisites must be completed:**
-   ```bash
-   git show ${PRIMARY_BRANCH}:.agent/kf/tracks/deps.yaml 2>/dev/null
-   ```
+3. **Check dependency graph — all prerequisites must be completed:**
 
    Run the dependency check:
    ```bash
