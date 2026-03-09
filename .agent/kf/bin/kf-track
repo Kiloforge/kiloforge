@@ -1547,6 +1547,358 @@ cmd_content() {
   fi
 }
 
+# --- Status command ---
+cmd_status() {
+  local ref=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --ref)    ref="$2"; shift 2 ;;
+      -*)       echo "Unknown option: $1" >&2; return 1 ;;
+      *)        echo "Unknown argument: $1" >&2; return 1 ;;
+    esac
+  done
+
+  # Helper: read a file from ref or local
+  _read_file() {
+    local path="$1"
+    if [[ -n "$ref" ]]; then
+      git show "${ref}:${path}" 2>/dev/null || true
+    else
+      cat "${KF_DIR}/../../${path}" 2>/dev/null || cat "${KF_DIR}/${path#.agent/kf/}" 2>/dev/null || true
+    fi
+  }
+
+  # Helper: read kf-relative file
+  _read_kf() {
+    local path="$1"
+    if [[ -n "$ref" ]]; then
+      git show "${ref}:.agent/kf/${path}" 2>/dev/null || true
+    else
+      cat "${KF_DIR}/${path}" 2>/dev/null || true
+    fi
+  }
+
+  # --- Project name ---
+  local product_content
+  product_content=$(_read_kf "product.md")
+  local project_name="Unknown"
+  if [[ -n "$product_content" ]]; then
+    # Try to extract project name from "## Project Name" section or first heading
+    project_name=$(echo "$product_content" | awk '/^## Project Name/{getline; while(/^$/){getline}; print; exit}')
+    if [[ -z "$project_name" ]]; then
+      project_name=$(echo "$product_content" | grep -m1 "^# " | sed 's/^# //')
+    fi
+  fi
+
+  # --- Tracks data ---
+  local tracks_content
+  tracks_content=$(_read_kf "tracks.yaml")
+  if [[ -z "$tracks_content" ]]; then
+    echo "ERROR: No tracks.yaml found. Run /kf-setup first." >&2
+    return 1
+  fi
+
+  # Count by status
+  local pending=0 in_progress=0 completed=0 archived=0 total=0
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    total=$((total + 1))
+    case "$line" in
+      *'"status":"pending"'*)      pending=$((pending + 1)) ;;
+      *'"status":"in-progress"'*)  in_progress=$((in_progress + 1)) ;;
+      *'"status":"completed"'*)    completed=$((completed + 1)) ;;
+      *'"status":"archived"'*)     archived=$((archived + 1)) ;;
+    esac
+  done <<< "$tracks_content"
+
+  # --- Task progress for active tracks ---
+  # Build arrays for pending and in-progress tracks
+  local -a active_ids=() active_titles=() active_types=() active_statuses=()
+  local -a active_task_done=() active_task_total=() active_phase_done=() active_phase_total=()
+  local -a active_next_task=()
+
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" != *'"status":"pending"'* && "$line" != *'"status":"in-progress"'* ]] && continue
+
+    local tid ttitle ttype tstatus
+    tid=$(echo "$line" | sed 's/:.*//')
+    if command -v jq &>/dev/null; then
+      local json
+      json=$(echo "$line" | sed "s/^[^{]*//")
+      ttitle=$(echo "$json" | jq -r '.title // ""')
+      ttype=$(echo "$json" | jq -r '.type // ""')
+      tstatus=$(echo "$json" | jq -r '.status // ""')
+    else
+      ttitle=$(echo "$line" | grep -o '"title":"[^"]*"' | head -1 | sed 's/"title":"\(.*\)"/\1/')
+      ttype=$(echo "$line" | grep -o '"type":"[^"]*"' | head -1 | sed 's/"type":"\(.*\)"/\1/')
+      tstatus=$(echo "$line" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
+    fi
+
+    # Get task progress from track.yaml plan
+    local track_yaml=""
+    if [[ -n "$ref" ]]; then
+      track_yaml=$(git show "${ref}:.agent/kf/tracks/${tid}/track.yaml" 2>/dev/null || true)
+    else
+      local track_file="${KF_DIR}/tracks/${tid}/track.yaml"
+      [[ -f "$track_file" ]] && track_yaml=$(cat "$track_file")
+    fi
+
+    local tdone=0 ttotal=0 pdone=0 ptotal=0 next_task=""
+    if [[ -n "$track_yaml" ]]; then
+      # Count tasks from plan section
+      local in_plan=false in_tasks=false phase_has_pending=false
+      ptotal=0
+      while IFS= read -r pline; do
+        if [[ "$pline" == "plan:" ]]; then
+          in_plan=true; continue
+        fi
+        [[ "$in_plan" != true ]] && continue
+        # Stop at next top-level key
+        if [[ "$pline" =~ ^[a-z] && "$pline" != *"  "* && "$pline" == *":"* && "$pline" != "plan:"* ]]; then
+          break
+        fi
+        # Phase line
+        if echo "$pline" | grep -q "^  - phase:"; then
+          ptotal=$((ptotal + 1))
+          phase_has_pending=false
+        fi
+        # Task line
+        if echo "$pline" | grep -q "^      - text:"; then
+          ttotal=$((ttotal + 1))
+        fi
+        if echo "$pline" | grep -q "done: true"; then
+          tdone=$((tdone + 1))
+        elif echo "$pline" | grep -q "done: false"; then
+          phase_has_pending=true
+          if [[ -z "$next_task" ]]; then
+            next_task=$(echo "$pline" | sed 's/.*text: //' | sed 's/^"//' | sed 's/"$//')
+          fi
+        fi
+      done <<< "$track_yaml"
+
+      # Count completed phases (all tasks done)
+      local current_phase=0 current_phase_done=0 current_phase_tasks=0
+      in_plan=false
+      while IFS= read -r pline; do
+        if [[ "$pline" == "plan:" ]]; then
+          in_plan=true; continue
+        fi
+        [[ "$in_plan" != true ]] && continue
+        if [[ "$pline" =~ ^[a-z] && "$pline" != *"  "* && "$pline" == *":"* && "$pline" != "plan:"* ]]; then
+          break
+        fi
+        if echo "$pline" | grep -q "^  - phase:"; then
+          if [[ "$current_phase" -gt 0 && "$current_phase_done" -eq "$current_phase_tasks" && "$current_phase_tasks" -gt 0 ]]; then
+            pdone=$((pdone + 1))
+          fi
+          current_phase=$((current_phase + 1))
+          current_phase_done=0
+          current_phase_tasks=0
+        fi
+        if echo "$pline" | grep -q "done: true"; then
+          current_phase_done=$((current_phase_done + 1))
+          current_phase_tasks=$((current_phase_tasks + 1))
+        elif echo "$pline" | grep -q "done: false"; then
+          current_phase_tasks=$((current_phase_tasks + 1))
+        fi
+      done <<< "$track_yaml"
+      # Last phase
+      if [[ "$current_phase" -gt 0 && "$current_phase_done" -eq "$current_phase_tasks" && "$current_phase_tasks" -gt 0 ]]; then
+        pdone=$((pdone + 1))
+      fi
+    fi
+
+    active_ids+=("$tid")
+    active_titles+=("$ttitle")
+    active_types+=("$ttype")
+    active_statuses+=("$tstatus")
+    active_task_done+=("$tdone")
+    active_task_total+=("$ttotal")
+    active_phase_done+=("$pdone")
+    active_phase_total+=("$ptotal")
+    active_next_task+=("$next_task")
+  done <<< "$tracks_content"
+
+  # --- Deps data (for blockers and ready check) ---
+  local deps_content=""
+  deps_content=$(_read_kf "tracks/deps.yaml")
+
+  # Find ready tracks (pending with all deps satisfied)
+  local -a ready_ids=()
+  for i in "${!active_ids[@]}"; do
+    [[ "${active_statuses[$i]}" != "pending" ]] && continue
+    local tid="${active_ids[$i]}"
+    local blocked=false
+
+    if [[ -n "$deps_content" ]]; then
+      # Extract deps for this track from deps.yaml
+      local track_deps=""
+      track_deps=$(echo "$deps_content" | awk -v id="$tid" '
+        $0 ~ "^"id":" { found=1; next }
+        found && /^  - / { print substr($0, 5); next }
+        found { exit }
+      ')
+      if [[ -n "$track_deps" ]]; then
+        while IFS= read -r dep; do
+          [[ -z "$dep" ]] && continue
+          # Check if dep is completed
+          if ! echo "$tracks_content" | grep -q "^${dep}:.*\"status\":\"completed\""; then
+            blocked=true
+            break
+          fi
+        done <<< "$track_deps"
+      fi
+    fi
+
+    if [[ "$blocked" == false ]]; then
+      ready_ids+=("$tid")
+    fi
+  done
+
+  # --- Total tasks across all active tracks ---
+  local total_tasks_done=0 total_tasks_all=0
+  for i in "${!active_ids[@]}"; do
+    total_tasks_done=$((total_tasks_done + active_task_done[i]))
+    total_tasks_all=$((total_tasks_all + active_task_total[i]))
+  done
+
+  # --- Progress bar helper ---
+  _progress_bar() {
+    local done=$1 total=$2 width=20
+    if [[ "$total" -eq 0 ]]; then
+      printf "[....................] 0%%"
+      return
+    fi
+    local pct=$((done * 100 / total))
+    local filled=$((done * width / total))
+    local empty=$((width - filled))
+    printf "["
+    for ((j=0; j<filled; j++)); do printf "#"; done
+    for ((j=0; j<empty; j++)); do printf "."; done
+    printf "] %d%%" "$pct"
+  }
+
+  # --- Output ---
+  echo "================================================================================"
+  printf "                        PROJECT STATUS: %s\n" "$project_name"
+  echo "================================================================================"
+  echo ""
+  echo "--------------------------------------------------------------------------------"
+  echo "                              OVERALL PROGRESS"
+  echo "--------------------------------------------------------------------------------"
+  echo ""
+  printf "Tracks:     %d/%d completed (%d%%)\n" "$completed" "$total" "$((total > 0 ? completed * 100 / total : 0))"
+  printf "Tasks:      %d/%d completed (active tracks)\n" "$total_tasks_done" "$total_tasks_all"
+  echo ""
+  printf "Progress:   "; _progress_bar "$completed" "$total"; echo ""
+  echo ""
+  printf "  completed:   %4d\n" "$completed"
+  printf "  in-progress: %4d\n" "$in_progress"
+  printf "  pending:     %4d\n" "$pending"
+  printf "  archived:    %4d\n" "$archived"
+  echo ""
+
+  # --- Track detail table ---
+  if [[ "${#active_ids[@]}" -gt 0 ]]; then
+    echo "--------------------------------------------------------------------------------"
+    echo "                              ACTIVE TRACKS"
+    echo "--------------------------------------------------------------------------------"
+    echo ""
+    printf "%-10s %-48s %-8s %s\n" "Status" "Track ID" "Type" "Tasks"
+    printf "%-10s %-48s %-8s %s\n" "----------" "------------------------------------------------" "--------" "----------"
+
+    # In-progress first
+    for i in "${!active_ids[@]}"; do
+      [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
+      local pct=0
+      [[ "${active_task_total[$i]}" -gt 0 ]] && pct=$((active_task_done[i] * 100 / active_task_total[i]))
+      printf "%-10s %-48s %-8s %d/%d (%d%%)\n" \
+        "IN-PROG" "${active_ids[$i]}" "${active_types[$i]}" \
+        "${active_task_done[$i]}" "${active_task_total[$i]}" "$pct"
+    done
+
+    # Then pending
+    for i in "${!active_ids[@]}"; do
+      [[ "${active_statuses[$i]}" != "pending" ]] && continue
+      local pct=0
+      [[ "${active_task_total[$i]}" -gt 0 ]] && pct=$((active_task_done[i] * 100 / active_task_total[i]))
+      printf "%-10s %-48s %-8s %d/%d (%d%%)\n" \
+        "PENDING" "${active_ids[$i]}" "${active_types[$i]}" \
+        "${active_task_done[$i]}" "${active_task_total[$i]}" "$pct"
+    done
+    echo ""
+  fi
+
+  # --- Current focus ---
+  echo "--------------------------------------------------------------------------------"
+  echo "                              CURRENT FOCUS"
+  echo "--------------------------------------------------------------------------------"
+  echo ""
+
+  local has_in_progress=false
+  for i in "${!active_ids[@]}"; do
+    [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
+    has_in_progress=true
+    printf "Active: %s\n" "${active_ids[$i]}"
+    printf "  Title: %s\n" "${active_titles[$i]}"
+    printf "  Progress: %d/%d tasks, %d/%d phases\n" \
+      "${active_task_done[$i]}" "${active_task_total[$i]}" \
+      "${active_phase_done[$i]}" "${active_phase_total[$i]}"
+    if [[ -n "${active_next_task[$i]}" ]]; then
+      printf "  Next: %s\n" "${active_next_task[$i]}"
+    fi
+    echo ""
+  done
+
+  if [[ "$has_in_progress" == false ]]; then
+    echo "No tracks currently in-progress."
+    echo ""
+  fi
+
+  # --- Ready to start ---
+  if [[ "${#ready_ids[@]}" -gt 0 ]]; then
+    echo "Ready to start (no unmet dependencies):"
+    for rid in "${ready_ids[@]}"; do
+      for i in "${!active_ids[@]}"; do
+        if [[ "${active_ids[$i]}" == "$rid" ]]; then
+          printf "  %s — %s\n" "$rid" "${active_titles[$i]}"
+          break
+        fi
+      done
+    done
+    echo ""
+  fi
+
+  # --- Next actions ---
+  echo "--------------------------------------------------------------------------------"
+  echo "                              NEXT ACTIONS"
+  echo "--------------------------------------------------------------------------------"
+  echo ""
+  local action_num=1
+  # In-progress tasks first
+  for i in "${!active_ids[@]}"; do
+    [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
+    if [[ -n "${active_next_task[$i]}" ]]; then
+      printf "%d. Continue: %s — %s\n" "$action_num" "${active_ids[$i]}" "${active_next_task[$i]}"
+    else
+      printf "%d. Continue: %s\n" "$action_num" "${active_ids[$i]}"
+    fi
+    action_num=$((action_num + 1))
+  done
+  # Ready tracks
+  for rid in "${ready_ids[@]}"; do
+    [[ "$action_num" -gt 5 ]] && break
+    printf "%d. Start: /kf-developer %s\n" "$action_num" "$rid"
+    action_num=$((action_num + 1))
+  done
+  if [[ "$action_num" -eq 1 ]]; then
+    echo "No pending actions."
+  fi
+  echo ""
+  echo "================================================================================"
+}
+
 cmd_help() {
   cat <<'HELP'
 kf-track — Track registry management for Kiloforge agents
@@ -1595,6 +1947,7 @@ COMMANDS:
   conflicts list [track-id]                             List pairs (filtered)
   conflicts clean                                       Remove pairs for completed tracks
 
+  status [--ref <branch|commit>]                          Full project status report
   index [--ref <branch|commit>]                          Generate project index from tracks.yaml
   quick-links [show [--ref <ref>]]                       Show quick links
   quick-links add <label> <path>                         Add a quick link
@@ -1630,6 +1983,7 @@ case "$cmd" in
   conflicts)   cmd_conflicts "$@" ;;
   index)       cmd_index "$@" ;;
   quick-links) cmd_quick_links "$@" ;;
+  status)      cmd_status "$@" ;;
   # Content commands delegate to kf-track-content (Python3 required)
   show|spec|plan|task|progress|extra|init|migrate|migrate-all)
     cmd_content "$cmd" "$@" ;;
