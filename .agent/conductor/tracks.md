@@ -114,7 +114,7 @@
 | [x] | agent-lifecycle-fe_20260310030001Z | Agent Lifecycle Management — Stop, Resume, Delete (Frontend) | 2026-03-10 | 2026-03-10 |
 | [x] | navbar-design-polish_20260310033000Z | Navigation Bar Design Polish and Agent Status Popover | 2026-03-10 | 2026-03-10 |
 | [x] | fix-quota-display_20260310033001Z | Fix Token and Cost Display — Bridge QuotaTracker to API | 2026-03-10 | 2026-03-10 |
-| [ ] | terminal-markdown-style_20260310033002Z | Agent Terminal Markdown Rendering and Terminal-Style Design | 2026-03-10 | 2026-03-10 |
+| [x] | terminal-markdown-style_20260310033002Z | Agent Terminal Markdown Rendering and Terminal-Style Design | 2026-03-10 | 2026-03-10 |
 | [ ] | project-documentation_20260310034000Z | Project Documentation with Author's Foreword | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
