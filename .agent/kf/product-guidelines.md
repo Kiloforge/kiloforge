@@ -14,6 +14,17 @@ Professional and technical. Documentation and CLI output should be precise, deta
 6. **Makefile as build entry point** — All builds, tests, and code generation go through the Makefile. See `code_styleguides/build.md` for conventions on frontend embedding, output directories, and VCS stamping.
 7. **Thin adapters, shared domain logic** — CLI commands and REST handlers are thin adapters that convert input into domain commands/queries and dispatch to the service layer. Business logic lives exclusively in `core/service/`. Adapters never access stores directly — they receive services via constructor injection. This ensures consistent behavior regardless of entry point (CLI, API, webhook). When adding a new operation, implement it as a service method first, then wire it from both CLI and API adapters.
 
+## Build Artifacts — Never Commit
+
+**`backend/internal/adapter/dashboard/dist/`** contains frontend build output (compiled JS/CSS/HTML/assets). These files are:
+- Built on demand via `make build-frontend`
+- Embedded into the Go binary via `//go:embed dist/*`
+- Listed in `.gitignore` — must NEVER be committed or staged
+
+If `dist/` is missing, the Makefile's `ensure-dist` target creates a placeholder. Do not work around a missing `dist/` by committing build artifacts — run `make build-frontend` instead.
+
+**`skills/`** (repo root) must not exist. Canonical skills live in `backend/internal/adapter/skills/embedded/`. Working copies are installed to `~/.claude/skills/`. Do not create or commit a `skills/` directory at the repo root.
+
 ## E2E Testing Requirements
 
 All agents building UI functionality **must** develop automated E2E tests using the Playwright MCP plugin. E2E tests ensure the full stack (Go backend + React frontend + SQLite) works together correctly.

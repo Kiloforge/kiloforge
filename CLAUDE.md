@@ -14,13 +14,17 @@ This exports `GIT_DIR` and `GIT_WORK_TREE` automatically. Use `KF_QUIET=1` to su
 
 `make build` and `make test` already handle this — prefer Makefile targets when available.
 
+## Never Commit Build Artifacts
+
+**`backend/internal/adapter/dashboard/dist/`** is in `.gitignore`. Never `git add` it. The frontend is built via `make build-frontend` and embedded into the Go binary at compile time. If `dist/` is missing, run the build — do not commit artifacts.
+
 ## Project Structure
 
 - `backend/` — Go backend (Cobra CLI, REST server, Gitea adapter)
 - `frontend/` — React dashboard (Vite, TanStack Query)
-- `.agent/conductor/` — Track-based project management artifacts
+- `.agent/kf/` — Kiloforge project management artifacts
 
 ## Guidelines
 
-- See `.agent/conductor/code_styleguides/` for Go and build conventions
-- See `.agent/conductor/product-guidelines.md` for design principles
+- See `.agent/kf/code_styleguides/` for Go and build conventions
+- See `.agent/kf/product-guidelines.md` for design principles
