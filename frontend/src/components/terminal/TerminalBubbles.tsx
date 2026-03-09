@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { WSMessage } from "../../hooks/useAgentWebSocket";
-import { formatCode } from "./formatCode";
+import { MarkdownContent } from "./MarkdownContent";
 import { formatTokens, formatUSD } from "../../utils/format";
 import styles from "./TerminalBubbles.module.css";
 
@@ -20,7 +20,7 @@ function TextBubble({ msg }: { msg: WSMessage }) {
     <div className={`${styles.message} ${styles.agentMessage}`}>
       <span className={styles.messageIcon}>kf</span>
       <div className={styles.messageContent}>
-        {formatCode(msg.text, styles.codeBlock, styles.inlineCode)}
+        <MarkdownContent text={msg.text} />
       </div>
     </div>
   );
@@ -70,7 +70,7 @@ function ThinkingBubble({ msg }: { msg: WSMessage }) {
         {isLong ? (
           <>
             <span className={styles.thinkingText}>
-              {expanded ? text : text.slice(0, 120) + "..."}
+              {expanded ? <MarkdownContent text={text} /> : text.slice(0, 120) + "..."}
             </span>
             <button
               className={styles.toggleBtn}
@@ -80,7 +80,9 @@ function ThinkingBubble({ msg }: { msg: WSMessage }) {
             </button>
           </>
         ) : (
-          <span className={styles.thinkingText}>{text}</span>
+          <span className={styles.thinkingText}>
+            <MarkdownContent text={text} />
+          </span>
         )}
       </div>
     </div>

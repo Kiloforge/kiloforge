@@ -1,0 +1,104 @@
+.markdown {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.markdown p {
+  margin: 0 0 8px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown ul,
+.markdown ol {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+.markdown li {
+  margin-bottom: 2px;
+}
+
+.markdown strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.markdown em {
+  font-style: italic;
+}
+
+/* Code blocks */
+.codeBlockWrapper {
+  position: relative;
+  margin: 6px 0;
+}
+
+.codeBlock {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.codeBlockCode {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Inline code */
+.inlineCode {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+}
+
+/* Copy button */
+.copyBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--border);
+  border: none;
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+
+.codeBlockWrapper:hover .copyBtn {
+  opacity: 1;
+}
+
+.copyBtn:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+/* Links */
+.link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(108, 140, 255, 0.4);
+}
+
+.link:hover {
+  text-decoration-color: var(--accent);
+}
