@@ -1,0 +1,172 @@
+id: impl-gitea-issue-api_20260308170000Z
+title: Extend Gitea Client with Issue, Label, and Project Board APIs
+type: feature
+status: complete
+created: 2026-03-08T17:00:00Z
+updated: 2026-03-08T17:00:00Z
+spec:
+  summary: Add Gitea API methods for creating/updating issues, managing labels, and project board (kanban) operations — columns, cards, and card movement. Foundation for track-to-board sync.
+  context: The Gitea client currently supports 14 methods covering repos, PRs, webhooks, and SSH keys. To sync conductor tracks with a Gitea kanban board, we need issue CRUD, label management, and project board APIs. Gitea's REST API v1 supports all of these.
+  codebase_analysis: |
+    - **Gitea client**: `internal/adapter/gitea/client.go` — 14 methods, generic `do()` HTTP helper, token+basic auth
+    - **Port interface**: `internal/core/port/gitea_client.go` — subset of client methods (PR-focused)
+    - **Tests**: `internal/adapter/gitea/client_test.go` — comprehensive httptest-based table-driven tests
+    - **Pattern**: All API calls use `c.do(ctx, method, path, body)` → `([]byte, error)`
+    - **Label creation**: `AddLabel()` already creates labels if missing + adds to issue — good pattern to follow
+    
+    ### API endpoints to implement
+    
+    ```
+    POST   /api/v1/repos/{owner}/{repo}/issues                        — create issue
+    PATCH  /api/v1/repos/{owner}/{repo}/issues/{number}               — update issue
+    GET    /api/v1/repos/{owner}/{repo}/issues?state=X&labels=Y       — list issues
+    POST   /api/v1/repos/{owner}/{repo}/labels                        — create label (already partial)
+    POST   /api/v1/repos/{owner}/{repo}/projects                      — create project board
+    GET    /api/v1/repos/{owner}/{repo}/projects                      — list projects
+    POST   /api/v1/repos/{owner}/{repo}/projects/{id}/columns         — create column
+    GET    /api/v1/repos/{owner}/{repo}/projects/{id}/columns         — list columns
+    POST   /api/v1/repos/{owner}/{repo}/projects/{id}/columns/{id}/cards — create card
+    PATCH  /api/v1/repos/{owner}/{repo}/projects/{id}/columns/{id}/cards/{id} — move card
+    ```
+  acceptance_criteria:
+    - `CreateIssue(ctx, repo, title, body, labels) → (int, error)` — returns issue number
+    - `UpdateIssue(ctx, repo, issueNum, updates) → error` — update title, body, state (open/closed)
+    - `GetIssues(ctx, repo, state, labels) → ([]Issue, error)` — list with filters
+    - `EnsureLabels(ctx, repo, labels []LabelDef) → error` — idempotent batch label creation
+    - `CreateProject(ctx, repo, title, desc) → (int, error)` — create project board
+    - `GetProjects(ctx, repo) → ([]Project, error)` — list projects
+    - `CreateColumn(ctx, projectID, title) → (int, error)` — add column to board
+    - `GetColumns(ctx, projectID) → ([]Column, error)` — list columns
+    - `CreateCard(ctx, columnID, issueID) → (int, error)` — add issue to column
+    - `MoveCard(ctx, cardID, columnID) → error` — move card between columns
+    - Port interface updated with new methods
+    - Table-driven httptest tests for all new methods
+    - All existing tests pass, build succeeds
+  out_of_scope: |
+    - Using these APIs (that's track 2 and 3)
+    - Gitea SDK or code generation — hand-written HTTP like existing code
+    - Milestone support (can be added later if needed)
+  technical_notes: |
+    ### Issue types for return values
+    
+    ```go
+    type Issue struct {
+        Number int    `json:"number"`
+        Title  string `json:"title"`
+        State  string `json:"state"` // "open", "closed"
+    }
+    
+    type LabelDef struct {
+        Name  string `json:"name"`
+        Color string `json:"color"`
+    }
+    
+    type Project struct {
+        ID    int    `json:"id"`
+        Title string `json:"title"`
+    }
+    
+    type Column struct {
+        ID    int    `json:"id"`
+        Title string `json:"title"`
+    }
+    ```
+    
+    These can live in the gitea adapter package as API response types (not domain types).
+    
+    ### EnsureLabels pattern
+    
+    ```go
+    func (c *Client) EnsureLabels(ctx context.Context, repo string, labels []LabelDef) error {
+        // GET existing labels, diff, POST missing ones
+        // Idempotent — safe to call multiple times
+    }
+    ```
+    
+    ---
+plan:
+  - phase: Issue & Label API Methods (4 tasks)
+    tasks:
+      - text: `CreateIssue(ctx, repo, title, body string, labels []string) → (int, error)`
+        done: true
+      - text: POST /api/v1/repos/{owner}/{repo}/issues with title, body, labels
+        done: true
+      - text: Parse response for issue number
+        done: true
+      - text: Return created issue number
+        done: true
+      - text: `UpdateIssue(ctx, repo string, issueNum int, title, body, state string) → error`
+        done: true
+      - text: PATCH /api/v1/repos/{owner}/{repo}/issues/{number}
+        done: true
+      - text: Support updating title, body, and state (open/closed)
+        done: true
+      - text: Only send non-empty fields
+        done: true
+      - text: `GetIssues(ctx, repo, state string, labels []string) → ([]Issue, error)`
+        done: true
+      - text: GET /api/v1/repos/{owner}/{repo}/issues with query params
+        done: true
+      - text: Define `Issue` struct with Number, Title, State, Labels fields
+        done: true
+      - text: Parse JSON array response
+        done: true
+      - text: `EnsureLabels(ctx, repo string, labels []LabelDef) → error`
+        done: true
+      - text: Define `LabelDef` struct with Name, Color
+        done: true
+      - text: GET existing labels from /api/v1/repos/{owner}/{repo}/labels
+        done: true
+      - text: POST only missing labels (diff against existing)
+        done: true
+      - text: Idempotent — safe to re-run
+        done: true
+  - phase: Project Board API Methods (3 tasks)
+    tasks:
+      - text: `CreateProject(ctx, repo, title, description string) → (int, error)`
+        done: true
+      - text: POST /api/v1/repos/{owner}/{repo}/projects
+        done: true
+      - text: `GetProjects(ctx, repo string) → ([]Project, error)`
+        done: true
+      - text: Define `Project` struct with ID, Title
+        done: true
+      - text: `CreateColumn(ctx context.Context, projectID int, title string) → (int, error)`
+        done: true
+      - text: POST /api/v1/repos/{owner}/{repo}/projects/{id}/columns
+        done: true
+      - text: `GetColumns(ctx context.Context, projectID int) → ([]Column, error)`
+        done: true
+      - text: Define `Column` struct with ID, Title
+        done: true
+      - text: `CreateCard(ctx context.Context, columnID, issueID int) → (int, error)`
+        done: true
+      - text: POST to column cards endpoint with issue_id
+        done: true
+      - text: `MoveCard(ctx context.Context, cardID, columnID int) → error`
+        done: true
+      - text: PATCH card to move to target column
+        done: true
+  - phase: Tests and Port Interface (3 tasks)
+    tasks:
+      - text: Table-driven httptest tests for CreateIssue (success, error)
+        done: true
+      - text: Tests for UpdateIssue (update fields, close issue)
+        done: true
+      - text: Tests for GetIssues (empty, multiple, with filters)
+        done: true
+      - text: Tests for EnsureLabels (all new, some existing, all existing)
+        done: true
+      - text: Tests for CreateProject and GetProjects
+        done: true
+      - text: Tests for CreateColumn and GetColumns
+        done: true
+      - text: Tests for CreateCard and MoveCard
+        done: true
+      - text: Add new methods to `port.GiteaClient` interface
+        done: true
+      - text: Verify all existing implementations still satisfy interface
+        done: true
+      - text: `go build ./...` and `go test -race ./...`
+        done: true
+extra: "{}"

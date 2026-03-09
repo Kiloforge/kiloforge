@@ -1,0 +1,60 @@
+id: tracing-always-on-fe_20260309231001Z
+title: Remove Tracing Toggle UI (Frontend)
+type: chore
+status: complete
+created: 2026-03-09T23:10:01Z
+updated: 2026-03-09T23:10:01Z
+spec:
+  summary: Remove the tracing toggle switch from the dashboard UI. Tracing is now always-on (no backend config field), so the toggle and its "changes take effect on next restart" note are no longer needed.
+  context: "The backend track `tracing-always-on-be_20260309231000Z` removes the `tracing_enabled` config field. The frontend toggle component and related config API calls become dead code."
+  codebase_analysis: |
+    ### Components to remove
+    
+    - **`frontend/src/components/TracingToggle.tsx`** — toggle switch component (36 lines)
+    - **`frontend/src/components/TracingToggle.module.css`** — toggle styles (52 lines)
+    
+    ### Components to simplify
+    
+    - **`frontend/src/components/TraceList.tsx`** — imports TracingToggle, renders it at top, shows "enable tracing" message when disabled. Remove toggle rendering and conditional message.
+    - **`frontend/src/pages/OverviewPage.tsx:111,237-241`** — passes config/updateConfig props to TraceList. Remove config-related props.
+    
+    ### Hooks/types to update
+    
+    - **`frontend/src/hooks/useConfig.ts`** (if exists) — may still be needed for `dashboard_enabled`, but `tracing_enabled` field usage should be removed
+    - **`frontend/src/types/api.ts:187-195`** — remove `tracing_enabled` from `ConfigResponse` and `UpdateConfigRequest`
+  acceptance_criteria:
+    - `TracingToggle.tsx` and `TracingToggle.module.css` deleted
+    - `TraceList.tsx` no longer imports or renders TracingToggle
+    - `TraceList.tsx` no longer shows "enable tracing" conditional message
+    - `OverviewPage.tsx` no longer passes config/updateConfig to TraceList
+    - `tracing_enabled` removed from frontend API types
+    - `npm run build` succeeds with no errors
+  out_of_scope: |
+    - Backend changes (separate track)
+    - Removing the config API hook entirely (still used for `dashboard_enabled`)
+  technical_notes: |
+    Simple removal track. Delete the toggle component files, remove imports and references in TraceList and OverviewPage.
+    
+    ---
+plan:
+  - phase: Remove Toggle Component
+    tasks:
+      - text: Delete `frontend/src/components/TracingToggle.tsx` and `TracingToggle.module.css`
+        done: true
+      - text: Update `TraceList.tsx` — remove TracingToggle import, render, and "enable tracing" conditional message
+        done: true
+      - text: Update `OverviewPage.tsx` — remove config hook usage and config-related props passed to TraceList
+        done: true
+  - phase: Update Types
+    tasks:
+      - text: Remove `tracing_enabled` from `ConfigResponse` and `UpdateConfigRequest` in `types/api.ts`
+        done: true
+      - text: Update `useConfig` hook if it references `tracing_enabled`
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `npm run build` succeeds
+        done: true
+      - text: Dashboard loads without errors, TraceList renders without toggle
+        done: true
+extra: "{}"

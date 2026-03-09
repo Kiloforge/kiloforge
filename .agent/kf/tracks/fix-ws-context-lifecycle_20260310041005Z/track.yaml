@@ -1,0 +1,41 @@
+id: fix-ws-context-lifecycle_20260310041005Z
+title: Fix WebSocket Session Context and Graceful Shutdown
+type: bug
+status: complete
+created: 2026-03-10T04:10:05Z
+updated: 2026-03-10T04:10:05Z
+spec:
+  summary: "Fix WebSocket session lifecycle issues: sessions use `context.Background()` instead of inheriting from request context, output relay goroutines are not tracked for cleanup, and stale sessions can accumulate in the session manager."
+  context: "WebSocket sessions are created with `context.Background()`, meaning they have no connection to the server's shutdown lifecycle. The OutputRelay goroutine is spawned but not tracked — it can only terminate when the output channel closes, not when explicitly stopped. These issues can cause goroutine leaks during server shutdown and stale session accumulation."
+  codebase_analysis: |
+    - **A16:** `ws/session.go:60` — `context.Background()` used instead of request-derived context
+    - **A18:** `ws/session.go:155-165` — OutputRelay goroutine not tracked for explicit cleanup
+    - Related to A14 (relay goroutine leak, covered by fix-relay-goroutine-leak track)
+  acceptance_criteria:
+    - WebSocket sessions inherit context from HTTP request (with cancellation on disconnect)
+    - OutputRelay goroutine is tracked and cancellable
+    - Session manager removes stale sessions on disconnect
+    - Graceful server shutdown cancels all WebSocket sessions
+    - Tests verify session cleanup on disconnect and shutdown
+  out_of_scope: |
+    - Changing the WebSocket library
+    - Adding WebSocket authentication
+  technical_notes: |
+    ### Context inheritance
+    ```go
+    func (m *SessionManager) NewSession(r *http.Request, agentID string) *Session {
+        ctx, cancel := context.WithCancel(r.Context())
+        // ...
+    }
+    ```
+    
+    ### Relay tracking
+    Add `cancelRelay context.CancelFunc` to Session. Call cancel on session Close(). OutputRelay selects on context.Done().
+    
+    ---
+plan:
+  - phase: Fix Session Context and Relay Tracking
+    tasks: []
+  - phase: Graceful Shutdown
+    tasks: []
+extra: "{}"

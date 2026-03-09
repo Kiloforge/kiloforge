@@ -1,0 +1,118 @@
+id: e2e-merge-lock_20260309194838Z
+title: E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict
+type: chore
+status: pending
+created: 2026-03-09T19:48:38Z
+updated: 2026-03-09T19:48:38Z
+spec:
+  summary: Comprehensive E2E tests for the merge lock coordination system: acquiring locks with TTL, heartbeat renewal, releasing locks, lock conflict detection, and UI display of lock state, covering happy path, edge cases, and expected failures.
+  context: |
+    The merge lock system is a critical coordination primitive in Kiloforge. It prevents concurrent merges by multiple developer agents through an HTTP-based lock API with TTL and heartbeat. The lock endpoints are:
+    
+    - `POST /api/locks/{scope}/acquire` — acquire a lock with holder name and TTL
+    - `POST /api/locks/{scope}/heartbeat` — renew lock TTL
+    - `DELETE /api/locks/{scope}` — release a held lock
+    - `GET /api/locks` — list all active locks
+    
+    The frontend displays active locks in the dashboard and receives real-time updates via SSE events (`lock_update`, `lock_released`). These E2E tests verify the full stack — API behavior, SSE delivery, and UI rendering — using the mock agent infrastructure.
+  codebase_analysis: |
+    ### Relevant endpoints
+    
+    - Lock acquire: `POST /api/locks/{scope}/acquire` — body: `{"holder": "...", "ttl_seconds": N}`, returns 200 with lock info or 409 on conflict
+    - Lock heartbeat: `POST /api/locks/{scope}/heartbeat` — body: `{"holder": "..."}`, returns 200 or 404
+    - Lock release: `DELETE /api/locks/{scope}` — body/header: holder identification, returns 200 or 403/404
+    - Lock list: `GET /api/locks` — returns array of active locks
+    
+    ### SSE events
+    
+    - `lock_update` — emitted on acquire and heartbeat, includes lock scope, holder, expiry
+    - `lock_released` — emitted on release or TTL expiry
+    
+    ### UI components
+    
+    - Lock list in dashboard shows active locks with holder, scope, remaining TTL
+    - Real-time updates via SSE subscription
+  acceptance_criteria:
+    - Acquire merge lock — lock appears in lock list with holder and TTL
+    - Heartbeat renews lock TTL — expiry time extends
+    - Release lock — lock disappears from list
+    - Second acquire attempt while locked returns conflict (409)
+    - Lock auto-expires after TTL without heartbeat
+    - UI displays active locks with holder, scope, and remaining TTL
+    - SSE lock_update/lock_released events update UI in real-time
+    - Edge cases: heartbeat after release (no-op), acquire immediately after release
+    - Failure cases: release by wrong holder, heartbeat for nonexistent lock, acquire with invalid TTL
+  out_of_scope: |
+    - Agent merge workflow (this tests the lock API in isolation)
+    - Lock persistence across server restarts
+    - Performance/load testing of lock contention
+  technical_notes: |
+    ### Test approach
+    
+    All tests use the E2E test infrastructure from the infra track. Tests drive both the REST API directly (for setup/assertion) and the Playwright browser (for UI verification).
+    
+    ### Lock TTL testing
+    
+    For TTL expiry tests, use a short TTL (e.g., 2 seconds) and wait for expiry. Do not rely on wall-clock precision — poll the lock list endpoint until the lock disappears or use a generous timeout.
+    
+    ### SSE verification
+    
+    Subscribe to the SSE `/events` endpoint before performing lock operations. Capture events in a buffer and assert that the expected events arrive within a timeout window.
+    
+    ### Developer agent instructions
+    
+    When building this track, use the Playwright MCP skill to verify E2E tests work in the browser. Run tests in headed mode during development for visual verification. Use `apiClient` helper for direct REST calls to lock endpoints.
+    
+    ---
+plan:
+  - phase: Acquire Tests
+    tasks:
+      - text: Acquire happy path — POST to `/api/locks/{scope}/acquire` with holder and TTL, verify 200 response with lock info (scope, holder, expiry), verify lock appears in `GET /api/locks` list
+        done: false
+      - text: Acquire with custom TTL — acquire lock with custom `ttl_seconds` value (e.g., 30), verify the returned expiry reflects the requested TTL, verify lock info displays correct remaining time
+        done: false
+      - text: Acquire returns lock info — verify response body contains `scope`, `holder`, `ttl_seconds`, `expires_at` fields with correct types and values, verify `expires_at` is in the future
+        done: false
+  - phase: Heartbeat Tests
+    tasks:
+      - text: Heartbeat extends TTL — acquire lock with short TTL (5s), wait 2s, send heartbeat, verify `expires_at` in response is later than original expiry
+        done: false
+      - text: Heartbeat response — verify heartbeat returns 200 with updated lock info including new `expires_at`, verify holder matches the original acquire holder
+        done: false
+      - text: Heartbeat timing — acquire lock, send multiple heartbeats in sequence, verify each heartbeat extends the expiry from the time of the heartbeat (not from original acquire)
+        done: false
+  - phase: Release Tests
+    tasks:
+      - text: Release happy path — acquire lock, then DELETE to release, verify 200 response, verify lock no longer appears in `GET /api/locks`
+        done: false
+      - text: Release clears from list — acquire two locks on different scopes, release one, verify only the released lock is gone from the list while the other remains
+        done: false
+      - text: Release SSE event — subscribe to SSE before releasing, release a lock, verify `lock_released` event is received with correct scope and holder info
+        done: false
+  - phase: Conflict Tests
+    tasks:
+      - text: Double acquire conflict — acquire lock on scope, attempt second acquire on same scope with different holder, verify 409 Conflict response with error message indicating lock is held
+        done: false
+      - text: Lock by different holder — acquire lock as holder-A, attempt heartbeat as holder-B, verify rejection; attempt release as holder-B, verify 403 Forbidden
+        done: false
+      - text: Wait-for-release scenario — acquire lock with short TTL (3s), attempt second acquire in a polling loop, verify second acquire succeeds after TTL expiry
+        done: false
+  - phase: TTL and Edge Cases
+    tasks:
+      - text: TTL auto-expiry — acquire lock with 2s TTL, do NOT heartbeat, poll `GET /api/locks` until lock disappears, verify `lock_released` SSE event fires on expiry
+        done: false
+      - text: Heartbeat after release — acquire and release a lock, then send heartbeat for the released scope, verify 404 response (lock not found), verify no side effects
+        done: false
+      - text: Invalid TTL — attempt acquire with `ttl_seconds: 0`, `ttl_seconds: -1`, and `ttl_seconds: 999999`, verify appropriate error responses (400 Bad Request)
+        done: false
+      - text: Wrong holder release — acquire lock as holder-A, attempt DELETE as holder-B, verify 403 Forbidden, verify lock remains active in list with holder-A
+        done: false
+  - phase: UI Verification
+    tasks:
+      - text: Lock list display — use Playwright to navigate to the dashboard, acquire a lock via API, verify the UI shows the lock with holder name, scope, and remaining TTL countdown
+        done: false
+      - text: Real-time lock update — with Playwright on the dashboard, acquire a lock via API, verify UI updates without page refresh (SSE-driven); release the lock, verify it disappears from UI
+        done: false
+      - text: Conflict indicator in UI — acquire a lock, verify UI shows the lock as active; attempt a second acquire via the UI (if applicable) or verify the conflict state is reflected in the lock list display
+        done: false
+extra: "{}"

@@ -1,0 +1,87 @@
+id: prereq-check-init_20260308230000Z
+title: Prerequisite Check During Init
+type: feature
+status: complete
+created: 2026-03-08T23:00:00Z
+updated: 2026-03-08T23:00:00Z
+spec:
+  summary: "Add a prerequisite check at the start of `kf init` that verifies all required tools (Git, Docker/Docker Compose, Claude Code) are available before proceeding. If any are missing, display platform-specific installation instructions and exit."
+  context: "`kf init` currently dives straight into Docker Compose detection (`compose.Detect()`) and fails with an opaque error if Docker isn't available. There's no check for `git` or `claude` at all — those failures surface later during `kf add` or `kf implement` with confusing "command not found" errors. A user-friendly init should validate everything upfront."
+  codebase_analysis: |
+    - **`cli/init.go:79-84`** — `compose.Detect()` checks for `docker compose` (v2) or `docker-compose` (v1), but the error message is technical, not instructional
+    - **`cli/add.go:96`** — `cloneRepo()` calls `git clone` — fails cryptically if git isn't installed
+    - **`adapter/agent/spawner.go`** — `exec.CommandContext(ctx, "claude", ...)` — fails if claude isn't in PATH
+    - **No existing prerequisite validation** anywhere in the codebase
+    - **`compose/detect.go`** — `Detect()` tries `docker compose version` then `docker-compose version`; returns error string but no install instructions
+  acceptance_criteria:
+    - `kf init` checks for `git`, `docker` (with compose), and `claude` before doing anything else
+    - Each missing tool shows the tool name, why it's needed, and platform-specific install instructions
+    - macOS instructions include Homebrew commands where applicable
+    - Linux instructions include apt/dnf package names
+    - Platform detection uses `runtime.GOOS`
+    - If all prerequisites pass, init continues normally (no user-visible change)
+    - If any prerequisite fails, all failures are shown at once (not one-at-a-time)
+    - Exit code is non-zero when prerequisites fail
+    - The check is fast (just `exec.LookPath` or version commands, no network calls)
+  out_of_scope: |
+    - Checking minimum versions (e.g., Docker 20+, Git 2.x) — presence is sufficient
+    - Auto-installing tools
+    - Checking prerequisites on every command (only on `init`)
+    - Windows support (darwin and linux only for now)
+  technical_notes: |
+    **Tools to check:**
+    
+    | Tool | Check | Needed For |
+    |------|-------|------------|
+    | `git` | `exec.LookPath("git")` | `kf add`, worktree management |
+    | `docker` | `exec.LookPath("docker")` | Gitea container lifecycle |
+    | `docker compose` or `docker-compose` | existing `compose.Detect()` logic | Compose file management |
+    | `claude` | `exec.LookPath("claude")` | Agent spawning (`kf implement`) |
+    
+    **Platform-specific instructions (examples):**
+    
+    macOS:
+    - git: `xcode-select --install` or `brew install git`
+    - docker: "Install Docker Desktop from https://docker.com/products/docker-desktop"
+    - docker-compose (Colima): `brew install docker-compose`
+    - claude: "Install Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+    
+    Linux:
+    - git: `sudo apt install git` / `sudo dnf install git`
+    - docker: "Install Docker Engine: https://docs.docker.com/engine/install/"
+    - docker-compose: `sudo apt install docker-compose` or "included with Docker Desktop"
+    - claude: "Install Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+    
+    **Implementation approach:**
+    
+    Create a `prereq` package (or add to existing `adapter/` package) with:
+    - `Check() []PrereqError` — returns all missing prerequisites
+    - `PrereqError` struct: `Tool`, `Reason`, `InstallHint` (platform-aware)
+    - Call `prereq.Check()` at the top of `runInit()`, before config resolution
+    - Format and display all errors, then `return fmt.Errorf("missing prerequisites")`
+    
+    ---
+plan:
+  - phase: Prereq Checker (4 tasks)
+    tasks:
+      - text: **File:** `backend/internal/adapter/prereq/check.go`
+        done: true
+      - text: Integrated into `check.go` (darwin/linux hints for git, docker, compose, claude)
+        done: true
+      - text: `FormatErrors()` shows all missing tools at once with install hints
+        done: true
+      - text: **File:** `backend/internal/adapter/prereq/check_test.go`
+        done: true
+  - phase: Wire Into Init (2 tasks)
+    tasks:
+      - text: **File:** `backend/internal/adapter/cli/init.go`
+        done: true
+      - text: All tests pass, no extra output when tools present
+        done: true
+  - phase: Tests and Verification (2 tasks)
+    tasks:
+      - text: TestCheck_AllPresent in check_test.go
+        done: true
+      - text: `make test` — all pass
+        done: true
+extra: "{}"

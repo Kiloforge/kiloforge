@@ -1,0 +1,102 @@
+id: agent-list-monitoring-ui_20260309180000Z
+title: Agent List with Role/Track Links and Monitoring View
+type: feature
+status: complete
+created: 2026-03-09T18:00:00Z
+updated: 2026-03-09T18:00:00Z
+spec:
+  summary: "Enhance the dashboard agent grid with clickable track/ref links, add a dedicated agent detail page at `/agents/:id` with embedded log viewer and terminal, and add role/status filter chips to the overview page."
+  context: "The overview page already displays an agent grid via `AgentCard` components showing role, status, tokens, model, uptime, and a `ref` field. However, the `ref` is plain text (not linked), there's no dedicated agent detail page (logs and terminal are only accessible via modals), and there's no way to filter agents by role or status."
+  codebase_analysis: |
+    ### Existing components
+    
+    - **`frontend/src/pages/OverviewPage.tsx`** — Agent grid sorted by status, fetches from `GET /api/agents`
+    - **`frontend/src/components/AgentCard.tsx`** — Card with role badge, status, tokens, cost, ref (plain text), "View Log" and "Attach" buttons
+    - **`frontend/src/components/LogViewer.tsx`** — Log viewer with follow mode, fetches from `GET /api/agents/{id}/log`
+    - **`frontend/src/components/AgentTerminal.tsx`** — WebSocket terminal for interactive agents at `/ws/agent/{id}`
+    - **`frontend/src/App.tsx`** — Router with `/`, `/projects/:slug`, `/traces/:traceId` routes. No `/agents/:id` route.
+    
+    ### API endpoints available
+    
+    - `GET /api/agents` — Returns all agents with role, ref, status, model, tokens, etc.
+    - `GET /api/agents/{id}` — Single agent detail
+    - `GET /api/agents/{id}/log?lines=200&follow=true` — Log with optional SSE streaming
+    
+    ### Agent data model
+    
+    - `id`, `role` (developer/reviewer/interactive), `ref` (track ID or label like "track-gen"), `status` (11 states), `session_id`, `pid`, `worktree_dir`, `log_file`, `started_at`, `updated_at`, `model`
+    
+    ### Track-agent linking
+    
+    - Board cards have `agent_id` and `track_id` fields — can cross-reference
+    - Agent `ref` field typically contains the track ID for developer agents
+  acceptance_criteria:
+    - New `/agents/:id` route with dedicated agent monitoring page
+    - Agent detail page shows: role, ref/track, status, model, uptime, PID, worktree, token usage, cost
+    - Agent detail page embeds LogViewer (always visible) and AgentTerminal (for interactive agents)
+    - Agent detail page links back to project board when agent has a track ref
+    - Agent cards in overview grid link to `/agents/:id` (clickable card or link on agent ID)
+    - Ref field in agent card is a clickable link to agent detail page
+    - Role/status filter chips on overview page to filter the agent grid
+    - Frontend builds without errors
+  out_of_scope: |
+    - Backend API changes (existing endpoints provide all needed data)
+    - Agent lifecycle management from the detail page (start/stop/restart)
+    - Real-time agent status updates via SSE on the detail page (can be added later)
+  technical_notes: |
+    ### Agent detail page layout
+    
+    ```
+    /agents/:id
+    ┌─────────────────────────────────────────────┐
+    │ Agent abc123f                    [Back]      │
+    │ Role: developer  Status: running  Model: opus│
+    │ Track: my-track-id → [View on Board]        │
+    │ Uptime: 12m  PID: 45678  Cost: $0.42        │
+    │ Tokens: 12.4k in / 3.2k out / 8.1k cache   │
+    ├─────────────────────────────────────────────┤
+    │ Log Output                        [Follow ✓]│
+    │ ┌─────────────────────────────────────────┐ │
+    │ │ ... scrollable log viewer ...           │ │
+    │ └─────────────────────────────────────────┘ │
+    ├─────────────────────────────────────────────┤
+    │ Terminal (interactive agents only)           │
+    │ ┌─────────────────────────────────────────┐ │
+    │ │ ... websocket terminal ...              │ │
+    │ └─────────────────────────────────────────┘ │
+    └─────────────────────────────────────────────┘
+    ```
+    
+    ### Filter chips
+    
+    Simple toggle chips above the agent grid: "All", "Running", "Completed", "Failed" for status; "Developer", "Reviewer", "Interactive" for role. Filter is client-side on the already-fetched agent list.
+    
+    ---
+plan:
+  - phase: Agent Detail Page
+    tasks:
+      - text: Add `/agents/:id` route in `App.tsx`
+        done: true
+      - text: Create `AgentDetailPage` component — fetch agent via `GET /api/agents/{id}`, display metadata (role, ref, status, model, uptime, PID, worktree, tokens, cost)
+        done: true
+      - text: Embed `LogViewer` in detail page (always visible, not modal) with follow mode
+        done: true
+      - text: Embed `AgentTerminal` in detail page for interactive agents (conditionally rendered based on role)
+        done: true
+  - phase: Enhance Agent Grid
+    tasks:
+      - text: Make agent card clickable — link agent ID or entire card to `/agents/:id`
+        done: true
+      - text: Make ref field a secondary link — clicking ref navigates to agent detail page
+        done: true
+      - text: Add "View on Board" link in agent card when ref matches a track ID — link to `/projects/:slug` with the track highlighted
+        done: true
+      - text: Add role/status filter chips above the agent grid in OverviewPage — client-side filtering on fetched agent list
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify frontend builds without errors (`npm run build`)
+        done: true
+      - text: Manual verification — navigate agent grid → detail page → log → terminal → back to board
+        done: true
+extra: "{}"

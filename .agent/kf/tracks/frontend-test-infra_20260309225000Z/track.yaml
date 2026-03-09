@@ -1,0 +1,128 @@
+id: frontend-test-infra_20260309225000Z
+title: Frontend Test Infrastructure and Makefile Integration
+type: chore
+status: complete
+created: 2026-03-09T22:50:00Z
+updated: 2026-03-09T22:50:00Z
+spec:
+  summary: "Set up frontend testing infrastructure with Vitest and React Testing Library. Add initial tests for key hooks and components. Wire `npm test` into the Makefile `test` target so `make test` runs both backend Go tests and frontend tests."
+  context: "The frontend has zero test infrastructure — no test framework, no test files, no `test` script in `package.json`. The Makefile `test` target only runs `cd backend && go test -race ./...`. Frontend regressions (like the tour API mismatch) go undetected."
+  codebase_analysis: |
+    ### Current state
+    
+    - **`frontend/package.json`** — scripts: `dev`, `build` only. No `test` script. No vitest/jest in dependencies.
+    - **`frontend/src/`** — No `*.test.*` or `*.spec.*` files anywhere.
+    - **`Makefile`** — `test` target: `cd backend && go test -race ./...`. No frontend test step.
+    - **Vite config** — `frontend/vite.config.ts` uses React plugin. Vitest integrates natively with Vite.
+    
+    ### Test framework choice
+    
+    **Vitest** — native Vite integration, same config, fast HMR-aware test runner. Pairs with `@testing-library/react` for component tests and `msw` for API mocking.
+    
+    ### Priority test targets
+    
+    Based on recent bugs and critical paths:
+    
+    1. **Hooks** — `useTour`, `useProjects`, `useBoard`, `useConsent` — these bridge FE to BE and are where contract mismatches occur
+    2. **Components** — `AddProjectForm` (validation), `KanbanBoard` (drag logic), `TourOverlay` (step progression)
+    3. **API layer** — `queryKeys`, `fetcher` — ensure correct URL construction and error handling
+  acceptance_criteria:
+    - Vitest and @testing-library/react installed as dev dependencies
+    - `vitest.config.ts` (or inline in `vite.config.ts`) configured with jsdom environment
+    - `test` script added to `frontend/package.json`
+    - At least 5 initial test files covering critical hooks and components
+    - Tests for `useTour` hook — verify correct action-based request body format
+    - Tests for `AddProjectForm` — URL validation
+    - Tests for `queryKeys` — key factory produces expected arrays
+    - All initial tests pass: `cd frontend && npm test`
+    - Makefile `test` target updated to run both backend and frontend tests
+    - Makefile `test-all` also runs frontend tests
+    - `make test` runs successfully end-to-end
+  out_of_scope: |
+    - E2E/integration tests (Playwright, Cypress)
+    - 100% test coverage — this track sets up infrastructure and adds initial critical tests
+    - Visual regression testing
+    - CI pipeline changes (future track)
+  technical_notes: |
+    ### Setup
+    
+    ```bash
+    cd frontend
+    npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom msw
+    ```
+    
+    ### Vitest config
+    
+    ```ts
+    // vite.config.ts — add test section
+    export default defineConfig({
+      plugins: [react()],
+      base: '/',
+      test: {
+        environment: 'jsdom',
+        globals: true,
+        setupFiles: './src/test/setup.ts',
+      },
+    });
+    ```
+    
+    ### Makefile update
+    
+    ```makefile
+    test: ensure-dist
+    	cd backend && go test -race ./...
+    	cd frontend && npm test -- --run
+    
+    test-all: ensure-dist
+    	cd backend && go test -race -tags=integration ./...
+    	cd frontend && npm test -- --run
+    ```
+    
+    ### Initial test files
+    
+    ```
+    frontend/src/test/setup.ts           — testing-library matchers, MSW server
+    frontend/src/hooks/useTour.test.ts   — verify action request body format
+    frontend/src/hooks/useProjects.test.ts — verify query keys and mutation shape
+    frontend/src/api/queryKeys.test.ts    — unit test key factory
+    frontend/src/components/AddProjectForm.test.tsx — URL validation
+    frontend/src/components/KanbanBoard.test.tsx    — column rendering, card placement
+    ```
+    
+    ---
+plan:
+  - phase: Test Framework Setup
+    tasks:
+      - text: Install vitest, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom, msw as dev dependencies
+        done: true
+      - text: Add vitest config to `vite.config.ts` (test environment: jsdom, globals: true)
+        done: true
+      - text: Create `frontend/src/test/setup.ts` — import jest-dom matchers, configure MSW server
+        done: true
+      - text: Add `"test": "vitest"` script to `package.json`
+        done: true
+  - phase: Initial Tests
+    tasks:
+      - text: Create `frontend/src/api/queryKeys.test.ts` — verify all key factory functions
+        done: true
+      - text: Create `frontend/src/hooks/useTour.test.ts` — verify mutation sends correct action-based body
+        done: true
+      - text: Create `frontend/src/components/AddProjectForm.test.tsx` — URL validation, form submission
+        done: true
+      - text: Create `frontend/src/utils/format.test.ts` — verify formatUSD, formatTokens, formatUptime
+        done: true
+      - text: Create `frontend/src/api/fetcher.test.ts` — verify fetcher success, error, non-JSON error
+        done: true
+  - phase: Makefile Integration
+    tasks:
+      - text: Update Makefile `test` target to also run `cd frontend && npm test -- --run`
+        done: true
+      - text: Update Makefile `test-all` target similarly
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `cd frontend && npm test -- --run` passes
+        done: true
+      - text: `make test` runs both backend and frontend tests successfully
+        done: true
+extra: "{}"

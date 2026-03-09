@@ -1,0 +1,124 @@
+id: setup-prereq-be_20260310004000Z
+title: Setup Prerequisite Check Before Agent Spawning (Backend)
+type: feature
+status: complete
+created: 2026-03-10T00:40:00Z
+updated: 2026-03-10T00:40:00Z
+spec:
+  summary: "Make conductor setup (`kf-setup`) a blocking prerequisite before any agent work can happen on a project. Currently, `GenerateTracks` silently chains `/kf-setup` into the prompt, but setup asks 17-20 interactive questions that cannot work in `-p` (print) mode. Instead, the backend should detect missing setup and return a specific error code so the frontend can guide the user through an interactive setup session first."
+  context: |
+    The `kf-setup` skill is an interactive Q&A process that generates conductor artifacts (`product.md`, `tech-stack.md`, `workflow.md`, etc.). Without these artifacts, track generation and developer agents cannot function — they rely on product context, tech stack info, and the tracks registry.
+    
+    The current auto-chain approach (`/kf-setup\n\n...` prepended to the track gen prompt) fails because:
+    1. `-p` mode doesn't support interactive Q&A — the agent can't ask the user questions
+    2. The agent either makes up answers or halts at the first question
+    3. The user never sees the setup questions, resulting in garbage or missing artifacts
+  codebase_analysis: |
+    ### Current flow (`api_handler.go`)
+    - `GenerateTracks` (line ~1273): checks for `.agent/conductor/product.md`, prepends `/kf-setup` if missing
+    - `GetPreflight` (line ~144): returns `claude_authenticated`, `skills_ok`, `consent_given` — **no setup check**
+    - `SpawnInteractiveAgent` (line ~270): no setup check at all
+    
+    ### Existing prerequisite patterns
+    - **401** — Claude CLI not authenticated (`checkClaudeAuth`)
+    - **403** — Agent permissions not consented (`checkConsent`)
+    - **412** — Required skills not installed (`checkSkillsForRole`)
+    - **New: 428** — Kiloforge setup not completed (proposed)
+    
+    ### Files to modify
+    - `backend/internal/adapter/rest/api_handler.go` — add setup check, remove auto-chain
+    - `backend/api/openapi.yaml` — add `setup_required` to preflight, add 428 response, add setup endpoint
+  acceptance_criteria:
+    - `GET /api/preflight` returns `setup_required` boolean (true if `.agent/conductor/product.md` missing for the active project)
+    - `GET /api/projects/{slug}/setup-status` returns whether conductor setup is complete for that project
+    - `POST /api/projects/{slug}/setup` spawns an interactive setup agent session (same pattern as `SpawnInteractiveAgent`)
+    - `POST /api/tracks/generate` returns 428 with `{"error": "kiloforge setup required", "project": "<slug>"}` when setup is incomplete — **instead of** auto-chaining `/kf-setup`
+    - `POST /api/agents/interactive` also returns 428 when setup is incomplete for the target project
+    - Remove the auto-chain `/kf-setup` hack from `GenerateTracks`
+    - OpenAPI spec updated with new endpoint and response schemas
+    - `make test` passes
+  out_of_scope: |
+    - Frontend UI for setup flow (separate track: `setup-prereq-fe_20260310004001Z`)
+    - Changing the `kf-setup` skill itself
+    - Setup for CLI-only workflows (this is dashboard-specific)
+  technical_notes: |
+    ### New endpoint: `GET /api/projects/{slug}/setup-status`
+    
+    ```go
+    func (h *APIHandler) GetProjectSetupStatus(ctx context.Context, req gen.GetProjectSetupStatusRequestObject) (gen.GetProjectSetupStatusResponseObject, error) {
+        project, ok := h.findProject(req.Slug)
+        if !ok {
+            return gen.GetProjectSetupStatus404JSONResponse{Error: "project not found"}, nil
+        }
+        workDir := project.WorktreeDir
+        productPath := filepath.Join(workDir, ".agent", "conductor", "product.md")
+        _, err := os.Stat(productPath)
+        return gen.GetProjectSetupStatus200JSONResponse{
+            SetupComplete: err == nil,
+            ProjectSlug:   req.Slug,
+        }, nil
+    }
+    ```
+    
+    ### New endpoint: `POST /api/projects/{slug}/setup`
+    
+    Spawns an interactive agent with `/kf-setup` as the prompt. Uses the same `SpawnInteractive` + WebSocket bridge pattern as `SpawnInteractiveAgent`.
+    
+    ### Setup check helper
+    
+    ```go
+    func (h *APIHandler) checkSetup(projectSlug string) *string {
+        project, ok := h.findProject(projectSlug)
+        if !ok {
+            return nil // no project context = no setup needed
+        }
+        productPath := filepath.Join(project.WorktreeDir, ".agent", "conductor", "product.md")
+        if _, err := os.Stat(productPath); os.IsNotExist(err) {
+            msg := "kiloforge setup required"
+            return &msg
+        }
+        return nil
+    }
+    ```
+    
+    ### HTTP 428 Precondition Required
+    
+    Using 428 (RFC 6585) — "the server requires the request to be conditional." This fits semantically: the operation requires setup to be completed first. The response body includes the project slug so the frontend knows which project needs setup.
+    
+    ---
+plan:
+  - phase: API Contract
+    tasks:
+      - text: Add `setup_required` boolean to `PreflightResponse` in `openapi.yaml`
+        done: true
+      - text: Add `GET /api/projects/{slug}/setup-status` endpoint with `SetupStatusResponse` schema
+        done: true
+      - text: Add `POST /api/projects/{slug}/setup` endpoint (request: empty, response: agent info)
+        done: true
+      - text: Add 428 response schema (`SetupRequiredResponse`) to `tracks/generate` and `agents/interactive`
+        done: true
+      - text: Run `make generate` to regenerate server stubs
+        done: true
+  - phase: Implementation
+    tasks:
+      - text: Add `checkSetup(projectSlug string)` helper to `api_handler.go`
+        done: true
+      - text: Add `setup_required` to `GetPreflight` — check active project's conductor artifacts
+        done: true
+      - text: Implement `GetProjectSetupStatus` handler
+        done: true
+      - text: Implement `StartProjectSetup` handler — spawn interactive agent with `/kf-setup` prompt
+        done: true
+      - text: Add 428 check to `GenerateTracks` — return `SetupRequiredResponse` when setup incomplete
+        done: true
+      - text: Add 428 check to `SpawnInteractiveAgent` — same pattern
+        done: true
+      - text: Remove the auto-chain `/kf-setup` hack from `GenerateTracks`
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `make test` passes
+        done: true
+      - text: `make generate` produces no diff (API contract matches implementation)
+        done: true
+extra: "{}"

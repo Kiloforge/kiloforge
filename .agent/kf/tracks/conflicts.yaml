@@ -1,0 +1,14 @@
+# Track Conflict Risk Pairs
+#
+# PROTOCOL:
+#   Each line: <id-a>/<id-b>: {"risk":"high|medium|low","note":"...","added":"..."}
+#   Pair key is strictly ordered: lower ID / higher ID (only one record per pair).
+#
+# RULES:
+#   - Architect adds pairs when generating tracks that may conflict.
+#   - Pairs auto-cleaned when either track completes or is archived.
+#   - Only active (pending/in-progress) tracks should have pairs.
+#
+# TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
+#
+

@@ -1,0 +1,89 @@
+id: relay-daemon_20260308200000Z
+title: Relay Server Daemon Mode
+type: feature
+status: complete
+created: 2026-03-08T20:00:00Z
+updated: 2026-03-08T20:45:00Z
+spec:
+  summary: "Make the relay server run as a background daemon with PID file management, started automatically on `init`/`up` and stopped on `down`/`destroy`."
+  context: "Currently the relay server blocks the terminal via `srv.ListenAndServe()` in the `up` command. Gitea already runs as a daemon via `docker compose up -d`. The relay should follow the same pattern — start in background and return control to the user."
+  codebase_analysis: |
+    - `internal/adapter/cli/up.go` — Relay starts via `rest.Server.Run(ctx)` which blocks. Needs to spawn background process instead.
+    - `internal/adapter/cli/down.go` — Only stops Gitea. Must also stop the relay daemon.
+    - `internal/adapter/rest/server.go` — `Server.Run()` method blocks on `ListenAndServe`. Can be used as-is by the background process.
+    - `internal/adapter/config/config.go` — `DataDir` available for PID file storage.
+    - No existing PID file management. Need to add `relay.pid` lifecycle.
+    - `internal/core/service/` — No shutdown service exists yet, but agent management has `ProcessAlive()` and signal patterns that can inform the approach.
+  acceptance_criteria:
+    - `kf up` starts the relay as a background daemon and returns immediately
+    - `kf down` stops both the relay daemon and Gitea
+    - `kf destroy` stops relay daemon before tearing down Gitea
+    - PID file written to `$DataDir/relay.pid` on start, removed on stop
+    - `kf up` detects if relay is already running (via PID file + process check) and skips restart
+    - `kf status` shows relay daemon state (running/stopped + PID)
+    - Relay daemon logs to `$DataDir/relay.log` (rotatable)
+    - Graceful shutdown on SIGTERM/SIGINT — drains HTTP connections, saves agent state
+    - If relay crashes, stale PID file is detected and cleaned up on next `up`
+  out_of_scope: |
+    - Systemd/launchd service files (future track)
+    - Log rotation implementation (use simple file append; rotation is a future enhancement)
+    - Relay auto-restart on crash (watchdog is a separate concern)
+  technical_notes: |
+    ### Daemon approach
+    Use `os/exec` to re-exec the kiloforge binary with a `serve` subcommand (internal/hidden). The `up` command spawns `kf serve` as a detached background process, writes PID file, and exits.
+    
+    ### PID file lifecycle
+    1. On start: check existing PID file → verify process alive → skip or clean stale
+    2. Write PID → start server
+    3. On shutdown (SIGTERM/SIGINT): clean up PID file → graceful HTTP drain → exit
+    
+    ### Log file
+    Redirect stdout/stderr of the background process to `$DataDir/relay.log`. The `serve` command handles its own logging.
+    
+    ### Commands affected
+    - `up`: spawn daemon instead of blocking
+    - `down`: stop relay (SIGTERM via PID) + stop Gitea
+    - `destroy`: stop relay + destroy Gitea
+    - `status`: read PID file and check process
+    
+    ---
+plan:
+  - phase: PID File Management (4 tasks)
+    tasks:
+      - text: Create `internal/core/port/pidfile.go` with `PIDManager` interface
+        done: true
+      - text: Create `internal/adapter/pidfile/pidfile_test.go`
+        done: true
+      - text: Create `internal/adapter/pidfile/pidfile.go` implementing `PIDManager`
+        done: true
+      - text: Run `go test ./internal/adapter/pidfile/...` — all pass
+        done: true
+  - phase: Internal Serve Command (4 tasks)
+    tasks:
+      - text: Add `internal/adapter/cli/serve.go` with hidden Cobra command
+        done: true
+      - text: PID file write on start, SIGTERM/SIGINT handler, cleanup on exit
+        done: true
+      - text: Log output to `$DataDir/relay.log` with timestamps
+        done: true
+      - text: `go build ./...` compiles
+        done: true
+  - phase: Daemon Spawning in `up` (4 tasks)
+    tasks:
+      - text: Replace blocking server with daemon spawn via `kf serve`
+        done: true
+      - text: PID file check, stale cleanup, skip if running
+        done: true
+      - text: SIGTERM → wait 5s → SIGKILL → remove stale PID
+        done: true
+      - text: Stop relay daemon before Gitea teardown
+        done: true
+  - phase: Status & Polish (3 tasks)
+    tasks:
+      - text: Show relay daemon state with PID and port
+        done: true
+      - text: Spawn relay daemon after Gitea setup
+        done: true
+      - text: Full test suite passes (17 packages)
+        done: true
+extra: "{}"

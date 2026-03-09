@@ -1,0 +1,64 @@
+id: refactor-cli-business-logic_20260310041004Z
+title: Extract Business Logic from CLI Commands to Services
+type: refactor
+status: complete
+created: 2026-03-10T04:10:04Z
+updated: 2026-03-10T07:55:00Z
+spec:
+  summary: "Extract substantial business logic from `cli/implement.go` (411 lines) and `cli/skills.go` (275 lines) into proper service layer methods. Also extract git workflow logic from `cli/push.go` and SSH key discovery from `cli/add.go`."
+  context: "Product guidelines mandate "thin adapters" — CLI commands should parse args, construct services, and delegate. Two CLI commands contain significant business logic: `implement.go` has track validation, consent flow, worktree acquisition, and completion callbacks; `skills.go` has update checking, installation, and config management. This violates clean architecture."
+  codebase_analysis: |
+    - **A1 (Critical):** `cli/implement.go` (411 lines) — track validation, consent, worktree acquisition, completion callbacks, board state transitions
+    - **A2 (High):** `cli/skills.go` (275 lines) — skill update, GitHub release checking, version comparison, installation flow
+    - **A3 (Medium):** `cli/push.go:93-143` — git fetch/ahead-behind logic
+    - **A4 (Medium):** `cli/add.go:199-223` — SSH key discovery and selection
+  acceptance_criteria:
+    - `ImplementService` created in `service/` with track validation, consent, worktree, callback methods
+    - `SkillsService` created in `service/` with update check, install, config methods
+    - `cli/implement.go` reduced to thin adapter (< 100 lines of non-boilerplate)
+    - `cli/skills.go` reduced to thin adapter
+    - Git sync logic extracted from `cli/push.go` to existing or new service
+    - SSH key discovery extracted from `cli/add.go` to service
+    - All existing CLI tests pass
+    - New service methods have unit tests
+  out_of_scope: |
+    - Other CLI commands that are already thin adapters
+    - Refactoring `cli/runtime.go` service locator pattern
+  technical_notes: |
+    ### ImplementService
+    ```go
+    type ImplementService struct {
+        tracks    port.TrackReader
+        consent   port.ConsentStore
+        pool      port.WorktreePool
+        board     port.BoardService
+        agents    port.AgentSpawner
+        logger    port.Logger
+    }
+    
+    func (s *ImplementService) ValidateAndPrepare(ctx context.Context, trackID string) (*ImplementPlan, error)
+    func (s *ImplementService) Execute(ctx context.Context, plan *ImplementPlan) error
+    ```
+    
+    ### SkillsService
+    ```go
+    type SkillsService struct {
+        github    port.SkillSource
+        installer port.SkillInstaller
+        config    port.ConfigStore
+        logger    port.Logger
+    }
+    
+    func (s *SkillsService) CheckUpdates(ctx context.Context) ([]SkillUpdate, error)
+    func (s *SkillsService) Install(ctx context.Context, skills []string) error
+    ```
+    
+    ---
+plan:
+  - phase: Extract ImplementService
+    tasks: []
+  - phase: Extract SkillsService and Other Logic
+    tasks: []
+  - phase: Final Cleanup
+    tasks: []
+extra: "{}"

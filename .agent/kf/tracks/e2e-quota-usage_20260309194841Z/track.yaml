@@ -1,0 +1,128 @@
+id: e2e-quota-usage_20260309194841Z
+title: E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estimates
+type: chore
+status: pending
+created: 2026-03-09T19:48:41Z
+updated: 2026-03-09T19:48:41Z
+spec:
+  summary: Comprehensive E2E tests for the quota and token usage display: stat cards showing token counts and costs, rate limit indicators, quota updates via SSE, and cost estimation accuracy, covering happy path, edge cases, and expected failures.
+  context: |
+    Kiloforge tracks token usage and costs across all spawned agents. The quota endpoint returns aggregated token counts (input, output, cache), estimated costs in USD, and rate limit status. The frontend renders stat cards for each metric and a rate limit badge that appears when the API is rate-limited.
+    
+    The relevant endpoint is:
+    
+    - `GET /api/quota` — returns token counts, cost estimates, and rate limit status
+    
+    Real-time updates arrive via `quota_update` SSE events as agents consume tokens.
+  codebase_analysis: |
+    ### Relevant endpoints
+    
+    - Quota: `GET /api/quota` — returns:
+      ```json
+      {
+        "input_tokens": N,
+        "output_tokens": N,
+        "cache_read_tokens": N,
+        "cache_write_tokens": N,
+        "total_cost_usd": N.NN,
+        "rate_limited": bool,
+        "rate_limit_retry_after": N
+      }
+      ```
+    
+    ### SSE events
+    
+    - `quota_update` — emitted when agent usage is recorded, includes updated quota fields
+    
+    ### UI components
+    
+    - Stat cards: individual cards for input tokens, output tokens, cache tokens, and total cost
+    - Cost display: formatted as USD (e.g., "$1.23")
+    - Rate limit badge: appears when `rate_limited` is true, shows countdown timer based on `rate_limit_retry_after`
+    - Rate limit badge hides when rate limiting clears
+  acceptance_criteria:
+    - Stat cards display input/output/cache token counts
+    - Cost estimate displays in USD format
+    - Rate limit badge shows when rate limited (with countdown)
+    - Rate limit badge hides when not rate limited
+    - Quota updates via SSE reflect immediately in stat cards
+    - Token counts aggregate across multiple agents
+    - Cost format handles zero, small, and large values
+    - Edge cases: very large token counts, rapid quota updates, zero cost
+    - Failure cases: quota API error, malformed quota SSE event, rate limit without retry_after
+  out_of_scope: |
+    - Agent spawning that generates quota — use seeded/mock data
+    - Quota limits/enforcement (billing)
+    - Historical quota charts or graphs
+    - Per-model cost breakdowns
+  technical_notes: |
+    ### Test data seeding
+    
+    Seed quota data directly via the test server's service layer or by spawning mock agents that report known token counts. The mock agent's `result` event includes `usage` (input_tokens, output_tokens) and `cost` fields that the server aggregates.
+    
+    ### Cost formatting verification
+    
+    Test various cost values:
+    - Zero: `$0.00`
+    - Small: `$0.0012` (verify precision)
+    - Normal: `$1.23`
+    - Large: `$1,234.56` (verify comma formatting)
+    
+    ### Rate limit testing
+    
+    Set `rate_limited: true` and `rate_limit_retry_after: 10` in seeded data. Verify:
+    - Badge appears with countdown starting at 10
+    - Countdown decrements (or at least badge text updates)
+    - Badge disappears when rate limiting clears (send SSE with `rate_limited: false`)
+    
+    ### SSE coalescing
+    
+    When rapid `quota_update` events arrive (e.g., 10 per second), verify the UI does not flicker or show intermediate states. The final displayed values should match the last event received.
+    
+    ### Developer agent instructions
+    
+    When building this track, use the Playwright MCP skill to verify E2E tests work in the browser. Run tests in headed mode during development for visual verification. Use `apiClient` helper for direct REST calls to the quota endpoint.
+    
+    ---
+plan:
+  - phase: Stat Card Tests
+    tasks:
+      - text: Token count display — seed quota data with known input_tokens (1500), output_tokens (800), cache_read_tokens (200), navigate to dashboard, verify each stat card displays the correct token count with appropriate formatting
+        done: false
+      - text: Cost estimate format — seed quota data with `total_cost_usd: 1.23`, navigate to dashboard, verify cost stat card shows "$1.23" in USD format; repeat with `0.00`, `0.0012`, and `1234.56` to verify formatting across ranges
+        done: false
+      - text: Initial load from API — navigate to dashboard with no cache, verify stat cards load token counts and cost from `GET /api/quota` on initial page load, verify a loading state is shown briefly before data appears
+        done: false
+  - phase: Rate Limit Tests
+    tasks:
+      - text: Rate limit badge visible — seed quota data with `rate_limited: true` and `rate_limit_retry_after: 30`, navigate to dashboard, verify a rate limit badge/indicator is visible with retry countdown text
+        done: false
+      - text: Countdown timer — seed rate-limited quota with `retry_after: 10`, navigate to dashboard, verify countdown decrements over time (check value at T+0 and T+2 seconds), verify countdown text updates
+        done: false
+      - text: Badge hides when cleared — seed rate-limited quota, navigate to dashboard, verify badge is visible; send SSE `quota_update` with `rate_limited: false`, verify badge disappears without page refresh
+        done: false
+  - phase: SSE Update Tests
+    tasks:
+      - text: quota_update refreshes cards — open dashboard in Playwright, verify initial token counts, send SSE `quota_update` event with new token counts (input_tokens: 2500, output_tokens: 1200), verify stat cards update to new values without page refresh
+        done: false
+      - text: Rapid updates coalesce — open dashboard, send 10 `quota_update` SSE events in quick succession (50ms apart) with incrementing token counts, verify final displayed values match the last event, verify no visual flickering or intermediate renders
+        done: false
+      - text: Incremental updates — open dashboard with initial quota (input: 1000), spawn a mock agent via API that reports usage (input: 500), verify the stat cards update to show aggregated total (input: 1500) after the `quota_update` event arrives
+        done: false
+  - phase: Aggregation Tests
+    tasks:
+      - text: Multi-agent totals — seed quota from two mock agents (agent-A: 1000 input, agent-B: 2000 input), navigate to dashboard, verify stat cards show aggregated totals (3000 input), verify cost is the sum of both agents' costs
+        done: false
+      - text: Per-agent breakdown — if the UI provides a per-agent breakdown view, seed two agents with different usage, navigate to breakdown, verify individual agent usage is displayed correctly; if no breakdown view, verify the aggregate display is correct
+        done: false
+      - text: History view — if the UI provides a quota history or timeline, seed multiple quota snapshots at different timestamps, verify the history displays data points in chronological order; if no history view, verify the current snapshot display is correct
+        done: false
+  - phase: Edge and Failure Cases
+    tasks:
+      - text: Large and zero values — seed quota with very large token counts (1,000,000+ input tokens, $10,000+ cost), verify stat cards format with commas or abbreviations without overflow; seed zero values (0 tokens, $0.00 cost), verify cards display zero gracefully
+        done: false
+      - text: Zero and small costs — seed quota with `total_cost_usd: 0`, verify "$0.00" display; seed `total_cost_usd: 0.0001`, verify the UI shows appropriate precision without rounding to zero
+        done: false
+      - text: API errors and malformed events — simulate `GET /api/quota` returning 500 error, verify error state displayed in dashboard (error message or retry prompt); send malformed SSE `quota_update` event (invalid JSON), verify UI does not crash and previous values remain displayed
+        done: false
+extra: "{}"

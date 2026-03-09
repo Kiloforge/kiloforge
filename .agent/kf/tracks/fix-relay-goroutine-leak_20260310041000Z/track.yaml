@@ -1,0 +1,43 @@
+id: fix-relay-goroutine-leak_20260310041000Z
+title: Fix Agent Relay Goroutine Leak and Double-Close Panic
+type: bug
+status: complete
+created: 2026-03-10T04:10:00Z
+updated: 2026-03-10T04:10:00Z
+spec:
+  summary: Fix critical concurrency bugs in agent session management: relay goroutine leak on resume (two goroutines consuming from same channel), potential double-close panic in SDKSession.Close(), and stale WebSocket session broadcast after disconnect.
+  context: "When an agent is resumed via the REST API, `StartStructuredRelay()` spawns a new goroutine without stopping the previous one. Two goroutines reading from the same `ia.Output` channel causes dropped messages, race conditions, and potential panics. Additionally, `SDKSession.Close()` calls `close(channel)` without `sync.Once` protection — if called from both the monitor goroutine and StopAgent handler concurrently, it panics."
+  codebase_analysis: |
+    - **Finding A14 (Critical):** `api_handler.go:388,495,1486,1620,1878` — `StartStructuredRelay()` called on resume without stopping previous relay
+    - **Finding A15 (Medium):** `sdk_client.go:197-198` — `Close()` calls `close(s.output)` and `close(s.done)` without sync.Once
+    - **Finding A17 (Medium):** `ws/session.go:91-100` — `BroadcastToAgent` takes stale session snapshot, can write to cancelled context
+    - **Finding A18 (Medium):** `ws/session.go:155-165` — OutputRelay goroutine not tracked for explicit cleanup
+  acceptance_criteria:
+    - Resuming an agent stops any existing relay goroutine before starting a new one
+    - SDKSession.Close() is safe to call multiple times concurrently (sync.Once)
+    - No goroutine leaks after agent stop/resume cycles
+    - WebSocket broadcast skips disconnected sessions (cancelled context check)
+    - Existing agent spawn/stop/resume tests pass
+    - New tests cover resume-after-resume and concurrent-close scenarios
+  out_of_scope: |
+    - WebSocket session context inheritance (covered by fix-ws-context-lifecycle track)
+    - OutputRelay goroutine tracking (covered by fix-ws-context-lifecycle track)
+  technical_notes: |
+    ### Relay goroutine tracking
+    Add a `cancelRelay context.CancelFunc` field to `InteractiveAgent` or the relay manager. Before starting a new relay, call the previous cancel function. The relay goroutine should select on its context.
+    
+    ### sync.Once for Close()
+    Wrap `close(s.output)` and `close(s.done)` in `sync.Once.Do()`. Return early if already closed.
+    
+    ### Stale broadcast fix
+    In `BroadcastToAgent`, check `session.ctx.Err() != nil` before writing. Skip sessions with cancelled contexts.
+    
+    ---
+plan:
+  - phase: Fix SDKSession Double-Close
+    tasks: []
+  - phase: Fix Relay Goroutine Leak on Resume
+    tasks: []
+  - phase: Fix Stale WebSocket Broadcast
+    tasks: []
+extra: "{}"

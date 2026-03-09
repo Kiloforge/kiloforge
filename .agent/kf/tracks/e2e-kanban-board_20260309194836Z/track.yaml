@@ -1,0 +1,139 @@
+id: e2e-kanban-board_20260309194836Z
+title: E2E Tests: Kanban Board — View, Move, Sync, and Column Transitions
+type: chore
+status: pending
+created: 2026-03-09T19:48:36Z
+updated: 2026-03-09T19:48:36Z
+spec:
+  summary: Comprehensive E2E tests for the project kanban board: displaying tracks as cards in columns, moving cards between columns, syncing board state with backend, and verifying column transitions match agent lifecycle, covering happy path, edge cases, and expected failures.
+  context: "Kiloforge's dashboard includes a kanban board that organizes tracks into columns: Backlog, In Progress, In Review, and Done. Each track appears as a card in the column corresponding to its current status. Users can move cards between columns (via drag-and-drop or API), and the board syncs state with the backend. The board also receives real-time updates via SSE (`board_update` events) when tracks change status due to agent activity."
+  codebase_analysis: |
+    ### Board API endpoints
+    
+    - `GET /api/projects/{projectId}/board` — returns board state with columns and card positions
+    - `PUT /api/projects/{projectId}/board/cards/{trackId}` — move a card to a different column
+    - `POST /api/projects/{projectId}/board/sync` — sync board state from backend track statuses
+    
+    ### Frontend board component
+    
+    The React kanban board component renders four columns, each containing track cards. Cards display the track title, ID, and a status indicator. Cards can be moved between columns via drag-and-drop (or button controls). The board subscribes to SSE `board_update` events for real-time updates.
+    
+    ### Track domain model
+    
+    Tracks have a status field that maps to kanban columns:
+    - `backlog` -> Backlog column
+    - `in_progress` -> In Progress column
+    - `in_review` -> In Review column
+    - `done` / `complete` -> Done column
+    
+    ### SSE integration
+    
+    The `/events` SSE endpoint emits `board_update` events when a card moves, and `track_update` events when a track's status changes. The board component listens for these to update without polling.
+  acceptance_criteria:
+    - Board loads with correct columns: Backlog, In Progress, In Review, Done
+    - Seeded tracks appear as cards in correct columns based on status
+    - Move card between columns (drag-drop or API) — card position updates
+    - Board sync button refreshes state from backend
+    - Card shows track title, ID, and status indicator
+    - Column counts update when cards move
+    - Edge cases: empty board, all cards in one column, rapid moves
+    - Failure cases: move to invalid column, sync during API error, stale board state
+  out_of_scope: |
+    - Agent lifecycle triggering card moves (covered in `e2e-agent-lifecycle_20260309194834Z`)
+    - SSE transport and connection management (covered in `e2e-sse-realtime_20260309194837Z`)
+    - Track CRUD operations (covered in `e2e-track-management_20260309194833Z`)
+  technical_notes: |
+    ### Test file organization
+    
+    ```
+    e2e/
+      kanban-board/
+        display_test.go        — board loads, cards render, empty board
+        movement_test.go       — card movement forward/backward, API verification, column counts
+        sync_test.go           — sync button, external changes, sync during load
+        card_content_test.go   — title/ID display, status indicators, card navigation
+        edge_cases_test.go     — rapid moves, API errors, stale state
+    ```
+    
+    ### Test data seeding
+    
+    Each test should seed a project with tracks in known statuses:
+    ```go
+    seedData := seedTestData(t, server, SeedConfig{
+        Project: "test-project",
+        Tracks: []TrackSeed{
+            {Title: "Track A", Status: "backlog"},
+            {Title: "Track B", Status: "in_progress"},
+            {Title: "Track C", Status: "in_review"},
+            {Title: "Track D", Status: "done"},
+        },
+    })
+    ```
+    
+    ### Card movement verification
+    
+    After moving a card:
+    1. Assert the card visually appears in the target column (Playwright locator)
+    2. Assert the source column no longer contains the card
+    3. Assert column count badges updated
+    4. Verify via API (`GET /api/projects/{id}/board`) that the backend state matches
+    
+    ### Drag-and-drop testing with Playwright
+    
+    Use Playwright's drag-and-drop API:
+    ```typescript
+    await page.locator('[data-card-id="track-b"]').dragTo(
+      page.locator('[data-column="in_review"]')
+    );
+    ```
+    If drag-and-drop is not implemented, test via button controls or direct API calls with UI verification.
+    
+    ### Developer agent instructions
+    
+    When building this track, use the Playwright MCP skill to verify E2E tests work in the browser. Run tests in headed mode during development for visual verification.
+    
+    ---
+plan:
+  - phase: Board Display Tests
+    tasks:
+      - text: Board loads columns — navigate to project board page, verify all four columns render with correct headers: Backlog, In Progress, In Review, Done
+        done: false
+      - text: Cards render correctly — seed tracks with known statuses, verify each track card appears in the correct column with visible title and status indicator
+        done: false
+      - text: Empty board state — navigate to board for a project with no tracks, verify empty state message or placeholder is shown in each column
+        done: false
+  - phase: Card Movement Tests
+    tasks:
+      - text: Move card forward — move a card from Backlog to In Progress (via drag-drop or button), verify it appears in the target column and is removed from the source
+        done: false
+      - text: Move card backward — move a card from In Review back to In Progress, verify the card moves correctly (regression: ensure backward moves are allowed)
+        done: false
+      - text: Move API call verification — after moving a card, call `GET /api/projects/{id}/board` and verify backend state matches the UI column positions
+        done: false
+      - text: Column count updates — verify that column card count badges update after each card movement (source decrements, target increments)
+        done: false
+  - phase: Board Sync Tests
+    tasks:
+      - text: Sync button refreshes board — change a track's status via API (not UI), click board sync button, verify the card moves to the correct column reflecting the new status
+        done: false
+      - text: Sync after external change — modify track statuses via direct API calls, trigger sync, verify all cards reflect current backend state
+        done: false
+      - text: Sync during page load — seed data, navigate to board, verify initial load performs a sync and cards are in correct positions without manual sync
+        done: false
+  - phase: Card Content Tests
+    tasks:
+      - text: Track title and ID display — verify each card shows the track title and track ID (or abbreviated ID)
+        done: false
+      - text: Status indicators — verify cards display a visual status indicator (color dot, badge, or icon) matching their current status
+        done: false
+      - text: Card click navigates to detail — click a card, verify navigation to the track detail page with correct track information
+        done: false
+  - phase: Edge and Failure Cases
+    tasks:
+      - text: Rapid card moves — move the same card between columns in rapid succession, verify final state is consistent and no ghost cards appear
+        done: false
+      - text: API error handling — simulate API failure on card move (e.g., network error), verify error toast/message appears and card reverts to original column
+        done: false
+      - text: Stale board state recovery — open board, wait for backend state to change externally, attempt a move, verify conflict is handled gracefully (sync or error)
+        done: false
+extra: "{}"

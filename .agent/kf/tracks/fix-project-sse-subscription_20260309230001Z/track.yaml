@@ -1,0 +1,68 @@
+id: fix-project-sse-subscription_20260309230001Z
+title: Wire Project SSE Events in Dashboard Frontend
+type: bug
+status: complete
+created: 2026-03-09T23:00:01Z
+updated: 2026-03-09T23:00:01Z
+spec:
+  summary: "Adding or removing a project via the dashboard doesn't update the project list in real time. The backend correctly emits `project_update` and `project_removed` SSE events, and the `useProjects` hook already has cache-invalidation handlers, but `App.tsx` never registers them with the SSE subscription."
+  context: "The SSE subscription in `App.tsx` only registers handlers for `agent_update`, `agent_removed`, `quota_update`, `track_update`, and `track_removed`. The `project_update` and `project_removed` events are dropped because no handler is registered. The `useProjects` hook already exports `handleProjectUpdate` and `handleProjectRemoved` callbacks that correctly update the TanStack Query cache — they just need to be wired in."
+  codebase_analysis: |
+    ### Backend (working correctly)
+    
+    - **`backend/internal/adapter/rest/api_handler.go:481`** — publishes `project_update` event after add
+    - **`backend/internal/adapter/rest/api_handler.go:518`** — publishes `project_removed` event after delete
+    - **`backend/internal/core/domain/events.go:12-13`** — defines `EventProjectUpdate` and `EventProjectRemoved`
+    - **`backend/internal/adapter/dashboard/sse.go:73-105`** — broadcasts all events via SSE
+    
+    ### Frontend (missing subscription)
+    
+    - **`frontend/src/App.tsx:39-47`** — `sseHandlers` object missing `project_update`/`project_removed`
+    - **`frontend/src/hooks/useProjects.ts:77-105`** — `handleProjectUpdate` and `handleProjectRemoved` already implemented and exported
+    - **`frontend/src/pages/OverviewPage.tsx`** — currently the only consumer of `useProjects()`, but SSE handlers need to be at the App level
+    
+    ### Current event flow (broken)
+    
+    ```
+    Backend: AddProject() → eventBus.Publish(project_update)
+    → SSE broadcast to /events clients
+    → Frontend useSSE receives event
+    → No handler registered → event dropped
+    → Cache stale until page refresh
+    ```
+  acceptance_criteria:
+    - `App.tsx` calls `useProjects()` and wires `handleProjectUpdate`/`handleProjectRemoved` into `sseHandlers`
+    - Adding a project via the dashboard immediately shows it in the project list
+    - Removing a project via the dashboard immediately removes it from the project list
+    - No duplicate `useProjects` queries (ensure TanStack Query deduplication works since both App and OverviewPage call the hook)
+  out_of_scope: |
+    - SSE events for other entity types not currently handled
+    - Optimistic UI updates on mutation (cache update via SSE is sufficient)
+  technical_notes: |
+    The fix is minimal:
+    
+    1. Import and call `useProjects()` in `App()` component
+    2. Add `project_update: handleProjectUpdate` and `project_removed: handleProjectRemoved` to `sseHandlers`
+    3. Add both handlers to the `useMemo` dependency array
+    
+    TanStack Query will deduplicate the `useProjects()` call between App and OverviewPage since they share the same query key.
+    
+    ---
+plan:
+  - phase: Wire SSE Handlers
+    tasks:
+      - text: Import `useProjects` in `App.tsx` and destructure `handleProjectUpdate` and `handleProjectRemoved`
+        done: true
+      - text: Add `project_update` and `project_removed` to `sseHandlers` object and `useMemo` dependency array
+        done: true
+      - text: Verify `OverviewPage` still works (TanStack Query deduplicates the shared query key)
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Build passes (`cd frontend && npm run build`)
+        done: true
+      - text: Adding a project live-updates the project list without page refresh
+        done: true
+      - text: Removing a project live-updates the project list without page refresh
+        done: true
+extra: "{}"

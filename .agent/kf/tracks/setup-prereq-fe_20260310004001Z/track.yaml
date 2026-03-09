@@ -1,0 +1,119 @@
+id: setup-prereq-fe_20260310004001Z
+title: Setup Prerequisite Check — Dashboard UI (Frontend)
+type: feature
+status: complete
+created: 2026-03-10T00:40:01Z
+updated: 2026-03-10T00:40:01Z
+spec:
+  summary: Add frontend handling for the 428 "kiloforge setup required" response. When a user tries to generate tracks or spawn an agent on a project that hasn't been set up, show a dialog explaining that setup is needed and offer a button to launch an interactive setup session. After setup completes, the original operation is retried automatically.
+  context: "The backend (track `setup-prereq-be_20260310004000Z`) returns HTTP 428 when conductor artifacts are missing for a project. The frontend needs to catch this error and guide the user through setup, following the same pattern used for consent (403 → ConsentDialog) and skills (412 → SkillsInstallDialog)."
+  codebase_analysis: |
+    ### Existing prerequisite dialog patterns
+    
+    The frontend has two established patterns for prerequisite dialogs:
+    
+    1. **useConsent + ConsentDialog** (`frontend/src/hooks/useConsent.ts`, `frontend/src/components/ConsentDialog.tsx`)
+       - Hook provides `requestConsent(retryFn)` — stores retry callback, opens dialog
+       - Dialog shows explanation, Accept/Deny buttons
+       - On accept: POST consent API, then call `retryFn()`
+    
+    2. **useSkillsPrompt + SkillsInstallDialog** (`frontend/src/hooks/useSkillsPrompt.ts`, `frontend/src/components/SkillsInstallDialog.tsx`)
+       - Hook provides `requestInstall(retryFn)` — stores retry callback, opens dialog
+       - Dialog shows missing skills, Install/Cancel buttons
+       - On install: POST skills update API, then call `retryFn()`
+    
+    ### Integration point (`frontend/src/pages/ProjectPage.tsx`)
+    
+    The track generation mutation already handles 403 and 412:
+    ```typescript
+    onError: (err) => {
+      if (err instanceof FetchError && err.status === 403) {
+        consent.requestConsent(() => handleGenerateTracks());
+      } else if (err instanceof FetchError && err.status === 412) {
+        skillsPrompt.requestInstall(() => handleGenerateTracks());
+      }
+      // NEW: handle 428 for setup required
+    }
+    ```
+    
+    ### Files to create/modify
+    - `frontend/src/hooks/useSetupPrompt.ts` — new hook (mirrors useSkillsPrompt pattern)
+    - `frontend/src/components/SetupRequiredDialog.tsx` — new dialog component
+    - `frontend/src/pages/ProjectPage.tsx` — wire 428 handler in onError
+  acceptance_criteria:
+    - `useSetupPrompt` hook that provides `requestSetup(projectSlug, retryFn)` — opens setup dialog
+    - `SetupRequiredDialog` component explaining that project setup is needed, with "Run Setup" and "Cancel" buttons
+    - "Run Setup" spawns an interactive agent session via `POST /api/projects/{slug}/setup` and opens WebSocket terminal
+    - After setup agent completes successfully, the original operation (track gen, etc.) is retried automatically
+    - 428 error handling wired into `ProjectPage.tsx` track generation mutation
+    - 428 error handling wired into any other agent spawn triggers (if applicable)
+    - Project page shows a banner/indicator when setup is incomplete (using `GET /api/projects/{slug}/setup-status`)
+  out_of_scope: |
+    - Backend API implementation (covered by BE track)
+    - Modifying the `kf-setup` skill itself
+    - Setup for CLI workflows
+  technical_notes: |
+    ### useSetupPrompt hook
+    
+    ```typescript
+    export function useSetupPrompt() {
+      const [isOpen, setIsOpen] = useState(false);
+      const [projectSlug, setProjectSlug] = useState("");
+      const retryRef = useRef<(() => void) | null>(null);
+    
+      const requestSetup = (slug: string, retryFn: () => void) => {
+        setProjectSlug(slug);
+        retryRef.current = retryFn;
+        setIsOpen(true);
+      };
+    
+      const handleSetupComplete = () => {
+        setIsOpen(false);
+        retryRef.current?.();
+      };
+    
+      return { isOpen, projectSlug, requestSetup, handleSetupComplete, dismiss: () => setIsOpen(false) };
+    }
+    ```
+    
+    ### SetupRequiredDialog
+    
+    Similar to ConsentDialog/SkillsInstallDialog. The "Run Setup" button:
+    1. Calls `POST /api/projects/{slug}/setup`
+    2. Gets back agent info with WebSocket session ID
+    3. Opens the interactive terminal (same as existing interactive agent flow)
+    4. On agent completion, calls `handleSetupComplete` which retries the original operation
+    
+    ### Setup status indicator
+    
+    The project page can poll `GET /api/projects/{slug}/setup-status` to show a banner like "Kiloforge Setup Required — Run setup to configure this project for track management" with a prominent action button.
+    
+    ---
+plan:
+  - phase: Hook and Dialog
+    tasks:
+      - text: Create `useSetupPrompt` hook in `frontend/src/hooks/useSetupPrompt.ts` — mirrors useSkillsPrompt pattern
+        done: true
+      - text: Create `SetupRequiredDialog` component in `frontend/src/components/SetupRequiredDialog.tsx`
+        done: true
+      - text: "Run Setup" button spawns interactive agent via `POST /api/projects/{slug}/setup` and opens WebSocket terminal
+        done: true
+      - text: On agent completion, auto-retry the original operation
+        done: true
+  - phase: Integration
+    tasks:
+      - text: Wire 428 handler in `ProjectPage.tsx` track generation mutation's `onError`
+        done: true
+      - text: Wire 428 handler in any other agent spawn triggers on the project page
+        done: true
+      - text: Add setup status banner on project page — poll `GET /api/projects/{slug}/setup-status`, show "Setup Required" banner with action button when incomplete
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Frontend builds without errors (`npm run build`)
+        done: true
+      - text: Setup dialog appears when generating tracks on a project without conductor artifacts
+        done: true
+      - text: After completing setup, track generation proceeds automatically
+        done: true
+extra: "{}"

@@ -1,0 +1,94 @@
+id: fix-project-delete-refresh_20260310013000Z
+title: Fix Project Delete — Refresh List and Close Modal
+type: bug
+status: complete
+created: 2026-03-10T01:30:00Z
+updated: 2026-03-10T01:30:00Z
+spec:
+  summary: "After deleting a project, the modal doesn't close reliably and the project list doesn't update. The `removeProject` function in `useProjects.ts` is a plain async function that doesn't invalidate the TanStack Query cache after a successful DELETE. The list only updates if/when the SSE `project_removed` event arrives, which has a race condition."
+  context: |
+    The delete flow: RemoveProjectDialog → `onConfirm(slug, cleanup)` → `removeProject()` → `fetcher(DELETE)` → returns `true` → modal calls `onCancel()`.
+    
+    The problem is `removeProject` doesn't invalidate the projects query after DELETE succeeds. Compare with `addProject` which uses a proper `useMutation` with cache handling. The `removeProject` function is a bare `async` function with manual state management (`setRemoving`, `setError`).
+  codebase_analysis: |
+    ### Current removeProject (`useProjects.ts`, lines 57-75)
+    
+    ```typescript
+    const removeProject = async (slug: string, cleanup: boolean): Promise<boolean> => {
+      setRemoving(slug);
+      setError(null);
+      try {
+        const url = `/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
+        await fetcher<void>(url, { method: "DELETE" });
+        setRemoving(null);
+        return true; // returns before SSE event arrives
+      } catch (err) { ... }
+    };
+    ```
+    
+    Missing: `queryClient.invalidateQueries({ queryKey: queryKeys.projects })` after successful DELETE.
+    
+    ### RemoveProjectDialog (`RemoveProjectDialog.tsx`, lines 14-17)
+    
+    ```typescript
+    const handleConfirm = useCallback(async () => {
+      const ok = await onConfirm(slug, cleanup);
+      if (ok) onCancel(); // closes modal
+    }, [slug, cleanup, onConfirm, onCancel]);
+    ```
+    
+    This should work if `removeProject` returns `true`, but the user reports it doesn't close — possibly the `removeProject` function is throwing or the state isn't being updated correctly.
+    
+    ### OverviewPage wiring (`OverviewPage.tsx`, lines ~238-245)
+    
+    The `onConfirm` prop passes `removeProject` from `useProjects`. The `onCancel` prop calls `setRemoveSlug(null)` which should dismiss the dialog.
+  acceptance_criteria:
+    - After successful project deletion, the projects query cache is invalidated immediately
+    - Modal closes after successful DELETE response
+    - Project disappears from the list without waiting for SSE
+    - Convert `removeProject` to a proper `useMutation` for consistency with `addProject`
+    - Navigate to overview page if currently on the deleted project's page
+    - Frontend builds without errors (`npm run build`)
+  out_of_scope: |
+    - Backend changes (DELETE endpoint works correctly, SSE event is published)
+    - Other project operations
+  technical_notes: |
+    ### Fix: Convert to useMutation
+    
+    ```typescript
+    const removeMutation = useMutation({
+      mutationFn: async ({ slug, cleanup }: { slug: string; cleanup: boolean }) => {
+        const url = `/api/projects/${encodeURIComponent(slug)}${cleanup ? "?cleanup=true" : ""}`;
+        await fetcher<void>(url, { method: "DELETE" });
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects });
+      },
+    });
+    ```
+    
+    Then `removeProject` becomes a wrapper that calls `removeMutation.mutateAsync()`.
+    
+    ### Navigation after delete
+    
+    If the user is on `ProjectPage` for the deleted project, they should be navigated back to the overview after deletion. Check if `OverviewPage` handles this or if `ProjectPage` needs a redirect.
+    
+    ---
+plan:
+  - phase: Fix Delete Flow
+    tasks:
+      - text: Convert `removeProject` in `useProjects.ts` to use `useMutation` with `onSuccess` invalidating projects query
+        done: true
+      - text: Ensure `RemoveProjectDialog` properly awaits mutation and closes on success
+        done: true
+      - text: Navigate to overview page if user deletes a project while on that project's page
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Frontend builds without errors (`npm run build`)
+        done: true
+      - text: Delete project → modal closes → project removed from list immediately
+        done: true
+      - text: Delete project from project page → navigates back to overview
+        done: true
+extra: "{}"

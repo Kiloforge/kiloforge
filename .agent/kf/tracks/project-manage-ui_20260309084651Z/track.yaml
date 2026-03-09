@@ -1,0 +1,94 @@
+id: project-manage-ui_20260309084651Z
+title: Project Add/Remove Dashboard UI
+type: feature
+status: complete
+created: 2026-03-09T08:46:51Z
+updated: 2026-03-09T08:46:51Z
+spec:
+  summary: Add UI controls to the dashboard for registering and removing projects. An "Add Project" form lets users provide a remote URL, and a "Remove" action on each project row handles deregistration with a confirmation dialog.
+  context: |
+    The dashboard's Overview page already lists registered projects in a table (slug, origin remote, track counts). Currently the only way to add a project is `kf add <remote>` from the terminal. Users should be able to manage projects directly from the dashboard.
+    
+    ### Current Dashboard State
+    
+    - **Overview page** (`OverviewPage.tsx`) — lists projects, links to project detail
+    - **Project page** (`ProjectPage.tsx`) — shows metadata, kanban board, tracks
+    - **Data hook** (`useProjects.ts`) — fetches `GET /-/api/projects` (read-only)
+    - **Empty state** — shows "No projects registered — run `kf add <remote>`"
+  codebase_analysis: |
+    **Frontend stack:** React 19, TypeScript 5.9, Vite 7, CSS Modules
+    **API types:** `frontend/src/types/api.ts` — `Project` interface
+    **Data hooks:** `frontend/src/hooks/useProjects.ts` — fetch-only, no mutations
+    **Pages:** `frontend/src/pages/OverviewPage.tsx`, `ProjectPage.tsx`
+    
+    **API endpoints (from BE track):**
+    - `POST /-/api/projects` — `{remote_url, name?}` → `Project`
+    - `DELETE /-/api/projects/{slug}` — `?cleanup=true` → 204
+  acceptance_criteria:
+    - "Add Project" button on Overview page opens a form/modal
+    - Form has fields: Remote URL (required), Project Name (optional, auto-derived from URL)
+    - Form validates URL format before submission
+    - On submit: calls `POST /-/api/projects`, shows loading state, refreshes project list on success
+    - Error handling: shows inline error for bad URL (400), duplicate (409), or server errors
+    - Each project row has a "Remove" action (button or menu)
+    - Remove triggers a confirmation dialog: "Remove {slug}? This will deregister the project."
+    - Confirmation dialog has a "Also delete Gitea repo and local clone" checkbox (maps to `?cleanup=true`)
+    - On confirm: calls `DELETE /-/api/projects/{slug}`, refreshes project list on success
+    - Empty state message updated from "run `kf add <remote>`" to include the Add Project button
+  out_of_scope: |
+    - Project editing (rename, update remote)
+    - Bulk project operations
+    - Project import from Gitea (auto-discover existing repos)
+  technical_notes: |
+    - **Follow existing patterns:** Use `useProjects` hook pattern for mutations. Add `addProject()` and `removeProject()` functions.
+    - **CSS Modules:** Use existing CSS module patterns from the codebase, not inline styles.
+    - **Optimistic UI:** After successful add/remove, refetch the project list rather than optimistic updates (simpler, data is small).
+    - **Form placement:** An inline form above the project table is simpler than a modal. Match the dashboard's existing design language.
+    
+    ---
+plan:
+  - phase: API Integration Hooks
+    tasks:
+      - text: Add `addProject(remoteUrl, name?)` function to `useProjects` hook — calls `POST /-/api/projects`
+        done: true
+      - text: Add `removeProject(slug, cleanup?)` function to `useProjects` hook — calls `DELETE /-/api/projects/{slug}`
+        done: true
+      - text: Add loading/error state management for mutations
+        done: true
+      - text: Update `api.ts` types — add `AddProjectRequest` interface
+        done: true
+  - phase: Add Project Form
+    tasks:
+      - text: Create `AddProjectForm` component with Remote URL input and optional Name input
+        done: true
+      - text: Add client-side URL format validation (SSH, HTTPS patterns)
+        done: true
+      - text: Add submit handler — call `addProject()`, show loading spinner, handle errors inline
+        done: true
+      - text: Integrate form into `OverviewPage` above the project table
+        done: true
+      - text: Update empty state to include the Add Project form instead of CLI-only message
+        done: true
+      - text: Style with CSS Modules matching existing dashboard design
+        done: true
+  - phase: Remove Project UI
+    tasks:
+      - text: Add "Remove" button/action to each project row in the Overview table
+        done: true
+      - text: Create confirmation dialog component — project name, cleanup checkbox, confirm/cancel buttons
+        done: true
+      - text: Wire confirmation to `removeProject()` hook, show loading state during deletion
+        done: true
+      - text: Handle success (refresh list) and error (show message) states
+        done: true
+      - text: Style dialog with CSS Modules
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify frontend builds: `cd frontend && npm run build`
+        done: true
+      - text: Verify full build: `make build` (embeds frontend into Go binary)
+        done: true
+      - text: Manual verification: skipped (no live environment)
+        done: true
+extra: "{}"

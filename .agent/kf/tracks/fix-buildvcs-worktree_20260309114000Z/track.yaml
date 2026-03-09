@@ -1,0 +1,60 @@
+id: fix-buildvcs-worktree_20260309114000Z
+title: Fix VCS Stamping in Git Worktrees
+type: bug
+status: complete
+created: 2026-03-09T11:40:00Z
+updated: 2026-03-09T12:30:00Z
+spec:
+  summary: "Remove the `-buildvcs=false` workaround and enable proper VCS stamping in git worktrees by setting `GIT_DIR` and `GIT_WORK_TREE` environment variables during build. This embeds commit hash, timestamp, and dirty flag into the binary."
+  context: "The build currently uses `-buildvcs=false` because Go's VCS detection fails in git worktrees — the `.git` entry in a worktree is a file (pointer), not a directory, which confuses the Go toolchain. The fix is to set `GIT_DIR=$(git rev-parse --git-common-dir)` and `GIT_WORK_TREE` to the worktree root before building. This has been verified to work — the binary gets `vcs.revision`, `vcs.time`, and `vcs.modified` stamps."
+  codebase_analysis: |
+    ### Current state
+    - `Makefile:24` — `cd backend && go build -buildvcs=false -o ../$(BINARY) ./cmd/kf`
+    - `backend/cmd/kf/main_test.go:10` — `exec.Command("go", "build", "-buildvcs=false", ...)`
+    - Both explicitly disable VCS stamping
+    
+    ### Verified fix
+    ```bash
+    cd backend && GIT_DIR=$(git rev-parse --git-common-dir) GIT_WORK_TREE=$(cd .. && pwd) go build -buildvcs=true -o ../$(BINARY) ./cmd/kf
+    ```
+    
+    Result: binary embeds `vcs=git`, `vcs.revision=<hash>`, `vcs.time=<timestamp>`, `vcs.modified=<bool>`.
+    
+    ### Files to modify
+    - `Makefile` — update `build-backend` target: set `GIT_DIR` and `GIT_WORK_TREE` env vars, remove `-buildvcs=false`
+    - `backend/cmd/kf/main_test.go` — update `TestBinaryBuilds` to set the same env vars and remove `-buildvcs=false`
+  acceptance_criteria:
+    - `make build-backend` succeeds in a git worktree with VCS stamping enabled
+    - `make build-backend` succeeds in a normal (non-worktree) git checkout
+    - Built binary contains `vcs.revision` metadata (`go version -m <binary> | grep vcs`)
+    - `TestBinaryBuilds` passes in worktree context
+    - No `-buildvcs=false` remains in the codebase
+  out_of_scope: |
+    - Using VCS info at runtime (version command, etc.) — separate concern
+    - ldflags-based version stamping
+  technical_notes: |
+    ### Why GIT_DIR + GIT_WORK_TREE works
+    
+    In a worktree, `.git` is a file containing `gitdir: /path/to/.git/worktrees/<name>`. Go's VCS detection calls `git status` which needs the actual `.git` directory. Setting `GIT_DIR` to `$(git rev-parse --git-common-dir)` (the shared `.git` dir) and `GIT_WORK_TREE` to the worktree root gives git the correct context.
+    
+    This works identically in non-worktree checkouts: `git rev-parse --git-common-dir` returns `.git` and `GIT_WORK_TREE` is the repo root — same as the default.
+    
+    ---
+plan:
+  - phase: Fix Build
+    tasks:
+      - text: Update `Makefile` `build-backend` target — set `GIT_DIR=$(git rev-parse --git-common-dir)` and `GIT_WORK_TREE` env vars, remove `-buildvcs=false`
+        done: true
+      - text: Update `backend/cmd/kf/main_test.go` `TestBinaryBuilds` — set same env vars on the exec.Command, remove `-buildvcs=false`
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify `make build-backend` succeeds in worktree
+        done: true
+      - text: Verify built binary has VCS metadata: `go version -m .build/kf | grep vcs`
+        done: true
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Grep codebase for any remaining `-buildvcs=false` references
+        done: true
+extra: "{}"

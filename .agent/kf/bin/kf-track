@@ -20,6 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KF_DIR="${SCRIPT_DIR%/bin}"
 TRACKS_FILE="${KF_DIR}/tracks.yaml"
 DEPS_FILE="${KF_DIR}/tracks/deps.yaml"
+CONFLICTS_FILE="${KF_DIR}/tracks/conflicts.yaml"
 
 # --- Helpers ---
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
@@ -343,7 +344,7 @@ cmd_update() {
     set_field "$id" "archived_at" "$(today_iso)"
   fi
 
-  # If completed or archived, remove from deps.yaml (prune completed entries)
+  # If completed or archived, remove from deps.yaml and conflicts.yaml
   if [[ "$status" == "completed" || "$status" == "archived" ]]; then
     if [[ -f "$DEPS_FILE" ]]; then
       # Remove the track's own entry (key + any indented lines following it)
@@ -351,6 +352,8 @@ cmd_update() {
       # Clean up any resulting blank lines
       sed -i '' '/^$/N;/^\n$/d' "$DEPS_FILE"
     fi
+    # Remove conflict pairs involving this track
+    conflicts_clean_track "$id"
   fi
 
   echo "Updated: ${id} → ${status}"
@@ -665,6 +668,168 @@ cmd_deps() {
   esac
 }
 
+# --- Conflict risk pairs ---
+# conflicts.yaml stores pairs of tracks that may cause merge conflicts.
+# Each pair is strictly ordered (lower ID first) so only one record per pair.
+# Pairs are auto-cleaned when either track completes/archives.
+
+ensure_conflicts_file() {
+  if [[ ! -f "$CONFLICTS_FILE" ]]; then
+    mkdir -p "$(dirname "$CONFLICTS_FILE")"
+    cat > "$CONFLICTS_FILE" <<HEADER
+# Track Conflict Risk Pairs
+#
+# PROTOCOL:
+#   Each line: <id-a>/<id-b>: {"risk":"high|medium|low","note":"...","added":"..."}
+#   Pair key is strictly ordered: lower ID / higher ID (only one record per pair).
+#
+# RULES:
+#   - Architect adds pairs when generating tracks that may conflict.
+#   - Pairs auto-cleaned when either track completes or is archived.
+#   - Only active (pending/in-progress) tracks should have pairs.
+#
+# TOOL: Use \`kf-track conflicts\` to manage entries. Do not edit by hand.
+#
+HEADER
+  fi
+}
+
+# Build the canonical pair key (lower/higher alphabetical order)
+conflict_pair_key() {
+  local a="$1" b="$2"
+  if [[ "$a" < "$b" ]]; then
+    echo "${a}/${b}"
+  else
+    echo "${b}/${a}"
+  fi
+}
+
+sort_conflicts_file() {
+  [[ ! -f "$CONFLICTS_FILE" ]] && return
+  local header data
+  header=$(grep "^#" "$CONFLICTS_FILE" || true)
+  data=$(grep -v "^#" "$CONFLICTS_FILE" | grep -v "^$" | LC_ALL=C sort || true)
+  {
+    echo "$header"
+    [[ -n "$data" ]] && echo "" && echo "$data"
+  } > "${CONFLICTS_FILE}.tmp"
+  mv "${CONFLICTS_FILE}.tmp" "$CONFLICTS_FILE"
+}
+
+# Remove all conflict pairs involving a specific track ID
+conflicts_clean_track() {
+  local id="$1"
+  [[ ! -f "$CONFLICTS_FILE" ]] && return
+  # Match lines where the track ID appears in either position of the pair key
+  sed -i '' "/^[^#].*${id}/d" "$CONFLICTS_FILE"
+  # More precise: remove lines matching id/ or /id before the colon
+  # The sed above is broad enough for our controlled format
+}
+
+cmd_conflicts() {
+  local subcmd="${1:-}"; shift || true
+  case "$subcmd" in
+    add)
+      local id_a="${1:-}" id_b="${2:-}" risk="${3:-medium}" note="${4:-}"
+      if [[ -z "$id_a" || -z "$id_b" ]]; then
+        echo "Usage: kf-track conflicts add <track-a> <track-b> [risk] [note]" >&2
+        echo "  risk: high, medium, low (default: medium)" >&2
+        return 1
+      fi
+      if [[ "$id_a" == "$id_b" ]]; then
+        echo "ERROR: Cannot create conflict pair with itself" >&2; return 1
+      fi
+      ensure_conflicts_file
+      local pair_key
+      pair_key=$(conflict_pair_key "$id_a" "$id_b")
+      # Remove existing record for this pair (update semantics)
+      sed -i '' "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
+      # Build JSON
+      local json
+      if command -v jq &>/dev/null; then
+        json=$(jq -nc --arg r "$risk" --arg n "$note" --arg d "$(today_iso)" \
+          '{risk: $r, note: $n, added: $d}')
+      else
+        json="{\"risk\":\"${risk}\",\"note\":\"${note}\",\"added\":\"$(today_iso)\"}"
+      fi
+      echo "${pair_key}: ${json}" >> "$CONFLICTS_FILE"
+      sort_conflicts_file
+      echo "Added conflict pair: ${pair_key} (risk: ${risk})"
+      ;;
+    remove)
+      local id_a="${1:-}" id_b="${2:-}"
+      if [[ -z "$id_a" || -z "$id_b" ]]; then
+        echo "Usage: kf-track conflicts remove <track-a> <track-b>" >&2; return 1
+      fi
+      local pair_key
+      pair_key=$(conflict_pair_key "$id_a" "$id_b")
+      sed -i '' "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
+      echo "Removed conflict pair: ${pair_key}"
+      ;;
+    list)
+      local filter_id="${1:-}"
+      if [[ ! -f "$CONFLICTS_FILE" ]]; then
+        echo "(no conflicts.yaml)"; return 0
+      fi
+      local data
+      if [[ -n "$filter_id" ]]; then
+        data=$(grep -v "^#" "$CONFLICTS_FILE" | grep -v "^$" | grep "$filter_id" || true)
+      else
+        data=$(grep -v "^#" "$CONFLICTS_FILE" | grep -v "^$" || true)
+      fi
+      if [[ -z "$data" ]]; then
+        echo "(no conflict pairs${filter_id:+ for $filter_id})"
+      else
+        echo "$data" | while IFS= read -r line; do
+          local pair_key json risk
+          pair_key="${line%%:*}"
+          json="${line#*: }"
+          risk=$(echo "$json" | jq -r '.risk // "?"' 2>/dev/null || echo "?")
+          local note
+          note=$(echo "$json" | jq -r '.note // ""' 2>/dev/null || echo "")
+          printf "  %-60s  %s" "$pair_key" "risk=${risk}"
+          [[ -n "$note" ]] && printf "  %s" "$note"
+          echo
+        done
+      fi
+      ;;
+    clean)
+      # Remove pairs involving completed/archived tracks
+      if [[ ! -f "$CONFLICTS_FILE" ]]; then
+        echo "(no conflicts.yaml)"; return 0
+      fi
+      local removed=0
+      local pairs
+      pairs=$(grep -v "^#" "$CONFLICTS_FILE" | grep -v "^$" || true)
+      while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local pair_key="${line%%:*}"
+        local id_a="${pair_key%%/*}"
+        local id_b="${pair_key##*/}"
+        local status_a status_b
+        status_a=$(get_field "$id_a" "status" 2>/dev/null || echo "unknown")
+        status_b=$(get_field "$id_b" "status" 2>/dev/null || echo "unknown")
+        if [[ "$status_a" == "completed" || "$status_a" == "archived" || \
+              "$status_b" == "completed" || "$status_b" == "archived" || \
+              "$status_a" == "unknown" || "$status_b" == "unknown" ]]; then
+          sed -i '' "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
+          echo "  Removed: ${pair_key} (${id_a}=${status_a}, ${id_b}=${status_b})"
+          ((removed++)) || true
+        fi
+      done <<< "$pairs"
+      echo "Cleaned ${removed} stale conflict pair(s)"
+      ;;
+    *)
+      echo "Usage: kf-track conflicts <add|remove|list|clean> [args]" >&2
+      echo "  add <track-a> <track-b> [risk] [note]  Add/update conflict pair" >&2
+      echo "  remove <track-a> <track-b>              Remove conflict pair" >&2
+      echo "  list [track-id]                         List pairs (optionally filtered)" >&2
+      echo "  clean                                   Remove pairs for completed tracks" >&2
+      return 1
+      ;;
+  esac
+}
+
 cmd_archive() {
   local id="${1:-}" reason="${2:-completed}"
   if [[ -z "$id" ]]; then
@@ -683,6 +848,9 @@ cmd_archive() {
   if [[ -f "$DEPS_FILE" ]]; then
     sed -i '' "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
   fi
+
+  # Remove conflict pairs involving this track
+  conflicts_clean_track "$id"
 
   echo "Archived: ${id} (reason: ${reason})"
 }
@@ -1077,6 +1245,16 @@ COMMANDS:
     --json            Output as JSON lines
     --ids             Output track IDs only
 
+  show <id> [--section spec|plan|extra|header] [--json]   Show track content
+  spec <id> [--field F] [--set "val"]                    Read/write spec fields
+  plan <id> [--phase N]                                  Show implementation plan
+  task <id> <phase.task> --done|--pending                Update task completion
+  progress <id> [--json]                                 Show track completion stats
+  extra <id> [--key K] [--set "val"|--delete]            Read/write extra metadata
+  init <id> --title "..." [--type ...] [--spec-file ...] Create track.yaml
+  migrate <id> [--force] [--keep]                        Convert legacy files to track.yaml
+  migrate-all [--force] [--keep] [--dry-run]             Convert all legacy tracks
+
   compact [run] [--dry-run]                              Compact completed/archived tracks
   compact list [--json]                                  Show compaction history
   compact recover <hash>                                 Show recovery commands for a compaction
@@ -1086,6 +1264,11 @@ COMMANDS:
   deps remove <id> <dep-id>                             Remove a dependency
   deps list <id>                                        List dependencies
   deps check <id>                                       Check if all deps satisfied
+
+  conflicts add <a> <b> [risk] [note]                   Add conflict risk pair
+  conflicts remove <a> <b>                              Remove conflict pair
+  conflicts list [track-id]                             List pairs (filtered)
+  conflicts clean                                       Remove pairs for completed tracks
 
 STATUS VALUES:
   pending       Track created, not yet started
@@ -1113,7 +1296,11 @@ case "$cmd" in
   list)    cmd_list "$@" ;;
   archive) cmd_archive "$@" ;;
   compact) cmd_compact "$@" ;;
-  deps)    cmd_deps "$@" ;;
+  deps)      cmd_deps "$@" ;;
+  conflicts) cmd_conflicts "$@" ;;
+  # Content commands delegate to kf-track-content (Python)
+  show|spec|plan|task|progress|extra|init|migrate|migrate-all)
+    exec "${SCRIPT_DIR}/kf-track-content" "$cmd" "$@" ;;
   help|--help|-h) cmd_help ;;
   *)       echo "Unknown command: $cmd. Run 'kf-track help' for usage." >&2; exit 1 ;;
 esac

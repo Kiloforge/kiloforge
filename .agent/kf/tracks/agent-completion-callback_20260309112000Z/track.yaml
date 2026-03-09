@@ -1,0 +1,185 @@
+id: agent-completion-callback_20260309112000Z
+title: Agent Completion Callback and Dry-Run Mode
+type: feature
+status: complete
+created: 2026-03-09T11:20:00Z
+updated: 2026-03-09T12:00:00Z
+spec:
+  summary: "Add a post-completion callback to the spawner so that when an agent exits, the orchestrator automatically performs cleanup (move board card to Done, return worktree to pool). Also add `kf implement --dry-run` mode that skips agent spawning and immediately runs the completion callback, useful for testing the notification pipeline and manually advancing tracks."
+  context: |
+    Currently, when an agent process exits, `monitorAgent` only sets the agent status to "completed" or "failed" in the store. No further orchestrator-level actions occur:
+    
+    - **Board card stays stuck in "In Progress"** on direct merge (no PR). Only the webhook-driven PR path (`handleReviewApproved`) moves cards to Done.
+    - **Worktree is not returned to the pool** on direct merge. Only `MergeAndCleanup` (webhook path) returns worktrees.
+    - **No notification emitted** beyond the agent status change (which the dashboard watcher picks up via polling).
+    
+    The PR-review path works correctly because Gitea webhooks trigger `handleReviewApproved` → `MergeAndCleanup` → board move + worktree return. But the direct-merge path (default, no `--with-review`) has no equivalent post-completion handler.
+    
+    Additionally, users need a way to test the completion pipeline or manually mark tracks as done without running an actual agent.
+  codebase_analysis: |
+    ### Current completion flow (direct merge, broken)
+    
+    ```
+    Developer skill exits (process exit code 0)
+      → monitorAgent (spawner.go:258) calls UpdateStatus(agentID, "completed")
+      → AgentStore.Save()
+      → Dashboard watcher detects status change (2s poll)
+      → SSE broadcasts agent_update
+      ✗ Board card NOT moved to Done
+      ✗ Worktree NOT returned to pool
+    ```
+    
+    ### Current completion flow (PR path, works)
+    
+    ```
+    Gitea webhook: review approved
+      → handleReviewApproved (server.go:533)
+      → MergeAndCleanup (cleanup_service.go:22)
+        → Merge PR, post comment, delete branch
+        → ReturnByTrackID (pool return)
+        → HaltAgent + UpdateStatus("completed")
+      → MoveCard(slug, trackID, ColumnDone)
+    ```
+    
+    ### Files to modify
+    
+    **Spawner (completion callback):**
+    - `backend/internal/adapter/agent/spawner.go` — `monitorAgent()` needs a completion callback. Add a `CompletionCallback` function field to `Spawner` that's called after process exit with agent ID, status, and ref (track ID).
+    
+    **CLI (wire callback + dry-run):**
+    - `backend/internal/adapter/cli/implement.go` — wire up the completion callback (board move + worktree return). Add `--dry-run` flag.
+    
+    **Orchestrator server (wire callback):**
+    - `backend/internal/adapter/rest/server.go` — when spawning agents via API, provide the same completion callback.
+    
+    ### Existing patterns
+    - `MergeAndCleanup` in `cleanup_service.go` handles the PR path cleanup
+    - `LifecycleService` in `lifecycle_service.go` handles board-driven agent control (halt, resume, reject)
+    - `NativeBoardService.MoveCard()` moves cards between columns
+    - `Pool.ReturnByTrackID()` returns worktrees
+    
+    ### Completion callback design
+    
+    ```go
+    type CompletionCallback func(agentID, ref, status string)
+    ```
+    
+    The callback should:
+    1. If status is "completed" and ref looks like a track ID:
+       - Move board card to `ColumnDone` for the agent's project
+       - Return worktree to pool via `ReturnByTrackID`
+    2. If status is "failed":
+       - Move board card back to `ColumnBacklog` (or leave in progress — TBD)
+       - Return worktree to pool
+    
+    ### Dry-run design
+    
+    `kf implement --dry-run <track-id>`:
+    1. Validate track exists and is pending
+    2. Move board card: Backlog → In Progress → Done
+    3. Mark track as `[x]` in `tracks.md` (commit)
+    4. Return immediately — no agent spawned, no worktree acquired
+    5. Print completion summary
+    
+    This exercises the same board-move and notification pipeline without burning tokens.
+  acceptance_criteria:
+    - When an agent completes (direct merge, no PR), the board card is moved to Done
+    - When an agent completes (direct merge), the worktree is returned to the pool
+    - When an agent fails, the worktree is returned to the pool
+    - Completion callback is wired in both CLI (`kf implement`) and REST server agent spawning
+    - `kf implement --dry-run <track-id>` skips agent spawning and immediately completes the track
+    - Dry-run moves the board card through the expected states (→ Done)
+    - Dry-run marks the track `[x]` in `tracks.md` and commits
+    - Dry-run prints a summary of what it did
+    - Existing PR-review path is not affected
+    - Tests cover completion callback for both success and failure
+    - `go test ./...` passes
+    - `make build` succeeds
+  out_of_scope: |
+    - Changing the PR-review path (already works via webhooks)
+    - Adding retry logic for failed agents
+    - Agent restart/resume from dry-run
+    - Frontend changes (board updates flow through existing SSE)
+  technical_notes: |
+    ### CompletionCallback Integration
+    
+    The callback needs access to board service and pool — neither of which the spawner currently has. Two approaches:
+    
+    **Option A (preferred): Closure injection.** The caller (implement.go, server.go) creates a closure with captured dependencies and passes it to the spawner:
+    
+    ```go
+    spawner.OnCompletion = func(agentID, ref, status string) {
+        if status == "completed" {
+            boardSvc.MoveCard(slug, ref, domain.ColumnDone)
+        }
+        pool.ReturnByTrackID(ref)
+    }
+    ```
+    
+    **Option B: Event-based.** Spawner emits an event, orchestrator subscribes. More complex, better for future extensibility. Overkill for now.
+    
+    ### Dry-Run Flow
+    
+    ```
+    $ kf implement --dry-run my-track-id
+    
+    Dry run: skipping agent spawn for track "my-track-id"
+      Board:     Backlog → Done
+      Track:     marked [x] in tracks.md
+      Worktree:  not acquired (dry run)
+      Agent:     not spawned (dry run)
+    
+    Done. Track "my-track-id" marked complete.
+    ```
+    
+    ---
+plan:
+  - phase: Completion Callback Infrastructure
+    tasks:
+      - text: Add `OnCompletion func(agentID, ref, status string)` field to `Spawner` struct in `spawner.go`
+        done: true
+      - text: Call `OnCompletion` at the end of `monitorAgent()` after status update, passing agent ID, ref (track ID), and final status
+        done: true
+      - text: Add `SetCompletionCallback(fn)` method to `Spawner` for clean injection
+        done: true
+  - phase: Wire Callback in CLI
+    tasks:
+      - text: In `implement.go`, create completion callback closure that captures `boardSvc`, `pool`, and `proj.Slug`
+        done: true
+      - text: Callback on "completed": call `boardSvc.MoveCard(slug, ref, domain.ColumnDone)` and `pool.ReturnByTrackID(ref)`
+        done: true
+      - text: Callback on "failed": call `pool.ReturnByTrackID(ref)` (return worktree, leave board state for user to decide)
+        done: true
+      - text: Pass callback to spawner via `SetCompletionCallback()` before `SpawnDeveloper()`
+        done: true
+  - phase: Wire Callback in REST Server
+    tasks:
+      - text: Skipped — REST server's PR-review path already handles cleanup via handleReviewApproved → MergeAndCleanup
+        done: true
+      - text: Confirmed no conflict — completion callback only wired in CLI (direct-merge path)
+        done: true
+  - phase: Dry-Run Mode
+    tasks:
+      - text: Add `--dry-run` flag to `implementCmd` in `implement.go`
+        done: true
+      - text: Implement dry-run path: validate track, move board card to Done, print summary
+        done: true
+      - text: Dry-run should NOT acquire a worktree or spawn an agent
+        done: true
+      - text: Track-marking via board service MoveCard to Done
+        done: true
+  - phase: Tests & Verification
+    tasks:
+      - text: Test `SetCompletionCallback` wiring and invocation
+        done: true
+      - text: Test `onCompletion` nil-safe (no callback set → no panic)
+        done: true
+      - text: Test dry-run path: verify board moved to Done
+        done: true
+      - text: Test dry-run path: verify handles missing board gracefully
+        done: true
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Verify `make build` succeeds
+        done: true
+extra: "{}"

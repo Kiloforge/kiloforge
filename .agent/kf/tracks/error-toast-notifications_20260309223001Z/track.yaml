@@ -1,0 +1,96 @@
+id: error-toast-notifications_20260309223001Z
+title: Error Toast Notifications in Dashboard
+type: feature
+status: complete
+created: 2026-03-09T22:30:01Z
+updated: 2026-03-09T22:55:00Z
+spec:
+  summary: Add a global error notification system (toast) to the dashboard so that API errors, mutation failures, and other problems are visible to the user instead of silently failing or only appearing in the browser console.
+  context: Currently, when an API call fails (like the tour 400 error), the user sees nothing — the UI just doesn't respond. Errors are only visible in the browser developer console. Users need visible feedback when something goes wrong.
+  codebase_analysis: |
+    ### Current error handling
+    
+    - **TanStack Query mutations** — `onError` callbacks exist on some mutations but most just log to console or do nothing
+    - **TanStack Query queries** — `error` state is available but components inconsistently display it
+    - **No global error handler** — no centralized place to catch and display errors
+    - **Consent dialog** — the only existing "notification" pattern is the consent modal, which is task-specific
+    
+    ### Approach
+    
+    Add a lightweight toast notification system:
+    1. **Toast context/provider** wrapping the app
+    2. **Global TanStack Query error handler** via `QueryClient` `onError` callback — catches all query/mutation errors automatically
+    3. **Manual toast API** for non-query errors (e.g., WebSocket disconnects, SSE failures)
+    4. **Auto-dismiss** after 5 seconds, with manual dismiss button
+    
+    ### Libraries
+    
+    Could use a lightweight library like `react-hot-toast` or `sonner`, or build a simple custom toast since the app already uses Tailwind-style CSS. Keep it minimal.
+  acceptance_criteria:
+    - Global toast notification component rendered at app root
+    - All TanStack Query mutation errors automatically show a toast with the error message
+    - Toast shows the HTTP status and error body when available (e.g., "400: invalid action")
+    - Toast auto-dismisses after 5 seconds
+    - Toast has a manual dismiss (×) button
+    - Multiple toasts stack vertically
+    - Toast styles: red/error for failures, yellow/warning for warnings, green/success optional
+    - Manual `useToast()` hook available for non-query errors
+    - SSE disconnect shows a warning toast
+    - `npm run build` succeeds
+    - Rebuild dist and commit
+  out_of_scope: |
+    - Success toasts for every mutation (only errors by default)
+    - Persistent notification center / history
+    - Email or external alerting
+  technical_notes: |
+    ### QueryClient global error handler
+    
+    ```tsx
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: {
+          onError: (error) => {
+            toast.error(formatError(error));
+          },
+        },
+      },
+    });
+    ```
+    
+    ### Toast component
+    
+    Position: top-right, stacked. Each toast shows:
+    - Error icon + message
+    - HTTP status if available
+    - Timestamp
+    - Dismiss button
+    
+    ---
+plan:
+  - phase: Toast Infrastructure
+    tasks:
+      - text: Choose approach — lightweight library (react-hot-toast/sonner) or custom component
+        done: true
+      - text: Create `ToastProvider` and `useToast` hook
+        done: true
+      - text: Create `Toast` component with error/warning/success variants, auto-dismiss, manual dismiss
+        done: true
+      - text: Wrap app with `ToastProvider` in `main.tsx` or `App.tsx`
+        done: true
+  - phase: Global Error Integration
+    tasks:
+      - text: Add global `onError` to `QueryClient` mutation defaults — auto-shows toast for all mutation failures
+        done: true
+      - text: Format error messages — extract HTTP status and body from fetch errors
+        done: true
+      - text: Add SSE disconnect warning toast in `useSSE` hook
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `npm run build` succeeds
+        done: true
+      - text: Rebuild dist and commit
+        done: true
+      - text: Manual test — trigger an API error, verify toast appears and auto-dismisses
+        done: true
+extra: "{}"

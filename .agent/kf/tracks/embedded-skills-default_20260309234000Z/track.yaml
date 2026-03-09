@@ -1,0 +1,112 @@
+id: embedded-skills-default_20260309234000Z
+title: Embedded Skills as Default — Remove Repo Dependency
+type: chore
+status: complete
+created: 2026-03-09T23:40:00Z
+updated: 2026-03-09T23:40:00Z
+spec:
+  summary: "Make embedded skills the default installation path. Auto-install required skills during `kf init` from the binary — no `SkillsRepo` config required. The GitHub repo path becomes an optional override for custom/updated skills, not a prerequisite."
+  context: |
+    Skills are already embedded in the binary via `//go:embed embedded/*` in `checker.go`. The `InstallEmbedded()` function extracts them. But the system still gates everything on `SkillsRepo` being configured:
+    - `offerSkillsInstall()` returns early if `SkillsRepo == ""`
+    - `SkillsBanner` returns null if `status.repo` is falsy
+    - `/api/skills/update` returns 400 if no repo configured
+    - Auto-update only runs if `SkillsRepo` is set
+    
+    This means a fresh `kf init` has no skills, the dashboard shows nothing about skills, and the 412 preflight always fails until the user manually configures a repo.
+  codebase_analysis: |
+    ### Embedded infrastructure (already working)
+    
+    - **`backend/internal/adapter/skills/checker.go:12-13`** — `//go:embed embedded/*` bundles all kf-* skills
+    - **`checker.go:82-118`** — `InstallEmbedded(name, destDir)` extracts a skill from the binary
+    - **`checker.go:120-133`** — `ListEmbedded()` lists available embedded skills
+    - **`checker.go:145-160`** — `hashMatches()` compares installed vs embedded versions
+    
+    ### Gates to remove/modify
+    
+    1. **`backend/internal/adapter/cli/skills.go:176`** — `offerSkillsInstall()` returns early if `cfg.SkillsRepo == ""`
+    2. **`backend/internal/adapter/cli/init.go:173`** — calls `offerSkillsInstall()` which is repo-gated
+    3. **`backend/internal/adapter/rest/api_handler.go:779-785`** — `GetSkillsStatus` returns empty if no repo
+    4. **`backend/internal/adapter/rest/api_handler.go:819-890`** — `UpdateSkills` returns 400 if no repo
+    5. **`frontend/src/components/SkillsBanner.tsx:10`** — `if (!status.repo) return null`
+    
+    ### Required skills by role
+    
+    - `developer` → `kf-developer`
+    - `reviewer` → `kf-reviewer`
+    - `interactive` → `kf-track-generator`
+    
+    ### CLI install flow (already works)
+    
+    - **`backend/internal/adapter/cli/implement.go:353-393`** — `promptSkillInstall()` uses `InstallEmbedded()` when spawning developer agents. This already works without a repo.
+  acceptance_criteria:
+    - `kf init` auto-installs all required skills from embedded assets (no prompt, no repo needed)
+    - `GetSkillsStatus` API returns embedded skill list even when no `SkillsRepo` configured
+    - `UpdateSkills` API installs/updates from embedded when no repo configured (update means re-extract from binary)
+    - `SkillsBanner` shows skill status regardless of repo config
+    - Skills preflight check passes after a fresh `kf init` without any manual setup
+    - `SkillsRepo` config remains optional — when set, enables GitHub-based updates as an override
+    - `make test` passes
+  out_of_scope: |
+    - Removing `SkillsRepo` config field entirely (keep for optional GitHub override)
+    - Changing the embedded skill file structure
+    - Adding new skills
+  technical_notes: |
+    ### Init flow change
+    
+    Replace the optional `offerSkillsInstall()` with a mandatory `installEmbeddedSkills()` that:
+    1. Calls `ListEmbedded()` to get all available skills
+    2. For each required skill (`kf-developer`, `kf-reviewer`, `kf-track-generator`), calls `InstallEmbedded(name, skillsDir)`
+    3. Installs to the default global location (`~/.claude/skills/`)
+    4. No user prompt needed — these are bundled with the binary
+    5. Skip if already installed and hash matches (up to date)
+    
+    ### API changes
+    
+    `GetSkillsStatus`:
+    - When `SkillsRepo` is empty, still return skill list from `CheckStatus()`
+    - Set `repo` to `"embedded"` or leave null but still populate `skills` array
+    
+    `UpdateSkills`:
+    - When `SkillsRepo` is empty, re-extract from embedded assets instead of returning 400
+    - This handles the case where skills got corrupted or deleted
+    
+    ### Frontend changes
+    
+    `SkillsBanner`:
+    - Remove the `if (!status.repo) return null` guard
+    - Show status based on `status.skills` array presence instead
+    
+    ---
+plan:
+  - phase: Auto-Install During Init
+    tasks:
+      - text: Create `installEmbeddedSkills(cfg)` function in `skills.go` — iterates required skills, calls `InstallEmbedded()` for each, skips if hash matches
+        done: true
+      - text: Replace `offerSkillsInstall(ctx, cfg)` call in `init.go` with `installEmbeddedSkills(cfg)` — mandatory, no prompt
+        done: true
+      - text: Keep `offerSkillsInstall` for backward compat but make it fall back to embedded when no repo
+        done: true
+  - phase: Update Skills API
+    tasks:
+      - text: Update `GetSkillsStatus` in `api_handler.go` — return embedded skill list when no `SkillsRepo` configured
+        done: true
+      - text: Update `UpdateSkills` in `api_handler.go` — re-extract from embedded when no repo instead of returning 400
+        done: true
+  - phase: Update Frontend
+    tasks:
+      - text: Update `SkillsBanner.tsx` — remove `if (!status.repo) return null` guard, show status based on skills array
+        done: true
+      - text: Update skill-related type definitions if needed (not needed — types already support embedded)
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `make test` passes
+        done: true
+      - text: Fresh `kf init` installs skills automatically
+        done: true
+      - text: Dashboard shows skill status without repo configured
+        done: true
+      - text: Interactive agent spawn succeeds without manual skill setup
+        done: true
+extra: "{}"

@@ -1,0 +1,72 @@
+id: fix-project-mgr-wiring_20260309120000Z
+title: Fix Project Manager Wiring in REST Server
+type: bug
+status: complete
+created: 2026-03-09T12:00:00Z
+updated: 2026-03-09T13:00:00Z
+spec:
+  summary: "Wire `ProjectService` into the REST server's `APIHandler` so that the "Add Project" and "Remove Project" API endpoints actually work. Currently they return "project management not configured" because `ProjectMgr` is nil."
+  context: |
+    The `APIHandler` has a `projectMgr` field and the `AddProject`/`RemoveProject` handlers are fully implemented, but `ProjectMgr` is never set in `APIHandlerOpts` when creating the handler in `server.go:193`. All dependencies needed to create a `ProjectService` are already available on the `Server` struct:
+    
+    - `s.registry` (`*jsonfile.ProjectStore`) — implements `ProjectStoreWriter`
+    - `s.client` (`*gitea.Client`) — implements `ProjectGiteaClient`
+    - `s.cfg` — has `DataDir`, `OrchestratorPort`, `GiteaAdminUser`
+  codebase_analysis: |
+    ### The bug
+    `backend/internal/adapter/rest/server.go:193` — `APIHandlerOpts` is created without `ProjectMgr`:
+    ```go
+    apiHandler := NewAPIHandler(APIHandlerOpts{
+        Agents:     s.store,
+        Quota:      s.quotaReader,
+        // ... other fields ...
+        // ProjectMgr is MISSING
+    })
+    ```
+    
+    ### The fix
+    Create a `ProjectService` and pass it:
+    ```go
+    projectSvc := service.NewProjectService(s.registry, s.client, service.ProjectServiceConfig{
+        DataDir:          s.cfg.DataDir,
+        OrchestratorPort: s.cfg.OrchestratorPort,
+        GiteaAdminUser:   s.cfg.GiteaAdminUser,
+    })
+    
+    apiHandler := NewAPIHandler(APIHandlerOpts{
+        // ... existing fields ...
+        ProjectMgr: projectSvc,
+    })
+    ```
+    
+    ### Files to modify
+    - `backend/internal/adapter/rest/server.go` — add `ProjectMgr: projectSvc` to `APIHandlerOpts`
+  acceptance_criteria:
+    - `POST /-/api/projects` returns 201 with a valid project (not 500 "not configured")
+    - `DELETE /-/api/projects/{slug}` works (not 500 "not configured")
+    - UI "Add Project" form successfully adds a project
+    - `go test ./...` passes
+    - `make build` succeeds
+  out_of_scope: |
+    - SSH key selection (separate track)
+    - Project add form UI changes
+    
+    ---
+plan:
+  - phase: Wire ProjectService
+    tasks:
+      - text: In `server.go` `Run()`, create `ProjectService` using `s.registry`, `s.client`, and config values from `s.cfg`
+        done: true
+      - text: Pass the `ProjectService` as `ProjectMgr` in `APIHandlerOpts`
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verified API handler wiring compiles correctly
+        done: true
+      - text: Existing API handler tests pass (add/remove project endpoints tested via stubProjectManager)
+        done: true
+      - text: `go test ./...` passes
+        done: true
+      - text: `make build` succeeds
+        done: true
+extra: "{}"

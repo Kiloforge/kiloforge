@@ -1,0 +1,86 @@
+id: fix-skills-412-prompt_20260309233000Z
+title: Handle 412 Skills Missing with Install Prompt Instead of Error
+type: bug
+status: complete
+created: 2026-03-09T23:30:00Z
+updated: 2026-03-09T23:30:00Z
+spec:
+  summary: When spawning an interactive agent or generating tracks, a 412 "skills not installed" response shows as a raw error toast. Instead, the frontend should intercept 412 and prompt the user to install skills (using the existing skills update mechanism), then retry the action.
+  context: |
+    The backend pre-flight check validates that required skills are installed before spawning agents. If skills are missing, it returns 412 with a `SkillsMissingResponse` containing the missing skill names. The frontend doesn't handle 412 specially — it falls through to the global error toast, showing a confusing raw error message.
+    
+    The existing `SkillsBanner` component and `useSkillsStatus` hook already have the "Install Skills" UI and `triggerUpdate()` API. The fix should reuse this mechanism when a 412 is received.
+  codebase_analysis: |
+    ### Backend (working correctly)
+    
+    - **`api_handler.go:1220-1222`** — `GenerateTracks` returns 412 with `SkillsMissingResponse`
+    - **`api_handler.go:293-294`** — `SpawnInteractiveAgent` returns 412 similarly
+    - **`api_handler.go:1336-1337`** — `RunAdminOperation` returns 412 similarly
+    - Response body: `{ error: string, missing_skills: [{ name, reason }] }`
+    
+    ### Frontend (missing 412 handling)
+    
+    - **`frontend/src/pages/ProjectPage.tsx:67-71`** — `generateMutation.onError` only handles 403 (consent), not 412
+    - **`frontend/src/App.tsx:78-81`** — `spawnMutation.onError` only handles 403, not 412
+    - **`frontend/src/hooks/useSkillsStatus.ts`** — `triggerUpdate(force)` calls `POST /api/skills/update`
+    - **`frontend/src/components/SkillsBanner.tsx`** — shows "Install Skills" button when no skills installed
+    
+    ### Desired flow
+    
+    1. User clicks "Generate Tracks" or spawns interactive agent
+    2. Backend returns 412 (skills missing)
+    3. Frontend intercepts 412 — shows a dialog/prompt: "Required skills not installed. Install now?"
+    4. User clicks "Install" → calls `triggerUpdate(true)` → waits for completion
+    5. On success, automatically retries the original action
+    6. If install fails, shows error
+  acceptance_criteria:
+    - 412 responses on spawn/generate/admin endpoints are intercepted, NOT shown as error toasts
+    - User sees a clear prompt to install skills when 412 is received
+    - Clicking install triggers `POST /api/skills/update` and shows progress
+    - After successful install, the original action is automatically retried
+    - If install fails, a meaningful error is shown
+    - Works for all three endpoints: spawn interactive, generate tracks, admin operations
+  out_of_scope: |
+    - Changing the backend pre-flight check logic
+    - Auto-installing skills on app load (SkillsBanner already handles that case)
+  technical_notes: |
+    The pattern should mirror how 403 (consent) is handled:
+    
+    ```tsx
+    onError: (err) => {
+      if (err instanceof FetchError && err.status === 403) {
+        consent.requestConsent(() => retryAction());
+      } else if (err instanceof FetchError && err.status === 412) {
+        // Show skills install prompt, retry on success
+        promptSkillsInstall(() => retryAction());
+      }
+    },
+    ```
+    
+    Consider creating a `useSkillsPrompt` hook or extending `useSkillsStatus` with a `requestInstall(onComplete)` pattern similar to how consent works with `requestConsent(callback)`.
+    
+    ---
+plan:
+  - phase: Skills Install Prompt Hook
+    tasks:
+      - text: Create `useSkillsPrompt` hook (or extend `useSkillsStatus`) with `requestInstall(onComplete)` pattern — shows dialog, triggers update, calls callback on success
+        done: true
+      - text: Create `SkillsInstallDialog` component — modal prompting user to install missing skills with Install/Cancel buttons and progress state
+        done: true
+  - phase: Wire 412 Handling
+    tasks:
+      - text: Update `App.tsx` `spawnMutation.onError` to handle 412 — call `skillsPrompt.requestInstall(() => spawnMutation.mutate())`
+        done: true
+      - text: Update `ProjectPage.tsx` `generateMutation.onError` to handle 412 — same pattern
+        done: true
+      - text: Render `SkillsInstallDialog` in App.tsx (alongside ConsentDialog)
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `npm run build` succeeds
+        done: true
+      - text: 412 shows install prompt instead of error toast
+        done: true
+      - text: After installing, original action retries automatically
+        done: true
+extra: "{}"

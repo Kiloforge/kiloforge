@@ -1,0 +1,133 @@
+id: quota-reframe-fe_20260309103001Z
+title: Reframe Quota System — Tokens and Rate Limits (Frontend)
+type: refactor
+status: complete
+created: 2026-03-09T10:30:01Z
+updated: 2026-03-09T10:30:01Z
+spec:
+  summary: "Update the dashboard UI to display token usage as the primary metric and reframe USD cost as secondary informational data ("estimated API-equivalent cost"). Aligns the frontend with the backend API schema changes from `quota-reframe-be_20260309103000Z`."
+  context: The current dashboard prominently displays "Total Cost: $X.XX" as a primary stat card, implying a billing event. Users are on Claude Code subscriptions — they don't pay per-token. The real value proposition is showing token consumption patterns and rate limit status. The cost should be reframed as "Estimated API Cost" — informational data showing what the work would cost on the API (nice marketing for subscription value).
+  codebase_analysis: |
+    ### Files to modify
+    
+    **Types:**
+    - `frontend/src/types/api.ts` — `QuotaResponse`: rename `total_cost_usd` → `estimated_cost_usd`, add `cache_read_tokens` and `cache_creation_tokens`. `QuotaAgent`: rename `cost_usd` → `estimated_cost_usd`, add cache token fields. `Agent`: rename `cost_usd` → `estimated_cost_usd`.
+    
+    **Components:**
+    - `frontend/src/components/StatCards.tsx` — Currently shows 4 cards: Agents, Total Cost, Rate Limit, Tokens In/Out. Reorder to: Agents, Token Usage (input+output+cache), Rate Limit, Estimated API Cost (secondary). Token card becomes the prominent metric.
+    - `frontend/src/components/AgentCard.tsx` — Shows `agent.cost_usd` per agent. Rename to `estimated_cost_usd`, add token breakdown display.
+    - `frontend/src/components/StatCards.module.css` — May need styling adjustments for token-primary layout.
+    
+    **Hooks:**
+    - `frontend/src/hooks/useQuota.ts` — Field name changes flow through automatically from API types, but verify SSE handler parses new fields.
+    
+    **Utilities:**
+    - `frontend/src/utils/format.ts` — `formatUSD()` stays but may be used with different label context. `formatTokens()` already exists and handles k/M formatting.
+    
+    ### Existing patterns
+    - `formatTokens()` utility already handles human-readable token display (k, M suffixes)
+    - `formatUSD()` formats currency with 2 decimal places
+    - StatCards uses a 4-column grid layout
+    - SSE `quota_update` events update quota state via `useQuota` hook
+  acceptance_criteria:
+    - `QuotaResponse` type uses `estimated_cost_usd` (renamed from `total_cost_usd`) and includes `cache_read_tokens`, `cache_creation_tokens`
+    - `QuotaAgent` type uses `estimated_cost_usd` (renamed from `cost_usd`) and includes cache token fields
+    - `Agent` type uses `estimated_cost_usd` (renamed from `cost_usd`)
+    - StatCards displays token usage as the primary/prominent metric
+    - StatCards shows cost as "Est. API Cost" — clearly informational/secondary
+    - AgentCard shows per-agent token breakdown (input/output/cache) alongside estimated cost
+    - Rate limit status remains prominently displayed
+    - SSE `quota_update` events work with new field names
+    - `StatusResponse` type updated if applicable
+  out_of_scope: |
+    - Backend API changes (separate track: `quota-reframe-be_20260309103000Z`)
+    - Adding subscription plan details or tier display
+    - Token budgeting UI
+    - Historical token usage charts or trends
+  technical_notes: |
+    ### StatCards Layout Change
+    
+    **Before (cost-primary):**
+    ```
+    [Agents: 3] [Total Cost: $4.23] [Rate Limit: OK] [Tokens: 125k / 12k]
+    ```
+    
+    **After (tokens-primary):**
+    ```
+    [Agents: 3] [Tokens: 125k in / 12k out] [Rate Limit: OK] [Est. API Cost: $4.23]
+    ```
+    
+    The token card should show all four token types when cache tokens are non-zero:
+    - Input tokens
+    - Output tokens
+    - Cache read tokens (if > 0)
+    - Cache creation tokens (if > 0)
+    
+    ### AgentCard Enhancement
+    
+    Per-agent display should shift from cost-first to tokens-first:
+    - Primary: token counts (input/output)
+    - Secondary: cache tokens (if present)
+    - Tertiary: estimated API cost (dimmed/smaller)
+    
+    ### Type Changes
+    
+    ```typescript
+    // Before
+    interface QuotaResponse {
+      total_cost_usd: number;
+      input_tokens: number;
+      output_tokens: number;
+      // ...
+    }
+    
+    // After
+    interface QuotaResponse {
+      input_tokens: number;
+      output_tokens: number;
+      cache_read_tokens: number;
+      cache_creation_tokens: number;
+      estimated_cost_usd: number;  // informational
+      // ...
+    }
+    ```
+    
+    ---
+plan:
+  - phase: Type Definitions & Utilities
+    tasks:
+      - text: Update `frontend/src/types/api.ts` — rename `total_cost_usd` to `estimated_cost_usd` in `QuotaResponse`, add `cache_read_tokens` and `cache_creation_tokens` as required fields
+        done: true
+      - text: Update `QuotaAgent` type — rename `cost_usd` to `estimated_cost_usd`, add `cache_read_tokens` and `cache_creation_tokens`
+        done: true
+      - text: Update `Agent` type — rename `cost_usd` to `estimated_cost_usd`
+        done: true
+      - text: Update `StatusResponse` type — rename `total_cost_usd` to `estimated_cost_usd` if present
+        done: true
+  - phase: StatCards — Token-Primary Display
+    tasks:
+      - text: Reorder StatCards — tokens become primary metric card, cost moves to last position as "Est. API Cost"
+        done: true
+      - text: Enhance token card — show input/output tokens prominently, show cache tokens (read/creation) when non-zero
+        done: true
+      - text: Update cost card label from "Total Cost" to "Est. API Cost" with informational styling
+        done: true
+      - text: Update StatCards.module.css if needed for token-primary layout emphasis
+        done: true
+  - phase: AgentCard — Token Breakdown
+    tasks:
+      - text: Update AgentCard to display per-agent token breakdown (input/output) as primary info
+        done: true
+      - text: Show cache token counts per agent when non-zero
+        done: true
+      - text: Display estimated cost per agent as secondary/dimmed info (rename from `cost_usd` to `estimated_cost_usd`)
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify `useQuota` hook works with new field names (SSE `quota_update` events)
+        done: true
+      - text: Verify all TypeScript compilation passes (`npm run build` or equivalent)
+        done: true
+      - text: Manual smoke test — dashboard loads, StatCards render, AgentCards show token data
+        done: true
+extra: "{}"

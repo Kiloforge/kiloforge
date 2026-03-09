@@ -1,0 +1,113 @@
+id: gitea-proxy-authn_20260309123000Z
+title: Passwordless Gitea Login via Reverse Proxy Authentication
+type: feature
+status: complete
+created: 2026-03-09T12:30:00Z
+updated: 2026-03-09T14:00:00Z
+spec:
+  summary: Enable automatic Gitea authentication through the orchestrator's reverse proxy. Users accessing Gitea through the orchestrator URL are automatically logged in as the admin user — no password needed. This eliminates credential management for the local Gitea instance.
+  context: |
+    Gitea currently requires username/password login, which is unnecessary friction for a local-only development tool. The orchestrator already reverse-proxies all Gitea traffic (`localhost:4001/` → Gitea). Gitea supports reverse proxy authentication where a trusted proxy injects an `X-WEBAUTH-USER` header and Gitea treats the request as authenticated.
+    
+    This is safe because:
+    - Gitea is bound to localhost only (not exposed to the network)
+    - Traffic is HTTP (not HTTPS) — already not secured
+    - Single-user/single-machine tool — no multi-tenant concerns
+    - The orchestrator proxy is the intended entry point
+    
+    Future auth requirements (if ever needed) can be layered on top without removing this.
+  codebase_analysis: |
+    ### Current proxy setup
+    - `backend/internal/adapter/proxy/gitea.go` — simple `httputil.NewSingleHostReverseProxy(target)`, no header injection
+    - `backend/internal/adapter/rest/server.go:55` — `s.giteaProxy = proxy.NewGiteaProxy(giteaURL)`
+    - `backend/internal/adapter/rest/server.go:228` — `mux.Handle("/", s.giteaProxy)` — catch-all route
+    
+    ### Current Gitea docker config
+    - `backend/internal/adapter/compose/template.go` — docker-compose template with `GITEA__*` environment variables
+    - No `ENABLE_REVERSE_PROXY_AUTHENTICATION` set
+    - No `REVERSE_PROXY_AUTHENTICATION_USER` header configured
+    
+    ### Config
+    - `backend/internal/adapter/config/config.go` — `GiteaAdminUser string` field already exists
+    - The admin username is available at proxy creation time
+    
+    ### Files to modify
+    
+    **Docker compose template:**
+    - `backend/internal/adapter/compose/template.go` — add `GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true` environment variable
+    
+    **Reverse proxy:**
+    - `backend/internal/adapter/proxy/gitea.go` — wrap the reverse proxy to inject `X-WEBAUTH-USER` header with the configured admin username on every request
+    
+    **Server wiring:**
+    - `backend/internal/adapter/rest/server.go` — pass admin username to `NewGiteaProxy()` so it can inject the header
+  acceptance_criteria:
+    - Gitea reverse proxy auth is enabled in docker-compose environment
+    - Proxy injects `X-WEBAUTH-USER` header with admin username on all forwarded requests
+    - Accessing `localhost:4001/` shows Gitea as logged in (no login prompt)
+    - Gitea API calls through the proxy are authenticated
+    - Direct Gitea access (`localhost:4000/`) still requires password (unchanged)
+    - Existing `kf init` flow works — admin user creation is unaffected
+    - `go test ./...` passes
+    - `make build` succeeds
+  out_of_scope: |
+    - Multi-user authentication
+    - OAuth2 or SSO integration
+    - HTTPS/TLS setup
+    - Removing the password from `kf init` (still needed for direct Gitea access and API token creation)
+  technical_notes: |
+    ### Gitea Environment Variable
+    
+    ```yaml
+    - GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true
+    ```
+    
+    This tells Gitea to trust the `X-WEBAUTH-USER` header. The default header name is `X-WEBAUTH-USER` — no need to customize it.
+    
+    ### Proxy Header Injection
+    
+    ```go
+    func NewGiteaProxy(targetURL, authUser string) http.Handler {
+        target, err := url.Parse(targetURL)
+        if err != nil {
+            panic("invalid gitea proxy target URL: " + err.Error())
+        }
+        proxy := httputil.NewSingleHostReverseProxy(target)
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            r.Header.Set("X-WEBAUTH-USER", authUser)
+            proxy.ServeHTTP(w, r)
+        })
+    }
+    ```
+    
+    ### Security Note
+    
+    Gitea should only accept the `X-WEBAUTH-USER` header from the trusted proxy, not from external clients. Since Gitea's port (4000) is only used internally by the orchestrator and direct access still requires password auth, this is safe. The `ENABLE_REVERSE_PROXY_AUTHENTICATION` flag doesn't bypass direct login — it only trusts the header when present.
+    
+    ---
+plan:
+  - phase: Enable Gitea Reverse Proxy Auth
+    tasks:
+      - text: Add `GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true` to docker-compose environment in `compose/template.go`
+        done: true
+      - text: Update `compose/template_test.go` to verify the new env var is present
+        done: true
+  - phase: Proxy Header Injection
+    tasks:
+      - text: Update `NewGiteaProxy()` in `proxy/gitea.go` to accept an `authUser` parameter and inject `X-WEBAUTH-USER` header on all requests
+        done: true
+      - text: Update `server.go` — pass `s.cfg.GiteaAdminUser` to `NewGiteaProxy()`
+        done: true
+      - text: Add test for proxy header injection — verify `X-WEBAUTH-USER` is set on forwarded requests
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify `kf init && kf up` works — Gitea starts with reverse proxy auth enabled
+        done: true
+      - text: Verify accessing `localhost:4001/` shows Gitea as logged in
+        done: true
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Verify `make build` succeeds
+        done: true
+extra: "{}"

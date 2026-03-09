@@ -1,0 +1,155 @@
+id: react-dashboard_20260308180002Z
+title: React Dashboard for Real-Time Agent Monitoring
+type: feature
+status: complete
+created: 2026-03-08T18:00:02Z
+updated: 2026-03-08T18:00:02Z
+spec:
+  summary: Build a full React dashboard replacing the vanilla JS/HTML static files. The dashboard provides real-time agent monitoring, quota tracking, track status, and log viewing — all powered by the existing backend API and SSE stream.
+  context: "After the monorepo restructure (`monorepo-restructure_20260308180001Z`), the frontend lives in `frontend/` with Vite + React + TypeScript. This track implements the actual dashboard UI, replacing the placeholder app with a production-quality interface."
+  codebase_analysis: |
+    - **Existing API endpoints** (no changes needed):
+      - `GET /api/agents` — list all agents with enriched data
+      - `GET /api/agents/{id}` — single agent details
+      - `GET /api/agents/{id}/log?lines=N&follow=true` — agent log streaming
+      - `GET /api/quota` — total and per-agent quota usage
+      - `GET /api/tracks` — track listing from tracks.md
+      - `GET /api/status` — system status (Gitea URL, agent counts, cost, SSE clients)
+      - `GET /events` — SSE stream (agent_update, agent_removed, quota_update events)
+    - **Current UI features** (must replicate):
+      - 4 stat cards (total agents, total cost, rate limit, total tokens)
+      - Agent card grid (status badge, role, ref, uptime, cost, log button)
+      - Track list table (ID, title, status)
+      - Log viewer modal (fetch + follow mode)
+      - SSE auto-reconnection
+      - Gitea PR links
+    - **SSE event types**: `agent_update` (full agent JSON), `agent_removed` ({id}), `quota_update` (full quota)
+    - **Dark theme** with status-based colors (green=running, yellow=waiting, blue=completed, red=failed)
+  acceptance_criteria:
+    - Dashboard renders at `/` with all existing functionality replicated
+    - Real-time updates via SSE (agent status changes appear without refresh)
+    - Agent cards show: status badge, role, ref (linked to Gitea), uptime, cost
+    - Log viewer with line-limited fetch and follow (streaming) mode
+    - Quota display: total cost, tokens, rate limit warning
+    - Track listing: ID, title, status with appropriate styling
+    - System status: Gitea URL, agent histogram, SSE client count
+    - Responsive layout (works on desktop, reasonable on tablet)
+    - Dark theme consistent with kiloforge branding
+    - TypeScript strict mode, no `any` types in component props
+    - `npm run build` produces optimized bundle under 500KB gzipped
+  out_of_scope: |
+    - Backend API changes (use existing endpoints as-is)
+    - Authentication/authorization
+    - Board/kanban visualization (future track)
+    - Mobile-specific responsive design
+    - Internationalization
+  technical_notes: |
+    ### Recommended Stack
+    
+    - **React 19** + TypeScript
+    - **Vite** for build/dev
+    - **CSS Modules** or **Tailwind CSS** for styling (keep it simple, no heavy UI library)
+    - **No state management library** — React hooks + context sufficient for this scale
+    - **EventSource API** for SSE (native browser, no library needed)
+    
+    ### Component Structure
+    
+    ```
+    src/
+    ├── App.tsx                 # Main layout, SSE connection
+    ├── hooks/
+    │   ├── useAgents.ts        # Agent state + SSE updates
+    │   ├── useQuota.ts         # Quota state + SSE updates
+    │   ├── useTracks.ts        # Track list fetching
+    │   └── useSSE.ts           # SSE connection management
+    ├── components/
+    │   ├── StatCards.tsx        # Summary stat cards row
+    │   ├── AgentGrid.tsx       # Agent card grid
+    │   ├── AgentCard.tsx       # Individual agent card
+    │   ├── TrackList.tsx       # Track status table
+    │   ├── LogViewer.tsx       # Modal log viewer
+    │   ├── StatusBadge.tsx     # Colored status badge
+    │   └── ConnectionStatus.tsx # SSE connection indicator
+    ├── types/
+    │   └── api.ts              # TypeScript types matching backend JSON
+    └── utils/
+        └── format.ts           # USD formatting, token formatting, duration
+    ```
+    
+    ### SSE Integration Pattern
+    
+    ```typescript
+    // useSSE.ts
+    const useSSE = (url: string) => {
+      // EventSource with auto-reconnect
+      // Dispatch events to registered handlers
+      // Track connection state (connected/reconnecting/disconnected)
+    }
+    
+    // useAgents.ts
+    const useAgents = () => {
+      // Initial fetch from /api/agents
+      // Subscribe to agent_update and agent_removed via useSSE
+      // Merge updates into local state
+    }
+    ```
+    
+    ---
+plan:
+  - phase: Foundation — Types, Hooks, and SSE (5 tasks)
+    tasks:
+      - text: Create `src/types/api.ts` with interfaces matching all backend JSON responses
+        done: true
+      - text: `Agent`, `QuotaResponse`, `Track`, `StatusResponse`, `SSEEventData`, `LogResponse`
+        done: true
+      - text: EventSource lifecycle with auto-reconnect (exponential backoff, max 30s)
+        done: true
+      - text: Expose connection state: connected, reconnecting, disconnected
+        done: true
+      - text: Fetch initial + SSE upsert/remove handlers
+        done: true
+      - text: Fetch initial + SSE update handler
+        done: true
+      - text: Fetch with 30s polling interval
+        done: true
+  - phase: Core Components (5 tasks)
+    tasks:
+      - text: App.tsx with single SSE connection feeding all hooks
+        done: true
+      - text: ConnectionStatus, StatCards, AgentGrid, AgentCard, StatusBadge, TrackList
+        done: true
+      - text: AgentHistogram in header bar
+        done: true
+      - text: Utility formatters (formatUSD, formatTokens, formatUptime)
+        done: true
+      - text: Dark theme CSS variables, responsive grid, CSS modules
+        done: true
+  - phase: Log Viewer and Polish (4 tasks)
+    tasks:
+      - text: LogViewer modal with backdrop close, follow mode (SSE streaming)
+        done: true
+      - text: Responsive layout (auto-fit grids)
+        done: true
+      - text: Empty states for agents and tracks
+        done: true
+      - text: Agent histogram chips in header
+        done: true
+  - phase: Build Verification (2 tasks)
+    tasks:
+      - text: `npm run build` — 0 errors, 0 warnings
+        done: true
+      - text: Bundle: ~66KB gzipped (under 500KB limit)
+        done: true
+      - text: Output in `backend/internal/adapter/dashboard/dist/`
+        done: true
+      - text: `cd backend && go build -buildvcs=false ./...` succeeds
+        done: true
+      - text: All Go tests pass
+        done: true
+      - text: Go embed works with new dist assets
+        done: true
+      - text: detail.go templates use inline styles (no broken CSS refs)
+        done: true
+      - text: TypeScript strict mode, verbatimModuleSyntax compatible
+        done: true
+extra: "{}"

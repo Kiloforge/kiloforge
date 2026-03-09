@@ -1,0 +1,145 @@
+id: agent-display-ttl-be_20260310014000Z
+title: Agent Display TTL and History API (Backend)
+type: feature
+status: complete
+created: 2026-03-10T01:40:00Z
+updated: 2026-03-10T02:15:00Z
+spec:
+  summary: "Finished agents (completed, failed, stopped, force-killed) persist on the dashboard indefinitely, cluttering the active view and inflating status counts. Add a `finished_at` timestamp to the agent model, support filtering active vs. historical agents in the API, and add a dedicated history endpoint for the full agent list."
+  context: |
+    The dashboard currently shows ALL agents regardless of status. After extended use, the agent grid fills with completed/failed agents that obscure the currently running ones. The status bar histogram counts all agents, making it hard to see at a glance how many are actually active.
+    
+    Users need:
+    1. **Dashboard view** — only active agents + recently finished (within ~30 minutes)
+    2. **History page** — all agents in a scrollable list, including long-finished ones
+    3. **Status bar** — only count active agents (running, waiting)
+  codebase_analysis: |
+    ### Agent domain model (`domain/agent.go`)
+    
+    Current timestamps: `StartedAt`, `UpdatedAt`, `SuspendedAt`. No `FinishedAt`.
+    
+    Terminal statuses: `stopped`, `completed`, `failed`, `force-killed`, `resume-failed`.
+    
+    ### Agent store (`port/agent_store.go`)
+    
+    Has `AgentsByStatus(statuses ...string) []AgentInfo` but it's not used by the API.
+    
+    ### API endpoint (`api_handler.go`)
+    
+    `ListAgents()` (line ~290) returns `h.agents.Agents()` — all agents, no filtering.
+    
+    ### SQLite store (`sqlite/agent_store.go`)
+    
+    Stores agents with `started_at`, `updated_at`, `suspended_at`. Returns `ORDER BY started_at DESC`.
+  acceptance_criteria:
+    - Add `FinishedAt *time.Time` field to `domain.AgentInfo`
+    - Set `FinishedAt` when agent transitions to a terminal status (stopped, completed, failed, force-killed, resume-failed)
+    - SQLite schema migration adds `finished_at` column to agents table
+    - `GET /api/agents` supports `?active=true` query param — returns only running/waiting agents + agents finished within the last 30 minutes
+    - `GET /api/agents` default (no param) returns same as `?active=true` to avoid breaking the dashboard
+    - `GET /api/agents?active=false` or `GET /api/agents?all=true` returns all agents
+    - `GET /api/status` — `agent_counts` only counts active agents (running, waiting) by default
+    - Add `finished_at` to the API response schema in `openapi.yaml`
+    - `make generate` produces no diff
+    - `make test` passes
+  out_of_scope: |
+    - Frontend changes (separate track: `agent-display-ttl-fe_20260310014001Z`)
+    - Cursor-based pagination for history (future track)
+    - Automatic deletion/archival of old agents from the database
+  technical_notes: |
+    ### FinishedAt population
+    
+    In the spawner's `monitorAgent` goroutine (or wherever status transitions happen), set `FinishedAt` when status becomes terminal:
+    
+    ```go
+    func (s *Spawner) monitorAgent(agentID string, ...) {
+        // ... wait for process exit ...
+        now := time.Now()
+        s.store.UpdateAgent(agentID, func(a *domain.AgentInfo) {
+            a.Status = finalStatus
+            a.FinishedAt = &now
+            a.UpdatedAt = now
+        })
+    }
+    ```
+    
+    ### Active filter logic
+    
+    ```go
+    func (h *APIHandler) ListAgents(ctx context.Context, req gen.ListAgentsRequestObject) (...) {
+        agents := h.agents.Agents()
+        if req.Params.Active == nil || *req.Params.Active {
+            cutoff := time.Now().Add(-30 * time.Minute)
+            agents = filterActiveAgents(agents, cutoff)
+        }
+        // convert and return
+    }
+    
+    func filterActiveAgents(agents []domain.AgentInfo, cutoff time.Time) []domain.AgentInfo {
+        var result []domain.AgentInfo
+        for _, a := range agents {
+            if a.IsActive() {
+                result = append(result, a)
+            } else if a.FinishedAt != nil && a.FinishedAt.After(cutoff) {
+                result = append(result, a)
+            } else if a.FinishedAt == nil && a.UpdatedAt.After(cutoff) {
+                // fallback for agents without FinishedAt (pre-migration)
+                result = append(result, a)
+            }
+        }
+        return result
+    }
+    ```
+    
+    ### IsActive helper on domain
+    
+    ```go
+    func (a AgentInfo) IsActive() bool {
+        return a.Status == "running" || a.Status == "waiting"
+    }
+    ```
+    
+    ### Status counts
+    
+    `GET /api/status` should only count active agents in the headline count, but can include a breakdown:
+    ```json
+    {
+      "active_agents": 3,
+      "total_agents": 47,
+      "agent_counts": {"running": 2, "waiting": 1}
+    }
+    ```
+    
+    ---
+plan:
+  - phase: Domain and Storage
+    tasks:
+      - text: Add `FinishedAt *time.Time` to `domain.AgentInfo`
+        done: true
+      - text: Add `IsActive() bool` helper method to `domain.AgentInfo`
+        done: true
+      - text: SQLite migration — add `finished_at` column to agents table
+        done: true
+      - text: Update SQLite agent store to read/write `finished_at`
+        done: true
+      - text: Set `FinishedAt` in spawner when agent reaches terminal status
+        done: true
+  - phase: API
+    tasks:
+      - text: Update `openapi.yaml` — add `finished_at` to Agent schema, add `active` query param to `GET /api/agents`
+        done: true
+      - text: Run `make generate` to regenerate stubs
+        done: true
+      - text: Implement `?active=true` filter in `ListAgents` handler — filter to active + recently finished (30 min)
+        done: true
+      - text: Update `GET /api/status` — `agent_counts` only includes active statuses, add `active_agents` and `total_agents` fields
+        done: true
+      - text: Include `finished_at` in `domainAgentToGen` response conversion
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `make test` passes
+        done: true
+      - text: `make generate` produces no diff
+        done: true
+extra: "{}"

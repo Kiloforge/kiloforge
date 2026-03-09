@@ -1,0 +1,142 @@
+id: ssh-key-selection-ui_20260309120001Z
+title: SSH Key Selection in Project Add UI
+type: feature
+status: complete
+created: 2026-03-09T12:00:01Z
+updated: 2026-03-09T13:30:00Z
+spec:
+  summary: Add SSH key selection to the dashboard's "Add Project" form. When a user enters an SSH-based remote URL, show a dropdown of available SSH keys from the server. Extend the API to support listing SSH keys and passing the selected key when adding a project.
+  context: "The CLI `kf add` command already supports interactive SSH key selection (completed in `ssh-key-selection_20260309100000Z`), but the dashboard UI has no equivalent. The `AddProjectForm` component only has remote URL and name fields. Users adding SSH-based repos via the UI have no way to specify which SSH key to use — the backend uses the system default, which may not be the right key."
+  codebase_analysis: |
+    ### Existing CLI implementation
+    - `backend/internal/adapter/auth/sshkey.go` — `DiscoverSSHKeys(sshDir)` returns `[]SSHKeyInfo` with `Name`, `Path`, `PubKeyPath`, `Type`, `Comment`
+    - `backend/internal/adapter/cli/add.go` — detects SSH URLs, prompts for key selection, passes `--ssh-key` flag
+    - `backend/internal/adapter/cli/prompt.go` — interactive key selection prompt
+    
+    ### API gaps
+    - `POST /-/api/projects` (`AddProjectRequest`) has no `ssh_key` field
+    - No `GET /-/api/ssh-keys` endpoint to list available keys
+    - `ProjectService.AddProject()` doesn't accept an SSH key parameter — it clones using system default SSH config
+    
+    ### Frontend gaps
+    - `AddProjectForm.tsx` — only has `remote_url` and `name` fields
+    - `useProjects.ts` — `addProject()` sends `{remote_url, name}` only
+    - `api.ts` — `AddProjectRequest` type has no `ssh_key` field
+    
+    ### Files to modify
+    
+    **Backend API:**
+    - `backend/api/openapi.yaml` — add `GET /-/api/ssh-keys` endpoint, add `ssh_key` field to `AddProjectRequest`
+    - `backend/internal/adapter/rest/gen/` — regenerate
+    - `backend/internal/adapter/rest/api_handler.go` — add `ListSSHKeys` handler, pass `ssh_key` to project service
+    - `backend/internal/core/service/project_service.go` — accept optional SSH key path, set `GIT_SSH_COMMAND` when cloning
+    
+    **Frontend:**
+    - `frontend/src/types/api.ts` — add `SSHKeyInfo` type, update `AddProjectRequest`
+    - `frontend/src/components/AddProjectForm.tsx` — add SSH key dropdown, fetch keys when SSH URL detected
+    - `frontend/src/hooks/useProjects.ts` — add `fetchSSHKeys()` function
+    
+    ### Existing patterns
+    - `DiscoverSSHKeys()` already exists in `auth/sshkey.go` — reuse for the API endpoint
+    - `isRemoteURL()` pattern in `add.go` — can inform frontend SSH URL detection
+    - SSH URL regex: `^(ssh://|[^/]+@[^:]+:)` — detects SSH-based remotes
+  acceptance_criteria:
+    - `GET /-/api/ssh-keys` returns list of available SSH keys with name, type, and path
+    - `AddProjectRequest` accepts optional `ssh_key` field (path to private key)
+    - When user enters an SSH URL in the add form, a dropdown of available keys appears
+    - Selected key is passed to `POST /-/api/projects` and used for cloning
+    - HTTPS URLs do not show the SSH key selector
+    - If no keys found, form works without the dropdown (graceful degradation)
+    - If only one key found, it's auto-selected
+    - OpenAPI spec updated and code regenerated
+    - `go test ./...` passes
+    - `make build` succeeds
+  out_of_scope: |
+    - SSH key generation or import
+    - SSH key management (add/remove keys)
+    - HTTPS credential management
+    - SSH agent forwarding
+  technical_notes: |
+    ### SSH Key Dropdown Behavior
+    
+    1. User types remote URL
+    2. Frontend detects SSH URL pattern (`git@...` or `ssh://...`)
+    3. Frontend fetches `GET /-/api/ssh-keys`
+    4. If keys found → show dropdown with auto-select for single key
+    5. If no keys → hide dropdown, use system default
+    6. On submit → include `ssh_key` in request body
+    
+    ### API Schema
+    
+    ```yaml
+    GET /-/api/ssh-keys:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SSHKeyInfo'
+    
+    SSHKeyInfo:
+      type: object
+      properties:
+        name: string        # e.g., "id_ed25519"
+        path: string        # e.g., "/Users/foo/.ssh/id_ed25519"
+        type: string        # e.g., "ed25519", "rsa"
+        comment: string     # Key comment if present
+    
+    AddProjectRequest:
+      properties:
+        remote_url: string (required)
+        name: string (optional)
+        ssh_key: string (optional)  # Path to SSH private key
+    ```
+    
+    ---
+plan:
+  - phase: Backend API — SSH Key Listing
+    tasks:
+      - text: Add `GET /-/api/ssh-keys` endpoint to `openapi.yaml` with `SSHKeyInfo` schema
+        done: true
+      - text: Add `ssh_key` optional field to `AddProjectRequest` schema in `openapi.yaml`
+        done: true
+      - text: Regenerate server code: `oapi-codegen` → `backend/internal/adapter/rest/gen/`
+        done: true
+      - text: Implement `ListSSHKeys` handler in `api_handler.go` — call `auth.DiscoverSSHKeys()`
+        done: true
+  - phase: Backend — SSH Key in Project Add
+    tasks:
+      - text: Update `ProjectService.AddProject()` to accept optional SSH key path
+        done: true
+      - text: When SSH key provided, set `GIT_SSH_COMMAND="ssh -i <key> -o IdentitiesOnly=yes"` for clone operation
+        done: true
+      - text: Update `ProjectManager` interface and `APIHandler.AddProject()` to pass SSH key from request
+        done: true
+  - phase: Frontend — SSH Key Selector
+    tasks:
+      - text: Add `SSHKeyInfo` type and update `AddProjectRequest` in `frontend/src/types/api.ts`
+        done: true
+      - text: Add `fetchSSHKeys()` to `useProjects.ts` hook
+        done: true
+      - text: Update `AddProjectForm.tsx` — detect SSH URL pattern, fetch and display SSH key dropdown
+        done: true
+      - text: Auto-select when single key, hide dropdown for HTTPS URLs
+        done: true
+      - text: Pass selected `ssh_key` in add project request
+        done: true
+  - phase: Tests & Verification
+    tasks:
+      - text: Test `ListSSHKeys` handler returns discovered keys
+        done: true
+      - text: Test `AddProject` with SSH key sets correct GIT_SSH_COMMAND
+        done: true
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Verify `make build` succeeds
+        done: true
+extra: "{}"

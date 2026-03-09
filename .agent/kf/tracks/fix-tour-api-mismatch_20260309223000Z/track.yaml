@@ -1,0 +1,72 @@
+id: fix-tour-api-mismatch_20260309223000Z
+title: Fix Tour API Request Body Mismatch
+type: bug
+status: complete
+created: 2026-03-09T22:30:00Z
+updated: 2026-03-09T22:30:00Z
+spec:
+  summary: "Fix the guided tour — clicking any button returns 400 `{"error":"invalid action, must be accept|advance|dismiss|complete"}`. The frontend sends `{ status: "active", current_step: 0 }` but the backend expects `{ action: "accept", step?: number }`."
+  context: "The `PUT /api/tour` endpoint and the `useTour` hook were built by different tracks (BE and FE) with mismatched request body contracts."
+  codebase_analysis: |
+    ### Backend (`tour_handler.go`)
+    
+    Expects:
+    ```json
+    { "action": "accept", "step": 0 }
+    ```
+    
+    Valid actions: `accept`, `advance`, `dismiss`, `complete`.
+    
+    ### Frontend (`useTour.ts`)
+    
+    Sends:
+    ```json
+    { "status": "active", "current_step": 0 }
+    ```
+    
+    The mutation sends a `Partial<TourState>` object directly instead of mapping to the action-based API.
+    
+    ### Fix
+    
+    Update `useTour.ts` mutation functions to send the correct action-based body:
+    
+    - `startTour()` → `{ action: "accept" }`
+    - `advanceStep(step)` → `{ action: "advance", step: step }`
+    - `dismissTour()` → `{ action: "dismiss" }`
+    - `completeTour()` → `{ action: "complete" }`
+  acceptance_criteria:
+    - `useTour.ts` mutation sends `{ action: "..." }` format matching backend contract
+    - Tour "Start Tour" button works (sends `action: "accept"`)
+    - Tour "Skip" button works (sends `action: "dismiss"`)
+    - Step advancement works (sends `action: "advance", step: N`)
+    - Tour completion works (sends `action: "complete"`)
+    - No 400 errors in browser console
+    - `npm run build` succeeds
+    - Rebuild dist and commit
+  out_of_scope: |
+    - Changing the backend API contract
+    - Adding error notifications (separate track)
+    
+    ---
+plan:
+  - phase: Fix
+    tasks:
+      - text: Update `useTour.ts` — change mutation to send `{ action, step? }` instead of `Partial<TourState>`
+        done: true
+      - text: Update `startTour()` → `{ action: "accept" }`
+        done: true
+      - text: Update `advanceStep(step)` → `{ action: "advance", step }`
+        done: true
+      - text: Update `dismissTour()` → `{ action: "dismiss" }`
+        done: true
+      - text: Update `completeTour()` → `{ action: "complete" }`
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `npm run build` succeeds
+        done: true
+      - text: Rebuild dist and commit
+        done: true
+      - text: Manual test — full tour walkthrough works without 400 errors
+        done: true
+extra: "{}"

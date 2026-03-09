@@ -1,0 +1,136 @@
+id: kf-skills-source_20260309063859Z
+title: Kiloforge-Branded Skill Source Artifacts
+type: chore
+status: complete
+created: 2026-03-09T06:38:59Z
+updated: 2026-03-09T06:38:59Z
+spec:
+  summary: "Copy the 14 conductor skills into the repo as kiloforge-branded source artifacts under `skills/`. Rebrand all references from "conductor-" prefix to "kf-" prefix, replace "kiloforge" with "kiloforge"/"kf", and update env var references from `KF_*` to `KF_*`. These source files become the canonical distribution artifacts that the existing skill installer packages and deploys."
+  context: |
+    The conductor skills currently live only in `~/.claude/skills/conductor-*/` as local user files. There is no source-of-truth in the repo. The existing skill installer (`backend/internal/adapter/skills/`) already supports downloading skills from GitHub tarballs and installing them to `~/.claude/skills/`. By placing the rebranded skills in the repo, they become:
+    
+    1. **Version-controlled** — changes are tracked, reviewed, and committed
+    2. **Distributable** — the installer can package them from the repo
+    3. **Consistently branded** — all "conductor-" prefixes become "kf-", matching the CLI rename
+    
+    ### Current Skills (14 total)
+    
+    | Old Name | New Name |
+    |----------|----------|
+    | `conductor-bulk-archive` | `kf-bulk-archive` |
+    | `conductor-compact-archive` | `kf-compact-archive` |
+    | `conductor-developer` | `kf-developer` |
+    | `conductor-implement` | `kf-implement` |
+    | `conductor-manage` | `kf-manage` |
+    | `conductor-new-track` | `kf-new-track` |
+    | `conductor-parallel` | `kf-parallel` |
+    | `conductor-report` | `kf-report` |
+    | `conductor-revert` | `kf-revert` |
+    | `conductor-reviewer` | `kf-reviewer` |
+    | `conductor-setup` | `kf-setup` |
+    | `conductor-status-private` | `kf-status` |
+    | `conductor-track-generator` | `kf-track-generator` |
+    | `conductor-validate` | `kf-validate` |
+    
+    ### Rebrand Mappings
+    
+    | Before | After |
+    |--------|-------|
+    | `conductor-` prefix in dir/skill names | `kf-` prefix |
+    | `/conductor-developer` (slash command) | `/kf-developer` |
+    | `KF_RELAY_URL` | `KF_RELAY_URL` |
+    | "kiloforge" in descriptions/docs | "kiloforge" or "kf" |
+    | "kiloforge lock API" | "kiloforge lock API" |
+    | "kiloforge relay" | "kiloforge relay" |
+  codebase_analysis: |
+    **Skill source location:** `~/.claude/skills/conductor-*/SKILL.md` (14 skills)
+    - Only 2 skills reference "kiloforge" in content: `conductor-developer` and `conductor-track-generator` (merge lock sections)
+    - All 14 use `conductor-` prefix in YAML frontmatter `name:` field and directory names
+    - 1 skill (`conductor-manage`) has a `resources/` subdirectory
+    
+    **Existing installer code:** `backend/internal/adapter/skills/`
+    - `installer.go` — Downloads tarballs, extracts skills by finding `SKILL.md` files
+    - `manifest.go` — Tracks installed skill checksums for modification detection
+    - `github.go` — GitHub release tarball URL construction
+    - The installer already uses `kf-skills-*` temp file prefixes (post-rebrand)
+    
+    **Target location in repo:** `skills/` (top-level directory)
+    - Mirrors the structure that the installer expects: `skills/{name}/SKILL.md`
+    - The installer's `findSkills()` function discovers directories containing `SKILL.md`
+  acceptance_criteria:
+    - `skills/` directory exists at repo root with all 14 rebranded skills
+    - Each skill directory is named `kf-{function}` (e.g., `skills/kf-developer/SKILL.md`)
+    - YAML frontmatter `name:` field matches directory name in every SKILL.md
+    - All `KF_RELAY_URL` references replaced with `KF_RELAY_URL`
+    - All "kiloforge" text references replaced with "kiloforge" or "kf" as appropriate
+    - All `/conductor-*` slash command references updated to `/kf-*`
+    - Cross-skill references updated (e.g., "use `/conductor-setup` first" → "use `/kf-setup` first")
+    - `conductor-manage/resources/` subdirectory copied to `kf-manage/resources/`
+    - Skill descriptions updated for trigger accuracy (so Claude invokes `/kf-*` not `/conductor-*`)
+  out_of_scope: |
+    - Modifying the installer to read from the local `skills/` directory (separate track)
+    - Removing the original `~/.claude/skills/conductor-*` skills (user manages those)
+    - Updating CLAUDE.md or settings to register the new skill names (separate concern)
+    - Automated skill deployment from repo to `~/.claude/skills/` (the installer already handles this)
+  technical_notes: |
+    - **Copy, don't move** — the original conductor skills remain in `~/.claude/skills/` untouched
+    - **Mechanical rename** — this is primarily find-replace work across 14 SKILL.md files + 1 resource file
+    - **YAML frontmatter** — the `name:` field in each SKILL.md must exactly match the directory name for Claude to register the skill correctly
+    - **Slash command triggers** — skill descriptions contain trigger patterns (e.g., "Use when the user runs `/conductor-developer`"). These must be updated to `/kf-*` for correct invocation.
+    - **argument-hint metadata** — some skills have `metadata.argument-hint:` in frontmatter that references command syntax; update these too
+    
+    ---
+plan:
+  - phase: Directory Setup and Bulk Copy
+    tasks:
+      - text: Create `skills/` directory at repo root
+        done: true
+      - text: Copy all 14 conductor skills from `~/.claude/skills/conductor-*/` to `skills/kf-*/` with renamed directories
+        done: true
+      - text: Copy `conductor-manage/resources/` subdirectory to `kf-manage/resources/`
+        done: true
+      - text: Verify all 14 skill directories exist with SKILL.md files
+        done: true
+  - phase: YAML Frontmatter Rebrand
+    tasks:
+      - text: Update `name:` field in all 14 SKILL.md files from `conductor-*` to `kf-*`
+        done: true
+      - text: Update `description:` fields that reference "conductor" to use "kiloforge" or "kf"
+        done: true
+      - text: Update `metadata.argument-hint:` fields where present
+        done: true
+      - text: Verify YAML frontmatter is valid in all files
+        done: true
+  - phase: Content Rebrand — Environment Variables and API References
+    tasks:
+      - text: Replace `KF_RELAY_URL` with `KF_RELAY_URL` in `kf-developer/SKILL.md`
+        done: true
+      - text: Replace `KF_RELAY_URL` with `KF_RELAY_URL` in `kf-track-generator/SKILL.md`
+        done: true
+      - text: Replace "kiloforge lock API" / "kiloforge relay" with "kiloforge lock API" / "kiloforge relay" in both files
+        done: true
+      - text: Search all skill files for any remaining `KF_` or `kiloforge` references and update
+        done: true
+  - phase: Content Rebrand — Slash Commands and Cross-References
+    tasks:
+      - text: Replace all `/conductor-*` slash command references with `/kf-*` across all 14 SKILL.md files
+        done: true
+      - text: Update cross-skill references (e.g., "use `/conductor-setup` first" → "use `/kf-setup` first")
+        done: true
+      - text: Update `conductor-manage/resources/implementation-playbook.md` → `kf-manage/resources/implementation-playbook.md` content
+        done: true
+      - text: Replace "conductor" role references with "kiloforge" where appropriate in skill descriptions
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Grep all files under `skills/` for remaining "conductor-" prefix references — zero found
+        done: true
+      - text: Grep all files under `skills/` for remaining "KF_" references — zero found
+        done: true
+      - text: Grep all files under `skills/` for remaining "kiloforge" references — zero found
+        done: true
+      - text: Verify each SKILL.md has valid YAML frontmatter with correct `name:` matching directory name
+        done: true
+      - text: Verify directory count is 14 with no missing skills
+        done: true
+extra: "{}"

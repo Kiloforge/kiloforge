@@ -1,0 +1,77 @@
+id: track-detail-view-fe_20260309001727Z
+title: Track Detail View UI
+type: feature
+status: complete
+created: 2026-03-09T00:17:27Z
+updated: 2026-03-10T00:36:00Z
+spec:
+  summary: Add a track detail page accessible from both the kanban board and track list. Display the track's specification, implementation plan (rendered as markdown), phase/task progress, metadata, and agent/trace links.
+  context: "The dashboard currently shows tracks as cards on a kanban board and as items in a track list, but neither is clickable for viewing details. Rich track data (spec, plan, progress) exists on the backend via the new `GET /api/tracks/{trackId}` endpoint but the frontend has no way to display it. Users need to see what a track entails before approving it or understanding its progress."
+  codebase_analysis: |
+    - **KanbanBoard** (`frontend/src/components/KanbanBoard.tsx`): Cards show track_id, title, type badge, agent status, trace link. Cards are draggable but NOT clickable for navigation. Need to add click-to-navigate.
+    - **TrackList** (`frontend/src/components/TrackList.tsx`): Read-only list with status icon + ID + title. No click handlers. Need to add Link or click navigation.
+    - **Routes** (`frontend/src/App.tsx`): Has `/projects/:slug`, `/agents/:id`, `/traces/:traceId` — no `/tracks/:trackId` route. Need to add track detail route.
+    - **Types** (`frontend/src/types/api.ts`): `Track` interface has only id/title/status/project. Need `TrackDetail` with spec, plan, metadata.
+    - **API client** (`frontend/src/api/client.ts`): Has `fetchTracks()` — need `fetchTrackDetail(trackId, project)`.
+    - **Query keys** (`frontend/src/api/queryKeys.ts`): No track detail query key.
+    - **Existing detail page pattern**: `AgentDetailPage` fetches agent data and renders structured content — good pattern to follow.
+    - **Markdown rendering**: Check if a markdown library exists; if not, render as preformatted text or add `react-markdown`.
+  acceptance_criteria:
+    - Clicking a kanban board card navigates to a track detail view
+    - Clicking a track list item navigates to the same track detail view
+    - Track detail page displays: title, status badge, type, created/updated dates
+    - Track detail page renders spec.md content as formatted markdown
+    - Track detail page renders plan.md content as formatted markdown with task checkboxes
+    - Track detail page shows phase and task progress (e.g., "3/5 phases, 12/18 tasks")
+    - Track detail page includes link back to the project board
+    - If track has an active agent, show agent status with link to agent detail
+    - `npm run build` succeeds with no errors
+  out_of_scope: |
+    - Track editing from the detail page
+    - Inline plan task toggling (tasks are managed by developer agents, not the UI)
+    - Track comparison or diff views
+  technical_notes: |
+    - Route: `/projects/:slug/tracks/:trackId` (keeps project context for back-navigation and API calls)
+    - Use the project slug from the route to pass as query param to `GET /api/tracks/{trackId}?project={slug}`
+    - For markdown rendering: check if `react-markdown` or similar is already a dependency. If not, use `<pre>` blocks for simplicity — a markdown library can be added in a follow-up track if needed.
+    - Kanban card click: wrap the card content (not the drag handle) in a `<Link>` or add an `onClick` with `navigate()`
+    - TrackList item: wrap each row in a `<Link to={...}>` component
+    - Follow the existing `AgentDetailPage` pattern for layout and data fetching
+    
+    ---
+plan:
+  - phase: Types and API Client
+    tasks:
+      - text: Add `TrackDetail` interface to `types/api.ts` — id, title, status, type, spec, plan, phases (total/completed), tasks (total/completed), created_at, updated_at
+        done: true
+      - text: Add `fetchTrackDetail(trackId: string, project: string)` to API client
+        done: true
+      - text: Add `trackDetail` query key factory to `queryKeys.ts`
+        done: true
+      - text: Add `useTrackDetail(trackId, project)` hook using TanStack Query
+        done: true
+  - phase: Track Detail Page
+    tasks:
+      - text: Create `TrackDetailPage` component — fetch track detail, display loading/error states
+        done: true
+      - text: Render track header: title, status badge, type badge, dates, phase/task progress bar
+        done: true
+      - text: Render spec.md content — use markdown rendering if library available, otherwise `<pre>` with whitespace preservation
+        done: true
+      - text: Render plan.md content — same approach as spec
+        done: true
+      - text: Add back-link to project page and show agent/trace links if available
+        done: true
+      - text: Add route `/projects/:slug/tracks/:trackId` to App.tsx
+        done: true
+  - phase: Navigation from Board and List
+    tasks:
+      - text: Make KanbanBoard cards clickable — add click handler or Link to navigate to track detail route
+        done: true
+      - text: Make TrackList items clickable — wrap items in Link to track detail route
+        done: true
+  - phase: Verification
+    tasks:
+      - text: `npm run build` succeeds with no errors
+        done: true
+extra: "{}"

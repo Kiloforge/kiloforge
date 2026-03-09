@@ -1,0 +1,149 @@
+id: fix-board-sync-ux-fe_20260310012001Z
+title: Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)
+type: bug
+status: complete
+created: 2026-03-10T01:20:01Z
+updated: 2026-03-10T01:20:01Z
+spec:
+  summary: "The board UI has three problems: (1) no `board_update` SSE handler so the board never updates in real-time, (2) no sync button despite the empty message telling users to "Run sync to populate", and (3) empty columns are hidden — when no cards exist, users see a blank message instead of the kanban column layout. Fix all three for a usable board experience."
+  context: |
+    The backend publishes `board_update` SSE events and the auto-sync on empty board fetch (track `fix-board-sync-ux-be_20260310012000Z`) ensures the board populates on first load. But the frontend still needs to:
+    - Listen for `board_update` events to update in real-time
+    - Show the 5 kanban columns (backlog, approved, in_progress, in_review, done) even when empty
+    - Provide a manual sync button for users who want to refresh from track state
+  codebase_analysis: |
+    ### Missing SSE handler (`App.tsx`)
+    
+    Current SSE handlers (lines 44-57):
+    ```typescript
+    const handlers: Record<string, (data: unknown) => void> = {
+      agent_update: ...,
+      agent_removed: ...,
+      quota_update: ...,
+      track_update: ...,
+      track_removed: ...,
+      project_update: ...,
+      project_removed: ...,
+      // MISSING: board_update
+    };
+    ```
+    
+    ### Board rendering condition (`ProjectPage.tsx`, lines 241-247)
+    
+    ```tsx
+    {board && Object.keys(board.cards).length > 0 ? (
+      <KanbanBoard board={board} ... />
+    ) : (
+      <p>No cards on the board yet. Run sync to populate.</p>
+    )}
+    ```
+    
+    Should always show `KanbanBoard` — let the component render empty columns.
+    
+    ### KanbanBoard component
+    
+    Iterates `board.columns` (hardcoded 5 columns) and groups cards by column. Already supports empty columns internally — just never gets rendered when cards object is empty due to the parent condition.
+    
+    ### useBoard hook (`frontend/src/hooks/useBoard.ts`)
+    
+    Uses TanStack Query with `refetchInterval: 300_000` (5 min). Has no SSE-driven cache invalidation.
+    
+    ### Files to modify
+    
+    - `frontend/src/App.tsx` — add `board_update` SSE handler
+    - `frontend/src/hooks/useBoard.ts` — export handler for SSE updates, add `syncBoard` mutation
+    - `frontend/src/pages/ProjectPage.tsx` — always render KanbanBoard, add sync button
+    - `frontend/src/components/KanbanBoard.tsx` — ensure empty columns render correctly with proper labels
+  acceptance_criteria:
+    - `board_update` SSE handler wired in `App.tsx` — invalidates board query cache on event
+    - Board always shows 5 kanban columns (backlog, approved, in_progress, in_review, done) even when empty
+    - Column headers use human-readable labels: "Backlog", "Approved", "In Progress", "In Review", "Done"
+    - "Sync" button visible in the board section header, calls `POST /api/board/{project}/sync`
+    - After sync, board updates immediately (via SSE event or direct cache update)
+    - Remove the "No cards on the board yet" empty message — the board itself is always visible
+    - Frontend builds without errors (`npm run build`)
+  out_of_scope: |
+    - Backend sync logic (covered by BE track)
+    - Drag-and-drop between columns (already implemented in KanbanBoard)
+    - Card styling or detail views
+  technical_notes: |
+    ### SSE handler for board_update
+    
+    In `App.tsx`, add to the handlers map:
+    ```typescript
+    board_update: (data: unknown) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.board(projectSlug) });
+    },
+    ```
+    
+    This triggers a refetch of the board data, which will include any changes from sync.
+    
+    ### Always show KanbanBoard
+    
+    Replace the conditional in `ProjectPage.tsx`:
+    ```tsx
+    // Before:
+    {board && Object.keys(board.cards).length > 0 ? <KanbanBoard ... /> : <p>Empty</p>}
+    
+    // After:
+    {boardLoading ? (
+      <p>Loading board...</p>
+    ) : (
+      <KanbanBoard board={board ?? emptyBoard} ... />
+    )}
+    ```
+    
+    Where `emptyBoard` is a default board state with empty columns.
+    
+    ### Sync button
+    
+    Add next to the board section header:
+    ```tsx
+    <div className={styles.sectionHeader}>
+      <h3>Board</h3>
+      <button onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+        {syncMutation.isPending ? "Syncing..." : "Sync"}
+      </button>
+    </div>
+    ```
+    
+    ### useBoard sync mutation
+    
+    ```typescript
+    const syncBoard = useMutation({
+      mutationFn: () => fetcher(`/api/board/${project}/sync`, { method: "POST" }),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.board(project) }),
+    });
+    ```
+    
+    ---
+plan:
+  - phase: SSE and Data Layer
+    tasks:
+      - text: Add `board_update` SSE handler in `App.tsx` — invalidate board query cache
+        done: true
+      - text: Add `syncBoard` mutation to `useBoard.ts` — calls `POST /api/board/{project}/sync`
+        done: true
+      - text: Export `handleBoardUpdate` from `useBoard.ts` for SSE handler wiring
+        done: true
+  - phase: Board UI
+    tasks:
+      - text: Always render `KanbanBoard` in `ProjectPage.tsx` — remove the empty-cards conditional
+        done: true
+      - text: Ensure `KanbanBoard` renders all 5 columns with human-readable labels even when empty
+        done: true
+      - text: Add "Sync" button in the board section header, wired to `syncBoard` mutation
+        done: true
+      - text: Show loading/disabled state on sync button during mutation
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Frontend builds without errors (`npm run build`)
+        done: true
+      - text: Board shows 5 empty columns on a project with no tracks
+        done: true
+      - text: Board populates with cards after sync on a project with tracks
+        done: true
+      - text: Board updates in real-time when tracks change (via SSE)
+        done: true
+extra: "{}"

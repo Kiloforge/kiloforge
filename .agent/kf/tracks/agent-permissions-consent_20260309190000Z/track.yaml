@@ -1,0 +1,127 @@
+id: agent-permissions-consent_20260309190000Z
+title: Agent Permissions Flag and User Consent
+type: bug
+status: complete
+created: 2026-03-09T19:00:00Z
+updated: 2026-03-09T19:00:00Z
+spec:
+  summary: "Fix agent spawning to pass `--dangerously-skip-permissions` to `claude -p` (required for non-interactive mode). Add a one-time user consent flow before the first agent spawn — store consent in SQLite so subsequent spawns proceed without prompting."
+  context: |
+    The spawner currently invokes `claude -p "<prompt>" --session-id <id> --output-format stream-json` without `--dangerously-skip-permissions`. In non-interactive (`-p`) mode, Claude Code will hang or fail on tool permission prompts since there's no human to approve them. The design doc (`backend/docs/design-agent-orchestration.md:111`) intended this flag to be passed but it was never wired in.
+    
+    Since this flag grants agents unrestricted tool access, users should explicitly consent before any agent is spawned. Once consented, store the flag in the database so they aren't asked again.
+  codebase_analysis: |
+    ### Spawner args (current)
+    
+    - **`spawner.go:147`** (reviewer): `args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json"}`
+    - **`spawner.go:246`** (developer): identical pattern
+    - **`spawner.go:~340`** (interactive): similar pattern but may also pass prompt via `-p`
+    - **Missing**: `--dangerously-skip-permissions` in all three
+    
+    ### Consent storage
+    
+    - **SQLite `config` table** — Already exists with `key TEXT PRIMARY KEY, value TEXT NOT NULL`. Can store `agent_permissions_consent = "true"` with timestamp.
+    - **`backend/internal/core/port/`** — Config store interface exists for key-value operations.
+    
+    ### CLI consent prompt
+    
+    - **`backend/internal/adapter/cli/implement.go`** — `kf implement` is the CLI entry for developer spawning. Consent prompt should go here before calling spawner.
+    - **`backend/internal/adapter/cli/init.go`** — `offerSkillsInstall` pattern can be followed for the consent prompt (interactive readline with context).
+    
+    ### REST API consent
+    
+    - **`POST /api/agents/interactive`**, **`POST /api/tracks/generate`**, **`POST /api/admin/run`** — All spawn agents via REST. These should check consent state and return 403 if not yet consented.
+    - **New endpoint needed**: `POST /api/consent/agent-permissions` — allows dashboard to trigger consent (with confirmation dialog).
+    - **`GET /api/consent/agent-permissions`** — check current consent state.
+  acceptance_criteria:
+    - All spawn methods pass `--dangerously-skip-permissions` to `claude` CLI
+    - First `kf implement` prompts user with clear warning about what the flag does and asks for consent
+    - Consent is stored in SQLite config table (`agent_permissions_consent`)
+    - Subsequent spawns skip the prompt if consent was previously given
+    - REST API agent spawn endpoints check consent — return 403 with message if not consented
+    - New `GET /api/consent/agent-permissions` endpoint returns consent state
+    - New `POST /api/consent/agent-permissions` endpoint records consent
+    - Dashboard shows consent dialog on first agent spawn attempt if not yet consented
+    - `go test ./...` passes
+  out_of_scope: |
+    - Revoking consent (user can reset by deleting the config key)
+    - Per-agent or per-tool granular permissions
+    - Configuring `allowedTools` in `.claude/settings.json` as an alternative
+  technical_notes: |
+    ### Consent prompt (CLI)
+    
+    ```
+    WARNING: Kiloforge agents run with --dangerously-skip-permissions.
+    This grants agents unrestricted access to tools (file read/write,
+    shell commands, etc.) within their worktree directory.
+    
+    This is required for non-interactive agent operation.
+    
+    Do you accept? [y/N]
+    ```
+    
+    ### Spawner change
+    
+    In all three spawn methods, append the flag:
+    ```go
+    args := []string{
+        "-p", prompt,
+        "--session-id", sessionID,
+        "--output-format", "stream-json",
+        "--dangerously-skip-permissions",
+    }
+    ```
+    
+    ### Consent check flow
+    
+    1. CLI (`kf implement`): check config store → if not consented, prompt → store → proceed
+    2. REST API: check config store → if not consented, return 403 with `{"error": "agent_permissions_not_consented", "message": "..."}`
+    3. Dashboard: on 403, show consent dialog → `POST /api/consent/agent-permissions` → retry spawn
+    
+    ---
+plan:
+  - phase: Add Permissions Flag to Spawner
+    tasks:
+      - text: Append `--dangerously-skip-permissions` to args in `SpawnReviewer()`, `SpawnDeveloper()`, and `SpawnInteractive()`
+        done: true
+      - text: Update spawner tests if they assert on args
+        done: true
+  - phase: Consent Storage
+    tasks:
+      - text: Add consent check/store functions using the SQLite config table — `HasAgentPermissionsConsent(db)` and `RecordAgentPermissionsConsent(db)`
+        done: true
+      - text: Unit test for consent read/write round-trip
+        done: true
+  - phase: CLI Consent Flow
+    tasks:
+      - text: Add consent check to `kf implement` — before spawning, check DB; if not consented, display warning and prompt; on "y", store consent and proceed; on "n", abort
+        done: true
+      - text: Verify consent is checked only once — second `kf implement` skips prompt
+        done: true
+  - phase: REST API Consent
+    tasks:
+      - text: Add `GET /api/consent/agent-permissions` endpoint — returns `{"consented": bool, "consented_at": string}`
+        done: true
+      - text: Add `POST /api/consent/agent-permissions` endpoint — records consent, returns 200
+        done: true
+      - text: Add consent guard to all agent spawn REST handlers — return 403 if not consented
+        done: true
+      - text: Update OpenAPI spec with consent endpoints and 403 responses
+        done: true
+  - phase: Dashboard Consent Dialog
+    tasks:
+      - text: Add consent check before agent spawn in dashboard — on 403, show confirmation dialog with warning text
+        done: true
+      - text: On user confirm, call `POST /api/consent/agent-permissions`, then retry the spawn
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Verify frontend builds without errors
+        done: true
+      - text: Verify `kf implement` prompts on first run, skips on second
+        done: true
+      - text: Verify dashboard consent dialog flow
+        done: true
+extra: "{}"

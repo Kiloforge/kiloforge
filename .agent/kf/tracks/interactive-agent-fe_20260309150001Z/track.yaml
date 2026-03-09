@@ -1,0 +1,123 @@
+id: interactive-agent-fe_20260309150001Z
+title: Interactive Agent Terminal in Dashboard (Frontend)
+type: feature
+status: complete
+created: 2026-03-09T15:00:01Z
+updated: 2026-03-09T16:00:00Z
+spec:
+  summary: Add a chat-style terminal component to the dashboard for interactive agent sessions. Users can start interactive agents (for track creation, setup, etc.) and have real-time conversations via WebSocket.
+  context: "The BE track (`interactive-agent-be_20260309150000Z`) provides WebSocket infrastructure for bidirectional agent communication. The frontend needs a terminal/chat UI that connects to the WebSocket, displays agent output, and accepts user input."
+  codebase_analysis: |
+    ### Existing UI patterns
+    - `LogViewer.tsx` — displays agent log output (read-only, fetches via API)
+    - `App.tsx` — tab-based navigation with agents, tracks, traces tabs
+    - SSE hook (`useSSE.ts`) — real-time event streaming pattern (one-way)
+    
+    ### Placement
+    - New "Interactive" tab or modal accessible from agent cards
+    - Could also be triggered from track board ("Create Track" action → opens interactive agent)
+    - Agent cards for interactive agents show "Attach" button that opens the terminal
+  acceptance_criteria:
+    - Chat-style terminal component that connects to `ws://host/ws/agent/{id}`
+    - Displays agent output as formatted messages (markdown support)
+    - Text input area for sending messages to the agent
+    - Auto-scrolls to latest output
+    - Shows connection status (connecting/connected/disconnected/reconnecting)
+    - Reconnection with output replay (buffered lines from server)
+    - "Start Interactive Agent" action (calls `POST /api/agents/interactive`)
+    - Loading state while agent is starting
+    - Clean exit display when agent completes
+    - `npm run build` succeeds
+  out_of_scope: |
+    - Backend WebSocket infrastructure (covered by BE track)
+    - Full xterm.js terminal emulation (chat-style is sufficient for Claude conversations)
+    - Interactive `kf init` workflow (separate track using this infrastructure)
+  technical_notes: |
+    ### useAgentWebSocket hook
+    ```typescript
+    const { messages, sendMessage, status, connect } = useAgentWebSocket(agentId);
+    // status: "connecting" | "connected" | "disconnected" | "reconnecting"
+    // messages: Array<{ type: "output" | "input" | "status" | "error", text: string, timestamp: Date }>
+    // sendMessage(text: string): void
+    ```
+    
+    ### Chat component layout
+    ```
+    ┌─────────────────────────────────┐
+    │ Agent: track-gen-abc123   [●]   │  ← header with status indicator
+    ├─────────────────────────────────┤
+    │                                 │
+    │ 🤖 Setting up track generator  │  ← agent output (scrollable)
+    │    for your request...          │
+    │                                 │
+    │ What feature would you like     │
+    │ to create a track for?          │
+    │                                 │
+    │ 👤 I want to add a new auth    │  ← user input (highlighted differently)
+    │    system with OAuth2           │
+    │                                 │
+    │ 🤖 Let me research the current │
+    │    codebase for auth patterns...│
+    │                                 │
+    ├─────────────────────────────────┤
+    │ Type a message...        [Send] │  ← input area
+    └─────────────────────────────────┘
+    ```
+    
+    ### Markdown rendering
+    Agent output often includes code blocks, lists, and formatting. Use a lightweight markdown renderer (e.g., `react-markdown` or similar) for agent messages. User messages render as plain text.
+    
+    ### WebSocket message handling
+    ```typescript
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      switch (msg.type) {
+        case "output": // agent text → append to messages
+        case "status": // agent lifecycle → update status indicator
+        case "error":  // error → show error banner
+      }
+    };
+    
+    // Send user input
+    ws.send(JSON.stringify({ type: "input", text: userText }));
+    ```
+    
+    ---
+plan:
+  - phase: WebSocket Hook
+    tasks:
+      - text: Create `frontend/src/hooks/useAgentWebSocket.ts` — connect to `/ws/agent/{id}`, handle messages, reconnection, send input
+        done: true
+      - text: Define message types in `types/api.ts` (AgentWSMessage, input/output/status/error)
+        done: true
+  - phase: Terminal Component
+    tasks:
+      - text: Create `frontend/src/components/AgentTerminal.tsx` — chat-style message display with auto-scroll, markdown rendering for agent output, plain text for user input
+        done: true
+      - text: Create input area component — text input with Send button and Enter-to-send
+        done: true
+      - text: Add connection status indicator (green dot connected, yellow reconnecting, red disconnected)
+        done: true
+      - text: Style agent vs user messages differently (alignment, color, icon)
+        done: true
+  - phase: Integration
+    tasks:
+      - text: Add "Start Interactive Agent" action — button that calls `POST /api/agents/interactive`, opens terminal on success
+        done: true
+      - text: Add "Attach" button to agent cards for interactive agents — opens terminal connected to existing agent
+        done: true
+      - text: Create interactive agent page/modal that hosts the terminal component
+        done: true
+      - text: Add route for interactive terminal view (e.g., `/agents/{id}/terminal`)
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify `npm run build` succeeds
+        done: true
+      - text: Verify WebSocket connects and displays agent output
+        done: true
+      - text: Verify user input is sent and agent responds
+        done: true
+      - text: Verify reconnection replays buffered output
+        done: true
+extra: "{}"

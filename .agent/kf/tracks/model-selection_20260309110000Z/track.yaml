@@ -1,0 +1,150 @@
+id: model-selection_20260309110000Z
+title: Configurable Model Selection with Opus Default
+type: feature
+status: complete
+created: 2026-03-09T11:00:00Z
+updated: 2026-03-09T11:00:00Z
+spec:
+  summary: "Add model selection configuration so agents can be spawned with a specific Claude model. Default to `opus` (latest Claude Opus). The model flows through config → spawner → `claude --model <model>` flag."
+  context: "Currently the spawner invokes `claude -p <prompt> --session-id <id> --output-format stream-json` without specifying a model, which uses whatever Claude Code's own default is. Users should be able to configure which model their agents use — defaulting to `opus` for maximum capability. The Claude CLI supports `--model <alias>` where aliases like `opus`, `sonnet`, `haiku` resolve to the latest version of that model family."
+  codebase_analysis: |
+    ### Current state
+    - `spawner.go` constructs `exec.Command("claude", "-p", prompt, "--session-id", sessionID, "--output-format", "stream-json")` — no `--model` flag
+    - `recovery.go` constructs `exec.Command("claude", "--resume", sessionID, "--output-format", "stream-json")` — no `--model` flag
+    - `config.go` has no model field
+    - `defaults.go` has no model default
+    - `env_adapter.go` has no `KF_MODEL` env var
+    - `implement.go` calls `spawner.SpawnDeveloper()` with no model parameter
+    - `domain/agent.go` `AgentInfo` has no model field
+    - `openapi.yaml` `Agent` schema has no model field
+    - `port/agent_spawner.go` `ReviewerOpts` has no model field
+    - `SpawnDeveloperOpts` has no model field
+    - Claude CLI supports: `--model <model>` with aliases (`opus`, `sonnet`, `haiku`) or full model IDs
+    
+    ### Files to modify
+    
+    **Config:**
+    - `backend/internal/adapter/config/config.go` — add `Model string` field
+    - `backend/internal/adapter/config/defaults.go` — default `Model: "opus"`
+    - `backend/internal/adapter/config/env_adapter.go` — add `KF_MODEL` env var
+    
+    **Spawner:**
+    - `backend/internal/adapter/agent/spawner.go` — add `--model` flag to `SpawnDeveloper()` and `SpawnReviewer()` command construction
+    - `backend/internal/adapter/agent/recovery.go` — add `--model` flag to resume command
+    
+    **Domain & Ports:**
+    - `backend/internal/core/domain/agent.go` — add `Model string` field to `AgentInfo`
+    - `backend/internal/core/port/agent_spawner.go` — add `Model string` to `ReviewerOpts`
+    - `backend/internal/adapter/agent/spawner.go` — add `Model string` to `SpawnDeveloperOpts`
+    
+    **CLI:**
+    - `backend/internal/adapter/cli/implement.go` — pass `cfg.Model` to spawner opts
+    - Consider adding `--model` flag override on `kf implement`
+    
+    **API:**
+    - `backend/api/openapi.yaml` — add `model` field to `Agent` schema
+    - `backend/internal/adapter/rest/gen/` — regenerate from updated spec
+    - `backend/internal/adapter/rest/api_handler.go` — map `Model` field in agent response
+    
+    **Dashboard display (minimal):**
+    - `frontend/src/types/api.ts` — add `model?: string` to `Agent` interface
+    - `frontend/src/components/AgentCard.tsx` — display model name if present
+  acceptance_criteria:
+    - Config supports `model` field with default `"opus"`
+    - `KF_MODEL` env var overrides the config model
+    - `kf implement` passes the configured model to the spawner
+    - Spawner passes `--model <model>` to all `claude` CLI invocations (spawn + resume)
+    - `AgentInfo` records which model was used
+    - API response includes `model` field per agent
+    - Dashboard displays model name on agent cards
+    - Existing behavior preserved when model is not explicitly set (defaults to opus)
+    - `go test ./...` passes
+    - `make build` succeeds
+  out_of_scope: |
+    - Per-track or per-agent model override via API (config-level only for now)
+    - Model cost/pricing differences
+    - Model capability comparison or recommendations
+    - Fallback model configuration (Claude CLI has its own `--fallback-model` flag)
+  technical_notes: |
+    ### Config Addition
+    
+    ```go
+    type Config struct {
+        // ... existing fields ...
+        Model string `json:"model,omitempty"`
+    }
+    ```
+    
+    Default: `"opus"` — resolves to latest Claude Opus via Claude CLI alias system.
+    
+    ### Spawner Change
+    
+    ```go
+    cmd := exec.CommandContext(ctx, "claude",
+        "--model", s.cfg.Model,  // NEW
+        "-p", prompt,
+        "--session-id", sessionID,
+        "--output-format", "stream-json",
+    )
+    ```
+    
+    Same for resume:
+    ```go
+    cmd := newCommand(ctx, "claude", "--model", model, "--resume", sessionID, "--output-format", "stream-json")
+    ```
+    
+    ### Valid Model Values
+    
+    Users can specify:
+    - Aliases: `opus`, `sonnet`, `haiku` (resolve to latest)
+    - Full IDs: `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`
+    
+    ---
+plan:
+  - phase: Config & Domain
+    tasks:
+      - text: Add `Model string` field to `Config` struct in `config.go` with JSON tag `"model,omitempty"`
+        done: true
+      - text: Add `Model: "opus"` default in `defaults.go`
+        done: true
+      - text: Add `KF_MODEL` env var support in `env_adapter.go`
+        done: true
+      - text: Add `Model string` field to `AgentInfo` in `domain/agent.go`
+        done: true
+  - phase: Spawner & Recovery
+    tasks:
+      - text: Add `Model string` to `SpawnDeveloperOpts` struct
+        done: true
+      - text: Add `Model string` to `ReviewerOpts` in `port/agent_spawner.go`
+        done: true
+      - text: Update `SpawnDeveloper()` — pass `--model` flag to `claude` command, record model in `AgentInfo`
+        done: true
+      - text: Update `SpawnReviewer()` — pass `--model` flag to `claude` command, record model in `AgentInfo`
+        done: true
+      - text: Update `recovery.go` resume command — pass `--model` flag
+        done: true
+  - phase: CLI & API
+    tasks:
+      - text: Update `implement.go` — pass `cfg.Model` to `SpawnDeveloperOpts`
+        done: true
+      - text: Update `openapi.yaml` — add `model` field to `Agent` schema
+        done: true
+      - text: Regenerate server code: `oapi-codegen` → `backend/internal/adapter/rest/gen/`
+        done: true
+      - text: Update `api_handler.go` — map `Model` field in agent response (`domainAgentToGen`)
+        done: true
+      - text: Update REST server `SpawnReviewer` call — pass model from config
+        done: true
+  - phase: Frontend & Tests
+    tasks:
+      - text: Add `model?: string` to `Agent` interface in `frontend/src/types/api.ts`
+        done: true
+      - text: Display model name on `AgentCard` (small label, e.g., "opus")
+        done: true
+      - text: Update config tests — verify model default and env override
+        done: true
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Verify `make build` succeeds
+        done: true
+extra: "{}"

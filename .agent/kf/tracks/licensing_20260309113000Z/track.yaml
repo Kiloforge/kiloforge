@@ -1,0 +1,95 @@
+id: licensing_20260309113000Z
+title: Add Apache 2.0 License and Upstream Attribution
+type: chore
+status: complete
+created: 2026-03-09T11:30:00Z
+updated: 2026-03-09T12:30:00Z
+spec:
+  summary: Add Apache License 2.0 to the project (requires attribution for derivative works) and provide proper attribution for the gemini-conductor MIT-licensed upstream from which the conductor skills were derived.
+  context: |
+    The project currently has no LICENSE file — only a one-word "MIT" mention in README.md. The conductor skills (kf-developer, kf-track-generator, kf-reviewer, etc.) are derivative works of the gemini-conductor project which was MIT-licensed. MIT requires the license and copyright notice be included in derivative works. Additionally, the project owner wants a permissive license that explicitly requires attribution for derivative works — Apache 2.0 is the standard choice for this.
+    
+    ### Why Apache 2.0
+    
+    - Permissive: allows commercial use, modification, distribution
+    - **Requires attribution**: derivative works must retain copyright notices, state changes made, and include the license
+    - Patent grant: includes explicit patent license (MIT does not)
+    - NOTICE file convention: standard place to list upstream attributions
+    - Compatible with MIT: MIT-licensed code can be included in Apache 2.0 projects
+  codebase_analysis: |
+    ### Current state
+    - `README.md` line 348: says "MIT" — needs updating to Apache 2.0
+    - No `LICENSE` file at repo root
+    - No `NOTICE` file
+    - No license headers in any source files
+    - No license field in `frontend/package.json`
+    - No attribution for gemini-conductor anywhere
+    - 16 skills in `skills/` directory — all derived from gemini-conductor patterns
+    
+    ### Files to create
+    - `LICENSE` — full Apache License 2.0 text
+    - `NOTICE` — project attribution + upstream MIT license for gemini-conductor
+    
+    ### Files to modify
+    - `README.md` — update license section from "MIT" to Apache 2.0 with badge/link
+    - `frontend/package.json` — add `"license": "Apache-2.0"` field
+  acceptance_criteria:
+    - `LICENSE` file at repo root contains full Apache License 2.0 text with correct copyright holder and year
+    - `NOTICE` file at repo root includes project name, copyright, and gemini-conductor MIT attribution
+    - README.md updated with Apache 2.0 license reference
+    - `frontend/package.json` includes `"license": "Apache-2.0"`
+    - Gemini-conductor MIT license text is reproduced in NOTICE file
+  out_of_scope: |
+    - Adding license headers to every source file (can be a follow-up if desired)
+    - License scanning or compliance tooling
+    - Dependency license audit
+  technical_notes: |
+    ### LICENSE file
+    
+    Standard Apache License 2.0 text from https://www.apache.org/licenses/LICENSE-2.0
+    
+    ### NOTICE file format
+    
+    ```
+    Kiloforge
+    Copyright 2026 [Copyright Holder]
+    
+    This product includes software developed as derivative works of:
+    
+      gemini-conductor
+      Copyright [year] [original author]
+      Licensed under the MIT License
+    
+      Permission is hereby granted, free of charge, to any person obtaining a copy
+      of this software and associated documentation files (the "Software"), to deal
+      in the Software without restriction, including without limitation the rights
+      to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+      copies of the Software...
+      [full MIT text]
+    ```
+    
+    The developer implementing this track should confirm the exact gemini-conductor copyright holder and year with the project owner.
+    
+    ---
+plan:
+  - phase: License Files
+    tasks:
+      - text: Create `LICENSE` at repo root with full Apache License 2.0 text, correct copyright year and holder
+        done: true
+      - text: Create `NOTICE` at repo root with Kiloforge copyright and gemini-conductor MIT attribution (include full MIT license text)
+        done: true
+  - phase: Update References
+    tasks:
+      - text: Update `README.md` — replace "MIT" license section with Apache 2.0 reference
+        done: true
+      - text: Add `"license": "Apache-2.0"` to `frontend/package.json`
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify LICENSE file is valid Apache 2.0 text
+        done: true
+      - text: Verify NOTICE file includes complete gemini-conductor MIT license text
+        done: true
+      - text: Verify `make build` succeeds (no broken references)
+        done: true
+extra: "{}"

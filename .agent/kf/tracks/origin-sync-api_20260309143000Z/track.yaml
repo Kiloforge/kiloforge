@@ -1,0 +1,130 @@
+id: origin-sync-api_20260309143000Z
+title: Origin Push/Pull REST API with Remote Branch Targeting
+type: feature
+status: complete
+created: 2026-03-09T14:30:00Z
+updated: 2026-03-09T15:00:00Z
+spec:
+  summary: "Add REST API endpoints for pushing local main to a configurable remote branch and pulling latest state from upstream. The push targets a user-specified remote branch (not necessarily `main`), allowing non-destructive contribution that preserves the upstream merge workflow."
+  context: |
+    `kf push` exists as a CLI command but has no REST API equivalent, so the dashboard can't trigger it. There's also no pull/fetch capability at all. Users need:
+    
+    1. **Push local main → remote branch** — push to a branch like `kf/main` or `kf/<slug>` on the upstream remote, so they don't clobber the remote's main branch. This lets users (or other developers) perform a proper merge/PR process on the upstream repo.
+    2. **Pull latest from upstream** — fetch and merge upstream changes into the internal Gitea clone to stay current.
+    
+    The existing `cli/push.go` already supports `--branch` flag and SSH key env setup. The API needs to expose this functionality with the remote branch as a required parameter.
+  codebase_analysis: |
+    ### Existing push implementation (`cli/push.go`)
+    - Fetches origin, checks ahead/behind status
+    - Warns on divergence
+    - Runs `git push origin <branch>` with SSH key env
+    - Supports `--all` flag for all projects
+    
+    ### Project domain
+    - `OriginRemote string` — the upstream URL
+    - `SSHKeyPath string` — SSH private key for auth
+    - `ProjectDir string` — path to internal Gitea clone
+    
+    ### Git adapter (`pool/git.go`)
+    - Only handles worktree operations, no push/pull
+    - Need to add or use direct exec for push/pull
+    
+    ### OpenAPI spec (`backend/api/openapi.yaml`)
+    - No push/pull endpoints exist
+    - Project endpoints at `/api/projects` and `/api/projects/{slug}`
+  acceptance_criteria:
+    - `POST /api/projects/{slug}/push` endpoint — pushes local main to specified remote branch
+    - `POST /api/projects/{slug}/pull` endpoint — fetches and merges upstream main into local
+    - `GET /api/projects/{slug}/sync-status` endpoint — returns ahead/behind counts vs upstream
+    - Push requires `remote_branch` parameter (e.g., `kf/main`, `kf/<slug>`)
+    - Push uses project's configured SSH key
+    - Pull fetches from origin and fast-forward merges (fails cleanly if diverged)
+    - Sync status shows: local branch, remote branch, ahead count, behind count, last synced timestamp
+    - Operations return structured results (success/failure, details)
+    - `go test ./...` passes
+    - `make build` succeeds
+  out_of_scope: |
+    - Frontend UI (separate FE track)
+    - Conflict resolution UI
+    - Automatic background sync/polling
+    - PR creation on upstream
+  technical_notes: |
+    ### Push endpoint
+    ```
+    POST /api/projects/{slug}/push
+    Body: { "remote_branch": "kf/main" }
+    Response: { "success": true, "local_branch": "main", "remote_branch": "kf/main", "commits_pushed": 3 }
+    ```
+    
+    The push always pushes local `main` to `origin/<remote_branch>`. This means:
+    - `git push origin main:refs/heads/kf/main` — push local main as remote `kf/main`
+    - Force push is NOT allowed by default (add `"force": true` option for advanced use)
+    
+    ### Pull endpoint
+    ```
+    POST /api/projects/{slug}/pull
+    Body: { "remote_branch": "main" }  // optional, defaults to "main"
+    Response: { "success": true, "commits_pulled": 5, "new_head": "abc123" }
+    ```
+    
+    Pull fetches from origin and attempts fast-forward merge. If diverged, returns error with ahead/behind counts rather than forcing.
+    
+    ### Sync status endpoint
+    ```
+    GET /api/projects/{slug}/sync-status
+    Response: {
+      "local_branch": "main",
+      "remote_url": "git@github.com:user/repo.git",
+      "ahead": 3,
+      "behind": 0,
+      "last_fetch": "2026-03-09T14:00:00Z",
+      "status": "ahead"  // "synced" | "ahead" | "behind" | "diverged" | "unknown"
+    }
+    ```
+    
+    ### Git operations
+    Extract a `GitSync` adapter (or extend existing git adapter) that handles:
+    - `FetchOrigin(projectDir, sshKeyPath)` — git fetch origin
+    - `PushToRemote(projectDir, localBranch, remoteBranch, sshKeyPath)` — git push origin local:remote
+    - `PullFromRemote(projectDir, remoteBranch, sshKeyPath)` — git fetch + merge
+    - `SyncStatus(projectDir)` — git rev-list counts
+    
+    ---
+plan:
+  - phase: Git Sync Adapter
+    tasks:
+      - text: Create `backend/internal/adapter/git/sync.go` — `GitSync` struct with `FetchOrigin()`, `PushToRemote()`, `PullFromRemote()`, `SyncStatus()` methods
+        done: true
+      - text: Implement SSH key env setup (reuse pattern from `cli/push.go`)
+        done: true
+      - text: Implement `PushToRemote(projectDir, localBranch, remoteBranch, sshKeyPath)` — runs `git push origin localBranch:refs/heads/remoteBranch`
+        done: true
+      - text: Implement `PullFromRemote(projectDir, remoteBranch, sshKeyPath)` — fetch + fast-forward merge
+        done: true
+      - text: Implement `SyncStatus(projectDir)` — returns ahead/behind counts via `git rev-list`
+        done: true
+      - text: Add tests for git sync operations (using test git repos)
+        done: true
+  - phase: OpenAPI Spec and Endpoints
+    tasks:
+      - text: Add `POST /api/projects/{slug}/push`, `POST /api/projects/{slug}/pull`, `GET /api/projects/{slug}/sync-status` to `openapi.yaml` with request/response schemas
+        done: true
+      - text: Regenerate server code
+        done: true
+      - text: Implement `PushProject()` handler — validate slug, get project, call `GitSync.PushToRemote()`
+        done: true
+      - text: Implement `PullProject()` handler — validate slug, get project, call `GitSync.PullFromRemote()`
+        done: true
+      - text: Implement `GetSyncStatus()` handler — call `GitSync.SyncStatus()`, return structured response
+        done: true
+      - text: Wire `GitSync` into REST server
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify `go test ./...` passes
+        done: true
+      - text: Verify `make build` succeeds
+        done: true
+      - text: Verify push endpoint works with SSH key auth
+        done: true
+extra: "{}"

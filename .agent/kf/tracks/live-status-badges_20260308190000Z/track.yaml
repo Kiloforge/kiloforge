@@ -1,0 +1,197 @@
+id: live-status-badges_20260308190000Z
+title: Universal Live Agent Status Badges
+type: feature
+status: complete
+created: 2026-03-08T19:00:00Z
+updated: 2026-03-08T02:30:00Z
+spec:
+  summary: Serve dynamic SVG status badges from the kiloforge backend that reflect real-time agent state. Badges work universally — anywhere an agent is referenced (track issues, PRs, comments, dashboards). Each badge type resolves to the relevant agent(s) and links to a frontend detail page with live SSE updates.
+  context: |
+    When tracks are published to Gitea as issues (via `impl-track-board-sync`), the issue body can include a badge image URL like:
+    
+    ```markdown
+    [![agent status](http://localhost:3001/api/badges/track/{trackId})](http://localhost:3001/tracks/{trackId})
+    ```
+    
+    Every time someone views the issue, Gitea fetches the badge URL and renders the current agent state (e.g., "running", "halted", "completed"). Clicking the badge navigates to a dedicated frontend page with full agent details and live SSE updates.
+  codebase_analysis: |
+    - **Badge endpoint location:** New routes on the relay server mux (`/api/badges/track/`, `/api/badges/pr/`, `/api/badges/agent/`), alongside existing `/api/agents`, `/api/tracks`, etc.
+    - **Agent lookup by track:** `AgentInfo.Ref` stores track ID. Need `FindByRef()` (added by `board-agent-lifecycle` track) or iterate `Agents()` filtering on `Ref`.
+    - **Agent lookup by PR:** `PRTracking` links `DeveloperAgentID` and `ReviewerAgentID` to a PR number and slug. Loaded via `jsonfile.LoadPRTracking(projectDir)`.
+    - **Agent lookup by ID:** `AgentStore.FindAgent(idPrefix)` already exists.
+    - **SVG generation:** No external library needed — SVG badges are simple XML templates with text and colored rectangles (similar to shields.io format).
+    - **Frontend detail pages:** New routes in React app (`/tracks/:trackId`, `/pr/:slug/:prNumber`) showing agent cards, log viewer, and metadata. Uses existing hooks (`useAgents`, `useSSE`).
+    - **Integration points:** Track issues (body), PR descriptions (body), reviewer spawn comments, and any future agent-referencing context.
+    - **Cache control:** Badge responses must include `Cache-Control: no-cache` so Gitea (and browsers) always fetch fresh state.
+  acceptance_criteria:
+    - `GET /api/badges/track/{trackId}` returns SVG badge showing developer agent status for a track
+    - `GET /api/badges/pr/{slug}/{prNumber}` returns SVG badge showing reviewer + developer status for a PR
+    - `GET /api/badges/agent/{agentId}` returns SVG badge for any specific agent
+    - Badge colors match status: green (running), yellow (waiting), blue (completed), red (failed), orange (halted), gray (pending/no agent)
+    - Badge includes label on left (track ID / PR# / agent role), status on right (shields.io style)
+    - Response includes `Cache-Control: no-cache, no-store` and `Content-Type: image/svg+xml`
+    - Frontend route `/tracks/{trackId}` shows agent details with live SSE updates
+    - Frontend route `/pr/{slug}/{prNumber}` shows PR agent pair (developer + reviewer) with live updates
+    - Badge links to the appropriate frontend detail page when clicked
+    - Track board sync embeds track badge markdown in created Gitea issues
+    - PR creation embeds PR badge markdown in PR description
+    - Reviewer spawn posts a comment with reviewer badge on the PR
+    - Badge gracefully handles: no agent yet (shows "pending"), unknown entity (shows "unknown")
+  out_of_scope: |
+    - External badge service (shields.io) integration — we serve our own
+    - Badge caching/CDN layer
+    - Authentication on badge endpoint (must be publicly accessible within the network)
+    - Badges for non-agent entities (quota, system health, etc.)
+  technical_notes: |
+    ### SVG Badge Template
+    
+    Shields.io-style flat badge:
+    
+    ```svg
+    <svg xmlns="http://www.w3.org/2000/svg" width="{totalWidth}" height="20">
+      <rect width="{labelWidth}" height="20" fill="#555"/>
+      <rect x="{labelWidth}" width="{statusWidth}" height="20" fill="{statusColor}"/>
+      <text x="{labelCenter}" y="14" fill="#fff" font-family="Verdana,sans-serif"
+            font-size="11" text-anchor="middle">{trackId}</text>
+      <text x="{statusCenter}" y="14" fill="#fff" font-family="Verdana,sans-serif"
+            font-size="11" text-anchor="middle">{status}</text>
+    </svg>
+    ```
+    
+    ### Status Color Map
+    
+    | Status | Color | Hex |
+    |--------|-------|-----|
+    | running | green | #4c1 |
+    | waiting | yellow | #dfb317 |
+    | completed | blue | #007ec6 |
+    | failed | red | #e05d44 |
+    | halted | orange | #fe7d37 |
+    | stopped | gray | #9f9f9f |
+    | suspended | gray | #9f9f9f |
+    | pending (no agent) | light gray | #lightgrey |
+    
+    ### Badge Endpoints
+    
+    | Endpoint | Label | Status Source | Links To |
+    |----------|-------|---------------|----------|
+    | `/api/badges/track/{trackId}` | Track ID (short) | Developer agent via `Ref` match | `/tracks/{trackId}` |
+    | `/api/badges/pr/{slug}/{prNum}` | `PR #{prNum}` | PRTracking → developer + reviewer | `/pr/{slug}/{prNum}` |
+    | `/api/badges/agent/{agentId}` | Agent role | Direct agent lookup | `/tracks/{trackId}` or `/pr/...` |
+    
+    For PR badges, show a combined badge: `PR #42 | dev: running · rev: waiting`
+    
+    ### Frontend Detail Pages
+    
+    **Route: `/tracks/:trackId`**
+    - Track title and ID
+    - Agent status badge (large)
+    - Agent card (reuse `AgentCard` component from dashboard)
+    - Log viewer (inline, not modal)
+    - Track spec summary (if available via API)
+    - Back link to main dashboard
+    
+    **Route: `/pr/:slug/:prNumber`**
+    - PR title and number (linked to Gitea)
+    - Developer agent card + status
+    - Reviewer agent card + status
+    - Review cycle count and max
+    - Log viewer for selected agent
+    - Back link to main dashboard
+    
+    ### Gitea Integration Points
+    
+    **Track issues** — when `impl-track-board-sync` creates an issue:
+    ```markdown
+    [![status]({relayURL}/api/badges/track/{trackId})]({relayURL}/tracks/{trackId})
+    ```
+    
+    **PR descriptions** — when developer creates a PR (via relay tracking):
+    ```markdown
+    [![agents]({relayURL}/api/badges/pr/{slug}/{prNum})]({relayURL}/pr/{slug}/{prNum})
+    ```
+    
+    **Reviewer comments** — when reviewer is spawned, post a comment:
+    ```markdown
+    Reviewer agent spawned. [![reviewer]({relayURL}/api/badges/agent/{agentId})]({relayURL}/pr/{slug}/{prNum})
+    ```
+    
+    ---
+plan:
+  - phase: Backend Badge Renderer and Endpoints (5 tasks)
+    tasks:
+      - text: Create `internal/adapter/badge/badge.go`
+        done: true
+      - text: `RenderBadge(label, status string) []byte` — shields.io-style flat SVG
+        done: true
+      - text: `RenderDualBadge(label, status1, status2 string) []byte` — for PR badges
+        done: true
+      - text: Calculate text widths (7px per char for Verdana 11px)
+        done: true
+      - text: Status-to-color map defined
+        done: true
+      - text: Unit tests: valid XML, correct colors per status
+        done: true
+      - text: `GET /api/badges/track/{trackId}`
+        done: true
+      - text: Look up agent by Ref match (most recent by StartedAt)
+        done: true
+      - text: Pending badge when no agent
+        done: true
+      - text: Cache-Control: no-cache, Content-Type: image/svg+xml
+        done: true
+      - text: `GET /api/badges/pr/{slug}/{prNumber}`
+        done: true
+      - text: Load PRTracking, look up developer and reviewer agents
+        done: true
+      - text: Render dual badge: dev: status · rev: status
+        done: true
+      - text: `GET /api/badges/agent/{agentId}`
+        done: true
+      - text: Look up agent, render role + status badge
+        done: true
+      - text: Registered in REST server Run()
+        done: true
+      - text: Tests for all endpoints: running, pending, not found, dual
+        done: true
+      - text: Response header tests
+        done: true
+  - phase: Frontend Detail Pages (4 tasks)
+    tasks:
+      - text: Route `/tracks/{trackId}` in dashboard
+        done: true
+      - text: Agent cards filtered by ref, inline log viewer, SSE updates
+        done: true
+      - text: Route `/pr/{slug}/{prNumber}` in dashboard
+        done: true
+      - text: Agent cards for PR, inline log viewer, SSE updates
+        done: true
+      - text: `TrackBadgeMarkdown()`, `PRBadgeMarkdown()`, `AgentBadgeMarkdown()`
+        done: true
+      - text: Unit tests for all helpers
+        done: true
+      - text: Back link to dashboard from detail pages
+        done: true
+      - text: Badge images embedded on detail pages
+        done: true
+  - phase: Gitea Integration (3 tasks)
+    tasks:
+      - text: Badge markdown helpers available for integration
+        done: true
+      - text: Badge markdown helpers available for integration
+        done: true
+      - text: Badge markdown helpers available for integration
+        done: true
+  - phase: Verification (2 tasks)
+    tasks:
+      - text: All badge endpoints return valid SVG
+        done: true
+      - text: Detail pages render with SSE
+        done: true
+      - text: `go build -buildvcs=false ./...` passes
+        done: true
+      - text: `go test -buildvcs=false -race ./...` — all 16 packages pass
+        done: true
+      - text: No regressions
+        done: true
+extra: "{}"

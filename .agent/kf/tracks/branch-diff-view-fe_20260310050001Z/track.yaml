@@ -1,0 +1,84 @@
+id: branch-diff-view-fe_20260310050001Z
+title: Branch Diff View with Agent Discuss Button (Frontend)
+type: feature
+status: complete
+created: 2026-03-10T05:00:01Z
+updated: 2026-03-10T05:00:01Z
+spec:
+  summary: Add a diff viewer to the dashboard that shows file-by-file unified diffs for any agent's working branch vs main, with a "Discuss" button that opens the agent terminal for direct feedback. Also add the missing role badge to the AgentTerminal modal header.
+  context: The diff viewer replaces Gitea's PR review UI, providing a lightweight in-dashboard way to review agent work. Users can see what an agent changed, then click "Discuss" to talk to the agent about those changes via the existing WebSocket terminal.
+  codebase_analysis: |
+    - **AgentCard** (`components/AgentCard.tsx`) already shows role badges — the modal needs the same treatment
+    - **AgentTerminal** (`components/AgentTerminal.tsx`) shows only agent ID in header, no role badge
+    - **No diff viewer** exists — need a new component
+    - **CSS Modules** with custom properties — no UI framework, all custom styled
+    - **TanStack Query v5** for data fetching — new endpoints will use `useQuery`
+    - **react-diff-viewer-continued** is a good fit — React component for unified/split diffs with syntax highlighting
+    - **AgentDetailPage** exists at `/agents/:id` — good place to add a diff tab/section
+  acceptance_criteria:
+    - Diff viewer component renders file-by-file unified diffs with syntax highlighting
+    - File list sidebar/header showing changed files with status indicators (A/M/D/R) and stats
+    - Click a file to scroll to its diff
+    - "Discuss" button opens AgentTerminal for the agent working on that branch
+    - "View Diff" button on AgentCard for agents with active worktrees
+    - Diff view accessible from agent detail page
+    - Summary stats shown: files changed, insertions, deletions
+    - Loading, empty, and error states handled
+    - Role badge added to AgentTerminal modal header
+    - Role badge added to AgentDetailPage header (if missing)
+  out_of_scope: |
+    - Inline commenting or review annotations
+    - Commit-by-commit navigation
+    - File editing from the diff view
+    - Split diff mode (unified only for v1)
+  technical_notes: |
+    ### Diff Viewer Component
+    
+    Use `react-diff-viewer-continued` for rendering:
+    - Unified diff mode
+    - Syntax highlighting via included Prism support
+    - Dark theme matching dashboard design tokens
+    - Collapsible file sections
+    
+    ### Component Structure
+    
+    ```
+    DiffView/
+      DiffView.tsx          — Main container, fetches diff data
+      DiffView.module.css
+      FileList.tsx          — Sidebar listing changed files with status badges
+      FileDiff.tsx          — Single file diff with collapsible hunks
+      DiffStats.tsx         — Summary bar (X files, +Y, -Z)
+    ```
+    
+    ### Integration Points
+    
+    1. **AgentCard** — Add "View Diff" button (only shown when agent has a worktree with changes)
+    2. **AgentDetailPage** — Add diff section below the existing terminal/log view
+    3. **AgentTerminal** — Add role badge to modal header next to agent ID
+    4. **New route** — Consider `/agents/:id/diff` or keep as a section within agent detail
+    
+    ### Data Fetching
+    
+    ```typescript
+    // New TanStack Query hooks
+    useProjectDiff(slug, branch)   // GET /api/projects/{slug}/diff?branch={branch}
+    useProjectBranches(slug)       // GET /api/projects/{slug}/branches
+    ```
+    
+    ### Role Badge in Terminal
+    
+    The AgentTerminal currently receives only `agentId`. It needs the agent's role to display the badge. Options:
+    - Pass `role` as a prop (requires AgentCard/caller to provide it)
+    - Fetch agent details inside the terminal (adds a query but is self-contained)
+    - Preferred: pass as prop since callers already have the agent object
+    
+    ---
+plan:
+  - phase: Dependencies and Role Badge Fix (Foundation)
+    tasks: []
+  - phase: Diff Viewer Components (Core)
+    tasks: []
+  - phase: Integration (Polish)
+    tasks: []
+extra: "{}"
