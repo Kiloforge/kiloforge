@@ -266,15 +266,14 @@ func (h *APIHandler) checkConsent() string {
 // checkSetup returns the project slug if kiloforge setup is required for the given project.
 // Returns empty string if setup is complete or project not found.
 func (h *APIHandler) checkSetup(projectSlug string) string {
-	if projectSlug == "" || h.projects == nil {
+	if projectSlug == "" || h.projects == nil || h.trackReader == nil {
 		return ""
 	}
 	proj, ok := h.findProject(projectSlug)
 	if !ok {
 		return ""
 	}
-	productPath := filepath.Join(proj.ProjectDir, ".agent", "conductor", "product.md")
-	if _, err := os.Stat(productPath); os.IsNotExist(err) {
+	if !h.trackReader.IsInitialized(proj.ProjectDir) {
 		return projectSlug
 	}
 	return ""
@@ -282,12 +281,11 @@ func (h *APIHandler) checkSetup(projectSlug string) string {
 
 // isSetupRequired checks if any registered project is missing kiloforge setup.
 func (h *APIHandler) isSetupRequired() bool {
-	if h.projects == nil {
+	if h.projects == nil || h.trackReader == nil {
 		return false
 	}
 	for _, p := range h.projects.List() {
-		productPath := filepath.Join(p.ProjectDir, ".agent", "conductor", "product.md")
-		if _, err := os.Stat(productPath); os.IsNotExist(err) {
+		if !h.trackReader.IsInitialized(p.ProjectDir) {
 			return true
 		}
 	}
@@ -1786,8 +1784,7 @@ func (h *APIHandler) GetTrackDetail(_ context.Context, req gen.GetTrackDetailReq
 		return gen.GetTrackDetail404JSONResponse{Error: fmt.Sprintf("project %q not found", projectSlug)}, nil
 	}
 
-	conductorDir := filepath.Join(projectDir, ".agent", "conductor")
-	detail, err := h.trackReader.GetTrackDetail(conductorDir, req.TrackId)
+	detail, err := h.trackReader.GetTrackDetail(projectDir, req.TrackId)
 	if err != nil {
 		return gen.GetTrackDetail404JSONResponse{Error: err.Error()}, nil
 	}
@@ -1842,13 +1839,21 @@ func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestOb
 				break
 			}
 		}
-	} else if h.projects != nil {
-		// Try to find the track across all projects.
+	} else if h.projects != nil && h.trackReader != nil {
+		// Try to find the track across all projects using SDK.
 		for _, p := range h.projects.List() {
-			trackDir := filepath.Join(p.ProjectDir, ".agent", "conductor", "tracks", trackID)
-			if _, err := os.Stat(trackDir); err == nil {
-				projectSlug = p.Slug
-				projectDir = p.ProjectDir
+			tracks, err := h.trackReader.DiscoverTracks(p.ProjectDir)
+			if err != nil {
+				continue
+			}
+			for _, t := range tracks {
+				if t.ID == trackID {
+					projectSlug = p.Slug
+					projectDir = p.ProjectDir
+					break
+				}
+			}
+			if projectDir != "" {
 				break
 			}
 		}
@@ -1858,27 +1863,11 @@ func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestOb
 		return gen.DeleteTrack404JSONResponse{Error: fmt.Sprintf("track %q not found in any project", trackID)}, nil
 	}
 
-	// Remove track directory.
-	trackDir := filepath.Join(projectDir, ".agent", "conductor", "tracks", trackID)
-	if _, err := os.Stat(trackDir); os.IsNotExist(err) {
-		return gen.DeleteTrack404JSONResponse{Error: fmt.Sprintf("track %q not found", trackID)}, nil
-	}
-	if err := os.RemoveAll(trackDir); err != nil {
-		return gen.DeleteTrack500JSONResponse{Error: fmt.Sprintf("remove track dir: %v", err)}, nil
-	}
-
-	// Remove from tracks.md — read, filter out the line, write back.
-	tracksMdPath := filepath.Join(projectDir, ".agent", "conductor", "tracks.md")
-	if data, err := os.ReadFile(tracksMdPath); err == nil {
-		lines := strings.Split(string(data), "\n")
-		var filtered []string
-		for _, line := range lines {
-			if strings.Contains(line, trackID) {
-				continue
-			}
-			filtered = append(filtered, line)
+	// Remove track via SDK (deletes track dir, removes from registry, prunes deps/conflicts).
+	if h.trackReader != nil {
+		if err := h.trackReader.RemoveTrack(projectDir, trackID); err != nil {
+			return gen.DeleteTrack500JSONResponse{Error: fmt.Sprintf("remove track: %v", err)}, nil
 		}
-		_ = os.WriteFile(tracksMdPath, []byte(strings.Join(filtered, "\n")), 0o644)
 	}
 
 	// Remove board card if board service is available.
@@ -1939,10 +1928,9 @@ func (h *APIHandler) GetProjectSetupStatus(_ context.Context, req gen.GetProject
 	if !ok {
 		return gen.GetProjectSetupStatus404JSONResponse{Error: "project not found"}, nil
 	}
-	productPath := filepath.Join(proj.ProjectDir, ".agent", "conductor", "product.md")
-	_, err := os.Stat(productPath)
+	initialized := h.trackReader != nil && h.trackReader.IsInitialized(proj.ProjectDir)
 	return gen.GetProjectSetupStatus200JSONResponse{
-		SetupComplete: err == nil,
+		SetupComplete: initialized,
 		ProjectSlug:   req.Slug,
 	}, nil
 }
