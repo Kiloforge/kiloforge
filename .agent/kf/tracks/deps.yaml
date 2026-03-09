@@ -45,9 +45,6 @@ e2e-git-origin-sync_20260309194840Z:
 
 e2e-health-preflight-onboarding_20260309194831Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-e2e-infra-mock-agent_20260309194830Z: []
-
 e2e-interactive-terminal_20260309194835Z:
   - e2e-infra-mock-agent_20260309194830Z
 

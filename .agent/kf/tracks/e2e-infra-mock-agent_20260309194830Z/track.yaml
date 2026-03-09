@@ -2,8 +2,8 @@ id: e2e-infra-mock-agent_20260309194830Z
 title: E2E Test Infrastructure and Mock Agent Binary
 type: chore
 status: pending
-created: "2026-03-09T19:48:30Z"
-updated: "2026-03-09T19:48:30Z"
+created: 2026-03-09T19:48:30Z
+updated: 2026-03-09
 spec:
   summary: Set up Playwright E2E test infrastructure with a mock agent binary that simulates Claude CLI stream-JSON output, enabling all subsequent E2E tracks to test against a fully wired server without requiring a real Claude API key.
   context: |
@@ -37,7 +37,6 @@ spec:
     - Documentation in test directory explaining mock agent usage and E2E conventions
     - All E2E tests use Playwright to drive the browser and verify UI behavior
     - Product guidelines updated to mandate E2E test development (via Playwright plugin) for all agents building UI functionality
-  conflict_risk: - LOW — adds new test infrastructure files only, no production code changes.
   out_of_scope: |
     - Testing any specific application feature (that's for subsequent tracks)
     - CI pipeline integration (can be a follow-up)
@@ -98,45 +97,46 @@ spec:
     When building this track, use the Playwright MCP skill to verify E2E tests work in the browser. Run tests in headed mode during development for visual verification.
     
     ---
+  conflict_risk: - LOW — adds new test infrastructure files only, no production code changes.
 plan:
   - phase: Playwright Setup
     tasks:
       - text: Install Playwright and dependencies — `npm init playwright@latest` in `frontend/`, configure `playwright.config.ts` with headless/headed toggle via `HEADED` env var, set base URL to be dynamic
-        done: false
+        done: true
       - text: Create base test fixture in `frontend/e2e/fixtures.ts` — extend Playwright `test` with custom `serverURL` fixture that reads from environment, add `apiClient` helper for direct REST calls
-        done: false
+        done: true
       - text: Add Playwright to `.gitignore` (test-results/, playwright-report/) and verify `npx playwright test` runs with a trivial smoke test
-        done: false
+        done: true
   - phase: Mock Agent Binary
     tasks:
       - text: Create `backend/internal/adapter/agent/testdata/mock-agent/main.go` — parse CLI flags (`--output-format`, `--model`, `--verbose`, `--print`, `-p`), read env vars (`MOCK_AGENT_EVENTS`, `MOCK_AGENT_DELAY`, `MOCK_AGENT_EXIT_CODE`, `MOCK_AGENT_INTERACTIVE`, `MOCK_AGENT_FAIL_AFTER`)
-        done: false
+        done: true
       - text: Implement default stream-JSON output — emit `init`, `content_block_delta`, and `result` events with configurable delays between them
-        done: false
+        done: true
       - text: Implement custom event sequence — when `MOCK_AGENT_EVENTS` is set, parse JSON array and emit those events instead of defaults
-        done: false
+        done: true
       - text: Implement interactive mode — when `MOCK_AGENT_INTERACTIVE=true`, emit `init`, then read stdin lines and echo as `content_block_delta` events, emit `result` on EOF
-        done: false
+        done: true
       - text: Write unit tests for mock agent — verify default output, custom events, interactive mode, exit codes, and fail-after behavior; tests go in `backend/internal/adapter/agent/testdata/mock-agent/main_test.go`
-        done: false
+        done: true
   - phase: E2E Server Helpers
     tasks:
       - text: Create `backend/internal/adapter/rest/e2e_helpers_test.go` with `//go:build e2e` tag — implement `startE2EServer()` that builds mock agent binary to temp dir, creates temp SQLite DB, boots Fiber server with mock agent path override, returns server URL + cleanup func
-        done: false
+        done: true
       - text: Implement `seedTestData()` helper — create test project, test tracks (various statuses), and test agents via direct service calls or REST API
-        done: false
+        done: true
       - text: Implement `cleanupTestData()` helper — reset SQLite database between tests, kill any spawned mock agent processes
-        done: false
+        done: true
       - text: Write health check smoke test — `TestE2E_HealthCheck` starts server, hits `GET /api/health`, verifies 200 response with expected body structure
-        done: false
+        done: true
   - phase: Integration and Makefile
     tasks:
       - text: Add `test-e2e` target to `Makefile` — build mock agent, start test server, run `npx playwright test`, tear down; use `//go:build e2e` tag so `go test ./...` skips E2E by default
-        done: false
+        done: true
       - text: Create `frontend/e2e/README.md` documenting E2E conventions — mock agent usage, env vars, how to run headed vs headless, how to add new E2E tests, test data seeding
-        done: false
+        done: true
       - text: Run full verification — execute `make test-e2e`, confirm health check smoke test passes end-to-end with Playwright driving the browser, fix any issues
-        done: false
+        done: true
       - text: Update `.agent/kf/product-guidelines.md` to add a section instructing that all agents building UI functionality must develop automated E2E tests using the Playwright MCP plugin — tests should cover happy path, edge cases, and expected failures, and must use the mock agent binary (never a real Claude API key) for any agent-related flows
-        done: false
-extra: "{}"
+        done: true
+extra: {}
