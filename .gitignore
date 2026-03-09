@@ -2,8 +2,12 @@
 /.build/
 /bin/
 
-# Frontend build output is committed so //go:embed always has correct assets.
-# Rebuild with `make build-frontend` before committing frontend changes.
+# Frontend build output — built on demand via `make build-frontend`.
+# The ensure-dist Makefile target creates a placeholder if dist/ is missing.
+backend/internal/adapter/dashboard/dist/
+
+# Runtime artifacts
+backend/internal/adapter/rest/state.json
 
 # Node
 node_modules/
