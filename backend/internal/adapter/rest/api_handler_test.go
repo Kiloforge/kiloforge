@@ -883,7 +883,7 @@ func TestMoveCard_EmitsBoardUpdate(t *testing.T) {
 	boardSvc := service.NewNativeBoardService(newTestBoardStore(dir))
 
 	// Create a board with a card.
-	_, _ = boardSvc.SyncFromTracks("proj", []service.TrackEntry{
+	_, _ = boardSvc.SyncFromTracks("proj", []port.TrackEntry{
 		{ID: "track-1", Title: "Test Track", Status: "pending"},
 	}, nil)
 

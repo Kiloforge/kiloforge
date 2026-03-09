@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 )
 
@@ -130,7 +131,7 @@ func TestNativeBoardService_SyncFromTracks(t *testing.T) {
 	store := newMockNativeBoardStore()
 	svc := service.NewNativeBoardService(store)
 
-	tracks := []service.TrackEntry{
+	tracks := []port.TrackEntry{
 		{ID: "track-1", Title: "New Track", Status: service.StatusPending},
 		{ID: "track-2", Title: "In Progress", Status: service.StatusInProgress},
 		{ID: "track-3", Title: "Done", Status: service.StatusComplete},
@@ -174,7 +175,7 @@ func TestNativeBoardService_SyncFromTracks_UpdateExisting(t *testing.T) {
 	}
 	svc := service.NewNativeBoardService(store)
 
-	tracks := []service.TrackEntry{
+	tracks := []port.TrackEntry{
 		{ID: "track-1", Title: "Old Title", Status: service.StatusInProgress},
 		{ID: "track-2", Title: "New", Status: service.StatusPending},
 	}

@@ -8,6 +8,9 @@ import (
 	"kiloforge/internal/core/port"
 )
 
+// Compile-time check that NativeBoardService satisfies port.BoardService.
+var _ port.BoardService = (*NativeBoardService)(nil)
+
 // NativeBoardService manages the native track board.
 type NativeBoardService struct {
 	store port.BoardStore
@@ -31,15 +34,8 @@ func (s *NativeBoardService) GetBoard(slug string) (*domain.BoardState, error) {
 	return board, nil
 }
 
-// MoveCardResult holds the outcome of a card move.
-type MoveCardResult struct {
-	TrackID    string `json:"track_id"`
-	FromColumn string `json:"from_column"`
-	ToColumn   string `json:"to_column"`
-}
-
 // MoveCard moves a card to a new column.
-func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*MoveCardResult, error) {
+func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*port.BoardMoveCardResult, error) {
 	if !domain.IsValidColumn(toColumn) {
 		return nil, fmt.Errorf("invalid column: %s", toColumn)
 	}
@@ -59,7 +55,7 @@ func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*MoveCard
 
 	fromColumn := card.Column
 	if fromColumn == toColumn {
-		return &MoveCardResult{TrackID: trackID, FromColumn: fromColumn, ToColumn: toColumn}, nil
+		return &port.BoardMoveCardResult{TrackID: trackID, FromColumn: fromColumn, ToColumn: toColumn}, nil
 	}
 
 	card.Column = toColumn
@@ -72,22 +68,15 @@ func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*MoveCard
 		return nil, fmt.Errorf("save board: %w", err)
 	}
 
-	return &MoveCardResult{
+	return &port.BoardMoveCardResult{
 		TrackID:    trackID,
 		FromColumn: fromColumn,
 		ToColumn:   toColumn,
 	}, nil
 }
 
-// SyncResult holds the results of a track sync operation.
-type SyncResult struct {
-	Created   int
-	Updated   int
-	Unchanged int
-}
-
 // SyncFromTracks syncs the board from discovered tracks.
-func (s *NativeBoardService) SyncFromTracks(slug string, tracks []TrackEntry, trackTypes map[string]string) (*SyncResult, error) {
+func (s *NativeBoardService) SyncFromTracks(slug string, tracks []port.TrackEntry, trackTypes map[string]string) (*port.BoardSyncResult, error) {
 	board, err := s.store.GetBoard(slug)
 	if err != nil {
 		return nil, fmt.Errorf("get board: %w", err)
@@ -96,7 +85,7 @@ func (s *NativeBoardService) SyncFromTracks(slug string, tracks []TrackEntry, tr
 		board = domain.NewBoardState()
 	}
 
-	result := &SyncResult{}
+	result := &port.BoardSyncResult{}
 	now := time.Now().Truncate(time.Second)
 
 	for _, t := range tracks {

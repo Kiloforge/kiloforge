@@ -88,13 +88,13 @@ func NewImplementService(
 }
 
 // ValidateTrack checks that a track exists in the project and is in pending status.
-func (s *ImplementService) ValidateTrack(projectDir, trackID string) (*TrackEntry, error) {
+func (s *ImplementService) ValidateTrack(projectDir, trackID string) (*port.TrackEntry, error) {
 	tracks, err := DiscoverTracks(projectDir)
 	if err != nil {
 		return nil, fmt.Errorf("discover tracks: %w", err)
 	}
 
-	var found *TrackEntry
+	var found *port.TrackEntry
 	for i := range tracks {
 		if tracks[i].ID == trackID {
 			found = &tracks[i]
@@ -193,7 +193,7 @@ func (e *TrackInProgressError) Error() string {
 }
 
 // ListPendingTracks returns tracks with pending status in the given project.
-func (s *ImplementService) ListPendingTracks(projectDir string) ([]TrackEntry, error) {
+func (s *ImplementService) ListPendingTracks(projectDir string) ([]port.TrackEntry, error) {
 	tracks, err := DiscoverTracks(projectDir)
 	if err != nil {
 		return nil, fmt.Errorf("discover tracks: %w", err)

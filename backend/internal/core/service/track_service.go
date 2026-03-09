@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"kiloforge/internal/core/port"
 )
 
 const (
@@ -18,17 +20,10 @@ const (
 	StatusInReview   = "in-review"
 )
 
-// TrackEntry represents a parsed track from tracks.md.
-type TrackEntry struct {
-	ID     string
-	Title  string
-	Status string
-}
-
 // ParseTracks parses track entries from a tracks.md reader.
 // This is a pure function — I/O stays in the caller.
-func ParseTracks(r io.Reader) ([]TrackEntry, error) {
-	var tracks []TrackEntry
+func ParseTracks(r io.Reader) ([]port.TrackEntry, error) {
+	var tracks []port.TrackEntry
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -41,8 +36,8 @@ func ParseTracks(r io.Reader) ([]TrackEntry, error) {
 }
 
 // FilterByStatus returns tracks matching the given status.
-func FilterByStatus(tracks []TrackEntry, status string) []TrackEntry {
-	var result []TrackEntry
+func FilterByStatus(tracks []port.TrackEntry, status string) []port.TrackEntry {
+	var result []port.TrackEntry
 	for _, t := range tracks {
 		if t.Status == status {
 			result = append(result, t)
@@ -52,7 +47,7 @@ func FilterByStatus(tracks []TrackEntry, status string) []TrackEntry {
 }
 
 // DiscoverTracks reads .agent/conductor/tracks.md from projectDir and parses track entries.
-func DiscoverTracks(projectDir string) ([]TrackEntry, error) {
+func DiscoverTracks(projectDir string) ([]port.TrackEntry, error) {
 	path := filepath.Join(projectDir, ".agent", "conductor", "tracks.md")
 	f, err := os.Open(path)
 	if err != nil {
@@ -60,26 +55,6 @@ func DiscoverTracks(projectDir string) ([]TrackEntry, error) {
 	}
 	defer f.Close()
 	return ParseTracks(f)
-}
-
-// TrackDetail contains the full detail of a track including artifact contents.
-type TrackDetail struct {
-	ID        string
-	Title     string
-	Status    string
-	Type      string
-	Spec      string
-	Plan      string
-	Phases    ProgressCount
-	Tasks     ProgressCount
-	CreatedAt string
-	UpdatedAt string
-}
-
-// ProgressCount tracks total vs completed counts.
-type ProgressCount struct {
-	Total     int
-	Completed int
 }
 
 // trackMetadata mirrors the JSON structure of metadata.json.
@@ -102,13 +77,13 @@ type trackMetadata struct {
 
 // GetTrackDetail reads track artifacts from disk and returns a TrackDetail.
 // conductorDir is the path to the .agent/conductor directory.
-func GetTrackDetail(conductorDir, trackID string) (*TrackDetail, error) {
+func GetTrackDetail(conductorDir, trackID string) (*port.TrackDetail, error) {
 	trackDir := filepath.Join(conductorDir, "tracks", trackID)
 	if _, err := os.Stat(trackDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("track %q not found", trackID)
 	}
 
-	detail := &TrackDetail{ID: trackID}
+	detail := &port.TrackDetail{ID: trackID}
 
 	// Read metadata.json if present.
 	metaPath := filepath.Join(trackDir, "metadata.json")
@@ -120,8 +95,8 @@ func GetTrackDetail(conductorDir, trackID string) (*TrackDetail, error) {
 			detail.Type = meta.Type
 			detail.CreatedAt = meta.Created
 			detail.UpdatedAt = meta.Updated
-			detail.Phases = ProgressCount{Total: meta.Phases.Total, Completed: meta.Phases.Completed}
-			detail.Tasks = ProgressCount{Total: meta.Tasks.Total, Completed: meta.Tasks.Completed}
+			detail.Phases = port.ProgressCount{Total: meta.Phases.Total, Completed: meta.Phases.Completed}
+			detail.Tasks = port.ProgressCount{Total: meta.Tasks.Total, Completed: meta.Tasks.Completed}
 		}
 	}
 
@@ -138,15 +113,15 @@ func GetTrackDetail(conductorDir, trackID string) (*TrackDetail, error) {
 	return detail, nil
 }
 
-func parseTrackLine(line string) (TrackEntry, bool) {
+func parseTrackLine(line string) (port.TrackEntry, bool) {
 	line = strings.TrimSpace(line)
 	if !strings.HasPrefix(line, "|") {
-		return TrackEntry{}, false
+		return port.TrackEntry{}, false
 	}
 
 	parts := strings.Split(line, "|")
 	if len(parts) < 5 {
-		return TrackEntry{}, false
+		return port.TrackEntry{}, false
 	}
 
 	statusCell := strings.TrimSpace(parts[1])
@@ -166,14 +141,14 @@ func parseTrackLine(line string) (TrackEntry, bool) {
 	case "[r]":
 		status = StatusInReview
 	default:
-		return TrackEntry{}, false
+		return port.TrackEntry{}, false
 	}
 
 	if idCell == "" || idCell == "Track ID" || idCell == "------" {
-		return TrackEntry{}, false
+		return port.TrackEntry{}, false
 	}
 
-	return TrackEntry{
+	return port.TrackEntry{
 		ID:     idCell,
 		Title:  titleCell,
 		Status: status,

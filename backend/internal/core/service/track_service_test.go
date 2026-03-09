@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 )
 
@@ -139,7 +140,7 @@ func TestParseTracks_NewStatuses(t *testing.T) {
 func TestFilterByStatus(t *testing.T) {
 	t.Parallel()
 
-	tracks := []service.TrackEntry{
+	tracks := []port.TrackEntry{
 		{ID: "t1", Status: service.StatusComplete},
 		{ID: "t2", Status: service.StatusPending},
 		{ID: "t3", Status: service.StatusPending},
