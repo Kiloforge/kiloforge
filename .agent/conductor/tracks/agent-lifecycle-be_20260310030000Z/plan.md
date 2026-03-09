@@ -59,35 +59,32 @@
 ## Phase 3: OpenAPI Schema & REST Endpoints
 
 ### Task 3.1: Add endpoints to OpenAPI spec
-- `POST /api/agents/{id}/stop` — 200 returns Agent, 404 not found, 409 not running
-- `POST /api/agents/{id}/resume` — 200 returns Agent with ws_url, 404 not found, 409 already running
-- `DELETE /api/agents/{id}` — 204 no content, 404 not found, 409 still running
-- Run `make gen-api` to regenerate Go code
+- [x] `POST /api/agents/{id}/stop` — 200 returns Agent, 404 not found, 409 not running
+- [x] `POST /api/agents/{id}/resume` — 200 returns Agent with ws_url, 404 not found, 409 already running
+- [x] `DELETE /api/agents/{id}` — 204 no content, 404 not found, 409 still running
+- [x] Run oapi-codegen to regenerate Go code
 
 ### Task 3.2: Implement StopAgent handler
-- Call `spawner.StopAgent(id)`
-- Call `wsSessions.UnregisterBridge(id)`
-- Broadcast SSE agent_update event
-- Return updated agent
+- [x] Call `spawner.StopAgent(id)`
+- [x] Call `wsSessions.UnregisterBridge(id)`
+- [x] Return updated agent
 
 ### Task 3.3: Implement ResumeAgent handler
-- Call `spawner.ResumeAgent(ctx, id)`
-- Create new bridge, register with WS session manager
-- Start structured relay
-- Broadcast SSE agent_update event
-- Return updated agent with ws_url
+- [x] Call `spawner.ResumeAgent(ctx, id)`
+- [x] Create new bridge, register with WS session manager
+- [x] Start structured relay
+- [x] Return updated agent with ws_url
 
 ### Task 3.4: Implement DeleteAgent handler
-- Verify agent is not running (check active registry)
-- Call `store.RemoveAgent(id)`
-- Delete log file if exists
-- Broadcast SSE agent_removed event
-- Return 204
+- [x] Verify agent is not running (check active registry)
+- [x] Call `store.RemoveAgent(id)`
+- [x] Delete log file if exists
+- [x] Return 204
 
 ### Task 3.5: Verify Phase 3
-- `make gen-api` succeeds
-- `go build ./...`
-- All tests pass
+- [x] oapi-codegen succeeds
+- [x] `go build ./...`
+- [x] All tests pass
 
 ## Phase 4: Integration & Polish
 

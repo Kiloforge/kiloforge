@@ -52,9 +52,17 @@ type ProjectManager interface {
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
 }
 
-// InteractiveSpawner creates interactive agent sessions.
+// InteractiveSpawner creates and manages interactive agent sessions.
 type InteractiveSpawner interface {
 	SpawnInteractive(ctx context.Context, opts agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error)
+	StopAgent(id string) error
+	ResumeAgent(ctx context.Context, id string) (*agent.InteractiveAgent, error)
+	GetActiveAgent(id string) (*agent.InteractiveAgent, bool)
+}
+
+// AgentRemover can remove agent records from persistence.
+type AgentRemover interface {
+	RemoveAgent(id string) error
 }
 
 // ConsentChecker provides consent state access.
@@ -81,6 +89,7 @@ type APIHandler struct {
 	interSpawner  InteractiveSpawner
 	wsSessions    *wsAdapter.SessionManager
 	consent       ConsentChecker
+	agentRemover  AgentRemover
 
 	adminMu          sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -103,6 +112,7 @@ type APIHandlerOpts struct {
 	InterSpawner  InteractiveSpawner
 	WSSessions    *wsAdapter.SessionManager
 	Consent       ConsentChecker
+	AgentRemover  AgentRemover
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -123,6 +133,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		interSpawner: opts.InterSpawner,
 		wsSessions:   opts.WSSessions,
 		consent:      opts.Consent,
+		agentRemover: opts.AgentRemover,
 	}
 }
 
@@ -431,6 +442,91 @@ func (h *APIHandler) GetAgentLog(_ context.Context, req gen.GetAgentLogRequestOb
 		Lines:   tail,
 		Total:   len(allLines),
 	}, nil
+}
+
+// StopAgent implements gen.StrictServerInterface.
+func (h *APIHandler) StopAgent(_ context.Context, req gen.StopAgentRequestObject) (gen.StopAgentResponseObject, error) {
+	if h.interSpawner == nil {
+		return gen.StopAgent409JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+
+	if err := h.interSpawner.StopAgent(req.Id); err != nil {
+		if strings.Contains(err.Error(), "not running") {
+			return gen.StopAgent409JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.StopAgent404JSONResponse{Error: err.Error()}, nil
+	}
+
+	// Unregister WS bridge.
+	if h.wsSessions != nil {
+		h.wsSessions.UnregisterBridge(req.Id)
+	}
+
+	// Return updated agent.
+	a, err := h.agents.FindAgent(req.Id)
+	if err != nil {
+		return gen.StopAgent404JSONResponse{Error: "agent not found after stop"}, nil
+	}
+	return gen.StopAgent200JSONResponse(domainAgentToGen(*a, h.quota)), nil
+}
+
+// ResumeAgent implements gen.StrictServerInterface.
+func (h *APIHandler) ResumeAgent(ctx context.Context, req gen.ResumeAgentRequestObject) (gen.ResumeAgentResponseObject, error) {
+	if h.interSpawner == nil || h.wsSessions == nil {
+		return gen.ResumeAgent409JSONResponse{Error: "interactive agents not configured"}, nil
+	}
+
+	ia, err := h.interSpawner.ResumeAgent(ctx, req.Id)
+	if err != nil {
+		if strings.Contains(err.Error(), "already running") {
+			return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+		}
+		if strings.Contains(err.Error(), "not found") {
+			return gen.ResumeAgent404JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+	}
+
+	// Create SDK bridge and register with WS session manager.
+	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
+
+	// Start structured message relay in background.
+	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
+
+	return gen.ResumeAgent200JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
+}
+
+// DeleteAgent implements gen.StrictServerInterface.
+func (h *APIHandler) DeleteAgent(_ context.Context, req gen.DeleteAgentRequestObject) (gen.DeleteAgentResponseObject, error) {
+	if h.agentRemover == nil {
+		return gen.DeleteAgent409JSONResponse{Error: "agent removal not configured"}, nil
+	}
+
+	// Check agent is not running.
+	if h.interSpawner != nil {
+		if _, ok := h.interSpawner.GetActiveAgent(req.Id); ok {
+			return gen.DeleteAgent409JSONResponse{Error: "agent still running — stop it first"}, nil
+		}
+	}
+
+	// Find agent to get log file path.
+	a, err := h.agents.FindAgent(req.Id)
+	if err != nil {
+		return gen.DeleteAgent404JSONResponse{Error: "agent not found"}, nil
+	}
+
+	// Delete log file if exists.
+	if a.LogFile != "" {
+		_ = os.Remove(a.LogFile)
+	}
+
+	// Remove from store.
+	if err := h.agentRemover.RemoveAgent(a.ID); err != nil {
+		return gen.DeleteAgent404JSONResponse{Error: err.Error()}, nil
+	}
+
+	return gen.DeleteAgent204Response{}, nil
 }
 
 // GetQuota implements gen.StrictServerInterface.

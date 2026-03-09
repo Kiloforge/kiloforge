@@ -780,12 +780,21 @@ type ServerInterface interface {
 	// Spawn an interactive agent with WebSocket IO
 	// (POST /api/agents/interactive)
 	SpawnInteractiveAgent(w http.ResponseWriter, r *http.Request)
+	// Delete an agent record
+	// (DELETE /api/agents/{id})
+	DeleteAgent(w http.ResponseWriter, r *http.Request, id string)
 	// Get agent by ID or ID prefix
 	// (GET /api/agents/{id})
 	GetAgent(w http.ResponseWriter, r *http.Request, id string)
 	// Get recent log lines for an agent
 	// (GET /api/agents/{id}/log)
 	GetAgentLog(w http.ResponseWriter, r *http.Request, id string, params GetAgentLogParams)
+	// Resume a stopped agent session
+	// (POST /api/agents/{id}/resume)
+	ResumeAgent(w http.ResponseWriter, r *http.Request, id string)
+	// Stop a running agent
+	// (POST /api/agents/{id}/stop)
+	StopAgent(w http.ResponseWriter, r *http.Request, id string)
 	// Get board state for a project
 	// (GET /api/board/{project})
 	GetBoard(w http.ResponseWriter, r *http.Request, project string)
@@ -948,6 +957,31 @@ func (siw *ServerInterfaceWrapper) SpawnInteractiveAgent(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// DeleteAgent operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAgent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAgent(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetAgent operation middleware
 func (siw *ServerInterfaceWrapper) GetAgent(w http.ResponseWriter, r *http.Request) {
 
@@ -1000,6 +1034,56 @@ func (siw *ServerInterfaceWrapper) GetAgentLog(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAgentLog(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResumeAgent operation middleware
+func (siw *ServerInterfaceWrapper) ResumeAgent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResumeAgent(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StopAgent operation middleware
+func (siw *ServerInterfaceWrapper) StopAgent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StopAgent(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1819,8 +1903,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/api/admin/run", wrapper.RunAdminOperation)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents", wrapper.ListAgents)
 	m.HandleFunc("POST "+options.BaseURL+"/api/agents/interactive", wrapper.SpawnInteractiveAgent)
+	m.HandleFunc("DELETE "+options.BaseURL+"/api/agents/{id}", wrapper.DeleteAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}", wrapper.GetAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}/log", wrapper.GetAgentLog)
+	m.HandleFunc("POST "+options.BaseURL+"/api/agents/{id}/resume", wrapper.ResumeAgent)
+	m.HandleFunc("POST "+options.BaseURL+"/api/agents/{id}/stop", wrapper.StopAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/board/{project}", wrapper.GetBoard)
 	m.HandleFunc("POST "+options.BaseURL+"/api/board/{project}/move", wrapper.MoveCard)
 	m.HandleFunc("POST "+options.BaseURL+"/api/board/{project}/sync", wrapper.SyncBoard)
@@ -2025,6 +2112,40 @@ func (response SpawnInteractiveAgent500JSONResponse) VisitSpawnInteractiveAgentR
 	return json.NewEncoder(w).Encode(response)
 }
 
+type DeleteAgentRequestObject struct {
+	Id string `json:"id"`
+}
+
+type DeleteAgentResponseObject interface {
+	VisitDeleteAgentResponse(w http.ResponseWriter) error
+}
+
+type DeleteAgent204Response struct {
+}
+
+func (response DeleteAgent204Response) VisitDeleteAgentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAgent404JSONResponse ErrorResponse
+
+func (response DeleteAgent404JSONResponse) VisitDeleteAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteAgent409JSONResponse ErrorResponse
+
+func (response DeleteAgent409JSONResponse) VisitDeleteAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetAgentRequestObject struct {
 	Id string `json:"id"`
 }
@@ -2110,6 +2231,76 @@ type GetAgentLog500JSONResponse ErrorResponse
 func (response GetAgentLog500JSONResponse) VisitGetAgentLogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResumeAgentRequestObject struct {
+	Id string `json:"id"`
+}
+
+type ResumeAgentResponseObject interface {
+	VisitResumeAgentResponse(w http.ResponseWriter) error
+}
+
+type ResumeAgent200JSONResponse Agent
+
+func (response ResumeAgent200JSONResponse) VisitResumeAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResumeAgent404JSONResponse ErrorResponse
+
+func (response ResumeAgent404JSONResponse) VisitResumeAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResumeAgent409JSONResponse ErrorResponse
+
+func (response ResumeAgent409JSONResponse) VisitResumeAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StopAgentRequestObject struct {
+	Id string `json:"id"`
+}
+
+type StopAgentResponseObject interface {
+	VisitStopAgentResponse(w http.ResponseWriter) error
+}
+
+type StopAgent200JSONResponse Agent
+
+func (response StopAgent200JSONResponse) VisitStopAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StopAgent404JSONResponse ErrorResponse
+
+func (response StopAgent404JSONResponse) VisitStopAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StopAgent409JSONResponse ErrorResponse
+
+func (response StopAgent409JSONResponse) VisitStopAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -3117,12 +3308,21 @@ type StrictServerInterface interface {
 	// Spawn an interactive agent with WebSocket IO
 	// (POST /api/agents/interactive)
 	SpawnInteractiveAgent(ctx context.Context, request SpawnInteractiveAgentRequestObject) (SpawnInteractiveAgentResponseObject, error)
+	// Delete an agent record
+	// (DELETE /api/agents/{id})
+	DeleteAgent(ctx context.Context, request DeleteAgentRequestObject) (DeleteAgentResponseObject, error)
 	// Get agent by ID or ID prefix
 	// (GET /api/agents/{id})
 	GetAgent(ctx context.Context, request GetAgentRequestObject) (GetAgentResponseObject, error)
 	// Get recent log lines for an agent
 	// (GET /api/agents/{id}/log)
 	GetAgentLog(ctx context.Context, request GetAgentLogRequestObject) (GetAgentLogResponseObject, error)
+	// Resume a stopped agent session
+	// (POST /api/agents/{id}/resume)
+	ResumeAgent(ctx context.Context, request ResumeAgentRequestObject) (ResumeAgentResponseObject, error)
+	// Stop a running agent
+	// (POST /api/agents/{id}/stop)
+	StopAgent(ctx context.Context, request StopAgentRequestObject) (StopAgentResponseObject, error)
 	// Get board state for a project
 	// (GET /api/board/{project})
 	GetBoard(ctx context.Context, request GetBoardRequestObject) (GetBoardResponseObject, error)
@@ -3341,6 +3541,32 @@ func (sh *strictHandler) SpawnInteractiveAgent(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// DeleteAgent operation middleware
+func (sh *strictHandler) DeleteAgent(w http.ResponseWriter, r *http.Request, id string) {
+	var request DeleteAgentRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAgent(ctx, request.(DeleteAgentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAgent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteAgentResponseObject); ok {
+		if err := validResponse.VisitDeleteAgentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetAgent operation middleware
 func (sh *strictHandler) GetAgent(w http.ResponseWriter, r *http.Request, id string) {
 	var request GetAgentRequestObject
@@ -3387,6 +3613,58 @@ func (sh *strictHandler) GetAgentLog(w http.ResponseWriter, r *http.Request, id 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAgentLogResponseObject); ok {
 		if err := validResponse.VisitGetAgentLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResumeAgent operation middleware
+func (sh *strictHandler) ResumeAgent(w http.ResponseWriter, r *http.Request, id string) {
+	var request ResumeAgentRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResumeAgent(ctx, request.(ResumeAgentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResumeAgent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResumeAgentResponseObject); ok {
+		if err := validResponse.VisitResumeAgentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StopAgent operation middleware
+func (sh *strictHandler) StopAgent(w http.ResponseWriter, r *http.Request, id string) {
+	var request StopAgentRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StopAgent(ctx, request.(StopAgentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StopAgent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StopAgentResponseObject); ok {
+		if err := validResponse.VisitStopAgentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
