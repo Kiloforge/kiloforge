@@ -1,0 +1,170 @@
+/* Track summary stats */
+.summaryRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.summaryValue {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.summaryCompleted {
+  color: var(--green);
+}
+
+.summaryProgress {
+  color: var(--yellow);
+}
+
+.summaryPending {
+  color: var(--text-dim);
+}
+
+.summaryArchived {
+  color: var(--text-dimmed);
+}
+
+/* Quick links */
+.quickLinks {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.quickLink {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quickLink:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Sub-tabs for style guides */
+.subTabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.subTab {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.subTab:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.subTabActive {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Content area */
+.content {
+  max-width: 800px;
+}
+
+.content .markdown {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Heading overrides for better reading */
+.content h1,
+.content h2,
+.content h3 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+/* Empty state */
+.empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-style: italic;
+  padding: 16px 0;
+}
+
+/* Loading */
+.loading {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+/* Error */
+.error {
+  color: var(--red);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+.notInitialized {
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 24px 0;
+  text-align: center;
+}

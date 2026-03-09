@@ -128,17 +128,17 @@ plan:
   - phase: Metadata View Component
     tasks:
       - text: Create src/components/ProjectMetadataView.tsx with tabbed layout for Product, Guidelines, Tech Stack, Workflow, Style Guides sections
-        done: false
+        done: true
       - text: Implement markdown rendering for each section, reusing or extracting MarkdownContent
-        done: false
+        done: true
       - text: Add track summary stats display (pending, in-progress, completed, archived counts)
-        done: false
+        done: true
       - text: Add quick links display as clickable pill/chip list
-        done: false
+        done: true
       - text: Handle style guides with sub-tabs by language name
-        done: false
+        done: true
       - text: Create CSS module for metadata view styling (reading-optimized typography, tab navigation)
-        done: false
+        done: true
   - phase: Page Integration
     tasks:
       - text: Integrate metadata view into ProjectPage — add "Project Info" tab alongside existing board/tracks content
