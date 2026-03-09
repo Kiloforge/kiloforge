@@ -1,0 +1,16 @@
+{
+  "id": "track-detail-view-fe_20260309001727Z",
+  "title": "Track Detail View UI",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-09T00:17:27Z",
+  "updated": "2026-03-09T00:17:27Z",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 11,
+    "completed": 0
+  }
+}

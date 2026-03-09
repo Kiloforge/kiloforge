@@ -144,6 +144,8 @@ Navigation hub for project context.
 - **setup-gate-fe_20260310234711Z** — Disable Agent Actions Until Setup Complete (Frontend)
 - **fix-skill-prereq-be_20260310000644Z** — Fix Skill Prerequisite Chain — Rename and Required List (Backend)
 - **fix-skill-prereq-fe_20260310000645Z** — Fix Skill Prerequisite Chain — Frontend Proactive Gating
+- **track-detail-view-be_20260309001726Z** — Track Detail View API
+- **track-detail-view-fe_20260309001727Z** — Track Detail View UI
 
 ## Getting Started
 
