@@ -163,6 +163,7 @@ sse-entity-subscriptions_20260309091501Z: {"title":"SSE Entity Subscriptions","s
 sse-event-bus_20260309091500Z: {"title":"SSE Event Bus Infrastructure","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
 ssh-key-selection-ui_20260309120001Z: {"title":"SSH Key Selection in Project Add UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 ssh-key-selection_20260309100000Z: {"title":"Interactive SSH Key Selection for Add Command","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+status-enrich_20260311000000Z: {"title":"Enrich kf-track status with deps, conflicts, and claimed/available info","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
