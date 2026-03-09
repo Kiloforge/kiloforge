@@ -255,6 +255,60 @@ func (c *Client) RemoveConflict(idA, idB string) error {
 	return WriteConflictsFile(c.conflictsFile(), filtered)
 }
 
+// RemoveTrack deletes a track's directory and removes it from the registry,
+// deps graph, and conflicts list.
+func (c *Client) RemoveTrack(trackID string) error {
+	entries, err := c.ListTracks()
+	if err != nil {
+		return err
+	}
+	entry := FindEntry(entries, trackID)
+	if entry == nil {
+		return fmt.Errorf("track %q not found in registry", trackID)
+	}
+
+	// Remove from registry
+	var filtered []TrackEntry
+	for _, e := range entries {
+		if e.ID != trackID {
+			filtered = append(filtered, e)
+		}
+	}
+	if err := WriteRegistryFile(c.tracksFile(), filtered); err != nil {
+		return err
+	}
+
+	// Prune deps and conflicts
+	if graph, err := c.GetDepsGraph(); err == nil {
+		graph.RemoveTrack(trackID)
+		_ = WriteDepsFile(c.depsFile(), graph)
+	}
+	if pairs, err := c.GetConflicts(); err == nil {
+		pairs = RemoveConflictsForTrack(pairs, trackID)
+		_ = WriteConflictsFile(c.conflictsFile(), pairs)
+	}
+
+	// Remove track directory
+	trackDir := filepath.Join(c.tracksDir(), trackID)
+	if err := os.RemoveAll(trackDir); err != nil {
+		return fmt.Errorf("remove track dir: %w", err)
+	}
+
+	return nil
+}
+
+// IsInitialized checks if the kf directory exists with required files
+// (product.md and tracks.yaml).
+func (c *Client) IsInitialized() bool {
+	if _, err := os.Stat(filepath.Join(c.KFDir, "product.md")); err != nil {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(c.KFDir, "tracks.yaml")); err != nil {
+		return false
+	}
+	return true
+}
+
 // --- Track content operations ---
 
 // GetTrack reads the full track.yaml for a track.

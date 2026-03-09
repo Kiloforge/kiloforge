@@ -599,6 +599,94 @@ func TestGetProjectInfoMissingProduct(t *testing.T) {
 	}
 }
 
+func TestRemoveTrack(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(filepath.Join(kfDir, "tracks"), 0o755)
+
+	client := kf.NewClient(kfDir)
+
+	// Add a track with content
+	entry := kf.TrackEntry{
+		ID: "rm_20260101Z", Title: "Remove Me", Status: kf.StatusPending,
+		Type: "feature", Created: "2026-01-01", Updated: "2026-01-01",
+	}
+	if err := client.AddTrack(entry, nil); err != nil {
+		t.Fatal(err)
+	}
+	track := kf.NewTrack("rm_20260101Z", "Remove Me", "feature", "summary")
+	if err := client.SaveTrack(track); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify track exists
+	if _, err := client.GetTrackEntry("rm_20260101Z"); err != nil {
+		t.Fatalf("track should exist: %v", err)
+	}
+	if _, err := client.GetTrack("rm_20260101Z"); err != nil {
+		t.Fatalf("track content should exist: %v", err)
+	}
+
+	// Remove
+	if err := client.RemoveTrack("rm_20260101Z"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Should be gone from registry
+	if _, err := client.GetTrackEntry("rm_20260101Z"); err == nil {
+		t.Error("track should be removed from registry")
+	}
+
+	// Track dir should be gone
+	if _, err := client.GetTrack("rm_20260101Z"); err == nil {
+		t.Error("track dir should be removed")
+	}
+}
+
+func TestRemoveTrackNotFound(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(filepath.Join(kfDir, "tracks"), 0o755)
+	// Write empty registry
+	os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte(""), 0o644)
+
+	client := kf.NewClient(kfDir)
+	err := client.RemoveTrack("nonexistent_20260101Z")
+	if err == nil {
+		t.Error("expected error for nonexistent track")
+	}
+}
+
+func TestIsInitialized(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+
+	client := kf.NewClient(kfDir)
+
+	// Not initialized — dir doesn't exist
+	if client.IsInitialized() {
+		t.Error("should not be initialized before kf dir exists")
+	}
+
+	// Create dir but no required files
+	os.MkdirAll(kfDir, 0o755)
+	if client.IsInitialized() {
+		t.Error("should not be initialized without required files")
+	}
+
+	// Add product.md only
+	os.WriteFile(filepath.Join(kfDir, "product.md"), []byte("# Product"), 0o644)
+	if client.IsInitialized() {
+		t.Error("should not be initialized without tracks.yaml")
+	}
+
+	// Add tracks.yaml
+	os.WriteFile(filepath.Join(kfDir, "tracks.yaml"), []byte(""), 0o644)
+	if !client.IsInitialized() {
+		t.Error("should be initialized with product.md and tracks.yaml")
+	}
+}
+
 func TestGetTrackSummary(t *testing.T) {
 	dir := t.TempDir()
 	kfDir := filepath.Join(dir, ".agent", "kf")
