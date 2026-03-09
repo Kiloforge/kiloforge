@@ -35,9 +35,6 @@
 
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-merge-conflict-guidance_20260311020000Z: []
-
 track-relations-fe_20260311010001Z:
   - track-tooltip-be_20260311010000Z
 work-queue-be_20260311010002Z: []
