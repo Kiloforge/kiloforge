@@ -1720,19 +1720,19 @@ cmd_status() {
     active_next_task+=("$next_task")
   done <<< "$tracks_content"
 
-  # --- Deps data (for blockers and ready check) ---
+  # --- Deps data (for blockers, ready check, and per-track dep counts) ---
   local deps_content=""
   deps_content=$(_read_kf "tracks/deps.yaml")
 
-  # Find ready tracks (pending with all deps satisfied)
+  # Compute per-track dep counts and find ready tracks
   local -a ready_ids=()
+  local -a active_dep_met=() active_dep_total=()
   for i in "${!active_ids[@]}"; do
-    [[ "${active_statuses[$i]}" != "pending" ]] && continue
     local tid="${active_ids[$i]}"
+    local dep_total=0 dep_met=0
     local blocked=false
 
     if [[ -n "$deps_content" ]]; then
-      # Extract deps for this track from deps.yaml
       local track_deps=""
       track_deps=$(echo "$deps_content" | awk -v id="$tid" '
         $0 ~ "^"id":" { found=1; next }
@@ -1742,16 +1742,20 @@ cmd_status() {
       if [[ -n "$track_deps" ]]; then
         while IFS= read -r dep; do
           [[ -z "$dep" ]] && continue
-          # Check if dep is completed
-          if ! echo "$tracks_content" | grep -q "^${dep}:.*\"status\":\"completed\""; then
+          dep_total=$((dep_total + 1))
+          if echo "$tracks_content" | grep -q "^${dep}:.*\"status\":\"completed\""; then
+            dep_met=$((dep_met + 1))
+          else
             blocked=true
-            break
           fi
         done <<< "$track_deps"
       fi
     fi
 
-    if [[ "$blocked" == false ]]; then
+    active_dep_met+=("$dep_met")
+    active_dep_total+=("$dep_total")
+
+    if [[ "${active_statuses[$i]}" == "pending" && "$blocked" == false ]]; then
       ready_ids+=("$tid")
     fi
   done
@@ -1805,27 +1809,58 @@ cmd_status() {
     echo "                              ACTIVE TRACKS"
     echo "--------------------------------------------------------------------------------"
     echo ""
-    printf "%-10s %-48s %-8s %s\n" "Status" "Track ID" "Type" "Tasks"
-    printf "%-10s %-48s %-8s %s\n" "----------" "------------------------------------------------" "--------" "----------"
+    printf "%-10s %-48s %-8s %-12s %s\n" "Status" "Track ID" "Type" "Tasks" "Deps"
+    printf "%-10s %-48s %-8s %-12s %s\n" "----------" "------------------------------------------------" "--------" "------------" "----------"
 
-    # In-progress first
+    # Helper: format deps column
+    _fmt_deps() {
+      local met=$1 total=$2
+      if [[ "$total" -eq 0 ]]; then
+        echo "no deps"
+      else
+        echo "${met}/${total} met"
+      fi
+    }
+
+    # Helper: resolve display status label
+    _status_label() {
+      local idx=$1
+      if [[ "${active_statuses[$idx]}" == "in-progress" ]]; then
+        echo "CLAIMED"
+      elif [[ "${active_statuses[$idx]}" == "pending" ]]; then
+        # Check if in ready list
+        local is_ready=false
+        for rid in "${ready_ids[@]}"; do
+          [[ "$rid" == "${active_ids[$idx]}" ]] && is_ready=true && break
+        done
+        if [[ "$is_ready" == true ]]; then
+          echo "AVAILABLE"
+        else
+          echo "BLOCKED"
+        fi
+      fi
+    }
+
+    # In-progress (CLAIMED) first
     for i in "${!active_ids[@]}"; do
       [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
       local pct=0
       [[ "${active_task_total[$i]}" -gt 0 ]] && pct=$((active_task_done[i] * 100 / active_task_total[i]))
-      printf "%-10s %-48s %-8s %d/%d (%d%%)\n" \
-        "IN-PROG" "${active_ids[$i]}" "${active_types[$i]}" \
-        "${active_task_done[$i]}" "${active_task_total[$i]}" "$pct"
+      printf "%-10s %-48s %-8s %-12s %s\n" \
+        "$(_status_label $i)" "${active_ids[$i]}" "${active_types[$i]}" \
+        "${active_task_done[$i]}/${active_task_total[$i]} (${pct}%)" \
+        "$(_fmt_deps "${active_dep_met[$i]}" "${active_dep_total[$i]}")"
     done
 
-    # Then pending
+    # Then pending (AVAILABLE / BLOCKED)
     for i in "${!active_ids[@]}"; do
       [[ "${active_statuses[$i]}" != "pending" ]] && continue
       local pct=0
       [[ "${active_task_total[$i]}" -gt 0 ]] && pct=$((active_task_done[i] * 100 / active_task_total[i]))
-      printf "%-10s %-48s %-8s %d/%d (%d%%)\n" \
-        "PENDING" "${active_ids[$i]}" "${active_types[$i]}" \
-        "${active_task_done[$i]}" "${active_task_total[$i]}" "$pct"
+      printf "%-10s %-48s %-8s %-12s %s\n" \
+        "$(_status_label $i)" "${active_ids[$i]}" "${active_types[$i]}" \
+        "${active_task_done[$i]}/${active_task_total[$i]} (${pct}%)" \
+        "$(_fmt_deps "${active_dep_met[$i]}" "${active_dep_total[$i]}")"
     done
     echo ""
   fi
@@ -1840,7 +1875,7 @@ cmd_status() {
   for i in "${!active_ids[@]}"; do
     [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
     has_in_progress=true
-    printf "Active: %s\n" "${active_ids[$i]}"
+    printf "Claimed: %s\n" "${active_ids[$i]}"
     printf "  Title: %s\n" "${active_titles[$i]}"
     printf "  Progress: %d/%d tasks, %d/%d phases\n" \
       "${active_task_done[$i]}" "${active_task_total[$i]}" \
@@ -1874,6 +1909,65 @@ cmd_status() {
     echo "  (none — all pending tracks have unmet dependencies)"
   fi
   echo ""
+
+  # --- Conflict Risk section ---
+  local conflicts_content=""
+  conflicts_content=$(_read_kf "tracks/conflicts.yaml")
+
+  # Filter to pairs where both tracks are active
+  local -a conflict_pairs=() conflict_risks=() conflict_notes=()
+  if [[ -n "$conflicts_content" ]]; then
+    while IFS= read -r cline; do
+      [[ -z "$cline" || "$cline" == \#* ]] && continue
+      # Format: id-a/id-b: {"risk":"...","note":"...","added":"..."}
+      local pair_key pair_json
+      pair_key=$(echo "$cline" | sed 's/:.*//')
+      pair_json=$(echo "$cline" | sed 's/^[^{]*//')
+      local id_a id_b
+      id_a=$(echo "$pair_key" | cut -d'/' -f1)
+      id_b=$(echo "$pair_key" | cut -d'/' -f2)
+
+      # Check both tracks are active
+      local a_active=false b_active=false
+      for aid in "${active_ids[@]}"; do
+        [[ "$aid" == "$id_a" ]] && a_active=true
+        [[ "$aid" == "$id_b" ]] && b_active=true
+      done
+      [[ "$a_active" != true || "$b_active" != true ]] && continue
+
+      local crisk cnote
+      if command -v jq &>/dev/null; then
+        crisk=$(echo "$pair_json" | jq -r '.risk // "unknown"')
+        cnote=$(echo "$pair_json" | jq -r '.note // ""')
+      else
+        crisk=$(echo "$pair_json" | grep -o '"risk":"[^"]*"' | head -1 | sed 's/"risk":"\(.*\)"/\1/')
+        cnote=$(echo "$pair_json" | grep -o '"note":"[^"]*"' | head -1 | sed 's/"note":"\(.*\)"/\1/')
+      fi
+
+      conflict_pairs+=("${id_a}/${id_b}")
+      conflict_risks+=("$crisk")
+      conflict_notes+=("$cnote")
+    done <<< "$conflicts_content"
+  fi
+
+  if [[ "${#conflict_pairs[@]}" -gt 0 ]]; then
+    echo "--------------------------------------------------------------------------------"
+    echo "                              CONFLICT RISK"
+    echo "--------------------------------------------------------------------------------"
+    echo ""
+    for i in "${!conflict_pairs[@]}"; do
+      # Truncate note to 80 chars
+      local note="${conflict_notes[$i]}"
+      if [[ "${#note}" -gt 80 ]]; then
+        note="${note:0:77}..."
+      fi
+      printf "  %-60s [%s]\n" "${conflict_pairs[$i]}" "${conflict_risks[$i]}"
+      if [[ -n "$note" ]]; then
+        printf "    %s\n" "$note"
+      fi
+    done
+    echo ""
+  fi
 
   # --- Blocked tracks (pending with unmet deps) ---
   local -a blocked_ids=() blocked_reasons=()
