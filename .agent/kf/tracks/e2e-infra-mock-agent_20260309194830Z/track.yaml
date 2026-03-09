@@ -36,6 +36,7 @@ spec:
     - Test that server starts, health check passes, and mock agent can be spawned and produces expected output
     - Documentation in test directory explaining mock agent usage and E2E conventions
     - All E2E tests use Playwright to drive the browser and verify UI behavior
+    - Product guidelines updated to mandate E2E test development (via Playwright plugin) for all agents building UI functionality
   conflict_risk: - LOW — adds new test infrastructure files only, no production code changes.
   out_of_scope: |
     - Testing any specific application feature (that's for subsequent tracks)
@@ -135,5 +136,7 @@ plan:
       - text: Create `frontend/e2e/README.md` documenting E2E conventions — mock agent usage, env vars, how to run headed vs headless, how to add new E2E tests, test data seeding
         done: false
       - text: Run full verification — execute `make test-e2e`, confirm health check smoke test passes end-to-end with Playwright driving the browser, fix any issues
+        done: false
+      - text: Update `.agent/kf/product-guidelines.md` to add a section instructing that all agents building UI functionality must develop automated E2E tests using the Playwright MCP plugin — tests should cover happy path, edge cases, and expected failures, and must use the mock agent binary (never a real Claude API key) for any agent-related flows
         done: false
 extra: "{}"
