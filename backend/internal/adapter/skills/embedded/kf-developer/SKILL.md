@@ -68,11 +68,29 @@ echo "Primary branch: $PRIMARY_BRANCH"
 
 Record `PRIMARY_BRANCH` for all subsequent operations. If `config.yaml` doesn't exist or has no `primary_branch`, default to `main`.
 
-**All track state reads should come from the primary branch** (via `git show ${PRIMARY_BRANCH}:<path>`) to see the latest committed state, not the local working tree which may be stale.
+**IMPORTANT: Your home branch is almost always stale.** Other architects and developers merge to the primary branch continuously. Before doing ANY validation or track lookups, you MUST sync first:
+
+```bash
+git reset --hard ${PRIMARY_BRANCH}
+```
+
+This ensures your local working tree has the latest tracks.yaml, deps.yaml, and track directories. Without this, `kf-track get`, `kf-track list`, and `kf-track deps check` will operate on stale data and may report tracks as "not found" even though they exist on the primary branch.
+
+**All track state reads should come from the primary branch.** Either sync first (preferred) or use `--ref ${PRIMARY_BRANCH}` on commands that support it.
 
 ---
 
 ## Phase 1: Validation
+
+### Step 0b — Sync with primary branch
+
+Before any validation, sync the working tree to the latest primary branch state:
+
+```bash
+git reset --hard ${PRIMARY_BRANCH}
+```
+
+This is mandatory — skip this and you risk operating on stale track data.
 
 ### Step 1 — Parse track ID
 

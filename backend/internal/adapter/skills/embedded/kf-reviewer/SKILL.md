@@ -43,6 +43,18 @@ The reviewer works from its own worktree but reads code via the PR diff and by c
 
 ---
 
+## Phase 0: Sync with primary branch
+
+Before any track lookups or validation, sync to the latest state. Your worktree may be stale — other developers and architects merge continuously:
+
+```bash
+git reset --hard main
+```
+
+This ensures `kf-track-content show`, `kf-track get`, and file reads see the latest track specs and project context.
+
+---
+
 ## Phase 1: PR Intake
 
 ### Step 1 — Parse arguments

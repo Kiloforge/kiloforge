@@ -27,22 +27,28 @@ Reports are written to `.agent/kf/_reports/` as markdown files.
 
 ## Pre-flight Checks
 
-1. Verify Kiloforge is initialized:
+1. **Sync with primary branch** — your working tree may be stale:
+   ```bash
+   git reset --hard main
+   ```
+   This ensures you see the latest track statuses, completed/archived tracks, and project metadata. Without this, reports may show outdated data or miss recently completed tracks.
+
+2. Verify Kiloforge is initialized:
    - Check `.agent/kf/product.md` exists
    - Check `.agent/kf/tracks.yaml` exists
    - If missing: Display error and suggest running `/kf-setup` first
 
-2. Verify git repository:
+3. Verify git repository:
    - Run `git rev-parse --is-inside-work-tree`
    - If not a git repo: Display error — git history is required for timeline and velocity
 
-3. Determine date range:
+4. Determine date range:
    - If `--since` provided: use that date
    - If `--until` provided: use that date
    - Default: from first commit to today
    - Store as `$SINCE` and `$UNTIL` (YYYY-MM-DD format)
 
-4. Detect compacted archives:
+5. Detect compacted archives:
    - Check if `.agent/kf/archive-compactions.md` exists
    - If it exists, read it and parse the compaction table(s):
      - Extract each row: `Commit`, `Date`, `Completed`, `Uncompleted`, `First Created`, `Last Created`, `First Completed`, `Last Completed`

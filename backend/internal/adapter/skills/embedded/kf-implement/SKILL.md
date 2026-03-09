@@ -27,7 +27,13 @@ Execute tasks from a track's implementation plan, following the workflow rules d
 
 ## Pre-flight Checks
 
-1. Verify Kiloforge is initialized:
+1. **Sync with primary branch** — your working tree may be stale:
+   ```bash
+   git reset --hard main
+   ```
+   This ensures you see the latest tracks, dependencies, and project state. Without this, `kf-track get` and `kf-track list` may report tracks as "not found" even if they exist on main.
+
+2. Verify Kiloforge is initialized:
    - Check `.agent/kf/product.md` exists
    - Check `.agent/kf/workflow.md` exists
    - Check `.agent/kf/tracks.yaml` exists
