@@ -44,7 +44,7 @@ This line is designed to survive compaction summaries. If you see it in your con
 
 This agent is expected to run in a worktree whose folder name starts with `developer-` (e.g., `developer-1`, `developer-2`, `developer-3`). The corresponding branch name matches the folder name.
 
-### Step 0 — Verify worktree identity
+### Step 0 — Verify worktree identity and resolve primary branch
 
 ```bash
 git branch --show-current
@@ -58,7 +58,17 @@ git worktree list
 - Record the **main worktree path** from `git worktree list` — needed for merge operations
 - Record the **home branch** (the `developer-*` branch) — to return to after merge
 
-**All track state reads should come from main** (via `git show main:<path>`) to see the latest committed state, not the local working tree which may be stale.
+**Resolve the primary branch** from `.agent/kf/config.yaml`:
+
+```bash
+PRIMARY_BRANCH=$(git show main:.agent/kf/config.yaml 2>/dev/null | grep '^primary_branch:' | awk '{print $2}')
+PRIMARY_BRANCH="${PRIMARY_BRANCH:-main}"
+echo "Primary branch: $PRIMARY_BRANCH"
+```
+
+Record `PRIMARY_BRANCH` for all subsequent operations. If `config.yaml` doesn't exist or has no `primary_branch`, default to `main`.
+
+**All track state reads should come from the primary branch** (via `git show ${PRIMARY_BRANCH}:<path>`) to see the latest committed state, not the local working tree which may be stale.
 
 ---
 
@@ -80,34 +90,34 @@ To see available tracks, run `.agent/kf/bin/kf-track list` or /kf-architect to c
 
 ### Step 2 — Verify Kiloforge is initialized
 
-Check these files exist (read from main):
+Check these files exist (read from primary branch):
 ```bash
-git show main:.agent/kf/product.md > /dev/null 2>&1
-git show main:.agent/kf/workflow.md > /dev/null 2>&1
-git show main:.agent/kf/tracks.yaml > /dev/null 2>&1
+git show ${PRIMARY_BRANCH}:.agent/kf/product.md > /dev/null 2>&1
+git show ${PRIMARY_BRANCH}:.agent/kf/workflow.md > /dev/null 2>&1
+git show ${PRIMARY_BRANCH}:.agent/kf/tracks.yaml > /dev/null 2>&1
 ```
 
 If missing: Display error and suggest `/kf-setup`. **HALT.**
 
 ### Step 3 — Validate track exists and is claimable
 
-1. **Check track exists on main:**
+1. **Check track exists on primary branch:**
    ```bash
-   git show main:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
+   git show ${PRIMARY_BRANCH}:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
    ```
    If not found:
    ```
    ERROR: Track not found — {trackId}
 
-   The track .agent/kf/tracks/{trackId}/ does not exist on main.
-   This track ID may be incorrect, or the track may not have been merged to main yet.
+   The track .agent/kf/tracks/{trackId}/ does not exist on ${PRIMARY_BRANCH}.
+   This track ID may be incorrect, or the track may not have been merged yet.
 
-   Available tracks (from main):
+   Available tracks (from ${PRIMARY_BRANCH}):
    {output from `.agent/kf/bin/kf-track list --active`}
    ```
    **HALT.**
 
-2. **Check track status on main** using `kf-track`:
+2. **Check track status on primary branch** using `kf-track`:
    ```bash
    .agent/kf/bin/kf-track get {trackId}
    ```
@@ -116,7 +126,7 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
      ```
      ERROR: Track already complete — {trackId}
 
-     This track has already been implemented and marked complete on main.
+     This track has already been implemented and marked complete on ${PRIMARY_BRANCH}.
      ```
      **HALT.**
 
@@ -141,22 +151,22 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
    ```
    **HALT.**
 
-4. **Check track has required files on main:**
+4. **Check track has required files on primary branch:**
    ```bash
-   git show main:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
+   git show ${PRIMARY_BRANCH}:.agent/kf/tracks/{trackId}/track.yaml > /dev/null 2>&1
    ```
    If missing:
    ```
    ERROR: Track incomplete — {trackId}
 
-   Missing track.yaml on main.
+   Missing track.yaml on ${PRIMARY_BRANCH}.
    This track may need to be regenerated via /kf-architect.
    ```
    **HALT.**
 
 5. **Check dependency graph — all prerequisites must be completed:**
    ```bash
-   git show main:.agent/kf/tracks/deps.yaml 2>/dev/null
+   git show ${PRIMARY_BRANCH}:.agent/kf/tracks/deps.yaml 2>/dev/null
    ```
 
    Run the dependency check:
@@ -190,7 +200,7 @@ Tasks:    {total tasks from track.yaml plan}
 Phases:   {total phases}
 
 Beginning implementation:
-1. Create branch {type}/{trackId} from main
+1. Create branch {type}/{trackId} from ${PRIMARY_BRANCH}
 2. Implement all tasks following the plan
 3. Verify and prepare for merge
 ================================================================================
@@ -209,19 +219,19 @@ ACTIVE ROLE: kf-developer — track {trackId} — skill at ~/.claude/skills/kf-d
 
 ### Step 5 — Sync home branch and create implementation branch
 
-The `developer-*` home branch is a dead/marker branch. Its only purpose is recording the point at which this worker last synced with main. Sync it now so the marker reflects where we're starting from, then branch off main:
+The `developer-*` home branch is a dead/marker branch. Its only purpose is recording the point at which this worker last synced with the primary branch. Sync it now so the marker reflects where we're starting from, then branch off:
 
 ```bash
-# Sync home branch to main (updates the marker)
-git reset --hard main
+# Sync home branch to primary branch (updates the marker)
+git reset --hard ${PRIMARY_BRANCH}
 
-# Create implementation branch from main
-git checkout -b {type}/{trackId} main
+# Create implementation branch from primary branch
+git checkout -b {type}/{trackId} ${PRIMARY_BRANCH}
 ```
 
 Branch naming: `{type}/{trackId}` where type comes from metadata (e.g., `feature/auth_20250115100000Z`).
 
-> **Note:** The implementation branch is created from `main`, not from the home branch. The `git reset --hard main` just before serves as a timestamp marker — it records when this worker last synced, which can be useful for diagnosing staleness.
+> **Note:** The implementation branch is created from `${PRIMARY_BRANCH}`, not from the home branch. The `git reset --hard` just before serves as a timestamp marker — it records when this worker last synced, which can be useful for diagnosing staleness.
 
 ### Step 6 — Load workflow configuration
 
@@ -232,7 +242,7 @@ Read `.agent/kf/workflow.md` and parse:
 
 ### Step 7 — Load track context
 
-Load track context via CLI (now from the working tree, which is based on main):
+Load track context via CLI (now from the working tree, which is based on the primary branch):
 ```bash
 # Full track content
 .agent/kf/bin/kf-track-content show {trackId}
@@ -323,7 +333,7 @@ Create PR with session ID embedded:
 **GitHub:**
 ```bash
 gh pr create \
-  --base main \
+  --base ${PRIMARY_BRANCH} \
   --head {type}/{trackId} \
   --title "{type}: {track title} ({trackId})" \
   --body "$(cat <<'EOF'
@@ -350,7 +360,7 @@ EOF
 **Gitea:**
 ```bash
 tea pr create \
-  --base main \
+  --base ${PRIMARY_BRANCH} \
   --head {type}/{trackId} \
   --title "{type}: {track title} ({trackId})" \
   --description "..." # same body as above
@@ -581,10 +591,10 @@ start_heartbeat
 
 **From this point: call `release_lock` on ANY failure.**
 
-#### 11b. Rebase onto latest main
+#### 11b. Rebase onto latest primary branch
 
 ```bash
-if ! git rebase main; then
+if ! git rebase ${PRIMARY_BRANCH}; then
   git rebase --abort 2>/dev/null || true
   release_lock
   echo "REBASE FAILED — lock released"
@@ -601,10 +611,10 @@ Run the full verification suite from `workflow.md` (e.g., `make test`, `make e2e
 
 On failure: call `release_lock`, report, **HALT**.
 
-#### 11d. Fast-forward merge into main
+#### 11d. Fast-forward merge into primary branch
 
 ```bash
-if git -C {main-worktree-path} merge {type}/{trackId} --ff-only; then
+if git -C {primary-branch-worktree-path} merge {type}/{trackId} --ff-only; then
   release_lock
   echo "MERGE SUCCEEDED — lock released"
 else
@@ -620,7 +630,7 @@ On failure: lock released. Report and **HALT**.
 
 ```bash
 # Verify merge
-git -C {main-worktree-path} log --oneline -3
+git -C {primary-branch-worktree-path} log --oneline -3
 
 # Delete implementation branch (safe — it's been merged)
 git branch -d {type}/{trackId}
@@ -632,8 +642,8 @@ git branch -d {type}/{trackId}
 # Return to developer home branch
 git checkout {developer-home-branch}
 
-# Sync home branch to main (updates the marker to post-merge state)
-git reset --hard main
+# Sync home branch to primary branch (updates the marker to post-merge state)
+git reset --hard ${PRIMARY_BRANCH}
 ```
 
 Report:
@@ -643,9 +653,9 @@ Report:
                          MERGE COMPLETE
 ================================================================================
 Track:       {trackId} - {title}
-Merged into: main
+Merged into: ${PRIMARY_BRANCH}
 Branch:      {type}/{trackId} (deleted)
-Home branch: {developer-home-branch} (synced to main)
+Home branch: {developer-home-branch} (synced to ${PRIMARY_BRANCH})
 
 Developer is ready for next track.
 ================================================================================
@@ -658,7 +668,7 @@ Developer is ready for next track.
 | Error                      | Action                                                   |
 |----------------------------|----------------------------------------------------------|
 | No track ID provided       | Display usage, **HALT**                                  |
-| Track not found on main    | List available tracks from main, **HALT**                |
+| Track not found            | List available tracks from primary branch, **HALT**      |
 | Track already complete     | Notify, **HALT**                                         |
 | Track already claimed      | Show claiming worker/branch, **HALT**                    |
 | Track missing spec/plan    | Suggest regeneration, **HALT**                           |
@@ -698,7 +708,7 @@ Detection is automatic: if `curl -sf $ORCH_URL/health` succeeds, HTTP mode is us
 ## Critical Rules
 
 1. **ALWAYS validate before implementing** — never start work on an invalid or claimed track
-2. **ALWAYS read track state from main** — use `git show main:<path>`, not local working tree
+2. **ALWAYS read track state from the primary branch** — resolve from `.agent/kf/config.yaml`, default `main`. Use `git show ${PRIMARY_BRANCH}:<path>`, not local working tree
 3. **NEVER push to remote unless `--with-review`** — without review flag, all branches are local only
 4. **Auto-merge is the default** — only pause for explicit "merge" command when `--disable-auto-merge` is provided
 5. **ALWAYS verify after rebase** — full verification after rebase, before merge

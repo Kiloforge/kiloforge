@@ -1,0 +1,9 @@
+# Kiloforge Project Configuration
+#
+# Structured project settings used by kf tooling and agent skills.
+# TOOL: Managed by `kf-track` and agent skills. Hand-editable.
+
+# The primary branch that tracks, metadata, and project state are read from.
+# All agents (developers, architects, reviewers) should read track state
+# from this branch, not their local working tree.
+primary_branch: main
