@@ -221,6 +221,11 @@ func (s *Server) Run(ctx context.Context) error {
 		mux.HandleFunc("POST /api/traces", handleSeedTrace(writer))
 	}
 
+	// Track seeding endpoint for E2E tests.
+	if s._projects != nil {
+		mux.HandleFunc("POST /api/tracks/seed", handleSeedTracks(s._projects))
+	}
+
 	// Lock service (shared with generated API handler).
 	lockMgr := lock.New(s.cfg.DataDir)
 	lockMgr.StartReaper(ctx)
