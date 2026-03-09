@@ -12,11 +12,13 @@ spec:
 
     Additionally, kf-developer's post-merge cleanup step (11e) tells agents to delete the implementation branch BEFORE switching to the home branch, which fails because git won't delete the branch you're currently on.
 
-    Skills exist in two canonical locations that must BOTH be updated together:
-    - `backend/internal/adapter/skills/embedded/kf-*/SKILL.md` — embedded skills compiled into binary
-    - `~/.claude/skills/kf-*/SKILL.md` — global installed skills used by active agents
+    The canonical source of truth for skills is:
+    - `backend/internal/adapter/skills/embedded/kf-*/SKILL.md` — embedded skills compiled into the binary
 
-    There is also a stale `skills/` directory at the repo root that is a redundant third copy. This should be deleted entirely as part of this track — it is not a canonical location and creates sync confusion.
+    The user also has global installed copies that active agents use:
+    - `~/.claude/skills/kf-*/SKILL.md` — must also receive these updates so running agents benefit immediately
+
+    There is also a stale `skills/` directory at the repo root that is a redundant copy. This should be deleted entirely as part of this track — it creates sync confusion.
   codebase_analysis: |
     ### Direct file access patterns found (by skill)
 
@@ -49,9 +51,9 @@ spec:
 
     ### Files to modify (repo locations)
 
-    For each affected skill, update BOTH canonical locations:
-    - `backend/internal/adapter/skills/embedded/{skill}/SKILL.md` (embedded)
-    - `~/.claude/skills/{skill}/SKILL.md` (global)
+    For each affected skill, update the canonical embedded copy and mirror the change to global:
+    - `backend/internal/adapter/skills/embedded/{skill}/SKILL.md` (canonical — source of truth)
+    - `~/.claude/skills/{skill}/SKILL.md` (global — also update so active agents benefit immediately)
 
     Affected skills: kf-developer, kf-implement, kf-report, kf-reviewer, kf-architect
 
@@ -72,7 +74,7 @@ spec:
     - "kf-architect: git show tracks.yaml replaced with kf-track list --active --json"
     - "kf-report: direct tracks.yaml reads replaced with kf-track list --json (git show for recovery is acceptable)"
     - "kf-reviewer: git show spec/plan reads replaced with kf-track-content show"
-    - "Both canonical copies (embedded/ and ~/.claude/skills/) are updated consistently"
+    - "Embedded copies (canonical) and ~/.claude/skills/ (global) are updated consistently"
     - "Redundant skills/ directory at repo root is deleted"
     - "No references to legacy metadata.json or manual plan.md editing remain in updated skills"
   out_of_scope: |
