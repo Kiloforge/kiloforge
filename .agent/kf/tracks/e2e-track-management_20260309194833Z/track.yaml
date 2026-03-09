@@ -3,7 +3,7 @@ title: E2E Tests: Track Management — List, Detail, Generate, and Delete
 type: chore
 status: pending
 created: 2026-03-09T19:48:33Z
-updated: 2026-03-09T19:48:33Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for track lifecycle: listing tracks, viewing track details, generating tracks via mock agent, and deleting tracks, covering happy path, edge cases, and expected failures.
   context: |
@@ -114,43 +114,43 @@ plan:
   - phase: Track List Tests
     tasks:
       - text: Create `frontend/e2e/track-list.spec.ts` — seed 5 tracks with various statuses (pending, approved, in_progress, in_review, done) via `seedTestData()`, navigate to track list page, verify all tracks displayed with correct title, status badge, project name, and timestamps
-        done: false
+        done: true
       - text: Test empty track list — start with no seeded tracks, navigate to track list, verify empty state message displayed (e.g., "No tracks yet"), verify "Generate Tracks" call-to-action is visible
-        done: false
+        done: true
       - text: Test track filtering and sorting — seed 5 tracks, test status filter dropdown (select "pending", verify only pending tracks shown), test sort by date (ascending/descending), test sort by title (alphabetical)
-        done: false
+        done: true
   - phase: Track Detail Tests
     tasks:
       - text: Create `frontend/e2e/track-detail.spec.ts` — seed a track with full spec/plan/metadata, click track in list to navigate to detail page, verify spec tab shows rendered markdown content
-        done: false
+        done: true
       - text: Test track detail tab navigation — verify plan tab shows task list with checkboxes, verify metadata tab shows track metadata (type, status, created date, phase/task counts), verify tab switching preserves scroll position
-        done: false
+        done: true
       - text: Test nonexistent track navigation — navigate to `/tracks/nonexistent-id`, verify 404 page or "Track not found" message displayed, verify back navigation returns to track list
-        done: false
+        done: true
   - phase: Track Generation Tests
     tasks:
       - text: Create `frontend/e2e/track-generate.spec.ts` — seed a project, open track generation dialog, fill in prompt/description, submit, verify mock agent is spawned (agent appears in agent list or status indicator shows "running")
-        done: false
+        done: true
       - text: Test real-time stream display — trigger generation, verify stream output panel appears, verify text from mock agent `content_block_delta` events renders progressively in the output area, verify init event shows session info
-        done: false
+        done: true
       - text: Test generation completion — wait for mock agent `result` event, verify generation completes successfully, verify new track appears in track list, verify track has correct metadata (usage stats from result event)
-        done: false
+        done: true
       - text: Test generation failure handling — configure mock agent with `MOCK_AGENT_EXIT_CODE=1` and `MOCK_AGENT_FAIL_AFTER=2`, trigger generation, verify error state displayed in UI, verify error toast notification, verify no partial/corrupt track created in list
-        done: false
+        done: true
   - phase: Track Deletion Tests
     tasks:
       - text: Create `frontend/e2e/track-delete.spec.ts` — seed a track, navigate to track detail or list, click delete button, verify confirmation dialog appears with track title, confirm deletion, verify track removed from list
-        done: false
+        done: true
       - text: Test cancel delete — seed a track, click delete button, verify confirmation dialog, click cancel, verify track still exists in list and detail page still accessible
-        done: false
+        done: true
       - text: Test delete nonexistent track — call `DELETE /api/tracks/nonexistent-id` directly via API, verify 404 response, verify UI handles gracefully if track was already deleted (e.g., another tab deleted it)
-        done: false
+        done: true
   - phase: Edge and Failure Cases
     tasks:
       - text: Test concurrent track generation — trigger two track generations simultaneously for the same project, verify both succeed or one queues gracefully, verify no duplicate tracks or data corruption
-        done: false
+        done: true
       - text: Test long content handling — seed a track with very long title (200+ characters) and very long spec content (10,000+ characters), verify list truncates title appropriately, verify detail page renders full content with scrolling
-        done: false
+        done: true
       - text: Test API error scenarios — mock 500 error on track list endpoint (verify error state with retry button), mock timeout on track generation (verify timeout message after reasonable wait), mock 403 on track delete (verify permission error toast)
-        done: false
-extra: "{}"
+        done: true
+extra: {}

@@ -43,7 +43,7 @@ e2e-merge-lock_20260309194838Z: {"title":"E2E Tests: Merge Lock Coordination —
 e2e-project-management_20260309194832Z: {"title":"E2E Tests: Project Management — Add, Remove, Setup, and Sync Status","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-quota-usage_20260309194841Z: {"title":"E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estimates","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-sse-realtime_20260309194837Z: {"title":"E2E Tests: Real-Time SSE Updates — Connection, Events, and Reconnection","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-track-management_20260309194833Z: {"title":"E2E Tests: Track Management — List, Detail, Generate, and Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-track-management_20260309194833Z: {"title":"E2E Tests: Track Management — List, Detail, Generate, and Delete","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 embedded-skills-default_20260309234000Z: {"title":"Embedded Skills as Default — Remove Repo Dependency","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 error-toast-notifications_20260309223001Z: {"title":"Error Toast Notifications in Dashboard","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
