@@ -1,54 +1,54 @@
 id: project-metadata-be_20260310070000Z
-title: "Project Metadata API — Serve Product, Guidelines, Tech Stack, and Style Guides"
+title: Project Metadata API — Serve Product, Guidelines, Tech Stack, and Style Guides
 type: feature
 status: pending
-created: "2026-03-10T07:00:00Z"
-updated: "2026-03-10T07:00:00Z"
+created: 2026-03-10T07:00:00Z
+updated: 2026-03-09
 spec:
   summary: Add a REST endpoint that serves all kiloforge project metadata (product definition, guidelines, tech stack, workflow, quick links, style guides, and track summary) using the existing pkg/kf SDK, enabling the dashboard to display project context in a read-only view.
   context: |
     The pkg/kf Go SDK already provides `Client.GetProjectInfo()` which reads all `.agent/kf/` metadata files (product.md, product-guidelines.md, tech-stack.md, workflow.md, quick-links.md, code_styleguides/*.md) into a unified `ProjectInfo` struct. The SDK also provides `Client.GetTrackSummary()` for aggregate track statistics.
-
+    
     Currently no REST endpoint exposes this data. The frontend needs it to display project context in a dedicated metadata view, allowing users to browse product definitions, guidelines, tech stack, and code style guides without needing to read raw files.
-
+    
     The setup-status endpoint at `GET /api/projects/{slug}/setup-status` already checks for `.agent/conductor/product.md` — this should be updated to check `.agent/kf/product.md` (the current location).
   codebase_analysis: |
     ### Existing patterns
-
+    
     - **REST handler**: `backend/internal/adapter/rest/api_handler.go` implements all API handlers following clean architecture
     - **OpenAPI spec**: `backend/api/openapi.yaml` defines routes, auto-generates `gen/` code
     - **Project service**: `backend/internal/core/service/project_service.go` handles project CRUD
     - **Setup status**: Handler at line ~1936 of api_handler.go reads `.agent/conductor/product.md` to check setup
     - **Track service**: `backend/internal/core/service/track_service.go` still reads old conductor format
-
+    
     ### SDK ready
-
+    
     - `backend/pkg/kf/project.go` — `ProjectInfo`, `QuickLink`, `StyleGuide`, `TrackSummary` types
     - `backend/pkg/kf/client.go` — `GetProjectInfo()`, `GetTrackSummary()`, individual getters
     - 27 SDK tests passing
-
+    
     ### Integration approach
-
+    
     Wire `kf.NewClientFromProject(projectDir)` in a new handler, return JSON. The project directory is already known from the project store (each registered project has a local path).
   acceptance_criteria:
-    - "GET /api/projects/{slug}/metadata returns full ProjectInfo JSON (product, guidelines, tech_stack, workflow, quick_links, style_guides)"
-    - "GET /api/projects/{slug}/metadata returns track_summary with counts by status (pending, in_progress, completed, archived, total)"
-    - "Returns 404 if project slug not found"
-    - "Returns 404 with clear message if .agent/kf/ directory doesn't exist (kf not initialized)"
-    - "Setup-status endpoint updated to check .agent/kf/product.md instead of .agent/conductor/product.md"
-    - "OpenAPI spec updated with new endpoint and response schema"
-    - "Integration test covers happy path and not-found cases"
+    - GET /api/projects/{slug}/metadata returns full ProjectInfo JSON (product, guidelines, tech_stack, workflow, quick_links, style_guides)
+    - GET /api/projects/{slug}/metadata returns track_summary with counts by status (pending, in_progress, completed, archived, total)
+    - Returns 404 if project slug not found
+    - Returns 404 with clear message if .agent/kf/ directory doesn't exist (kf not initialized)
+    - Setup-status endpoint updated to check .agent/kf/product.md instead of .agent/conductor/product.md
+    - OpenAPI spec updated with new endpoint and response schema
+    - Integration test covers happy path and not-found cases
   out_of_scope: |
     - Editing project metadata via API (read-only for now — users discuss changes with agents)
     - Migrating track_service.go from old conductor format to pkg/kf (separate track)
     - Frontend UI (handled by project-metadata-fe track)
   technical_notes: |
     ### Endpoint design
-
+    
     ```
     GET /api/projects/{slug}/metadata
     ```
-
+    
     Response schema:
     ```json
     {
@@ -73,46 +73,46 @@ spec:
       }
     }
     ```
-
+    
     ### Handler wiring
-
+    
     In `api_handler.go`:
     1. Look up project by slug from project store
     2. Construct path: `{projectDir}/.agent/kf`
     3. Create `kf.NewClient(kfPath)`
     4. Call `client.GetProjectInfo()` and `client.GetTrackSummary()`
     5. Marshal and return
-
+    
     ### Setup status fix
-
+    
     Update the setup-status handler to check `.agent/kf/product.md` instead of `.agent/conductor/product.md`.
 plan:
   - phase: OpenAPI Schema
     tasks:
       - text: Add ProjectMetadata response schema to openapi.yaml with all fields (product, product_guidelines, tech_stack, workflow, quick_links array, style_guides array, track_summary object)
-        done: false
+        done: true
       - text: Add GET /api/projects/{slug}/metadata route to openapi.yaml with 200 and 404 responses
-        done: false
+        done: true
       - text: Run code generation to update gen/ types
-        done: false
+        done: true
   - phase: Handler Implementation
     tasks:
       - text: Implement GetProjectMetadata handler in api_handler.go — look up project, create kf.Client, call GetProjectInfo() and GetTrackSummary(), return combined JSON response
-        done: false
+        done: true
       - text: Handle error cases — project not found (404), kf not initialized (404 with message), internal errors (500)
-        done: false
+        done: true
       - text: Register the new route in server.go
-        done: false
+        done: true
   - phase: Setup Status Fix
     tasks:
       - text: Update setup-status handler to check .agent/kf/product.md instead of .agent/conductor/product.md
-        done: false
+        done: true
   - phase: Testing
     tasks:
       - text: Write integration test for GET /api/projects/{slug}/metadata — happy path with seeded kf directory, verify all fields present
-        done: false
+        done: true
       - text: Write test for 404 when project not found and when kf not initialized
-        done: false
+        done: true
       - text: Verify existing setup-status tests still pass with updated path
-        done: false
+        done: true
 extra: {}
