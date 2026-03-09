@@ -3,7 +3,7 @@ title: E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estim
 type: chore
 status: pending
 created: 2026-03-09T19:48:41Z
-updated: 2026-03-09T19:48:41Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the quota and token usage display: stat cards showing token counts and costs, rate limit indicators, quota updates via SSE, and cost estimation accuracy, covering happy path, edge cases, and expected failures.
   context: |
@@ -88,41 +88,41 @@ plan:
   - phase: Stat Card Tests
     tasks:
       - text: Token count display — seed quota data with known input_tokens (1500), output_tokens (800), cache_read_tokens (200), navigate to dashboard, verify each stat card displays the correct token count with appropriate formatting
-        done: false
+        done: true
       - text: Cost estimate format — seed quota data with `total_cost_usd: 1.23`, navigate to dashboard, verify cost stat card shows "$1.23" in USD format; repeat with `0.00`, `0.0012`, and `1234.56` to verify formatting across ranges
-        done: false
+        done: true
       - text: Initial load from API — navigate to dashboard with no cache, verify stat cards load token counts and cost from `GET /api/quota` on initial page load, verify a loading state is shown briefly before data appears
-        done: false
+        done: true
   - phase: Rate Limit Tests
     tasks:
       - text: Rate limit badge visible — seed quota data with `rate_limited: true` and `rate_limit_retry_after: 30`, navigate to dashboard, verify a rate limit badge/indicator is visible with retry countdown text
-        done: false
+        done: true
       - text: Countdown timer — seed rate-limited quota with `retry_after: 10`, navigate to dashboard, verify countdown decrements over time (check value at T+0 and T+2 seconds), verify countdown text updates
-        done: false
+        done: true
       - text: Badge hides when cleared — seed rate-limited quota, navigate to dashboard, verify badge is visible; send SSE `quota_update` with `rate_limited: false`, verify badge disappears without page refresh
-        done: false
+        done: true
   - phase: SSE Update Tests
     tasks:
       - text: quota_update refreshes cards — open dashboard in Playwright, verify initial token counts, send SSE `quota_update` event with new token counts (input_tokens: 2500, output_tokens: 1200), verify stat cards update to new values without page refresh
-        done: false
+        done: true
       - text: Rapid updates coalesce — open dashboard, send 10 `quota_update` SSE events in quick succession (50ms apart) with incrementing token counts, verify final displayed values match the last event, verify no visual flickering or intermediate renders
-        done: false
+        done: true
       - text: Incremental updates — open dashboard with initial quota (input: 1000), spawn a mock agent via API that reports usage (input: 500), verify the stat cards update to show aggregated total (input: 1500) after the `quota_update` event arrives
-        done: false
+        done: true
   - phase: Aggregation Tests
     tasks:
       - text: Multi-agent totals — seed quota from two mock agents (agent-A: 1000 input, agent-B: 2000 input), navigate to dashboard, verify stat cards show aggregated totals (3000 input), verify cost is the sum of both agents' costs
-        done: false
+        done: true
       - text: Per-agent breakdown — if the UI provides a per-agent breakdown view, seed two agents with different usage, navigate to breakdown, verify individual agent usage is displayed correctly; if no breakdown view, verify the aggregate display is correct
-        done: false
+        done: true
       - text: History view — if the UI provides a quota history or timeline, seed multiple quota snapshots at different timestamps, verify the history displays data points in chronological order; if no history view, verify the current snapshot display is correct
-        done: false
+        done: true
   - phase: Edge and Failure Cases
     tasks:
       - text: Large and zero values — seed quota with very large token counts (1,000,000+ input tokens, $10,000+ cost), verify stat cards format with commas or abbreviations without overflow; seed zero values (0 tokens, $0.00 cost), verify cards display zero gracefully
-        done: false
+        done: true
       - text: Zero and small costs — seed quota with `total_cost_usd: 0`, verify "$0.00" display; seed `total_cost_usd: 0.0001`, verify the UI shows appropriate precision without rounding to zero
-        done: false
+        done: true
       - text: API errors and malformed events — simulate `GET /api/quota` returning 500 error, verify error state displayed in dashboard (error message or retry prompt); send malformed SSE `quota_update` event (invalid JSON), verify UI does not crash and previous values remain displayed
-        done: false
-extra: "{}"
+        done: true
+extra: {}
