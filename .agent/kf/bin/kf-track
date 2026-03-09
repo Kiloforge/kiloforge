@@ -22,6 +22,48 @@ TRACKS_FILE="${KF_DIR}/tracks.yaml"
 DEPS_FILE="${KF_DIR}/tracks/deps.yaml"
 CONFLICTS_FILE="${KF_DIR}/tracks/conflicts.yaml"
 
+# --- Platform detection ---
+# Detect OS for platform-specific behavior (sed -i, etc.)
+_KF_OS="$(uname -s 2>/dev/null || echo Unknown)"
+case "$_KF_OS" in
+  Darwin*)  _KF_PLATFORM="mac" ;;
+  Linux*)   _KF_PLATFORM="linux" ;;
+  MINGW*|MSYS*|CYGWIN*) _KF_PLATFORM="windows" ;;
+  *)        _KF_PLATFORM="unknown" ;;
+esac
+
+# Platform-portable sed in-place: `sedi 'pattern' file`
+sedi() {
+  if [[ "$_KF_PLATFORM" == "mac" ]]; then
+    sed -i '' "$@"
+  else
+    sed -i "$@"
+  fi
+}
+
+# --- Prerequisite checks ---
+# Python3 is required for kf-track-content (structured YAML management).
+# jq is strongly recommended for canonical JSON ordering.
+_check_prerequisites() {
+  local missing=()
+  if ! command -v python3 &>/dev/null; then
+    missing+=("python3 (required for track content management: init, show, spec, plan, task, progress, migrate)")
+  fi
+  if ! command -v jq &>/dev/null; then
+    missing+=("jq (recommended for canonical JSON field ordering — without it, field order in tracks.yaml may vary)")
+  fi
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "WARNING: Missing tool(s):" >&2
+    for m in "${missing[@]}"; do
+      echo "  - $m" >&2
+    done
+    echo "" >&2
+  fi
+}
+
+# Run prereq check once at startup (only warns, does not block)
+_check_prerequisites
+
 # --- Helpers ---
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 today_iso() { date -u +%Y-%m-%d; }
@@ -201,7 +243,7 @@ set_field() {
   # Normalize field order for stable diffs
   new_json=$(normalize_json "$new_json")
 
-  sed -i '' "s|^${id}: .*|${id}: ${new_json}|" "$TRACKS_FILE"
+  sedi "s|^${id}: .*|${id}: ${new_json}|" "$TRACKS_FILE"
 }
 
 get_track_deps() {
@@ -348,9 +390,9 @@ cmd_update() {
   if [[ "$status" == "completed" || "$status" == "archived" ]]; then
     if [[ -f "$DEPS_FILE" ]]; then
       # Remove the track's own entry (key + any indented lines following it)
-      sed -i '' "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
+      sedi "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
       # Clean up any resulting blank lines
-      sed -i '' '/^$/N;/^\n$/d' "$DEPS_FILE"
+      sedi '/^$/N;/^\n$/d' "$DEPS_FILE"
     fi
     # Remove conflict pairs involving this track
     conflicts_clean_track "$id"
@@ -584,7 +626,7 @@ cmd_deps() {
       ensure_deps_file
       if grep -q "^${id}:" "$DEPS_FILE"; then
         # Track exists in deps — add dependency under it
-        sed -i '' "/^${id}:/{
+        sedi "/^${id}:/{
           a\\
 \\  - ${dep}
         }" "$DEPS_FILE"
@@ -601,7 +643,7 @@ cmd_deps() {
       if [[ -z "$id" || -z "$dep" ]]; then
         echo "Usage: kf-track deps remove <track-id> <dependency-id>" >&2; return 1
       fi
-      sed -i '' "/^${id}:/,/^[^ #]/{/^  - ${dep}$/d;}" "$DEPS_FILE"
+      sedi "/^${id}:/,/^[^ #]/{/^  - ${dep}$/d;}" "$DEPS_FILE"
       echo "Removed dependency: ${id} → ${dep}"
       ;;
     list)
@@ -723,8 +765,8 @@ conflicts_clean_track() {
   # Remove lines where the track ID appears as either half of the pair key.
   # Pair format: <id-a>/<id-b>: {json}
   # Match id at start of line (before /) or after /
-  sed -i '' "/^${id}\//d" "$CONFLICTS_FILE"
-  sed -i '' "/\/${id}:/d" "$CONFLICTS_FILE"
+  sedi "/^${id}\//d" "$CONFLICTS_FILE"
+  sedi "/\/${id}:/d" "$CONFLICTS_FILE"
 }
 
 cmd_conflicts() {
@@ -744,7 +786,7 @@ cmd_conflicts() {
       local pair_key
       pair_key=$(conflict_pair_key "$id_a" "$id_b")
       # Remove existing record for this pair (update semantics)
-      sed -i '' "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
+      sedi "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
       # Build JSON
       local json
       if command -v jq &>/dev/null; then
@@ -764,7 +806,7 @@ cmd_conflicts() {
       fi
       local pair_key
       pair_key=$(conflict_pair_key "$id_a" "$id_b")
-      sed -i '' "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
+      sedi "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
       echo "Removed conflict pair: ${pair_key}"
       ;;
     list)
@@ -813,7 +855,7 @@ cmd_conflicts() {
         if [[ "$status_a" == "completed" || "$status_a" == "archived" || \
               "$status_b" == "completed" || "$status_b" == "archived" || \
               "$status_a" == "unknown" || "$status_b" == "unknown" ]]; then
-          sed -i '' "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
+          sedi "/^${pair_key//\//\\/}:/d" "$CONFLICTS_FILE"
           echo "  Removed: ${pair_key} (${id_a}=${status_a}, ${id_b}=${status_b})"
           ((removed++)) || true
         fi
@@ -847,7 +889,7 @@ cmd_archive() {
 
   # Remove from deps.yaml
   if [[ -f "$DEPS_FILE" ]]; then
-    sed -i '' "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
+    sedi "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
   fi
 
   # Remove conflict pairs involving this track
@@ -1299,8 +1341,17 @@ case "$cmd" in
   compact) cmd_compact "$@" ;;
   deps)      cmd_deps "$@" ;;
   conflicts) cmd_conflicts "$@" ;;
-  # Content commands delegate to kf-track-content (Python)
+  # Content commands delegate to kf-track-content (Python3 required)
   show|spec|plan|task|progress|extra|init|migrate|migrate-all)
+    if ! command -v python3 &>/dev/null; then
+      echo "ERROR: python3 is required for 'kf-track $cmd' but was not found." >&2
+      echo "" >&2
+      echo "Install Python 3:" >&2
+      echo "  macOS:   brew install python3" >&2
+      echo "  Ubuntu:  sudo apt install python3" >&2
+      echo "  Windows: https://www.python.org/downloads/" >&2
+      exit 1
+    fi
     exec "${SCRIPT_DIR}/kf-track-content" "$cmd" "$@" ;;
   help|--help|-h) cmd_help ;;
   *)       echo "Unknown command: $cmd. Run 'kf-track help' for usage." >&2; exit 1 ;;

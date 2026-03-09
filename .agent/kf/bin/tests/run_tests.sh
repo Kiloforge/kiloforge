@@ -13,6 +13,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_DIR="${SCRIPT_DIR}/.."
 PATTERN="${1:-}"
 
+# --- Prerequisite check ---
+MISSING=()
+command -v python3 &>/dev/null || MISSING+=("python3")
+command -v jq &>/dev/null || MISSING+=("jq")
+command -v git &>/dev/null || MISSING+=("git")
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  echo "ERROR: Missing required tools: ${MISSING[*]}" >&2
+  echo "Install them before running tests." >&2
+  exit 1
+fi
+
 # --- Test framework ---
 TESTS_RUN=0
 TESTS_PASSED=0
