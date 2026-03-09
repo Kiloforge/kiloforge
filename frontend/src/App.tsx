@@ -85,7 +85,11 @@ export default function App() {
 
   const spawnMutation = useMutation({
     mutationFn: () =>
-      fetcher<Agent>("/api/agents/interactive", { method: "POST" }),
+      fetcher<Agent>("/api/agents/interactive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      }),
     onSuccess: (agent) => {
       setTerminalAgentId(agent.id);
     },
