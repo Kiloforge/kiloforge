@@ -1403,6 +1403,109 @@ func (h *APIHandler) GetSyncStatus(ctx context.Context, req gen.GetSyncStatusReq
 	return resp, nil
 }
 
+// GetProjectDiff implements gen.StrictServerInterface.
+func (h *APIHandler) GetProjectDiff(ctx context.Context, req gen.GetProjectDiffRequestObject) (gen.GetProjectDiffResponseObject, error) {
+	if h.gitSync == nil {
+		return gen.GetProjectDiff500JSONResponse{Error: "git sync not configured"}, nil
+	}
+	p, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.GetProjectDiff404JSONResponse{Error: fmt.Sprintf("project %q not found", req.Slug)}, nil
+	}
+
+	maxFiles := 100
+	if req.Params.MaxFiles != nil {
+		maxFiles = *req.Params.MaxFiles
+	}
+
+	result, err := h.gitSync.DiffWithMaxFiles(ctx, p.ProjectDir, req.Params.Branch, maxFiles)
+	if err != nil {
+		if _, ok := err.(*gitadapter.BranchNotFoundError); ok {
+			return gen.GetProjectDiff404JSONResponse{Error: err.Error()}, nil
+		}
+		return gen.GetProjectDiff500JSONResponse{Error: err.Error()}, nil
+	}
+
+	resp := gen.GetProjectDiff200JSONResponse{
+		Branch: result.Branch,
+		Base:   result.Base,
+		Stats: gen.DiffStats{
+			FilesChanged: result.Stats.FilesChanged,
+			Insertions:   result.Stats.Insertions,
+			Deletions:    result.Stats.Deletions,
+		},
+		Files: make([]gen.FileDiff, len(result.Files)),
+	}
+	if result.Truncated {
+		t := true
+		resp.Truncated = &t
+	}
+
+	for i, f := range result.Files {
+		gf := gen.FileDiff{
+			Path:       f.Path,
+			Status:     gen.FileDiffStatus(f.Status),
+			Insertions: f.Insertions,
+			Deletions:  f.Deletions,
+			IsBinary:   f.IsBinary,
+			Hunks:      make([]gen.DiffHunk, len(f.Hunks)),
+		}
+		if f.OldPath != "" {
+			gf.OldPath = &f.OldPath
+		}
+		for j, hunk := range f.Hunks {
+			gh := gen.DiffHunk{
+				OldStart: hunk.OldStart,
+				OldLines: hunk.OldLines,
+				NewStart: hunk.NewStart,
+				NewLines: hunk.NewLines,
+				Header:   hunk.Header,
+				Lines:    make([]gen.DiffLine, len(hunk.Lines)),
+			}
+			for k, line := range hunk.Lines {
+				gh.Lines[k] = gen.DiffLine{
+					Type:    gen.DiffLineType(line.Type),
+					Content: line.Content,
+					OldNo:   line.OldNo,
+					NewNo:   line.NewNo,
+				}
+			}
+			gf.Hunks[j] = gh
+		}
+		resp.Files[i] = gf
+	}
+
+	return resp, nil
+}
+
+// GetProjectBranches implements gen.StrictServerInterface.
+func (h *APIHandler) GetProjectBranches(_ context.Context, req gen.GetProjectBranchesRequestObject) (gen.GetProjectBranchesResponseObject, error) {
+	_, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.GetProjectBranches404JSONResponse{Error: fmt.Sprintf("project %q not found", req.Slug)}, nil
+	}
+
+	// Build branch info from active agents that have worktree directories.
+	var branches []gen.BranchInfo
+	if h.agents != nil {
+		for _, a := range h.agents.Agents() {
+			if a.WorktreeDir == "" {
+				continue
+			}
+			branches = append(branches, gen.BranchInfo{
+				Branch:  a.Ref,
+				AgentId: &a.ID,
+				TrackId: &a.Ref,
+				Status:  a.Status,
+			})
+		}
+	}
+	if branches == nil {
+		branches = []gen.BranchInfo{}
+	}
+	return gen.GetProjectBranches200JSONResponse(branches), nil
+}
+
 // findProject looks up a project by slug from the projects list.
 func (h *APIHandler) findProject(slug string) (domain.Project, bool) {
 	if h.projects == nil {
