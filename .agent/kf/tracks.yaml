@@ -34,7 +34,7 @@ design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforg
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-distributed-tracing_20260309194839Z: {"title":"E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-git-origin-sync_20260309194840Z: {"title":"E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-git-origin-sync_20260309194840Z: {"title":"E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-health-preflight-onboarding_20260309194831Z: {"title":"E2E Tests: Health Check, Preflight Validation, and Onboarding Flow","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-infra-mock-agent_20260309194830Z: {"title":"E2E Test Infrastructure and Mock Agent Binary","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-interactive-terminal_20260309194835Z: {"title":"E2E Tests: Interactive Agent Terminal via WebSocket","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}

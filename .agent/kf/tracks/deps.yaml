@@ -40,11 +40,6 @@ e2e-agent-lifecycle_20260309194834Z:
 
 e2e-distributed-tracing_20260309194839Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-e2e-git-origin-sync_20260309194840Z:
-  - e2e-infra-mock-agent_20260309194830Z
-  - e2e-project-management_20260309194832Z
-
 e2e-health-preflight-onboarding_20260309194831Z:
   - e2e-infra-mock-agent_20260309194830Z
 
