@@ -35,26 +35,32 @@ dev: ensure-dist
 	wait
 
 test: ensure-dist
-	cd backend && go test -race ./...
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go test -race ./...
 	cd frontend && npm test -- --run
 
 test-smoke: ensure-dist
-	cd backend && go test -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go test -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
 
 test-integration: ensure-dist
-	cd backend && go test -race -tags=integration ./...
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go test -race -tags=integration ./...
 
 test-e2e: ensure-dist
 	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
 		go test -race -tags=e2e -run 'TestE2E' -count=1 ./internal/adapter/rest/ -v
 
 test-all: ensure-dist
-	cd backend && go test -race -tags=integration ./...
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go test -race -tags=integration ./...
 	cd frontend && npm test -- --run
 
 test-coverage: ensure-dist
-	cd backend && go test -race -coverprofile=coverage.out ./...
-	cd backend && go tool cover -func=coverage.out
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go test -race -coverprofile=coverage.out ./...
+	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go tool cover -func=coverage.out
 	@echo "HTML report: go tool cover -html=backend/coverage.out"
 
 clean:

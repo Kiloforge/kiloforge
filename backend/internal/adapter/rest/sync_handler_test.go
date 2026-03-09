@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	gitadapter "kiloforge/internal/adapter/git"
@@ -46,6 +47,26 @@ func setupSyncTestMux(t *testing.T, projects []domain.Project) *http.ServeMux {
 	return mux
 }
 
+// cleanGitEnv returns os.Environ() with GIT_DIR and GIT_WORK_TREE removed
+// to prevent worktree env vars from leaking into subprocess git operations.
+func cleanGitEnv() []string {
+	var env []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "GIT_DIR=") || strings.HasPrefix(e, "GIT_WORK_TREE=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	return env
+}
+
+// cleanGitCmd creates a git exec.Cmd with GIT_DIR/GIT_WORK_TREE removed.
+func cleanGitCmd(args ...string) *exec.Cmd {
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Env = cleanGitEnv()
+	return cmd
+}
+
 // initTestRepo creates a bare + clone pair and returns a Project pointing at the clone.
 func initTestRepo(t *testing.T, slug string) (domain.Project, string) {
 	t.Helper()
@@ -53,10 +74,16 @@ func initTestRepo(t *testing.T, slug string) (domain.Project, string) {
 	bareDir := filepath.Join(dir, "origin.git")
 	cloneDir := filepath.Join(dir, "clone")
 
-	run := func(args ...string) {
-		t.Helper()
+	gitCmd := func(args ...string) *exec.Cmd {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = dir
+		// Clear GIT_DIR/GIT_WORK_TREE to avoid worktree env leaking into subprocesses
+		cmd.Env = cleanGitEnv()
+		return cmd
+	}
+	run := func(args ...string) {
+		t.Helper()
+		cmd := gitCmd(args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("%v: %s: %v", args, out, err)
@@ -66,18 +93,18 @@ func initTestRepo(t *testing.T, slug string) (domain.Project, string) {
 	run("git", "init", "--bare", bareDir)
 	tmpWork := filepath.Join(dir, "tmp-work")
 	run("git", "clone", bareDir, tmpWork)
-	exec.Command("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	gitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	gitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
 	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
 	f.WriteString("# test")
 	f.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "initial").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	gitCmd("git", "-C", tmpWork, "add", ".").Run()
+	gitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	gitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	run("git", "clone", bareDir, cloneDir)
-	exec.Command("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+	gitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	gitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
 
 	p := domain.Project{
 		Slug:         slug,
@@ -132,8 +159,8 @@ func TestPushProject_OK(t *testing.T) {
 	f, _ := os.Create(filepath.Join(p.ProjectDir, "new.txt"))
 	f.WriteString("push me")
 	f.Close()
-	exec.Command("git", "-C", p.ProjectDir, "add", ".").Run()
-	exec.Command("git", "-C", p.ProjectDir, "commit", "-m", "to push").Run()
+	cleanGitCmd("git", "-C", p.ProjectDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", p.ProjectDir, "commit", "-m", "to push").Run()
 
 	mux := setupSyncTestMux(t, []domain.Project{p})
 
@@ -156,7 +183,7 @@ func TestPushProject_OK(t *testing.T) {
 	}
 
 	// Verify remote branch exists.
-	out, _ := exec.Command("git", "-C", bareDir, "branch", "--list", "kf/main").Output()
+	out, _ := cleanGitCmd("git", "-C", bareDir, "branch", "--list", "kf/main").Output()
 	if len(out) == 0 {
 		t.Error("remote branch kf/main not found")
 	}
@@ -200,15 +227,15 @@ func TestPullProject_OK(t *testing.T) {
 	// Push an upstream change via a second clone.
 	dir := filepath.Dir(p.ProjectDir)
 	tmpWork := filepath.Join(dir, "tmp-push")
-	exec.Command("git", "clone", filepath.Join(dir, "origin.git"), tmpWork).Run()
-	exec.Command("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "clone", filepath.Join(dir, "origin.git"), tmpWork).Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
 	f, _ := os.Create(filepath.Join(tmpWork, "upstream.txt"))
 	f.WriteString("upstream")
 	f.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	mux := setupSyncTestMux(t, []domain.Project{p})
 

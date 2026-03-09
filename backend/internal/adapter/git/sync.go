@@ -181,13 +181,23 @@ func (gs *GitSync) revListCounts(ctx context.Context, projectDir, local, remote 
 }
 
 // gitCmd creates a git command for the given directory with optional SSH key env.
+// It clears GIT_DIR and GIT_WORK_TREE from the environment so that -C works
+// correctly even when the parent process runs in a git worktree.
 func (gs *GitSync) gitCmd(ctx context.Context, projectDir, sshKeyPath string, args ...string) *exec.Cmd {
 	fullArgs := append([]string{"-C", projectDir}, args...)
 	cmd := exec.CommandContext(ctx, "git", fullArgs...)
-	if sshKeyPath != "" {
-		cmd.Env = append(os.Environ(),
-			fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", sshKeyPath),
-		)
+
+	// Build a clean env without GIT_DIR/GIT_WORK_TREE which would override -C.
+	var env []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "GIT_DIR=") || strings.HasPrefix(e, "GIT_WORK_TREE=") {
+			continue
+		}
+		env = append(env, e)
 	}
+	if sshKeyPath != "" {
+		env = append(env, fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes", sshKeyPath))
+	}
+	cmd.Env = env
 	return cmd
 }

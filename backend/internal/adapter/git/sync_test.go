@@ -9,6 +9,26 @@ import (
 	"testing"
 )
 
+// cleanGitEnv returns os.Environ() with GIT_DIR and GIT_WORK_TREE removed
+// to prevent worktree env vars from leaking into subprocess git operations.
+func cleanGitEnv() []string {
+	var env []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "GIT_DIR=") || strings.HasPrefix(e, "GIT_WORK_TREE=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	return env
+}
+
+// cleanGitCmd creates a git exec.Cmd with GIT_DIR/GIT_WORK_TREE removed.
+func cleanGitCmd(args ...string) *exec.Cmd {
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Env = cleanGitEnv()
+	return cmd
+}
+
 // initBareAndClone creates a bare "origin" repo and a clone of it.
 // Returns (bareDir, cloneDir). The clone has one initial commit on main.
 func initBareAndClone(t *testing.T) (string, string) {
@@ -21,6 +41,7 @@ func initBareAndClone(t *testing.T) (string, string) {
 		t.Helper()
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("%v failed: %s: %v", args, out, err)
@@ -35,23 +56,23 @@ func initBareAndClone(t *testing.T) (string, string) {
 	run("git", "clone", bareDir, tmpWork)
 
 	// Configure git user in tmpWork.
-	cmd := exec.Command("git", "-C", tmpWork, "config", "user.email", "test@test.com")
+	cmd := cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com")
 	cmd.Run()
-	cmd = exec.Command("git", "-C", tmpWork, "config", "user.name", "Test")
+	cmd = cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test")
 	cmd.Run()
 
 	// Create initial commit.
 	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
 	f.WriteString("# test")
 	f.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "initial").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	// Clone for the test.
 	run("git", "clone", bareDir, cloneDir)
-	exec.Command("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
 
 	return bareDir, cloneDir
 }
@@ -87,8 +108,8 @@ func TestSyncStatus_Ahead(t *testing.T) {
 	f, _ := os.Create(filepath.Join(cloneDir, "new.txt"))
 	f.WriteString("new file")
 	f.Close()
-	exec.Command("git", "-C", cloneDir, "add", ".").Run()
-	exec.Command("git", "-C", cloneDir, "commit", "-m", "local change").Run()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "local change").Run()
 
 	gs := New()
 	status, err := gs.SyncStatus(context.Background(), cloneDir, "")
@@ -116,6 +137,7 @@ func TestSyncStatus_Behind(t *testing.T) {
 		t.Helper()
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("%v failed: %s: %v", args, out, err)
@@ -126,26 +148,26 @@ func TestSyncStatus_Behind(t *testing.T) {
 	run("git", "init", "--bare", bareDir)
 	tmpWork := filepath.Join(dir, "tmp-work")
 	run("git", "clone", bareDir, tmpWork)
-	exec.Command("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
 	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
 	f.WriteString("# test")
 	f.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "initial").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	run("git", "clone", bareDir, cloneDir)
-	exec.Command("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
 
 	// Push a new commit to origin via tmpWork.
 	f2, _ := os.Create(filepath.Join(tmpWork, "upstream.txt"))
 	f2.WriteString("upstream change")
 	f2.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "upstream change").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "upstream change").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	// Fetch in clone so it knows about the upstream commit.
 	gs := New()
@@ -169,8 +191,8 @@ func TestPushToRemote(t *testing.T) {
 	f, _ := os.Create(filepath.Join(cloneDir, "pushed.txt"))
 	f.WriteString("push me")
 	f.Close()
-	exec.Command("git", "-C", cloneDir, "add", ".").Run()
-	exec.Command("git", "-C", cloneDir, "commit", "-m", "to push").Run()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "to push").Run()
 
 	gs := New()
 	result, err := gs.PushToRemote(context.Background(), cloneDir, "main", "kf/main", "")
@@ -185,7 +207,7 @@ func TestPushToRemote(t *testing.T) {
 	}
 
 	// Verify the remote branch exists.
-	out, err := exec.Command("git", "-C", bareDir, "branch", "--list", "kf/main").Output()
+	out, err := cleanGitCmd("git", "-C", bareDir, "branch", "--list", "kf/main").Output()
 	if err != nil {
 		t.Fatalf("list branches: %v", err)
 	}
@@ -197,7 +219,7 @@ func TestPushToRemote(t *testing.T) {
 func TestPushToRemote_NoOrigin(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	exec.Command("git", "-C", dir, "init").Run()
+	cleanGitCmd("git", "-C", dir, "init").Run()
 
 	gs := New()
 	_, err := gs.PushToRemote(context.Background(), dir, "main", "kf/main", "")
@@ -216,6 +238,7 @@ func TestPullFromRemote(t *testing.T) {
 		t.Helper()
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("%v failed: %s: %v", args, out, err)
@@ -225,26 +248,26 @@ func TestPullFromRemote(t *testing.T) {
 	run("git", "init", "--bare", bareDir)
 	tmpWork := filepath.Join(dir, "tmp-work")
 	run("git", "clone", bareDir, tmpWork)
-	exec.Command("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
 	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
 	f.WriteString("# test")
 	f.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "initial").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	run("git", "clone", bareDir, cloneDir)
-	exec.Command("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
 
 	// Push upstream changes.
 	f2, _ := os.Create(filepath.Join(tmpWork, "upstream.txt"))
 	f2.WriteString("upstream change")
 	f2.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	gs := New()
 	result, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "")
@@ -271,6 +294,7 @@ func TestPullFromRemote_Diverged(t *testing.T) {
 		t.Helper()
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("%v failed: %s: %v", args, out, err)
@@ -280,33 +304,33 @@ func TestPullFromRemote_Diverged(t *testing.T) {
 	run("git", "init", "--bare", bareDir)
 	tmpWork := filepath.Join(dir, "tmp-work")
 	run("git", "clone", bareDir, tmpWork)
-	exec.Command("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
 	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
 	f.WriteString("# test")
 	f.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "initial").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	run("git", "clone", bareDir, cloneDir)
-	exec.Command("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
 
 	// Create divergence: local commit.
 	f2, _ := os.Create(filepath.Join(cloneDir, "local.txt"))
 	f2.WriteString("local")
 	f2.Close()
-	exec.Command("git", "-C", cloneDir, "add", ".").Run()
-	exec.Command("git", "-C", cloneDir, "commit", "-m", "local").Run()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "local").Run()
 
 	// Create divergence: upstream commit.
 	f3, _ := os.Create(filepath.Join(tmpWork, "upstream.txt"))
 	f3.WriteString("upstream")
 	f3.Close()
-	exec.Command("git", "-C", tmpWork, "add", ".").Run()
-	exec.Command("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
-	exec.Command("git", "-C", tmpWork, "push", "origin", "main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	gs := New()
 	_, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "")
