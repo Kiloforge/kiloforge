@@ -436,9 +436,34 @@ cmd_set() {
 }
 
 cmd_get() {
-  local id="$1"
+  local id="" ref=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --ref)  ref="$2"; shift 2 ;;
+      -*)     echo "Unknown option: $1" >&2; return 1 ;;
+      *)      id="$1"; shift ;;
+    esac
+  done
+
   if [[ -z "$id" ]]; then
-    echo "Usage: kf-track get <track-id>" >&2; return 1
+    echo "Usage: kf-track get <track-id> [--ref <branch|commit>]" >&2; return 1
+  fi
+
+  # If --ref is specified, override file paths with temp files from that ref
+  if [[ -n "$ref" ]]; then
+    local ref_tracks ref_deps
+    ref_tracks=$(git show "${ref}:.agent/kf/tracks.yaml" 2>/dev/null) || {
+      echo "ERROR: Cannot read tracks.yaml from ref '${ref}'" >&2; return 1
+    }
+    ref_deps=$(git show "${ref}:.agent/kf/tracks/deps.yaml" 2>/dev/null || true)
+    local tmp_tracks tmp_deps
+    tmp_tracks=$(mktemp)
+    tmp_deps=$(mktemp)
+    echo "$ref_tracks" > "$tmp_tracks"
+    echo "$ref_deps" > "$tmp_deps"
+    TRACKS_FILE="$tmp_tracks"
+    DEPS_FILE="$tmp_deps"
+    trap "rm -f '$tmp_tracks' '$tmp_deps'" RETURN
   fi
 
   local line
@@ -475,7 +500,7 @@ cmd_get() {
 }
 
 cmd_list() {
-  local filter_status="" filter_active="" filter_ready="" show_all=false format="table"
+  local filter_status="" filter_active="" filter_ready="" show_all=false format="table" ref=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --status)  filter_status="$2"; shift 2 ;;
@@ -484,10 +509,30 @@ cmd_list() {
       --all)     show_all=true; shift ;;
       --json)    format="json"; shift ;;
       --ids)     format="ids"; shift ;;
+      --ref)     ref="$2"; shift 2 ;;
       -*)        echo "Unknown option: $1" >&2; return 1 ;;
       *)         echo "Unknown argument: $1" >&2; return 1 ;;
     esac
   done
+
+  # If --ref is specified, use git show to read from that ref
+  if [[ -n "$ref" ]]; then
+    local ref_tracks ref_deps
+    ref_tracks=$(git show "${ref}:.agent/kf/tracks.yaml" 2>/dev/null) || {
+      echo "ERROR: Cannot read tracks.yaml from ref '${ref}'" >&2; return 1
+    }
+    ref_deps=$(git show "${ref}:.agent/kf/tracks/deps.yaml" 2>/dev/null || true)
+    # Create temp files for the ref data and redirect
+    local tmp_tracks tmp_deps
+    tmp_tracks=$(mktemp)
+    tmp_deps=$(mktemp)
+    echo "$ref_tracks" > "$tmp_tracks"
+    echo "$ref_deps" > "$tmp_deps"
+    # Override globals for this invocation
+    TRACKS_FILE="$tmp_tracks"
+    DEPS_FILE="$tmp_deps"
+    trap "rm -f '$tmp_tracks' '$tmp_deps'" RETURN
+  fi
 
   ensure_tracks_file
 
@@ -1266,6 +1311,242 @@ _compact_import() {
   echo "Imported compaction record: ${hash:0:10} (source: ${source})"
 }
 
+# --- Index command ---
+
+QUICK_LINKS_FILE="${KF_DIR}/quick-links.md"
+
+ensure_quick_links_file() {
+  if [[ ! -f "$QUICK_LINKS_FILE" ]]; then
+    cat > "$QUICK_LINKS_FILE" <<'QL'
+# Quick Links
+#
+# Navigation links to key project files. Managed by `kf-track quick-links`.
+#
+# FORMAT: - [Label](./relative/path.md)
+
+- [Product Definition](./product.md)
+- [Tech Stack](./tech-stack.md)
+- [Tracks Registry](./tracks.yaml)
+QL
+  fi
+}
+
+cmd_quick_links() {
+  local subcmd="${1:-show}"; shift 2>/dev/null || true
+
+  case "$subcmd" in
+    show)
+      local ref=""
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --ref)  ref="$2"; shift 2 ;;
+          *)      echo "Unknown argument: $1" >&2; return 1 ;;
+        esac
+      done
+      if [[ -n "$ref" ]]; then
+        local content
+        content=$(git show "${ref}:.agent/kf/quick-links.md" 2>/dev/null) || {
+          echo "ERROR: Cannot read quick-links.md from ref '${ref}'" >&2; return 1
+        }
+        echo "$content" | grep -v "^#" | grep -v "^$" || true
+      else
+        ensure_quick_links_file
+        grep -v "^#" "$QUICK_LINKS_FILE" | grep -v "^$" || true
+      fi
+      ;;
+    add)
+      local label="${1:-}" path="${2:-}"
+      if [[ -z "$label" || -z "$path" ]]; then
+        echo "Usage: kf-track quick-links add <label> <path>" >&2
+        return 1
+      fi
+      ensure_quick_links_file
+      # Check if label already exists
+      if grep -q "\[${label}\]" "$QUICK_LINKS_FILE" 2>/dev/null; then
+        echo "Quick link '${label}' already exists. Remove first to update." >&2
+        return 1
+      fi
+      echo "- [${label}](${path})" >> "$QUICK_LINKS_FILE"
+      echo "Added quick link: ${label} → ${path}"
+      ;;
+    remove)
+      local label="${1:-}"
+      if [[ -z "$label" ]]; then
+        echo "Usage: kf-track quick-links remove <label>" >&2
+        return 1
+      fi
+      if [[ ! -f "$QUICK_LINKS_FILE" ]]; then
+        echo "No quick-links.md file found." >&2
+        return 1
+      fi
+      if ! grep -q "\[${label}\]" "$QUICK_LINKS_FILE" 2>/dev/null; then
+        echo "Quick link '${label}' not found." >&2
+        return 1
+      fi
+      sedi "/\[${label}\]/d" "$QUICK_LINKS_FILE"
+      echo "Removed quick link: ${label}"
+      ;;
+    *)
+      echo "Usage: kf-track quick-links [show|add <label> <path>|remove <label>]" >&2
+      return 1
+      ;;
+  esac
+}
+
+cmd_index() {
+  local ref=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --ref)    ref="$2"; shift 2 ;;
+      -*)       echo "Unknown option: $1" >&2; return 1 ;;
+      *)        echo "Unknown argument: $1" >&2; return 1 ;;
+    esac
+  done
+
+  local tracks_content quick_links_content
+  if [[ -n "$ref" ]]; then
+    tracks_content=$(git show "${ref}:.agent/kf/tracks.yaml" 2>/dev/null) || {
+      echo "ERROR: Cannot read tracks.yaml from ref '${ref}'" >&2; return 1
+    }
+    quick_links_content=$(git show "${ref}:.agent/kf/quick-links.md" 2>/dev/null || true)
+  else
+    ensure_tracks_file
+    tracks_content=$(cat "$TRACKS_FILE")
+    ensure_quick_links_file
+    quick_links_content=$(cat "$QUICK_LINKS_FILE")
+  fi
+
+  # Build the index output
+  local output=""
+  output+="# Kiloforge Project Index"$'\n'
+  output+=""$'\n'
+
+  # Quick links section
+  if [[ -n "$quick_links_content" ]]; then
+    output+="## Quick Links"$'\n'
+    output+=""$'\n'
+    output+="$(echo "$quick_links_content" | grep -v "^#" | grep -v "^$" || true)"$'\n'
+    output+=""$'\n'
+  fi
+
+  # Count tracks by status
+  local pending=0 in_progress=0 completed=0 archived=0 total=0
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    total=$((total + 1))
+    case "$line" in
+      *'"status":"pending"'*)      pending=$((pending + 1)) ;;
+      *'"status":"in-progress"'*)  in_progress=$((in_progress + 1)) ;;
+      *'"status":"completed"'*)    completed=$((completed + 1)) ;;
+      *'"status":"archived"'*)     archived=$((archived + 1)) ;;
+    esac
+  done <<< "$tracks_content"
+
+  output+="## Summary"$'\n'
+  output+=""$'\n'
+  output+="| Status | Count |"$'\n'
+  output+="|--------|-------|"$'\n'
+  output+="| Pending | ${pending} |"$'\n'
+  output+="| In Progress | ${in_progress} |"$'\n'
+  output+="| Completed | ${completed} |"$'\n'
+  output+="| Archived | ${archived} |"$'\n'
+  output+="| **Total** | **${total}** |"$'\n'
+  output+=""$'\n'
+
+  # In-progress tracks
+  if [[ "$in_progress" -gt 0 ]]; then
+    output+="## In Progress"$'\n'
+    output+=""$'\n'
+    while IFS= read -r line; do
+      [[ -z "$line" || "$line" == \#* ]] && continue
+      [[ "$line" != *'"status":"in-progress"'* ]] && continue
+      local id title
+      id=$(echo "$line" | sed 's/:.*//')
+      if command -v jq &>/dev/null; then
+        title=$(echo "$line" | sed "s/^[^{]*//" | jq -r '.title // ""')
+      else
+        title=$(echo "$line" | grep -o '"title":"[^"]*"' | head -1 | sed 's/"title":"\(.*\)"/\1/')
+      fi
+      output+="- **${id}** — ${title}"$'\n'
+    done <<< "$tracks_content"
+    output+=""$'\n'
+  fi
+
+  # Pending tracks
+  if [[ "$pending" -gt 0 ]]; then
+    output+="## Pending"$'\n'
+    output+=""$'\n'
+    while IFS= read -r line; do
+      [[ -z "$line" || "$line" == \#* ]] && continue
+      [[ "$line" != *'"status":"pending"'* ]] && continue
+      local id title
+      id=$(echo "$line" | sed 's/:.*//')
+      if command -v jq &>/dev/null; then
+        title=$(echo "$line" | sed "s/^[^{]*//" | jq -r '.title // ""')
+      else
+        title=$(echo "$line" | grep -o '"title":"[^"]*"' | head -1 | sed 's/"title":"\(.*\)"/\1/')
+      fi
+      output+="- **${id}** — ${title}"$'\n'
+    done <<< "$tracks_content"
+    output+=""$'\n'
+  fi
+
+  echo "$output"
+}
+
+cmd_content() {
+  local cmd="$1"; shift
+  if ! command -v python3 &>/dev/null; then
+    echo "ERROR: python3 is required for 'kf-track $cmd' but was not found." >&2
+    echo "" >&2
+    echo "Install Python 3:" >&2
+    echo "  macOS:   brew install python3" >&2
+    echo "  Ubuntu:  sudo apt install python3" >&2
+    echo "  Windows: https://www.python.org/downloads/" >&2
+    exit 1
+  fi
+  # Handle --ref for read-only content commands: extract track.yaml from git ref
+  local ref="" content_args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "--ref" ]]; then
+      ref="__next__"
+      continue
+    fi
+    if [[ "$ref" == "__next__" ]]; then
+      ref="$arg"
+      continue
+    fi
+    content_args+=("$arg")
+  done
+  if [[ -n "$ref" && "$ref" != "__next__" ]]; then
+    # Read-only commands only
+    case "$cmd" in
+      show|spec|plan|progress)
+        local track_id="${content_args[0]:-}"
+        if [[ -z "$track_id" ]]; then
+          echo "ERROR: track ID required" >&2; exit 1
+        fi
+        local ref_yaml
+        ref_yaml=$(git show "${ref}:.agent/kf/tracks/${track_id}/track.yaml" 2>/dev/null) || {
+          echo "ERROR: Cannot read track.yaml for '${track_id}' from ref '${ref}'" >&2; exit 1
+        }
+        local tmp_dir
+        tmp_dir=$(mktemp -d)
+        mkdir -p "${tmp_dir}/tracks/${track_id}"
+        echo "$ref_yaml" > "${tmp_dir}/tracks/${track_id}/track.yaml"
+        KF_DIR="$tmp_dir" "${SCRIPT_DIR}/kf-track-content" "$cmd" "${content_args[@]}"
+        rm -rf "$tmp_dir"
+        ;;
+      *)
+        echo "ERROR: --ref is only supported for read-only commands (show, spec, plan, progress)" >&2
+        exit 1
+        ;;
+    esac
+  else
+    exec "${SCRIPT_DIR}/kf-track-content" "$cmd" "$@"
+  fi
+}
+
 cmd_help() {
   cat <<'HELP'
 kf-track — Track registry management for Kiloforge agents
@@ -1277,7 +1558,7 @@ COMMANDS:
   add <id> --title "..." [--type ...] [--deps "a,b"]   Add a new track
   update <id> --status <status>                         Update track status
   set <id> --<field> <value>                            Set arbitrary metadata field
-  get <id>                                              Show track details + deps
+  get <id> [--ref <branch|commit>]                       Show track details + deps
   archive <id> [reason]                                 Archive a track
 
   list [options]                                        List tracks (default: ready)
@@ -1287,6 +1568,7 @@ COMMANDS:
     --all             Show all tracks including completed/archived
     --json            Output as JSON lines
     --ids             Output track IDs only
+    --ref <ref>       Read from a git branch or commit
 
   show <id> [--section spec|plan|extra|header] [--json]   Show track content
   spec <id> [--field F] [--set "val"]                    Read/write spec fields
@@ -1312,6 +1594,11 @@ COMMANDS:
   conflicts remove <a> <b>                              Remove conflict pair
   conflicts list [track-id]                             List pairs (filtered)
   conflicts clean                                       Remove pairs for completed tracks
+
+  index [--ref <branch|commit>]                          Generate project index from tracks.yaml
+  quick-links [show [--ref <ref>]]                       Show quick links
+  quick-links add <label> <path>                         Add a quick link
+  quick-links remove <label>                             Remove a quick link
 
 STATUS VALUES:
   pending       Track created, not yet started
@@ -1339,20 +1626,13 @@ case "$cmd" in
   list)    cmd_list "$@" ;;
   archive) cmd_archive "$@" ;;
   compact) cmd_compact "$@" ;;
-  deps)      cmd_deps "$@" ;;
-  conflicts) cmd_conflicts "$@" ;;
+  deps)        cmd_deps "$@" ;;
+  conflicts)   cmd_conflicts "$@" ;;
+  index)       cmd_index "$@" ;;
+  quick-links) cmd_quick_links "$@" ;;
   # Content commands delegate to kf-track-content (Python3 required)
   show|spec|plan|task|progress|extra|init|migrate|migrate-all)
-    if ! command -v python3 &>/dev/null; then
-      echo "ERROR: python3 is required for 'kf-track $cmd' but was not found." >&2
-      echo "" >&2
-      echo "Install Python 3:" >&2
-      echo "  macOS:   brew install python3" >&2
-      echo "  Ubuntu:  sudo apt install python3" >&2
-      echo "  Windows: https://www.python.org/downloads/" >&2
-      exit 1
-    fi
-    exec "${SCRIPT_DIR}/kf-track-content" "$cmd" "$@" ;;
+    cmd_content "$cmd" "$@" ;;
   help|--help|-h) cmd_help ;;
   *)       echo "Unknown command: $cmd. Run 'kf-track help' for usage." >&2; exit 1 ;;
 esac
