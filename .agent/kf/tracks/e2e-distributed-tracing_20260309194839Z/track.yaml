@@ -3,7 +3,7 @@ title: E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline
 type: chore
 status: pending
 created: 2026-03-09T19:48:39Z
-updated: 2026-03-09T19:48:39Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the distributed tracing UI: listing traces, viewing trace detail with span hierarchy, timeline visualization, and trace filtering, covering happy path, edge cases, and expected failures.
   context: |
@@ -72,41 +72,41 @@ plan:
   - phase: Trace List Tests
     tasks:
       - text: List with seeded traces — seed 3-5 traces with known IDs and durations, navigate to trace list page, verify all traces appear with correct trace ID, duration, and span count
-        done: false
+        done: true
       - text: Empty list — start with no traces seeded, navigate to trace list page, verify empty state message is displayed (e.g., "No traces recorded")
-        done: false
+        done: true
       - text: Trace metadata display — seed a trace with known root span name and started_at timestamp, verify the list row shows root span name, formatted timestamp, and duration in human-readable format
-        done: false
+        done: true
   - phase: Trace Detail Tests
     tasks:
       - text: Span hierarchy — seed a trace with 3-level span hierarchy (root -> child -> grandchild), navigate to trace detail, verify all three spans are displayed with correct parent-child indentation or tree structure
-        done: false
+        done: true
       - text: Span attributes — seed a trace with spans containing attributes (project slug, track ID, agent ID, webhook event type), navigate to detail, verify attributes are displayed for each span (in a detail panel or inline)
-        done: false
+        done: true
       - text: Navigation from list — seed traces, navigate to trace list, click on a trace row, verify URL changes to `/traces/{traceId}` and the detail page loads with the correct trace
-        done: false
+        done: true
   - phase: Timeline Tests
     tasks:
       - text: Timeline rendering — seed a trace with 3 spans of known durations, navigate to trace detail, verify spans are rendered as visual bars in a timeline view
-        done: false
+        done: true
       - text: Relative timing — seed a trace where child span starts 100ms after root span, verify the child span bar is offset from the root span bar in the timeline
-        done: false
+        done: true
       - text: Span duration display — seed spans with varying durations (10ms, 500ms, 2000ms), verify the timeline bar widths are proportional to duration, and duration text labels are shown
-        done: false
+        done: true
   - phase: Real-Time Tests
     tasks:
       - text: trace_update SSE event — open trace list page in Playwright, seed a new trace via API, verify the trace list updates to show the new trace without manual page refresh
-        done: false
+        done: true
       - text: New trace appears in list — subscribe to SSE, create a trace, verify `trace_update` event is received AND the UI reflects the new trace in the list
-        done: false
+        done: true
       - text: Auto-refresh on update — open trace detail page for an existing trace, add new spans to that trace via API, verify the detail page updates to show the new spans
-        done: false
+        done: true
   - phase: Edge and Failure Cases
     tasks:
       - text: Deep nesting — seed a trace with 6-level deep span hierarchy, navigate to detail, verify all levels render without layout overflow or truncation, verify tree/indentation is visible for all levels
-        done: false
+        done: true
       - text: Nonexistent trace — navigate directly to `/traces/nonexistent-id`, verify a 404 or "Trace not found" error page is displayed, verify no crash or blank page
-        done: false
+        done: true
       - text: Missing spans and API errors — seed a trace with a span referencing a nonexistent parent_span_id, verify the UI handles orphaned spans gracefully (renders them at root level or shows warning); simulate API error during trace list load, verify error state is shown
-        done: false
-extra: "{}"
+        done: true
+extra: {}

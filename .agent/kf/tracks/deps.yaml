@@ -38,8 +38,7 @@ dashboard-theme-alignment_20260310225322Z:
 e2e-agent-lifecycle_20260309194834Z:
   - e2e-infra-mock-agent_20260309194830Z
 
-e2e-distributed-tracing_20260309194839Z:
-  - e2e-infra-mock-agent_20260309194830Z
+
 e2e-health-preflight-onboarding_20260309194831Z:
   - e2e-infra-mock-agent_20260309194830Z
 
