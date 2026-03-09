@@ -170,3 +170,56 @@ func (g DepsGraph) AllDepsSatisfied(trackID string, completedIDs map[string]bool
 func (g DepsGraph) HasDeps(trackID string) bool {
 	return len(g[trackID]) > 0
 }
+
+// TopologicalSort returns track IDs in dependency order using Kahn's algorithm.
+// Only tracks present in the candidates set are included in the output.
+// Returns an error if a cycle is detected among the candidates.
+func (g DepsGraph) TopologicalSort(candidates map[string]bool) ([]string, error) {
+	// Build in-degree map scoped to candidates.
+	inDegree := make(map[string]int, len(candidates))
+	for id := range candidates {
+		inDegree[id] = 0
+	}
+	for id := range candidates {
+		for _, dep := range g[id] {
+			if candidates[dep] {
+				inDegree[id]++
+			}
+		}
+	}
+
+	// Seed queue with zero in-degree nodes.
+	var queue []string
+	for id, deg := range inDegree {
+		if deg == 0 {
+			queue = append(queue, id)
+		}
+	}
+	sort.Strings(queue) // deterministic order
+
+	var result []string
+	for len(queue) > 0 {
+		node := queue[0]
+		queue = queue[1:]
+		result = append(result, node)
+
+		// For each candidate that depends on node, decrement in-degree.
+		for id := range candidates {
+			for _, dep := range g[id] {
+				if dep == node {
+					inDegree[id]--
+					if inDegree[id] == 0 {
+						queue = append(queue, id)
+						sort.Strings(queue) // maintain deterministic order
+					}
+					break
+				}
+			}
+		}
+	}
+
+	if len(result) != len(candidates) {
+		return nil, fmt.Errorf("cycle detected in dependency graph")
+	}
+	return result, nil
+}

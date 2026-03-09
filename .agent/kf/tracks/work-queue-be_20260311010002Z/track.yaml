@@ -170,11 +170,11 @@ plan:
   - phase: Queue service core
     tasks:
       - text: Implement QueueService in core/service/ — Enqueue, EnqueueReady, Next, OnAgentComplete, SpawnNext, availableSlots
-        done: false
+        done: true
       - text: Implement topological sort for dependency-aware ordering using Kahn's algorithm on deps graph
-        done: false
+        done: true
       - text: Wire completion callback chain — extend existing spawner callback to call QueueService.OnAgentComplete when queue is active
-        done: false
+        done: true
   - phase: REST API and SSE
     tasks:
       - text: Implement queue API handlers — start, stop, status, settings update
