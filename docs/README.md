@@ -4,7 +4,7 @@
 
 ## Contents
 
-### [A Note from the Author](foreword.md)
+### [Why I Built This](why-i-built-this.md)
 
 The story behind Kiloforge — from first encountering agentic coding tools to building an orchestration platform that coordinates dozens of AI agents in parallel. Covers the origin, the "human mutex" moment, the philosophy of trusting agent processes, and what 1,000x productivity actually looks like.
 

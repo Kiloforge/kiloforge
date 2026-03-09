@@ -133,6 +133,6 @@ kf attach <agent-id> # Resume an agent's Claude session
 ## What's Next
 
 - Read the [Architecture Overview](architecture.md) to understand how the pieces fit together
-- Read the [Author's Foreword](foreword.md) for the story behind Kiloforge
+- Read [Why I Built This](why-i-built-this.md) for the story behind Kiloforge
 - Explore the [OpenAPI schema](../backend/api/openapi.yaml) for the full REST API
 - Check the main [README](../README.md) for complete command reference

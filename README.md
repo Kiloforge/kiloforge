@@ -399,7 +399,7 @@ make release-local   # goreleaser --snapshot --clean
 
 ## Documentation
 
-- [Author's Foreword](docs/foreword.md) — The story behind Kiloforge
+- [Why I Built This](docs/why-i-built-this.md) — The story behind Kiloforge
 - [Getting Started](docs/getting-started.md) — Installation and first agent
 - [Architecture Overview](docs/architecture.md) — How the pieces fit together
 
