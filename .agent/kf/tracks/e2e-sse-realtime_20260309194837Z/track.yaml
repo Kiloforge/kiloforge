@@ -154,11 +154,11 @@ plan:
   - phase: Project and Lock Event Tests
     tasks:
       - text: `project_update` and `project_removed` — update a project via API, verify project list refreshes; delete a project, verify it disappears from the list
-        done: false
+        done: true
       - text: `lock_update` and `lock_released` — acquire a merge lock via API, verify lock indicator appears in the UI; release the lock, verify the indicator clears
-        done: false
+        done: true
       - text: `trace_update` — trigger a trace event, verify the trace timeline or trace indicator updates in the UI
-        done: false
+        done: true
   - phase: Reconnection and Failure Tests
     tasks:
       - text: Auto-reconnect after disconnect — establish SSE connection, simulate server-side disconnect, verify connection indicator shows "disconnected", then verify auto-reconnect restores the connection and new events are received
