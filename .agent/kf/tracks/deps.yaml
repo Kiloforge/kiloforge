@@ -32,9 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-
-backend-kf-sdk-adoption_20260310223000Z: []
-
 e2e-agent-lifecycle_20260309194834Z:
   - e2e-infra-mock-agent_20260309194830Z
 

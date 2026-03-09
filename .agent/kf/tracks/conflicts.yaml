@@ -12,4 +12,3 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-backend-kf-sdk-adoption_20260310223000Z/project-metadata-be_20260310070000Z: {"risk":"medium","note":"Both touch api_handler.go — metadata-be adds new handlers, sdk-adoption modifies existing handlers (setup-status, track deletion). Either ordering works with rebase.","added":"2026-03-09"}
