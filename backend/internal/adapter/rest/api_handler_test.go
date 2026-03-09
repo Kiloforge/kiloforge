@@ -10,6 +10,7 @@ import (
 
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
+	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
@@ -1162,4 +1163,97 @@ func TestUpdateConfig_NilBody(t *testing.T) {
 	if _, ok := resp.(gen.UpdateConfig400JSONResponse); !ok {
 		t.Fatalf("expected 400, got %T", resp)
 	}
+}
+
+func TestGetProjectDiff(t *testing.T) {
+	t.Run("project not found", func(t *testing.T) {
+		h := newTestHandler(nil)
+		h.gitSync = gitadapter.New()
+		resp, err := h.GetProjectDiff(context.Background(), gen.GetProjectDiffRequestObject{
+			Slug:   "nonexistent",
+			Params: gen.GetProjectDiffParams{Branch: "some-branch"},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, ok := resp.(gen.GetProjectDiff404JSONResponse); !ok {
+			t.Fatalf("expected 404, got %T", resp)
+		}
+	})
+
+	t.Run("git sync not configured", func(t *testing.T) {
+		h := newTestHandler(nil)
+		// gitSync is nil by default in newTestHandler
+		resp, err := h.GetProjectDiff(context.Background(), gen.GetProjectDiffRequestObject{
+			Slug:   "proj-1",
+			Params: gen.GetProjectDiffParams{Branch: "some-branch"},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, ok := resp.(gen.GetProjectDiff500JSONResponse); !ok {
+			t.Fatalf("expected 500, got %T", resp)
+		}
+	})
+}
+
+func TestGetProjectBranches(t *testing.T) {
+	t.Run("project not found", func(t *testing.T) {
+		h := newTestHandler(nil)
+		resp, err := h.GetProjectBranches(context.Background(), gen.GetProjectBranchesRequestObject{
+			Slug: "nonexistent",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, ok := resp.(gen.GetProjectBranches404JSONResponse); !ok {
+			t.Fatalf("expected 404, got %T", resp)
+		}
+	})
+
+	t.Run("returns branches from agents", func(t *testing.T) {
+		agents := []domain.AgentInfo{
+			{ID: "agent-1", Role: "developer", Ref: "feature/track-1", Status: "running", WorktreeDir: "/some/path"},
+			{ID: "agent-2", Role: "developer", Ref: "feature/track-2", Status: "completed", WorktreeDir: "/other/path"},
+			{ID: "agent-3", Role: "interactive", Ref: "interactive", Status: "running"}, // no worktree
+		}
+		h := newTestHandler(agents)
+		resp, err := h.GetProjectBranches(context.Background(), gen.GetProjectBranchesRequestObject{
+			Slug: "proj-1",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r, ok := resp.(gen.GetProjectBranches200JSONResponse)
+		if !ok {
+			t.Fatalf("expected 200, got %T", resp)
+		}
+		// Only agents with worktree dirs should be included
+		if len(r) != 2 {
+			t.Fatalf("expected 2 branches, got %d", len(r))
+		}
+		if r[0].Branch != "feature/track-1" {
+			t.Errorf("branch[0] = %q, want %q", r[0].Branch, "feature/track-1")
+		}
+		if r[0].Status != "running" {
+			t.Errorf("status[0] = %q, want %q", r[0].Status, "running")
+		}
+	})
+
+	t.Run("empty when no agents", func(t *testing.T) {
+		h := newTestHandler(nil)
+		resp, err := h.GetProjectBranches(context.Background(), gen.GetProjectBranchesRequestObject{
+			Slug: "proj-1",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r, ok := resp.(gen.GetProjectBranches200JSONResponse)
+		if !ok {
+			t.Fatalf("expected 200, got %T", resp)
+		}
+		if len(r) != 0 {
+			t.Errorf("expected 0 branches, got %d", len(r))
+		}
+	})
 }
