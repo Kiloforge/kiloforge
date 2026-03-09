@@ -153,6 +153,7 @@ Navigation hub for project context.
 - **navbar-design-polish_20260310033000Z** — Navigation Bar Design Polish and Agent Status Popover
 - **fix-quota-display_20260310033001Z** — Fix Token and Cost Display — Bridge QuotaTracker to API
 - **terminal-markdown-style_20260310033002Z** — Agent Terminal Markdown Rendering and Terminal-Style Design
+- **project-documentation_20260310034000Z** — Project Documentation with Author's Foreword
 
 ## Getting Started
 
