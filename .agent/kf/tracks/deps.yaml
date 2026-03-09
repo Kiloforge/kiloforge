@@ -33,8 +33,6 @@
 #
 # UPDATED: 2026-03-10
 
-e2e-interactive-terminal_20260309194835Z:
-  - e2e-infra-mock-agent_20260309194830Z
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
 

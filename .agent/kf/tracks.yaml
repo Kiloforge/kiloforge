@@ -37,7 +37,7 @@ e2e-distributed-tracing_20260309194839Z: {"title":"E2E Tests: Distributed Tracin
 e2e-git-origin-sync_20260309194840Z: {"title":"E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-health-preflight-onboarding_20260309194831Z: {"title":"E2E Tests: Health Check, Preflight Validation, and Onboarding Flow","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-infra-mock-agent_20260309194830Z: {"title":"E2E Test Infrastructure and Mock Agent Binary","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-interactive-terminal_20260309194835Z: {"title":"E2E Tests: Interactive Agent Terminal via WebSocket","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-interactive-terminal_20260309194835Z: {"title":"E2E Tests: Interactive Agent Terminal via WebSocket","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-kanban-board_20260309194836Z: {"title":"E2E Tests: Kanban Board — View, Move, Sync, and Column Transitions","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-merge-lock_20260309194838Z: {"title":"E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-project-management_20260309194832Z: {"title":"E2E Tests: Project Management — Add, Remove, Setup, and Sync Status","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}

@@ -3,7 +3,7 @@ title: E2E Tests: Interactive Agent Terminal via WebSocket
 type: chore
 status: pending
 created: 2026-03-09T19:48:35Z
-updated: 2026-03-09T19:48:35Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the interactive agent terminal: spawning interactive agents, WebSocket connection, sending input, receiving output, buffer replay on reconnect, and multi-client behavior, covering happy path, edge cases, and expected failures.
   context: |
@@ -96,45 +96,45 @@ plan:
   - phase: Basic Terminal Tests
     tasks:
       - text: Spawn interactive agent — click spawn with interactive role, verify terminal UI component appears with a connected indicator
-        done: false
+        done: true
       - text: Terminal renders output — verify mock agent's init event and initial output text appear in the terminal display area
-        done: false
+        done: true
       - text: Basic input/output — type text in terminal input, press enter, verify mock agent echoes it back as output in the terminal
-        done: false
+        done: true
   - phase: Stream-JSON Parsing Tests
     tasks:
       - text: Text extraction from events — verify that `content_block_delta` text_delta content is correctly extracted and displayed as plain text in the terminal
-        done: false
+        done: true
       - text: Multi-line output — send input that triggers multi-line mock agent response, verify all lines render in correct order with line breaks
-        done: false
+        done: true
       - text: Non-text events ignored — verify that `init` and `result` events do not produce spurious text in the terminal output area (status shown separately)
-        done: false
+        done: true
   - phase: Reconnection Tests
     tasks:
       - text: Disconnect and reconnect — close the WebSocket connection (navigate away and back, or programmatic close), verify terminal reconnects and shows connected indicator
-        done: false
+        done: true
       - text: Buffer replay on reconnect — accumulate output from several inputs, disconnect, reconnect, verify all previous output lines (up to 500) are replayed in order
-        done: false
+        done: true
       - text: Status sync on reconnect — disconnect while agent is running, reconnect, verify current agent status is correctly displayed (running/completed/failed)
-        done: false
+        done: true
   - phase: Multi-Client Tests
     tasks:
       - text: Second tab observes output — open a second browser context connected to the same agent, verify it receives the same output stream
-        done: false
+        done: true
       - text: Primary client stdin control — verify the first-connected client can type and send input successfully
-        done: false
+        done: true
       - text: Second tab cannot send input — verify that the second browser context's input is rejected or input field is disabled/read-only
-        done: false
+        done: true
   - phase: Edge and Failure Cases
     tasks:
       - text: Rapid input — send many input lines in quick succession, verify all are processed and echoed back without loss or duplication
-        done: false
+        done: true
       - text: Long output lines — trigger mock agent to emit very long lines (>1000 chars), verify terminal handles them without breaking layout
-        done: false
+        done: true
       - text: Unicode and special characters — send Unicode text (emoji, CJK, RTL), verify terminal displays them correctly without corruption
-        done: false
+        done: true
       - text: Agent crash mid-session — configure mock to crash after N events (`MOCK_AGENT_FAIL_AFTER`), verify terminal shows error/status change and handles gracefully
-        done: false
+        done: true
       - text: Connect to nonexistent agent — attempt WebSocket connection to a fake agent ID, verify appropriate error message is displayed
-        done: false
-extra: "{}"
+        done: true
+extra: {}
