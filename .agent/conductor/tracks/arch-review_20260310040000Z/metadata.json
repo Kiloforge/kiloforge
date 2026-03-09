@@ -2,15 +2,15 @@
   "id": "arch-review_20260310040000Z",
   "title": "Research: Architectural Review and Alignment Audit",
   "type": "research",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T04:00:00Z",
   "updated": "2026-03-10T04:00:00Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 13,
-    "completed": 0
+    "completed": 13
   }
 }

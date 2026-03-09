@@ -116,7 +116,7 @@
 | [x] | fix-quota-display_20260310033001Z | Fix Token and Cost Display — Bridge QuotaTracker to API | 2026-03-10 | 2026-03-10 |
 | [x] | terminal-markdown-style_20260310033002Z | Agent Terminal Markdown Rendering and Terminal-Style Design | 2026-03-10 | 2026-03-10 |
 | [x] | project-documentation_20260310034000Z | Project Documentation with Author's Foreword | 2026-03-10 | 2026-03-10 |
-| [ ] | arch-review_20260310040000Z | Research: Architectural Review and Alignment Audit | 2026-03-10 | 2026-03-10 |
+| [x] | arch-review_20260310040000Z | Research: Architectural Review and Alignment Audit | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 
