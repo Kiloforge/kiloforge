@@ -1349,8 +1349,145 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/queue:
+    get:
+      operationId: getQueue
+      summary: Get work queue status
+      tags: [Queue]
+      responses:
+        "200":
+          description: Queue status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStatus"
+
+  /api/queue/start:
+    post:
+      operationId: startQueue
+      summary: Start the work queue
+      tags: [Queue]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project:
+                  type: string
+                  description: Project slug to enqueue ready tracks for
+      responses:
+        "200":
+          description: Queue started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStatus"
+        "409":
+          description: Queue already running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/queue/stop:
+    post:
+      operationId: stopQueue
+      summary: Stop the work queue
+      tags: [Queue]
+      responses:
+        "200":
+          description: Queue stopped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStatus"
+        "409":
+          description: Queue not running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/queue/settings:
+    patch:
+      operationId: updateQueueSettings
+      summary: Update queue settings
+      tags: [Queue]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_workers:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStatus"
+        "400":
+          description: Invalid settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
+    QueueStatus:
+      type: object
+      required: [running, max_workers, active_workers, items]
+      properties:
+        running:
+          type: boolean
+        max_workers:
+          type: integer
+        active_workers:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueueItem"
+
+    QueueItem:
+      type: object
+      required: [track_id, project_slug, status, enqueued_at]
+      properties:
+        track_id:
+          type: string
+        project_slug:
+          type: string
+        status:
+          type: string
+          enum: [queued, assigned, completed, failed]
+        agent_id:
+          type: string
+        enqueued_at:
+          type: string
+          format: date-time
+        assigned_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
     ConfigResponse:
       type: object
       required: [dashboard_enabled]

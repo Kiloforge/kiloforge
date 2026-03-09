@@ -202,6 +202,22 @@ type ClientInterface interface {
 	// GetSyncStatus request
 	GetSyncStatus(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetQueue request
+	GetQueue(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateQueueSettingsWithBody request with any body
+	UpdateQueueSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateQueueSettings(ctx context.Context, body UpdateQueueSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartQueueWithBody request with any body
+	StartQueueWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	StartQueue(ctx context.Context, body StartQueueJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StopQueue request
+	StopQueue(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetQuota request
 	GetQuota(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -725,6 +741,78 @@ func (c *Client) GetProjectSetupStatus(ctx context.Context, slug string, reqEdit
 
 func (c *Client) GetSyncStatus(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSyncStatusRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetQueue(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetQueueRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateQueueSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateQueueSettingsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateQueueSettings(ctx context.Context, body UpdateQueueSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateQueueSettingsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartQueueWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartQueueRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartQueue(ctx context.Context, body StartQueueJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartQueueRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StopQueue(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStopQueueRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -2110,6 +2198,140 @@ func NewGetSyncStatusRequest(server string, slug string) (*http.Request, error) 
 	return req, nil
 }
 
+// NewGetQueueRequest generates requests for GetQueue
+func NewGetQueueRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/queue")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateQueueSettingsRequest calls the generic UpdateQueueSettings builder with application/json body
+func NewUpdateQueueSettingsRequest(server string, body UpdateQueueSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateQueueSettingsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateQueueSettingsRequestWithBody generates requests for UpdateQueueSettings with any type of body
+func NewUpdateQueueSettingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/queue/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStartQueueRequest calls the generic StartQueue builder with application/json body
+func NewStartQueueRequest(server string, body StartQueueJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewStartQueueRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewStartQueueRequestWithBody generates requests for StartQueue with any type of body
+func NewStartQueueRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/queue/start")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStopQueueRequest generates requests for StopQueue
+func NewStopQueueRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/queue/stop")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetQuotaRequest generates requests for GetQuota
 func NewGetQuotaRequest(server string) (*http.Request, error) {
 	var err error
@@ -2736,6 +2958,22 @@ type ClientWithResponsesInterface interface {
 
 	// GetSyncStatusWithResponse request
 	GetSyncStatusWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetSyncStatusResponse, error)
+
+	// GetQueueWithResponse request
+	GetQueueWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQueueResponse, error)
+
+	// UpdateQueueSettingsWithBodyWithResponse request with any body
+	UpdateQueueSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateQueueSettingsResponse, error)
+
+	UpdateQueueSettingsWithResponse(ctx context.Context, body UpdateQueueSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateQueueSettingsResponse, error)
+
+	// StartQueueWithBodyWithResponse request with any body
+	StartQueueWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartQueueResponse, error)
+
+	StartQueueWithResponse(ctx context.Context, body StartQueueJSONRequestBody, reqEditors ...RequestEditorFn) (*StartQueueResponse, error)
+
+	// StopQueueWithResponse request
+	StopQueueWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*StopQueueResponse, error)
 
 	// GetQuotaWithResponse request
 	GetQuotaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQuotaResponse, error)
@@ -3522,6 +3760,98 @@ func (r GetSyncStatusResponse) StatusCode() int {
 	return 0
 }
 
+type GetQueueResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *QueueStatus
+}
+
+// Status returns HTTPResponse.Status
+func (r GetQueueResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetQueueResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateQueueSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *QueueStatus
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateQueueSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateQueueSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StartQueueResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *QueueStatus
+	JSON409      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r StartQueueResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartQueueResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StopQueueResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *QueueStatus
+	JSON409      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r StopQueueResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StopQueueResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetQuotaResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4161,6 +4491,58 @@ func (c *ClientWithResponses) GetSyncStatusWithResponse(ctx context.Context, slu
 		return nil, err
 	}
 	return ParseGetSyncStatusResponse(rsp)
+}
+
+// GetQueueWithResponse request returning *GetQueueResponse
+func (c *ClientWithResponses) GetQueueWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQueueResponse, error) {
+	rsp, err := c.GetQueue(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetQueueResponse(rsp)
+}
+
+// UpdateQueueSettingsWithBodyWithResponse request with arbitrary body returning *UpdateQueueSettingsResponse
+func (c *ClientWithResponses) UpdateQueueSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateQueueSettingsResponse, error) {
+	rsp, err := c.UpdateQueueSettingsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateQueueSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateQueueSettingsWithResponse(ctx context.Context, body UpdateQueueSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateQueueSettingsResponse, error) {
+	rsp, err := c.UpdateQueueSettings(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateQueueSettingsResponse(rsp)
+}
+
+// StartQueueWithBodyWithResponse request with arbitrary body returning *StartQueueResponse
+func (c *ClientWithResponses) StartQueueWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartQueueResponse, error) {
+	rsp, err := c.StartQueueWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartQueueResponse(rsp)
+}
+
+func (c *ClientWithResponses) StartQueueWithResponse(ctx context.Context, body StartQueueJSONRequestBody, reqEditors ...RequestEditorFn) (*StartQueueResponse, error) {
+	rsp, err := c.StartQueue(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartQueueResponse(rsp)
+}
+
+// StopQueueWithResponse request returning *StopQueueResponse
+func (c *ClientWithResponses) StopQueueWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*StopQueueResponse, error) {
+	rsp, err := c.StopQueue(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStopQueueResponse(rsp)
 }
 
 // GetQuotaWithResponse request returning *GetQuotaResponse
@@ -5521,6 +5903,138 @@ func ParseGetSyncStatusResponse(rsp *http.Response) (*GetSyncStatusResponse, err
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetQueueResponse parses an HTTP response from a GetQueueWithResponse call
+func ParseGetQueueResponse(rsp *http.Response) (*GetQueueResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetQueueResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest QueueStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateQueueSettingsResponse parses an HTTP response from a UpdateQueueSettingsWithResponse call
+func ParseUpdateQueueSettingsResponse(rsp *http.Response) (*UpdateQueueSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateQueueSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest QueueStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartQueueResponse parses an HTTP response from a StartQueueWithResponse call
+func ParseStartQueueResponse(rsp *http.Response) (*StartQueueResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartQueueResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest QueueStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStopQueueResponse parses an HTTP response from a StopQueueWithResponse call
+func ParseStopQueueResponse(rsp *http.Response) (*StopQueueResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StopQueueResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest QueueStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

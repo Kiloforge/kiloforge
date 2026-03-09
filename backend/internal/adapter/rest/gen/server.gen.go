@@ -32,17 +32,17 @@ const (
 
 // Defines values for AgentStatus.
 const (
-	Completed     AgentStatus = "completed"
-	Failed        AgentStatus = "failed"
-	ForceKilled   AgentStatus = "force-killed"
-	Halted        AgentStatus = "halted"
-	ResumeFailed  AgentStatus = "resume-failed"
-	Running       AgentStatus = "running"
-	Stopped       AgentStatus = "stopped"
-	Suspended     AgentStatus = "suspended"
-	Suspending    AgentStatus = "suspending"
-	Waiting       AgentStatus = "waiting"
-	WaitingReview AgentStatus = "waiting-review"
+	AgentStatusCompleted     AgentStatus = "completed"
+	AgentStatusFailed        AgentStatus = "failed"
+	AgentStatusForceKilled   AgentStatus = "force-killed"
+	AgentStatusHalted        AgentStatus = "halted"
+	AgentStatusResumeFailed  AgentStatus = "resume-failed"
+	AgentStatusRunning       AgentStatus = "running"
+	AgentStatusStopped       AgentStatus = "stopped"
+	AgentStatusSuspended     AgentStatus = "suspended"
+	AgentStatusSuspending    AgentStatus = "suspending"
+	AgentStatusWaiting       AgentStatus = "waiting"
+	AgentStatusWaitingReview AgentStatus = "waiting-review"
 )
 
 // Defines values for BoardCardColumn.
@@ -76,6 +76,14 @@ const (
 	MoveCardRequestToColumnDone       MoveCardRequestToColumn = "done"
 	MoveCardRequestToColumnInProgress MoveCardRequestToColumn = "in_progress"
 	MoveCardRequestToColumnInReview   MoveCardRequestToColumn = "in_review"
+)
+
+// Defines values for QueueItemStatus.
+const (
+	QueueItemStatusAssigned  QueueItemStatus = "assigned"
+	QueueItemStatusCompleted QueueItemStatus = "completed"
+	QueueItemStatusFailed    QueueItemStatus = "failed"
+	QueueItemStatusQueued    QueueItemStatus = "queued"
 )
 
 // Defines values for SyncStatusResponseStatus.
@@ -442,6 +450,28 @@ type PushResult struct {
 	Success      bool   `json:"success"`
 }
 
+// QueueItem defines model for QueueItem.
+type QueueItem struct {
+	AgentId     *string         `json:"agent_id,omitempty"`
+	AssignedAt  *time.Time      `json:"assigned_at"`
+	CompletedAt *time.Time      `json:"completed_at"`
+	EnqueuedAt  time.Time       `json:"enqueued_at"`
+	ProjectSlug string          `json:"project_slug"`
+	Status      QueueItemStatus `json:"status"`
+	TrackId     string          `json:"track_id"`
+}
+
+// QueueItemStatus defines model for QueueItem.Status.
+type QueueItemStatus string
+
+// QueueStatus defines model for QueueStatus.
+type QueueStatus struct {
+	ActiveWorkers int         `json:"active_workers"`
+	Items         []QueueItem `json:"items"`
+	MaxWorkers    int         `json:"max_workers"`
+	Running       bool        `json:"running"`
+}
+
 // QuickLink defines model for QuickLink.
 type QuickLink struct {
 	Label string `json:"label"`
@@ -753,6 +783,17 @@ type GetProjectDiffParams struct {
 	MaxFiles *int `form:"max_files,omitempty" json:"max_files,omitempty"`
 }
 
+// UpdateQueueSettingsJSONBody defines parameters for UpdateQueueSettings.
+type UpdateQueueSettingsJSONBody struct {
+	MaxWorkers *int `json:"max_workers,omitempty"`
+}
+
+// StartQueueJSONBody defines parameters for StartQueue.
+type StartQueueJSONBody struct {
+	// Project Project slug to enqueue ready tracks for
+	Project *string `json:"project,omitempty"`
+}
+
 // ListTracesParams defines parameters for ListTraces.
 type ListTracesParams struct {
 	// TrackId Filter traces by track ID attribute
@@ -809,6 +850,12 @@ type PullProjectJSONRequestBody = PullProjectRequest
 
 // PushProjectJSONRequestBody defines body for PushProject for application/json ContentType.
 type PushProjectJSONRequestBody = PushProjectRequest
+
+// UpdateQueueSettingsJSONRequestBody defines body for UpdateQueueSettings for application/json ContentType.
+type UpdateQueueSettingsJSONRequestBody UpdateQueueSettingsJSONBody
+
+// StartQueueJSONRequestBody defines body for StartQueue for application/json ContentType.
+type StartQueueJSONRequestBody StartQueueJSONBody
 
 // UpdateSkillsJSONRequestBody defines body for UpdateSkills for application/json ContentType.
 type UpdateSkillsJSONRequestBody = SkillUpdateRequest
@@ -911,6 +958,18 @@ type ServerInterface interface {
 	// Get ahead/behind sync status vs upstream
 	// (GET /api/projects/{slug}/sync-status)
 	GetSyncStatus(w http.ResponseWriter, r *http.Request, slug string)
+	// Get work queue status
+	// (GET /api/queue)
+	GetQueue(w http.ResponseWriter, r *http.Request)
+	// Update queue settings
+	// (PATCH /api/queue/settings)
+	UpdateQueueSettings(w http.ResponseWriter, r *http.Request)
+	// Start the work queue
+	// (POST /api/queue/start)
+	StartQueue(w http.ResponseWriter, r *http.Request)
+	// Stop the work queue
+	// (POST /api/queue/stop)
+	StopQueue(w http.ResponseWriter, r *http.Request)
 	// Get quota and cost usage
 	// (GET /api/quota)
 	GetQuota(w http.ResponseWriter, r *http.Request)
@@ -1673,6 +1732,62 @@ func (siw *ServerInterfaceWrapper) GetSyncStatus(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// GetQueue operation middleware
+func (siw *ServerInterfaceWrapper) GetQueue(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetQueue(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateQueueSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateQueueSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateQueueSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartQueue operation middleware
+func (siw *ServerInterfaceWrapper) StartQueue(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartQueue(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StopQueue operation middleware
+func (siw *ServerInterfaceWrapper) StopQueue(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StopQueue(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetQuota operation middleware
 func (siw *ServerInterfaceWrapper) GetQuota(w http.ResponseWriter, r *http.Request) {
 
@@ -2088,6 +2203,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/setup", wrapper.StartProjectSetup)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/setup-status", wrapper.GetProjectSetupStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/sync-status", wrapper.GetSyncStatus)
+	m.HandleFunc("GET "+options.BaseURL+"/api/queue", wrapper.GetQueue)
+	m.HandleFunc("PATCH "+options.BaseURL+"/api/queue/settings", wrapper.UpdateQueueSettings)
+	m.HandleFunc("POST "+options.BaseURL+"/api/queue/start", wrapper.StartQueue)
+	m.HandleFunc("POST "+options.BaseURL+"/api/queue/stop", wrapper.StopQueue)
 	m.HandleFunc("GET "+options.BaseURL+"/api/quota", wrapper.GetQuota)
 	m.HandleFunc("GET "+options.BaseURL+"/api/skills", wrapper.GetSkillsStatus)
 	m.HandleFunc("POST "+options.BaseURL+"/api/skills/update", wrapper.UpdateSkills)
@@ -3208,6 +3327,108 @@ func (response GetSyncStatus500JSONResponse) VisitGetSyncStatusResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetQueueRequestObject struct {
+}
+
+type GetQueueResponseObject interface {
+	VisitGetQueueResponse(w http.ResponseWriter) error
+}
+
+type GetQueue200JSONResponse QueueStatus
+
+func (response GetQueue200JSONResponse) VisitGetQueueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQueueSettingsRequestObject struct {
+	Body *UpdateQueueSettingsJSONRequestBody
+}
+
+type UpdateQueueSettingsResponseObject interface {
+	VisitUpdateQueueSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateQueueSettings200JSONResponse QueueStatus
+
+func (response UpdateQueueSettings200JSONResponse) VisitUpdateQueueSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateQueueSettings400JSONResponse ErrorResponse
+
+func (response UpdateQueueSettings400JSONResponse) VisitUpdateQueueSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartQueueRequestObject struct {
+	Body *StartQueueJSONRequestBody
+}
+
+type StartQueueResponseObject interface {
+	VisitStartQueueResponse(w http.ResponseWriter) error
+}
+
+type StartQueue200JSONResponse QueueStatus
+
+func (response StartQueue200JSONResponse) VisitStartQueueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartQueue409JSONResponse ErrorResponse
+
+func (response StartQueue409JSONResponse) VisitStartQueueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartQueue500JSONResponse ErrorResponse
+
+func (response StartQueue500JSONResponse) VisitStartQueueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StopQueueRequestObject struct {
+}
+
+type StopQueueResponseObject interface {
+	VisitStopQueueResponse(w http.ResponseWriter) error
+}
+
+type StopQueue200JSONResponse QueueStatus
+
+func (response StopQueue200JSONResponse) VisitStopQueueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StopQueue409JSONResponse ErrorResponse
+
+func (response StopQueue409JSONResponse) VisitStopQueueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetQuotaRequestObject struct {
 }
 
@@ -3658,6 +3879,18 @@ type StrictServerInterface interface {
 	// Get ahead/behind sync status vs upstream
 	// (GET /api/projects/{slug}/sync-status)
 	GetSyncStatus(ctx context.Context, request GetSyncStatusRequestObject) (GetSyncStatusResponseObject, error)
+	// Get work queue status
+	// (GET /api/queue)
+	GetQueue(ctx context.Context, request GetQueueRequestObject) (GetQueueResponseObject, error)
+	// Update queue settings
+	// (PATCH /api/queue/settings)
+	UpdateQueueSettings(ctx context.Context, request UpdateQueueSettingsRequestObject) (UpdateQueueSettingsResponseObject, error)
+	// Start the work queue
+	// (POST /api/queue/start)
+	StartQueue(ctx context.Context, request StartQueueRequestObject) (StartQueueResponseObject, error)
+	// Stop the work queue
+	// (POST /api/queue/stop)
+	StopQueue(ctx context.Context, request StopQueueRequestObject) (StopQueueResponseObject, error)
 	// Get quota and cost usage
 	// (GET /api/quota)
 	GetQuota(ctx context.Context, request GetQuotaRequestObject) (GetQuotaResponseObject, error)
@@ -4577,6 +4810,116 @@ func (sh *strictHandler) GetSyncStatus(w http.ResponseWriter, r *http.Request, s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetSyncStatusResponseObject); ok {
 		if err := validResponse.VisitGetSyncStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetQueue operation middleware
+func (sh *strictHandler) GetQueue(w http.ResponseWriter, r *http.Request) {
+	var request GetQueueRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetQueue(ctx, request.(GetQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetQueueResponseObject); ok {
+		if err := validResponse.VisitGetQueueResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateQueueSettings operation middleware
+func (sh *strictHandler) UpdateQueueSettings(w http.ResponseWriter, r *http.Request) {
+	var request UpdateQueueSettingsRequestObject
+
+	var body UpdateQueueSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateQueueSettings(ctx, request.(UpdateQueueSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateQueueSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateQueueSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateQueueSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartQueue operation middleware
+func (sh *strictHandler) StartQueue(w http.ResponseWriter, r *http.Request) {
+	var request StartQueueRequestObject
+
+	var body StartQueueJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartQueue(ctx, request.(StartQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartQueueResponseObject); ok {
+		if err := validResponse.VisitStartQueueResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StopQueue operation middleware
+func (sh *strictHandler) StopQueue(w http.ResponseWriter, r *http.Request) {
+	var request StopQueueRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StopQueue(ctx, request.(StopQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StopQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StopQueueResponseObject); ok {
+		if err := validResponse.VisitStopQueueResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

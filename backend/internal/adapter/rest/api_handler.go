@@ -2083,6 +2083,41 @@ func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProject
 	}, nil
 }
 
+// GetQueue implements gen.StrictServerInterface.
+func (h *APIHandler) GetQueue(_ context.Context, _ gen.GetQueueRequestObject) (gen.GetQueueResponseObject, error) {
+	return gen.GetQueue200JSONResponse{
+		Running:       false,
+		MaxWorkers:    h.cfg.GetMaxWorkers(),
+		ActiveWorkers: 0,
+		Items:         []gen.QueueItem{},
+	}, nil
+}
+
+// UpdateQueueSettings implements gen.StrictServerInterface.
+func (h *APIHandler) UpdateQueueSettings(_ context.Context, req gen.UpdateQueueSettingsRequestObject) (gen.UpdateQueueSettingsResponseObject, error) {
+	if req.Body != nil && req.Body.MaxWorkers != nil {
+		if *req.Body.MaxWorkers < 1 {
+			return gen.UpdateQueueSettings400JSONResponse{Error: "max_workers must be >= 1"}, nil
+		}
+	}
+	return gen.UpdateQueueSettings200JSONResponse{
+		Running:       false,
+		MaxWorkers:    h.cfg.GetMaxWorkers(),
+		ActiveWorkers: 0,
+		Items:         []gen.QueueItem{},
+	}, nil
+}
+
+// StartQueue implements gen.StrictServerInterface.
+func (h *APIHandler) StartQueue(_ context.Context, _ gen.StartQueueRequestObject) (gen.StartQueueResponseObject, error) {
+	return gen.StartQueue500JSONResponse{Error: "queue service not configured"}, nil
+}
+
+// StopQueue implements gen.StrictServerInterface.
+func (h *APIHandler) StopQueue(_ context.Context, _ gen.StopQueueRequestObject) (gen.StopQueueResponseObject, error) {
+	return gen.StopQueue409JSONResponse{Error: "queue is not running"}, nil
+}
+
 func intPtr(v int) *int       { return &v }
 func strPtr(v string) *string { return &v }
 

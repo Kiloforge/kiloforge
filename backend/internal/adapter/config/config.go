@@ -30,6 +30,24 @@ type Config struct {
 	AutoUpdateSkills   *bool   `json:"auto_update_skills,omitempty"`
 	SkillsDir          string  `json:"skills_dir,omitempty"`
 	Model              string  `json:"model,omitempty"`
+	MaxWorkers         int     `json:"max_workers,omitempty"`
+	QueueEnabled       *bool   `json:"queue_enabled,omitempty"`
+}
+
+// GetMaxWorkers returns the configured max workers, defaulting to 3.
+func (c *Config) GetMaxWorkers() int {
+	if c.MaxWorkers <= 0 {
+		return 3
+	}
+	return c.MaxWorkers
+}
+
+// IsQueueEnabled returns whether the work queue is enabled. Defaults to false.
+func (c *Config) IsQueueEnabled() bool {
+	if c.QueueEnabled == nil {
+		return false
+	}
+	return *c.QueueEnabled
 }
 
 // IsDashboardEnabled returns whether the dashboard is enabled.
