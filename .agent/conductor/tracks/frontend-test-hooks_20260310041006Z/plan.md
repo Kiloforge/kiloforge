@@ -4,12 +4,12 @@
 
 ## Phase 1: WebSocket and SSE Hook Tests
 
-### Task 1.1: Create test helpers for WebSocket and SSE mocks [~]
+### Task 1.1: Create test helpers for WebSocket and SSE mocks [x]
 - Create `src/test/mocks/websocket.ts` with MockWebSocket class
 - Create `src/test/mocks/eventsource.ts` with MockEventSource class
 - Create `src/test/helpers.tsx` with QueryClient wrapper for `renderHook()`
 
-### Task 1.2: Test useAgentWebSocket
+### Task 1.2: Test useAgentWebSocket [x]
 - Create `src/hooks/useAgentWebSocket.test.ts`
 - Test: connects to correct URL with agent ID
 - Test: parses incoming messages and updates state
@@ -18,7 +18,7 @@
 - Test: cleans up WebSocket and timeout on unmount
 - Test: handles malformed messages gracefully
 
-### Task 1.3: Test useSSE
+### Task 1.3: Test useSSE [x]
 - Create `src/hooks/useSSE.test.ts`
 - Test: creates EventSource with correct URL
 - Test: dispatches events to registered handlers
@@ -26,7 +26,7 @@
 - Test: cleans up EventSource on unmount
 - Test: handles connection state transitions
 
-### Task 1.4: Verify Phase 1
+### Task 1.4: Verify Phase 1 [x]
 - `npm test` passes, all new tests green
 
 ## Phase 2: Data Mutation Hook Tests
