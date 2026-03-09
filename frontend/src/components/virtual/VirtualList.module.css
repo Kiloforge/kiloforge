@@ -1,0 +1,56 @@
+.container {
+  overflow-y: auto;
+  position: relative;
+  contain: strict;
+}
+
+.inner {
+  position: relative;
+  width: 100%;
+}
+
+.item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.scrollToBottom {
+  position: sticky;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scrollToBottomBtn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface, #1e1e2e);
+  color: var(--text-secondary, #cdd6f4);
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, color 0.15s;
+}
+
+.scrollToBottomBtn:hover {
+  background: var(--bg-hover, #313244);
+  color: var(--text-primary, #fff);
+}
+
+.newBadge {
+  background: var(--accent, #89b4fa);
+  color: var(--bg-surface, #1e1e2e);
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
