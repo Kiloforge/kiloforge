@@ -14,57 +14,60 @@
 #   <track-id>: []
 #
 # RULES:
-#   - Only pending ([ ]) and in-progress ([~]) tracks are listed here.
-#   - Completed ([x]) and archived tracks are removed during cleanup.
+#   - Only pending and in-progress tracks are listed here.
+#   - Completed and archived tracks are removed during cleanup.
 #   - The architect skill MUST update this file when creating new tracks.
 #   - The developer skill MUST check this file before claiming a track:
 #     a track is claimable only when ALL its dependencies are completed.
 #   - Cycles are forbidden. If detected, the architect must restructure.
+#
+# ORDERING:
+#   - Track entries sorted alphabetically by track ID.
+#   - Dependency lists sorted alphabetically within each entry.
+#   - Stable ordering keeps diffs minimal and predictable.
 #
 # MAINTENANCE:
 #   - Architect adds entries in Step 10 (track creation).
 #   - Developer removes entries when marking a track complete.
 #   - /kf-manage bulk-archive prunes completed entries.
 #
-# UPDATED: 2026-03-09T19:48:30Z
-
-# --- E2E Test Suite (Wave 1: foundation) ---
-e2e-infra-mock-agent_20260309194830Z: []
-
-# --- E2E Test Suite (Wave 2: depend on infra only) ---
-e2e-health-preflight-onboarding_20260309194831Z:
-  - e2e-infra-mock-agent_20260309194830Z
-
-e2e-project-management_20260309194832Z:
-  - e2e-infra-mock-agent_20260309194830Z
+# UPDATED: 2026-03-10
 
 e2e-agent-lifecycle_20260309194834Z:
-  - e2e-infra-mock-agent_20260309194830Z
-
-e2e-interactive-terminal_20260309194835Z:
-  - e2e-infra-mock-agent_20260309194830Z
-
-e2e-sse-realtime_20260309194837Z:
-  - e2e-infra-mock-agent_20260309194830Z
-
-e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
 
 e2e-distributed-tracing_20260309194839Z:
   - e2e-infra-mock-agent_20260309194830Z
 
-e2e-quota-usage_20260309194841Z:
-  - e2e-infra-mock-agent_20260309194830Z
-
-# --- E2E Test Suite (Wave 3: depend on infra + project management) ---
-e2e-track-management_20260309194833Z:
+e2e-git-origin-sync_20260309194840Z:
   - e2e-infra-mock-agent_20260309194830Z
   - e2e-project-management_20260309194832Z
+
+e2e-health-preflight-onboarding_20260309194831Z:
+  - e2e-infra-mock-agent_20260309194830Z
+
+e2e-infra-mock-agent_20260309194830Z: []
+
+e2e-interactive-terminal_20260309194835Z:
+  - e2e-infra-mock-agent_20260309194830Z
 
 e2e-kanban-board_20260309194836Z:
   - e2e-infra-mock-agent_20260309194830Z
   - e2e-project-management_20260309194832Z
 
-e2e-git-origin-sync_20260309194840Z:
+e2e-merge-lock_20260309194838Z:
+  - e2e-infra-mock-agent_20260309194830Z
+
+e2e-project-management_20260309194832Z:
+  - e2e-infra-mock-agent_20260309194830Z
+
+e2e-quota-usage_20260309194841Z:
+  - e2e-infra-mock-agent_20260309194830Z
+
+e2e-sse-realtime_20260309194837Z:
+  - e2e-infra-mock-agent_20260309194830Z
+
+e2e-track-management_20260309194833Z:
   - e2e-infra-mock-agent_20260309194830Z
   - e2e-project-management_20260309194832Z
+

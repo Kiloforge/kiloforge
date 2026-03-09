@@ -25,6 +25,88 @@ DEPS_FILE="${KF_DIR}/tracks/deps.yaml"
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 today_iso() { date -u +%Y-%m-%d; }
 
+# Canonical JSON field order for tracks.yaml.
+# All writes go through this to keep diffs stable and predictable.
+# Order: title, status, type, created, updated, [archived_at, archive_reason]
+normalize_json() {
+  # Usage: normalize_json '{"status":"pending","title":"Foo",...}'
+  # Outputs: {"title":"Foo","status":"pending",...} with canonical key order
+  local json="$1"
+  if command -v jq &>/dev/null; then
+    echo "$json" | jq -c '{
+      title: .title,
+      status: .status,
+      type: .type,
+      created: .created,
+      updated: .updated
+    } + (if .archived_at then {archived_at: .archived_at} else {} end)
+      + (if .archive_reason then {archive_reason: .archive_reason} else {} end)
+      + (to_entries | map(select(.key | IN("title","status","type","created","updated","archived_at","archive_reason") | not)) | from_entries)'
+  else
+    # Without jq, return as-is (best-effort — jq strongly recommended)
+    echo "$json"
+  fi
+}
+
+# Sort tracks.yaml lines by track ID (alphabetical) while preserving header comments.
+sort_tracks_file() {
+  if [[ ! -f "$TRACKS_FILE" ]]; then return; fi
+  local header data
+  header=$(grep "^#" "$TRACKS_FILE" || true)
+  data=$(grep -v "^#" "$TRACKS_FILE" | grep -v "^$" | LC_ALL=C sort || true)
+  {
+    echo "$header"
+    [[ -n "$data" ]] && echo "" && echo "$data"
+  } > "${TRACKS_FILE}.tmp"
+  mv "${TRACKS_FILE}.tmp" "$TRACKS_FILE"
+}
+
+# Sort deps.yaml: entries alphabetical by track ID, dep lists sorted within each.
+# Uses Python for reliable multi-line YAML block sorting; falls back to no-sort.
+sort_deps_file() {
+  [[ ! -f "$DEPS_FILE" ]] && return
+  if command -v python3 &>/dev/null; then
+    python3 -c "
+import re, sys
+text = open(sys.argv[1]).read()
+# Split header (comment lines at top) from entries
+lines = text.split('\n')
+header, rest = [], []
+in_header = True
+for l in lines:
+    if in_header and (l.startswith('#') or l.strip() == ''):
+        header.append(l)
+    else:
+        in_header = False
+        rest.append(l)
+# Parse entries: each starts with a non-space, non-# line
+entries = {}
+current_id = None
+for l in rest:
+    if l and not l.startswith(' ') and not l.startswith('#'):
+        current_id = l.split(':')[0]
+        if '[]' in l:
+            entries[current_id] = []
+        else:
+            entries[current_id] = []
+    elif l.startswith('  - ') and current_id:
+        entries[current_id].append(l.replace('  - ', '', 1))
+# Write sorted
+out = '\n'.join(header).rstrip() + '\n\n'
+for tid in sorted(entries.keys()):
+    deps = sorted(entries[tid])
+    if not deps:
+        out += f'{tid}: []\n'
+    else:
+        out += f'{tid}:\n'
+        for d in deps:
+            out += f'  - {d}\n'
+    out += '\n'
+open(sys.argv[1], 'w').write(out.rstrip() + '\n')
+" "$DEPS_FILE"
+  fi
+}
+
 ensure_tracks_file() {
   if [[ ! -f "$TRACKS_FILE" ]]; then
     cat > "$TRACKS_FILE" <<'HEADER'
@@ -32,6 +114,8 @@ ensure_tracks_file() {
 #
 # FORMAT: <track-id>: {"title":"...","status":"...","type":"...","created":"...","updated":"..."}
 # STATUS: pending | in-progress | completed | archived
+# ORDER:  Lines sorted alphabetically by track ID. JSON fields in canonical order:
+#         title, status, type, created, updated [, archived_at, archive_reason]
 # TOOL:   Use `kf-track` to manage entries. Do not edit by hand.
 #
 HEADER
@@ -113,11 +197,8 @@ set_field() {
     fi
   fi
 
-  # Escape sed delimiter
-  local escaped_json
-  escaped_json=$(echo "$new_json" | sed 's/[&/\]/\\&/g')
-  local escaped_old
-  escaped_old=$(echo "$json" | sed 's/[&/\]/\\&/g')
+  # Normalize field order for stable diffs
+  new_json=$(normalize_json "$new_json")
 
   sed -i '' "s|^${id}: .*|${id}: ${new_json}|" "$TRACKS_FILE"
 }
@@ -194,9 +275,9 @@ cmd_add() {
 
   local created
   created=$(today_iso)
-  local json="{\"title\":\"${title}\",\"status\":\"${status}\",\"type\":\"${type}\",\"created\":\"${created}\",\"updated\":\"${created}\"}"
+  local json
 
-  # Use jq to ensure valid JSON if available
+  # Build JSON with canonical field order
   if command -v jq &>/dev/null; then
     json=$(jq -nc \
       --arg title "$title" \
@@ -204,9 +285,12 @@ cmd_add() {
       --arg type "$type" \
       --arg created "$created" \
       '{title:$title, status:$status, type:$type, created:$created, updated:$created}')
+  else
+    json="{\"title\":\"${title}\",\"status\":\"${status}\",\"type\":\"${type}\",\"created\":\"${created}\",\"updated\":\"${created}\"}"
   fi
 
   echo "${id}: ${json}" >> "$TRACKS_FILE"
+  sort_tracks_file
 
   # Add to deps.yaml
   ensure_deps_file
@@ -221,6 +305,7 @@ cmd_add() {
     echo "" >> "$DEPS_FILE"
     echo "${id}: []" >> "$DEPS_FILE"
   fi
+  sort_deps_file
 
   echo "Added: ${id}"
 }
@@ -505,6 +590,7 @@ cmd_deps() {
         echo "${id}:" >> "$DEPS_FILE"
         echo "  - ${dep}" >> "$DEPS_FILE"
       fi
+      sort_deps_file
       echo "Added dependency: ${id} → ${dep}"
       ;;
     remove)

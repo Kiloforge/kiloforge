@@ -2,170 +2,173 @@
 #
 # FORMAT: <track-id>: {"title":"...","status":"...","type":"...","created":"...","updated":"..."}
 # STATUS: pending | in-progress | completed | archived
+# ORDER:  Lines sorted alphabetically by track ID. JSON fields in canonical order:
+#         title, status, type, created, updated [, archived_at, archive_reason]
 # TOOL:   Use `kf-track` to manage entries. Do not edit by hand.
 #
-impl-gitea-issue-api_20260308170000Z: {"title":"Extend Gitea Client with Issue, Label, and Project Board APIs","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-impl-track-board-sync_20260308170001Z: {"title":"Track-to-Gitea Board Sync Service","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-impl-board-webhook-sync_20260308170002Z: {"title":"Webhook-Driven Board State Synchronization","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"completed","type":"refactor","created":"2026-03-08","updated":"2026-03-08"}
-react-dashboard_20260308180002Z: {"title":"React Dashboard for Real-Time Agent Monitoring","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-live-status-badges_20260308190000Z: {"title":"Universal Live Agent Status Badges","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-relay-daemon_20260308200000Z: {"title":"Relay Server Daemon Mode","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"completed","type":"refactor","created":"2026-03-08","updated":"2026-03-08"}
-schema-first-guidance_20260308200002Z: {"title":"Schema-First API Development Guidance and Standards","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
-fix-route-conflict_20260308200100Z: {"title":"Fix Route Pattern Conflict Panic on Startup","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
-testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
-remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
-build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
-readme-prerequisites_20260308210002Z: {"title":"Update README Prerequisites to Docker + Claude Code","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+
 add-local-ssh-identity_20260308220000Z: {"title":"Add Command SSH Identity and Repo Name Improvements","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-project-scoped-dashboard_20260308220001Z: {"title":"Project-Scoped Dashboard Tracks","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
-origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-prereq-check-init_20260308230000Z: {"title":"Prerequisite Check During Init","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-skill-install-update_20260308231000Z: {"title":"Conductor Skill Installation and Auto-Update","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-research-otel-task-tracing_20260308233000Z: {"title":"Research: OpenTelemetry for Task-Level Tracing and Token Metrics","status":"completed","type":"research","created":"2026-03-08","updated":"2026-03-08"}
-impl-otel-task-tracing_20260308233001Z: {"title":"OpenTelemetry Task-Level Tracing and Token Metrics","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-fix-init-build-bugs_20260308234000Z: {"title":"Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
-fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Errors in TraceTimeline","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
-research-native-track-board_20260308235000Z: {"title":"Research: Native Track Board in Kiloforge Dashboard","status":"completed","type":"research","created":"2026-03-08","updated":"2026-03-08"}
-impl-native-track-board_20260308235001Z: {"title":"Native Track Board with Dashboard Kanban and Agent Lifecycle","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
-fix-init-password-display_20260308235500Z: {"title":"Fix Init Password Display","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
-rebrand-kiloforge_20260309055250Z: {"title":"Rebrand crelay to Kiloforge (CLI: kf)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-track-lifecycle-tracing_20260309062329Z: {"title":"Track Lifecycle Tracing with OTel","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-rebrand-historical-records_20260309063900Z: {"title":"Rebrand Historical Conductor Records","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
-fix-password-display-v3_20260309083826Z: {"title":"Fix Init Password Display (Root Cause)","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-project-manage-api_20260309084650Z: {"title":"Project Add/Remove REST API","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-project-manage-ui_20260309084651Z: {"title":"Project Add/Remove Dashboard UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-sse-event-bus_20260309091500Z: {"title":"SSE Event Bus Infrastructure","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
-sse-entity-subscriptions_20260309091501Z: {"title":"SSE Entity Subscriptions","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-ssh-key-selection_20260309100000Z: {"title":"Interactive SSH Key Selection for Add Command","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-quota-reframe-be_20260309103000Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Backend)","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
-quota-reframe-fe_20260309103001Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Frontend)","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
-model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-fix-buildvcs-worktree_20260309114000Z: {"title":"Fix VCS Stamping in Git Worktrees","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-fix-project-mgr-wiring_20260309120000Z: {"title":"Fix Project Manager Wiring in REST Server","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-ssh-key-selection-ui_20260309120001Z: {"title":"SSH Key Selection in Project Add UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-gitea-proxy-authn_20260309123000Z: {"title":"Passwordless Gitea Login via Reverse Proxy Authentication","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-tracing-default-on-be_20260309133000Z: {"title":"Enable Tracing by Default with Config API (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-tracing-default-on-fe_20260309133001Z: {"title":"Tracing Toggle in Dashboard UI (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-sqlite-storage-core_20260309140000Z: {"title":"SQLite Storage Layer — Core Schema and Migration","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
-origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-origin-sync-ui_20260309143001Z: {"title":"Origin Push/Pull Dashboard UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via WebSocket (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitHub Actions, and Homebrew","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-fix-spa-and-init-output_20260309163000Z: {"title":"Fix SPA Asset MIME Type, Init Output URLs, and Password Display","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-skill-preflight-check_20260309170000Z: {"title":"Pre-flight Skill Validation Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-fix-test-ci-pr-tracking_20260309173000Z: {"title":"Fix CI Test Failure — PR Tracking Store References","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+add-project-command_20260307122000Z: {"title":"Implement 'kf add' Command for Project Registration","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 admin-operations-ui_20260309173001Z: {"title":"Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-skill-ref-migration_20260309173002Z: {"title":"Migrate All Skill References from conductor-* to kf-*","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track Links and Monitoring View","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-goose-migrations_20260309184000Z: {"title":"Migrate to Goose for Database Schema Migrations","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
-claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-guided-tour-be_20260309203000Z: {"title":"Guided Tour State API and Demo Seed Data (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-guided-tour-fe_20260309203001Z: {"title":"Guided Tour Overlay with Simulated Onboarding Flow (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-fix-stale-frontend-build_20260309210000Z: {"title":"Fix Stale Frontend Build — Rebuild dist with Correct Base Path","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-track-gen-auto-approve_20260309220000Z: {"title":"Track Generator Auto-Approve for Non-Code Tracks","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-fix-tour-api-mismatch_20260309223000Z: {"title":"Fix Tour API Request Body Mismatch","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-error-toast-notifications_20260309223001Z: {"title":"Error Toast Notifications in Dashboard","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-fix-gitea-push-auth_20260309224000Z: {"title":"Fix Gitea Push Authentication — Embed Credentials in Remote URL","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-frontend-test-infra_20260309225000Z: {"title":"Frontend Test Infrastructure and Makefile Integration","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-fix-dashboard-interactive-agent_20260309230000Z: {"title":"Fix Interactive Agent Wiring in Dashboard Command","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-fix-project-sse-subscription_20260309230001Z: {"title":"Wire Project SSE Events in Dashboard Frontend","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-tracing-always-on-be_20260309231000Z: {"title":"Remove Optional Tracing — Always-On (Backend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-tracing-always-on-fe_20260309231001Z: {"title":"Remove Tracing Toggle UI (Frontend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-fix-serve-interactive-agent_20260309232000Z: {"title":"Fix Interactive Agent Wiring in Serve Command (kf up)","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-fix-skills-412-prompt_20260309233000Z: {"title":"Handle 412 Skills Missing with Install Prompt Instead of Error","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-embedded-skills-default_20260309234000Z: {"title":"Embedded Skills as Default — Remove Repo Dependency","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-tour-ux-improvements_20260309235000Z: {"title":"Tour UX Improvements — State Transitions, Demo Data, and Example URL","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
-gitignore-frontend-dist_20260310000000Z: {"title":"Stop Committing Frontend Dist — Build Before Backend Instead","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-fix-nested-claude-env_20260310001000Z: {"title":"Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --verbose Flag for stream-json","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-setup-prereq-be_20260310004000Z: {"title":"Setup Prerequisite Check Before Agent Spawning (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-setup-prereq-fe_20260310004001Z: {"title":"Setup Prerequisite Check — Dashboard UI (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-refactor-cli-thin-adapters_20260310010000Z: {"title":"Refactor CLI Commands to Thin Adapters with Shared Service Layer","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-fix-board-sync-ux-be_20260310012000Z: {"title":"Fix Board Sync and SSE Events (Backend)","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-board-sync-ux-fe_20260310012001Z: {"title":"Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-project-delete-refresh_20260310013000Z: {"title":"Fix Project Delete — Refresh List and Close Modal","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-display-ttl-fe_20260310014001Z: {"title":"Agent Display TTL and History Page (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-setup-gate-be_20260310234710Z: {"title":"Gate All Agent Endpoints Behind Setup Check (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-setup-gate-fe_20260310234711Z: {"title":"Disable Agent Actions Until Setup Complete (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-fix-skill-prereq-be_20260310000644Z: {"title":"Fix Skill Prerequisite Chain — Rename and Required List (Backend)","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-skill-prereq-fe_20260310000645Z: {"title":"Fix Skill Prerequisite Chain — Frontend Proactive Gating","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-track-detail-view-be_20260309001726Z: {"title":"Track Detail View API","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-track-detail-view-fe_20260309001727Z: {"title":"Track Detail View UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-sdk-agent-migration-be_20260310014147Z: {"title":"Migrate Agent Spawner to Claude Agent SDK (Backend)","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-sdk-agent-migration-fe_20260310014148Z: {"title":"Structured Agent Terminal Display (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-lifecycle-be_20260310030000Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-lifecycle-fe_20260310030001Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-fix-quota-display_20260310033001Z: {"title":"Fix Token and Cost Display — Bridge QuotaTracker to API","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-project-documentation_20260310034000Z: {"title":"Project Documentation with Author's Foreword","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track Links and Monitoring View","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"completed","type":"research","created":"2026-03-10","updated":"2026-03-10"}
-fix-relay-goroutine-leak_20260310041000Z: {"title":"Fix Agent Relay Goroutine Leak and Double-Close Panic","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-refactor-port-interfaces_20260310041002Z: {"title":"Move Service-Local Interfaces to Port Layer","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-refactor-error-standardization_20260310041003Z: {"title":"Standardize Domain Sentinel Errors and Store Returns","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-refactor-cli-business-logic_20260310041004Z: {"title":"Extract Business Logic from CLI Commands to Services","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-fix-ws-context-lifecycle_20260310041005Z: {"title":"Fix WebSocket Session Context and Graceful Shutdown","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-frontend-test-hooks_20260310041006Z: {"title":"Frontend Test Coverage — Critical Hooks","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-frontend-test-pages_20260310041007Z: {"title":"Frontend Test Coverage — Pages and Components","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-refactor-domain-types-cleanup_20260310041008Z: {"title":"Consolidate Domain Types and Frontend Component Cleanup","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-e2e-infra-mock-agent_20260309194830Z: {"title":"E2E Test Infrastructure and Mock Agent Binary","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-health-preflight-onboarding_20260309194831Z: {"title":"E2E Tests: Health Check, Preflight Validation, and Onboarding Flow","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-project-management_20260309194832Z: {"title":"E2E Tests: Project Management — Add, Remove, Setup, and Sync Status","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-track-management_20260309194833Z: {"title":"E2E Tests: Track Management — List, Detail, Generate, and Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-interactive-terminal_20260309194835Z: {"title":"E2E Tests: Interactive Agent Terminal via WebSocket","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-kanban-board_20260309194836Z: {"title":"E2E Tests: Kanban Board — View, Move, Sync, and Column Transitions","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-sse-realtime_20260309194837Z: {"title":"E2E Tests: Real-Time SSE Updates — Connection, Events, and Reconnection","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
-e2e-merge-lock_20260309194838Z: {"title":"E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-distributed-tracing_20260309194839Z: {"title":"E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-git-origin-sync_20260309194840Z: {"title":"E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-health-preflight-onboarding_20260309194831Z: {"title":"E2E Tests: Health Check, Preflight Validation, and Onboarding Flow","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-infra-mock-agent_20260309194830Z: {"title":"E2E Test Infrastructure and Mock Agent Binary","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-interactive-terminal_20260309194835Z: {"title":"E2E Tests: Interactive Agent Terminal via WebSocket","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-kanban-board_20260309194836Z: {"title":"E2E Tests: Kanban Board — View, Move, Sync, and Column Transitions","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-merge-lock_20260309194838Z: {"title":"E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Conflict","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-project-management_20260309194832Z: {"title":"E2E Tests: Project Management — Add, Remove, Setup, and Sync Status","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-quota-usage_20260309194841Z: {"title":"E2E Tests: Quota and Token Usage — Display, Rate Limits, and Cost Estimates","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-sse-realtime_20260309194837Z: {"title":"E2E Tests: Real-Time SSE Updates — Connection, Events, and Reconnection","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+e2e-track-management_20260309194833Z: {"title":"E2E Tests: Track Management — List, Detail, Generate, and Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+embedded-skills-default_20260309234000Z: {"title":"Embedded Skills as Default — Remove Repo Dependency","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+error-toast-notifications_20260309223001Z: {"title":"Error Toast Notifications in Dashboard","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+fix-board-sync-ux-be_20260310012000Z: {"title":"Fix Board Sync and SSE Events (Backend)","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-board-sync-ux-fe_20260310012001Z: {"title":"Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-buildvcs-worktree_20260309114000Z: {"title":"Fix VCS Stamping in Git Worktrees","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-dashboard-interactive-agent_20260309230000Z: {"title":"Fix Interactive Agent Wiring in Dashboard Command","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-gitea-push-auth_20260309224000Z: {"title":"Fix Gitea Push Authentication — Embed Credentials in Remote URL","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-init-build-bugs_20260308234000Z: {"title":"Fix Init Ctrl+C, Build Failure Propagation, and VCS Stamping","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
+fix-init-password-display_20260308235500Z: {"title":"Fix Init Password Display","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
+fix-nested-claude-env_20260310001000Z: {"title":"Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-password-display-v3_20260309083826Z: {"title":"Fix Init Password Display (Root Cause)","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-project-delete-refresh_20260310013000Z: {"title":"Fix Project Delete — Refresh List and Close Modal","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-project-mgr-wiring_20260309120000Z: {"title":"Fix Project Manager Wiring in REST Server","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-project-sse-subscription_20260309230001Z: {"title":"Wire Project SSE Events in Dashboard Frontend","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-quota-display_20260310033001Z: {"title":"Fix Token and Cost Display — Bridge QuotaTracker to API","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-relay-goroutine-leak_20260310041000Z: {"title":"Fix Agent Relay Goroutine Leak and Double-Close Panic","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-route-conflict_20260308200100Z: {"title":"Fix Route Pattern Conflict Panic on Startup","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
+fix-serve-interactive-agent_20260309232000Z: {"title":"Fix Interactive Agent Wiring in Serve Command (kf up)","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-skill-prereq-be_20260310000644Z: {"title":"Fix Skill Prerequisite Chain — Rename and Required List (Backend)","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-skill-prereq-fe_20260310000645Z: {"title":"Fix Skill Prerequisite Chain — Frontend Proactive Gating","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-skills-412-prompt_20260309233000Z: {"title":"Handle 412 Skills Missing with Install Prompt Instead of Error","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-spa-and-init-output_20260309163000Z: {"title":"Fix SPA Asset MIME Type, Init Output URLs, and Password Display","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --verbose Flag for stream-json","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --verbose Flag for stream-json","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-stale-frontend-build_20260309210000Z: {"title":"Fix Stale Frontend Build — Rebuild dist with Correct Base Path","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-test-ci-pr-tracking_20260309173000Z: {"title":"Fix CI Test Failure — PR Tracking Store References","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-tour-api-mismatch_20260309223000Z: {"title":"Fix Tour API Request Body Mismatch","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Errors in TraceTimeline","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
+fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-ws-context-lifecycle_20260310041005Z: {"title":"Fix WebSocket Session Context and Graceful Shutdown","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+frontend-test-hooks_20260310041006Z: {"title":"Frontend Test Coverage — Critical Hooks","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+frontend-test-infra_20260309225000Z: {"title":"Frontend Test Infrastructure and Makefile Integration","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+frontend-test-pages_20260310041007Z: {"title":"Frontend Test Coverage — Pages and Components","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+gitea-proxy-authn_20260309123000Z: {"title":"Passwordless Gitea Login via Reverse Proxy Authentication","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+gitignore-frontend-dist_20260310000000Z: {"title":"Stop Committing Frontend Dist — Build Before Backend Instead","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+goose-migrations_20260309184000Z: {"title":"Migrate to Goose for Database Schema Migrations","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+guided-tour-be_20260309203000Z: {"title":"Guided Tour State API and Demo Seed Data (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+guided-tour-fe_20260309203001Z: {"title":"Guided Tour Overlay with Simulated Onboarding Flow (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+impl-board-webhook-sync_20260308170002Z: {"title":"Webhook-Driven Board State Synchronization","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+impl-conductor-lock-migration_20260308150001Z: {"title":"Migrate Conductor Skills to Use Kiloforge Lock API","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-gitea-issue-api_20260308170000Z: {"title":"Extend Gitea Client with Issue, Label, and Project Board APIs","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+impl-graceful-shutdown-recovery_20260307160002Z: {"title":"Graceful Agent Shutdown and Auto-Recovery on Restart","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-lock-service_20260308150000Z: {"title":"HTTP-Based Scoped Lock Service in Relay Server","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-native-track-board_20260308235001Z: {"title":"Native Track Board with Dashboard Kanban and Agent Lifecycle","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+impl-otel-task-tracing_20260308233001Z: {"title":"OpenTelemetry Task-Level Tracing and Token Metrics","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+impl-quota-aware-agents_20260307160001Z: {"title":"Quota-Aware Agent Management and Cost Reporting","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-quota-tracker_20260307160000Z: {"title":"CC Stream-JSON Parser and Centralized Quota Tracker","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-track-board-sync_20260308170001Z: {"title":"Track-to-Gitea Board Sync Service","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+impl-unified-server_20260308160000Z: {"title":"Unified Server with Reverse Proxy to Gitea","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-webui-integration_20260308140001Z: {"title":"Web UI CLI Integration and Gitea Links","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+impl-webui-server_20260308140000Z: {"title":"Web UI Server with Real-Time Agent Monitoring","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+implement-command_20260307125001Z: {"title":"'kf implement' Command — Spawn Developer Agent","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+init-docker-compose_20260307120100Z: {"title":"Implement Init Command with Docker Compose and Global Gitea","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+init-ssh-and-auth_20260307125500Z: {"title":"SSH Key Auto-Registration and Randomized Admin Password","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via WebSocket (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+live-status-badges_20260308190000Z: {"title":"Universal Live Agent Status Badges","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+merge-cleanup_20260307125003Z: {"title":"PR Merge, Worktree Cleanup, and Agent Teardown","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"completed","type":"refactor","created":"2026-03-08","updated":"2026-03-08"}
+navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"completed","type":"refactor","created":"2026-03-08","updated":"2026-03-08"}
+origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+origin-sync-ui_20260309143001Z: {"title":"Origin Push/Pull Dashboard UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+prereq-check-init_20260308230000Z: {"title":"Prerequisite Check During Init","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+project-documentation_20260310034000Z: {"title":"Project Documentation with Author's Foreword","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+project-manage-api_20260309084650Z: {"title":"Project Add/Remove REST API","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+project-manage-ui_20260309084651Z: {"title":"Project Add/Remove Dashboard UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+project-scoped-dashboard_20260308220001Z: {"title":"Project-Scoped Dashboard Tracks","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
+quota-reframe-be_20260309103000Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Backend)","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
+quota-reframe-fe_20260309103001Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Frontend)","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
+react-dashboard_20260308180002Z: {"title":"React Dashboard for Real-Time Agent Monitoring","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+readme-prerequisites_20260308210002Z: {"title":"Update README Prerequisites to Docker + Claude Code","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+rebrand-historical-records_20260309063900Z: {"title":"Rebrand Historical Conductor Records","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+rebrand-kiloforge_20260309055250Z: {"title":"Rebrand crelay to Kiloforge (CLI: kf)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+refactor-clean-arch_20260307140000Z: {"title":"Restructure Packages into Clean Architecture Layout","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+refactor-cli-business-logic_20260310041004Z: {"title":"Extract Business Logic from CLI Commands to Services","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+refactor-cli-thin-adapters_20260310010000Z: {"title":"Refactor CLI Commands to Thin Adapters with Shared Service Layer","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+refactor-config-port-adapter_20260307121000Z: {"title":"Refactor Config to Port/Adapter Pattern with Layered Resolution","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+refactor-domain-ports_20260307140001Z: {"title":"Extract Domain Types, Port Interfaces, and Service Layer","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+refactor-domain-types-cleanup_20260310041008Z: {"title":"Consolidate Domain Types and Frontend Component Cleanup","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+refactor-error-standardization_20260310041003Z: {"title":"Standardize Domain Sentinel Errors and Store Returns","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+refactor-port-interfaces_20260310041002Z: {"title":"Move Service-Local Interfaces to Port Layer","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+relay-daemon_20260308200000Z: {"title":"Relay Server Daemon Mode","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+relay-event-handling_20260307124000Z: {"title":"Relay Event Handling for Issues and PRs with Multi-Project Routing","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitHub Actions, and Homebrew","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
+research-cc-quota-monitoring_20260307150000Z: {"title":"Research: Claude Code Quota Monitoring and Graceful Degradation","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-docker-compose-init_20260307120000Z: {"title":"Research: Docker Compose for Init with v1/v2 CLI Compatibility","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-global-gitea-multiproject_20260307120001Z: {"title":"Research: Global Gitea Server for Multi-Project Coordination","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-init-docker-compose_20260307120100Z: {"title":"Implement Init Command with Docker Compose and Global Gitea","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-refactor-config-port-adapter_20260307121000Z: {"title":"Refactor Config to Port/Adapter Pattern with Layered Resolution","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-add-project-command_20260307122000Z: {"title":"Implement 'kf add' Command for Project Registration","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-relay-event-handling_20260307124000Z: {"title":"Relay Event Handling for Issues and PRs with Multi-Project Routing","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-init-ssh-and-auth_20260307125500Z: {"title":"SSH Key Auto-Registration and Randomized Admin Password","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-worktree-pool_20260307125000Z: {"title":"Worktree Pool Management","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-implement-command_20260307125001Z: {"title":"'kf implement' Command — Spawn Developer Agent","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-review-cycle-relay_20260307125002Z: {"title":"Developer-Reviewer Relay Cycle","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-merge-cleanup_20260307125003Z: {"title":"PR Merge, Worktree Cleanup, and Agent Teardown","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-refactor-clean-arch_20260307140000Z: {"title":"Restructure Packages into Clean Architecture Layout","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-refactor-domain-ports_20260307140001Z: {"title":"Extract Domain Types, Port Interfaces, and Service Layer","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-research-cc-quota-monitoring_20260307150000Z: {"title":"Research: Claude Code Quota Monitoring and Graceful Degradation","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-graceful-shutdown-recovery_20260307150001Z: {"title":"Research: Graceful Agent Shutdown, Session Persistence, and Recovery","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-quota-tracker_20260307160000Z: {"title":"CC Stream-JSON Parser and Centralized Quota Tracker","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-quota-aware-agents_20260307160001Z: {"title":"Quota-Aware Agent Management and Cost Reporting","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-graceful-shutdown-recovery_20260307160002Z: {"title":"Graceful Agent Shutdown and Auto-Recovery on Restart","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-webui-server_20260308140000Z: {"title":"Web UI Server with Real-Time Agent Monitoring","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-webui-integration_20260308140001Z: {"title":"Web UI CLI Integration and Gitea Links","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-lock-service_20260308150000Z: {"title":"HTTP-Based Scoped Lock Service in Relay Server","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-conductor-lock-migration_20260308150001Z: {"title":"Migrate Conductor Skills to Use Kiloforge Lock API","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-impl-unified-server_20260308160000Z: {"title":"Unified Server with Reverse Proxy to Gitea","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+research-native-track-board_20260308235000Z: {"title":"Research: Native Track Board in Kiloforge Dashboard","status":"completed","type":"research","created":"2026-03-08","updated":"2026-03-08"}
+research-otel-task-tracing_20260308233000Z: {"title":"Research: OpenTelemetry for Task-Level Tracing and Token Metrics","status":"completed","type":"research","created":"2026-03-08","updated":"2026-03-08"}
+review-cycle-relay_20260307125002Z: {"title":"Developer-Reviewer Relay Cycle","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+schema-first-guidance_20260308200002Z: {"title":"Schema-First API Development Guidance and Standards","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+sdk-agent-migration-be_20260310014147Z: {"title":"Migrate Agent Spawner to Claude Agent SDK (Backend)","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+sdk-agent-migration-fe_20260310014148Z: {"title":"Structured Agent Terminal Display (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+setup-gate-be_20260310234710Z: {"title":"Gate All Agent Endpoints Behind Setup Check (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+setup-gate-fe_20260310234711Z: {"title":"Disable Agent Actions Until Setup Complete (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+setup-prereq-be_20260310004000Z: {"title":"Setup Prerequisite Check Before Agent Spawning (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+setup-prereq-fe_20260310004001Z: {"title":"Setup Prerequisite Check — Dashboard UI (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+skill-install-update_20260308231000Z: {"title":"Conductor Skill Installation and Auto-Update","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
+skill-preflight-check_20260309170000Z: {"title":"Pre-flight Skill Validation Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+skill-ref-migration_20260309173002Z: {"title":"Migrate All Skill References from conductor-* to kf-*","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+sqlite-storage-core_20260309140000Z: {"title":"SQLite Storage Layer — Core Schema and Migration","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
+sse-entity-subscriptions_20260309091501Z: {"title":"SSE Entity Subscriptions","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+sse-event-bus_20260309091500Z: {"title":"SSE Event Bus Infrastructure","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
+ssh-key-selection-ui_20260309120001Z: {"title":"SSH Key Selection in Project Add UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+ssh-key-selection_20260309100000Z: {"title":"Interactive SSH Key Selection for Add Command","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
+terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+tour-ux-improvements_20260309235000Z: {"title":"Tour UX Improvements — State Transitions, Demo Data, and Example URL","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+tracing-always-on-be_20260309231000Z: {"title":"Remove Optional Tracing — Always-On (Backend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+tracing-always-on-fe_20260309231001Z: {"title":"Remove Tracing Toggle UI (Frontend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+tracing-default-on-be_20260309133000Z: {"title":"Enable Tracing by Default with Config API (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+tracing-default-on-fe_20260309133001Z: {"title":"Tracing Toggle in Dashboard UI (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+track-detail-view-be_20260309001726Z: {"title":"Track Detail View API","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+track-detail-view-fe_20260309001727Z: {"title":"Track Detail View UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+track-gen-auto-approve_20260309220000Z: {"title":"Track Generator Auto-Approve for Non-Code Tracks","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+track-lifecycle-tracing_20260309062329Z: {"title":"Track Lifecycle Tracing with OTel","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+worktree-pool_20260307125000Z: {"title":"Worktree Pool Management","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
