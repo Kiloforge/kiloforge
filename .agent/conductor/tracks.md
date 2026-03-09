@@ -89,7 +89,7 @@
 | [x] | embedded-skills-default_20260309234000Z | Embedded Skills as Default — Remove Repo Dependency | 2026-03-09 | 2026-03-09 |
 | [x] | tour-ux-improvements_20260309235000Z | Tour UX Improvements — State Transitions, Demo Data, and Example URL | 2026-03-09 | 2026-03-09 |
 | [x] | fix-track-gen-project-init_20260309235500Z | Auto-Initialize Conductor Artifacts Before Track Generation | 2026-03-09 | 2026-03-09 |
-| [ ] | gitignore-frontend-dist_20260310000000Z | Stop Committing Frontend Dist — Build Before Backend Instead | 2026-03-10 | 2026-03-10 |
+| [x] | gitignore-frontend-dist_20260310000000Z | Stop Committing Frontend Dist — Build Before Backend Instead | 2026-03-10 | 2026-03-10 |
 | [x] | fix-nested-claude-env_20260310001000Z | Fix Nested Claude Session Detection — Unset CLAUDECODE Env Var | 2026-03-10 | 2026-03-10 |
 | [x] | fix-spawner-verbose-flag_20260310003000Z | Fix Agent Spawner — Add --verbose Flag for stream-json | 2026-03-10 | 2026-03-10 |
 | [x] | setup-prereq-be_20260310004000Z | Setup Prerequisite Check Before Agent Spawning (Backend) | 2026-03-10 | 2026-03-10 |
