@@ -127,7 +127,7 @@ Or add to your project's `.claude/settings.json`:
 
 1. **Generate tracks** (in your project):
    ```bash
-   claude -p "/kf-track-generator add user authentication"
+   claude -p "/kf-architect add user authentication"
    ```
 
 2. **Start a developer agent** (in a worktree):

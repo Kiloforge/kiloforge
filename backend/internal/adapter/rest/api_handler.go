@@ -1366,7 +1366,7 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		}, nil
 	}
 
-	fullPrompt := fmt.Sprintf("/kf-track-generator I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
+	fullPrompt := fmt.Sprintf("/kf-architect I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
 
 	opts := agent.SpawnInteractiveOpts{
 		WorkDir: workDir,
@@ -1702,8 +1702,8 @@ func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProject
 		return gen.StartProjectSetup404JSONResponse{Error: "project not found"}, nil
 	}
 
-	// Validate required skills.
-	if resp := h.checkSkillsForRole("interactive", proj.ProjectDir); resp != nil {
+	// Validate required skills (setup needs kf-setup specifically).
+	if resp := h.checkSkillsForRole("setup", proj.ProjectDir); resp != nil {
 		return gen.StartProjectSetup412JSONResponse(*resp), nil
 	}
 

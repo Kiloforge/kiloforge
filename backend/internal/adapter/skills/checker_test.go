@@ -55,22 +55,22 @@ func TestCheckRequired(t *testing.T) {
 		},
 		{
 			name:      "missing skill",
-			required:  []RequiredSkill{{Name: "kf-track-generator", Reason: "track gen"}},
+			required:  []RequiredSkill{{Name: "kf-architect", Reason: "track gen"}},
 			globalDir: globalDir,
 			localDir:  localDir,
 			wantCount: 1,
-			wantNames: []string{"kf-track-generator"},
+			wantNames: []string{"kf-architect"},
 		},
 		{
 			name: "mixed found and missing",
 			required: []RequiredSkill{
 				{Name: "kf-developer", Reason: "dev"},
-				{Name: "kf-track-generator", Reason: "track gen"},
+				{Name: "kf-architect", Reason: "track gen"},
 			},
 			globalDir: globalDir,
 			localDir:  localDir,
 			wantCount: 1,
-			wantNames: []string{"kf-track-generator"},
+			wantNames: []string{"kf-architect"},
 		},
 		{
 			name: "both missing",
@@ -148,7 +148,7 @@ func TestCheckStatus(t *testing.T) {
 	required := []RequiredSkill{
 		{Name: "kf-developer", Reason: "dev"},
 		{Name: "kf-reviewer", Reason: "rev"},
-		{Name: "kf-track-generator", Reason: "gen"},
+		{Name: "kf-architect", Reason: "gen"},
 	}
 
 	statuses := CheckStatus(required, globalDir, "")
@@ -161,9 +161,9 @@ func TestCheckStatus(t *testing.T) {
 	if !statuses[1].Installed || statuses[1].Current {
 		t.Errorf("kf-reviewer: installed=%v current=%v, want true/false", statuses[1].Installed, statuses[1].Current)
 	}
-	// kf-track-generator: not installed.
+	// kf-architect: not installed.
 	if statuses[2].Installed {
-		t.Errorf("kf-track-generator: installed=%v, want false", statuses[2].Installed)
+		t.Errorf("kf-architect: installed=%v, want false", statuses[2].Installed)
 	}
 }
 
@@ -230,7 +230,7 @@ func TestListEmbedded(t *testing.T) {
 	for _, n := range names {
 		nameSet[n] = true
 	}
-	for _, expected := range []string{"kf-developer", "kf-reviewer", "kf-track-generator"} {
+	for _, expected := range []string{"kf-developer", "kf-reviewer", "kf-architect"} {
 		if !nameSet[expected] {
 			t.Errorf("expected %q in embedded skills", expected)
 		}
@@ -244,7 +244,8 @@ func TestRequiredSkillsForRole(t *testing.T) {
 	}{
 		{"developer", "kf-developer"},
 		{"reviewer", "kf-reviewer"},
-		{"interactive", "kf-track-generator"},
+		{"interactive", "kf-architect"},
+		{"setup", "kf-setup"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.role, func(t *testing.T) {

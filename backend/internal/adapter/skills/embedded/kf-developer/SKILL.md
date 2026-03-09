@@ -11,13 +11,13 @@ Implement a kiloforge track in a parallel worktree workflow. Receives a track ID
 
 ## Use this skill when
 
-- A track has been generated and approved via `/kf-track-generator`
+- A track has been generated and approved via `/kf-architect`
 - You have been assigned a specific track ID to implement
 - You are a developer worker in a parallel worktree setup
 
 ## Do not use this skill when
 
-- You need to create new tracks (use `/kf-track-generator` instead)
+- You need to create new tracks (use `/kf-architect` instead)
 - The project has no Kiloforge artifacts (use `/kf-setup` first)
 - You are working in a single-branch workflow (use `/kf-implement` instead)
 
@@ -73,7 +73,7 @@ ERROR: Track ID required.
 
 Usage: /kf-developer <track-id>
 
-To see available tracks, check .agent/conductor/tracks.md or run /kf-track-generator to create new ones.
+To see available tracks, check .agent/conductor/tracks.md or run /kf-architect to create new ones.
 ```
 
 **HALT.**
@@ -153,7 +153,7 @@ If missing: Display error and suggest `/kf-setup`. **HALT.**
    Missing required files on main:
    - {list missing files}
 
-   This track may need to be regenerated via /kf-track-generator.
+   This track may need to be regenerated via /kf-architect.
    ```
    **HALT.**
 
