@@ -89,12 +89,17 @@ func (sm *SessionManager) RemoveSession(agentID string, s *Session) {
 }
 
 // BroadcastToAgent sends a message to all WebSocket clients observing an agent.
+// Sessions with cancelled contexts are skipped to avoid writing to disconnected clients.
 func (sm *SessionManager) BroadcastToAgent(agentID string, msg []byte) {
 	sm.mu.RLock()
-	sessions := sm.sessions[agentID]
+	sessions := make([]*Session, len(sm.sessions[agentID]))
+	copy(sessions, sm.sessions[agentID])
 	sm.mu.RUnlock()
 
 	for _, s := range sessions {
+		if s.ctx.Err() != nil {
+			continue
+		}
 		_ = s.conn.Write(s.ctx, websocket.MessageText, msg)
 	}
 }
