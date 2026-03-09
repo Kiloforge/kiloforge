@@ -154,6 +154,7 @@ Navigation hub for project context.
 - **fix-quota-display_20260310033001Z** — Fix Token and Cost Display — Bridge QuotaTracker to API
 - **terminal-markdown-style_20260310033002Z** — Agent Terminal Markdown Rendering and Terminal-Style Design
 - **project-documentation_20260310034000Z** — Project Documentation with Author's Foreword
+- **arch-review_20260310040000Z** — Research: Architectural Review and Alignment Audit
 
 ## Getting Started
 
