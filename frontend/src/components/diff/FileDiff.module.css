@@ -1,0 +1,146 @@
+.file {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  color: var(--text);
+  user-select: none;
+}
+
+.fileHeader:hover {
+  background: var(--border);
+}
+
+.chevron {
+  font-size: 10px;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.statusBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.statusAdded {
+  color: var(--green);
+  background: rgba(61, 214, 140, 0.12);
+}
+
+.statusModified {
+  color: var(--yellow);
+  background: rgba(240, 197, 65, 0.12);
+}
+
+.statusDeleted {
+  color: var(--red);
+  background: rgba(240, 108, 108, 0.12);
+}
+
+.statusRenamed {
+  color: var(--accent);
+  background: rgba(108, 140, 255, 0.12);
+}
+
+.filePath {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileCounts {
+  font-size: 11px;
+  display: flex;
+  gap: 6px;
+}
+
+.ins {
+  color: var(--green);
+}
+
+.del {
+  color: var(--red);
+}
+
+.hunks {
+  font-size: 13px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  overflow-x: auto;
+}
+
+.hunkHeader {
+  padding: 4px 12px;
+  background: rgba(108, 140, 255, 0.08);
+  color: var(--accent);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.line {
+  display: flex;
+  padding: 0 12px;
+  min-height: 20px;
+  line-height: 20px;
+  white-space: pre;
+}
+
+.lineAdd {
+  background: rgba(61, 214, 140, 0.08);
+  color: var(--green);
+}
+
+.lineDelete {
+  background: rgba(240, 108, 108, 0.08);
+  color: var(--red);
+}
+
+.lineContext {
+  color: var(--text-dim);
+}
+
+.lineNo {
+  width: 40px;
+  text-align: right;
+  padding-right: 8px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  flex-shrink: 0;
+  user-select: none;
+  font-size: 11px;
+}
+
+.lineContent {
+  flex: 1;
+  overflow: hidden;
+}
+
+.binaryLabel {
+  padding: 16px;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+}
+
+.emptyLabel {
+  padding: 16px;
+  color: var(--text-dim);
+  text-align: center;
+}

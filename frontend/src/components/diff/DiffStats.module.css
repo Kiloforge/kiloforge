@@ -1,0 +1,29 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: "SF Mono", "Fira Code", monospace;
+}
+
+.files {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.insertions {
+  color: var(--green);
+}
+
+.deletions {
+  color: var(--red);
+}
+
+.truncated {
+  color: var(--yellow);
+  font-size: 11px;
+}

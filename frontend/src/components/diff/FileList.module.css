@@ -1,0 +1,85 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  font-family: "SF Mono", "Fira Code", monospace;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+}
+
+.item:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.active {
+  background: var(--surface);
+  color: var(--text);
+  border-left: 2px solid var(--accent);
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  border-radius: 3px;
+  padding: 1px 0;
+}
+
+.badgeA {
+  color: var(--green);
+  background: rgba(61, 214, 140, 0.12);
+}
+
+.badgeM {
+  color: var(--yellow);
+  background: rgba(240, 197, 65, 0.12);
+}
+
+.badgeD {
+  color: var(--red);
+  background: rgba(240, 108, 108, 0.12);
+}
+
+.badgeR {
+  color: var(--accent);
+  background: rgba(108, 140, 255, 0.12);
+}
+
+.path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counts {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.ins {
+  color: var(--green);
+}
+
+.del {
+  color: var(--red);
+}
