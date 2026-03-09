@@ -7,6 +7,17 @@ on:
     branches: [main]
 
 jobs:
+  kf-tools:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run kf-track test suite
+        run: .agent/kf/bin/tests/run_tests.sh
+
   test:
     runs-on: ubuntu-latest
     steps:
