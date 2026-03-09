@@ -103,12 +103,9 @@ describe("useSSE", () => {
     renderHook(() => useSSE("/events", { "test": handler }));
     act(() => MockEventSource.latest!.simulateOpen());
 
-    // Simulate malformed data by directly calling the listener with invalid JSON
-    const es = MockEventSource.latest!;
-    const event = new MessageEvent("test", { data: "not valid json" });
-    // Access the private listeners through addEventListener
+    // simulateEvent wraps data in JSON.stringify, so it's always valid JSON
     act(() => {
-      es.simulateEvent("test", "will-be-valid-json");
+      MockEventSource.latest!.simulateEvent("test", "will-be-valid-json");
     });
 
     // The handler should be called since simulateEvent wraps in JSON.stringify
