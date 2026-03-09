@@ -45,10 +45,11 @@ func (m *MockAgentStore) Save() error {
 	return nil
 }
 
-func (m *MockAgentStore) AddAgent(info domain.AgentInfo) {
+func (m *MockAgentStore) AddAgent(info domain.AgentInfo) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.AgentData = append(m.AgentData, info)
+	return nil
 }
 
 func (m *MockAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
@@ -62,15 +63,16 @@ func (m *MockAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	return nil, domain.ErrAgentNotFound
 }
 
-func (m *MockAgentStore) UpdateStatus(idPrefix, status string) {
+func (m *MockAgentStore) UpdateStatus(idPrefix, status string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for i := range m.AgentData {
 		if m.AgentData[i].ID == idPrefix {
 			m.AgentData[i].Status = status
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
 func (m *MockAgentStore) HaltAgent(idPrefix string) error {

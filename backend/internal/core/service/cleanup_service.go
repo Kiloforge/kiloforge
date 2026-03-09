@@ -47,11 +47,11 @@ func MergeAndCleanup(ctx context.Context, opts CleanupOpts) error {
 	if opts.AgentStore != nil {
 		if t.DeveloperAgentID != "" {
 			_ = opts.AgentStore.HaltAgent(t.DeveloperAgentID)
-			opts.AgentStore.UpdateStatus(t.DeveloperAgentID, "completed")
+			_ = opts.AgentStore.UpdateStatus(t.DeveloperAgentID, "completed")
 		}
 		if t.ReviewerAgentID != "" {
 			_ = opts.AgentStore.HaltAgent(t.ReviewerAgentID)
-			opts.AgentStore.UpdateStatus(t.ReviewerAgentID, "completed")
+			_ = opts.AgentStore.UpdateStatus(t.ReviewerAgentID, "completed")
 		}
 		_ = opts.AgentStore.Save()
 	}

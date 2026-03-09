@@ -55,7 +55,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 	running := rm.store.AgentsByStatus("running", "waiting", "suspending")
 	for _, a := range running {
 		if a.PID > 0 && !ProcessAlive(a.PID) {
-			rm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
+			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
 		}
 	}
 
@@ -77,7 +77,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 
 	for _, a := range ordered {
 		if a.SessionID == "" {
-			rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
+			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
 			if ag, err := rm.store.FindAgent(a.ID); err == nil {
 				ag.ResumeError = "no session ID"
 			}
@@ -88,7 +88,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 		workDir := a.WorktreeDir
 		if workDir != "" {
 			if _, err := os.Stat(workDir); err != nil {
-				rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
+				_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
 				if ag, err := rm.store.FindAgent(a.ID); err == nil {
 					ag.ResumeError = "worktree missing"
 				}
@@ -99,7 +99,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 
 		pid, err := rm.starter.Start(ctx, a.SessionID, workDir, a.Model)
 		if err != nil {
-			rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
+			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
 			errMsg := fmt.Sprintf("resume failed: %v", err)
 			if ag, err := rm.store.FindAgent(a.ID); err == nil {
 				ag.ResumeError = errMsg
@@ -108,7 +108,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 			continue
 		}
 
-		rm.store.UpdateStatus(a.ID, string(domain.AgentStatusRunning))
+		_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusRunning))
 		if ag, err := rm.store.FindAgent(a.ID); err == nil {
 			ag.PID = pid
 			ag.SuspendedAt = nil

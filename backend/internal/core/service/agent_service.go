@@ -48,7 +48,9 @@ func (s *AgentService) StopAgent(idPrefix string) (*domain.AgentInfo, error) {
 		return agent, fmt.Errorf("halt agent: %w", err)
 	}
 
-	s.agents.UpdateStatus(idPrefix, "stopped")
+	if err := s.agents.UpdateStatus(idPrefix, "stopped"); err != nil {
+		return agent, fmt.Errorf("update status: %w", err)
+	}
 	if err := s.agents.Save(); err != nil {
 		return agent, fmt.Errorf("save state: %w", err)
 	}
@@ -67,7 +69,9 @@ func (s *AgentService) AttachAgent(idPrefix string) (*domain.AgentInfo, error) {
 		if err := s.agents.HaltAgent(idPrefix); err != nil {
 			return agent, fmt.Errorf("halt agent: %w", err)
 		}
-		s.agents.UpdateStatus(idPrefix, "halted")
+		if err := s.agents.UpdateStatus(idPrefix, "halted"); err != nil {
+			return agent, fmt.Errorf("update status: %w", err)
+		}
 		_ = s.agents.Save()
 	}
 

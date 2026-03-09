@@ -16,5 +16,5 @@ type TraceReader interface {
 // SpanRecorder records completed spans. Used by StoreProcessor to decouple
 // from the concrete Store type.
 type SpanRecorder interface {
-	Record(span sdktrace.ReadOnlySpan)
+	Record(span sdktrace.ReadOnlySpan) error
 }

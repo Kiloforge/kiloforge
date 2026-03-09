@@ -56,7 +56,7 @@ func NewStore() *Store {
 }
 
 // Record adds a completed span to the store.
-func (s *Store) Record(span sdktrace.ReadOnlySpan) {
+func (s *Store) Record(span sdktrace.ReadOnlySpan) error {
 	attrs := make(map[string]string)
 	for _, kv := range span.Attributes() {
 		attrs[string(kv.Key)] = kv.Value.Emit()
@@ -102,6 +102,7 @@ func (s *Store) Record(span sdktrace.ReadOnlySpan) {
 	s.spans = append(s.spans, summary)
 	s.indexSpan(summary)
 	s.mu.Unlock()
+	return nil
 }
 
 // indexSpan populates secondary indexes from span attributes. Must be called with mu held.

@@ -41,16 +41,16 @@ func (sm *ShutdownManager) ShutdownAll(timeout time.Duration) ShutdownResult {
 	for _, a := range agents {
 		if a.PID <= 0 {
 			result.NoPID = append(result.NoPID, a.ID)
-			sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
+			_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
 			continue
 		}
 		if !ProcessAlive(a.PID) {
 			result.AlreadyDead = append(result.AlreadyDead, a.ID)
-			sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
+			_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
 			continue
 		}
 		signalProcess(a.PID, syscall.SIGINT)
-		sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspending))
+		_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspending))
 		alive = append(alive, a)
 	}
 
@@ -76,7 +76,7 @@ func (sm *ShutdownManager) ShutdownAll(timeout time.Duration) ShutdownResult {
 						ag.SuspendedAt = &now
 						ag.ShutdownReason = "orchestrator shutdown"
 					}
-					sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
+					_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
 					result.Suspended = append(result.Suspended, a.ID)
 				}
 			}
@@ -87,7 +87,7 @@ func (sm *ShutdownManager) ShutdownAll(timeout time.Duration) ShutdownResult {
 	// Phase 3: Force-kill stragglers.
 	for _, a := range alive {
 		killProcess(a.PID)
-		sm.store.UpdateStatus(a.ID, string(domain.AgentStatusForceKilled))
+		_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusForceKilled))
 		result.ForceKilled = append(result.ForceKilled, a.ID)
 	}
 

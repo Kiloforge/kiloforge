@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"log"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -20,7 +21,9 @@ func NewStoreProcessor(store SpanRecorder) *StoreProcessor {
 func (p *StoreProcessor) OnStart(_ context.Context, _ sdktrace.ReadWriteSpan) {}
 
 func (p *StoreProcessor) OnEnd(span sdktrace.ReadOnlySpan) {
-	p.store.Record(span)
+	if err := p.store.Record(span); err != nil {
+		log.Printf("trace store: record span: %v", err)
+	}
 }
 
 func (p *StoreProcessor) Shutdown(_ context.Context) error { return nil }

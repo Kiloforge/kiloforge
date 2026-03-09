@@ -517,7 +517,9 @@ func (s *Server) createPRTracking(slug string, prNumber int, pr map[string]any) 
 
 	// Update developer agent status.
 	if tracking.DeveloperAgentID != "" {
-		s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review")
+		if err := s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review"); err != nil {
+			s.logger.Printf("[%s] Error updating agent status: %v", slug, err)
+		}
 		if err := s.store.Save(); err != nil {
 			s.logger.Printf("[%s] Error saving state: %v", slug, err)
 		}
@@ -570,7 +572,9 @@ func (s *Server) spawnReviewerForPR(slug string, prNumber int) {
 		s.logger.Printf("[%s] Error saving PR tracking: %v", slug, err)
 	}
 
-	s.store.AddAgent(*info)
+	if err := s.store.AddAgent(*info); err != nil {
+		s.logger.Printf("[%s] Error adding agent: %v", slug, err)
+	}
 	if err := s.store.Save(); err != nil {
 		s.logger.Printf("[%s] Error saving state: %v", slug, err)
 	}
@@ -714,7 +718,9 @@ func (s *Server) handleReviewChangesRequested(slug string, tracking *domain.PRTr
 			s.logger.Printf("[%s] Error resuming developer: %v", slug, err)
 			return
 		}
-		s.store.UpdateStatus(tracking.DeveloperAgentID, "running")
+		if err := s.store.UpdateStatus(tracking.DeveloperAgentID, "running"); err != nil {
+			s.logger.Printf("[%s] Error updating agent status: %v", slug, err)
+		}
 		_ = s.store.Save()
 	}
 }
@@ -725,11 +731,15 @@ func (s *Server) escalatePR(slug string, tracking *domain.PRTracking) {
 	// Stop agents.
 	if tracking.DeveloperAgentID != "" {
 		_ = s.store.HaltAgent(tracking.DeveloperAgentID)
-		s.store.UpdateStatus(tracking.DeveloperAgentID, "stopped")
+		if err := s.store.UpdateStatus(tracking.DeveloperAgentID, "stopped"); err != nil {
+			s.logger.Printf("[%s] Error updating agent status: %v", slug, err)
+		}
 	}
 	if tracking.ReviewerAgentID != "" {
 		_ = s.store.HaltAgent(tracking.ReviewerAgentID)
-		s.store.UpdateStatus(tracking.ReviewerAgentID, "stopped")
+		if err := s.store.UpdateStatus(tracking.ReviewerAgentID, "stopped"); err != nil {
+			s.logger.Printf("[%s] Error updating agent status: %v", slug, err)
+		}
 	}
 	_ = s.store.Save()
 
@@ -748,7 +758,9 @@ func (s *Server) handlePRSynchronize(slug string, prNumber int) {
 
 	// Mark developer as waiting-review and spawn new reviewer.
 	if tracking.DeveloperAgentID != "" {
-		s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review")
+		if err := s.store.UpdateStatus(tracking.DeveloperAgentID, "waiting-review"); err != nil {
+			s.logger.Printf("[%s] Error updating agent status: %v", slug, err)
+		}
 		_ = s.store.Save()
 	}
 

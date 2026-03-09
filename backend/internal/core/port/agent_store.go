@@ -6,10 +6,10 @@ import "kiloforge/internal/core/domain"
 type AgentStore interface {
 	Load() error
 	Save() error
-	AddAgent(info domain.AgentInfo)
+	AddAgent(info domain.AgentInfo) error
 	FindAgent(idPrefix string) (*domain.AgentInfo, error)
 	FindByRef(ref string) *domain.AgentInfo
-	UpdateStatus(idPrefix, status string)
+	UpdateStatus(idPrefix, status string) error
 	HaltAgent(idPrefix string) error
 	RemoveAgent(id string) error
 	Agents() []domain.AgentInfo

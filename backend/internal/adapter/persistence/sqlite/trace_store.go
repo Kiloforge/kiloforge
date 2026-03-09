@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"kiloforge/internal/adapter/tracing"
@@ -21,7 +22,7 @@ func NewTraceStore(db *sql.DB) *TraceStore {
 }
 
 // Record adds a completed span to the store, persisting to SQLite.
-func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) {
+func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) error {
 	attrs := make(map[string]string)
 	for _, kv := range span.Attributes() {
 		attrs[string(kv.Key)] = kv.Value.Emit()
@@ -58,45 +59,57 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) {
 	eventsJSON, _ := json.Marshal(events)
 
 	// Upsert trace.
-	s.db.Exec(
+	if _, err := s.db.Exec(
 		`INSERT INTO traces (trace_id, started_at, span_count)
 		 VALUES (?, ?, 0)
 		 ON CONFLICT(trace_id) DO NOTHING`,
 		traceID, span.StartTime().Format(time.RFC3339Nano),
-	)
+	); err != nil {
+		return fmt.Errorf("trace store: upsert trace %s: %w", traceID, err)
+	}
 
 	// Update trace metadata.
 	if parentID == "" {
-		s.db.Exec(
+		if _, err := s.db.Exec(
 			"UPDATE traces SET root_span_name = ? WHERE trace_id = ?",
 			span.Name(), traceID,
-		)
+		); err != nil {
+			return fmt.Errorf("trace store: update root span name: %w", err)
+		}
 	}
-	s.db.Exec(
+	if _, err := s.db.Exec(
 		"UPDATE traces SET span_count = span_count + 1 WHERE trace_id = ?",
 		traceID,
-	)
+	); err != nil {
+		return fmt.Errorf("trace store: update span count: %w", err)
+	}
 
 	// Update trace start/end.
-	s.db.Exec(
+	if _, err := s.db.Exec(
 		`UPDATE traces SET started_at = MIN(started_at, ?), ended_at = MAX(COALESCE(ended_at, ?), ?)
 		 WHERE trace_id = ?`,
 		span.StartTime().Format(time.RFC3339Nano),
 		span.EndTime().Format(time.RFC3339Nano),
 		span.EndTime().Format(time.RFC3339Nano),
 		traceID,
-	)
+	); err != nil {
+		return fmt.Errorf("trace store: update trace times: %w", err)
+	}
 
 	// Index by track.id and session.id.
 	if trackID, ok := attrs["track.id"]; ok && trackID != "" {
-		s.db.Exec("UPDATE traces SET track_id = ? WHERE trace_id = ?", trackID, traceID)
+		if _, err := s.db.Exec("UPDATE traces SET track_id = ? WHERE trace_id = ?", trackID, traceID); err != nil {
+			return fmt.Errorf("trace store: update track_id: %w", err)
+		}
 	}
 	if sessionID, ok := attrs["session.id"]; ok && sessionID != "" {
-		s.db.Exec("UPDATE traces SET session_id = ? WHERE trace_id = ?", sessionID, traceID)
+		if _, err := s.db.Exec("UPDATE traces SET session_id = ? WHERE trace_id = ?", sessionID, traceID); err != nil {
+			return fmt.Errorf("trace store: update session_id: %w", err)
+		}
 	}
 
 	// Insert span.
-	s.db.Exec(
+	if _, err := s.db.Exec(
 		`INSERT OR REPLACE INTO spans
 		 (span_id, trace_id, parent_id, name, start_time, end_time, duration_ms, status, attributes, events)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -104,7 +117,11 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) {
 		span.StartTime().Format(time.RFC3339Nano),
 		span.EndTime().Format(time.RFC3339Nano),
 		durationMs, status, string(attrsJSON), string(eventsJSON),
-	)
+	); err != nil {
+		return fmt.Errorf("trace store: insert span %s: %w", spanID, err)
+	}
+
+	return nil
 }
 
 // ListTraces returns all trace summaries.

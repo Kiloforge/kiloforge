@@ -19,7 +19,7 @@ type stubAgentStore struct {
 
 func (s *stubAgentStore) Load() error                              { return nil }
 func (s *stubAgentStore) Save() error                              { s.saved = true; return nil }
-func (s *stubAgentStore) AddAgent(info domain.AgentInfo)           { s.agents = append(s.agents, info) }
+func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error     { s.agents = append(s.agents, info); return nil }
 func (s *stubAgentStore) Agents() []domain.AgentInfo               { return s.agents }
 func (s *stubAgentStore) AgentsByStatus(_ ...string) []domain.AgentInfo { return nil }
 func (s *stubAgentStore) FindByRef(_ string) *domain.AgentInfo     { return nil }
@@ -33,9 +33,10 @@ func (s *stubAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	return nil, fmt.Errorf("agent not found: %s", idPrefix)
 }
 
-func (s *stubAgentStore) UpdateStatus(idPrefix, status string) {
+func (s *stubAgentStore) UpdateStatus(idPrefix, status string) error {
 	s.updatedID = idPrefix
 	s.updatedStat = status
+	return nil
 }
 
 func (s *stubAgentStore) HaltAgent(idPrefix string) error {

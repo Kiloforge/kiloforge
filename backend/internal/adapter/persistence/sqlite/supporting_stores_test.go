@@ -97,12 +97,14 @@ func TestQuotaStore_RecordAndGet(t *testing.T) {
 	db := openTestDB(t)
 	store := NewQuotaStore(db)
 
-	store.RecordUsage(&agent.AgentUsage{
+	if err := store.RecordUsage(&agent.AgentUsage{
 		AgentID:      "agent-1",
 		TotalCostUSD: 0.05,
 		InputTokens:  1000,
 		OutputTokens: 500,
-	})
+	}); err != nil {
+		t.Fatalf("RecordUsage: %v", err)
+	}
 
 	got := store.GetAgentUsage("agent-1")
 	if got == nil {

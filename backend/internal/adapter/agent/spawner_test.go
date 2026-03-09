@@ -26,7 +26,7 @@ var _ port.AgentStore = (*stubAgentStore)(nil)
 
 func (s *stubAgentStore) Load() error                                  { return nil }
 func (s *stubAgentStore) Save() error                                  { return nil }
-func (s *stubAgentStore) AddAgent(info domain.AgentInfo)               { s.agents = append(s.agents, info) }
+func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error         { s.agents = append(s.agents, info); return nil }
 func (s *stubAgentStore) FindAgent(id string) (*domain.AgentInfo, error) {
 	for i := range s.agents {
 		if s.agents[i].ID == id {
@@ -36,12 +36,13 @@ func (s *stubAgentStore) FindAgent(id string) (*domain.AgentInfo, error) {
 	return nil, fmt.Errorf("not found: %s", id)
 }
 func (s *stubAgentStore) FindByRef(ref string) *domain.AgentInfo { return nil }
-func (s *stubAgentStore) UpdateStatus(id, status string) {
+func (s *stubAgentStore) UpdateStatus(id, status string) error {
 	for i := range s.agents {
 		if s.agents[i].ID == id {
 			s.agents[i].Status = status
 		}
 	}
+	return nil
 }
 func (s *stubAgentStore) HaltAgent(string) error                            { return nil }
 func (s *stubAgentStore) RemoveAgent(id string) error {

@@ -196,7 +196,9 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		Model:       model,
 	}
 
-	s.store.AddAgent(info)
+	if err := s.store.AddAgent(info); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: add agent: %v\n", err)
+	}
 	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
@@ -272,7 +274,9 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		Model:       model,
 	}
 
-	s.store.AddAgent(info)
+	if err := s.store.AddAgent(info); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: add agent: %v\n", err)
+	}
 	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
@@ -299,11 +303,15 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 	finalStatus, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span)
 	if err != nil {
 		finalStatus = "failed"
-		s.store.UpdateStatus(agentID, finalStatus)
+		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {
+			fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)
+		}
 		span.AddEvent("agent.failed")
 		span.SetError(err)
 	} else {
-		s.store.UpdateStatus(agentID, finalStatus)
+		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {
+			fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)
+		}
 		span.AddEvent("agent." + finalStatus)
 	}
 	_ = s.store.Save()
@@ -400,7 +408,9 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		return nil, fmt.Errorf("SDK connect: %w", err)
 	}
 
-	s.store.AddAgent(info)
+	if err := s.store.AddAgent(info); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: add agent: %v\n", err)
+	}
 	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
@@ -464,12 +474,16 @@ func (s *Spawner) StopAgent(id string) error {
 
 	// Update store.
 	now := time.Now()
-	s.store.UpdateStatus(id, "stopped")
+	if uerr := s.store.UpdateStatus(id, "stopped"); uerr != nil {
+		fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)
+	}
 	agent, err := s.store.FindAgent(id)
 	if err == nil {
 		agent.ShutdownReason = "user_stopped"
 		agent.FinishedAt = &now
-		s.store.AddAgent(*agent) // upsert
+		if uerr := s.store.AddAgent(*agent); uerr != nil { // upsert
+			fmt.Fprintf(os.Stderr, "warning: add agent: %v\n", uerr)
+		}
 	}
 	_ = s.store.Save()
 
@@ -536,7 +550,9 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	}
 
 	// Update agent status.
-	s.store.UpdateStatus(id, "running")
+	if uerr := s.store.UpdateStatus(id, "running"); uerr != nil {
+		fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)
+	}
 	_ = s.store.Save()
 
 	_, span := s.tracer.StartSpan(ctx, "agent/interactive-resume",
@@ -586,7 +602,9 @@ func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, sp
 	span.AddEvent("agent.completed")
 	span.End()
 
-	s.store.UpdateStatus(agentID, "completed")
+	if uerr := s.store.UpdateStatus(agentID, "completed"); uerr != nil {
+		fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)
+	}
 	_ = s.store.Save()
 
 	if s.tracker != nil {

@@ -107,7 +107,7 @@ func (s *LifecycleService) haltIfActive(agent *domain.AgentInfo, reason string) 
 		if err != nil {
 			s.logger.Printf("halt agent %s: %v (marking halted anyway)", agent.ID, err)
 		}
-		s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusHalted))
+		_ = s.agents.UpdateStatus(agent.ID, string(domain.AgentStatusHalted))
 		if a := s.agents.FindByRef(agent.Ref); a != nil {
 			a.ShutdownReason = reason
 		}

@@ -42,7 +42,7 @@ func (s *AgentStore) Agents() []domain.AgentInfo {
 	return scanAgents(rows)
 }
 
-func (s *AgentStore) AddAgent(info domain.AgentInfo) {
+func (s *AgentStore) AddAgent(info domain.AgentInfo) error {
 	var suspAt, finAt *string
 	if info.SuspendedAt != nil {
 		v := info.SuspendedAt.Format(time.RFC3339)
@@ -52,7 +52,7 @@ func (s *AgentStore) AddAgent(info domain.AgentInfo) {
 		v := info.FinishedAt.Format(time.RFC3339)
 		finAt = &v
 	}
-	s.db.Exec(
+	_, err := s.db.Exec(
 		`INSERT OR REPLACE INTO agents
 		 (id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
 		  started_at, updated_at, suspended_at, finished_at, shutdown_reason, resume_error, model)
@@ -62,6 +62,10 @@ func (s *AgentStore) AddAgent(info domain.AgentInfo) {
 		info.StartedAt.Format(time.RFC3339), info.UpdatedAt.Format(time.RFC3339),
 		suspAt, finAt, info.ShutdownReason, info.ResumeError, info.Model,
 	)
+	if err != nil {
+		return fmt.Errorf("agent store: add agent %s: %w", info.ID, err)
+	}
+	return nil
 }
 
 func (s *AgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
@@ -98,18 +102,23 @@ func (s *AgentStore) FindByRef(ref string) *domain.AgentInfo {
 	return &agents[0]
 }
 
-func (s *AgentStore) UpdateStatus(idPrefix, status string) {
+func (s *AgentStore) UpdateStatus(idPrefix, status string) error {
 	now := time.Now().Format(time.RFC3339)
 	a := domain.AgentInfo{Status: status}
+	var err error
 	if a.IsTerminal() {
-		s.db.Exec(
+		_, err = s.db.Exec(
 			`UPDATE agents SET status = ?, updated_at = ?, finished_at = ? WHERE id = ? OR id LIKE ?`,
 			status, now, now, idPrefix, idPrefix+"%")
 	} else {
-		s.db.Exec(
+		_, err = s.db.Exec(
 			`UPDATE agents SET status = ?, updated_at = ? WHERE id = ? OR id LIKE ?`,
 			status, now, idPrefix, idPrefix+"%")
 	}
+	if err != nil {
+		return fmt.Errorf("agent store: update status %s for %s: %w", status, idPrefix, err)
+	}
+	return nil
 }
 
 func (s *AgentStore) HaltAgent(idPrefix string) error {
