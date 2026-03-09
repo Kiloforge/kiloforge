@@ -79,6 +79,7 @@ type APIHandler struct {
 	projects   ProjectLister
 	projectMgr ProjectManager
 	gitSync    *gitadapter.GitSync
+	diffProv   port.DiffProvider
 	traceStore tracing.TraceReader
 	boardSvc     port.BoardService
 	trackReader  port.TrackReader
@@ -103,6 +104,7 @@ type APIHandlerOpts struct {
 	Projects      ProjectLister
 	ProjectMgr    ProjectManager
 	GitSync       *gitadapter.GitSync
+	DiffProvider  port.DiffProvider
 	TraceStore    tracing.TraceReader
 	BoardSvc      port.BoardService
 	TrackReader   port.TrackReader
@@ -125,6 +127,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		projects:     opts.Projects,
 		projectMgr:   opts.ProjectMgr,
 		gitSync:      opts.GitSync,
+		diffProv:     opts.DiffProvider,
 		traceStore:   opts.TraceStore,
 		boardSvc:     opts.BoardSvc,
 		trackReader:  opts.TrackReader,
@@ -1405,8 +1408,8 @@ func (h *APIHandler) GetSyncStatus(ctx context.Context, req gen.GetSyncStatusReq
 
 // GetProjectDiff implements gen.StrictServerInterface.
 func (h *APIHandler) GetProjectDiff(ctx context.Context, req gen.GetProjectDiffRequestObject) (gen.GetProjectDiffResponseObject, error) {
-	if h.gitSync == nil {
-		return gen.GetProjectDiff500JSONResponse{Error: "git sync not configured"}, nil
+	if h.diffProv == nil {
+		return gen.GetProjectDiff500JSONResponse{Error: "diff provider not configured"}, nil
 	}
 	p, ok := h.findProject(req.Slug)
 	if !ok {
@@ -1418,7 +1421,7 @@ func (h *APIHandler) GetProjectDiff(ctx context.Context, req gen.GetProjectDiffR
 		maxFiles = *req.Params.MaxFiles
 	}
 
-	result, err := h.gitSync.DiffWithMaxFiles(ctx, p.ProjectDir, req.Params.Branch, maxFiles)
+	result, err := h.diffProv.DiffWithMaxFiles(ctx, p.ProjectDir, req.Params.Branch, maxFiles)
 	if err != nil {
 		if _, ok := err.(*gitadapter.BranchNotFoundError); ok {
 			return gen.GetProjectDiff404JSONResponse{Error: err.Error()}, nil

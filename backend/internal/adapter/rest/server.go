@@ -236,13 +236,15 @@ func (s *Server) Run(ctx context.Context) error {
 		APIToken:         s.cfg.APIToken,
 	})
 
+	gitSync := gitadapter.New()
 	apiHandler := NewAPIHandler(APIHandlerOpts{
 		Agents:       s.store,
 		Quota:        s.quotaReader,
 		LockMgr:      lockMgr,
 		Projects:     s._projects,
 		ProjectMgr:   projectSvc,
-		GitSync:      gitadapter.New(),
+		GitSync:      gitSync,
+		DiffProvider: gitSync,
 		TraceStore:   s.traceStore,
 		BoardSvc:     s.boardSvc,
 		TrackReader:  service.NewTrackReader(),

@@ -1168,7 +1168,7 @@ func TestUpdateConfig_NilBody(t *testing.T) {
 func TestGetProjectDiff(t *testing.T) {
 	t.Run("project not found", func(t *testing.T) {
 		h := newTestHandler(nil)
-		h.gitSync = gitadapter.New()
+		h.diffProv = gitadapter.New()
 		resp, err := h.GetProjectDiff(context.Background(), gen.GetProjectDiffRequestObject{
 			Slug:   "nonexistent",
 			Params: gen.GetProjectDiffParams{Branch: "some-branch"},
@@ -1181,9 +1181,9 @@ func TestGetProjectDiff(t *testing.T) {
 		}
 	})
 
-	t.Run("git sync not configured", func(t *testing.T) {
+	t.Run("diff provider not configured", func(t *testing.T) {
 		h := newTestHandler(nil)
-		// gitSync is nil by default in newTestHandler
+		// diffProv is nil by default in newTestHandler
 		resp, err := h.GetProjectDiff(context.Background(), gen.GetProjectDiffRequestObject{
 			Slug:   "proj-1",
 			Params: gen.GetProjectDiffParams{Branch: "some-branch"},
