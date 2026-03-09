@@ -23,7 +23,6 @@ import (
 	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
-	"kiloforge/internal/core/service"
 )
 
 // AgentLister provides read access to agent state.

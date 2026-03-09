@@ -5,58 +5,66 @@
 ## Phase 1: Move Existing Service-Local Interfaces to Port
 
 ### Task 1.1: Move ProjectGiteaClient to port/
-- Create `port/gitea_client.go` (or extend existing `port/gitea_client.go`)
-- Move `ProjectGiteaClient` interface from `service/project_service.go` to `port/`
-- Update `service/project_service.go` to import from `port`
+- [x] Create `port/project_gitea_client.go`
+- [x] Move `ProjectGiteaClient` interface from `service/project_service.go` to `port/`
+- [x] Update `service/project_service.go` to import from `port`
 
 ### Task 1.2: Move ProjectStoreWriter to port/
-- Move `ProjectStoreWriter` interface to `port/project_store.go` (merge with existing ProjectStore or create separate)
-- Update service imports
+- [x] Update `ProjectService` to use `port.ProjectStore` (superset of `ProjectStoreWriter`)
+- [x] Remove local `ProjectStoreWriter` definition
+- [x] Update test mocks to satisfy `port.ProjectStore`
 
 ### Task 1.3: Move NativeBoardStore to port/
-- Create `port/board_store.go`
-- Move `NativeBoardStore` interface from `service/board_service.go` to `port/`
-- Update service imports
+- [x] `port/board_store.go` already exists with identical interface
+- [x] Update `service/board_service.go` to use `port.BoardStore`
+- [x] Remove local `NativeBoardStore` definition
 
 ### Task 1.4: Verify Phase 1
-- `go test ./internal/core/... -race` passes
-- No service files define local interfaces
+- [x] `go test ./internal/core/... -race` passes
+- [x] No service files define local interfaces
 
 ## Phase 2: Create Port Interfaces for REST Handler Dependencies
 
 ### Task 2.1: Create BoardService port interface
-- Define `port.BoardService` interface covering methods used by `api_handler.go`
-- Ensure `service.NativeBoardService` satisfies the interface
-- Add compile-time check: `var _ port.BoardService = (*service.NativeBoardService)(nil)`
+- [x] Define `port.BoardService` interface in `port/board_service.go`
+- [x] Add compile-time check: `var _ port.BoardService = (*service.NativeBoardService)(nil)`
+- [x] Move `MoveCardResult` and `SyncResult` to port as `BoardMoveCardResult` and `BoardSyncResult`
 
 ### Task 2.2: Create TrackReader port interface
-- Define `port.TrackReader` interface for `DiscoverTracks` and `GetTrackDetail`
-- Used by both `api_handler.go` and `dashboard/watcher.go`
-- Add compile-time check
+- [x] Define `port.TrackReader` interface in `port/track_reader.go`
+- [x] Move `TrackEntry`, `TrackDetail`, `ProgressCount` types to port
+- [x] Create `service.TrackReaderImpl` satisfying port.TrackReader
+- [x] Add compile-time check
 
 ### Task 2.3: Move AddProjectOpts to domain
-- Move `service.AddProjectOpts` to `domain.AddProjectOpts` (it's a value object)
-- Update all references
+- [x] Move `AddProjectOpts` and `AddProjectResult` to `domain/project.go`
+- [x] Update all references in service, CLI, and REST adapter
 
 ### Task 2.4: Verify Phase 2
-- `go test ./... -race` passes
-- New port interfaces have compile-time satisfaction checks
+- [x] `make test` passes
+- [x] New port interfaces have compile-time satisfaction checks
 
 ## Phase 3: Update Adapters to Use Port Interfaces
 
 ### Task 3.1: Refactor api_handler.go to use port interfaces
-- Change `APIHandler` struct fields from concrete service types to port interfaces
-- Remove `import "service"` from `api_handler.go`
-- Update `NewAPIHandler()` constructor
+- [x] Change `boardSvc` field from `*service.NativeBoardService` to `port.BoardService`
+- [x] Add `trackReader port.TrackReader` field
+- [x] Replace `service.DiscoverTracks()` calls with `h.trackReader.DiscoverTracks()`
+- [x] Replace `service.GetTrackDetail()` calls with `h.trackReader.GetTrackDetail()`
+- [x] Replace `service.AddProjectOpts` with `domain.AddProjectOpts`
 
 ### Task 3.2: Refactor dashboard/watcher.go to use port interface
-- Change `watcher` to depend on `port.TrackReader` instead of `service.DiscoverTracks`
-- Remove `import "service"` from `watcher.go`
+- [x] Add `trackReader port.TrackReader` field to dashboard Server
+- [x] Replace `service.DiscoverTracks()` with `s.trackReader.DiscoverTracks()`
+- [x] Remove `import "service"` from `watcher.go`
 
 ### Task 3.3: Update server.go wiring
-- `server.go` still imports `service` for construction — this is acceptable (composition root)
-- Ensure it passes port-typed values to handlers
+- [x] `WithBoardService` accepts `port.BoardService` instead of `*service.NativeBoardService`
+- [x] Wire `service.NewTrackReader()` at composition roots
+- [x] Add `SetTrackReader()` method to dashboard Server
 
 ### Task 3.4: Verify Phase 3
-- Full test suite passes: `make test`
-- `api_handler.go` and `watcher.go` have no `service` import
+- [x] `make test` passes
+- [x] `make build` passes
+- [x] `watcher.go` has no `service` import
+- [x] `api_handler.go` only imports `service` for error types (deferred to error-standardization track)
