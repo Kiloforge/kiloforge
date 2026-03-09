@@ -73,9 +73,11 @@
 }
 
 .panel {
-  background: var(--surface);
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 20px;
   margin-bottom: 16px;
 }

@@ -65,11 +65,11 @@
   background: transparent;
   color: var(--accent);
   cursor: pointer;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .discussBtn:hover {
-  background: rgba(108, 140, 255, 0.12);
+  background: rgba(52, 211, 153, 0.12);
 }

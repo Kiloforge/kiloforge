@@ -42,7 +42,7 @@
 }
 
 .id {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-dim);
   min-width: 120px;

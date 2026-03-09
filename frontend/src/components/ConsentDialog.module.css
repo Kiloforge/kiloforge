@@ -9,9 +9,11 @@
 }
 
 .dialog {
-  background: var(--surface);
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 24px;
   max-width: 460px;
   width: 90%;

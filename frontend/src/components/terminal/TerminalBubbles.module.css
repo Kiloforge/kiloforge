@@ -7,7 +7,7 @@
 }
 
 .messageIcon {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -24,7 +24,7 @@
   word-break: break-word;
   min-width: 0;
   flex: 1;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-family: var(--font-mono);
 }
 
 /* User input */
@@ -53,7 +53,7 @@
 }
 
 .toolName {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
   color: var(--orange, #e8944a);
@@ -63,7 +63,7 @@
 }
 
 .toolId {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-dim);
 }
@@ -74,7 +74,7 @@
   border-radius: 4px;
   padding: 8px 10px;
   margin: 6px 0 0;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
   color: var(--text-dim);
@@ -139,13 +139,13 @@
   gap: 12px;
   font-size: 11px;
   color: var(--text-dim);
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   padding: 2px 0 4px;
 }
 
 /* System messages */
 .systemMessage .messageIcon {
-  background: rgba(108, 140, 255, 0.15);
+  background: rgba(52, 211, 153, 0.15);
   color: var(--accent);
 }
 
@@ -172,7 +172,7 @@
 }
 
 .systemInfo .messageIcon {
-  background: rgba(108, 140, 255, 0.15);
+  background: rgba(52, 211, 153, 0.15);
   color: var(--accent);
 }
 
@@ -202,7 +202,7 @@
   padding: 10px 12px;
   margin: 6px 0;
   overflow-x: auto;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
   color: var(--text-dim);
@@ -217,6 +217,6 @@
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 1px 4px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
 }

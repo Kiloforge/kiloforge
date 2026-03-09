@@ -9,15 +9,17 @@
 }
 
 .modal {
-  background: var(--bg);
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   width: 90%;
   max-width: 720px;
   height: 80vh;
   display: flex;
   flex-direction: column;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .header {
@@ -59,7 +61,7 @@
 }
 
 .developer {
-  background: rgba(108, 140, 255, 0.15);
+  background: rgba(52, 211, 153, 0.15);
   color: var(--accent);
 }
 
@@ -160,7 +162,7 @@
   color: var(--text);
   padding: 8px 12px;
   font-size: 13px;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-family: var(--font-mono);
   resize: none;
   outline: none;
   min-height: 36px;
@@ -188,7 +190,7 @@
   padding: 8px 14px;
   font-size: 12px;
   font-weight: 600;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-family: var(--font-mono);
   cursor: pointer;
   white-space: nowrap;
   text-transform: uppercase;

@@ -7,7 +7,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 13px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .files {

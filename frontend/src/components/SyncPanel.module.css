@@ -40,7 +40,7 @@
 .dim {
   color: var(--text-dim);
   font-size: 12px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .refreshBtn {
@@ -116,7 +116,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   color: inherit;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   padding: 4px 8px;
   width: 160px;

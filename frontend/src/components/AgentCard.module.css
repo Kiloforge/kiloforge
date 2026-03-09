@@ -1,11 +1,18 @@
 .card {
-  background: var(--bg);
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: border-color var(--transition-default), background var(--transition-default);
+}
+
+.card:hover {
+  border-color: var(--border-hover);
 }
 
 .header {
@@ -27,7 +34,7 @@
 }
 
 .idRow {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-dim);
 }
@@ -40,7 +47,7 @@
 }
 
 .developer {
-  background: rgba(108, 140, 255, 0.15);
+  background: rgba(52, 211, 153, 0.15);
   color: var(--accent);
 }
 
@@ -51,7 +58,7 @@
 
 .tokens {
   font-size: 12px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   color: var(--text-dim);
 }
 

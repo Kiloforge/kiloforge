@@ -162,13 +162,13 @@ plan:
   - phase: Component migration — glass panels
     tasks:
       - text: Update Header/Nav component to glass treatment (semi-transparent bg, white/8% border, backdrop-blur)
-        done: false
+        done: true
       - text: Update card components (AgentCard, StatCards) to glass panel pattern
-        done: false
+        done: true
       - text: Update panel/container components (TrackList, KanbanBoard columns) to glass treatment
-        done: false
+        done: true
       - text: Update modal/dialog overlays to glass treatment
-        done: false
+        done: true
   - phase: Brand accent and polish
     tasks:
       - text: Apply emerald-cyan gradient to primary accent areas (active states, key buttons, highlights)

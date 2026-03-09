@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 2px;
   font-size: 13px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .item {
@@ -59,7 +59,7 @@
 
 .badgeR {
   color: var(--accent);
-  background: rgba(108, 140, 255, 0.12);
+  background: rgba(52, 211, 153, 0.12);
 }
 
 .path {

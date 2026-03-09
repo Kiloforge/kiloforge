@@ -9,11 +9,13 @@
 .column {
   flex: 1;
   min-width: 180px;
-  background: var(--surface);
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 12px;
-  transition: border-color 0.15s;
+  transition: border-color var(--transition-default);
 }
 
 .columnOver {
@@ -49,8 +51,8 @@
   margin-left: auto;
   font-size: 11px;
   color: var(--text-dim);
-  background: var(--bg);
-  border-radius: 10px;
+  background: var(--bg-surface-solid);
+  border-radius: var(--radius-pill);
   padding: 1px 7px;
   min-width: 20px;
   text-align: center;
@@ -63,17 +65,17 @@
 }
 
 .card {
-  background: var(--bg);
+  background: var(--bg-surface-solid);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 10px;
   cursor: grab;
-  transition: opacity 0.15s, border-color 0.15s;
+  transition: opacity var(--transition-fast), border-color var(--transition-default);
   user-select: none;
 }
 
 .card:hover {
-  border-color: var(--text-dim);
+  border-color: var(--border-hover);
 }
 
 .card:active {
@@ -104,7 +106,7 @@
 .cardPR {
   font-size: 10px;
   color: var(--green);
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
 }
 
 .cardTitle {
@@ -133,7 +135,7 @@
 .cardId {
   font-size: 11px;
   color: var(--text-dim);
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

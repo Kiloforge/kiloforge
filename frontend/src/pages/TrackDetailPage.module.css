@@ -71,7 +71,7 @@
 }
 
 .mono {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
 }
 
@@ -124,7 +124,7 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   overflow-x: auto;
 }
 

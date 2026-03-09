@@ -44,7 +44,7 @@
   border-radius: 4px;
   padding: 10px 12px;
   overflow-x: auto;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
   color: var(--text-dim);
@@ -62,7 +62,7 @@
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 1px 4px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
 }
 
@@ -96,7 +96,7 @@
 .link {
   color: var(--accent);
   text-decoration: underline;
-  text-decoration-color: rgba(108, 140, 255, 0.4);
+  text-decoration-color: rgba(52, 211, 153, 0.4);
 }
 
 .link:hover {

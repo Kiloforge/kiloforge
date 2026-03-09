@@ -13,7 +13,7 @@
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   font-size: 13px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   color: var(--text);
   user-select: none;
 }
@@ -56,7 +56,7 @@
 
 .statusRenamed {
   color: var(--accent);
-  background: rgba(108, 140, 255, 0.12);
+  background: rgba(52, 211, 153, 0.12);
 }
 
 .filePath {
@@ -82,13 +82,13 @@
 
 .hunks {
   font-size: 13px;
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: var(--font-mono);
   overflow-x: auto;
 }
 
 .hunkHeader {
   padding: 4px 12px;
-  background: rgba(108, 140, 255, 0.08);
+  background: rgba(52, 211, 153, 0.08);
   color: var(--accent);
   font-size: 12px;
   border-top: 1px solid var(--border);
