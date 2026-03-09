@@ -39,14 +39,18 @@ func TestRunDryRun_MovesCardToDone(t *testing.T) {
 
 	proj := domain.Project{Slug: slug, ProjectDir: t.TempDir()}
 
+	// Build service for dry-run.
+	consentStore := sqlite.NewConsentStore(db)
+	boardSvc := service.NewNativeBoardService(boardStore)
+	implSvc := service.NewImplementService(consentStore, boardSvc, dataDir, "")
+
 	// Run dry-run.
-	if err := runDryRun(db, proj, trackID); err != nil {
+	if err := runDryRun(implSvc, proj, trackID); err != nil {
 		t.Fatalf("runDryRun: %v", err)
 	}
 
 	// Verify card moved to Done.
-	svc := service.NewNativeBoardService(boardStore)
-	updatedBoard, err := svc.GetBoard(slug)
+	updatedBoard, err := boardSvc.GetBoard(slug)
 	if err != nil {
 		t.Fatalf("get board: %v", err)
 	}
@@ -73,8 +77,13 @@ func TestRunDryRun_NoBoard(t *testing.T) {
 
 	proj := domain.Project{Slug: "no-board-proj", ProjectDir: t.TempDir()}
 
+	consentStore := sqlite.NewConsentStore(db)
+	boardStore := sqlite.NewBoardStore(db)
+	boardSvc := service.NewNativeBoardService(boardStore)
+	implSvc := service.NewImplementService(consentStore, boardSvc, dataDir, "")
+
 	// Should not error even if track is not on the board.
-	if err := runDryRun(db, proj, "nonexistent-track"); err != nil {
+	if err := runDryRun(implSvc, proj, "nonexistent-track"); err != nil {
 		t.Fatalf("runDryRun should not error for missing board card: %v", err)
 	}
 }

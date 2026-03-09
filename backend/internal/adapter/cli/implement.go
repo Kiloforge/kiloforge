@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"os"
@@ -57,24 +56,26 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
 
-	// Open SQLite database.
 	db, err := sqlite.Open(cfg.DataDir)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
 	defer db.Close()
 
-	// Resolve project.
 	reg := sqlite.NewProjectStore(db)
-
 	proj, err := resolveProject(reg, flagImplementProject)
 	if err != nil {
 		return err
 	}
 
-	// --list mode: show available tracks.
+	// Build the implement service for track validation, consent, and board ops.
+	consentStore := sqlite.NewConsentStore(db)
+	boardStore := sqlite.NewBoardStore(db)
+	boardSvc := service.NewNativeBoardService(boardStore)
+	implSvc := service.NewImplementService(consentStore, boardSvc, cfg.DataDir, cfg.Model)
+
 	if flagImplementList {
-		return listTracks(proj)
+		return listTracks(implSvc, proj)
 	}
 
 	if len(args) == 0 {
@@ -83,66 +84,29 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	trackID := args[0]
 
-	// Validate track is pending.
-	tracks, err := service.DiscoverTracks(proj.ProjectDir)
+	// Validate track via service.
+	found, err := implSvc.ValidateTrack(proj.ProjectDir, trackID)
 	if err != nil {
-		return fmt.Errorf("discover tracks: %w", err)
+		return fmt.Errorf("%w (project %q)", err, proj.Slug)
 	}
 
-	var found *service.TrackEntry
-	for i := range tracks {
-		if tracks[i].ID == trackID {
-			found = &tracks[i]
-			break
-		}
-	}
-	if found == nil {
-		return fmt.Errorf("track %q not found in project %q", trackID, proj.Slug)
-	}
-	if found.Status == service.StatusComplete {
-		return fmt.Errorf("track %q is already complete", trackID)
-	}
-	if found.Status == service.StatusInProgress {
-		return fmt.Errorf("track %q is already in progress", trackID)
-	}
-
-	// Dry-run mode: skip agent spawn, move board card to Done.
 	if flagImplementDryRun {
-		return runDryRun(db, proj, trackID)
+		return runDryRun(implSvc, proj, trackID)
 	}
 
-	// Check agent permissions consent.
-	consentStore := sqlite.NewConsentStore(db)
-	if !consentStore.HasAgentPermissionsConsent() {
-		fmt.Println()
-		fmt.Println("WARNING: Kiloforge agents run with --dangerously-skip-permissions.")
-		fmt.Println("This grants agents unrestricted access to tools (file read/write,")
-		fmt.Println("shell commands, etc.) within their worktree directory.")
-		fmt.Println()
-		fmt.Println("This is required for non-interactive agent operation.")
-		fmt.Print("\nDo you accept? [y/N] ")
-
-		answer, ok := readLineCtx(ctx)
-		if !ok {
-			return fmt.Errorf("aborted")
+	// Consent prompt (user I/O stays in CLI).
+	if !implSvc.HasConsent() {
+		if err := promptConsent(ctx, implSvc); err != nil {
+			return err
 		}
-		if answer != "y" && answer != "Y" && answer != "yes" {
-			return fmt.Errorf("agent spawning aborted — permissions not accepted")
-		}
-		if err := consentStore.RecordAgentPermissionsConsent(); err != nil {
-			return fmt.Errorf("save consent: %w", err)
-		}
-		fmt.Println("Consent recorded.")
-		fmt.Println()
 	}
 
-	// Initialize tracing for track lifecycle.
+	// Initialize tracing.
 	tracer, tracingShutdown := initTracing(ctx, cfg)
 	if tracingShutdown != nil {
 		defer tracingShutdown(context.Background())
 	}
 
-	// Start root trace span for the track lifecycle.
 	ctx, trackSpan := tracer.StartSpan(ctx, "track/"+trackID,
 		port.StringAttr("track.id", trackID),
 		port.StringAttr("track.title", found.Title),
@@ -150,7 +114,6 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	)
 	defer trackSpan.End()
 
-	// Extract trace ID from span context for cross-process propagation.
 	traceID := extractTraceID(ctx)
 
 	// Acquire worktree.
@@ -174,7 +137,6 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	acquireSpan.SetAttributes(port.StringAttr("worktree.path", wt.Path))
 	acquireSpan.End()
 
-	// Prepare worktree for track.
 	_, prepareSpan := tracer.StartSpan(ctx, "worktree.prepare",
 		port.StringAttr("track.id", trackID),
 		port.StringAttr("worktree.path", wt.Path),
@@ -191,27 +153,20 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	tracker := agent.NewQuotaTracker(cfg.DataDir)
 	_ = tracker.Load()
 
-	// Create board service before spawner so the completion callback can reference it.
-	boardStore := sqlite.NewBoardStore(db)
-	nativeBoardSvc := service.NewNativeBoardService(boardStore)
-
-	logDir := filepath.Join(cfg.DataDir, "projects", proj.Slug, "logs")
+	logDir := implSvc.LogDir(proj.Slug)
 	spawner := agent.NewSpawner(cfg, store, tracker)
 	spawner.SetTracer(tracer)
 
-	// Pre-flight: verify Claude CLI authentication.
 	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
 		return fmt.Errorf("claude auth check failed: %w\n\nRun 'claude' in a terminal to authenticate, then retry.", err)
 	}
 
-	// Pre-flight skill validation: ensure required skills are installed.
 	if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
 		var errMissing *agent.ErrSkillsMissing
 		if errors.As(err, &errMissing) {
 			if installErr := promptSkillInstall(ctx, cfg, errMissing.Missing, proj.ProjectDir); installErr != nil {
 				return installErr
 			}
-			// Re-validate after install.
 			if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
 				return fmt.Errorf("skills still missing after install: %w", err)
 			}
@@ -220,10 +175,10 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Wire completion callback: move board card and return worktree on agent exit.
+	// Wire completion callback using service for board ops.
 	spawner.SetCompletionCallback(func(agentID, ref, status string) {
 		if status == "completed" {
-			if _, err := nativeBoardSvc.MoveCard(proj.Slug, ref, domain.ColumnDone); err != nil {
+			if err := implSvc.MoveCardToDone(proj.Slug, ref); err != nil {
 				fmt.Fprintf(os.Stderr, "warning: board move to done: %v\n", err)
 			}
 		}
@@ -247,24 +202,19 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("spawn developer: %w", err)
 	}
 
-	// Record worktree-agent link.
 	wt.AgentID = info.ID
-
-	// Save pool state.
 	if err := p.Save(cfg.DataDir); err != nil {
 		return fmt.Errorf("save pool: %w", err)
 	}
 
-	// Move track card to In Progress on the native board and store trace ID.
-	if moveResult, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnInProgress); err == nil {
-		if moveResult.FromColumn != moveResult.ToColumn {
-			fmt.Println("  Board:     → In Progress")
-		}
+	// Board state transitions via service.
+	from, to, err := implSvc.MoveCardToInProgress(proj.Slug, trackID)
+	if err == nil && from != to {
+		fmt.Println("  Board:     → In Progress")
 	}
 
-	// Store trace ID in board card for cross-process propagation.
 	if traceID != "" {
-		_ = nativeBoardSvc.StoreTraceID(proj.Slug, trackID, traceID)
+		implSvc.StoreTraceID(proj.Slug, trackID, traceID)
 	}
 
 	fmt.Println()
@@ -285,8 +235,32 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// promptConsent displays the consent warning and records user acceptance.
+func promptConsent(ctx context.Context, svc *service.ImplementService) error {
+	fmt.Println()
+	fmt.Println("WARNING: Kiloforge agents run with --dangerously-skip-permissions.")
+	fmt.Println("This grants agents unrestricted access to tools (file read/write,")
+	fmt.Println("shell commands, etc.) within their worktree directory.")
+	fmt.Println()
+	fmt.Println("This is required for non-interactive agent operation.")
+	fmt.Print("\nDo you accept? [y/N] ")
+
+	answer, ok := readLineCtx(ctx)
+	if !ok {
+		return fmt.Errorf("aborted")
+	}
+	if answer != "y" && answer != "Y" && answer != "yes" {
+		return fmt.Errorf("agent spawning aborted — permissions not accepted")
+	}
+	if err := svc.RecordConsent(); err != nil {
+		return fmt.Errorf("save consent: %w", err)
+	}
+	fmt.Println("Consent recorded.")
+	fmt.Println()
+	return nil
+}
+
 // initTracing sets up a tracer for the implement command.
-// Returns NoopTracer if OTel initialization fails.
 func initTracing(ctx context.Context, _ *config.Config) (port.Tracer, func(context.Context) error) {
 	result, err := tracing.Init(ctx, "")
 	if err != nil {
@@ -313,7 +287,6 @@ func resolveProject(reg port.ProjectStore, slug string) (domain.Project, error) 
 		return proj, nil
 	}
 
-	// Auto-detect from cwd.
 	cwd, err := os.Getwd()
 	if err != nil {
 		return domain.Project{}, fmt.Errorf("get cwd: %w", err)
@@ -326,16 +299,13 @@ func resolveProject(reg port.ProjectStore, slug string) (domain.Project, error) 
 	return proj, nil
 }
 
-func runDryRun(db *sql.DB, proj domain.Project, trackID string) error {
+func runDryRun(svc *service.ImplementService, proj domain.Project, trackID string) error {
 	fmt.Printf("Dry run: skipping agent spawn for track %q\n\n", trackID)
 
-	// Move board card to Done.
-	boardStore := sqlite.NewBoardStore(db)
-	nativeBoardSvc := service.NewNativeBoardService(boardStore)
-	if result, err := nativeBoardSvc.MoveCard(proj.Slug, trackID, domain.ColumnDone); err == nil {
-		fmt.Printf("  Board:     %s → %s\n", result.FromColumn, result.ToColumn)
-	} else {
+	if err := svc.MoveCardToDone(proj.Slug, trackID); err != nil {
 		fmt.Printf("  Board:     (not on board: %v)\n", err)
+	} else {
+		fmt.Println("  Board:     → Done")
 	}
 
 	fmt.Printf("  Worktree:  not acquired (dry run)\n")
@@ -344,9 +314,7 @@ func runDryRun(db *sql.DB, proj domain.Project, trackID string) error {
 	return nil
 }
 
-// promptSkillInstall offers the user a choice to install missing skills
-// globally, locally, or deny. Skills are extracted from the embedded assets
-// bundled in the binary.
+// promptSkillInstall offers the user a choice to install missing skills.
 func promptSkillInstall(ctx context.Context, cfg *config.Config, missing []skills.RequiredSkill, projectDir string) error {
 	fmt.Println("\nRequired skills are not installed:")
 	for _, s := range missing {
@@ -389,13 +357,12 @@ func promptSkillInstall(ctx context.Context, cfg *config.Config, missing []skill
 	return nil
 }
 
-func listTracks(proj domain.Project) error {
-	tracks, err := service.DiscoverTracks(proj.ProjectDir)
+func listTracks(svc *service.ImplementService, proj domain.Project) error {
+	pending, err := svc.ListPendingTracks(proj.ProjectDir)
 	if err != nil {
-		return fmt.Errorf("discover tracks: %w", err)
+		return err
 	}
 
-	pending := service.FilterByStatus(tracks, service.StatusPending)
 	if len(pending) == 0 {
 		fmt.Printf("No pending tracks for project %q.\n", proj.Slug)
 		return nil
