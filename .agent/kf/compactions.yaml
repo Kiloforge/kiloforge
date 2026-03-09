@@ -1,0 +1,12 @@
+# Kiloforge Compaction Registry
+#
+# FORMAT: <commit-hash>: {"date":"...","completed":N,"archived":N,"track_ids":["..."],"first_created":"...","last_created":"..."}
+# ORDER:  Lines sorted by date (newest first) — most recent compaction at top of data section.
+# TOOL:   Use `kf-track compact` to manage. Do not edit by hand.
+#
+# RECOVERY:
+#   git show <commit>:.agent/kf/tracks.yaml              — full track registry at that point
+#   git show <commit>:.agent/kf/tracks/<id>/spec.md      — specific track files
+#   git ls-tree <commit> .agent/kf/tracks/                — list all track directories
+#
+c0d6d7ec4cb516dd059aaf382992307aee3ae9fc: {"date":"2026-03-09","source":"conductor","completed":182,"archived":0,"track_ids":[],"note":"Pre-migration snapshot — all conductor tracks accessible via git show c0d6d7e:.agent/conductor/"}

@@ -687,6 +687,374 @@ cmd_archive() {
   echo "Archived: ${id} (reason: ${reason})"
 }
 
+# --- Config: compactions ---
+COMPACTIONS_FILE="${KF_DIR}/compactions.yaml"
+TRACKS_DIR="${KF_DIR}/tracks"
+ARCHIVE_DIR="${TRACKS_DIR}/_archive"
+
+ensure_compactions_file() {
+  if [[ ! -f "$COMPACTIONS_FILE" ]]; then
+    cat > "$COMPACTIONS_FILE" <<'HEADER'
+# Kiloforge Compaction Registry
+#
+# FORMAT: <commit-hash>: {"date":"...","completed":N,"archived":N,"track_ids":["..."],"first_created":"...","last_created":"..."}
+# ORDER:  Lines sorted by date (newest first) — most recent compaction at top of data section.
+# TOOL:   Use `kf-track compact` to manage. Do not edit by hand.
+#
+# RECOVERY:
+#   git show <commit>:.agent/kf/tracks.yaml              — full track registry at that point
+#   git show <commit>:.agent/kf/tracks/<id>/spec.md      — specific track files
+#   git ls-tree <commit> .agent/kf/tracks/                — list all track directories
+#
+HEADER
+  fi
+}
+
+cmd_compact() {
+  local subcmd="${1:-run}"; shift 2>/dev/null || true
+  case "$subcmd" in
+    run)
+      _compact_run "$@"
+      ;;
+    list)
+      _compact_list "$@"
+      ;;
+    recover)
+      _compact_recover "$@"
+      ;;
+    import)
+      _compact_import "$@"
+      ;;
+    *)
+      echo "Usage: kf-track compact <run|list|recover [hash]|import [hash] [--source ...]>" >&2
+      return 1
+      ;;
+  esac
+}
+
+_compact_run() {
+  local dry_run=false
+  [[ "${1:-}" == "--dry-run" ]] && dry_run=true
+
+  ensure_tracks_file
+  ensure_compactions_file
+
+  # Collect compactable tracks from both sources
+  local compactable_ids=()
+  local completed_ids=()
+  local archived_dir_ids=()
+
+  # Source 1: archived track directories
+  if [[ -d "$ARCHIVE_DIR" ]]; then
+    for dir in "$ARCHIVE_DIR"/*/; do
+      [[ -d "$dir" ]] || continue
+      local dirname
+      dirname=$(basename "$dir")
+      archived_dir_ids+=("$dirname")
+      compactable_ids+=("$dirname")
+    done
+  fi
+
+  # Source 2: completed tracks with directories
+  local completed_lines
+  completed_lines=$(grep -v "^#" "$TRACKS_FILE" | grep -v "^$" | grep '"status":"completed"' || true)
+  if [[ -n "$completed_lines" ]]; then
+    while IFS= read -r line; do
+      local tid
+      tid=$(echo "$line" | sed 's/:.*//')
+      if [[ -d "${TRACKS_DIR}/${tid}" ]]; then
+        completed_ids+=("$tid")
+        # Avoid duplicates (track could be in both)
+        local already=false
+        for existing in "${compactable_ids[@]:-}"; do
+          [[ "$existing" == "$tid" ]] && already=true
+        done
+        [[ "$already" == "false" ]] && compactable_ids+=("$tid")
+      fi
+    done <<< "$completed_lines"
+  fi
+
+  if [[ ${#compactable_ids[@]} -eq 0 ]]; then
+    echo "Nothing to compact — no archived directories or completed track directories found."
+    return 0
+  fi
+
+  # Gather metadata
+  local total=${#compactable_ids[@]}
+  local completed_count=${#completed_ids[@]}
+  local archived_count=${#archived_dir_ids[@]}
+  local first_created="" last_created=""
+
+  for tid in "${compactable_ids[@]}"; do
+    local created
+    created=$(get_field "$tid" "created" 2>/dev/null || echo "")
+    if [[ -n "$created" && "$created" != "null" ]]; then
+      if [[ -z "$first_created" || "$created" < "$first_created" ]]; then
+        first_created="$created"
+      fi
+      if [[ -z "$last_created" || "$created" > "$last_created" ]]; then
+        last_created="$created"
+      fi
+    fi
+  done
+
+  local commit_hash
+  commit_hash=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+  local compact_date
+  compact_date=$(today_iso)
+
+  echo "Compaction summary:"
+  echo "  Total tracks to compact: ${total}"
+  echo "  From _archive/:          ${archived_count}"
+  echo "  Completed (with dirs):   ${completed_count}"
+  echo "  Date range:              ${first_created:-unknown} — ${last_created:-unknown}"
+  echo "  Recovery commit:         ${commit_hash}"
+  echo ""
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "(dry run — no changes made)"
+    echo ""
+    echo "Tracks that would be compacted:"
+    for tid in "${compactable_ids[@]}"; do
+      echo "  ${tid}"
+    done
+    return 0
+  fi
+
+  # Build JSON for track_ids array
+  local ids_json="["
+  local first=true
+  for tid in "${compactable_ids[@]}"; do
+    if [[ "$first" == "true" ]]; then
+      ids_json+="\"${tid}\""
+      first=false
+    else
+      ids_json+=",\"${tid}\""
+    fi
+  done
+  ids_json+="]"
+
+  # Build compaction record
+  local record
+  if command -v jq &>/dev/null; then
+    record=$(jq -nc \
+      --arg date "$compact_date" \
+      --argjson completed "$completed_count" \
+      --argjson archived "$archived_count" \
+      --argjson track_ids "$ids_json" \
+      --arg first_created "${first_created:-}" \
+      --arg last_created "${last_created:-}" \
+      '{date:$date, completed:$completed, archived:$archived, track_ids:$track_ids, first_created:$first_created, last_created:$last_created}')
+  else
+    record="{\"date\":\"${compact_date}\",\"completed\":${completed_count},\"archived\":${archived_count},\"track_ids\":${ids_json},\"first_created\":\"${first_created:-}\",\"last_created\":\"${last_created:-}\"}"
+  fi
+
+  # Delete directories
+  for tid in "${archived_dir_ids[@]}"; do
+    rm -rf "${ARCHIVE_DIR}/${tid}"
+  done
+  # Remove _archive dir if empty
+  rmdir "$ARCHIVE_DIR" 2>/dev/null || true
+
+  for tid in "${completed_ids[@]}"; do
+    rm -rf "${TRACKS_DIR}/${tid}"
+  done
+
+  # Archive completed tracks in tracks.yaml
+  for tid in "${completed_ids[@]}"; do
+    set_field "$tid" "status" "archived"
+    set_field "$tid" "archived_at" "$compact_date"
+    set_field "$tid" "archive_reason" "compacted — recover from ${commit_hash}"
+  done
+
+  # Record compaction
+  echo "${commit_hash}: ${record}" >> "$COMPACTIONS_FILE"
+
+  # Commit
+  git add "${TRACKS_DIR}" "${TRACKS_FILE}" "${COMPACTIONS_FILE}" 2>/dev/null
+  git commit -m "chore: compact archive (${completed_count} completed, ${archived_count} archived — recover from ${commit_hash})" 2>/dev/null || true
+
+  echo "Compaction complete."
+  echo "  Removed ${total} track directories"
+  echo "  Recovery: git show ${commit_hash}:.agent/kf/tracks/<trackId>/spec.md"
+}
+
+_compact_list() {
+  local format="${1:---table}"
+  ensure_compactions_file
+
+  local lines
+  lines=$(grep -v "^#" "$COMPACTIONS_FILE" | grep -v "^$" || true)
+
+  if [[ -z "$lines" ]]; then
+    echo "(no compaction records)"
+    return 0
+  fi
+
+  case "$format" in
+    --json)
+      echo "$lines" | while IFS= read -r line; do
+        local hash json
+        hash=$(echo "$line" | sed 's/:.*//')
+        json=$(echo "$line" | sed 's/^[^{]*//')
+        if command -v jq &>/dev/null; then
+          echo "$json" | jq -c ". + {\"commit\": \"$hash\"}"
+        else
+          echo "{\"commit\":\"${hash}\",${json#\{}"
+        fi
+      done
+      ;;
+    *)
+      printf "%-12s %-12s %-12s %-10s %-10s %-12s %-12s\n" "COMMIT" "DATE" "SOURCE" "COMPLETED" "ARCHIVED" "FIRST" "LAST"
+      printf "%-12s %-12s %-12s %-10s %-10s %-12s %-12s\n" "------" "----" "------" "---------" "--------" "-----" "----"
+      echo "$lines" | while IFS= read -r line; do
+        local hash json date source completed archived first_created last_created
+        hash=$(echo "$line" | sed 's/:.*//')
+        json=$(echo "$line" | sed 's/^[^{]*//')
+        if command -v jq &>/dev/null; then
+          date=$(echo "$json" | jq -r '.date // ""')
+          source=$(echo "$json" | jq -r '.source // "kf"')
+          completed=$(echo "$json" | jq -r '.completed // 0')
+          archived=$(echo "$json" | jq -r '.archived // 0')
+          first_created=$(echo "$json" | jq -r '.first_created // ""')
+          last_created=$(echo "$json" | jq -r '.last_created // ""')
+        else
+          date=$(echo "$json" | grep -o '"date":"[^"]*"' | head -1 | sed 's/"date":"\(.*\)"/\1/')
+          source=$(echo "$json" | grep -o '"source":"[^"]*"' | head -1 | sed 's/"source":"\(.*\)"/\1/')
+          [[ -z "$source" ]] && source="kf"
+          completed=$(echo "$json" | grep -o '"completed":[0-9]*' | head -1 | sed 's/"completed"://')
+          archived=$(echo "$json" | grep -o '"archived":[0-9]*' | head -1 | sed 's/"archived"://')
+          first_created=$(echo "$json" | grep -o '"first_created":"[^"]*"' | head -1 | sed 's/"first_created":"\(.*\)"/\1/')
+          last_created=$(echo "$json" | grep -o '"last_created":"[^"]*"' | head -1 | sed 's/"last_created":"\(.*\)"/\1/')
+        fi
+        printf "%-12s %-12s %-12s %-10s %-10s %-12s %-12s\n" "${hash:0:10}" "$date" "$source" "$completed" "$archived" "$first_created" "$last_created"
+      done
+      echo ""
+      echo "$(echo "$lines" | wc -l | tr -d ' ') compaction(s)"
+      ;;
+  esac
+}
+
+_compact_recover() {
+  local hash="${1:-}"
+  if [[ -z "$hash" ]]; then
+    echo "Usage: kf-track compact recover <commit-hash>" >&2
+    echo "" >&2
+    echo "Shows recovery commands for a compaction point." >&2
+    echo "Use 'kf-track compact list' to see available compaction points." >&2
+    return 1
+  fi
+
+  ensure_compactions_file
+
+  local line
+  line=$(grep "^${hash}" "$COMPACTIONS_FILE" 2>/dev/null || true)
+
+  if [[ -z "$line" ]]; then
+    # Try partial hash match
+    line=$(grep "^${hash}" "$COMPACTIONS_FILE" 2>/dev/null | head -1 || true)
+  fi
+
+  if [[ -z "$line" ]]; then
+    echo "ERROR: No compaction record found for commit ${hash}" >&2
+    echo "Use 'kf-track compact list' to see available compaction points." >&2
+    return 1
+  fi
+
+  local full_hash json
+  full_hash=$(echo "$line" | sed 's/:.*//')
+  json=$(echo "$line" | sed 's/^[^{]*//')
+
+  local source="kf"
+  if command -v jq &>/dev/null; then
+    source=$(echo "$json" | jq -r '.source // "kf"')
+  fi
+
+  echo "Recovery commands for compaction ${full_hash:0:10} (source: ${source}):"
+  echo ""
+
+  if [[ "$source" == "conductor" ]]; then
+    echo "# This is a conductor-era compaction. Use .agent/conductor/ paths:"
+    echo ""
+    echo "# Full track registry (markdown table):"
+    echo "git show ${full_hash}:.agent/conductor/tracks.md"
+    echo ""
+    echo "# List archived track directories:"
+    echo "git ls-tree ${full_hash} .agent/conductor/tracks/_archive/"
+    echo ""
+    echo "# List all track directories:"
+    echo "git ls-tree ${full_hash} .agent/conductor/tracks/"
+    echo ""
+    echo "# Recover a specific track's spec:"
+    echo "git show ${full_hash}:.agent/conductor/tracks/<trackId>/spec.md"
+    echo "git show ${full_hash}:.agent/conductor/tracks/_archive/<trackId>/spec.md"
+  elif command -v jq &>/dev/null; then
+    local track_ids
+    track_ids=$(echo "$json" | jq -r '.track_ids[]' 2>/dev/null || true)
+    echo "# List all track directories at that point:"
+    echo "git ls-tree ${full_hash} .agent/kf/tracks/"
+    echo ""
+    echo "# Full track registry at that point:"
+    echo "git show ${full_hash}:.agent/kf/tracks.yaml"
+    echo ""
+    if [[ -n "$track_ids" ]]; then
+      echo "# Recover specific tracks:"
+      echo "$track_ids" | while read -r tid; do
+        [[ -n "$tid" ]] && echo "git show ${full_hash}:.agent/kf/tracks/${tid}/spec.md"
+      done
+    fi
+  else
+    echo "git ls-tree ${full_hash} .agent/kf/tracks/"
+    echo "git show ${full_hash}:.agent/kf/tracks.yaml"
+  fi
+}
+
+_compact_import() {
+  # Import a legacy compaction record (e.g., from conductor migration).
+  # Usage: kf-track compact import <commit-hash> --source conductor --note "..."
+  local hash="" source="conductor" note="" track_count=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --source) source="$2"; shift 2 ;;
+      --note)   note="$2"; shift 2 ;;
+      --count)  track_count="$2"; shift 2 ;;
+      -*)       echo "Unknown option: $1" >&2; return 1 ;;
+      *)        hash="$1"; shift ;;
+    esac
+  done
+
+  if [[ -z "$hash" ]]; then
+    echo "Usage: kf-track compact import <commit-hash> [--source conductor] [--note \"...\"] [--count N]" >&2
+    return 1
+  fi
+
+  ensure_compactions_file
+
+  # Check if already recorded
+  if grep -q "^${hash}" "$COMPACTIONS_FILE" 2>/dev/null; then
+    echo "ERROR: Compaction record already exists for ${hash}" >&2
+    return 1
+  fi
+
+  local compact_date
+  compact_date=$(today_iso)
+
+  local record
+  if command -v jq &>/dev/null; then
+    record=$(jq -nc \
+      --arg date "$compact_date" \
+      --arg source "$source" \
+      --arg note "$note" \
+      --argjson count "$track_count" \
+      '{date:$date, source:$source, completed:$count, archived:0, track_ids:[], note:$note}')
+  else
+    record="{\"date\":\"${compact_date}\",\"source\":\"${source}\",\"completed\":${track_count},\"archived\":0,\"track_ids\":[],\"note\":\"${note}\"}"
+  fi
+
+  echo "${hash}: ${record}" >> "$COMPACTIONS_FILE"
+  echo "Imported compaction record: ${hash:0:10} (source: ${source})"
+}
+
 cmd_help() {
   cat <<'HELP'
 kf-track — Track registry management for Kiloforge agents
@@ -708,6 +1076,11 @@ COMMANDS:
     --all             Show all tracks including completed/archived
     --json            Output as JSON lines
     --ids             Output track IDs only
+
+  compact [run] [--dry-run]                              Compact completed/archived tracks
+  compact list [--json]                                  Show compaction history
+  compact recover <hash>                                 Show recovery commands for a compaction
+  compact import <hash> [--source ...] [--note ...]      Import legacy compaction record
 
   deps add <id> <dep-id>                                Add a dependency
   deps remove <id> <dep-id>                             Remove a dependency
@@ -739,6 +1112,7 @@ case "$cmd" in
   get)     cmd_get "$@" ;;
   list)    cmd_list "$@" ;;
   archive) cmd_archive "$@" ;;
+  compact) cmd_compact "$@" ;;
   deps)    cmd_deps "$@" ;;
   help|--help|-h) cmd_help ;;
   *)       echo "Unknown command: $cmd. Run 'kf-track help' for usage." >&2; exit 1 ;;
