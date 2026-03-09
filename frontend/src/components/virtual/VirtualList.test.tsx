@@ -33,7 +33,6 @@ globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserv
 const origGetBCR = HTMLElement.prototype.getBoundingClientRect;
 const origClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
 const origScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
-const origScrollTop = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollTop");
 const origOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
 
 beforeAll(() => {
@@ -257,5 +256,80 @@ describe("VirtualList", () => {
     const inner = document.querySelector("[data-virtual-list] > div") as HTMLElement;
     expect(inner).toBeTruthy();
     expect(inner.style.height).toBe("400px");
+  });
+
+  it("shows scroll-to-bottom button when autoFollow enabled and not at bottom", async () => {
+    // Simulate user scrolled up: scrollHeight - scrollTop - clientHeight > threshold
+    const origSH = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get() {
+        if (this.hasAttribute?.("data-virtual-list")) return 5000;
+        return origSH?.get?.call(this) ?? 0;
+      },
+    });
+
+    await renderAndFlush(
+      <VirtualList
+        items={makeItems(100)}
+        estimateSize={() => 40}
+        renderItem={(item) => <div>{item}</div>}
+        autoFollow
+        style={{ height: 200 }}
+      />,
+    );
+
+    // Fire a scroll event to trigger at-bottom check
+    const container = document.querySelector("[data-virtual-list]") as HTMLElement;
+    // scrollHeight(5000) - scrollTop(0) - clientHeight(200) = 4800 > threshold
+    // So NOT at bottom => button should appear
+    await act(async () => {
+      container.dispatchEvent(new Event("scroll"));
+    });
+
+    expect(screen.queryByText(/Scroll to bottom/)).toBeInTheDocument();
+
+    // Restore
+    if (origSH) Object.defineProperty(HTMLElement.prototype, "scrollHeight", origSH);
+  });
+
+  it("scrollToIndex accepts align option", async () => {
+    const ref = createRef<VirtualListRef>();
+
+    await renderAndFlush(
+      <VirtualList
+        ref={ref}
+        items={makeItems(100)}
+        estimateSize={() => 40}
+        renderItem={(item) => <div>{item}</div>}
+        style={{ height: 200 }}
+      />,
+    );
+
+    // Should accept align options without throwing
+    act(() => { ref.current!.scrollToIndex(50, { align: "center" }); });
+    act(() => { ref.current!.scrollToIndex(0, { align: "start" }); });
+    act(() => { ref.current!.scrollToIndex(99, { align: "end" }); });
+  });
+
+  it("calls onScrollStateChange callback on scroll", async () => {
+    const onScrollStateChange = vi.fn();
+
+    await renderAndFlush(
+      <VirtualList
+        items={makeItems(100)}
+        estimateSize={() => 40}
+        renderItem={(item) => <div>{item}</div>}
+        onScrollStateChange={onScrollStateChange}
+        style={{ height: 200 }}
+      />,
+    );
+
+    const container = document.querySelector("[data-virtual-list]") as HTMLElement;
+    await act(async () => {
+      container.dispatchEvent(new Event("scroll"));
+    });
+
+    expect(onScrollStateChange).toHaveBeenCalled();
   });
 });
