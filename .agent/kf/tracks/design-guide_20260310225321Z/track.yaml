@@ -169,7 +169,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Review guide for completeness — every visual element on kiloforge.dev should be covered
-        done: false
+        done: true
       - text: Verify all color values are accurate hex/rgba (not approximations)
-        done: false
+        done: true
 extra: {}

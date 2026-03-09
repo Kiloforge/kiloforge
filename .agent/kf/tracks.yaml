@@ -30,7 +30,7 @@ dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and 
 dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kiloforge.dev design guide","status":"pending","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 e2e-distributed-tracing_20260309194839Z: {"title":"E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
