@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# kf-worktree-env — Detect git worktree context and export env vars for Go builds.
+#
+# Usage:
+#   source .agent/kf/bin/kf-worktree-env   (export env vars into current shell)
+#   .agent/kf/bin/kf-worktree-env           (print info only, no export)
+#   .agent/kf/bin/kf-worktree-env --help    (show help)
+#   .agent/kf/bin/kf-worktree-env --show-branches  (list worktrees and branches)
+#
+# Exported variables (when sourced):
+#   GIT_DIR          — Path to the shared .git directory
+#   GIT_WORK_TREE    — Path to the worktree root
+#   KF_IS_WORKTREE   — 1 if in a worktree, 0 if in a normal repo
+#   KF_WORKTREE_NAME — Basename of the current directory (e.g., "developer-1")
+#   KF_MAIN_WORKTREE — Path to the main worktree
+
+_kf_worktree_env_main() {
+  local show_branches=false
+  local show_help=false
+
+  for arg in "$@"; do
+    case "$arg" in
+      --help|-h)
+        show_help=true
+        ;;
+      --show-branches)
+        show_branches=true
+        ;;
+    esac
+  done
+
+  if $show_help; then
+    cat <<'HELP'
+kf-worktree-env — Detect git worktree context and export env vars.
+
+Usage:
+  source .agent/kf/bin/kf-worktree-env   Export env vars into current shell
+  .agent/kf/bin/kf-worktree-env           Print worktree info (no export)
+  kf-worktree-env --show-branches         List all worktrees and their branches
+  kf-worktree-env --help                  Show this help
+
+Exported variables (when sourced):
+  GIT_DIR            Path to the shared .git directory (git-common-dir)
+  GIT_WORK_TREE      Path to the worktree root (show-toplevel)
+  KF_IS_WORKTREE     1 if running in a worktree, 0 if normal repo
+  KF_WORKTREE_NAME   Basename of the current directory
+  KF_MAIN_WORKTREE   Path to the main worktree
+
+Why this matters:
+  Git worktrees have a .git file (not directory), which breaks Go's VCS
+  stamping. Exporting GIT_DIR and GIT_WORK_TREE fixes this.
+HELP
+    return 0
+  fi
+
+  # Detect git repo
+  local git_toplevel
+  git_toplevel=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "kf-worktree-env: not in a git repository" >&2
+    return 1
+  }
+
+  local git_common_dir
+  git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null)
+
+  local git_dir
+  git_dir=$(git rev-parse --git-dir 2>/dev/null)
+
+  local main_worktree
+  main_worktree=$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //')
+
+  local is_worktree=0
+  # In a worktree, .git is a file; in the main repo, .git is a directory
+  if [ -f "${git_toplevel}/.git" ]; then
+    is_worktree=1
+  fi
+
+  local worktree_name
+  worktree_name=$(basename "$git_toplevel")
+
+  # Determine if we're being sourced or executed
+  local is_sourced=false
+  if [ -n "${BASH_SOURCE:-}" ] && [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+    is_sourced=true
+  elif [ -n "${ZSH_EVAL_CONTEXT:-}" ] && [ "${ZSH_EVAL_CONTEXT}" != "toplevel" ]; then
+    is_sourced=true
+  fi
+
+  if $is_sourced; then
+    # Export variables
+    export GIT_DIR="$git_common_dir"
+    export GIT_WORK_TREE="$git_toplevel"
+    export KF_IS_WORKTREE="$is_worktree"
+    export KF_WORKTREE_NAME="$worktree_name"
+    export KF_MAIN_WORKTREE="$main_worktree"
+  fi
+
+  # Print summary (unless KF_QUIET=1)
+  if [ "${KF_QUIET:-}" != "1" ]; then
+    if [ "$is_worktree" = "1" ]; then
+      echo "kf-worktree-env: worktree detected"
+    else
+      echo "kf-worktree-env: normal repo (not a worktree)"
+    fi
+    echo "  GIT_DIR=$git_common_dir"
+    echo "  GIT_WORK_TREE=$git_toplevel"
+    echo "  KF_IS_WORKTREE=$is_worktree"
+    echo "  KF_WORKTREE_NAME=$worktree_name"
+    echo "  KF_MAIN_WORKTREE=$main_worktree"
+  fi
+
+  if $show_branches; then
+    echo ""
+    echo "Worktrees and branches:"
+    git worktree list
+  fi
+
+  return 0
+}
+
+_kf_worktree_env_main "$@"
