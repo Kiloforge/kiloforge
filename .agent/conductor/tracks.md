@@ -118,7 +118,7 @@
 | [x] | project-documentation_20260310034000Z | Project Documentation with Author's Foreword | 2026-03-10 | 2026-03-10 |
 | [x] | arch-review_20260310040000Z | Research: Architectural Review and Alignment Audit | 2026-03-10 | 2026-03-10 |
 | [ ] | fix-relay-goroutine-leak_20260310041000Z | Fix Agent Relay Goroutine Leak and Double-Close Panic | 2026-03-10 | 2026-03-10 |
-| [ ] | fix-sqlite-error-handling_20260310041001Z | Fix Unhandled SQLite Write Errors Across All Stores | 2026-03-10 | 2026-03-10 |
+| [x] | fix-sqlite-error-handling_20260310041001Z | Fix Unhandled SQLite Write Errors Across All Stores | 2026-03-10 | 2026-03-10 |
 | [ ] | refactor-port-interfaces_20260310041002Z | Move Service-Local Interfaces to Port Layer | 2026-03-10 | 2026-03-10 |
 | [ ] | refactor-error-standardization_20260310041003Z | Standardize Domain Sentinel Errors and Store Returns | 2026-03-10 | 2026-03-10 |
 | [ ] | refactor-cli-business-logic_20260310041004Z | Extract Business Logic from CLI Commands to Services | 2026-03-10 | 2026-03-10 |
