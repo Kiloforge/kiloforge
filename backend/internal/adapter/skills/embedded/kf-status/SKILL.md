@@ -32,38 +32,38 @@ PRIMARY_BRANCH="${PRIMARY_BRANCH:-main}"
 
 ### Step 2 — Run the status command
 
-The `kf-track status` command generates the full project status report automatically:
+The `kf-track status` command generates the full factual status report:
 
 ```bash
 .agent/kf/bin/kf-track status --ref ${PRIMARY_BRANCH}
 ```
 
-This outputs:
-- Project name and overall progress (track counts, progress bar)
-- Active tracks table with per-track task completion
-- Current focus (in-progress tracks with next task)
-- Ready-to-start tracks (pending with all dependencies met)
-- Next actions (what to start or continue)
+This outputs all **data** sections:
+- **Overall Progress** — track counts, task counts, progress bar
+- **Active Tracks** — table with per-track task completion percentages
+- **Current Focus** — in-progress tracks with next pending task
+- **Ready to Start** — pending tracks with all dependencies satisfied
+- **Blocked** — pending tracks with unmet dependencies and their current statuses
 
-### Step 3 — Present and assess
+### Step 3 — Assess and recommend
 
-Display the command output to the user. If the agent is in a worktree that may be out of sync, always use `--ref ${PRIMARY_BRANCH}` to read from the authoritative branch.
+The CLI output is purely factual. After presenting it, add your **assessment** — the parts that require judgment:
 
-Add any assessment or recommendations based on the output:
-- If tracks are blocked, explain what they're waiting on
-- If many tracks are ready, suggest prioritization
-- If no tracks are pending, suggest `/kf-architect` to create new ones
+1. **Prioritization** — If multiple tracks are ready, recommend which to start first and why (e.g., "e2e-infra should go first — 11 tracks depend on it" or "these two are independent and can run in parallel across worktrees")
+
+2. **Bottleneck analysis** — If many tracks are blocked on the same dependency, call it out (e.g., "e2e-infra is the critical path — completing it unblocks 11 tracks")
+
+3. **Parallelism opportunities** — Identify ready tracks that are independent and can be worked simultaneously by different developer agents
+
+4. **Recommendations** — Based on the state:
+   - No in-progress tracks + idle workers → suggest starting ready tracks
+   - No pending tracks → suggest `/kf-architect` to create new work
+   - Many completed tracks not archived → suggest `/kf-bulk-archive`
+   - In-progress tracks with low progress → note they may be stalled
 
 ### Single track detail
 
 For a specific track, use:
-
-```bash
-.agent/kf/bin/kf-track-content show {trackId}
-.agent/kf/bin/kf-track-content progress {trackId}
-```
-
-Or with `--ref` to read from a branch:
 
 ```bash
 .agent/kf/bin/kf-track show {trackId} --ref ${PRIMARY_BRANCH}

@@ -1857,8 +1857,11 @@ cmd_status() {
   fi
 
   # --- Ready to start ---
+  echo "--------------------------------------------------------------------------------"
+  echo "                            READY TO START"
+  echo "--------------------------------------------------------------------------------"
+  echo ""
   if [[ "${#ready_ids[@]}" -gt 0 ]]; then
-    echo "Ready to start (no unmet dependencies):"
     for rid in "${ready_ids[@]}"; do
       for i in "${!active_ids[@]}"; do
         if [[ "${active_ids[$i]}" == "$rid" ]]; then
@@ -1867,35 +1870,68 @@ cmd_status() {
         fi
       done
     done
+  else
+    echo "  (none — all pending tracks have unmet dependencies)"
+  fi
+  echo ""
+
+  # --- Blocked tracks (pending with unmet deps) ---
+  local -a blocked_ids=() blocked_reasons=()
+  for i in "${!active_ids[@]}"; do
+    [[ "${active_statuses[$i]}" != "pending" ]] && continue
+    local tid="${active_ids[$i]}"
+    # Skip if already in ready list
+    local is_ready=false
+    for rid in "${ready_ids[@]}"; do
+      [[ "$rid" == "$tid" ]] && is_ready=true && break
+    done
+    [[ "$is_ready" == true ]] && continue
+
+    # Find unmet deps
+    local unmet=""
+    if [[ -n "$deps_content" ]]; then
+      local track_deps=""
+      track_deps=$(echo "$deps_content" | awk -v id="$tid" '
+        $0 ~ "^"id":" { found=1; next }
+        found && /^  - / { print substr($0, 5); next }
+        found { exit }
+      ')
+      while IFS= read -r dep; do
+        [[ -z "$dep" ]] && continue
+        if ! echo "$tracks_content" | grep -q "^${dep}:.*\"status\":\"completed\""; then
+          # Get dep status
+          local dep_status="unknown"
+          local dep_line
+          dep_line=$(echo "$tracks_content" | grep "^${dep}:" | head -1)
+          if [[ -n "$dep_line" ]]; then
+            dep_status=$(echo "$dep_line" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
+          fi
+          if [[ -n "$unmet" ]]; then
+            unmet+=", "
+          fi
+          unmet+="${dep} (${dep_status})"
+        fi
+      done <<< "$track_deps"
+    fi
+
+    if [[ -n "$unmet" ]]; then
+      blocked_ids+=("$tid")
+      blocked_reasons+=("$unmet")
+    fi
+  done
+
+  if [[ "${#blocked_ids[@]}" -gt 0 ]]; then
+    echo "--------------------------------------------------------------------------------"
+    echo "                           BLOCKED (unmet deps)"
+    echo "--------------------------------------------------------------------------------"
+    echo ""
+    for i in "${!blocked_ids[@]}"; do
+      printf "  %s\n" "${blocked_ids[$i]}"
+      printf "    waiting on: %s\n" "${blocked_reasons[$i]}"
+    done
     echo ""
   fi
 
-  # --- Next actions ---
-  echo "--------------------------------------------------------------------------------"
-  echo "                              NEXT ACTIONS"
-  echo "--------------------------------------------------------------------------------"
-  echo ""
-  local action_num=1
-  # In-progress tasks first
-  for i in "${!active_ids[@]}"; do
-    [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
-    if [[ -n "${active_next_task[$i]}" ]]; then
-      printf "%d. Continue: %s — %s\n" "$action_num" "${active_ids[$i]}" "${active_next_task[$i]}"
-    else
-      printf "%d. Continue: %s\n" "$action_num" "${active_ids[$i]}"
-    fi
-    action_num=$((action_num + 1))
-  done
-  # Ready tracks
-  for rid in "${ready_ids[@]}"; do
-    [[ "$action_num" -gt 5 ]] && break
-    printf "%d. Start: /kf-developer %s\n" "$action_num" "$rid"
-    action_num=$((action_num + 1))
-  done
-  if [[ "$action_num" -eq 1 ]]; then
-    echo "No pending actions."
-  fi
-  echo ""
   echo "================================================================================"
 }
 
