@@ -180,9 +180,9 @@ plan:
   - phase: Visual verification
     tasks:
       - text: Take before/after screenshots of OverviewPage, ProjectPage, AgentDetailPage
-        done: false
+        done: true
       - text: Verify all status colors render correctly (running=green, warning=yellow, error=red)
-        done: false
+        done: true
       - text: Verify no hardcoded colors conflict with new theme (grep for hex codes in .module.css files)
-        done: false
+        done: true
 extra: {}

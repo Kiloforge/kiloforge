@@ -12,4 +12,3 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-dashboard-theme-alignment_20260310225322Z/project-metadata-fe_20260310070001Z: {"risk":"medium","note":"Both modify frontend CSS/components — dashboard-theme changes global tokens and component styles, metadata-fe adds new page. Theme should merge first so new page uses correct tokens.","added":"2026-03-09"}
