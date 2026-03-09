@@ -3,7 +3,7 @@ title: E2E Tests: Health Check, Preflight Validation, and Onboarding Flow
 type: chore
 status: pending
 created: 2026-03-09T19:48:31Z
-updated: 2026-03-09T19:48:31Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for health check, preflight validation (Claude auth, skills, consent, setup), and the guided tour onboarding flow, covering happy path, edge cases, and expected failures.
   context: |
@@ -94,45 +94,45 @@ plan:
   - phase: Health and Status Tests
     tasks:
       - text: Create `frontend/e2e/health-preflight.spec.ts` — test `GET /api/health` returns 200 with `{"status":"ok"}`, verify response headers and content type
-        done: false
+        done: true
       - text: Test status endpoint — `GET /api/status` returns system info including version string, uptime, and configuration summary
-        done: false
+        done: true
       - text: Test health endpoint failure — stop the backend, verify Playwright detects connection refused, verify UI shows offline/error state when navigating to dashboard
-        done: false
+        done: true
   - phase: Preflight Tests
     tasks:
       - text: Test all-clear preflight — seed server with consent granted, skills installed, project setup complete; hit `GET /api/preflight`, verify all checks pass, verify dashboard loads without any blocking dialogs
-        done: false
+        done: true
       - text: Test missing skills preflight — seed server with consent granted but skills not installed; verify preflight returns skills-missing status, verify SkillsInstallDialog appears in UI
-        done: false
+        done: true
       - text: Test missing consent preflight — seed server with skills installed but consent not granted; verify preflight returns consent-missing status, verify ConsentDialog appears in UI
-        done: false
+        done: true
       - text: Test missing setup preflight — seed server with consent and skills but no project configured; verify preflight returns setup-incomplete status, verify SetupRequiredDialog appears in UI
-        done: false
+        done: true
   - phase: Consent Flow Tests
     tasks:
       - text: Test grant consent happy path — navigate to dashboard, verify ConsentDialog appears, click accept button, verify dialog dismisses, verify consent state persisted via `GET /api/consent`
-        done: false
+        done: true
       - text: Test consent dialog UI interaction — verify dialog shows correct permission descriptions, verify cancel/dismiss behavior, verify keyboard accessibility (Escape key)
-        done: false
+        done: true
       - text: Test consent state persistence — grant consent, reload page, verify ConsentDialog does not reappear, verify `GET /api/consent` returns granted state
-        done: false
+        done: true
   - phase: Tour Tests
     tasks:
       - text: Create `frontend/e2e/onboarding-tour.spec.ts` — test tour auto-starts on first visit when tour state is `pending`, verify first step content is displayed, verify tour overlay/highlight is visible
-        done: false
+        done: true
       - text: Test tour step navigation — advance through all tour steps using next button, verify each step shows correct content and highlights the correct UI element, test previous button navigates back
-        done: false
+        done: true
       - text: Test tour completion — advance through all steps to final step, click complete/finish button, verify tour state changes to `completed` via `GET /api/tour`, verify tour UI dismissed
-        done: false
+        done: true
       - text: Test tour state persistence across reload — start tour, advance to step 3, reload page, verify tour resumes at step 3 (not step 1), verify tour state shows `active` with `current_step: 3`
-        done: false
+        done: true
   - phase: Edge and Failure Cases
     tasks:
       - text: Test concurrent preflight calls — fire 5 simultaneous `GET /api/preflight` requests using `Promise.all`, verify all return consistent results, verify no 500 errors or data corruption
-        done: false
+        done: true
       - text: Test server errors during onboarding — mock API error on preflight endpoint, verify UI shows a user-friendly error message or retry option rather than a blank screen or unhandled exception
-        done: false
+        done: true
       - text: Test partial failure scenarios — skills install endpoint returns partial success (some skills installed, some failed), verify UI shows which skills failed, verify retry is possible for failed skills only
-        done: false
-extra: "{}"
+        done: true
+extra: {}
