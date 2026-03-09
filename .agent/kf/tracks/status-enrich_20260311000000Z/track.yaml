@@ -108,5 +108,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Run kf-track status --ref main and verify all new sections render correctly with current project data
-        done: false
+        done: true
 extra: {}
