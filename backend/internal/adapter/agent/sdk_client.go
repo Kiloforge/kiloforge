@@ -25,8 +25,9 @@ type SDKSession struct {
 	done    chan struct{}
 	logFile *os.File
 
-	mu       sync.Mutex
-	querying bool // prevents concurrent turns
+	mu        sync.Mutex
+	querying  bool // prevents concurrent turns
+	closeOnce sync.Once
 }
 
 // NewSDKSession creates an SDK client configured for an interactive agent.
@@ -188,17 +189,20 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 	}
 }
 
-// Close terminates the SDK session.
+// Close terminates the SDK session. It is safe to call multiple times
+// concurrently — only the first call performs cleanup.
 func (s *SDKSession) Close() {
-	s.cancel()
-	if s.client != nil {
-		_ = s.client.Close(s.ctx)
-	}
-	close(s.output)
-	close(s.done)
-	if s.logFile != nil {
-		s.logFile.Close()
-	}
+	s.closeOnce.Do(func() {
+		s.cancel()
+		if s.client != nil {
+			_ = s.client.Close(s.ctx)
+		}
+		close(s.output)
+		close(s.done)
+		if s.logFile != nil {
+			s.logFile.Close()
+		}
+	})
 }
 
 // Output returns the channel of structured WS messages.
