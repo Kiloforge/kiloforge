@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -75,11 +76,14 @@ func startE2EServer(t *testing.T) *e2eServer {
 	lockMgr := lock.New(dir)
 	lockMgr.StartReaper(ctx)
 
+	projectMgr := newE2EProjectManager(reg)
+
 	apiHandler := NewAPIHandler(APIHandlerOpts{
-		Agents:   store,
-		LockMgr:  lockMgr,
-		Projects: reg,
-		GiteaURL: cfg.GiteaURL(),
+		Agents:     store,
+		LockMgr:    lockMgr,
+		Projects:   reg,
+		ProjectMgr: projectMgr,
+		GiteaURL:   cfg.GiteaURL(),
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
@@ -233,5 +237,75 @@ func findMockAgentSource(t *testing.T) string {
 		}
 	}
 	t.Fatal("cannot find mock-agent source directory")
+	return ""
+}
+
+// e2eProjectManager is an in-memory ProjectManager for E2E tests.
+// It stores projects in the SQLite project store without needing a real Gitea instance.
+type e2eProjectManager struct {
+	mu    sync.Mutex
+	store *sqlite.ProjectStore
+}
+
+func newE2EProjectManager(store *sqlite.ProjectStore) *e2eProjectManager {
+	return &e2eProjectManager{store: store}
+}
+
+func (m *e2eProjectManager) AddProject(_ context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Derive slug from URL or use provided name.
+	slug := name
+	if slug == "" {
+		slug = deriveSlug(remoteURL)
+	}
+	if slug == "" {
+		return nil, fmt.Errorf("cannot derive project name from URL")
+	}
+
+	// Check for duplicates.
+	if _, ok := m.store.FindByRepoName(slug); ok {
+		return nil, domain.ErrProjectExists
+	}
+
+	p := domain.Project{
+		Slug:         slug,
+		RepoName:     slug,
+		OriginRemote: remoteURL,
+		Active:       true,
+		RegisteredAt: time.Now(),
+	}
+	if err := m.store.Add(p); err != nil {
+		return nil, err
+	}
+	return &domain.AddProjectResult{Project: p}, nil
+}
+
+func (m *e2eProjectManager) RemoveProject(_ context.Context, slug string, _ bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	err := m.store.Remove(slug)
+	if err != nil {
+		// Map store errors to domain errors for proper API status codes.
+		if strings.Contains(err.Error(), "not found") {
+			return domain.ErrProjectNotFound
+		}
+		return err
+	}
+	return nil
+}
+
+// deriveSlug extracts a project name from a git remote URL.
+func deriveSlug(url string) string {
+	// Strip trailing .git
+	url = strings.TrimSuffix(url, ".git")
+	// Take last path component
+	if idx := strings.LastIndex(url, "/"); idx >= 0 {
+		return url[idx+1:]
+	}
+	if idx := strings.LastIndex(url, ":"); idx >= 0 {
+		return url[idx+1:]
+	}
 	return ""
 }
