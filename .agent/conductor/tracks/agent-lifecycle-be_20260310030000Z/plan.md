@@ -5,12 +5,12 @@
 ## Phase 1: Store & Interface Extensions
 
 ### Task 1.1: Add RemoveAgent to AgentStore interface
-- Add `RemoveAgent(id string) error` to `port.AgentStore`
-- Update all interface implementations
+- [x] Add `RemoveAgent(id string) error` to `port.AgentStore`
+- [x] Update all interface implementations
 
 ### Task 1.2: Implement RemoveAgent in SQLite store
-- Add `DELETE FROM agents WHERE id = ?` implementation
-- Return error if agent not found
+- [x] Add `DELETE FROM agents WHERE id = ?` implementation
+- [x] Return error if agent not found
 
 ### Task 1.3: Add active session registry to Spawner
 - Add `activeAgents map[string]*InteractiveAgent` field with mutex

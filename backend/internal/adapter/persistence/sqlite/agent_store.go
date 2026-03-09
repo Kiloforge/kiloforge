@@ -127,6 +127,18 @@ func (s *AgentStore) HaltAgent(idPrefix string) error {
 	return proc.Signal(syscall.SIGINT)
 }
 
+func (s *AgentStore) RemoveAgent(id string) error {
+	res, err := s.db.Exec(`DELETE FROM agents WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete agent: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("agent not found: %s", id)
+	}
+	return nil
+}
+
 func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	if len(statuses) == 0 {
 		return nil

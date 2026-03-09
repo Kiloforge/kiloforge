@@ -81,6 +81,18 @@ func (m *MockAgentStore) HaltAgent(idPrefix string) error {
 	return err
 }
 
+func (m *MockAgentStore) RemoveAgent(id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i := range m.AgentData {
+		if m.AgentData[i].ID == id {
+			m.AgentData = append(m.AgentData[:i], m.AgentData[i+1:]...)
+			return nil
+		}
+	}
+	return domain.ErrAgentNotFound
+}
+
 func (m *MockAgentStore) Agents() []domain.AgentInfo {
 	m.mu.Lock()
 	defer m.mu.Unlock()

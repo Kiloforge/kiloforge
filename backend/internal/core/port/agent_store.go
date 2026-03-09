@@ -11,6 +11,7 @@ type AgentStore interface {
 	FindByRef(ref string) *domain.AgentInfo
 	UpdateStatus(idPrefix, status string)
 	HaltAgent(idPrefix string) error
+	RemoveAgent(id string) error
 	Agents() []domain.AgentInfo
 	AgentsByStatus(statuses ...string) []domain.AgentInfo
 }

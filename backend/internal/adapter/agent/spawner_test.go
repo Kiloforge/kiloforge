@@ -43,6 +43,15 @@ func (s *stubAgentStore) UpdateStatus(id, status string) {
 	}
 }
 func (s *stubAgentStore) HaltAgent(string) error                            { return nil }
+func (s *stubAgentStore) RemoveAgent(id string) error {
+	for i := range s.agents {
+		if s.agents[i].ID == id {
+			s.agents = append(s.agents[:i], s.agents[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("not found: %s", id)
+}
 func (s *stubAgentStore) Agents() []domain.AgentInfo                        { return s.agents }
 func (s *stubAgentStore) AgentsByStatus(...string) []domain.AgentInfo       { return nil }
 
