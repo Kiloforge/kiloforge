@@ -148,6 +148,8 @@ Navigation hub for project context.
 - **track-detail-view-fe_20260309001727Z** — Track Detail View UI
 - **sdk-agent-migration-be_20260310014147Z** — Migrate Agent Spawner to Claude Agent SDK (Backend)
 - **sdk-agent-migration-fe_20260310014148Z** — Structured Agent Terminal Display (Frontend)
+- **agent-lifecycle-be_20260310030000Z** — Agent Lifecycle Management — Stop, Resume, Delete (Backend)
+- **agent-lifecycle-fe_20260310030001Z** — Agent Lifecycle Management — Stop, Resume, Delete (Frontend)
 
 ## Getting Started
 
