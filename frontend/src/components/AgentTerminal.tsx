@@ -6,6 +6,7 @@ import styles from "./AgentTerminal.module.css";
 
 interface Props {
   agentId: string;
+  role?: string;
   onClose: () => void;
 }
 
@@ -32,7 +33,7 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, onClose }: Props) {
+export function AgentTerminal({ agentId, role, onClose }: Props) {
   const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -86,6 +87,7 @@ export function AgentTerminal({ agentId, onClose }: Props) {
           <div className={styles.headerLeft}>
             <h3>
               Agent: <span className={styles.agentId}>{agentId}</span>
+              {role && <span className={`${styles.roleBadge} ${styles[role] ?? ""}`}>{role}</span>}
             </h3>
             <ConnectionDot status={status} />
           </div>

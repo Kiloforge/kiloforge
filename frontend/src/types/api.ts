@@ -212,3 +212,50 @@ export interface SpawnInteractiveRequest {
   work_dir?: string;
   model?: string;
 }
+
+export interface DiffLine {
+  type: "context" | "add" | "delete";
+  content: string;
+  old_no: number | null;
+  new_no: number | null;
+}
+
+export interface DiffHunk {
+  old_start: number;
+  old_lines: number;
+  new_start: number;
+  new_lines: number;
+  header: string;
+  lines: DiffLine[];
+}
+
+export interface FileDiff {
+  path: string;
+  old_path?: string;
+  status: "added" | "modified" | "deleted" | "renamed";
+  insertions: number;
+  deletions: number;
+  is_binary: boolean;
+  hunks: DiffHunk[];
+}
+
+export interface DiffStats {
+  files_changed: number;
+  insertions: number;
+  deletions: number;
+}
+
+export interface DiffResponse {
+  branch: string;
+  base: string;
+  stats: DiffStats;
+  files: FileDiff[];
+  truncated?: boolean;
+}
+
+export interface BranchInfo {
+  branch: string;
+  agent_id?: string;
+  track_id?: string;
+  status: string;
+}

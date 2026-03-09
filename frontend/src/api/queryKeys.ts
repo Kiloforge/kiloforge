@@ -17,4 +17,6 @@ export const queryKeys = {
   setupStatus: (slug: string) => ["setupStatus", slug] as const,
   preflight: ["preflight"] as const,
   trackDetail: (trackId: string, project: string) => ["tracks", trackId, project] as const,
+  projectDiff: (slug: string, branch: string) => ["projectDiff", slug, branch] as const,
+  projectBranches: (slug: string) => ["projectBranches", slug] as const,
 };
