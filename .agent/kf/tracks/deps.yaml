@@ -33,6 +33,8 @@
 #
 # UPDATED: 2026-03-10
 
+backend-kf-sdk-adoption_20260310223000Z: []
+
 e2e-agent-lifecycle_20260309194834Z:
   - e2e-infra-mock-agent_20260309194830Z
 
@@ -45,6 +47,7 @@ e2e-git-origin-sync_20260309194840Z:
 
 e2e-health-preflight-onboarding_20260309194831Z:
   - e2e-infra-mock-agent_20260309194830Z
+
 e2e-interactive-terminal_20260309194835Z:
   - e2e-infra-mock-agent_20260309194830Z
 
@@ -72,3 +75,5 @@ project-metadata-be_20260310070000Z: []
 
 project-metadata-fe_20260310070001Z:
   - project-metadata-be_20260310070000Z
+
+skills-cli-migration_20260310222955Z: []

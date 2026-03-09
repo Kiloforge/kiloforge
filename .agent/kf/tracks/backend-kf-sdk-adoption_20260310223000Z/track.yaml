@@ -1,0 +1,155 @@
+id: backend-kf-sdk-adoption_20260310223000Z
+title: "Migrate Go backend to use pkg/kf SDK for all kf data access"
+type: refactor
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Replace all direct filesystem access to .agent/kf (and legacy .agent/conductor) data files in the Go backend with calls to the pkg/kf SDK Client. The SDK already provides full read/write coverage but is currently only used in tests.
+  context: |
+    The `backend/pkg/kf/` SDK package provides a clean Go API for all kf data operations:
+    - Registry: ListTracks, GetTrackEntry, AddTrack, UpdateStatus, ArchiveTrack
+    - Content: GetTrack, SaveTrack, GetTrackProgress
+    - Dependencies: GetDepsGraph, CheckDeps
+    - Conflicts: GetConflicts, AddConflict, RemoveConflict
+    - Project: GetProjectInfo, GetProduct, GetTechStack, GetQuickLinks, GetStyleGuides
+
+    However, no production code imports this package. Instead, 3 files directly use os.ReadFile/os.WriteFile to access .agent/conductor (legacy) and .agent/kf paths. This creates:
+    - Inconsistent path handling (.agent/conductor vs .agent/kf)
+    - No validation on reads/writes
+    - Fragile string manipulation of tracks.md in api_handler.go (dangerous for data integrity)
+    - Duplicate file parsing logic that the SDK already handles
+
+    The project-metadata-be track (pending) will ADD a new endpoint using the SDK. This track REFACTORS existing code to also use the SDK. They touch different parts of api_handler.go — metadata-be adds new handlers, this track modifies existing handlers.
+  codebase_analysis: |
+    ### Production files with direct kf/conductor file access
+
+    **backend/internal/core/service/track_service.go**
+    - Line ~51: `DiscoverTracks()` reads `.agent/conductor/tracks.md` via os.ReadFile — parses markdown table
+    - Line ~90: `GetTrackDetail()` reads `metadata.json` via os.ReadFile
+    - Line ~104: Reads `spec.md` via os.ReadFile
+    - Line ~109: Reads `plan.md` via os.ReadFile
+    - All paths use `.agent/conductor/` (stale — should be `.agent/kf/`)
+
+    **backend/internal/adapter/cli/sync.go**
+    - Line ~81: `readTrackType()` reads `.agent/conductor/tracks/{trackID}/metadata.json` via os.ReadFile
+    - Parses JSON to extract "type" field
+
+    **backend/internal/adapter/rest/api_handler.go**
+    - Lines ~276, 289: Check `.agent/conductor/product.md` existence for setup validation
+    - Line ~1789: Passes conductor dir path to GetTrackDetail service
+    - Line ~1848: os.Stat on track directory to check existence
+    - Lines ~1862, 1871-1881: **DANGEROUS** — reads tracks.md, does string filtering, writes back (track deletion)
+    - Line ~1942: Check product.md for setup status
+
+    ### SDK API available but unused
+
+    The `kf.Client` initialized via `kf.NewClient(kfDir)` provides all needed methods. Zero production imports of `pkg/kf` currently exist.
+
+    ### Missing SDK methods (may need to add)
+
+    - `RemoveTrack(trackID)` — delete track directory + remove from registry (for track deletion in api_handler.go)
+    - `IsInitialized()` — check if .agent/kf/ directory and required files exist
+
+    ### Stale conductor references
+
+    All production code still references `.agent/conductor/` paths. The migration to `.agent/kf/` happened for CLI tools and skills but NOT for the Go backend.
+  acceptance_criteria:
+    - "track_service.go DiscoverTracks() uses kf.Client.ListTracks() instead of parsing tracks.md"
+    - "track_service.go GetTrackDetail() uses kf.Client.GetTrack() instead of direct file reads"
+    - "sync.go readTrackType() uses kf.Client.GetTrack() or GetTrackEntry() instead of direct metadata.json read"
+    - "api_handler.go setup-status checks use kf.Client or check .agent/kf/ path (not .agent/conductor/)"
+    - "api_handler.go track deletion uses SDK method instead of string manipulation of tracks.md"
+    - "api_handler.go track existence checks use SDK instead of os.Stat"
+    - "No remaining references to .agent/conductor/ in production Go code"
+    - "All existing tests pass after migration"
+    - "If new SDK methods are added (RemoveTrack, IsInitialized), they have unit tests"
+  out_of_scope: |
+    - Adding new API endpoints (project-metadata-be track handles that)
+    - Migrating the frontend
+    - Changing the kf SDK's internal implementation
+    - Skill file updates (handled by skills-cli-migration track)
+  technical_notes: |
+    ### Migration approach
+
+    1. **Add missing SDK methods** if needed:
+       - `Client.RemoveTrack(trackID string) error` — rm track dir + remove registry entry
+       - `Client.IsInitialized() bool` — checks kfDir/.agent/kf exists with required files
+
+    2. **Inject kf.Client into services** via constructor or port interface:
+       - Define a `KFReader` port interface in `internal/core/port/` with methods track_service needs
+       - Implement via `kf.Client` in adapter layer
+       - This follows existing clean architecture patterns in the codebase
+
+    3. **Update track_service.go**:
+       - `DiscoverTracks()`: call Client.ListTracks(), map TrackEntry to existing response type
+       - `GetTrackDetail()`: call Client.GetTrack(), map Track to existing detail response
+
+    4. **Update api_handler.go**:
+       - Setup status: check `.agent/kf/product.md` instead of `.agent/conductor/`
+       - Track deletion: call Client.RemoveTrack() instead of string manipulation
+       - Track existence: call Client.GetTrackEntry() instead of os.Stat
+
+    5. **Update sync.go**:
+       - readTrackType(): call Client.GetTrack() and read Type field
+
+    ### Conflict note with project-metadata-be
+
+    Both tracks touch api_handler.go but in different regions:
+    - project-metadata-be ADDS new handler for GET /metadata endpoint
+    - This track MODIFIES existing handlers (setup-status, track deletion)
+
+    Either ordering works. If metadata-be merges first, this track rebases cleanly. If this merges first, metadata-be rebases cleanly. The `.agent/conductor → .agent/kf` path fix in setup-status may appear in both — whoever goes second should verify and skip duplicate changes.
+plan:
+  - phase: "SDK Gap Analysis and Extensions"
+    tasks:
+      - text: "Review pkg/kf/client.go API surface and identify any missing methods needed for backend migration"
+        done: false
+      - text: "Add Client.RemoveTrack(trackID) method — deletes track dir and removes registry entry"
+        done: false
+      - text: "Add Client.IsInitialized() method — checks .agent/kf dir exists with product.md and tracks.yaml"
+        done: false
+      - text: "Write unit tests for new SDK methods"
+        done: false
+  - phase: "Define port interface"
+    tasks:
+      - text: "Create KFReader port interface in internal/core/port/ with methods needed by track_service (ListTracks, GetTrack, GetTrackEntry, RemoveTrack, IsInitialized)"
+        done: false
+      - text: "Create adapter that implements KFReader using kf.Client"
+        done: false
+  - phase: "Migrate track_service.go"
+    tasks:
+      - text: "Update TrackService constructor to accept KFReader port"
+        done: false
+      - text: "Replace DiscoverTracks() direct file reads with KFReader.ListTracks()"
+        done: false
+      - text: "Replace GetTrackDetail() direct file reads with KFReader.GetTrack()"
+        done: false
+      - text: "Remove all .agent/conductor path references from track_service.go"
+        done: false
+      - text: "Verify existing track service tests pass"
+        done: false
+  - phase: "Migrate api_handler.go"
+    tasks:
+      - text: "Update setup-status handler to check .agent/kf/ instead of .agent/conductor/"
+        done: false
+      - text: "Replace track deletion string manipulation with KFReader.RemoveTrack()"
+        done: false
+      - text: "Replace os.Stat track existence checks with SDK method"
+        done: false
+      - text: "Verify existing handler tests pass"
+        done: false
+  - phase: "Migrate sync.go"
+    tasks:
+      - text: "Replace readTrackType() direct metadata.json read with SDK call"
+        done: false
+      - text: "Verify sync tests pass"
+        done: false
+  - phase: "Final verification"
+    tasks:
+      - text: "Grep entire backend/ for remaining .agent/conductor references — should find zero in production code"
+        done: false
+      - text: "Run full test suite: make test"
+        done: false
+extra: {}

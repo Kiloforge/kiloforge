@@ -1,0 +1,163 @@
+id: skills-cli-migration_20260310222955Z
+title: "Migrate kf skills to use CLI tools exclusively and fix branch cleanup bug"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Update all kf skill SKILL.md files to replace direct file access (git show, Read, manual edits) with kf-track and kf-track-content CLI commands. Also fix the branch deletion order bug in kf-developer where git branch -d runs before git checkout.
+  context: |
+    The kf CLI tools (kf-track and kf-track-content) were created to provide a stable interface for managing track data. However, many skills still instruct agents to directly access kf data files via `git show`, Read tool, or manual file edits. This bypasses the CLI's validation, canonical formatting, and error handling.
+
+    Additionally, kf-developer's post-merge cleanup step (11e) tells agents to delete the implementation branch BEFORE switching to the home branch, which fails because git won't delete the branch you're currently on.
+
+    Skills exist in two locations in this repo:
+    - `skills/kf-*/SKILL.md` — repo-level skill definitions (14 skills)
+    - `backend/internal/adapter/skills/embedded/kf-*/SKILL.md` — embedded skills compiled into binary (14 skills)
+
+    Global installed skills at `~/.claude/skills/` are deployed from releases and should NOT be edited directly — they'll be updated when the next release is built from the repo copies.
+  codebase_analysis: |
+    ### Direct file access patterns found (by skill)
+
+    **kf-developer** (HIGH priority):
+    - `git show ${PRIMARY_BRANCH}:.agent/kf/tracks/{trackId}/track.yaml` → use `kf-track get {trackId}`
+    - `git show ${PRIMARY_BRANCH}:.agent/kf/tracks/deps.yaml` → use `kf-track deps check {trackId}`
+    - `git show` to verify kf files exist → use `kf-track status` or file existence checks
+    - Branch cleanup: `git branch -d` before `git checkout` → SWAP ORDER
+    - `git show` for config.yaml primary_branch → use `kf-track config` or read config.yaml (acceptable)
+
+    **kf-implement** (HIGH priority — most violations):
+    - Direct edits to `metadata.json` for status changes → use `kf-track update --status`
+    - Direct edits to `plan.md` for task marking → use `kf-track-content task X.Y --done`
+    - Manual plan.md parsing for task discovery → use `kf-track-content progress`
+    - Direct reads of spec.md, plan.md → use `kf-track-content show --section spec|plan`
+    - Direct reads of metadata.json → use `kf-track get`
+
+    **kf-architect** (MEDIUM priority):
+    - `git show main:.agent/kf/tracks.yaml` in Phase 4 → use `kf-track list --active --json`
+    - Reference to reading deps.yaml directly → use `kf-track deps list`
+    - Pre-flight `git show` checks → acceptable for existence validation
+
+    **kf-report** (MEDIUM priority):
+    - Direct reads of tracks.yaml → use `kf-track list --json`
+    - Direct reads of spec.md/plan.md → use `kf-track-content show`
+    - `git show {SHA}:...` for compaction recovery → ACCEPTABLE (historical git data, no CLI equivalent)
+
+    **kf-reviewer** (LOW priority):
+    - `git show main:.agent/kf/tracks/{trackId}/spec.md` → use `kf-track-content show --section spec`
+
+    ### Files to modify (repo locations)
+
+    - `skills/kf-developer/SKILL.md` + `backend/internal/adapter/skills/embedded/kf-developer/SKILL.md`
+    - `skills/kf-implement/SKILL.md` + `backend/internal/adapter/skills/embedded/kf-implement/SKILL.md`
+    - `skills/kf-report/SKILL.md` + `backend/internal/adapter/skills/embedded/kf-report/SKILL.md`
+    - `skills/kf-reviewer/SKILL.md` + `backend/internal/adapter/skills/embedded/kf-reviewer/SKILL.md`
+    - `backend/internal/adapter/skills/embedded/kf-architect/SKILL.md` (no repo skills/ copy)
+
+    ### CLI commands available for replacement
+
+    Registry: `kf-track list [--active] [--json] [--ref main]`, `kf-track get {id}`, `kf-track update {id} --status {status}`
+    Content: `kf-track-content show {id} [--section spec|plan|header]`, `kf-track-content task {id} X.Y --done|--pending`, `kf-track-content progress {id} [--json]`
+    Deps: `kf-track deps list`, `kf-track deps check {id}`
+    Conflicts: `kf-track conflicts list`
+  acceptance_criteria:
+    - "kf-developer cleanup step 11e: git checkout runs BEFORE git branch -d (bug fix)"
+    - "kf-developer: all git show reads of track data replaced with kf-track/kf-track-content CLI"
+    - "kf-implement: all direct metadata.json edits replaced with kf-track update CLI"
+    - "kf-implement: all direct plan.md edits replaced with kf-track-content task CLI"
+    - "kf-implement: all direct spec.md/plan.md reads replaced with kf-track-content show CLI"
+    - "kf-architect: git show tracks.yaml replaced with kf-track list --active --json"
+    - "kf-report: direct tracks.yaml reads replaced with kf-track list --json (git show for recovery is acceptable)"
+    - "kf-reviewer: git show spec/plan reads replaced with kf-track-content show"
+    - "Both skills/ and embedded/ copies are updated consistently"
+    - "No references to legacy metadata.json or manual plan.md editing remain in updated skills"
+  out_of_scope: |
+    - Global installed skills at ~/.claude/skills/ (updated via release process)
+    - Adding new CLI commands to kf-track or kf-track-content (use existing commands)
+    - Changing the merge lock protocol (lock file access is acceptable implementation detail)
+    - kf-setup, kf-new-track, kf-manage, kf-validate (minimal or no direct file access issues)
+    - Go backend code changes (separate track: backend-kf-sdk-adoption)
+  technical_notes: |
+    ### Approach
+
+    For each skill, replace direct file access patterns with CLI equivalents:
+
+    | Direct Access | CLI Replacement |
+    |---------------|----------------|
+    | `git show main:.agent/kf/tracks.yaml` | `kf-track list --json --ref main` |
+    | `git show ...tracks/{id}/track.yaml` | `kf-track-content show {id}` |
+    | `git show ...tracks/deps.yaml` | `kf-track deps list` or `kf-track deps check {id}` |
+    | Edit metadata.json status field | `kf-track update {id} --status {status}` |
+    | Edit plan.md task markers [x]/[ ] | `kf-track-content task {id} X.Y --done` |
+    | Read plan.md for progress | `kf-track-content progress {id} --json` |
+    | Read spec.md | `kf-track-content show {id} --section spec` |
+    | Read plan.md | `kf-track-content show {id} --section plan` |
+
+    ### Branch cleanup fix (kf-developer Step 11e)
+
+    Current (wrong):
+    ```bash
+    git branch -d {type}/{trackId}     # fails: can't delete current branch
+    git checkout {developer-home-branch}
+    ```
+
+    Fixed:
+    ```bash
+    git checkout {developer-home-branch}  # switch away first
+    git branch -d {type}/{trackId}        # then safe to delete
+    ```
+
+    ### Acceptable direct access (do NOT replace)
+
+    - Reading `.agent/kf/config.yaml` for primary_branch (no CLI command for this)
+    - `git show` for pre-flight existence checks (acceptable, could use CLI but low value)
+    - `git show {SHA}:...` for historical compaction recovery (kf-report — no CLI equivalent for git history reads)
+    - Lock file read/write (implementation detail of merge protocol)
+    - `git add` of kf files after CLI operations (agents still need to commit)
+plan:
+  - phase: "Fix kf-developer branch cleanup bug"
+    tasks:
+      - text: "In skills/kf-developer/SKILL.md Step 11e, swap order: git checkout before git branch -d"
+        done: false
+      - text: "Apply same fix in backend/internal/adapter/skills/embedded/kf-developer/SKILL.md"
+        done: false
+  - phase: "Migrate kf-developer to CLI tools"
+    tasks:
+      - text: "Replace git show reads of track.yaml with kf-track get / kf-track-content show"
+        done: false
+      - text: "Replace git show reads of deps.yaml with kf-track deps check"
+        done: false
+      - text: "Update both skills/ and embedded/ copies consistently"
+        done: false
+  - phase: "Migrate kf-implement to CLI tools"
+    tasks:
+      - text: "Replace direct metadata.json status edits with kf-track update --status"
+        done: false
+      - text: "Replace direct plan.md task edits with kf-track-content task X.Y --done"
+        done: false
+      - text: "Replace direct spec.md/plan.md reads with kf-track-content show --section"
+        done: false
+      - text: "Replace manual plan.md parsing with kf-track-content progress"
+        done: false
+      - text: "Update both skills/ and embedded/ copies consistently"
+        done: false
+  - phase: "Migrate kf-architect, kf-report, kf-reviewer"
+    tasks:
+      - text: "kf-architect: replace git show tracks.yaml with kf-track list --active --json"
+        done: false
+      - text: "kf-report: replace direct tracks.yaml reads with kf-track list --json"
+        done: false
+      - text: "kf-report: replace direct spec/plan reads with kf-track-content show"
+        done: false
+      - text: "kf-reviewer: replace git show spec/plan reads with kf-track-content show"
+        done: false
+      - text: "Update both skills/ and embedded/ copies consistently"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Grep all updated SKILL.md files for remaining direct file access patterns (git show .*tracks, metadata.json, spec.md, plan.md) and confirm none remain except acceptable exceptions"
+        done: false
+      - text: "Verify skills/ and embedded/ copies are consistent (diff check)"
+        done: false
+extra: {}

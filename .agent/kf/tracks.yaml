@@ -19,6 +19,7 @@ agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track L
 agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"completed","type":"research","created":"2026-03-10","updated":"2026-03-10"}
+backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"pending","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
@@ -154,6 +155,7 @@ setup-prereq-fe_20260310004001Z: {"title":"Setup Prerequisite Check — Dashboar
 skill-install-update_20260308231000Z: {"title":"Conductor Skill Installation and Auto-Update","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
 skill-preflight-check_20260309170000Z: {"title":"Pre-flight Skill Validation Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 skill-ref-migration_20260309173002Z: {"title":"Migrate All Skill References from conductor-* to kf-*","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+skills-cli-migration_20260310222955Z: {"title":"Migrate kf skills to use CLI tools exclusively and fix branch cleanup bug","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 sqlite-storage-core_20260309140000Z: {"title":"SQLite Storage Layer — Core Schema and Migration","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
 sse-entity-subscriptions_20260309091501Z: {"title":"SSE Entity Subscriptions","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 sse-event-bus_20260309091500Z: {"title":"SSE Event Bus Infrastructure","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
