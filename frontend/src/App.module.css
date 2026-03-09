@@ -3,8 +3,18 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: var(--surface);
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.logo {
+  height: 16px;
+  width: auto;
 }
 
 .headerLeft {

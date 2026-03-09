@@ -1,15 +1,77 @@
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --border: #2a2d3a;
-  --text: #e1e4ed;
-  --text-dim: #8b8fa3;
-  --accent: #6c8cff;
+  /* Backgrounds */
+  --bg: #0a0a0a;
+  --bg-page: #0a0a0a;
+  --surface: rgba(30, 30, 30, 0.4);
+  --bg-surface: rgba(30, 30, 30, 0.4);
+  --bg-surface-solid: rgba(0, 0, 0, 0.6);
+  --bg-surface-elevated: rgba(0, 0, 0, 0.8);
+  --bg-footer: #050505;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-icon: rgba(255, 255, 255, 0.05);
+  --bg-button: rgba(255, 255, 255, 0.2);
+  --bg-code: rgba(255, 255, 255, 0.1);
+
+  /* Text */
+  --text: #ededed;
+  --text-primary: #ededed;
+  --text-dim: #a3a3a3;
+  --text-secondary: #a3a3a3;
+  --text-dimmed: #737373;
+  --text-code: #d4d4d4;
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.05);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+
+  /* Brand */
+  --accent: #34d399;
+  --brand-emerald: #34d399;
+  --brand-cyan: #22d3ee;
+  --brand-gradient: linear-gradient(to right, #34d399, #22d3ee);
+
+  /* Domain accents */
+  --accent-infrastructure: #34d399;
+  --accent-orchestration: #22d3ee;
+  --accent-dashboard: #818cf8;
+  --accent-collaboration: #fb7185;
+  --accent-tracing: #fbbf24;
+  --accent-storage: #60a5fa;
+
+  /* Status */
   --green: #3dd68c;
   --yellow: #f0c541;
   --red: #f06c6c;
   --orange: #e8944a;
-  --radius: 8px;
+  --status-success: #3dd68c;
+  --status-warning: #f0c541;
+  --status-error: #f06c6c;
+  --status-pending: #e8944a;
+  --status-info: #22d3ee;
+  --status-idle: #a3a3a3;
+
+  /* Typography */
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Border radius */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* Backdrop */
+  --blur: 12px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-default: 0.2s ease;
 }
 
 *,
@@ -20,10 +82,30 @@
   box-sizing: border-box;
 }
 
+::selection {
+  background: #262626;
+  color: #f5f5f5;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   min-width: 320px;
+}
+
+/* Glass panel base pattern */
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-default), background var(--transition-default);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
 }
