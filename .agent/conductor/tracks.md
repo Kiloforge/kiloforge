@@ -105,7 +105,7 @@
 | [x] | setup-gate-fe_20260310234711Z | Disable Agent Actions Until Setup Complete (Frontend) | 2026-03-10 | 2026-03-10 |
 | [x] | fix-skill-prereq-be_20260310000644Z | Fix Skill Prerequisite Chain — Rename and Required List (Backend) | 2026-03-10 | 2026-03-10 |
 | [x] | fix-skill-prereq-fe_20260310000645Z | Fix Skill Prerequisite Chain — Frontend Proactive Gating | 2026-03-10 | 2026-03-10 |
-| [ ] | track-detail-view-be_20260309001726Z | Track Detail View API | 2026-03-09 | 2026-03-09 |
+| [x] | track-detail-view-be_20260309001726Z | Track Detail View API | 2026-03-09 | 2026-03-09 |
 | [ ] | track-detail-view-fe_20260309001727Z | Track Detail View UI | 2026-03-09 | 2026-03-09 |
 
 <!-- Tracks registered by /kf-new-track -->

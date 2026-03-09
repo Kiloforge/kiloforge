@@ -2,15 +2,15 @@
   "id": "track-detail-view-be_20260309001726Z",
   "title": "Track Detail View API",
   "type": "feature",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-09T00:17:26Z",
   "updated": "2026-03-09T00:17:26Z",
   "phases": {
     "total": 4,
-    "completed": 0
+    "completed": 4
   },
   "tasks": {
     "total": 11,
-    "completed": 0
+    "completed": 11
   }
 }
