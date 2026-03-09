@@ -2,6 +2,7 @@ package service
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -59,6 +60,82 @@ func DiscoverTracks(projectDir string) ([]TrackEntry, error) {
 	}
 	defer f.Close()
 	return ParseTracks(f)
+}
+
+// TrackDetail contains the full detail of a track including artifact contents.
+type TrackDetail struct {
+	ID        string
+	Title     string
+	Status    string
+	Type      string
+	Spec      string
+	Plan      string
+	Phases    ProgressCount
+	Tasks     ProgressCount
+	CreatedAt string
+	UpdatedAt string
+}
+
+// ProgressCount tracks total vs completed counts.
+type ProgressCount struct {
+	Total     int
+	Completed int
+}
+
+// trackMetadata mirrors the JSON structure of metadata.json.
+type trackMetadata struct {
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Type    string `json:"type"`
+	Status  string `json:"status"`
+	Created string `json:"created"`
+	Updated string `json:"updated"`
+	Phases  struct {
+		Total     int `json:"total"`
+		Completed int `json:"completed"`
+	} `json:"phases"`
+	Tasks struct {
+		Total     int `json:"total"`
+		Completed int `json:"completed"`
+	} `json:"tasks"`
+}
+
+// GetTrackDetail reads track artifacts from disk and returns a TrackDetail.
+// conductorDir is the path to the .agent/conductor directory.
+func GetTrackDetail(conductorDir, trackID string) (*TrackDetail, error) {
+	trackDir := filepath.Join(conductorDir, "tracks", trackID)
+	if _, err := os.Stat(trackDir); os.IsNotExist(err) {
+		return nil, fmt.Errorf("track %q not found", trackID)
+	}
+
+	detail := &TrackDetail{ID: trackID}
+
+	// Read metadata.json if present.
+	metaPath := filepath.Join(trackDir, "metadata.json")
+	if data, err := os.ReadFile(metaPath); err == nil {
+		var meta trackMetadata
+		if jsonErr := json.Unmarshal(data, &meta); jsonErr == nil {
+			detail.Title = meta.Title
+			detail.Status = meta.Status
+			detail.Type = meta.Type
+			detail.CreatedAt = meta.Created
+			detail.UpdatedAt = meta.Updated
+			detail.Phases = ProgressCount{Total: meta.Phases.Total, Completed: meta.Phases.Completed}
+			detail.Tasks = ProgressCount{Total: meta.Tasks.Total, Completed: meta.Tasks.Completed}
+		}
+	}
+
+	// Read spec.md.
+	if data, err := os.ReadFile(filepath.Join(trackDir, "spec.md")); err == nil {
+		detail.Spec = string(data)
+	}
+
+	// Read plan.md.
+	if data, err := os.ReadFile(filepath.Join(trackDir, "plan.md")); err == nil {
+		detail.Plan = string(data)
+	}
+
+	return detail, nil
 }
 
 func parseTrackLine(line string) (TrackEntry, bool) {

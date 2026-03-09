@@ -1,6 +1,8 @@
 package service_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -169,5 +171,96 @@ func TestFilterByStatus_NilSlice(t *testing.T) {
 	result := service.FilterByStatus(nil, service.StatusPending)
 	if len(result) != 0 {
 		t.Errorf("expected 0, got %d", len(result))
+	}
+}
+
+func TestGetTrackDetail_FullArtifacts(t *testing.T) {
+	t.Parallel()
+	conductorDir := t.TempDir()
+	trackID := "test-track_20260309120000Z"
+	trackDir := filepath.Join(conductorDir, "tracks", trackID)
+	os.MkdirAll(trackDir, 0o755)
+
+	// Write metadata.json.
+	os.WriteFile(filepath.Join(trackDir, "metadata.json"), []byte(`{
+		"id": "test-track_20260309120000Z",
+		"title": "Test Track",
+		"type": "feature",
+		"status": "pending",
+		"created": "2026-03-09T12:00:00Z",
+		"updated": "2026-03-09T13:00:00Z",
+		"phases": {"total": 3, "completed": 1},
+		"tasks": {"total": 8, "completed": 3}
+	}`), 0o644)
+	os.WriteFile(filepath.Join(trackDir, "spec.md"), []byte("# Spec\nDetails here"), 0o644)
+	os.WriteFile(filepath.Join(trackDir, "plan.md"), []byte("# Plan\n- [x] Task 1\n- [ ] Task 2"), 0o644)
+
+	detail, err := service.GetTrackDetail(conductorDir, trackID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if detail.ID != trackID {
+		t.Errorf("ID = %q, want %q", detail.ID, trackID)
+	}
+	if detail.Title != "Test Track" {
+		t.Errorf("Title = %q, want %q", detail.Title, "Test Track")
+	}
+	if detail.Type != "feature" {
+		t.Errorf("Type = %q, want %q", detail.Type, "feature")
+	}
+	if detail.Status != "pending" {
+		t.Errorf("Status = %q, want %q", detail.Status, "pending")
+	}
+	if detail.Phases.Total != 3 || detail.Phases.Completed != 1 {
+		t.Errorf("Phases = %+v, want total=3 completed=1", detail.Phases)
+	}
+	if detail.Tasks.Total != 8 || detail.Tasks.Completed != 3 {
+		t.Errorf("Tasks = %+v, want total=8 completed=3", detail.Tasks)
+	}
+	if detail.Spec != "# Spec\nDetails here" {
+		t.Errorf("Spec = %q", detail.Spec)
+	}
+	if detail.Plan != "# Plan\n- [x] Task 1\n- [ ] Task 2" {
+		t.Errorf("Plan = %q", detail.Plan)
+	}
+	if detail.CreatedAt != "2026-03-09T12:00:00Z" {
+		t.Errorf("CreatedAt = %q", detail.CreatedAt)
+	}
+	if detail.UpdatedAt != "2026-03-09T13:00:00Z" {
+		t.Errorf("UpdatedAt = %q", detail.UpdatedAt)
+	}
+}
+
+func TestGetTrackDetail_MissingMetadata(t *testing.T) {
+	t.Parallel()
+	conductorDir := t.TempDir()
+	trackID := "no-meta_20260309120000Z"
+	trackDir := filepath.Join(conductorDir, "tracks", trackID)
+	os.MkdirAll(trackDir, 0o755)
+	os.WriteFile(filepath.Join(trackDir, "spec.md"), []byte("# Spec only"), 0o644)
+
+	detail, err := service.GetTrackDetail(conductorDir, trackID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if detail.Title != "" {
+		t.Errorf("Title should be empty without metadata, got %q", detail.Title)
+	}
+	if detail.Spec != "# Spec only" {
+		t.Errorf("Spec = %q", detail.Spec)
+	}
+	if detail.Plan != "" {
+		t.Errorf("Plan should be empty, got %q", detail.Plan)
+	}
+}
+
+func TestGetTrackDetail_NotFound(t *testing.T) {
+	t.Parallel()
+	conductorDir := t.TempDir()
+
+	_, err := service.GetTrackDetail(conductorDir, "nonexistent_20260309120000Z")
+	if err == nil {
+		t.Fatal("expected error for nonexistent track")
 	}
 }
