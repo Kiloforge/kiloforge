@@ -720,10 +720,11 @@ sort_conflicts_file() {
 conflicts_clean_track() {
   local id="$1"
   [[ ! -f "$CONFLICTS_FILE" ]] && return
-  # Match lines where the track ID appears in either position of the pair key
-  sed -i '' "/^[^#].*${id}/d" "$CONFLICTS_FILE"
-  # More precise: remove lines matching id/ or /id before the colon
-  # The sed above is broad enough for our controlled format
+  # Remove lines where the track ID appears as either half of the pair key.
+  # Pair format: <id-a>/<id-b>: {json}
+  # Match id at start of line (before /) or after /
+  sed -i '' "/^${id}\//d" "$CONFLICTS_FILE"
+  sed -i '' "/\/${id}:/d" "$CONFLICTS_FILE"
 }
 
 cmd_conflicts() {

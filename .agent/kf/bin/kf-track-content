@@ -75,6 +75,8 @@ def _manual_yaml_dump(data, indent=0):
             if isinstance(value, (dict, list)) and value:
                 lines.append(f"{prefix}{key}:")
                 lines.append(_manual_yaml_dump(value, indent + 1))
+            elif isinstance(value, dict) and not value:
+                lines.append(f"{prefix}{key}: {{}}")
             elif isinstance(value, list) and not value:
                 lines.append(f"{prefix}{key}: []")
             elif isinstance(value, bool):
@@ -165,24 +167,27 @@ def _yaml_scalar(s):
     s = s.strip()
     if not s or s == '~' or s == 'null':
         return None
-    if s == 'true':
+    # Unquote first, then check special values
+    unquoted = _yaml_unquote(s)
+    if unquoted == 'true':
         return True
-    if s == 'false':
+    if unquoted == 'false':
         return False
-    if s == '[]':
+    if unquoted == '[]':
         return []
-    if s == '{}':
+    if unquoted == '{}':
         return {}
-    # Try int/float
-    try:
-        return int(s)
-    except ValueError:
-        pass
-    try:
-        return float(s)
-    except ValueError:
-        pass
-    return _yaml_unquote(s)
+    # Try int/float on unquoted value (but only if original was not quoted)
+    if not (len(s) >= 2 and s[0] in ('"', "'") and s[-1] == s[0]):
+        try:
+            return int(unquoted)
+        except ValueError:
+            pass
+        try:
+            return float(unquoted)
+        except ValueError:
+            pass
+    return unquoted
 
 
 def _indent_level(line):
