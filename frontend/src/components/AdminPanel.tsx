@@ -11,6 +11,7 @@ interface Props {
   projectSlug?: string;
   running: boolean;
   disabled?: boolean;
+  disabledReason?: string;
   onStartOperation: (agentId: string) => void;
   onSetupRequired?: () => void;
   onSkillsRequired?: () => void;
@@ -22,7 +23,7 @@ const operations: { key: AdminOperation; label: string }[] = [
   { key: "report", label: "Generate Report" },
 ];
 
-export function AdminPanel({ projectSlug, running, disabled, onStartOperation, onSetupRequired, onSkillsRequired }: Props) {
+export function AdminPanel({ projectSlug, running, disabled, disabledReason, onStartOperation, onSetupRequired, onSkillsRequired }: Props) {
   const [error, setError] = useState<string | null>(null);
   const consent = useConsent();
 
@@ -79,7 +80,7 @@ export function AdminPanel({ projectSlug, running, disabled, onStartOperation, o
             key={op.key}
             className={styles.opBtn}
             disabled={isDisabled}
-            title={disabled ? "Run kiloforge setup first" : undefined}
+            title={disabled ? disabledReason : undefined}
             onClick={() => handleRun(op.key)}
           >
             {mutation.isPending && mutation.variables === op.key ? "Starting..." : op.label}

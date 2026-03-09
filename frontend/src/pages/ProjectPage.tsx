@@ -44,8 +44,26 @@ export function ProjectPage() {
       ),
     enabled: !!slug,
   });
+  const { data: preflight } = useQuery({
+    queryKey: queryKeys.preflight,
+    queryFn: () =>
+      fetcher<{
+        claude_authenticated: boolean;
+        skills_ok: boolean;
+        skills_missing?: string[];
+        consent_given: boolean;
+        setup_required: boolean;
+      }>("/api/preflight"),
+  });
 
-  const setupIncomplete = setupStatus !== undefined && !setupStatus.setup_complete;
+  const skillsMissing = preflight !== undefined && !preflight.skills_ok;
+  const setupIncomplete = !skillsMissing && setupStatus !== undefined && !setupStatus.setup_complete;
+  const actionsDisabled = skillsMissing || setupIncomplete;
+  const disabledReason = skillsMissing
+    ? "Install skills first"
+    : setupIncomplete
+    ? "Run kiloforge setup first"
+    : undefined;
 
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -167,7 +185,23 @@ export function ProjectPage() {
         </section>
       )}
 
-      {setupStatus && !setupStatus.setup_complete && slug && (
+      {skillsMissing && (
+        <div className={styles.setupBanner}>
+          <span className={styles.setupBannerText}>
+            Required skills not installed — install skills before running setup or spawning agents.
+          </span>
+          <button
+            className={styles.setupBannerBtn}
+            onClick={() => skillsPrompt.requestInstall(() => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
+            })}
+            disabled={skillsPrompt.updating}
+          >
+            Install Skills
+          </button>
+        </div>
+      )}
+      {!skillsMissing && setupStatus && !setupStatus.setup_complete && slug && (
         <div className={styles.setupBanner}>
           <span className={styles.setupBannerText}>
             Kiloforge setup required — run setup to configure this project for track management.
@@ -208,16 +242,16 @@ export function ProjectPage() {
             <button
               className={styles.syncBtn}
               onClick={syncBoard}
-              disabled={syncing || setupIncomplete}
-              title={setupIncomplete ? "Run kiloforge setup first" : undefined}
+              disabled={syncing || actionsDisabled}
+              title={disabledReason}
             >
               {syncing ? "Syncing..." : "Sync"}
             </button>
             <button
               className={styles.generateBtn}
-              onClick={() => { if (!setupIncomplete) setShowPrompt((v) => !v); }}
-              disabled={setupIncomplete}
-              title={setupIncomplete ? "Run kiloforge setup first" : undefined}
+              onClick={() => { if (!actionsDisabled) setShowPrompt((v) => !v); }}
+              disabled={actionsDisabled}
+              title={disabledReason}
               data-tour="generate-tracks"
             >
               Generate Tracks
@@ -272,7 +306,8 @@ export function ProjectPage() {
         <AdminPanel
           projectSlug={slug}
           running={adminAgentId !== null}
-          disabled={setupIncomplete}
+          disabled={actionsDisabled}
+          disabledReason={disabledReason}
           onStartOperation={setAdminAgentId}
           onSetupRequired={() => {
             if (slug) setupPrompt.requestSetup(slug, () => {
@@ -280,7 +315,9 @@ export function ProjectPage() {
             });
           }}
           onSkillsRequired={() => {
-            skillsPrompt.requestInstall(() => {});
+            skillsPrompt.requestInstall(() => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
+            });
           }}
         />
       </section>

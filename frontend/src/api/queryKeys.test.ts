@@ -13,6 +13,7 @@ describe("queryKeys", () => {
     expect(queryKeys.sshKeys).toEqual(["sshKeys"]);
     expect(queryKeys.tour).toEqual(["tour"]);
     expect(queryKeys.tourDemoBoard).toEqual(["tour", "demo-board"]);
+    expect(queryKeys.preflight).toEqual(["preflight"]);
   });
 
   it("agent() produces scoped key", () => {
