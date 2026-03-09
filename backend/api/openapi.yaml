@@ -585,6 +585,42 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tracks/{trackId}:
+    get:
+      operationId: getTrackDetail
+      summary: Get full detail for a track including spec, plan, and metadata
+      tags: [Tracks]
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Track ID
+        - name: project
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Project slug to locate track artifacts
+      responses:
+        "200":
+          description: Track detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackDetail"
+        "404":
+          description: Track not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       operationId: deleteTrack
       summary: Delete a track's artifacts and board card
@@ -1379,6 +1415,40 @@ components:
           enum: [complete, in-progress, pending]
         project:
           type: string
+
+    TrackDetail:
+      type: object
+      required: [id, title, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+          description: Track type (feature, bug, chore, refactor)
+        spec:
+          type: string
+          description: Raw markdown content of spec.md
+        plan:
+          type: string
+          description: Raw markdown content of plan.md
+        phases_total:
+          type: integer
+        phases_completed:
+          type: integer
+        tasks_total:
+          type: integer
+        tasks_completed:
+          type: integer
+        created_at:
+          type: string
+          description: ISO 8601 timestamp
+        updated_at:
+          type: string
+          description: ISO 8601 timestamp
 
     StatusInfo:
       type: object

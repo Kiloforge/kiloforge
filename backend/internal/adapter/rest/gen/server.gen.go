@@ -658,6 +658,31 @@ type Track struct {
 // TrackStatus defines model for Track.Status.
 type TrackStatus string
 
+// TrackDetail defines model for TrackDetail.
+type TrackDetail struct {
+	// CreatedAt ISO 8601 timestamp
+	CreatedAt       *string `json:"created_at,omitempty"`
+	Id              string  `json:"id"`
+	PhasesCompleted *int    `json:"phases_completed,omitempty"`
+	PhasesTotal     *int    `json:"phases_total,omitempty"`
+
+	// Plan Raw markdown content of plan.md
+	Plan *string `json:"plan,omitempty"`
+
+	// Spec Raw markdown content of spec.md
+	Spec           *string `json:"spec,omitempty"`
+	Status         string  `json:"status"`
+	TasksCompleted *int    `json:"tasks_completed,omitempty"`
+	TasksTotal     *int    `json:"tasks_total,omitempty"`
+	Title          string  `json:"title"`
+
+	// Type Track type (feature, bug, chore, refactor)
+	Type *string `json:"type,omitempty"`
+
+	// UpdatedAt ISO 8601 timestamp
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
 // UpdateConfigRequest defines model for UpdateConfigRequest.
 type UpdateConfigRequest struct {
 	DashboardEnabled *bool `json:"dashboard_enabled,omitempty"`
@@ -700,6 +725,12 @@ type ListTracksParams struct {
 type DeleteTrackParams struct {
 	// Project Project slug for board card removal
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
+}
+
+// GetTrackDetailParams defines parameters for GetTrackDetail.
+type GetTrackDetailParams struct {
+	// Project Project slug to locate track artifacts
+	Project string `form:"project" json:"project"`
 }
 
 // RunAdminOperationJSONRequestBody defines body for RunAdminOperation for application/json ContentType.
@@ -845,6 +876,9 @@ type ServerInterface interface {
 	// Delete a track's artifacts and board card
 	// (DELETE /api/tracks/{trackId})
 	DeleteTrack(w http.ResponseWriter, r *http.Request, trackId string, params DeleteTrackParams)
+	// Get full detail for a track including spec, plan, and metadata
+	// (GET /api/tracks/{trackId})
+	GetTrackDetail(w http.ResponseWriter, r *http.Request, trackId string, params GetTrackDetailParams)
 	// Health check
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -1605,6 +1639,49 @@ func (siw *ServerInterfaceWrapper) DeleteTrack(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetTrackDetail operation middleware
+func (siw *ServerInterfaceWrapper) GetTrackDetail(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", r.PathValue("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trackId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTrackDetailParams
+
+	// ------------- Required query parameter "project" -------------
+
+	if paramValue := r.URL.Query().Get("project"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTrackDetail(w, r, trackId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -1774,6 +1851,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/api/tracks", wrapper.ListTracks)
 	m.HandleFunc("POST "+options.BaseURL+"/api/tracks/generate", wrapper.GenerateTracks)
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/tracks/{trackId}", wrapper.DeleteTrack)
+	m.HandleFunc("GET "+options.BaseURL+"/api/tracks/{trackId}", wrapper.GetTrackDetail)
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
 
 	return m
@@ -2976,6 +3054,42 @@ func (response DeleteTrack500JSONResponse) VisitDeleteTrackResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetTrackDetailRequestObject struct {
+	TrackId string `json:"trackId"`
+	Params  GetTrackDetailParams
+}
+
+type GetTrackDetailResponseObject interface {
+	VisitGetTrackDetailResponse(w http.ResponseWriter) error
+}
+
+type GetTrackDetail200JSONResponse TrackDetail
+
+func (response GetTrackDetail200JSONResponse) VisitGetTrackDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTrackDetail404JSONResponse ErrorResponse
+
+func (response GetTrackDetail404JSONResponse) VisitGetTrackDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTrackDetail500JSONResponse ErrorResponse
+
+func (response GetTrackDetail500JSONResponse) VisitGetTrackDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -3099,6 +3213,9 @@ type StrictServerInterface interface {
 	// Delete a track's artifacts and board card
 	// (DELETE /api/tracks/{trackId})
 	DeleteTrack(ctx context.Context, request DeleteTrackRequestObject) (DeleteTrackResponseObject, error)
+	// Get full detail for a track including spec, plan, and metadata
+	// (GET /api/tracks/{trackId})
+	GetTrackDetail(ctx context.Context, request GetTrackDetailRequestObject) (GetTrackDetailResponseObject, error)
 	// Health check
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -4097,6 +4214,33 @@ func (sh *strictHandler) DeleteTrack(w http.ResponseWriter, r *http.Request, tra
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DeleteTrackResponseObject); ok {
 		if err := validResponse.VisitDeleteTrackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTrackDetail operation middleware
+func (sh *strictHandler) GetTrackDetail(w http.ResponseWriter, r *http.Request, trackId string, params GetTrackDetailParams) {
+	var request GetTrackDetailRequestObject
+
+	request.TrackId = trackId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTrackDetail(ctx, request.(GetTrackDetailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTrackDetail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTrackDetailResponseObject); ok {
+		if err := validResponse.VisitGetTrackDetailResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -218,6 +218,9 @@ type ClientInterface interface {
 	// DeleteTrack request
 	DeleteTrack(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetTrackDetail request
+	GetTrackDetail(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -776,6 +779,18 @@ func (c *Client) GenerateTracks(ctx context.Context, body GenerateTracksJSONRequ
 
 func (c *Client) DeleteTrack(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteTrackRequest(c.Server, trackId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTrackDetail(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTrackDetailRequest(c.Server, trackId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2159,6 +2174,58 @@ func NewDeleteTrackRequest(server string, trackId string, params *DeleteTrackPar
 	return req, nil
 }
 
+// NewGetTrackDetailRequest generates requests for GetTrackDetail
+func NewGetTrackDetailRequest(server string, trackId string, params *GetTrackDetailParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "trackId", trackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project", params.Project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetHealthRequest generates requests for GetHealth
 func NewGetHealthRequest(server string) (*http.Request, error) {
 	var err error
@@ -2357,6 +2424,9 @@ type ClientWithResponsesInterface interface {
 
 	// DeleteTrackWithResponse request
 	DeleteTrackWithResponse(ctx context.Context, trackId string, params *DeleteTrackParams, reqEditors ...RequestEditorFn) (*DeleteTrackResponse, error)
+
+	// GetTrackDetailWithResponse request
+	GetTrackDetailWithResponse(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*GetTrackDetailResponse, error)
 
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
@@ -3199,6 +3269,30 @@ func (r DeleteTrackResponse) StatusCode() int {
 	return 0
 }
 
+type GetTrackDetailResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TrackDetail
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTrackDetailResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTrackDetailResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3630,6 +3724,15 @@ func (c *ClientWithResponses) DeleteTrackWithResponse(ctx context.Context, track
 		return nil, err
 	}
 	return ParseDeleteTrackResponse(rsp)
+}
+
+// GetTrackDetailWithResponse request returning *GetTrackDetailResponse
+func (c *ClientWithResponses) GetTrackDetailWithResponse(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*GetTrackDetailResponse, error) {
+	rsp, err := c.GetTrackDetail(ctx, trackId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTrackDetailResponse(rsp)
 }
 
 // GetHealthWithResponse request returning *GetHealthResponse
@@ -4989,6 +5092,46 @@ func ParseDeleteTrackResponse(rsp *http.Response) (*DeleteTrackResponse, error) 
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTrackDetailResponse parses an HTTP response from a GetTrackDetailWithResponse call
+func ParseGetTrackDetailResponse(rsp *http.Response) (*GetTrackDetailResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTrackDetailResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TrackDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

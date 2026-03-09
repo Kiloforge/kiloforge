@@ -1558,6 +1558,62 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 	}, nil
 }
 
+// GetTrackDetail implements gen.StrictServerInterface.
+func (h *APIHandler) GetTrackDetail(_ context.Context, req gen.GetTrackDetailRequestObject) (gen.GetTrackDetailResponseObject, error) {
+	if h.projects == nil {
+		return gen.GetTrackDetail404JSONResponse{Error: "no projects configured"}, nil
+	}
+
+	projectSlug := req.Params.Project
+	var projectDir string
+	for _, p := range h.projects.List() {
+		if p.Slug == projectSlug {
+			projectDir = p.ProjectDir
+			break
+		}
+	}
+	if projectDir == "" {
+		return gen.GetTrackDetail404JSONResponse{Error: fmt.Sprintf("project %q not found", projectSlug)}, nil
+	}
+
+	conductorDir := filepath.Join(projectDir, ".agent", "conductor")
+	detail, err := service.GetTrackDetail(conductorDir, req.TrackId)
+	if err != nil {
+		return gen.GetTrackDetail404JSONResponse{Error: err.Error()}, nil
+	}
+
+	resp := gen.TrackDetail{
+		Id:     detail.ID,
+		Title:  detail.Title,
+		Status: detail.Status,
+	}
+	if detail.Type != "" {
+		resp.Type = &detail.Type
+	}
+	if detail.Spec != "" {
+		resp.Spec = &detail.Spec
+	}
+	if detail.Plan != "" {
+		resp.Plan = &detail.Plan
+	}
+	if detail.Phases.Total > 0 {
+		resp.PhasesTotal = &detail.Phases.Total
+		resp.PhasesCompleted = &detail.Phases.Completed
+	}
+	if detail.Tasks.Total > 0 {
+		resp.TasksTotal = &detail.Tasks.Total
+		resp.TasksCompleted = &detail.Tasks.Completed
+	}
+	if detail.CreatedAt != "" {
+		resp.CreatedAt = &detail.CreatedAt
+	}
+	if detail.UpdatedAt != "" {
+		resp.UpdatedAt = &detail.UpdatedAt
+	}
+
+	return gen.GetTrackDetail200JSONResponse(resp), nil
+}
+
 // DeleteTrack implements gen.StrictServerInterface.
 func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestObject) (gen.DeleteTrackResponseObject, error) {
 	trackID := req.TrackId
