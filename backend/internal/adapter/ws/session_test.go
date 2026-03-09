@@ -100,7 +100,7 @@ func TestStartOutputRelay(t *testing.T) {
 	output <- []byte("line 2")
 	close(output)
 
-	sm.StartOutputRelay("relay-agent", output)
+	sm.StartOutputRelay(context.Background(), "relay-agent", output)
 
 	// Ring buffer should contain both lines.
 	lines := bridge.Buffer.Lines()

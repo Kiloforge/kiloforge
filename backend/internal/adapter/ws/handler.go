@@ -50,7 +50,7 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, isPrimary := h.sessions.AddSession(agentID, conn)
+	session, isPrimary := h.sessions.AddSession(r.Context(), agentID, conn)
 	defer h.sessions.RemoveSession(agentID, session)
 
 	h.logger.Printf("[ws] client connected to agent %s (primary=%v)", agentID, isPrimary)
@@ -70,15 +70,15 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 		go h.readLoop(session, bridge)
 	}
 
-	// Wait for agent exit or client disconnect.
+	// Wait for agent exit or client disconnect / server shutdown.
+	// Session context is derived from request context, so server shutdown
+	// automatically cancels the session.
 	select {
 	case <-bridge.Done:
 		_ = conn.Write(session.ctx, websocket.MessageText, StatusMsg("completed", intPtr(0)))
 		conn.Close(websocket.StatusNormalClosure, "agent exited")
 	case <-session.ctx.Done():
-		// Client disconnected — agent continues running.
-	case <-r.Context().Done():
-		// Server shutting down.
+		// Client disconnected or server shutting down — agent continues running.
 	}
 }
 

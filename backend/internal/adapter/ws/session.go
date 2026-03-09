@@ -55,9 +55,11 @@ func (sm *SessionManager) GetBridge(agentID string) (*Bridge, bool) {
 }
 
 // AddSession registers a WebSocket connection for an agent.
+// The parent context should be derived from the HTTP request so that
+// server shutdown automatically cancels all sessions.
 // Returns true if this is the primary (read-write) session.
-func (sm *SessionManager) AddSession(agentID string, conn *websocket.Conn) (*Session, bool) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (sm *SessionManager) AddSession(parent context.Context, agentID string, conn *websocket.Conn) (*Session, bool) {
+	ctx, cancel := context.WithCancel(parent)
 	s := &Session{
 		agentID: agentID,
 		conn:    conn,
@@ -89,18 +91,50 @@ func (sm *SessionManager) RemoveSession(agentID string, s *Session) {
 }
 
 // BroadcastToAgent sends a message to all WebSocket clients observing an agent.
-// Sessions with cancelled contexts are skipped to avoid writing to disconnected clients.
+// Stale sessions (cancelled context) are removed during broadcast.
 func (sm *SessionManager) BroadcastToAgent(agentID string, msg []byte) {
 	sm.mu.RLock()
 	sessions := make([]*Session, len(sm.sessions[agentID]))
 	copy(sessions, sm.sessions[agentID])
 	sm.mu.RUnlock()
 
+	var stale []*Session
 	for _, s := range sessions {
 		if s.ctx.Err() != nil {
+			stale = append(stale, s)
 			continue
 		}
 		_ = s.conn.Write(s.ctx, websocket.MessageText, msg)
+	}
+
+	if len(stale) > 0 {
+		sm.mu.Lock()
+		for _, s := range stale {
+			list := sm.sessions[agentID]
+			for i, ss := range list {
+				if ss == s {
+					sm.sessions[agentID] = append(list[:i], list[i+1:]...)
+					break
+				}
+			}
+		}
+		if len(sm.sessions[agentID]) == 0 {
+			delete(sm.sessions, agentID)
+		}
+		sm.mu.Unlock()
+	}
+}
+
+// CloseAllSessions cancels every active session context and clears the session map.
+// Used during graceful server shutdown to ensure all WebSocket connections are closed.
+func (sm *SessionManager) CloseAllSessions() {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	for agentID, sessions := range sm.sessions {
+		for _, s := range sessions {
+			s.cancel()
+		}
+		delete(sm.sessions, agentID)
 	}
 }
 
@@ -156,16 +190,24 @@ func (b *Bridge) WriteInput(text string) error {
 
 // StartOutputRelay reads from an output channel (from InteractiveAgent) and
 // broadcasts each message to all WebSocket clients while buffering for reconnection.
-// It runs until the output channel is closed.
-func (sm *SessionManager) StartOutputRelay(agentID string, output <-chan []byte) {
+// The relay stops when ctx is cancelled or the output channel is closed.
+func (sm *SessionManager) StartOutputRelay(ctx context.Context, agentID string, output <-chan []byte) {
 	bridge, ok := sm.GetBridge(agentID)
 	if !ok {
 		return
 	}
-	for text := range output {
-		msg := OutputMsg(string(text))
-		bridge.Buffer.Write(msg)
-		sm.BroadcastToAgent(agentID, msg)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case text, ok := <-output:
+			if !ok {
+				return
+			}
+			msg := OutputMsg(string(text))
+			bridge.Buffer.Write(msg)
+			sm.BroadcastToAgent(agentID, msg)
+		}
 	}
 }
 
