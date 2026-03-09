@@ -377,6 +377,28 @@ type Project struct {
 	Slug         string  `json:"slug"`
 }
 
+// ProjectMetadataResponse defines model for ProjectMetadataResponse.
+type ProjectMetadataResponse struct {
+	// Product Product definition (product.md content)
+	Product string `json:"product"`
+
+	// ProductGuidelines Product guidelines (product-guidelines.md content)
+	ProductGuidelines *string `json:"product_guidelines,omitempty"`
+
+	// QuickLinks Navigation links from quick-links.md
+	QuickLinks []QuickLink `json:"quick_links"`
+
+	// StyleGuides Code style guide files
+	StyleGuides *[]StyleGuideEntry `json:"style_guides,omitempty"`
+
+	// TechStack Tech stack reference (tech-stack.md content)
+	TechStack    string       `json:"tech_stack"`
+	TrackSummary TrackSummary `json:"track_summary"`
+
+	// Workflow Workflow reference (workflow.md content)
+	Workflow *string `json:"workflow,omitempty"`
+}
+
 // PullProjectRequest defines model for PullProjectRequest.
 type PullProjectRequest struct {
 	// RemoteBranch Remote branch to pull from (defaults to "main")
@@ -404,6 +426,12 @@ type PushResult struct {
 	LocalBranch  string `json:"local_branch"`
 	RemoteBranch string `json:"remote_branch"`
 	Success      bool   `json:"success"`
+}
+
+// QuickLink defines model for QuickLink.
+type QuickLink struct {
+	Label string `json:"label"`
+	Path  string `json:"path"`
 }
 
 // QuotaAgentUsage defines model for QuotaAgentUsage.
@@ -559,6 +587,15 @@ type StatusInfo struct {
 	TotalAgents int `json:"total_agents"`
 }
 
+// StyleGuideEntry defines model for StyleGuideEntry.
+type StyleGuideEntry struct {
+	// Content Full markdown content
+	Content string `json:"content"`
+
+	// Name Filename without extension (e.g., "go")
+	Name string `json:"name"`
+}
+
 // SyncBoardResult defines model for SyncBoardResult.
 type SyncBoardResult struct {
 	Created   int `json:"created"`
@@ -627,6 +664,15 @@ type TrackDetail struct {
 
 	// UpdatedAt ISO 8601 timestamp
 	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// TrackSummary defines model for TrackSummary.
+type TrackSummary struct {
+	Archived   int `json:"archived"`
+	Completed  int `json:"completed"`
+	InProgress int `json:"in_progress"`
+	Pending    int `json:"pending"`
+	Total      int `json:"total"`
 }
 
 // UpdateConfigRequest defines model for UpdateConfigRequest.
@@ -801,6 +847,9 @@ type ServerInterface interface {
 	// Get structured diff between a branch and main
 	// (GET /api/projects/{slug}/diff)
 	GetProjectDiff(w http.ResponseWriter, r *http.Request, slug string, params GetProjectDiffParams)
+	// Get project metadata including product info, guidelines, tech stack, and track summary
+	// (GET /api/projects/{slug}/metadata)
+	GetProjectMetadata(w http.ResponseWriter, r *http.Request, slug string)
 	// Pull latest from upstream and fast-forward merge
 	// (POST /api/projects/{slug}/pull)
 	PullProject(w http.ResponseWriter, r *http.Request, slug string)
@@ -1428,6 +1477,31 @@ func (siw *ServerInterfaceWrapper) GetProjectDiff(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GetProjectMetadata operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectMetadata(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectMetadata(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // PullProject operation middleware
 func (siw *ServerInterfaceWrapper) PullProject(w http.ResponseWriter, r *http.Request) {
 
@@ -1962,6 +2036,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/projects/{slug}", wrapper.RemoveProject)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/branches", wrapper.GetProjectBranches)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/diff", wrapper.GetProjectDiff)
+	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/metadata", wrapper.GetProjectMetadata)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/pull", wrapper.PullProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/push", wrapper.PushProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/setup", wrapper.StartProjectSetup)
@@ -2848,6 +2923,32 @@ func (response GetProjectDiff500JSONResponse) VisitGetProjectDiffResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetProjectMetadataRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetProjectMetadataResponseObject interface {
+	VisitGetProjectMetadataResponse(w http.ResponseWriter) error
+}
+
+type GetProjectMetadata200JSONResponse ProjectMetadataResponse
+
+func (response GetProjectMetadata200JSONResponse) VisitGetProjectMetadataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectMetadata404JSONResponse ErrorResponse
+
+func (response GetProjectMetadata404JSONResponse) VisitGetProjectMetadataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PullProjectRequestObject struct {
 	Slug string `json:"slug"`
 	Body *PullProjectJSONRequestBody
@@ -3493,6 +3594,9 @@ type StrictServerInterface interface {
 	// Get structured diff between a branch and main
 	// (GET /api/projects/{slug}/diff)
 	GetProjectDiff(ctx context.Context, request GetProjectDiffRequestObject) (GetProjectDiffResponseObject, error)
+	// Get project metadata including product info, guidelines, tech stack, and track summary
+	// (GET /api/projects/{slug}/metadata)
+	GetProjectMetadata(ctx context.Context, request GetProjectMetadataRequestObject) (GetProjectMetadataResponseObject, error)
 	// Pull latest from upstream and fast-forward merge
 	// (POST /api/projects/{slug}/pull)
 	PullProject(ctx context.Context, request PullProjectRequestObject) (PullProjectResponseObject, error)
@@ -4257,6 +4361,32 @@ func (sh *strictHandler) GetProjectDiff(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProjectDiffResponseObject); ok {
 		if err := validResponse.VisitGetProjectDiffResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectMetadata operation middleware
+func (sh *strictHandler) GetProjectMetadata(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetProjectMetadataRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectMetadata(ctx, request.(GetProjectMetadataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectMetadata")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectMetadataResponseObject); ok {
+		if err := validResponse.VisitGetProjectMetadataResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

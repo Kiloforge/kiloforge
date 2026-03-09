@@ -581,6 +581,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/projects/{slug}/metadata:
+    get:
+      operationId: getProjectMetadata
+      summary: Get project metadata including product info, guidelines, tech stack, and track summary
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "200":
+          description: Project metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMetadataResponse"
+        "404":
+          description: Project not found or kiloforge not initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/projects/{slug}/setup-status:
     get:
       operationId: getProjectSetupStatus
@@ -1380,6 +1406,70 @@ components:
         project_slug:
           type: string
           description: The project slug
+
+    ProjectMetadataResponse:
+      type: object
+      required: [product, tech_stack, quick_links, track_summary]
+      properties:
+        product:
+          type: string
+          description: Product definition (product.md content)
+        product_guidelines:
+          type: string
+          description: Product guidelines (product-guidelines.md content)
+        tech_stack:
+          type: string
+          description: Tech stack reference (tech-stack.md content)
+        workflow:
+          type: string
+          description: Workflow reference (workflow.md content)
+        quick_links:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuickLink"
+          description: Navigation links from quick-links.md
+        style_guides:
+          type: array
+          items:
+            $ref: "#/components/schemas/StyleGuideEntry"
+          description: Code style guide files
+        track_summary:
+          $ref: "#/components/schemas/TrackSummary"
+
+    QuickLink:
+      type: object
+      required: [label, path]
+      properties:
+        label:
+          type: string
+        path:
+          type: string
+
+    StyleGuideEntry:
+      type: object
+      required: [name, content]
+      properties:
+        name:
+          type: string
+          description: Filename without extension (e.g., "go")
+        content:
+          type: string
+          description: Full markdown content
+
+    TrackSummary:
+      type: object
+      required: [total, pending, in_progress, completed, archived]
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        in_progress:
+          type: integer
+        completed:
+          type: integer
+        archived:
+          type: integer
 
     SetupRequiredResponse:
       type: object

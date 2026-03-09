@@ -180,6 +180,9 @@ type ClientInterface interface {
 	// GetProjectDiff request
 	GetProjectDiff(ctx context.Context, slug string, params *GetProjectDiffParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetProjectMetadata request
+	GetProjectMetadata(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PullProjectWithBody request with any body
 	PullProjectWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -626,6 +629,18 @@ func (c *Client) GetProjectBranches(ctx context.Context, slug string, reqEditors
 
 func (c *Client) GetProjectDiff(ctx context.Context, slug string, params *GetProjectDiffParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectDiffRequest(c.Server, slug, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetProjectMetadata(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectMetadataRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -1865,6 +1880,40 @@ func NewGetProjectDiffRequest(server string, slug string, params *GetProjectDiff
 	return req, nil
 }
 
+// NewGetProjectMetadataRequest generates requests for GetProjectMetadata
+func NewGetProjectMetadataRequest(server string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/metadata", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPullProjectRequest calls the generic PullProject builder with application/json body
 func NewPullProjectRequest(server string, slug string, body PullProjectJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -2666,6 +2715,9 @@ type ClientWithResponsesInterface interface {
 	// GetProjectDiffWithResponse request
 	GetProjectDiffWithResponse(ctx context.Context, slug string, params *GetProjectDiffParams, reqEditors ...RequestEditorFn) (*GetProjectDiffResponse, error)
 
+	// GetProjectMetadataWithResponse request
+	GetProjectMetadataWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetProjectMetadataResponse, error)
+
 	// PullProjectWithBodyWithResponse request with any body
 	PullProjectWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PullProjectResponse, error)
 
@@ -3317,6 +3369,29 @@ func (r GetProjectDiffResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetProjectDiffResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetProjectMetadataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectMetadataResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectMetadataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectMetadataResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4016,6 +4091,15 @@ func (c *ClientWithResponses) GetProjectDiffWithResponse(ctx context.Context, sl
 		return nil, err
 	}
 	return ParseGetProjectDiffResponse(rsp)
+}
+
+// GetProjectMetadataWithResponse request returning *GetProjectMetadataResponse
+func (c *ClientWithResponses) GetProjectMetadataWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetProjectMetadataResponse, error) {
+	rsp, err := c.GetProjectMetadata(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectMetadataResponse(rsp)
 }
 
 // PullProjectWithBodyWithResponse request with arbitrary body returning *PullProjectResponse
@@ -5176,6 +5260,39 @@ func ParseGetProjectDiffResponse(rsp *http.Response) (*GetProjectDiffResponse, e
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectMetadataResponse parses an HTTP response from a GetProjectMetadataWithResponse call
+func ParseGetProjectMetadataResponse(rsp *http.Response) (*GetProjectMetadataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectMetadataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectMetadataResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
