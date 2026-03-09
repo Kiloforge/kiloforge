@@ -1,7 +1,11 @@
+import { useState, useCallback } from "react";
 import type { Agent } from "../types/api";
+import { AgentStatusPopover } from "./AgentStatusPopover";
 import styles from "./AgentHistogram.module.css";
 
 export function AgentHistogram({ agents }: { agents: Agent[] }) {
+  const [openStatus, setOpenStatus] = useState<string | null>(null);
+
   const active = agents.filter(
     (a) => a.status === "running" || a.status === "waiting",
   );
@@ -13,11 +17,32 @@ export function AgentHistogram({ agents }: { agents: Agent[] }) {
   const entries = Object.entries(counts);
   if (entries.length === 0) return null;
 
+  const handleChipClick = useCallback((status: string) => {
+    setOpenStatus((prev) => (prev === status ? null : status));
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setOpenStatus(null);
+  }, []);
+
   return (
     <div className={styles.histogram}>
       {entries.map(([status, count]) => (
-        <span key={status} className={`${styles.chip} ${styles[status] ?? ""}`}>
-          {count} {status}
+        <span key={status} className={styles.chipWrapper}>
+          <button
+            type="button"
+            className={`${styles.chip} ${styles[status] ?? ""}`}
+            onClick={() => handleChipClick(status)}
+          >
+            {count} {status}
+          </button>
+          {openStatus === status && (
+            <AgentStatusPopover
+              status={status}
+              agents={active.filter((a) => a.status === status)}
+              onClose={handleClose}
+            />
+          )}
         </span>
       ))}
     </div>
