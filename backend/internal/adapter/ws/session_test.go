@@ -323,6 +323,119 @@ func TestEnrichedMessage_Constructors(t *testing.T) {
 	}
 }
 
+func TestAddSession_InheritsContext(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	parent, cancel := context.WithCancel(context.Background())
+	s, isPrimary := sm.AddSession(parent, "agent-ctx", nil)
+	if !isPrimary {
+		t.Error("first session should be primary")
+	}
+	if s.ctx.Err() != nil {
+		t.Error("session context should not be cancelled yet")
+	}
+
+	// Cancelling parent should cancel session context.
+	cancel()
+	if s.ctx.Err() == nil {
+		t.Error("session context should be cancelled after parent cancel")
+	}
+}
+
+func TestCloseAllSessions(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	s1, _ := sm.AddSession(context.Background(), "agent-a", nil)
+	s2, _ := sm.AddSession(context.Background(), "agent-a", nil)
+	s3, _ := sm.AddSession(context.Background(), "agent-b", nil)
+
+	sm.CloseAllSessions()
+
+	if s1.ctx.Err() == nil {
+		t.Error("s1 context should be cancelled")
+	}
+	if s2.ctx.Err() == nil {
+		t.Error("s2 context should be cancelled")
+	}
+	if s3.ctx.Err() == nil {
+		t.Error("s3 context should be cancelled")
+	}
+
+	// Session map should be empty.
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if len(sm.sessions) != 0 {
+		t.Errorf("sessions map should be empty, got %d entries", len(sm.sessions))
+	}
+}
+
+func TestBroadcastToAgent_RemovesStale(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	// Add two sessions — both with cancelled contexts so Write is never attempted on nil conn.
+	ctx1, cancel1 := context.WithCancel(context.Background())
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	sm.AddSession(ctx1, "agent-stale", nil)
+	sm.AddSession(ctx2, "agent-stale", nil)
+
+	// Cancel the first session's context to make it stale; keep second alive initially.
+	cancel1()
+
+	// Verify we have 2 sessions before broadcast.
+	sm.mu.RLock()
+	before := len(sm.sessions["agent-stale"])
+	sm.mu.RUnlock()
+	if before != 2 {
+		t.Fatalf("expected 2 sessions before broadcast, got %d", before)
+	}
+
+	// Cancel second too (so broadcast won't try to write to nil conn).
+	cancel2()
+
+	// Broadcast should remove both stale sessions.
+	sm.BroadcastToAgent("agent-stale", OutputMsg("test"))
+
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if len(sm.sessions) != 0 {
+		t.Errorf("expected empty sessions map after stale cleanup, got %d agents", len(sm.sessions))
+	}
+}
+
+func TestStartOutputRelay_ContextCancel(t *testing.T) {
+	t.Parallel()
+
+	sm := NewSessionManager()
+	_, w := io.Pipe()
+	defer w.Close()
+	done := make(chan struct{})
+	bridge := NewBridge("relay-cancel", w, done)
+	sm.RegisterBridge("relay-cancel", bridge)
+
+	messages := make(chan []byte, 10)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	messages <- []byte("before-cancel")
+
+	relayDone := make(chan struct{})
+	go func() {
+		sm.StartOutputRelay(ctx, "relay-cancel", messages)
+		close(relayDone)
+	}()
+
+	cancel()
+
+	select {
+	case <-relayDone:
+		// Relay exited as expected.
+	case <-time.After(2 * time.Second):
+		t.Fatal("output relay did not exit after context cancellation")
+	}
+}
+
 func TestOutputMsg_BackwardCompat(t *testing.T) {
 	t.Parallel()
 

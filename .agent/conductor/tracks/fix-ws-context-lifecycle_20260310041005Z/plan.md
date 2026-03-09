@@ -29,11 +29,11 @@
 - When server context cancels, close all active sessions
 - Sessions drain pending writes before closing
 
-### Task 2.2: Add tests for lifecycle scenarios [~]
+### Task 2.2: Add tests for lifecycle scenarios [x]
 - Test: client disconnect → session cleaned up, relay stopped
 - Test: server shutdown → all sessions closed
 - Test: stale session doesn't receive broadcasts
 
-### Task 2.3: Verify Phase 2
+### Task 2.3: Verify Phase 2 [x]
 - Full test suite passes: `make test`
 - No goroutine leaks in session lifecycle tests
