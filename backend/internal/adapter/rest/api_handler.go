@@ -384,8 +384,10 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start structured message relay in background.
-	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background with cancellable context.
+	relayCtx, cancelRelay := context.WithCancel(context.Background())
+	ia.SetCancelRelay(cancelRelay)
+	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
 
 	return gen.SpawnInteractiveAgent201JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
 }
@@ -491,8 +493,10 @@ func (h *APIHandler) ResumeAgent(ctx context.Context, req gen.ResumeAgentRequest
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start structured message relay in background.
-	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background with cancellable context.
+	relayCtx, cancelRelay := context.WithCancel(context.Background())
+	ia.SetCancelRelay(cancelRelay)
+	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
 
 	return gen.ResumeAgent200JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
 }
@@ -1482,8 +1486,10 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start structured message relay in background.
-	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background with cancellable context.
+	relayCtx, cancelRelay := context.WithCancel(context.Background())
+	ia.SetCancelRelay(cancelRelay)
+	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
 
 	// Auto-sync board when track-gen agent completes.
 	if projectSlug != "" && h.boardSvc != nil {
@@ -1616,8 +1622,10 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start structured message relay in background.
-	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background with cancellable context.
+	relayCtx, cancelRelay := context.WithCancel(context.Background())
+	ia.SetCancelRelay(cancelRelay)
+	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
 
 	// Clear concurrency guard and auto-sync board on completion.
 	go func() {
@@ -1874,8 +1882,10 @@ func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProject
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start structured message relay in background.
-	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background with cancellable context.
+	relayCtx, cancelRelay := context.WithCancel(context.Background())
+	ia.SetCancelRelay(cancelRelay)
+	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
 
 	wsURL := fmt.Sprintf("/ws/agent/%s", ia.Info.ID)
 

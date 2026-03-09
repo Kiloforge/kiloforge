@@ -338,6 +338,19 @@ type InteractiveAgent struct {
 	Output       <-chan []byte   // structured messages for WS relay
 	Done         chan struct{}   // closed when agent exits
 	sdkSession   *SDKSession    // SDK session for turn-based input
+	cancelRelay  context.CancelFunc // cancels the current relay goroutine
+}
+
+// SetCancelRelay stores the cancel function for the current relay goroutine.
+func (ia *InteractiveAgent) SetCancelRelay(cancel context.CancelFunc) {
+	ia.cancelRelay = cancel
+}
+
+// CancelRelay cancels the current relay goroutine if one is active.
+func (ia *InteractiveAgent) CancelRelay() {
+	if ia.cancelRelay != nil {
+		ia.cancelRelay()
+	}
 }
 
 // SpawnInteractive launches a Claude agent in interactive mode using the SDK Client.
@@ -469,7 +482,8 @@ func (s *Spawner) StopAgent(id string) error {
 		return fmt.Errorf("agent not running: %s", id)
 	}
 
-	// Close the SDK session (cancels context, closes output channel).
+	// Cancel relay goroutine and close SDK session.
+	ia.CancelRelay()
 	ia.sdkSession.Close()
 
 	// Update store.

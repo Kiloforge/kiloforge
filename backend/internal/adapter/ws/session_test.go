@@ -1,9 +1,11 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"testing"
+	"time"
 )
 
 func TestSessionManager_AddRemove(t *testing.T) {
@@ -121,11 +123,98 @@ func TestStartStructuredRelay(t *testing.T) {
 	messages <- TurnEndMsg("turn-1", 0.05, nil)
 	close(messages)
 
-	sm.StartStructuredRelay("sdk-agent", messages)
+	sm.StartStructuredRelay(context.Background(), "sdk-agent", messages)
 
 	lines := bridge.Buffer.Lines()
 	if len(lines) != 3 {
 		t.Fatalf("buffer lines = %d, want 3", len(lines))
+	}
+}
+
+func TestStartStructuredRelay_ContextCancel(t *testing.T) {
+	t.Parallel()
+
+	sm := NewSessionManager()
+	done := make(chan struct{})
+	bridge := NewSDKBridge("cancel-agent", nil, done)
+	sm.RegisterBridge("cancel-agent", bridge)
+
+	messages := make(chan []byte, 10)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Send one message before cancel.
+	messages <- TextMsg("before-cancel", "t1")
+
+	relayDone := make(chan struct{})
+	go func() {
+		sm.StartStructuredRelay(ctx, "cancel-agent", messages)
+		close(relayDone)
+	}()
+
+	// Give relay time to process the first message.
+	// Then cancel context — relay should exit even though channel is still open.
+	cancel()
+
+	select {
+	case <-relayDone:
+		// Relay exited as expected.
+	case <-time.After(2 * time.Second):
+		t.Fatal("relay did not exit after context cancellation")
+	}
+
+	// Verify the channel is still open (not closed by relay).
+	select {
+	case messages <- TextMsg("after-cancel", "t1"):
+		// Channel accepted write — it's still open. Good.
+	default:
+		t.Fatal("messages channel should still be open after relay cancel")
+	}
+}
+
+func TestStartStructuredRelay_ReplacePrevious(t *testing.T) {
+	t.Parallel()
+
+	sm := NewSessionManager()
+	done := make(chan struct{})
+	bridge := NewSDKBridge("replace-agent", nil, done)
+	sm.RegisterBridge("replace-agent", bridge)
+
+	// Start first relay.
+	messages1 := make(chan []byte, 10)
+	ctx1, cancel1 := context.WithCancel(context.Background())
+	relay1Done := make(chan struct{})
+	go func() {
+		sm.StartStructuredRelay(ctx1, "replace-agent", messages1)
+		close(relay1Done)
+	}()
+
+	// Cancel first relay (simulating resume).
+	cancel1()
+	select {
+	case <-relay1Done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("first relay did not exit after cancel")
+	}
+
+	// Start second relay on new channel — should work without issues.
+	messages2 := make(chan []byte, 10)
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	defer cancel2()
+
+	messages2 <- TextMsg("from-relay-2", "t2")
+	close(messages2)
+
+	sm.StartStructuredRelay(ctx2, "replace-agent", messages2)
+
+	lines := bridge.Buffer.Lines()
+	found := false
+	for _, line := range lines {
+		if string(line) != "" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("second relay should have buffered messages")
 	}
 }
 

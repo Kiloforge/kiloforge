@@ -167,13 +167,22 @@ func (sm *SessionManager) StartOutputRelay(agentID string, output <-chan []byte)
 // StartStructuredRelay reads pre-serialized JSON messages from a channel
 // and broadcasts them to WebSocket clients. Used by SDK-based agents that
 // produce structured messages (turn_start, text, tool_use, etc.).
-func (sm *SessionManager) StartStructuredRelay(agentID string, messages <-chan []byte) {
+// The relay stops when ctx is cancelled or the messages channel is closed.
+func (sm *SessionManager) StartStructuredRelay(ctx context.Context, agentID string, messages <-chan []byte) {
 	bridge, ok := sm.GetBridge(agentID)
 	if !ok {
 		return
 	}
-	for msg := range messages {
-		bridge.Buffer.Write(msg)
-		sm.BroadcastToAgent(agentID, msg)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg, ok := <-messages:
+			if !ok {
+				return
+			}
+			bridge.Buffer.Write(msg)
+			sm.BroadcastToAgent(agentID, msg)
+		}
 	}
 }
