@@ -25,13 +25,36 @@ func (r *TrackReaderImpl) DiscoverTracks(projectDir string) ([]port.TrackEntry, 
 	if err != nil {
 		return nil, fmt.Errorf("list tracks: %w", err)
 	}
+
+	// Load deps graph and conflicts (best-effort — files may not exist).
+	depsGraph, _ := client.GetDepsGraph()
+	allConflicts, _ := client.GetConflicts()
+
+	// Build completed set for deps_met calculation.
+	completed := make(map[string]bool, len(entries))
+	for _, e := range entries {
+		if e.Status == kf.StatusCompleted {
+			completed[e.ID] = true
+		}
+	}
+
 	result := make([]port.TrackEntry, len(entries))
 	for i, e := range entries {
-		result[i] = port.TrackEntry{
+		entry := port.TrackEntry{
 			ID:     e.ID,
 			Title:  e.Title,
 			Status: mapKFStatusToPort(e.Status),
 		}
+		if deps := depsGraph.GetDeps(e.ID); len(deps) > 0 {
+			entry.DepsCount = len(deps)
+			for _, d := range deps {
+				if completed[d] {
+					entry.DepsMet++
+				}
+			}
+		}
+		entry.ConflictCount = len(kf.FindConflicts(allConflicts, e.ID))
+		result[i] = entry
 	}
 	return result, nil
 }
@@ -45,7 +68,7 @@ func (r *TrackReaderImpl) GetTrackDetail(projectDir, trackID string) (*port.Trac
 
 	progress := track.Progress()
 
-	return &port.TrackDetail{
+	detail := &port.TrackDetail{
 		ID:        track.ID,
 		Title:     track.Title,
 		Status:    mapKFStatusToPort(track.Status),
@@ -56,7 +79,59 @@ func (r *TrackReaderImpl) GetTrackDetail(projectDir, trackID string) (*port.Trac
 		Tasks:     port.ProgressCount{Total: progress.TotalTasks, Completed: progress.CompletedTasks},
 		CreatedAt: track.Created,
 		UpdatedAt: track.Updated,
-	}, nil
+	}
+
+	// Resolve dependencies with metadata from registry.
+	depsGraph, _ := client.GetDepsGraph()
+	if depIDs := depsGraph.GetDeps(trackID); len(depIDs) > 0 {
+		registry := buildRegistryMap(client)
+		detail.Dependencies = make([]port.TrackDependency, len(depIDs))
+		for i, depID := range depIDs {
+			dep := port.TrackDependency{ID: depID}
+			if entry, ok := registry[depID]; ok {
+				dep.Title = entry.Title
+				dep.Status = mapKFStatusToPort(entry.Status)
+			}
+			detail.Dependencies[i] = dep
+		}
+	}
+
+	// Resolve conflicts with metadata from registry.
+	conflictPairs, _ := client.GetConflictsForTrack(trackID)
+	if len(conflictPairs) > 0 {
+		registry := buildRegistryMap(client)
+		detail.Conflicts = make([]port.TrackConflict, len(conflictPairs))
+		for i, cp := range conflictPairs {
+			otherID := cp.TrackB
+			if otherID == trackID {
+				otherID = cp.TrackA
+			}
+			tc := port.TrackConflict{
+				TrackID: otherID,
+				Risk:    cp.Risk,
+				Note:    cp.Note,
+			}
+			if entry, ok := registry[otherID]; ok {
+				tc.TrackTitle = entry.Title
+			}
+			detail.Conflicts[i] = tc
+		}
+	}
+
+	return detail, nil
+}
+
+// buildRegistryMap returns a map of track ID → registry entry for fast lookup.
+func buildRegistryMap(client *kf.Client) map[string]kf.TrackEntry {
+	entries, err := client.ListTracks()
+	if err != nil {
+		return nil
+	}
+	m := make(map[string]kf.TrackEntry, len(entries))
+	for _, e := range entries {
+		m[e.ID] = e
+	}
+	return m
 }
 
 func (r *TrackReaderImpl) RemoveTrack(projectDir, trackID string) error {
