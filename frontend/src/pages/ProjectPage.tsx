@@ -12,12 +12,14 @@ import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
 import { AgentTerminal } from "../components/AgentTerminal";
 import { AdminPanel } from "../components/AdminPanel";
+import { ProjectMetadataView } from "../components/ProjectMetadataView";
 import { ConsentDialog } from "../components/ConsentDialog";
 import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
 import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
+import { useProjectMetadata } from "../hooks/useProjectMetadata";
 import { useTourContextSafe } from "../components/tour/TourProvider";
 import { TOUR_STEPS } from "../components/tour/tourSteps";
 import appStyles from "../App.module.css";
@@ -65,6 +67,8 @@ export function ProjectPage() {
     ? "Run kiloforge setup first"
     : undefined;
 
+  const [pageTab, setPageTab] = useState<"board" | "info">("board");
+  const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const setupPrompt = useSetupPrompt();
@@ -185,6 +189,39 @@ export function ProjectPage() {
         </section>
       )}
 
+      {/* Page-level tabs */}
+      <div className={styles.pageTabs}>
+        <button
+          className={`${styles.pageTab} ${pageTab === "board" ? styles.pageTabActive : ""}`}
+          onClick={() => setPageTab("board")}
+        >
+          Board
+        </button>
+        <button
+          className={`${styles.pageTab} ${pageTab === "info" ? styles.pageTabActive : ""}`}
+          onClick={() => setPageTab("info")}
+        >
+          Project Info
+        </button>
+      </div>
+
+      {pageTab === "info" && (
+        <section className={appStyles.panel}>
+          {metadataLoading && (
+            <p className={styles.metadataLoading}>Loading project metadata...</p>
+          )}
+          {metadataError && (
+            <p className={metadataError instanceof FetchError && metadataError.status === 404 ? styles.notInitialized : styles.metadataError}>
+              {metadataError instanceof FetchError && metadataError.status === 404
+                ? "Kiloforge is not initialized for this project. Run setup to configure track management."
+                : "Failed to load project metadata."}
+            </p>
+          )}
+          {metadata && <ProjectMetadataView metadata={metadata} />}
+        </section>
+      )}
+
+      {pageTab === "board" && (<>
       {skillsMissing && (
         <div className={styles.setupBanner}>
           <span className={styles.setupBannerText}>
@@ -356,6 +393,7 @@ export function ProjectPage() {
           <TrackList tracks={tracks} projectSlug={slug} />
         )}
       </section>
+      </>)}
     </>
   );
 }

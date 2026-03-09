@@ -194,3 +194,55 @@
 .setupBannerBtn:hover {
   opacity: 0.9;
 }
+
+/* Page-level tabs */
+.pageTabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pageTab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.pageTab:hover {
+  color: var(--text);
+}
+
+.pageTabActive {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* Metadata loading / error states */
+.metadataLoading {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.metadataError {
+  color: var(--red);
+  font-size: 13px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.notInitialized {
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 32px 0;
+  text-align: center;
+  line-height: 1.6;
+}

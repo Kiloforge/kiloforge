@@ -142,13 +142,13 @@ plan:
   - phase: Page Integration
     tasks:
       - text: Integrate metadata view into ProjectPage — add "Project Info" tab alongside existing board/tracks content
-        done: false
+        done: true
       - text: Handle loading state (skeleton or spinner while metadata loads)
-        done: false
+        done: true
       - text: Handle error states — kf not initialized message, API errors
-        done: false
+        done: true
       - text: Handle empty optional fields (no guidelines, no workflow) gracefully — hide tabs or show "Not configured" message
-        done: false
+        done: true
   - phase: Polish
     tasks:
       - text: Verify responsive layout on narrow viewports

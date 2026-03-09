@@ -129,6 +129,14 @@ vi.mock("../components/tour/TourProvider", () => ({
   useTourContextSafe: () => null,
 }));
 
+vi.mock("../hooks/useProjectMetadata", () => ({
+  useProjectMetadata: () => ({
+    data: undefined,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 vi.mock("../api/fetcher", () => ({
   fetcher: vi.fn().mockImplementation((url: string) => {
     if (url.includes("setup-status")) return Promise.resolve({ setup_complete: true, project_slug: "test-proj" });
@@ -180,7 +188,7 @@ describe("ProjectPage", () => {
 
   it("renders board section with columns", () => {
     renderPage();
-    expect(screen.getByText("Board")).toBeInTheDocument();
+    expect(screen.getAllByText("Board").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Backlog")).toBeInTheDocument();
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
