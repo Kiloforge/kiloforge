@@ -632,15 +632,15 @@ On failure: lock released. Report and **HALT**.
 # Verify merge
 git -C {primary-branch-worktree-path} log --oneline -3
 
-# Delete implementation branch (safe — it's been merged)
+# Return to developer home branch FIRST (can't delete current branch)
+git checkout {developer-home-branch}
+
+# Delete implementation branch (safe — it's been merged and we've switched away)
 git branch -d {type}/{trackId}
 
 # If --with-review was used: clean up remote branch and close PR
 # GitHub: gh pr close {pr-number} (if not auto-closed) && git push ${REMOTE_NAME} --delete {type}/{trackId}
 # Gitea: tea pr close {pr-number} && git push ${REMOTE_NAME} --delete {type}/{trackId}
-
-# Return to developer home branch
-git checkout {developer-home-branch}
 
 # Sync home branch to primary branch (updates the marker to post-merge state)
 git reset --hard ${PRIMARY_BRANCH}
