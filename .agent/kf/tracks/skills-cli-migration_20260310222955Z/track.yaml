@@ -12,12 +12,11 @@ spec:
 
     Additionally, kf-developer's post-merge cleanup step (11e) tells agents to delete the implementation branch BEFORE switching to the home branch, which fails because git won't delete the branch you're currently on.
 
-    Skills exist in three locations that must ALL be updated together:
-    - `skills/kf-*/SKILL.md` — repo-level skill definitions (14 skills)
-    - `backend/internal/adapter/skills/embedded/kf-*/SKILL.md` — embedded skills compiled into binary (14 skills)
-    - `~/.claude/skills/kf-*/SKILL.md` — global installed skills used by active agents (14 skills)
+    Skills exist in two canonical locations that must BOTH be updated together:
+    - `backend/internal/adapter/skills/embedded/kf-*/SKILL.md` — embedded skills compiled into binary
+    - `~/.claude/skills/kf-*/SKILL.md` — global installed skills used by active agents
 
-    All three copies must stay in sync. The repo copies are the source of truth, but global skills must also be updated directly so that running agents pick up fixes immediately (not just on next release).
+    There is also a stale `skills/` directory at the repo root that is a redundant third copy. This should be deleted entirely as part of this track — it is not a canonical location and creates sync confusion.
   codebase_analysis: |
     ### Direct file access patterns found (by skill)
 
@@ -50,15 +49,13 @@ spec:
 
     ### Files to modify (repo locations)
 
-    For each affected skill, update ALL THREE locations:
-    - `skills/{skill}/SKILL.md` + `backend/internal/adapter/skills/embedded/{skill}/SKILL.md` + `~/.claude/skills/{skill}/SKILL.md`
+    For each affected skill, update BOTH canonical locations:
+    - `backend/internal/adapter/skills/embedded/{skill}/SKILL.md` (embedded)
+    - `~/.claude/skills/{skill}/SKILL.md` (global)
 
-    Affected skills:
-    - kf-developer (skills/ + embedded/ + global)
-    - kf-implement (skills/ + embedded/ + global)
-    - kf-report (skills/ + embedded/ + global)
-    - kf-reviewer (skills/ + embedded/ + global)
-    - kf-architect (embedded/ + global — no repo skills/ copy)
+    Affected skills: kf-developer, kf-implement, kf-report, kf-reviewer, kf-architect
+
+    Additionally, delete the redundant `skills/` directory at the repo root entirely.
 
     ### CLI commands available for replacement
 
@@ -75,7 +72,8 @@ spec:
     - "kf-architect: git show tracks.yaml replaced with kf-track list --active --json"
     - "kf-report: direct tracks.yaml reads replaced with kf-track list --json (git show for recovery is acceptable)"
     - "kf-reviewer: git show spec/plan reads replaced with kf-track-content show"
-    - "All three copies (skills/, embedded/, ~/.claude/skills/) are updated consistently"
+    - "Both canonical copies (embedded/ and ~/.claude/skills/) are updated consistently"
+    - "Redundant skills/ directory at repo root is deleted"
     - "No references to legacy metadata.json or manual plan.md editing remain in updated skills"
   out_of_scope: |
     - Adding new CLI commands to kf-track or kf-track-content (use existing commands)
@@ -120,11 +118,15 @@ spec:
     - Lock file read/write (implementation detail of merge protocol)
     - `git add` of kf files after CLI operations (agents still need to commit)
 plan:
+  - phase: "Remove redundant skills/ directory"
+    tasks:
+      - text: "Delete the entire skills/ directory at the repo root (redundant copy — canonical locations are embedded/ and ~/.claude/skills/)"
+        done: false
   - phase: "Fix kf-developer branch cleanup bug"
     tasks:
-      - text: "In skills/kf-developer/SKILL.md Step 11e, swap order: git checkout before git branch -d"
+      - text: "In embedded kf-developer SKILL.md Step 11e, swap order: git checkout before git branch -d"
         done: false
-      - text: "Apply same fix in backend/internal/adapter/skills/embedded/kf-developer/SKILL.md and ~/.claude/skills/kf-developer/SKILL.md"
+      - text: "Apply same fix in ~/.claude/skills/kf-developer/SKILL.md"
         done: false
   - phase: "Migrate kf-developer to CLI tools"
     tasks:
@@ -132,7 +134,7 @@ plan:
         done: false
       - text: "Replace git show reads of deps.yaml with kf-track deps check"
         done: false
-      - text: "Update all three copies (skills/, embedded/, ~/.claude/skills/) consistently"
+      - text: "Update both embedded/ and ~/.claude/skills/ copies consistently"
         done: false
   - phase: "Migrate kf-implement to CLI tools"
     tasks:
@@ -144,7 +146,7 @@ plan:
         done: false
       - text: "Replace manual plan.md parsing with kf-track-content progress"
         done: false
-      - text: "Update all three copies (skills/, embedded/, ~/.claude/skills/) consistently"
+      - text: "Update both embedded/ and ~/.claude/skills/ copies consistently"
         done: false
   - phase: "Migrate kf-architect, kf-report, kf-reviewer"
     tasks:
@@ -156,12 +158,14 @@ plan:
         done: false
       - text: "kf-reviewer: replace git show spec/plan reads with kf-track-content show"
         done: false
-      - text: "Update all three copies (skills/, embedded/, ~/.claude/skills/) consistently"
+      - text: "Update both embedded/ and ~/.claude/skills/ copies consistently"
         done: false
   - phase: "Verification"
     tasks:
       - text: "Grep all updated SKILL.md files for remaining direct file access patterns (git show .*tracks, metadata.json, spec.md, plan.md) and confirm none remain except acceptable exceptions"
         done: false
-      - text: "Verify all three copies (skills/, embedded/, ~/.claude/skills/) are consistent (diff check)"
+      - text: "Verify embedded/ and ~/.claude/skills/ copies are consistent (diff check)"
+        done: false
+      - text: "Verify skills/ directory no longer exists at repo root"
         done: false
 extra: {}
