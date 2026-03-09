@@ -162,11 +162,11 @@ plan:
   - phase: Reconnection and Failure Tests
     tasks:
       - text: Auto-reconnect after disconnect — establish SSE connection, simulate server-side disconnect, verify connection indicator shows "disconnected", then verify auto-reconnect restores the connection and new events are received
-        done: false
+        done: true
       - text: Event burst handling — send 50+ events in rapid succession via API actions, verify all events are processed, UI reaches correct final state, and no events are dropped
-        done: false
+        done: true
       - text: Malformed event handling — inject an event with invalid JSON data (via test helper), verify no JavaScript console errors, connection remains open, and subsequent valid events are still processed correctly
-        done: false
+        done: true
       - text: Server restart during connection — restart the test server while SSE is connected, verify disconnection is detected, auto-reconnect occurs after server is back, and dashboard state is refreshed
-        done: false
+        done: true
 extra: {}
