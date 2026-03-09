@@ -150,6 +150,9 @@ Navigation hub for project context.
 - **sdk-agent-migration-fe_20260310014148Z** — Structured Agent Terminal Display (Frontend)
 - **agent-lifecycle-be_20260310030000Z** — Agent Lifecycle Management — Stop, Resume, Delete (Backend)
 - **agent-lifecycle-fe_20260310030001Z** — Agent Lifecycle Management — Stop, Resume, Delete (Frontend)
+- **navbar-design-polish_20260310033000Z** — Navigation Bar Design Polish and Agent Status Popover
+- **fix-quota-display_20260310033001Z** — Fix Token and Cost Display — Bridge QuotaTracker to API
+- **terminal-markdown-style_20260310033002Z** — Agent Terminal Markdown Rendering and Terminal-Style Design
 
 ## Getting Started
 
