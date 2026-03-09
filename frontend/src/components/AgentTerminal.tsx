@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
-import type { WSMessage, WSConnectionState } from "../hooks/useAgentWebSocket";
+import type { WSConnectionState } from "../hooks/useAgentWebSocket";
+import { MessageDispatch } from "./terminal";
 import styles from "./AgentTerminal.module.css";
 
 interface Props {
@@ -28,75 +29,6 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
       <span className={`${styles.dot} ${cls}`} />
       <span className={styles.connectionLabel}>{label}</span>
     </span>
-  );
-}
-
-function formatCode(text: string): React.ReactNode[] {
-  // Split on code blocks (```...```) and render them differently
-  const parts = text.split(/(```[\s\S]*?```)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("```") && part.endsWith("```")) {
-      const inner = part.slice(3, -3);
-      // Strip optional language tag on first line
-      const newlineIdx = inner.indexOf("\n");
-      const code = newlineIdx >= 0 ? inner.slice(newlineIdx + 1) : inner;
-      return (
-        <pre key={i} className={styles.codeBlock}>
-          <code>{code}</code>
-        </pre>
-      );
-    }
-    // Render inline code with backticks
-    const inlineParts = part.split(/(`[^`]+`)/g);
-    return (
-      <span key={i}>
-        {inlineParts.map((ip, j) =>
-          ip.startsWith("`") && ip.endsWith("`") ? (
-            <code key={j} className={styles.inlineCode}>
-              {ip.slice(1, -1)}
-            </code>
-          ) : (
-            <span key={j}>{ip}</span>
-          ),
-        )}
-      </span>
-    );
-  });
-}
-
-function MessageBubble({ msg }: { msg: WSMessage }) {
-  if (msg.type === "input") {
-    return (
-      <div className={`${styles.message} ${styles.userMessage}`}>
-        <span className={styles.messageIcon}>you</span>
-        <div className={styles.messageContent}>{msg.text}</div>
-      </div>
-    );
-  }
-
-  if (msg.type === "status") {
-    return (
-      <div className={`${styles.message} ${styles.statusMessage}`}>
-        <span className={styles.statusText}>{msg.text}</span>
-      </div>
-    );
-  }
-
-  if (msg.type === "error") {
-    return (
-      <div className={`${styles.message} ${styles.errorMessage}`}>
-        <span className={styles.messageIcon}>err</span>
-        <div className={styles.messageContent}>{msg.text}</div>
-      </div>
-    );
-  }
-
-  // output
-  return (
-    <div className={`${styles.message} ${styles.agentMessage}`}>
-      <span className={styles.messageIcon}>kf</span>
-      <div className={styles.messageContent}>{formatCode(msg.text)}</div>
-    </div>
   );
 }
 
@@ -144,6 +76,9 @@ export function AgentTerminal({ agentId, onClose }: Props) {
   const isTerminal = agentStatus === "completed" || agentStatus === "failed";
   const canSend = status === "connected" && !isTerminal;
 
+  // Compute turn numbers for turn_start messages
+  let turnCounter = 0;
+
   return (
     <div className={styles.overlay} onClick={handleBackdrop}>
       <div className={styles.modal}>
@@ -166,9 +101,10 @@ export function AgentTerminal({ agentId, onClose }: Props) {
           {messages.length === 0 && status === "connected" && (
             <p className={styles.emptyState}>Waiting for agent output...</p>
           )}
-          {messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} />
-          ))}
+          {messages.map((msg, i) => {
+            if (msg.type === "turn_start") turnCounter++;
+            return <MessageDispatch key={i} msg={msg} turnNumber={turnCounter} />;
+          })}
           <div ref={messagesEndRef} />
         </div>
 
