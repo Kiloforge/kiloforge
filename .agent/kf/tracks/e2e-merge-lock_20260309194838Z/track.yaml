@@ -3,7 +3,7 @@ title: E2E Tests: Merge Lock Coordination — Acquire, Heartbeat, Release, Confl
 type: chore
 status: pending
 created: 2026-03-09T19:48:38Z
-updated: 2026-03-09T19:48:38Z
+updated: 2026-03-09
 spec:
   summary: Comprehensive E2E tests for the merge lock coordination system: acquiring locks with TTL, heartbeat renewal, releasing locks, lock conflict detection, and UI display of lock state, covering happy path, edge cases, and expected failures.
   context: |
@@ -68,51 +68,51 @@ plan:
   - phase: Acquire Tests
     tasks:
       - text: Acquire happy path — POST to `/api/locks/{scope}/acquire` with holder and TTL, verify 200 response with lock info (scope, holder, expiry), verify lock appears in `GET /api/locks` list
-        done: false
+        done: true
       - text: Acquire with custom TTL — acquire lock with custom `ttl_seconds` value (e.g., 30), verify the returned expiry reflects the requested TTL, verify lock info displays correct remaining time
-        done: false
+        done: true
       - text: Acquire returns lock info — verify response body contains `scope`, `holder`, `ttl_seconds`, `expires_at` fields with correct types and values, verify `expires_at` is in the future
-        done: false
+        done: true
   - phase: Heartbeat Tests
     tasks:
       - text: Heartbeat extends TTL — acquire lock with short TTL (5s), wait 2s, send heartbeat, verify `expires_at` in response is later than original expiry
-        done: false
+        done: true
       - text: Heartbeat response — verify heartbeat returns 200 with updated lock info including new `expires_at`, verify holder matches the original acquire holder
-        done: false
+        done: true
       - text: Heartbeat timing — acquire lock, send multiple heartbeats in sequence, verify each heartbeat extends the expiry from the time of the heartbeat (not from original acquire)
-        done: false
+        done: true
   - phase: Release Tests
     tasks:
       - text: Release happy path — acquire lock, then DELETE to release, verify 200 response, verify lock no longer appears in `GET /api/locks`
-        done: false
+        done: true
       - text: Release clears from list — acquire two locks on different scopes, release one, verify only the released lock is gone from the list while the other remains
-        done: false
+        done: true
       - text: Release SSE event — subscribe to SSE before releasing, release a lock, verify `lock_released` event is received with correct scope and holder info
-        done: false
+        done: true
   - phase: Conflict Tests
     tasks:
       - text: Double acquire conflict — acquire lock on scope, attempt second acquire on same scope with different holder, verify 409 Conflict response with error message indicating lock is held
-        done: false
+        done: true
       - text: Lock by different holder — acquire lock as holder-A, attempt heartbeat as holder-B, verify rejection; attempt release as holder-B, verify 403 Forbidden
-        done: false
+        done: true
       - text: Wait-for-release scenario — acquire lock with short TTL (3s), attempt second acquire in a polling loop, verify second acquire succeeds after TTL expiry
-        done: false
+        done: true
   - phase: TTL and Edge Cases
     tasks:
       - text: TTL auto-expiry — acquire lock with 2s TTL, do NOT heartbeat, poll `GET /api/locks` until lock disappears, verify `lock_released` SSE event fires on expiry
-        done: false
+        done: true
       - text: Heartbeat after release — acquire and release a lock, then send heartbeat for the released scope, verify 404 response (lock not found), verify no side effects
-        done: false
+        done: true
       - text: Invalid TTL — attempt acquire with `ttl_seconds: 0`, `ttl_seconds: -1`, and `ttl_seconds: 999999`, verify appropriate error responses (400 Bad Request)
-        done: false
+        done: true
       - text: Wrong holder release — acquire lock as holder-A, attempt DELETE as holder-B, verify 403 Forbidden, verify lock remains active in list with holder-A
-        done: false
+        done: true
   - phase: UI Verification
     tasks:
       - text: Lock list display — use Playwright to navigate to the dashboard, acquire a lock via API, verify the UI shows the lock with holder name, scope, and remaining TTL countdown
-        done: false
+        done: true
       - text: Real-time lock update — with Playwright on the dashboard, acquire a lock via API, verify UI updates without page refresh (SSE-driven); release the lock, verify it disappears from UI
-        done: false
+        done: true
       - text: Conflict indicator in UI — acquire a lock, verify UI shows the lock as active; attempt a second acquire via the UI (if applicable) or verify the conflict state is reflected in the lock list display
-        done: false
-extra: "{}"
+        done: true
+extra: {}
