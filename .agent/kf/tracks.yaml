@@ -107,6 +107,7 @@ kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artif
 licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 live-status-badges_20260308190000Z: {"title":"Universal Live Agent Status Badges","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
 merge-cleanup_20260307125003Z: {"title":"PR Merge, Worktree Cleanup, and Agent Teardown","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+merge-conflict-guidance_20260311020000Z: {"title":"Simplify merge conflict resolution in kf-architect and kf-developer skills","status":"pending","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"completed","type":"refactor","created":"2026-03-08","updated":"2026-03-08"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
