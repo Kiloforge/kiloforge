@@ -152,7 +152,7 @@ plan:
   - phase: Polish
     tasks:
       - text: Verify responsive layout on narrow viewports
-        done: false
+        done: true
       - text: Test with real project data — verify all metadata renders correctly with actual markdown content
-        done: false
+        done: true
 extra: {}

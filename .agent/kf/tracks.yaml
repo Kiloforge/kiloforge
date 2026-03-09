@@ -119,7 +119,7 @@ project-documentation_20260310034000Z: {"title":"Project Documentation with Auth
 project-manage-api_20260309084650Z: {"title":"Project Add/Remove REST API","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 project-manage-ui_20260309084651Z: {"title":"Project Add/Remove Dashboard UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 project-metadata-be_20260310070000Z: {"title":"Project Metadata API — Serve Product, Guidelines, Tech Stack, and Style Guides","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
-project-metadata-fe_20260310070001Z: {"title":"Project Metadata UI — Browse Product, Guidelines, Tech Stack, and Style Guides","status":"pending","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+project-metadata-fe_20260310070001Z: {"title":"Project Metadata UI — Browse Product, Guidelines, Tech Stack, and Style Guides","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 project-scoped-dashboard_20260308220001Z: {"title":"Project-Scoped Dashboard Tracks","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
 quota-reframe-be_20260309103000Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Backend)","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
 quota-reframe-fe_20260309103001Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Frontend)","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
