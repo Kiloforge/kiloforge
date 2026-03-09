@@ -138,11 +138,11 @@ plan:
   - phase: Agent Event Tests
     tasks:
       - text: `agent_update` UI reaction — spawn an agent via API, verify the agent list in the dashboard updates to show the new agent without a page refresh
-        done: false
+        done: true
       - text: `agent_removed` UI reaction — delete an agent via API, verify the agent disappears from the dashboard agent list without a page refresh
-        done: false
+        done: true
       - text: `quota_update` stat cards — trigger a quota change (mock agent completes with token usage), verify the stat cards on the dashboard update with new token/cost values
-        done: false
+        done: true
   - phase: Track and Board Event Tests
     tasks:
       - text: `track_update` list refresh — change a track's status via API, verify the track list in the UI updates to reflect the new status without page refresh
