@@ -81,7 +81,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 	agentStore := sqlite.NewAgentStore(db)
 	prTracker := sqlite.NewPRTrackingStore(db)
 	traceStore := sqlite.NewTraceStore(db)
-	quotaStore := sqlite.NewQuotaStore(db)
 	boardStore := sqlite.NewBoardStore(db)
 
 	// Initialize tracing (always on).
@@ -93,6 +92,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 		log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
 	}
 
+	// Create in-memory quota tracker (receives live cost/token data from SDK).
+	quotaTracker := agent.NewQuotaTracker(cfg.DataDir)
+	_ = quotaTracker.Load()
+
 	// Build server options.
 	opts := []rest.ServerOption{
 		rest.WithGiteaProxy(cfg.GiteaURL(), cfg.GiteaAdminUser),
@@ -100,7 +103,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		rest.WithTracer(tracing.NewOTelTracer()),
 	}
 	if cfg.IsDashboardEnabled() {
-		opts = append(opts, rest.WithDashboard(agentStore, quotaStore, "/", reg))
+		opts = append(opts, rest.WithDashboard(agentStore, quotaTracker, "/", reg))
 	}
 
 	// Enable native board service.
@@ -116,8 +119,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 	opts = append(opts, rest.WithTourStore(tourStore))
 
 	// Wire interactive agent spawner for WebSocket-based agent sessions.
-	quotaTracker := agent.NewQuotaTracker(cfg.DataDir)
-	_ = quotaTracker.Load()
 	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
 	opts = append(opts, rest.WithInteractiveSpawner(spawner))
 
