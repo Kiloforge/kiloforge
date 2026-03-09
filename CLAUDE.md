@@ -4,21 +4,15 @@
 
 This repo uses git worktrees. Go's VCS stamping fails in worktrees because `.git` is a file, not a directory. **Never use `-buildvcs=false`.**
 
-Before running `go build`, `go test`, or any `go` command that touches VCS metadata, export these env vars:
+Before running `go build`, `go test`, or any `go` command that touches VCS metadata, source the worktree env helper:
 
 ```bash
-export GIT_DIR=$(git rev-parse --git-common-dir)
-export GIT_WORK_TREE=$(git rev-parse --show-toplevel)
+. .agent/kf/bin/kf-worktree-env
 ```
 
-Or prefix inline:
+This exports `GIT_DIR` and `GIT_WORK_TREE` automatically. Use `KF_QUIET=1` to suppress output. Run `kf-worktree-env --help` for details.
 
-```bash
-GIT_DIR=$(git rev-parse --git-common-dir) GIT_WORK_TREE=$(git rev-parse --show-toplevel) go build ./...
-GIT_DIR=$(git rev-parse --git-common-dir) GIT_WORK_TREE=$(git rev-parse --show-toplevel) go test ./...
-```
-
-`make build` and `make test` already do this — prefer Makefile targets when available.
+`make build` and `make test` already handle this — prefer Makefile targets when available.
 
 ## Project Structure
 
