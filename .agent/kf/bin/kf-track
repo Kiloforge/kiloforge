@@ -407,6 +407,27 @@ ${line}"
     return 0
   fi
 
+  # Sort: no-deps tracks first, then by unsatisfied dep count (ascending)
+  local sorted_lines=""
+  local no_deps_lines="" has_deps_lines=""
+  while IFS= read -r line; do
+    local id
+    id=$(echo "$line" | sed 's/:.*//')
+    local deps
+    deps=$(get_track_deps "$id")
+    if [[ -z "$deps" ]]; then
+      no_deps_lines="${no_deps_lines}${line}
+"
+    else
+      has_deps_lines="${has_deps_lines}${line}
+"
+    fi
+  done <<< "$lines"
+  # Combine: no-deps first, then has-deps
+  sorted_lines="${no_deps_lines}${has_deps_lines}"
+  # Remove trailing newline
+  lines=$(echo "$sorted_lines" | sed '/^$/d')
+
   local count
   count=$(echo "$lines" | wc -l | tr -d ' ')
 
