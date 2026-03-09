@@ -21,10 +21,10 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--text);
-  white-space: pre-wrap;
   word-break: break-word;
   min-width: 0;
   flex: 1;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
 /* User input */
