@@ -57,7 +57,7 @@
 }
 
 .acceptBtn {
-  background: var(--accent, #4f8ff7);
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 4px;

@@ -172,11 +172,11 @@ plan:
   - phase: Brand accent and polish
     tasks:
       - text: Apply emerald-cyan gradient to primary accent areas (active states, key buttons, highlights)
-        done: false
+        done: true
       - text: Audit all .module.css files for hardcoded colors that should use CSS vars
-        done: false
+        done: true
       - text: Update hover/focus states to use white-opacity progression (white/10 → white/20)
-        done: false
+        done: true
   - phase: Visual verification
     tasks:
       - text: Take before/after screenshots of OverviewPage, ProjectPage, AgentDetailPage

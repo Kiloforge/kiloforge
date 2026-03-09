@@ -1,30 +1,30 @@
 .timeline {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
-  border: 1px solid #333;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .header {
   display: flex;
-  background: #1a1a2e;
+  background: var(--bg-surface);
   padding: 6px 8px;
   font-weight: bold;
-  color: #888;
-  border-bottom: 1px solid #333;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
 }
 
 .row {
   display: flex;
   padding: 4px 8px;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid var(--border-default);
   cursor: pointer;
   transition: background 0.1s;
 }
 
 .row:hover {
-  background: #1a1a2e;
+  background: var(--bg-hover);
 }
 
 .nameCol {
@@ -32,13 +32,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #ccc;
+  color: var(--text);
 }
 
 .durationCol {
   flex: 0 0 80px;
   text-align: right;
-  color: #888;
+  color: var(--text-dim);
   padding-right: 12px;
 }
 
@@ -57,15 +57,15 @@
 }
 
 .ok {
-  background: #4caf50;
+  background: var(--green);
 }
 
 .error {
-  background: #f44336;
+  background: var(--red);
 }
 
 .agentName {
-  color: #7c9bf5;
+  color: var(--accent);
   font-style: italic;
   font-size: 11px;
 }
@@ -73,5 +73,5 @@
 .empty {
   padding: 24px;
   text-align: center;
-  color: #666;
+  color: var(--text-dimmed);
 }

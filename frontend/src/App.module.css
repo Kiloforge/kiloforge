@@ -28,7 +28,10 @@
   font-weight: 700;
   letter-spacing: -0.3px;
   margin: 0;
-  color: var(--accent);
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .headerDivider {
@@ -62,7 +65,7 @@
 }
 
 .link:hover {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text);
 }
 
