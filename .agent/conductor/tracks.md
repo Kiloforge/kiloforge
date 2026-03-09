@@ -109,7 +109,7 @@
 | [x] | track-detail-view-fe_20260309001727Z | Track Detail View UI | 2026-03-09 | 2026-03-09 |
 
 | [x] | sdk-agent-migration-be_20260310014147Z | Migrate Agent Spawner to Claude Agent SDK (Backend) | 2026-03-10 | 2026-03-10 |
-| [ ] | sdk-agent-migration-fe_20260310014148Z | Structured Agent Terminal Display (Frontend) | 2026-03-10 | 2026-03-10 |
+| [x] | sdk-agent-migration-fe_20260310014148Z | Structured Agent Terminal Display (Frontend) | 2026-03-10 | 2026-03-10 |
 
 <!-- Tracks registered by /kf-new-track -->
 
