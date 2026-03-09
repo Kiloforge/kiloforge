@@ -2,15 +2,15 @@
   "id": "frontend-test-pages_20260310041007Z",
   "title": "Frontend Test Coverage — Pages and Components",
   "type": "chore",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-03-10T04:10:07Z",
   "updated": "2026-03-10T04:10:07Z",
   "phases": {
     "total": 2,
-    "completed": 0
+    "completed": 2
   },
   "tasks": {
     "total": 8,
-    "completed": 0
+    "completed": 8
   }
 }
