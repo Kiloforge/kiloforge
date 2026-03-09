@@ -1,0 +1,16 @@
+{
+  "id": "fix-relay-goroutine-leak_20260310041000Z",
+  "title": "Fix Agent Relay Goroutine Leak and Double-Close Panic",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-10T04:10:00Z",
+  "updated": "2026-03-10T04:10:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}

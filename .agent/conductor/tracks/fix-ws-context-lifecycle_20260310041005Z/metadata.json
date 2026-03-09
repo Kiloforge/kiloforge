@@ -1,0 +1,16 @@
+{
+  "id": "fix-ws-context-lifecycle_20260310041005Z",
+  "title": "Fix WebSocket Session Context and Graceful Shutdown",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-10T04:10:05Z",
+  "updated": "2026-03-10T04:10:05Z",
+  "phases": {
+    "total": 2,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 7,
+    "completed": 0
+  }
+}

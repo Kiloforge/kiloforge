@@ -1,0 +1,16 @@
+{
+  "id": "refactor-error-standardization_20260310041003Z",
+  "title": "Standardize Domain Sentinel Errors and Store Returns",
+  "type": "refactor",
+  "status": "pending",
+  "created": "2026-03-10T04:10:03Z",
+  "updated": "2026-03-10T04:10:03Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 9,
+    "completed": 0
+  }
+}

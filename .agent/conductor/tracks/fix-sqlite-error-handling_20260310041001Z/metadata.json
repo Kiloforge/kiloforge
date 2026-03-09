@@ -1,0 +1,16 @@
+{
+  "id": "fix-sqlite-error-handling_20260310041001Z",
+  "title": "Fix Unhandled SQLite Write Errors Across All Stores",
+  "type": "bug",
+  "status": "pending",
+  "created": "2026-03-10T04:10:01Z",
+  "updated": "2026-03-10T04:10:01Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 0
+  }
+}

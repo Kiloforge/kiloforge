@@ -155,6 +155,15 @@ Navigation hub for project context.
 - **terminal-markdown-style_20260310033002Z** — Agent Terminal Markdown Rendering and Terminal-Style Design
 - **project-documentation_20260310034000Z** — Project Documentation with Author's Foreword
 - **arch-review_20260310040000Z** — Research: Architectural Review and Alignment Audit
+- **fix-relay-goroutine-leak_20260310041000Z** — Fix Agent Relay Goroutine Leak and Double-Close Panic
+- **fix-sqlite-error-handling_20260310041001Z** — Fix Unhandled SQLite Write Errors Across All Stores
+- **refactor-port-interfaces_20260310041002Z** — Move Service-Local Interfaces to Port Layer
+- **refactor-error-standardization_20260310041003Z** — Standardize Domain Sentinel Errors and Store Returns
+- **refactor-cli-business-logic_20260310041004Z** — Extract Business Logic from CLI Commands to Services
+- **fix-ws-context-lifecycle_20260310041005Z** — Fix WebSocket Session Context and Graceful Shutdown
+- **frontend-test-hooks_20260310041006Z** — Frontend Test Coverage — Critical Hooks
+- **frontend-test-pages_20260310041007Z** — Frontend Test Coverage — Pages and Components
+- **refactor-domain-types-cleanup_20260310041008Z** — Consolidate Domain Types and Frontend Component Cleanup
 
 ## Getting Started
 
