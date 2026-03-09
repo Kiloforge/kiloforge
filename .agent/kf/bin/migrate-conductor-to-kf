@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# migrate-conductor-to-kf — One-time migration from .agent/conductor/ to .agent/kf/
+#
+# What it does:
+#   1. Copies all files from .agent/conductor/ to .agent/kf/
+#   2. Converts tracks.md (markdown table) to tracks.yaml (YAML with JSON lines)
+#   3. Preserves archive metadata
+#   4. Keeps tracks.md as read-only reference (renamed to tracks-legacy.md)
+#   5. Does NOT delete .agent/conductor/ — that's a separate manual step after verification
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CONDUCTOR_DIR="${REPO_ROOT}/.agent/conductor"
+KF_DIR="${REPO_ROOT}/.agent/kf"
+TRACKS_YAML="${KF_DIR}/tracks.yaml"
+
+if [[ ! -d "$CONDUCTOR_DIR" ]]; then
+  echo "ERROR: .agent/conductor/ not found at ${CONDUCTOR_DIR}" >&2
+  exit 1
+fi
+
+echo "=== Migrating .agent/conductor/ → .agent/kf/ ==="
+echo ""
+
+# Step 1: Copy non-tracks files
+echo "Step 1: Copying project files..."
+mkdir -p "$KF_DIR"
+for f in product.md product-guidelines.md tech-stack.md workflow.md setup_state.json index.md; do
+  if [[ -f "${CONDUCTOR_DIR}/${f}" ]]; then
+    cp "${CONDUCTOR_DIR}/${f}" "${KF_DIR}/${f}"
+    echo "  Copied: ${f}"
+  fi
+done
+
+# Step 2: Copy code styleguides
+if [[ -d "${CONDUCTOR_DIR}/code_styleguides" ]]; then
+  mkdir -p "${KF_DIR}/code_styleguides"
+  cp -r "${CONDUCTOR_DIR}/code_styleguides/"* "${KF_DIR}/code_styleguides/" 2>/dev/null || true
+  echo "  Copied: code_styleguides/"
+fi
+
+# Step 3: Copy track directories (preserving structure)
+echo ""
+echo "Step 2: Copying track directories..."
+mkdir -p "${KF_DIR}/tracks"
+if [[ -d "${CONDUCTOR_DIR}/tracks" ]]; then
+  # Copy everything except tracks.md-derived files
+  find "${CONDUCTOR_DIR}/tracks" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+    dirname=$(basename "$dir")
+    if [[ ! -d "${KF_DIR}/tracks/${dirname}" ]]; then
+      cp -r "$dir" "${KF_DIR}/tracks/${dirname}"
+    fi
+  done
+  # Copy deps.yaml if exists
+  if [[ -f "${CONDUCTOR_DIR}/tracks/deps.yaml" ]]; then
+    cp "${CONDUCTOR_DIR}/tracks/deps.yaml" "${KF_DIR}/tracks/deps.yaml"
+    echo "  Copied: tracks/deps.yaml"
+  fi
+  echo "  Copied track directories"
+fi
+
+# Step 4: Convert tracks.md to tracks.yaml
+echo ""
+echo "Step 3: Converting tracks.md → tracks.yaml..."
+
+cat > "$TRACKS_YAML" <<'HEADER'
+# Kiloforge Track Registry
+#
+# FORMAT: <track-id>: {"title":"...","status":"...","type":"...","created":"...","updated":"..."}
+# STATUS: pending | in-progress | completed | archived
+# TOOL:   Use `kf-track` to manage entries. Do not edit by hand.
+#
+HEADER
+
+TRACKS_MD="${CONDUCTOR_DIR}/tracks.md"
+if [[ -f "$TRACKS_MD" ]]; then
+  # Parse active tracks table: | [status] | track-id | title | created | updated |
+  grep "^| \[" "$TRACKS_MD" | while IFS='|' read -r _ status_col id_col title_col created_col updated_col _; do
+    # Trim whitespace
+    status_raw=$(echo "$status_col" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    id=$(echo "$id_col" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    title=$(echo "$title_col" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    created=$(echo "$created_col" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    updated=$(echo "$updated_col" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    # Skip empty lines
+    [[ -z "$id" ]] && continue
+
+    # Map status markers to status strings
+    case "$status_raw" in
+      "[x]") status="completed" ;;
+      "[~]") status="in-progress" ;;
+      "[ ]") status="pending" ;;
+      *)     status="pending" ;;
+    esac
+
+    # Determine type from track ID prefix or metadata.json
+    type="feature"
+    meta_file="${KF_DIR}/tracks/${id}/metadata.json"
+    if [[ -f "$meta_file" ]] && command -v jq &>/dev/null; then
+      meta_type=$(jq -r '.type // empty' "$meta_file" 2>/dev/null || true)
+      [[ -n "$meta_type" ]] && type="$meta_type"
+    else
+      # Heuristic from track ID
+      case "$id" in
+        fix-*)       type="bug" ;;
+        refactor-*)  type="refactor" ;;
+        research-*)  type="research" ;;
+        e2e-*)       type="chore" ;;
+        impl-*)      type="feature" ;;
+        *)           type="feature" ;;
+      esac
+    fi
+
+    # Escape title for JSON (basic: handle double quotes)
+    title_escaped=$(echo "$title" | sed 's/"/\\"/g')
+
+    if command -v jq &>/dev/null; then
+      json=$(jq -nc \
+        --arg title "$title_escaped" \
+        --arg status "$status" \
+        --arg type "$type" \
+        --arg created "$created" \
+        --arg updated "$updated" \
+        '{title:$title, status:$status, type:$type, created:$created, updated:$updated}')
+    else
+      json="{\"title\":\"${title_escaped}\",\"status\":\"${status}\",\"type\":\"${type}\",\"created\":\"${created}\",\"updated\":\"${updated}\"}"
+    fi
+
+    echo "${id}: ${json}" >> "$TRACKS_YAML"
+  done
+
+  # Parse archived tracks section
+  # Format: | track-id | title | reason |
+  in_archive=false
+  grep "^|" "$TRACKS_MD" | while IFS='|' read -r _ col1 col2 col3 _; do
+    col1=$(echo "$col1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    col2=$(echo "$col2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    col3=$(echo "$col3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    # Skip headers and separators
+    [[ "$col1" == "Track ID" || "$col1" == "--------" || "$col1" == "Status" || "$col1" == "------" ]] && continue
+    # Skip active tracks (already processed — they start with [)
+    [[ "$col1" == "["* ]] && continue
+    # Skip if empty
+    [[ -z "$col1" ]] && continue
+
+    # This is an archived track
+    id="$col1"
+    title="$col2"
+    reason="${col3:-completed}"
+
+    # Skip if already in tracks.yaml
+    grep -q "^${id}:" "$TRACKS_YAML" 2>/dev/null && continue
+
+    title_escaped=$(echo "$title" | sed 's/"/\\"/g')
+
+    if command -v jq &>/dev/null; then
+      json=$(jq -nc \
+        --arg title "$title_escaped" \
+        --arg reason "$reason" \
+        '{title:$title, status:"archived", type:"feature", created:"", updated:"", archived_at:"", archive_reason:$reason}')
+    else
+      json="{\"title\":\"${title_escaped}\",\"status\":\"archived\",\"type\":\"feature\",\"created\":\"\",\"updated\":\"\",\"archived_at\":\"\",\"archive_reason\":\"${reason}\"}"
+    fi
+
+    echo "${id}: ${json}" >> "$TRACKS_YAML"
+  done
+
+  # Keep old tracks.md as reference
+  cp "$TRACKS_MD" "${KF_DIR}/tracks-legacy.md"
+  echo "  Preserved legacy: tracks-legacy.md"
+fi
+
+# Step 5: Make bin scripts executable
+chmod +x "${KF_DIR}/bin/"* 2>/dev/null || true
+
+# Count results
+total=$(grep -c "^[a-z]" "$TRACKS_YAML" 2>/dev/null || echo 0)
+pending=$(grep -c '"status":"pending"' "$TRACKS_YAML" 2>/dev/null || echo 0)
+completed=$(grep -c '"status":"completed"' "$TRACKS_YAML" 2>/dev/null || echo 0)
+archived=$(grep -c '"status":"archived"' "$TRACKS_YAML" 2>/dev/null || echo 0)
+
+echo ""
+echo "=== Migration Complete ==="
+echo ""
+echo "  tracks.yaml: ${total} tracks (${pending} pending, ${completed} completed, ${archived} archived)"
+echo "  deps.yaml:   preserved"
+echo "  bin/:        kf-track tool ready"
+echo ""
+echo "Next steps:"
+echo "  1. Verify: .agent/kf/bin/kf-track list --all"
+echo "  2. Test:   .agent/kf/bin/kf-track list --active"
+echo "  3. When satisfied, remove .agent/conductor/ via git"
+echo "  4. Update skills to reference .agent/kf/ paths"

@@ -1,0 +1,638 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# kf-track — Track registry management tool for Kiloforge agents.
+#
+# Operates on tracks.yaml (track registry) and deps.yaml (dependency graph).
+# Designed for use by both humans and AI agents.
+#
+# TRACKS.YAML FORMAT:
+#   Each line: <track-id>: {"title":"...","status":"...","type":"...","created":"...","updated":"..."}
+#   Track ID is always the leftmost field for human readability.
+#   Status values: pending, in-progress, completed, archived
+#
+# DEPS.YAML FORMAT:
+#   Each track ID maps to a list of prerequisite track IDs.
+#   See deps.yaml header for full protocol.
+
+# --- Config ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KF_DIR="${SCRIPT_DIR%/bin}"
+TRACKS_FILE="${KF_DIR}/tracks.yaml"
+DEPS_FILE="${KF_DIR}/tracks/deps.yaml"
+
+# --- Helpers ---
+now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+today_iso() { date -u +%Y-%m-%d; }
+
+ensure_tracks_file() {
+  if [[ ! -f "$TRACKS_FILE" ]]; then
+    cat > "$TRACKS_FILE" <<'HEADER'
+# Kiloforge Track Registry
+#
+# FORMAT: <track-id>: {"title":"...","status":"...","type":"...","created":"...","updated":"..."}
+# STATUS: pending | in-progress | completed | archived
+# TOOL:   Use `kf-track` to manage entries. Do not edit by hand.
+#
+HEADER
+  fi
+}
+
+ensure_deps_file() {
+  if [[ ! -f "$DEPS_FILE" ]]; then
+    mkdir -p "$(dirname "$DEPS_FILE")"
+    cat > "$DEPS_FILE" <<HEADER
+# Track Dependency Graph
+#
+# PROTOCOL:
+#   Canonical source for track dependency ordering (adjacency list).
+#   Each key is a track ID; its value is a list of prerequisite track IDs.
+#
+# RULES:
+#   - Only pending/in-progress tracks listed. Completed tracks pruned on cleanup.
+#   - Architect appends entries when creating tracks.
+#   - Developer checks deps before claiming: all deps must be completed.
+#   - Cycles are forbidden.
+#
+# UPDATED: $(now_iso)
+HEADER
+  fi
+}
+
+track_exists() {
+  grep -q "^${1}:" "$TRACKS_FILE" 2>/dev/null
+}
+
+get_track_line() {
+  grep "^${1}:" "$TRACKS_FILE" 2>/dev/null
+}
+
+get_track_json() {
+  local line
+  line=$(get_track_line "$1") || return 1
+  echo "$line" | sed "s/^[^{]*//"
+}
+
+get_field() {
+  # Usage: get_field <track-id> <field>
+  local json
+  json=$(get_track_json "$1") || return 1
+  if command -v jq &>/dev/null; then
+    echo "$json" | jq -r ".$2 // empty"
+  else
+    # Fallback: basic grep for "field":"value"
+    echo "$json" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed 's/.*:"\(.*\)"/\1/'
+  fi
+}
+
+set_field() {
+  # Usage: set_field <track-id> <field> <value>
+  local id="$1" field="$2" value="$3"
+  local json
+  json=$(get_track_json "$id") || { echo "ERROR: Track not found: $id" >&2; return 1; }
+
+  local new_json
+  if command -v jq &>/dev/null; then
+    new_json=$(echo "$json" | jq -c ". + {\"$field\": \"$value\"}")
+  else
+    # Check if field exists
+    if echo "$json" | grep -q "\"$field\""; then
+      new_json=$(echo "$json" | sed "s/\"$field\":\"[^\"]*\"/\"$field\":\"$value\"/")
+    else
+      # Add field before closing brace
+      new_json=$(echo "$json" | sed "s/}$/,\"$field\":\"$value\"}/")
+    fi
+  fi
+
+  # Also update the "updated" timestamp
+  if [[ "$field" != "updated" ]]; then
+    if command -v jq &>/dev/null; then
+      new_json=$(echo "$new_json" | jq -c ". + {\"updated\": \"$(today_iso)\"}")
+    else
+      new_json=$(echo "$new_json" | sed "s/\"updated\":\"[^\"]*\"/\"updated\":\"$(today_iso)\"/")
+    fi
+  fi
+
+  # Escape sed delimiter
+  local escaped_json
+  escaped_json=$(echo "$new_json" | sed 's/[&/\]/\\&/g')
+  local escaped_old
+  escaped_old=$(echo "$json" | sed 's/[&/\]/\\&/g')
+
+  sed -i '' "s|^${id}: .*|${id}: ${new_json}|" "$TRACKS_FILE"
+}
+
+get_track_deps() {
+  # Returns dependency track IDs for a given track, one per line. Empty if none.
+  local id="$1"
+  [[ ! -f "$DEPS_FILE" ]] && return 0
+  sed -n "/^${id}:/,/^[^ #]/p" "$DEPS_FILE" | grep "^  - " | sed 's/^  - //' || true
+}
+
+deps_satisfied() {
+  # Returns 0 if all deps for track are completed (or no deps), 1 otherwise.
+  local id="$1"
+  local deps
+  deps=$(get_track_deps "$id")
+  [[ -z "$deps" ]] && return 0
+  while read -r dep; do
+    local dep_status
+    dep_status=$(get_field "$dep" "status" 2>/dev/null || echo "unknown")
+    [[ "$dep_status" != "completed" ]] && return 1
+  done <<< "$deps"
+  return 0
+}
+
+dep_summary() {
+  # Returns a short string summarizing deps: "0/0", "2/3", etc. (satisfied/total)
+  local id="$1"
+  local deps
+  deps=$(get_track_deps "$id")
+  [[ -z "$deps" ]] && echo "-" && return 0
+  local total=0 satisfied=0
+  while read -r dep; do
+    total=$((total + 1))
+    local dep_status
+    dep_status=$(get_field "$dep" "status" 2>/dev/null || echo "unknown")
+    [[ "$dep_status" == "completed" ]] && satisfied=$((satisfied + 1))
+  done <<< "$deps"
+  if [[ "$satisfied" -eq "$total" ]]; then
+    echo "${satisfied}/${total} ✓"
+  else
+    echo "${satisfied}/${total}"
+  fi
+}
+
+# --- Commands ---
+
+cmd_add() {
+  local id="" title="" type="feature" status="pending" deps=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --title)  title="$2"; shift 2 ;;
+      --type)   type="$2"; shift 2 ;;
+      --status) status="$2"; shift 2 ;;
+      --deps)   deps="$2"; shift 2 ;;
+      -*)       echo "Unknown option: $1" >&2; return 1 ;;
+      *)        id="$1"; shift ;;
+    esac
+  done
+
+  if [[ -z "$id" ]]; then
+    echo "Usage: kf-track add <track-id> --title \"...\" [--type feature|bug|chore|refactor] [--status pending] [--deps \"dep1,dep2\"]" >&2
+    return 1
+  fi
+  if [[ -z "$title" ]]; then
+    echo "ERROR: --title is required" >&2; return 1
+  fi
+
+  ensure_tracks_file
+
+  if track_exists "$id"; then
+    echo "ERROR: Track already exists: $id" >&2; return 1
+  fi
+
+  local created
+  created=$(today_iso)
+  local json="{\"title\":\"${title}\",\"status\":\"${status}\",\"type\":\"${type}\",\"created\":\"${created}\",\"updated\":\"${created}\"}"
+
+  # Use jq to ensure valid JSON if available
+  if command -v jq &>/dev/null; then
+    json=$(jq -nc \
+      --arg title "$title" \
+      --arg status "$status" \
+      --arg type "$type" \
+      --arg created "$created" \
+      '{title:$title, status:$status, type:$type, created:$created, updated:$created}')
+  fi
+
+  echo "${id}: ${json}" >> "$TRACKS_FILE"
+
+  # Add to deps.yaml
+  ensure_deps_file
+  if [[ -n "$deps" ]]; then
+    echo "" >> "$DEPS_FILE"
+    echo "${id}:" >> "$DEPS_FILE"
+    IFS=',' read -ra DEP_ARRAY <<< "$deps"
+    for dep in "${DEP_ARRAY[@]}"; do
+      echo "  - ${dep}" >> "$DEPS_FILE"
+    done
+  else
+    echo "" >> "$DEPS_FILE"
+    echo "${id}: []" >> "$DEPS_FILE"
+  fi
+
+  echo "Added: ${id}"
+}
+
+cmd_update() {
+  local id="" status=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --status) status="$2"; shift 2 ;;
+      -*)       echo "Unknown option: $1" >&2; return 1 ;;
+      *)        id="$1"; shift ;;
+    esac
+  done
+
+  if [[ -z "$id" || -z "$status" ]]; then
+    echo "Usage: kf-track update <track-id> --status <pending|in-progress|completed|archived>" >&2
+    return 1
+  fi
+
+  ensure_tracks_file
+
+  if ! track_exists "$id"; then
+    echo "ERROR: Track not found: $id" >&2; return 1
+  fi
+
+  case "$status" in
+    pending|in-progress|completed|archived) ;;
+    *) echo "ERROR: Invalid status: $status (must be pending|in-progress|completed|archived)" >&2; return 1 ;;
+  esac
+
+  set_field "$id" "status" "$status"
+
+  # If archived, add archived_at timestamp
+  if [[ "$status" == "archived" ]]; then
+    set_field "$id" "archived_at" "$(today_iso)"
+  fi
+
+  # If completed or archived, remove from deps.yaml (prune completed entries)
+  if [[ "$status" == "completed" || "$status" == "archived" ]]; then
+    if [[ -f "$DEPS_FILE" ]]; then
+      # Remove the track's own entry (key + any indented lines following it)
+      sed -i '' "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
+      # Clean up any resulting blank lines
+      sed -i '' '/^$/N;/^\n$/d' "$DEPS_FILE"
+    fi
+  fi
+
+  echo "Updated: ${id} → ${status}"
+}
+
+cmd_set() {
+  local id="" field="" value=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -*)
+        field="${1#--}"
+        value="$2"
+        shift 2
+        ;;
+      *)
+        if [[ -z "$id" ]]; then
+          id="$1"; shift
+        else
+          echo "Unknown argument: $1" >&2; return 1
+        fi
+        ;;
+    esac
+  done
+
+  if [[ -z "$id" || -z "$field" || -z "$value" ]]; then
+    echo "Usage: kf-track set <track-id> --<field> <value>" >&2
+    return 1
+  fi
+
+  ensure_tracks_file
+
+  if ! track_exists "$id"; then
+    echo "ERROR: Track not found: $id" >&2; return 1
+  fi
+
+  set_field "$id" "$field" "$value"
+  echo "Set ${id}.${field} = ${value}"
+}
+
+cmd_get() {
+  local id="$1"
+  if [[ -z "$id" ]]; then
+    echo "Usage: kf-track get <track-id>" >&2; return 1
+  fi
+
+  local line
+  line=$(get_track_line "$id") || { echo "ERROR: Track not found: $id" >&2; return 1; }
+
+  local json
+  json=$(echo "$line" | sed "s/^[^{]*//")
+
+  if command -v jq &>/dev/null; then
+    echo "Track: ${id}"
+    echo "$json" | jq .
+  else
+    echo "Track: ${id}"
+    echo "$json"
+  fi
+
+  # Show deps if any
+  if [[ -f "$DEPS_FILE" ]]; then
+    local deps
+    deps=$(sed -n "/^${id}:/,/^[^ #]/p" "$DEPS_FILE" | grep "^  - " | sed 's/^  - //' || true)
+    if [[ -n "$deps" ]]; then
+      echo ""
+      echo "Dependencies:"
+      echo "$deps" | while read -r dep; do
+        local dep_status
+        dep_status=$(get_field "$dep" "status" 2>/dev/null || echo "unknown")
+        local marker="[ ]"
+        [[ "$dep_status" == "completed" ]] && marker="[x]"
+        [[ "$dep_status" == "in-progress" ]] && marker="[~]"
+        echo "  ${marker} ${dep}"
+      done
+    fi
+  fi
+}
+
+cmd_list() {
+  local filter_status="" filter_active="" filter_ready="" show_all=false format="table"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --status)  filter_status="$2"; shift 2 ;;
+      --active)  filter_active=true; shift ;;
+      --ready)   filter_ready=true; shift ;;
+      --all)     show_all=true; shift ;;
+      --json)    format="json"; shift ;;
+      --ids)     format="ids"; shift ;;
+      -*)        echo "Unknown option: $1" >&2; return 1 ;;
+      *)         echo "Unknown argument: $1" >&2; return 1 ;;
+    esac
+  done
+
+  ensure_tracks_file
+
+  # Default: --ready (active tracks with all deps satisfied)
+  if [[ -z "$filter_status" && -z "$filter_active" && -z "$filter_ready" && "$show_all" != "true" ]]; then
+    filter_ready=true
+  fi
+
+  # For --ready, start from active set then filter by deps
+  if [[ "$filter_ready" == "true" ]]; then
+    filter_active=true
+  fi
+
+  local lines
+  if [[ -n "$filter_status" ]]; then
+    lines=$(grep -v "^#" "$TRACKS_FILE" | grep -v "^$" | grep "\"status\":\"${filter_status}\"" || true)
+  elif [[ "$filter_active" == "true" ]]; then
+    lines=$(grep -v "^#" "$TRACKS_FILE" | grep -v "^$" | grep -v '"status":"completed"' | grep -v '"status":"archived"' || true)
+  else
+    lines=$(grep -v "^#" "$TRACKS_FILE" | grep -v "^$" || true)
+  fi
+
+  # Apply --ready filter: only tracks with all deps satisfied
+  if [[ "$filter_ready" == "true" && -n "$lines" ]]; then
+    local ready_lines=""
+    while IFS= read -r line; do
+      local id
+      id=$(echo "$line" | sed 's/:.*//')
+      if deps_satisfied "$id"; then
+        if [[ -z "$ready_lines" ]]; then
+          ready_lines="$line"
+        else
+          ready_lines="${ready_lines}
+${line}"
+        fi
+      fi
+    done <<< "$lines"
+    lines="$ready_lines"
+  fi
+
+  if [[ -z "$lines" ]]; then
+    if [[ "$filter_ready" == "true" ]]; then
+      echo "(no ready tracks — all active tracks have unmet dependencies)"
+    else
+      echo "(no tracks match filter)"
+    fi
+    return 0
+  fi
+
+  local count
+  count=$(echo "$lines" | wc -l | tr -d ' ')
+
+  case "$format" in
+    ids)
+      echo "$lines" | sed 's/:.*//'
+      ;;
+    json)
+      echo "$lines" | while IFS= read -r line; do
+        local id json
+        id=$(echo "$line" | sed 's/:.*//')
+        json=$(echo "$line" | sed "s/^[^{]*//")
+        local deps_info
+        deps_info=$(dep_summary "$id")
+        if command -v jq &>/dev/null; then
+          local dep_list
+          dep_list=$(get_track_deps "$id" | jq -R . | jq -sc .)
+          echo "$json" | jq -c ". + {\"id\": \"$id\", \"deps\": $dep_list, \"deps_summary\": \"$deps_info\"}"
+        else
+          echo "{\"id\":\"${id}\",\"deps_summary\":\"${deps_info}\",${json#\{}"
+        fi
+      done
+      ;;
+    table)
+      # Print header
+      printf "%-50s %-13s %-10s %-10s %s\n" "TRACK ID" "STATUS" "TYPE" "DEPS" "TITLE"
+      printf "%-50s %-13s %-10s %-10s %s\n" "--------" "------" "----" "----" "-----"
+      echo "$lines" | while IFS= read -r line; do
+        local id json title status type deps_info
+        id=$(echo "$line" | sed 's/:.*//')
+        json=$(echo "$line" | sed "s/^[^{]*//")
+        if command -v jq &>/dev/null; then
+          title=$(echo "$json" | jq -r '.title // ""')
+          status=$(echo "$json" | jq -r '.status // ""')
+          type=$(echo "$json" | jq -r '.type // ""')
+        else
+          title=$(echo "$json" | grep -o '"title":"[^"]*"' | head -1 | sed 's/"title":"\(.*\)"/\1/')
+          status=$(echo "$json" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
+          type=$(echo "$json" | grep -o '"type":"[^"]*"' | head -1 | sed 's/"type":"\(.*\)"/\1/')
+        fi
+        deps_info=$(dep_summary "$id")
+        # Truncate title if too long
+        if [[ ${#title} -gt 50 ]]; then
+          title="${title:0:47}..."
+        fi
+        printf "%-50s %-13s %-10s %-10s %s\n" "$id" "$status" "$type" "$deps_info" "$title"
+      done
+      echo ""
+      if [[ "$filter_ready" == "true" ]]; then
+        echo "${count} ready track(s)"
+      else
+        echo "${count} track(s)"
+      fi
+      ;;
+  esac
+}
+
+cmd_deps() {
+  local subcmd="${1:-}"; shift || true
+  case "$subcmd" in
+    add)
+      local id="${1:-}" dep="${2:-}"
+      if [[ -z "$id" || -z "$dep" ]]; then
+        echo "Usage: kf-track deps add <track-id> <dependency-id>" >&2; return 1
+      fi
+      ensure_deps_file
+      if grep -q "^${id}:" "$DEPS_FILE"; then
+        # Track exists in deps — add dependency under it
+        sed -i '' "/^${id}:/{
+          a\\
+\\  - ${dep}
+        }" "$DEPS_FILE"
+      else
+        echo "" >> "$DEPS_FILE"
+        echo "${id}:" >> "$DEPS_FILE"
+        echo "  - ${dep}" >> "$DEPS_FILE"
+      fi
+      echo "Added dependency: ${id} → ${dep}"
+      ;;
+    remove)
+      local id="${1:-}" dep="${2:-}"
+      if [[ -z "$id" || -z "$dep" ]]; then
+        echo "Usage: kf-track deps remove <track-id> <dependency-id>" >&2; return 1
+      fi
+      sed -i '' "/^${id}:/,/^[^ #]/{/^  - ${dep}$/d;}" "$DEPS_FILE"
+      echo "Removed dependency: ${id} → ${dep}"
+      ;;
+    list)
+      local id="${1:-}"
+      if [[ -z "$id" ]]; then
+        echo "Usage: kf-track deps list <track-id>" >&2; return 1
+      fi
+      if [[ ! -f "$DEPS_FILE" ]]; then
+        echo "(no deps.yaml found)"; return 0
+      fi
+      local deps
+      deps=$(sed -n "/^${id}:/,/^[^ #]/p" "$DEPS_FILE" | grep "^  - " | sed 's/^  - //' || true)
+      if [[ -z "$deps" ]]; then
+        echo "(no dependencies)"
+      else
+        echo "$deps"
+      fi
+      ;;
+    check)
+      local id="${1:-}"
+      if [[ -z "$id" ]]; then
+        echo "Usage: kf-track deps check <track-id>" >&2; return 1
+      fi
+      if [[ ! -f "$DEPS_FILE" ]]; then
+        echo "OK (no deps.yaml)"; return 0
+      fi
+      local deps
+      deps=$(sed -n "/^${id}:/,/^[^ #]/p" "$DEPS_FILE" | grep "^  - " | sed 's/^  - //' || true)
+      if [[ -z "$deps" ]]; then
+        echo "OK (no dependencies)"; return 0
+      fi
+      local blocked=false
+      echo "$deps" | while read -r dep; do
+        local dep_status
+        dep_status=$(get_field "$dep" "status" 2>/dev/null || echo "unknown")
+        if [[ "$dep_status" == "completed" ]]; then
+          echo "  [x] ${dep}"
+        else
+          echo "  [ ] ${dep} (${dep_status})"
+          blocked=true
+        fi
+      done
+      # Re-check for blocked (subshell issue)
+      local any_blocked=false
+      while read -r dep; do
+        local dep_status
+        dep_status=$(get_field "$dep" "status" 2>/dev/null || echo "unknown")
+        if [[ "$dep_status" != "completed" ]]; then
+          any_blocked=true
+        fi
+      done <<< "$deps"
+      if [[ "$any_blocked" == "true" ]]; then
+        echo "BLOCKED — not all dependencies completed"
+        return 1
+      else
+        echo "OK — all dependencies satisfied"
+        return 0
+      fi
+      ;;
+    *)
+      echo "Usage: kf-track deps <add|remove|list|check> <track-id> [dep-id]" >&2
+      return 1
+      ;;
+  esac
+}
+
+cmd_archive() {
+  local id="${1:-}" reason="${2:-completed}"
+  if [[ -z "$id" ]]; then
+    echo "Usage: kf-track archive <track-id> [reason]" >&2; return 1
+  fi
+
+  if ! track_exists "$id"; then
+    echo "ERROR: Track not found: $id" >&2; return 1
+  fi
+
+  set_field "$id" "status" "archived"
+  set_field "$id" "archived_at" "$(today_iso)"
+  set_field "$id" "archive_reason" "$reason"
+
+  # Remove from deps.yaml
+  if [[ -f "$DEPS_FILE" ]]; then
+    sed -i '' "/^${id}:/,/^[^ #]/{/^${id}:/d;/^  /d;}" "$DEPS_FILE"
+  fi
+
+  echo "Archived: ${id} (reason: ${reason})"
+}
+
+cmd_help() {
+  cat <<'HELP'
+kf-track — Track registry management for Kiloforge agents
+
+USAGE:
+  kf-track <command> [arguments]
+
+COMMANDS:
+  add <id> --title "..." [--type ...] [--deps "a,b"]   Add a new track
+  update <id> --status <status>                         Update track status
+  set <id> --<field> <value>                            Set arbitrary metadata field
+  get <id>                                              Show track details + deps
+  archive <id> [reason]                                 Archive a track
+
+  list [options]                                        List tracks (default: ready)
+    --ready           Active tracks with all deps satisfied (default)
+    --active          All pending + in-progress tracks
+    --status <s>      Filter by exact status
+    --all             Show all tracks including completed/archived
+    --json            Output as JSON lines
+    --ids             Output track IDs only
+
+  deps add <id> <dep-id>                                Add a dependency
+  deps remove <id> <dep-id>                             Remove a dependency
+  deps list <id>                                        List dependencies
+  deps check <id>                                       Check if all deps satisfied
+
+STATUS VALUES:
+  pending       Track created, not yet started
+  in-progress   Track claimed by a developer
+  completed     Track implementation done
+  archived      Track moved to archive
+
+EXAMPLES:
+  kf-track add my-track_20260310Z --title "My Feature" --type feature
+  kf-track update my-track_20260310Z --status in-progress
+  kf-track list --status pending
+  kf-track list --all
+  kf-track deps check my-track_20260310Z
+  kf-track archive my-track_20260310Z "completed and merged"
+HELP
+}
+
+# --- Main dispatch ---
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  add)     cmd_add "$@" ;;
+  update)  cmd_update "$@" ;;
+  set)     cmd_set "$@" ;;
+  get)     cmd_get "$@" ;;
+  list)    cmd_list "$@" ;;
+  archive) cmd_archive "$@" ;;
+  deps)    cmd_deps "$@" ;;
+  help|--help|-h) cmd_help ;;
+  *)       echo "Unknown command: $cmd. Run 'kf-track help' for usage." >&2; exit 1 ;;
+esac
