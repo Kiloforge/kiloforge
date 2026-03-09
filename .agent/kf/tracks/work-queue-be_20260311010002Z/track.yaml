@@ -1,0 +1,195 @@
+id: work-queue-be_20260311010002Z
+title: "Work queue — backend service with semaphore, dependency-aware scheduling, and auto-spawn"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Queue service that manages max concurrent developers via a counting semaphore, topologically sorts ready tracks, and auto-spawns the next developer agent when a slot opens. Includes SQLite store, REST API, and configuration.
+  context: |
+    Currently, developer agents are spawned manually via `kf implement <track-id>` or the dashboard. There is no automatic scheduling — a human must decide which track to work next and trigger the agent. The worktree pool (default 3) limits concurrency but has no queue or dependency-aware ordering.
+
+    The work queue adds automatic track scheduling:
+    1. User configures max concurrent developers (semaphore count)
+    2. Tracks are enqueued (all ready tracks, or manually selected)
+    3. Queue sorts by dependency order (topological sort of deps.yaml)
+    4. When an agent completes and a slot opens, the queue auto-pops the next ready track and spawns a developer
+    5. Dependency satisfaction is re-evaluated dynamically — a track blocked at enqueue time becomes ready when its deps complete
+  codebase_analysis: |
+    ### Agent spawning (adapter/agent/spawner.go)
+    - `SpawnDeveloper(ctx, project, trackID, model)` — spawns one-shot developer agent
+    - Fire-and-forget with completion callback: `spawner.SetCompletionCallback(func(agentID, ref, status))`
+    - Callback currently: updates board card, returns worktree to pool
+
+    ### Worktree pool (adapter/pool/pool.go)
+    - `DefaultMaxSize = 3` — fixed pool of git worktrees
+    - `Acquire()` / `Return()` semantics
+    - Pool size stored in pool.json
+
+    ### Implement service (core/service/implement_service.go)
+    - `ValidateTrack()` — checks track is pending/in-progress
+    - `HasConsent()` / `RecordConsent()` — user permission
+    - `MoveCardToInProgress()` / `MoveCardToDone()` — board state
+
+    ### Dependency graph (pkg/kf/deps.go)
+    - `ReadDepsFile()` → `DepsGraph map[string][]string`
+    - `AllDepsSatisfied(trackID, statusFn)` — checks if all deps completed
+    - `HasDeps(trackID)` — existence check
+    - No topological sort function exists yet
+
+    ### CLI (adapter/cli/implement.go)
+    - `kf implement <track-id>` — manual trigger
+    - Validates track, acquires worktree, spawns agent, registers callback
+
+    ### SQLite stores
+    - `agents` table — tracks running/completed agents
+    - `board_cards` table — Kanban state with `assigned_worker` field (currently unused)
+    - No queue table exists
+
+    ### Config (adapter/config/config.go)
+    - No `max_workers` or `queue_enabled` settings
+    - Would need new fields added
+
+    ### Key insight
+    The completion callback is the hook point for auto-spawning. When an agent finishes, the callback fires — this is where the queue checks for the next ready track and spawns.
+  acceptance_criteria:
+    - "New config fields: max_workers (int, default 3), queue_enabled (bool, default false)"
+    - "SQLite queue table stores enqueued tracks with status (queued, assigned, completed, failed)"
+    - "Queue service exposes: Enqueue(trackID), EnqueueReady(projectSlug), Next(), Dequeue(trackID)"
+    - "Next() returns the highest-priority ready track (all deps completed, not already assigned)"
+    - "Semaphore enforced: never more than max_workers developer agents running simultaneously"
+    - "Auto-spawn: when an agent completes and queue is non-empty, next ready track is automatically spawned"
+    - "Dependency re-evaluation: when a track completes, blocked tracks in the queue are re-checked for readiness"
+    - "REST API: POST /api/queue/start, POST /api/queue/stop, GET /api/queue, PATCH /api/queue/settings"
+    - "SSE events emitted for queue state changes (track assigned, queue empty, worker freed)"
+    - "Queue respects existing merge lock — only one merge at a time regardless of concurrent workers"
+    - "OpenAPI schema updated before implementation (schema-first)"
+  out_of_scope: |
+    - Frontend UI for the queue (separate FE track)
+    - Priority ordering beyond dependency topological sort
+    - Track selection UI (enqueue all ready tracks by default)
+    - Reviewer agent scheduling (only developer agents)
+    - Modifying the kf-developer skill (agents still use the same skill, just auto-spawned)
+  technical_notes: |
+    ### Architecture
+
+    ```
+    QueueService (core/service/)
+      ├── queue store (SQLite)
+      ├── semaphore (counting, max_workers)
+      ├── deps resolver (pkg/kf deps graph)
+      └── spawner integration (completion callback chain)
+
+    Flow:
+      User → POST /api/queue/start → QueueService.Start()
+        → EnqueueReady() — find all ready tracks, add to queue
+        → SpawnUpToLimit() — spawn agents up to semaphore limit
+        → Agent completes → callback → QueueService.OnAgentComplete()
+          → ReturnWorktree, UpdateBoard
+          → Re-evaluate deps (newly unblocked tracks)
+          → SpawnNext() if slot available and queue non-empty
+    ```
+
+    ### Queue store schema
+
+    ```sql
+    CREATE TABLE queue_items (
+      track_id TEXT PRIMARY KEY,
+      project_slug TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'queued',  -- queued, assigned, completed, failed
+      agent_id TEXT,
+      enqueued_at TEXT NOT NULL,
+      assigned_at TEXT,
+      completed_at TEXT
+    );
+    ```
+
+    ### Semaphore implementation
+
+    Simple counting semaphore using active agent count:
+    ```go
+    func (q *QueueService) availableSlots() int {
+      active := q.agentStore.CountByStatus("running")
+      return q.maxWorkers - active
+    }
+    ```
+
+    No need for a Go channel-based semaphore — the queue is event-driven (fires on completion callback), not goroutine-based.
+
+    ### Topological ordering
+
+    For queue ordering, use Kahn's algorithm on the deps graph:
+    1. Build in-degree map from deps.yaml
+    2. Start with tracks having in-degree 0 (no deps or all deps completed)
+    3. These are "ready" — enqueue in creation-date order as tiebreaker
+    4. When a track completes, decrement in-degree of dependents
+    5. Newly zero-in-degree tracks become ready
+
+    ### Completion callback chain
+
+    Current callback:
+    ```go
+    spawner.SetCompletionCallback(func(agentID, ref, status) {
+      implSvc.MoveCardToDone(proj.Slug, ref)
+      pool.ReturnByTrackID(ref)
+    })
+    ```
+
+    Extended with queue:
+    ```go
+    spawner.SetCompletionCallback(func(agentID, ref, status) {
+      implSvc.MoveCardToDone(proj.Slug, ref)
+      pool.ReturnByTrackID(ref)
+      if queueSvc.IsRunning() {
+        queueSvc.OnAgentComplete(ref, status) // re-evaluate + spawn next
+      }
+    })
+    ```
+
+    ### API endpoints
+
+    ```yaml
+    POST /api/queue/start    — Start queue (enqueue all ready tracks, begin spawning)
+    POST /api/queue/stop     — Stop queue (no new spawns, running agents finish normally)
+    GET  /api/queue          — Queue status (items, active workers, max workers)
+    PATCH /api/queue/settings — Update max_workers
+    ```
+plan:
+  - phase: "Schema and infrastructure"
+    tasks:
+      - text: "Add max_workers and queue_enabled fields to Config struct with defaults (3 and false)"
+        done: false
+      - text: "Add queue_items SQLite table with migration in sqlite/migrations.go"
+        done: false
+      - text: "Create QueueStore interface in core/port/ and SQLite implementation in persistence/sqlite/"
+        done: false
+      - text: "Update openapi.yaml with queue endpoints (POST /start, POST /stop, GET /, PATCH /settings) and schemas"
+        done: false
+      - text: "Run make gen-api to regenerate server code"
+        done: false
+  - phase: "Queue service core"
+    tasks:
+      - text: "Implement QueueService in core/service/ — Enqueue, EnqueueReady, Next, OnAgentComplete, SpawnNext, availableSlots"
+        done: false
+      - text: "Implement topological sort for dependency-aware ordering using Kahn's algorithm on deps graph"
+        done: false
+      - text: "Wire completion callback chain — extend existing spawner callback to call QueueService.OnAgentComplete when queue is active"
+        done: false
+  - phase: "REST API and SSE"
+    tasks:
+      - text: "Implement queue API handlers — start, stop, status, settings update"
+        done: false
+      - text: "Add SSE event types for queue state changes: queue-started, queue-stopped, track-assigned, track-completed, worker-freed"
+        done: false
+      - text: "Wire queue service into server startup (rest/server.go) with config-gated initialization"
+        done: false
+  - phase: "Testing and verification"
+    tasks:
+      - text: "Unit tests for QueueService — enqueue, next, semaphore enforcement, dependency re-evaluation"
+        done: false
+      - text: "Unit tests for topological sort with cycles detection, diamond deps, and independent tracks"
+        done: false
+      - text: "Integration test: simulate agent completion → queue auto-spawns next → verify semaphore not exceeded"
+        done: false
+extra: {}
