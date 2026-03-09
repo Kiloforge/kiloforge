@@ -99,13 +99,18 @@ func (sm *SessionManager) BroadcastToAgent(agentID string, msg []byte) {
 	}
 }
 
+// InputHandler processes user input for an agent. SDK-based agents use this
+// to route input through client.Query() instead of raw stdin pipes.
+type InputHandler func(text string) error
+
 // Bridge manages the IO between an interactive agent process and WebSocket clients.
 type Bridge struct {
-	AgentID string
-	Stdin   io.WriteCloser // write to agent's stdin
-	Buffer  *RingBuffer    // output ring buffer for reconnection
-	Done    <-chan struct{} // closed when agent exits
-	mu      sync.Mutex
+	AgentID      string
+	Stdin        io.WriteCloser // write to agent's stdin (legacy)
+	InputHandler InputHandler   // SDK-based input handler (takes precedence over Stdin)
+	Buffer       *RingBuffer    // output ring buffer for reconnection
+	Done         <-chan struct{} // closed when agent exits
+	mu           sync.Mutex
 }
 
 // NewBridge creates a new bridge for an interactive agent.
@@ -118,12 +123,30 @@ func NewBridge(agentID string, stdin io.WriteCloser, done <-chan struct{}) *Brid
 	}
 }
 
-// WriteInput sends user input to the agent's stdin.
+// NewSDKBridge creates a bridge for an SDK-based interactive agent.
+// Input is routed through the InputHandler instead of a raw stdin pipe.
+func NewSDKBridge(agentID string, handler InputHandler, done <-chan struct{}) *Bridge {
+	return &Bridge{
+		AgentID:      agentID,
+		InputHandler: handler,
+		Buffer:       NewRingBuffer(500),
+		Done:         done,
+	}
+}
+
+// WriteInput sends user input to the agent.
+// Uses InputHandler if set (SDK mode), otherwise writes to Stdin (legacy mode).
 func (b *Bridge) WriteInput(text string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	_, err := io.WriteString(b.Stdin, text+"\n")
-	return err
+	if b.InputHandler != nil {
+		return b.InputHandler(text)
+	}
+	if b.Stdin != nil {
+		_, err := io.WriteString(b.Stdin, text+"\n")
+		return err
+	}
+	return nil
 }
 
 // StartOutputRelay reads from an output channel (from InteractiveAgent) and
@@ -136,6 +159,20 @@ func (sm *SessionManager) StartOutputRelay(agentID string, output <-chan []byte)
 	}
 	for text := range output {
 		msg := OutputMsg(string(text))
+		bridge.Buffer.Write(msg)
+		sm.BroadcastToAgent(agentID, msg)
+	}
+}
+
+// StartStructuredRelay reads pre-serialized JSON messages from a channel
+// and broadcasts them to WebSocket clients. Used by SDK-based agents that
+// produce structured messages (turn_start, text, tool_use, etc.).
+func (sm *SessionManager) StartStructuredRelay(agentID string, messages <-chan []byte) {
+	bridge, ok := sm.GetBridge(agentID)
+	if !ok {
+		return
+	}
+	for msg := range messages {
 		bridge.Buffer.Write(msg)
 		sm.BroadcastToAgent(agentID, msg)
 	}

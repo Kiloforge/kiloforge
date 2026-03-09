@@ -369,12 +369,12 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 		return gen.SpawnInteractiveAgent500JSONResponse{Error: err.Error()}, nil
 	}
 
-	// Create bridge and register with WS session manager.
-	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	// Create SDK bridge and register with WS session manager.
+	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start output relay in background.
-	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background.
+	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
 
 	return gen.SpawnInteractiveAgent201JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
 }
@@ -1383,11 +1383,11 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 	}
 
 	// Create bridge and register with WS session manager.
-	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start output relay in background.
-	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background.
+	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
 
 	// Auto-sync board when track-gen agent completes.
 	if projectSlug != "" && h.boardSvc != nil {
@@ -1517,11 +1517,11 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 	h.adminMu.Unlock()
 
 	// Create bridge and register with WS session manager.
-	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start output relay in background.
-	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background.
+	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
 
 	// Clear concurrency guard and auto-sync board on completion.
 	go func() {
@@ -1775,11 +1775,11 @@ func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProject
 	}
 
 	// Create bridge and register with WS session manager.
-	bridge := wsAdapter.NewBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
-	// Start output relay in background.
-	go h.wsSessions.StartOutputRelay(ia.Info.ID, ia.Output)
+	// Start structured message relay in background.
+	go h.wsSessions.StartStructuredRelay(ia.Info.ID, ia.Output)
 
 	wsURL := fmt.Sprintf("/ws/agent/%s", ia.Info.ID)
 

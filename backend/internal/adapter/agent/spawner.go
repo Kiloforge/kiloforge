@@ -1,12 +1,9 @@
 package agent
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,6 +11,7 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/prereq"
 	"kiloforge/internal/adapter/skills"
+	"kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 
@@ -70,13 +68,10 @@ type Spawner struct {
 	completionCallback CompletionCallback
 }
 
-// NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
-func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker) *Spawner {
-	return &Spawner{cfg: cfg, store: store, tracker: tracker, tracer: port.NoopTracer{}}
-}
-
 // CleanClaudeEnv returns os.Environ() with Claude-internal env vars removed
 // to prevent "nested session" detection in child claude processes.
+// Deprecated: The SDK handles environment cleaning automatically for SDK-based agents.
+// This function is retained for non-SDK callers (e.g., direct exec.Command usage in server.go).
 func CleanClaudeEnv() []string {
 	var env []string
 	for _, e := range os.Environ() {
@@ -87,6 +82,11 @@ func CleanClaudeEnv() []string {
 		env = append(env, e)
 	}
 	return env
+}
+
+// NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
+func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker) *Spawner {
+	return &Spawner{cfg: cfg, store: store, tracker: tracker, tracer: port.NoopTracer{}}
 }
 
 // SetTracer sets the distributed tracer for agent lifecycle spans.
@@ -130,8 +130,7 @@ func (s *Spawner) checkQuota() error {
 	return nil
 }
 
-// SpawnReviewer launches a Claude agent to review a PR.
-// The projectDir parameter specifies the working directory for the agent.
+// SpawnReviewer launches a Claude agent to review a PR using the SDK Query function.
 func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error) {
 	if err := s.checkAuth(ctx); err != nil {
 		return nil, err
@@ -151,9 +150,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 	prompt := fmt.Sprintf("/kf-reviewer %s", prURL)
 
-	// Use current working directory as project dir (will be improved with 'kf add').
 	projectDir, _ := os.Getwd()
-
 	model := s.cfg.Model
 
 	info := domain.AgentInfo{
@@ -170,32 +167,6 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		Model:       model,
 	}
 
-	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
-	if model != "" {
-		args = append([]string{"--model", model}, args...)
-	}
-	cmd := exec.CommandContext(ctx, "claude", args...)
-	cmd.Dir = projectDir
-	cmd.Env = CleanClaudeEnv()
-
-	lf, err := os.Create(logFile)
-	if err != nil {
-		return nil, fmt.Errorf("create log file: %w", err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		lf.Close()
-		return nil, fmt.Errorf("stdout pipe: %w", err)
-	}
-	cmd.Stderr = lf
-
-	if err := cmd.Start(); err != nil {
-		lf.Close()
-		return nil, fmt.Errorf("start claude: %w", err)
-	}
-
-	info.PID = cmd.Process.Pid
 	s.store.AddAgent(info)
 	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
@@ -206,12 +177,11 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "reviewer"),
 		port.StringAttr("agent.ref", info.Ref),
-		port.IntAttr("agent.pid", cmd.Process.Pid),
 		port.StringAttr("session.id", sessionID),
 	)
-	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
+	span.AddEvent("agent.spawned")
 
-	go s.monitorAgent(agentID, stdout, lf, cmd, span)
+	go s.runSDKAgent(ctx, agentID, info.Ref, prompt, projectDir, model, logFile, span)
 
 	return &info, nil
 }
@@ -225,7 +195,7 @@ type SpawnDeveloperOpts struct {
 	Model       string // claude model alias (e.g., "opus", "sonnet")
 }
 
-// SpawnDeveloper launches a Claude agent to implement a track.
+// SpawnDeveloper launches a Claude agent to implement a track using the SDK Query function.
 func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*domain.AgentInfo, error) {
 	if err := s.checkAuth(ctx); err != nil {
 		return nil, err
@@ -273,32 +243,6 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		Model:       model,
 	}
 
-	args := []string{"-p", prompt, "--session-id", sessionID, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
-	if model != "" {
-		args = append([]string{"--model", model}, args...)
-	}
-	cmd := exec.CommandContext(ctx, "claude", args...)
-	cmd.Dir = workDir
-	cmd.Env = CleanClaudeEnv()
-
-	lf, err := os.Create(logFile)
-	if err != nil {
-		return nil, fmt.Errorf("create log file: %w", err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		lf.Close()
-		return nil, fmt.Errorf("stdout pipe: %w", err)
-	}
-	cmd.Stderr = lf
-
-	if err := cmd.Start(); err != nil {
-		lf.Close()
-		return nil, fmt.Errorf("start claude: %w", err)
-	}
-
-	info.PID = cmd.Process.Pid
 	s.store.AddAgent(info)
 	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
@@ -309,34 +253,57 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "developer"),
 		port.StringAttr("agent.ref", opts.TrackID),
-		port.IntAttr("agent.pid", cmd.Process.Pid),
 		port.StringAttr("agent.worktree", workDir),
 		port.StringAttr("session.id", sessionID),
 	)
-	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
+	span.AddEvent("agent.spawned")
 
-	go s.monitorAgent(agentID, stdout, lf, cmd, span)
+	go s.runSDKAgent(ctx, agentID, opts.TrackID, prompt, workDir, model, logFile, span)
 
 	return &info, nil
+}
+
+// runSDKAgent executes a one-shot SDK Query and updates agent state on completion.
+func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir, model, logFile string, span port.SpanEnder) {
+	defer span.End()
+
+	finalStatus, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span)
+	if err != nil {
+		finalStatus = "failed"
+		s.store.UpdateStatus(agentID, finalStatus)
+		span.AddEvent("agent.failed")
+		span.SetError(err)
+	} else {
+		s.store.UpdateStatus(agentID, finalStatus)
+		span.AddEvent("agent." + finalStatus)
+	}
+	_ = s.store.Save()
+
+	if s.tracker != nil {
+		_ = s.tracker.Save()
+	}
+
+	s.onCompletion(agentID, ref, finalStatus)
 }
 
 // SpawnInteractiveOpts configures an interactive agent spawn.
 type SpawnInteractiveOpts struct {
 	WorkDir string // working directory; defaults to cwd
 	Model   string // claude model alias
-	Prompt  string // initial prompt; if set, passed via -p flag
+	Prompt  string // initial prompt; if set, sent as the first query
 	Ref     string // ref label (e.g., "track-gen"); defaults to "interactive"
 }
 
 // InteractiveAgent represents a running interactive Claude agent with IO handles.
 type InteractiveAgent struct {
-	Info   domain.AgentInfo
-	Stdin  io.WriteCloser // write to agent's stdin
-	Output <-chan []byte   // parsed text output as WS-ready messages
-	Done   chan struct{}   // closed when agent exits
+	Info         domain.AgentInfo
+	Stdin        ws.InputHandler // SDK-based input handler
+	Output       <-chan []byte   // structured messages for WS relay
+	Done         chan struct{}   // closed when agent exits
+	sdkSession   *SDKSession    // SDK session for turn-based input
 }
 
-// SpawnInteractive launches a Claude agent in interactive mode with stdin connected.
+// SpawnInteractive launches a Claude agent in interactive mode using the SDK Client.
 func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpts) (*InteractiveAgent, error) {
 	if err := s.checkAuth(ctx); err != nil {
 		return nil, err
@@ -383,41 +350,27 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		Model:       model,
 	}
 
-	args := []string{"--session-id", sessionID, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
-	if model != "" {
-		args = append([]string{"--model", model}, args...)
+	// Create SDK session.
+	session, err := NewSDKSession(ctx, workDir, model, logFile)
+	if err != nil {
+		return nil, fmt.Errorf("create SDK session: %w", err)
 	}
-	if opts.Prompt != "" {
-		args = append(args, "-p", opts.Prompt)
-	}
-	cmd := exec.CommandContext(ctx, "claude", args...)
-	cmd.Dir = workDir
-	cmd.Env = CleanClaudeEnv()
 
+	// Open log file for structured output.
 	lf, err := os.Create(logFile)
 	if err != nil {
+		session.Close()
 		return nil, fmt.Errorf("create log file: %w", err)
 	}
+	session.SetLogFile(lf)
 
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
+	// Connect to Claude CLI.
+	if err := session.Connect(ctx); err != nil {
 		lf.Close()
-		return nil, fmt.Errorf("stdin pipe: %w", err)
+		session.Close()
+		return nil, fmt.Errorf("SDK connect: %w", err)
 	}
 
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		lf.Close()
-		return nil, fmt.Errorf("stdout pipe: %w", err)
-	}
-	cmd.Stderr = lf
-
-	if err := cmd.Start(); err != nil {
-		lf.Close()
-		return nil, fmt.Errorf("start claude: %w", err)
-	}
-
-	info.PID = cmd.Process.Pid
 	s.store.AddAgent(info)
 	if err := s.store.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
@@ -427,133 +380,49 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		port.StringAttr("agent.id", agentID),
 		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "interactive"),
-		port.IntAttr("agent.pid", cmd.Process.Pid),
 		port.StringAttr("session.id", sessionID),
 	)
-	span.AddEvent("agent.spawned", port.IntAttr("pid", cmd.Process.Pid))
+	span.AddEvent("agent.spawned")
 
-	output := make(chan []byte, 100)
-	done := make(chan struct{})
+	// If initial prompt is set, send the first query.
+	if opts.Prompt != "" {
+		if err := session.Query(ctx, opts.Prompt, s.tracker, agentID, span); err != nil {
+			span.End()
+			session.Close()
+			return nil, fmt.Errorf("initial query: %w", err)
+		}
+	}
 
-	go s.monitorInteractive(agentID, stdout, lf, cmd, span, output, done)
+	// Create input handler that sends subsequent queries via SDK.
+	inputHandler := func(text string) error {
+		return session.Query(ctx, text, s.tracker, agentID, span)
+	}
+
+	// Monitor session lifecycle in background.
+	go s.monitorSDKSession(agentID, ref, session, span)
 
 	return &InteractiveAgent{
-		Info:   info,
-		Stdin:  stdin,
-		Output: output,
-		Done:   done,
+		Info:       info,
+		Stdin:      inputHandler,
+		Output:     session.Output(),
+		Done:       session.done,
+		sdkSession: session,
 	}, nil
 }
 
-// monitorInteractive reads stdout from an interactive agent, extracts text
-// for WebSocket broadcast, and tracks quota usage.
-func (s *Spawner) monitorInteractive(agentID string, stdout io.Reader, lf *os.File, cmd *exec.Cmd, span port.SpanEnder, output chan<- []byte, done chan struct{}) {
-	defer lf.Close()
-	defer span.End()
-	defer close(done)
-	defer close(output)
+// monitorSDKSession waits for the SDK session to end and updates agent state.
+func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, span port.SpanEnder) {
+	<-session.ctx.Done()
 
-	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Fprintln(lf, line)
+	span.AddEvent("agent.completed")
+	span.End()
 
-		if s.tracker != nil {
-			if ev, err := ParseStreamLine(line); err == nil {
-				s.tracker.RecordEvent(agentID, ev)
-				if ev.Type == "result" && ev.Usage != nil {
-					span.SetAttributes(
-						port.IntAttr("tokens.input", ev.Usage.InputTokens),
-						port.IntAttr("tokens.output", ev.Usage.OutputTokens),
-						port.IntAttr("tokens.cache_read", ev.Usage.CacheReadTokens),
-						port.IntAttr("tokens.cache_create", ev.Usage.CacheCreationTokens),
-						port.Float64Attr("cost.usd", ev.CostUSD),
-					)
-				}
-			}
-		}
-
-		// Extract displayable text and send to output channel.
-		if text := ExtractText(line); text != "" {
-			// Non-blocking send — drop if channel is full.
-			select {
-			case output <- []byte(text):
-			default:
-			}
-		}
-	}
-
-	var finalStatus string
-	if err := cmd.Wait(); err != nil {
-		finalStatus = "failed"
-		s.store.UpdateStatus(agentID, finalStatus)
-		span.AddEvent("agent.failed")
-		span.SetError(err)
-	} else {
-		finalStatus = "completed"
-		s.store.UpdateStatus(agentID, finalStatus)
-		span.AddEvent("agent.completed")
-	}
+	s.store.UpdateStatus(agentID, "completed")
 	_ = s.store.Save()
 
 	if s.tracker != nil {
 		_ = s.tracker.Save()
 	}
 
-	s.onCompletion(agentID, "interactive", finalStatus)
-}
-
-// monitorAgent reads stdout from a CC process, logs each line, parses stream
-// events for the quota tracker, and updates agent status on completion.
-func (s *Spawner) monitorAgent(agentID string, stdout io.Reader, lf *os.File, cmd *exec.Cmd, span port.SpanEnder) {
-	defer lf.Close()
-	defer span.End()
-
-	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Fprintln(lf, line)
-
-		if s.tracker != nil {
-			if ev, err := ParseStreamLine(line); err == nil {
-				s.tracker.RecordEvent(agentID, ev)
-				if ev.Type == "result" && ev.Usage != nil {
-					span.SetAttributes(
-						port.IntAttr("tokens.input", ev.Usage.InputTokens),
-						port.IntAttr("tokens.output", ev.Usage.OutputTokens),
-						port.IntAttr("tokens.cache_read", ev.Usage.CacheReadTokens),
-						port.IntAttr("tokens.cache_create", ev.Usage.CacheCreationTokens),
-						port.Float64Attr("cost.usd", ev.CostUSD),
-					)
-				}
-			}
-		}
-	}
-
-	// Determine final status and get agent ref for callback.
-	var finalStatus string
-	if err := cmd.Wait(); err != nil {
-		finalStatus = "failed"
-		s.store.UpdateStatus(agentID, finalStatus)
-		span.AddEvent("agent.failed")
-		span.SetError(err)
-	} else {
-		finalStatus = "completed"
-		s.store.UpdateStatus(agentID, finalStatus)
-		span.AddEvent("agent.completed")
-	}
-	_ = s.store.Save()
-
-	if s.tracker != nil {
-		_ = s.tracker.Save()
-	}
-
-	// Look up the agent ref (track ID) for the callback.
-	ref := ""
-	if a, err := s.store.FindAgent(agentID); err == nil {
-		ref = a.Ref
-	}
-	s.onCompletion(agentID, ref, finalStatus)
+	s.onCompletion(agentID, ref, "completed")
 }

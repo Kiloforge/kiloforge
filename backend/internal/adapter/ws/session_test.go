@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"io"
 	"testing"
 )
@@ -62,6 +63,26 @@ func TestBridge_WriteInput(t *testing.T) {
 	}
 }
 
+func TestSDKBridge_WriteInput(t *testing.T) {
+	t.Parallel()
+
+	var received string
+	handler := func(text string) error {
+		received = text
+		return nil
+	}
+
+	done := make(chan struct{})
+	bridge := NewSDKBridge("test-sdk", handler, done)
+
+	if err := bridge.WriteInput("hello SDK"); err != nil {
+		t.Fatalf("WriteInput: %v", err)
+	}
+	if received != "hello SDK" {
+		t.Errorf("got %q, want %q", received, "hello SDK")
+	}
+}
+
 func TestStartOutputRelay(t *testing.T) {
 	t.Parallel()
 
@@ -86,6 +107,28 @@ func TestStartOutputRelay(t *testing.T) {
 	}
 }
 
+func TestStartStructuredRelay(t *testing.T) {
+	t.Parallel()
+
+	sm := NewSessionManager()
+	done := make(chan struct{})
+	bridge := NewSDKBridge("sdk-agent", nil, done)
+	sm.RegisterBridge("sdk-agent", bridge)
+
+	messages := make(chan []byte, 5)
+	messages <- TurnStartMsg("turn-1")
+	messages <- TextMsg("hello", "turn-1")
+	messages <- TurnEndMsg("turn-1", 0.05, nil)
+	close(messages)
+
+	sm.StartStructuredRelay("sdk-agent", messages)
+
+	lines := bridge.Buffer.Lines()
+	if len(lines) != 3 {
+		t.Fatalf("buffer lines = %d, want 3", len(lines))
+	}
+}
+
 func TestMessage_Constructors(t *testing.T) {
 	t.Parallel()
 
@@ -102,5 +145,107 @@ func TestMessage_Constructors(t *testing.T) {
 	errMsg := ErrorMsg("something broke")
 	if len(errMsg) == 0 {
 		t.Error("empty error message")
+	}
+}
+
+func TestEnrichedMessage_Constructors(t *testing.T) {
+	t.Parallel()
+
+	// TurnStart
+	ts := TurnStartMsg("turn-1")
+	var tsMsg TurnStartMessage
+	if err := json.Unmarshal(ts, &tsMsg); err != nil {
+		t.Fatalf("unmarshal TurnStart: %v", err)
+	}
+	if tsMsg.Type != MsgTurnStart {
+		t.Errorf("type = %q, want %q", tsMsg.Type, MsgTurnStart)
+	}
+	if tsMsg.TurnID != "turn-1" {
+		t.Errorf("turn_id = %q, want %q", tsMsg.TurnID, "turn-1")
+	}
+
+	// Text
+	txt := TextMsg("hello world", "turn-1")
+	var txtMsg TextMessage
+	if err := json.Unmarshal(txt, &txtMsg); err != nil {
+		t.Fatalf("unmarshal Text: %v", err)
+	}
+	if txtMsg.Type != MsgText {
+		t.Errorf("type = %q, want %q", txtMsg.Type, MsgText)
+	}
+	if txtMsg.Text != "hello world" {
+		t.Errorf("text = %q, want %q", txtMsg.Text, "hello world")
+	}
+
+	// ToolUse
+	tu := ToolUseMsg("Read", "toolu_123", "turn-1", map[string]string{"file": "test.go"})
+	var tuMsg ToolUseMessage
+	if err := json.Unmarshal(tu, &tuMsg); err != nil {
+		t.Fatalf("unmarshal ToolUse: %v", err)
+	}
+	if tuMsg.Type != MsgToolUse {
+		t.Errorf("type = %q, want %q", tuMsg.Type, MsgToolUse)
+	}
+	if tuMsg.ToolName != "Read" {
+		t.Errorf("tool_name = %q, want %q", tuMsg.ToolName, "Read")
+	}
+
+	// Thinking
+	th := ThinkingMsg("I am thinking...", "turn-1")
+	var thMsg ThinkingMessage
+	if err := json.Unmarshal(th, &thMsg); err != nil {
+		t.Fatalf("unmarshal Thinking: %v", err)
+	}
+	if thMsg.Type != MsgThinking {
+		t.Errorf("type = %q, want %q", thMsg.Type, MsgThinking)
+	}
+
+	// TurnEnd
+	usage := &UsageInfo{InputTokens: 100, OutputTokens: 50}
+	te := TurnEndMsg("turn-1", 0.034, usage)
+	var teMsg TurnEndMessage
+	if err := json.Unmarshal(te, &teMsg); err != nil {
+		t.Fatalf("unmarshal TurnEnd: %v", err)
+	}
+	if teMsg.Type != MsgTurnEnd {
+		t.Errorf("type = %q, want %q", teMsg.Type, MsgTurnEnd)
+	}
+	if teMsg.CostUSD != 0.034 {
+		t.Errorf("cost_usd = %f, want %f", teMsg.CostUSD, 0.034)
+	}
+	if teMsg.Usage == nil {
+		t.Fatal("usage is nil")
+	}
+	if teMsg.Usage.InputTokens != 100 {
+		t.Errorf("input_tokens = %d, want 100", teMsg.Usage.InputTokens)
+	}
+
+	// System
+	sys := SystemMsg("init", map[string]string{"version": "1.0"})
+	var sysMsg SystemNotification
+	if err := json.Unmarshal(sys, &sysMsg); err != nil {
+		t.Fatalf("unmarshal System: %v", err)
+	}
+	if sysMsg.Type != MsgSystem {
+		t.Errorf("type = %q, want %q", sysMsg.Type, MsgSystem)
+	}
+	if sysMsg.Subtype != "init" {
+		t.Errorf("subtype = %q, want %q", sysMsg.Subtype, "init")
+	}
+}
+
+func TestOutputMsg_BackwardCompat(t *testing.T) {
+	t.Parallel()
+
+	msg := OutputMsg("legacy text")
+	var m Message
+	if err := json.Unmarshal(msg, &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if m.Type != MsgOutput {
+		t.Errorf("type = %q, want %q", m.Type, MsgOutput)
+	}
+	if m.Text != "legacy text" {
+		t.Errorf("text = %q, want %q", m.Text, "legacy text")
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,6 +12,8 @@ import (
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
+
+	"github.com/schlunsen/claude-agent-sdk-go/types"
 )
 
 // stubAgentStore is a minimal port.AgentStore for tests that don't need persistence.
@@ -107,12 +108,10 @@ func TestSetTracer(t *testing.T) {
 	t.Parallel()
 
 	s := NewSpawner(&config.Config{}, nil, nil)
-	// Default tracer should be NoopTracer.
 	if s.tracer == nil {
 		t.Fatal("expected non-nil default tracer")
 	}
 
-	// SetTracer with nil should not replace the default.
 	s.SetTracer(nil)
 	if s.tracer == nil {
 		t.Fatal("SetTracer(nil) should not set nil")
@@ -133,7 +132,6 @@ func TestSetCompletionCallback(t *testing.T) {
 		gotStatus = status
 	})
 
-	// Invoke callback directly to test it's wired.
 	s.onCompletion("agent-123", "track-abc", "completed")
 
 	if !called {
@@ -154,14 +152,12 @@ func TestOnCompletion_NilCallback(t *testing.T) {
 	t.Parallel()
 
 	s := NewSpawner(&config.Config{}, nil, nil)
-	// Should not panic when no callback is set.
 	s.onCompletion("agent-123", "track-abc", "completed")
 }
 
 func TestCheckQuota_HighCostAllowed(t *testing.T) {
 	t.Parallel()
 
-	// Budget enforcement is deprecated — high cost should not block spawns.
 	tracker := NewQuotaTracker("")
 	tracker.RecordEvent("agent-1", StreamEvent{
 		Type:    "result",
@@ -179,63 +175,6 @@ func TestCheckQuota_HighCostAllowed(t *testing.T) {
 	}
 }
 
-func TestMonitorInteractive_ExtractsText(t *testing.T) {
-	t.Parallel()
-
-	// Use printf to emit stream-json lines that contain extractable text.
-	streamJSON := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"Hello from agent"}}
-{"type":"result","subtype":"success","total_cost_usd":0.01,"usage":{"input_tokens":100,"output_tokens":50}}
-`
-	cmd := exec.Command("printf", "%s", streamJSON)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	lf, err := os.CreateTemp(t.TempDir(), "monitor-*.log")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-
-	output := make(chan []byte, 10)
-	done := make(chan struct{})
-
-	s := &Spawner{
-		cfg:   &config.Config{},
-		store: nil,
-		tracer: port.NoopTracer{},
-	}
-
-	// monitorInteractive calls s.store.UpdateStatus — need a real store.
-	s.cfg.DataDir = t.TempDir()
-	s.store = &stubAgentStore{}
-
-	_, span := port.NoopTracer{}.StartSpan(nil, "test")
-
-	go s.monitorInteractive("test-agent", stdout, lf, cmd, span, output, done)
-
-	// Should receive the extracted text.
-	select {
-	case msg := <-output:
-		if string(msg) != "Hello from agent" {
-			t.Errorf("output = %q, want %q", msg, "Hello from agent")
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("timeout waiting for output")
-	}
-
-	// Wait for done signal.
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		t.Fatal("timeout waiting for done")
-	}
-}
-
 func TestValidateSkills_Developer(t *testing.T) {
 	t.Parallel()
 
@@ -243,7 +182,6 @@ func TestValidateSkills_Developer(t *testing.T) {
 	cfg := &config.Config{SkillsDir: globalDir}
 	s := NewSpawner(cfg, nil, nil)
 
-	// No skills installed — should return ErrSkillsMissing.
 	err := s.ValidateSkills("developer", "")
 	if err == nil {
 		t.Fatal("expected error when skills are missing")
@@ -256,12 +194,10 @@ func TestValidateSkills_Developer(t *testing.T) {
 		t.Errorf("unexpected missing skills: %v", errMissing.Missing)
 	}
 
-	// Install the skill globally.
 	devDir := filepath.Join(globalDir, "kf-developer")
 	os.MkdirAll(devDir, 0o755)
 	os.WriteFile(filepath.Join(devDir, "SKILL.md"), []byte("# Dev"), 0o644)
 
-	// Now should pass.
 	if err := s.ValidateSkills("developer", ""); err != nil {
 		t.Errorf("expected no error after install, got: %v", err)
 	}
@@ -279,7 +215,6 @@ func TestValidateSkills_Reviewer(t *testing.T) {
 		t.Fatal("expected error when reviewer skill is missing")
 	}
 
-	// Install locally.
 	workDir := t.TempDir()
 	localDir := filepath.Join(workDir, ".claude", "skills", "kf-reviewer")
 	os.MkdirAll(localDir, 0o755)
@@ -296,7 +231,6 @@ func TestValidateSkills_UnknownRole(t *testing.T) {
 	cfg := &config.Config{SkillsDir: t.TempDir()}
 	s := NewSpawner(cfg, nil, nil)
 
-	// Unknown role should not require any skills.
 	if err := s.ValidateSkills("unknown", ""); err != nil {
 		t.Errorf("unexpected error for unknown role: %v", err)
 	}
@@ -317,34 +251,115 @@ func TestErrSkillsMissing_Error(t *testing.T) {
 	}
 }
 
-func TestInteractiveAgent_DoneClosedOnExit(t *testing.T) {
+func TestResultToStreamEvent(t *testing.T) {
 	t.Parallel()
 
-	cmd := exec.Command("true")
-	stdout, _ := cmd.StdoutPipe()
-
-	lf, _ := os.CreateTemp(t.TempDir(), "monitor-*.log")
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
+	cost := 0.0342
+	result := &types.ResultMessage{
+		Type:         "result",
+		Subtype:      "success",
+		SessionID:    "sess-123",
+		TotalCostUSD: &cost,
+		Usage: map[string]interface{}{
+			"input_tokens":                float64(12500),
+			"output_tokens":               float64(3200),
+			"cache_read_input_tokens":     float64(8000),
+			"cache_creation_input_tokens": float64(1500),
+		},
 	}
 
-	output := make(chan []byte, 10)
-	done := make(chan struct{})
+	ev := resultToStreamEvent(result)
+	if ev.Type != "result" {
+		t.Errorf("Type: want %q, got %q", "result", ev.Type)
+	}
+	if ev.CostUSD != 0.0342 {
+		t.Errorf("CostUSD: want %f, got %f", 0.0342, ev.CostUSD)
+	}
+	if ev.Usage == nil {
+		t.Fatal("Usage is nil")
+	}
+	if ev.Usage.InputTokens != 12500 {
+		t.Errorf("InputTokens: want 12500, got %d", ev.Usage.InputTokens)
+	}
+	if ev.Usage.OutputTokens != 3200 {
+		t.Errorf("OutputTokens: want 3200, got %d", ev.Usage.OutputTokens)
+	}
+	if ev.Usage.CacheReadTokens != 8000 {
+		t.Errorf("CacheReadTokens: want 8000, got %d", ev.Usage.CacheReadTokens)
+	}
+	if ev.Usage.CacheCreationTokens != 1500 {
+		t.Errorf("CacheCreationTokens: want 1500, got %d", ev.Usage.CacheCreationTokens)
+	}
+}
 
-	s := &Spawner{
-		cfg:    &config.Config{DataDir: t.TempDir()},
-		store:  &stubAgentStore{},
-		tracer: port.NoopTracer{},
+func TestResultToStreamEvent_NilCost(t *testing.T) {
+	t.Parallel()
+
+	result := &types.ResultMessage{
+		Type:    "result",
+		Subtype: "error_during_execution",
 	}
 
-	_, span := port.NoopTracer{}.StartSpan(nil, "test")
+	ev := resultToStreamEvent(result)
+	if ev.CostUSD != 0 {
+		t.Errorf("CostUSD: want 0, got %f", ev.CostUSD)
+	}
+	if ev.Usage != nil {
+		t.Error("Usage should be nil")
+	}
+}
 
-	go s.monitorInteractive("test-agent", stdout, lf, cmd, span, output, done)
+func TestExtractUsageInfo(t *testing.T) {
+	t.Parallel()
 
-	select {
-	case <-done:
-		// Success — done channel closed when process exits.
-	case <-time.After(5 * time.Second):
-		t.Fatal("timeout waiting for done")
+	if got := extractUsageInfo(nil); got != nil {
+		t.Errorf("expected nil, got %v", got)
+	}
+
+	usage := map[string]interface{}{
+		"input_tokens":                float64(100),
+		"output_tokens":               float64(50),
+		"cache_read_input_tokens":     float64(200),
+		"cache_creation_input_tokens": float64(10),
+	}
+	info := extractUsageInfo(usage)
+	if info == nil {
+		t.Fatal("expected non-nil UsageInfo")
+	}
+	if info.InputTokens != 100 {
+		t.Errorf("InputTokens = %d, want 100", info.InputTokens)
+	}
+	if info.OutputTokens != 50 {
+		t.Errorf("OutputTokens = %d, want 50", info.OutputTokens)
+	}
+	if info.CacheReadTokens != 200 {
+		t.Errorf("CacheReadTokens = %d, want 200", info.CacheReadTokens)
+	}
+	if info.CacheCreationTokens != 10 {
+		t.Errorf("CacheCreationTokens = %d, want 10", info.CacheCreationTokens)
+	}
+}
+
+func TestIntFromMap(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]interface{}{
+		"float":   float64(42),
+		"int":     int(7),
+		"string":  "not a number",
+		"missing": nil,
+	}
+
+	if got := intFromMap(m, "float"); got != 42 {
+		t.Errorf("float: got %d, want 42", got)
+	}
+	if got := intFromMap(m, "int"); got != 7 {
+		t.Errorf("int: got %d, want 7", got)
+	}
+	if got := intFromMap(m, "string"); got != 0 {
+		t.Errorf("string: got %d, want 0", got)
+	}
+	if got := intFromMap(m, "nonexistent"); got != 0 {
+		t.Errorf("nonexistent: got %d, want 0", got)
 	}
 }
