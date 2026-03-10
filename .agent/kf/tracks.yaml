@@ -24,7 +24,7 @@ board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Co
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
-ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}

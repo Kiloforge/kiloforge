@@ -32,9 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-
-ci-reliability-hardening_20260310001316Z: []
-
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
 work-queue-be_20260311010002Z: []
