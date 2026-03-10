@@ -1,5 +1,5 @@
 id: fix-build-outside-worktree_20260310040000Z
-title: "Fix Go Build VCS Detection Outside Worktrees"
+title: Fix Go Build VCS Detection Outside Worktrees
 type: bug
 status: pending
 created: 2026-03-10
@@ -14,27 +14,27 @@ spec:
     GIT_DIR and GIT_WORK_TREE env vars to make Go's VCS stamping work inside worktrees.
     However, when `make build` is run from the bare repo root (which is not a proper
     worktree), Go's internal `git status` call fails with exit code 128, breaking the build.
-
+    
     The build already stamps version/commit/date via ldflags, so -buildvcs only adds the
     `vcs.modified` dirty flag. When VCS detection is unavailable, falling back to
     -buildvcs=false loses only the dirty flag — an acceptable tradeoff.
-
+    
     The build style guide says "Never use -buildvcs=false in local builds" but this
     policy doesn't account for the bare repo root case where VCS detection is genuinely
     impossible. The guide should be updated to reflect the fallback behavior.
   codebase_analysis: |
     Affected file: Makefile (root)
-
+    
     The build-backend target (line 27-29):
       cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
           go build -ldflags "..." -o ../$(BINARY) ./cmd/kf
-
+    
     Same GIT_DIR/GIT_WORK_TREE pattern used in: test, test-smoke, test-integration,
     test-e2e, test-all, test-coverage targets (lines 38-67).
-
+    
     Build style guide: .agent/kf/code_styleguides/build.md (VCS Stamping section)
     Build smoke test: backend/cmd/kf/main_test.go (uses gitCommonDir/gitWorkTree helpers)
-
+    
     The GIT_DIR/GIT_WORK_TREE approach works in worktrees but fails at the bare repo root
     where git status returns exit 128 despite the env vars being set.
   acceptance_criteria:
@@ -52,41 +52,41 @@ spec:
   technical_notes: |
     Approach: Add a Makefile variable that probes VCS availability and conditionally
     sets -buildvcs=false.
-
+    
     Implementation: Define a helper variable or inline check:
       BUILDVCS := $(shell cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) \
           GIT_WORK_TREE=$$(cd .. && pwd) git status --porcelain >/dev/null 2>&1 \
           && echo "" || echo "-buildvcs=false")
-
+    
     Then use $(BUILDVCS) in the go build command. Same check applied to all go test
     targets.
-
+    
     Alternative (simpler): Use a shell conditional inline in the recipe:
       BUILDVCS=""; if ! GIT_DIR=... GIT_WORK_TREE=... git status >/dev/null 2>&1; then
         BUILDVCS="-buildvcs=false"; fi; go build $$BUILDVCS ...
-
+    
     Update build.md to document: "If VCS detection is unavailable (e.g., bare repo root),
     the build falls back to -buildvcs=false automatically. Version info is still stamped
     via ldflags."
 plan:
-  - phase: "Core Fix"
+  - phase: Core Fix
     tasks:
-      - text: "Add VCS availability detection to Makefile — probe git status in the build context and set BUILDVCS flag"
-        done: false
-      - text: "Update build-backend target to use the BUILDVCS flag in the go build command"
-        done: false
-      - text: "Update all go test targets (test, test-smoke, test-integration, test-e2e, test-all, test-coverage) to use the same BUILDVCS detection"
-        done: false
-  - phase: "Documentation"
+      - text: Add VCS availability detection to Makefile — probe git status in the build context and set BUILDVCS flag
+        done: true
+      - text: Update build-backend target to use the BUILDVCS flag in the go build command
+        done: true
+      - text: Update all go test targets (test, test-smoke, test-integration, test-e2e, test-all, test-coverage) to use the same BUILDVCS detection
+        done: true
+  - phase: Documentation
     tasks:
-      - text: "Update .agent/kf/code_styleguides/build.md VCS Stamping section to document the fallback behavior"
-        done: false
-  - phase: "Verification"
+      - text: Update .agent/kf/code_styleguides/build.md VCS Stamping section to document the fallback behavior
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Verify make build succeeds from a worktree (with VCS stamping active)"
-        done: false
-      - text: "Verify make build succeeds from the bare repo root (with -buildvcs=false fallback)"
-        done: false
-      - text: "Verify make test-smoke passes in both contexts"
-        done: false
+      - text: Verify make build succeeds from a worktree (with VCS stamping active)
+        done: true
+      - text: Verify make build succeeds from the bare repo root (with -buildvcs=false fallback)
+        done: true
+      - text: Verify make test-smoke passes in both contexts
+        done: true
 extra: {}
