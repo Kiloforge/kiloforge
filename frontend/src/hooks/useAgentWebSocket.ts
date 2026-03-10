@@ -201,5 +201,9 @@ export function useAgentWebSocket(agentId: string | null) {
     [],
   );
 
-  return { messages, sendMessage, status, agentStatus };
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, []);
+
+  return { messages, sendMessage, clearMessages, status, agentStatus };
 }

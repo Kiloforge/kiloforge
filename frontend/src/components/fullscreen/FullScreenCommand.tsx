@@ -1,7 +1,9 @@
-import { useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useCommandPanes } from "../../hooks/useCommandPanes";
+import { usePlatform } from "../../hooks/usePlatform";
 import type { Agent } from "../../types/api";
 import { SplitContainer } from "./SplitContainer";
+import { CommandModeHelp } from "./CommandModeHelp";
 import styles from "./FullScreenCommand.module.css";
 
 interface Props {
@@ -11,19 +13,45 @@ interface Props {
 
 export function FullScreenCommand({ agents, onExit }: Props) {
   const panes = useCommandPanes();
+  const { mod } = usePlatform();
+  const [showHelp, setShowHelp] = useState(false);
+  const clearFnsRef = useRef(new Map<string, () => void>());
+
+  const registerClear = useCallback((paneId: string, clearFn: () => void) => {
+    clearFnsRef.current.set(paneId, clearFn);
+    return () => { clearFnsRef.current.delete(paneId); };
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
+      const isMod = e.metaKey || e.ctrlKey;
 
-      // Escape exits full-screen mode
+      // Escape exits full-screen mode (or closes help first)
       if (e.key === "Escape") {
         e.preventDefault();
-        onExit();
+        if (showHelp) {
+          setShowHelp(false);
+        } else {
+          onExit();
+        }
         return;
       }
 
-      if (!mod) return;
+      if (!isMod) return;
+
+      // Cmd+? — toggle help panel
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        setShowHelp((v) => !v);
+        return;
+      }
+
+      // Cmd+K — clear active pane messages
+      if (e.key === "k" && !e.shiftKey) {
+        e.preventDefault();
+        clearFnsRef.current.get(panes.activePaneId)?.();
+        return;
+      }
 
       // Cmd+D — split vertical
       if (e.key === "d" && !e.shiftKey) {
@@ -61,7 +89,7 @@ export function FullScreenCommand({ agents, onExit }: Props) {
         return;
       }
     },
-    [onExit, panes],
+    [onExit, panes, showHelp],
   );
 
   useEffect(() => {
@@ -82,22 +110,30 @@ export function FullScreenCommand({ agents, onExit }: Props) {
           <button
             className={styles.splitBtn}
             onClick={() => panes.splitPane(panes.activePaneId, "horizontal")}
-            title="Split vertical (Cmd+D)"
+            title={`Split vertical (${mod}+D)`}
           >
             Split |
           </button>
           <button
             className={styles.splitBtn}
             onClick={() => panes.splitPane(panes.activePaneId, "vertical")}
-            title="Split horizontal (Cmd+Shift+D)"
+            title={`Split horizontal (${mod}+Shift+D)`}
           >
             Split —
+          </button>
+          <button
+            className={styles.helpBtn}
+            onClick={() => setShowHelp((v) => !v)}
+            title={`Keyboard shortcuts (${mod}+?)`}
+          >
+            ?
           </button>
           <button className={styles.exitBtn} onClick={onExit} title="Exit (Esc)">
             Exit
           </button>
         </div>
       </div>
+      {showHelp && <CommandModeHelp onClose={() => setShowHelp(false)} />}
       <div className={styles.content}>
         <SplitContainer
           node={panes.root}
@@ -110,6 +146,7 @@ export function FullScreenCommand({ agents, onExit }: Props) {
             if (lastClosed) onExit();
           }}
           leafCount={panes.leafCount}
+          onRegisterClear={registerClear}
         />
       </div>
     </div>

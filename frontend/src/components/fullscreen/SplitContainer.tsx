@@ -11,6 +11,7 @@ interface Props {
   onAgentChange: (paneId: string, agentId: string | null) => void;
   onClosePane: (id: string) => void;
   leafCount: number;
+  onRegisterClear?: (paneId: string, clearFn: () => void) => (() => void);
 }
 
 export function SplitContainer({
@@ -21,6 +22,7 @@ export function SplitContainer({
   onAgentChange,
   onClosePane,
   leafCount,
+  onRegisterClear,
 }: Props) {
   if (node.kind === "leaf") {
     return (
@@ -33,6 +35,7 @@ export function SplitContainer({
         onAgentChange={(agentId) => onAgentChange(node.id, agentId)}
         onClose={() => onClosePane(node.id)}
         showCloseBtn={leafCount > 1}
+        onRegisterClear={onRegisterClear}
       />
     );
   }
@@ -51,6 +54,7 @@ export function SplitContainer({
           onAgentChange={onAgentChange}
           onClosePane={onClosePane}
           leafCount={leafCount}
+          onRegisterClear={onRegisterClear}
         />
       </div>
       <div className={dividerClass} />
@@ -63,6 +67,7 @@ export function SplitContainer({
           onAgentChange={onAgentChange}
           onClosePane={onClosePane}
           leafCount={leafCount}
+          onRegisterClear={onRegisterClear}
         />
       </div>
     </div>

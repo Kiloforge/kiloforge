@@ -14,6 +14,7 @@ interface Props {
   onAgentChange: (agentId: string | null) => void;
   onClose: () => void;
   showCloseBtn: boolean;
+  onRegisterClear?: (paneId: string, clearFn: () => void) => (() => void);
 }
 
 function ConnectionDot({ status }: { status: WSConnectionState }) {
@@ -35,8 +36,9 @@ export function CommandPane({
   onAgentChange,
   onClose,
   showCloseBtn,
+  onRegisterClear,
 }: Props) {
-  const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
+  const { messages, sendMessage, clearMessages, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -52,6 +54,12 @@ export function CommandPane({
       inputRef.current?.focus();
     }
   }, [isFocused]);
+
+  // Register clear function for keyboard shortcut (Cmd+K)
+  useEffect(() => {
+    if (!onRegisterClear) return;
+    return onRegisterClear(paneId, clearMessages);
+  }, [paneId, clearMessages, onRegisterClear]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
@@ -107,11 +115,18 @@ export function CommandPane({
             </span>
           )}
         </div>
-        {showCloseBtn && (
-          <button className={styles.paneCloseBtn} onClick={onClose} title="Close pane">
-            &times;
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+          {messages.length > 0 && (
+            <button className={styles.paneClearBtn} onClick={clearMessages} title="Clear messages">
+              Clear
+            </button>
+          )}
+          {showCloseBtn && (
+            <button className={styles.paneCloseBtn} onClick={onClose} title="Close pane">
+              &times;
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={styles.messages}>
