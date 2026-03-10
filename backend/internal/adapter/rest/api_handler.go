@@ -63,6 +63,7 @@ type InteractiveSpawner interface {
 	SpawnInteractive(ctx context.Context, opts agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error)
 	StopAgent(id string) error
 	ResumeAgent(ctx context.Context, id string) (*agent.InteractiveAgent, error)
+	ResumeDeveloper(ctx context.Context, id string) (*domain.AgentInfo, error)
 	GetActiveAgent(id string) (*agent.InteractiveAgent, bool)
 	Capacity() domain.SwarmCapacity
 	CanSpawn() bool
@@ -620,31 +621,56 @@ func (h *APIHandler) StopAgent(_ context.Context, req gen.StopAgentRequestObject
 
 // ResumeAgent implements gen.StrictServerInterface.
 func (h *APIHandler) ResumeAgent(ctx context.Context, req gen.ResumeAgentRequestObject) (gen.ResumeAgentResponseObject, error) {
-	if h.interSpawner == nil || h.wsSessions == nil {
-		return gen.ResumeAgent409JSONResponse{Error: "interactive agents not configured"}, nil
+	if h.interSpawner == nil {
+		return gen.ResumeAgent409JSONResponse{Error: "agent spawner not configured"}, nil
 	}
 
-	ia, err := h.interSpawner.ResumeAgent(ctx, req.Id)
+	// Look up agent to determine resume strategy based on role.
+	a, err := h.agents.FindAgent(req.Id)
 	if err != nil {
-		if strings.Contains(err.Error(), "already running") {
+		return gen.ResumeAgent404JSONResponse{Error: "agent not found"}, nil
+	}
+
+	// Developer and reviewer agents use one-shot resume (no WS bridge).
+	switch a.Role {
+	case "developer", "reviewer":
+		info, err := h.interSpawner.ResumeDeveloper(ctx, req.Id)
+		if err != nil {
+			if strings.Contains(err.Error(), "already active") {
+				return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+			}
 			return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
 		}
-		if strings.Contains(err.Error(), "not found") {
-			return gen.ResumeAgent404JSONResponse{Error: err.Error()}, nil
+		return gen.ResumeAgent200JSONResponse(domainAgentToGen(*info, h.quota)), nil
+
+	default:
+		// Interactive agents require WS session manager.
+		if h.wsSessions == nil {
+			return gen.ResumeAgent409JSONResponse{Error: "interactive agents not configured"}, nil
 		}
-		return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+
+		ia, err := h.interSpawner.ResumeAgent(ctx, req.Id)
+		if err != nil {
+			if strings.Contains(err.Error(), "already running") {
+				return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+			}
+			if strings.Contains(err.Error(), "not found") {
+				return gen.ResumeAgent404JSONResponse{Error: err.Error()}, nil
+			}
+			return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+		}
+
+		// Create SDK bridge and register with WS session manager.
+		bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
+		h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
+
+		// Start structured message relay in background with cancellable context.
+		relayCtx, cancelRelay := context.WithCancel(context.Background())
+		ia.SetCancelRelay(cancelRelay)
+		go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
+
+		return gen.ResumeAgent200JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
 	}
-
-	// Create SDK bridge and register with WS session manager.
-	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
-	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
-
-	// Start structured message relay in background with cancellable context.
-	relayCtx, cancelRelay := context.WithCancel(context.Background())
-	ia.SetCancelRelay(cancelRelay)
-	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
-
-	return gen.ResumeAgent200JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
 }
 
 // DeleteAgent implements gen.StrictServerInterface.

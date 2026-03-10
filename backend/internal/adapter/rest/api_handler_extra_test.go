@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/rest/gen"
@@ -15,6 +16,38 @@ import (
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 )
+
+// stubInteractiveSpawner implements InteractiveSpawner for testing.
+type stubInteractiveSpawner struct {
+	resumeDevResult *domain.AgentInfo
+	resumeDevErr    error
+	resumeResult    *agent.InteractiveAgent
+	resumeErr       error
+}
+
+func (s *stubInteractiveSpawner) SpawnInteractive(_ context.Context, _ agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error) {
+	return nil, fmt.Errorf("not implemented in stub")
+}
+func (s *stubInteractiveSpawner) StopAgent(_ string) error { return nil }
+func (s *stubInteractiveSpawner) ResumeAgent(_ context.Context, _ string) (*agent.InteractiveAgent, error) {
+	if s.resumeErr != nil {
+		return nil, s.resumeErr
+	}
+	return s.resumeResult, nil
+}
+func (s *stubInteractiveSpawner) ResumeDeveloper(_ context.Context, _ string) (*domain.AgentInfo, error) {
+	if s.resumeDevErr != nil {
+		return nil, s.resumeDevErr
+	}
+	return s.resumeDevResult, nil
+}
+func (s *stubInteractiveSpawner) GetActiveAgent(_ string) (*agent.InteractiveAgent, bool) {
+	return nil, false
+}
+func (s *stubInteractiveSpawner) Capacity() domain.SwarmCapacity {
+	return domain.SwarmCapacity{Max: 6, Active: 0, Available: 6}
+}
+func (s *stubInteractiveSpawner) CanSpawn() bool { return true }
 
 // --- Consent stubs ---
 
@@ -478,6 +511,86 @@ func TestResumeAgent_NilSpawner(t *testing.T) {
 	}
 	if _, ok := resp.(gen.ResumeAgent409JSONResponse); !ok {
 		t.Fatalf("expected 409 when spawner is nil, got %T", resp)
+	}
+}
+
+func TestResumeAgent_DeveloperReturns200(t *testing.T) {
+	t.Parallel()
+	devAgent := domain.AgentInfo{
+		ID:        "dev-1",
+		Role:      "developer",
+		Status:    "suspended",
+		SessionID: "sess-1",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{agents: []domain.AgentInfo{devAgent}},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{
+			resumeDevResult: &domain.AgentInfo{
+				ID:     "dev-1",
+				Role:   "developer",
+				Status: "running",
+			},
+		},
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "dev-1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.ResumeAgent200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.Status != "running" {
+		t.Errorf("expected running, got %s", r.Status)
+	}
+}
+
+func TestResumeAgent_InteractiveRequiresWSSessions(t *testing.T) {
+	t.Parallel()
+	interAgent := domain.AgentInfo{
+		ID:        "ia-1",
+		Role:      "interactive",
+		Status:    "stopped",
+		SessionID: "sess-1",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{agents: []domain.AgentInfo{interAgent}},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+		// wsSessions is nil — interactive resume should fail
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "ia-1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ResumeAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409 when wsSessions is nil for interactive agent, got %T", resp)
+	}
+}
+
+func TestResumeAgent_NotFoundReturns404(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "nonexistent"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ResumeAgent404JSONResponse); !ok {
+		t.Fatalf("expected 404 for not found agent, got %T", resp)
 	}
 }
 
