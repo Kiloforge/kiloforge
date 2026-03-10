@@ -119,7 +119,7 @@ fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Er
 fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-track-progress_20260311110000Z: {"title":"Fix track progress — count archived as finalized","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-ws-context-lifecycle_20260310041005Z: {"title":"Fix WebSocket Session Context and Graceful Shutdown","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-fix-ws-reconnect-be_20260312010000Z: {"title":"Fix WebSocket reconnect — agent terminal stays connecting forever after close/reopen","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-ws-reconnect-be_20260312010000Z: {"title":"Fix WebSocket reconnect — agent terminal stays connecting forever after close/reopen","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-ws-reconnect-fe_20260312010001Z: {"title":"Fix frontend reconnect loop — stop retrying when agent is terminal","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 frontend-bundle-opt-fe_20260311120006Z: {"title":"Frontend bundle optimization — code splitting and lazy loading","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 frontend-stability-fe_20260311120002Z: {"title":"Frontend stability — error boundary, hook fixes, fetch timeouts","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}

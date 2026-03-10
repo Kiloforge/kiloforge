@@ -1,9 +1,9 @@
 id: fix-ws-reconnect-be_20260312010000Z
-title: "Fix WebSocket reconnect — agent terminal stays connecting forever after close/reopen"
+title: Fix WebSocket reconnect — agent terminal stays connecting forever after close/reopen
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     After closing an agent terminal and reopening it (either via Attach or Resume),
@@ -14,37 +14,37 @@ spec:
     click "Attach" again (or "Resume" for stopped agents) → terminal shows
     "Connecting..." indefinitely. The agent is still alive and working but the
     UI is stuck.
-
+    
     This is a backend + frontend coordination bug spanning the WebSocket handler,
     bridge lifecycle, and relay goroutine management.
   codebase_analysis: |
     **Root causes identified across two scenarios:**
-
+    
     **Scenario 1 — Agent still running, close window, re-attach:**
-
+    
     When the user closes the terminal window, the frontend unmounts the
     AgentTerminal component, which closes the WebSocket connection. On the
     backend, `handleAgentWS` exits via `session.ctx.Done()` (handler.go:80).
     The bridge and relay remain alive since the agent is still running.
-
+    
     When the user clicks "Attach" again, `useAgentWebSocket` creates a new
     WebSocket to `/ws/agent/{id}`. This SHOULD work because the bridge is
     still registered. However:
-
+    
     1. `handler.go:66` — Hardcodes `StatusMsg("running", nil)` regardless
        of actual agent state. If the agent completed between close and
        reopen, the client gets a false "running" status, then the handler
        immediately hits `bridge.Done` and sends "completed" + closes the
        socket. The frontend sees a rapid open→close cycle and enters
        reconnection loop with exponential backoff.
-
+    
     2. `useAgentWebSocket.ts:163-173` — On WebSocket close, checks
        `agentStatusRef.current` to decide whether to reconnect. If the
        status message hasn't been processed yet (race between onmessage
        and onclose), it sees `null` and enters infinite reconnect loop.
-
+    
     **Scenario 2 — Agent stopped, user clicks Resume:**
-
+    
     1. StopAgent unregisters the bridge (`api_handler.go:648`)
     2. ResumeAgent creates new SDK session, new bridge, new relay
        (`api_handler.go:700-707`)
@@ -63,16 +63,16 @@ spec:
     7. The frontend shows "connected" but the terminal appears frozen.
        If the user closes and reopens during this limbo, it works the
        same way.
-
+    
     **Scenario 3 — Race between bridge cleanup and reconnect:**
-
+    
     `monitorSDKSession` (spawner.go) calls `sessionEndCallback` which
     runs `UnregisterBridge()`. If the agent completes while the terminal
     is closed, the bridge is removed. When the user clicks Attach,
     `GetBridge()` returns false → handler returns HTTP 404 → WebSocket
     upgrade fails → frontend enters reconnect loop forever (it never
     gets a "completed" status to know the agent is done).
-
+    
     **Key files:**
     - `backend/internal/adapter/ws/handler.go` — WS handler hardcodes "running"
     - `backend/internal/adapter/ws/session.go` — Bridge/relay lifecycle
@@ -94,50 +94,50 @@ spec:
     `handler.go:66` should query the agent store for current status before
     sending the initial status message. If the agent is completed/failed/stopped,
     send that status and close gracefully.
-
+    
     **Fix 2 — WS handler: handle missing bridge gracefully**
     When `GetBridge()` returns false, instead of returning 404, check the
     agent store. If the agent exists but is in a terminal state, upgrade
     the WebSocket, send the terminal status, and close cleanly. This lets
     the frontend know the agent is done instead of getting a raw 404.
-
+    
     **Fix 3 — Frontend: handle 404 on WebSocket as terminal state**
     If the WebSocket upgrade fails with 404, fetch agent status via REST
     (`GET /api/agents/{id}`) to determine if the agent is done. If so,
     stop reconnecting and show the terminal status.
-
+    
     **Fix 4 — Frontend: guard reconnect against null agentStatus**
     In `useAgentWebSocket.ts:163`, before entering reconnect mode,
     also check if the WebSocket was open long enough to have received
     a status. If it closed immediately (< 1s), fetch agent status via
     REST before retrying.
 plan:
-  - phase: "Backend — WS handler improvements"
+  - phase: Backend — WS handler improvements
     tasks:
-      - text: "Add agent store dependency to WS Handler so it can look up agent status"
-        done: false
-      - text: "In handleAgentWS, when GetBridge returns false, check agent store — if agent is terminal, upgrade WS, send terminal status, close cleanly instead of 404"
-        done: false
-      - text: "In handleAgentWS, query actual agent status from store before sending initial StatusMsg instead of hardcoding 'running'"
-        done: false
-      - text: "Add logging for WS connect/reconnect events to aid future debugging"
-        done: false
-  - phase: "Frontend — reconnect resilience"
+      - text: Add agent store dependency to WS Handler so it can look up agent status
+        done: true
+      - text: In handleAgentWS, when GetBridge returns false, check agent store — if agent is terminal, upgrade WS, send terminal status, close cleanly instead of 404
+        done: true
+      - text: In handleAgentWS, query actual agent status from store before sending initial StatusMsg instead of hardcoding 'running'
+        done: true
+      - text: Add logging for WS connect/reconnect events to aid future debugging
+        done: true
+  - phase: Frontend — reconnect resilience
     tasks:
-      - text: "In useAgentWebSocket, when onclose fires and agentStatus is null, fetch agent status via REST GET /api/agents/{id} before deciding to reconnect"
-        done: false
-      - text: "If REST shows agent in terminal state (completed/failed/stopped), set agentStatus accordingly and do NOT reconnect"
-        done: false
-      - text: "Add a maximum reconnect attempt limit (e.g. 10) to prevent infinite reconnect loops"
-        done: false
-  - phase: "Verification"
+      - text: In useAgentWebSocket, when onclose fires and agentStatus is null, fetch agent status via REST GET /api/agents/{id} before deciding to reconnect
+        done: true
+      - text: If REST shows agent in terminal state (completed/failed/stopped), set agentStatus accordingly and do NOT reconnect
+        done: true
+      - text: Add a maximum reconnect attempt limit (e.g. 10) to prevent infinite reconnect loops
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Test scenario: running agent → close terminal → reattach → verify messages resume"
-        done: false
-      - text: "Test scenario: running agent → agent completes while terminal closed → reattach → verify completion status shown"
-        done: false
-      - text: "Test scenario: stop agent → resume → verify terminal connects and shows output"
-        done: false
-      - text: "Run make test and make build-frontend to verify no regressions"
-        done: false
+      - text: Test scenario: running agent → close terminal → reattach → verify messages resume
+        done: true
+      - text: Test scenario: running agent → agent completes while terminal closed → reattach → verify completion status shown
+        done: true
+      - text: Test scenario: stop agent → resume → verify terminal connects and shows output
+        done: true
+      - text: Run make test and make build-frontend to verify no regressions
+        done: true
 extra: {}
