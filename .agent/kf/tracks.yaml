@@ -110,7 +110,7 @@ fix-spa-and-init-output_20260309163000Z: {"title":"Fix SPA Asset MIME Type, Init
 fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --verbose Flag for stream-json","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-stale-frontend-build_20260309210000Z: {"title":"Fix Stale Frontend Build — Rebuild dist with Correct Base Path","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-fix-terminal-render-crash-fe_20260311235900Z: {"title":"Fix React error #310 crash when opening agent terminal","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-terminal-render-crash-fe_20260311235900Z: {"title":"Fix React error #310 crash when opening agent terminal","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-test-ci-pr-tracking_20260309173000Z: {"title":"Fix CI Test Failure — PR Tracking Store References","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-test-failures_20260310140000Z: {"title":"Fix TestBinaryBuilds and TestGooseDown_RollsBack test failures","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-tour-api-mismatch_20260309223000Z: {"title":"Fix Tour API Request Body Mismatch","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
