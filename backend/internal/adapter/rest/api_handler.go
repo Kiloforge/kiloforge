@@ -891,6 +891,9 @@ func (h *APIHandler) ListProjects(_ context.Context, _ gen.ListProjectsRequestOb
 		if p.OriginRemote != "" {
 			proj.OriginRemote = &p.OriginRemote
 		}
+		if p.MirrorDir != "" {
+			proj.MirrorDir = &p.MirrorDir
+		}
 		result = append(result, proj)
 	}
 	return result, nil
@@ -918,19 +921,28 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 	var result *domain.AddProjectResult
 	var err error
 
+	outputDir := ""
+	if req.Body.OutputDir != nil {
+		outputDir = *req.Body.OutputDir
+	}
+
 	if remoteURL == "" {
 		// Create from scratch — name is required.
 		if name == "" {
 			return gen.AddProject400JSONResponse{Error: "name is required when remote_url is not provided"}, nil
 		}
-		result, err = h.projectMgr.CreateProject(ctx, name)
+		var opts []domain.AddProjectOpts
+		if outputDir != "" {
+			opts = append(opts, domain.AddProjectOpts{OutputDir: outputDir})
+		}
+		result, err = h.projectMgr.CreateProject(ctx, name, opts...)
 	} else {
 		// Clone from remote URL.
-		var opts []domain.AddProjectOpts
+		opt := domain.AddProjectOpts{OutputDir: outputDir}
 		if req.Body.SshKey != nil && *req.Body.SshKey != "" {
-			opts = append(opts, domain.AddProjectOpts{SSHKeyPath: *req.Body.SshKey})
+			opt.SSHKeyPath = *req.Body.SshKey
 		}
-		result, err = h.projectMgr.AddProject(ctx, remoteURL, name, opts...)
+		result, err = h.projectMgr.AddProject(ctx, remoteURL, name, opt)
 	}
 
 	if err != nil {
@@ -962,6 +974,9 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 	}
 	if p.OriginRemote != "" {
 		resp.OriginRemote = &p.OriginRemote
+	}
+	if p.MirrorDir != "" {
+		resp.MirrorDir = &p.MirrorDir
 	}
 	return resp, nil
 }

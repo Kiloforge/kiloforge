@@ -123,13 +123,13 @@ plan:
   - phase: API and schema
     tasks:
       - text: Add mirror_dir to OpenAPI Project schema and output_dir to AddProjectRequest
-        done: false
+        done: true
       - text: Run make gen-api to regenerate types
-        done: false
+        done: true
       - text: Update ListProjects handler to include mirror_dir in response
-        done: false
+        done: true
       - text: Update AddProject handler to accept and pass output_dir
-        done: false
+        done: true
   - phase: Destroy safety
     tasks:
       - text: Write test verifying destroy does not delete external mirror paths

@@ -165,6 +165,9 @@ type AddProjectRequest struct {
 	// Name Project slug. Required when remote_url is omitted; defaults to repo name from URL otherwise.
 	Name *string `json:"name,omitempty"`
 
+	// OutputDir Directory for the browseable mirror clone (defaults to ~/.kiloforge/output/{slug}/)
+	OutputDir *string `json:"output_dir,omitempty"`
+
 	// RemoteUrl Git remote URL (SSH or HTTPS). If omitted, a fresh local repo is created (name becomes required).
 	RemoteUrl *string `json:"remote_url,omitempty"`
 
@@ -539,7 +542,10 @@ type PreflightResponse struct {
 
 // Project defines model for Project.
 type Project struct {
-	Active       bool    `json:"active"`
+	Active bool `json:"active"`
+
+	// MirrorDir Path to the browseable mirror clone directory
+	MirrorDir    *string `json:"mirror_dir,omitempty"`
 	OriginRemote *string `json:"origin_remote,omitempty"`
 	RepoName     string  `json:"repo_name"`
 	Slug         string  `json:"slug"`

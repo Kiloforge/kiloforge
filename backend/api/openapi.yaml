@@ -2323,6 +2323,9 @@ components:
         ssh_key:
           type: string
           description: Path to SSH private key to use for cloning
+        output_dir:
+          type: string
+          description: Directory for the browseable mirror clone (defaults to ~/.kiloforge/output/{slug}/)
 
     SSHKeyInfo:
       type: object
@@ -2351,6 +2354,9 @@ components:
           type: string
         origin_remote:
           type: string
+        mirror_dir:
+          type: string
+          description: Path to the browseable mirror clone directory
         active:
           type: boolean
 
