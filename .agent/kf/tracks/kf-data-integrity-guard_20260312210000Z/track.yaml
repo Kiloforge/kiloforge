@@ -82,15 +82,15 @@ plan:
   - phase: Embed Guard in Core Workflow Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-architect SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-developer SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-implement SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-status SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-dispatch SKILL.md
-        done: false
+        done: true
   - phase: Embed Guard in Management Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-manage SKILL.md
