@@ -1,9 +1,16 @@
 # Kiloforge Project Configuration
 #
+# SCHEMA:
+#   primary_branch: string (default: "main")
+#     The branch agents read track state from.
+#
+#   enforce_dep_ordering: bool (default: true)
+#     When true, the work queue scheduler skips tracks with unmet dependencies
+#     and continues to the next eligible track (drain-loop). When false, tracks
+#     are popped in order regardless of dependency status.
+#
 # Structured project settings used by kf tooling and agent skills.
-# TOOL: Managed by `kf-track` and agent skills. Hand-editable.
+# TOOL: Managed by `kf-track config` and agent skills. Hand-editable.
 
-# The primary branch that tracks, metadata, and project state are read from.
-# All agents (developers, architects, reviewers) should read track state
-# from this branch, not their local working tree.
 primary_branch: main
+enforce_dep_ordering: true
