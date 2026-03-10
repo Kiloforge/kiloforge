@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
-import { SHORTCUT_LIST } from "../hooks/useKeyboardShortcuts";
+import { getShortcutList } from "../hooks/useKeyboardShortcuts";
+import { usePlatform } from "../hooks/usePlatform";
 import styles from "./ShortcutHelp.module.css";
 
 interface Props {
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export function ShortcutHelp({ onClose }: Props) {
+  const { isMac } = usePlatform();
+  const shortcuts = getShortcutList(isMac);
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -32,16 +35,18 @@ export function ShortcutHelp({ onClose }: Props) {
           </button>
         </div>
         <div className={styles.grid}>
-          {SHORTCUT_LIST.map((entry) => (
+          {shortcuts.map((entry) => (
             <div key={entry.keys} className={styles.row}>
               <kbd className={styles.keys}>{entry.keys}</kbd>
               <span className={styles.desc}>{entry.description}</span>
             </div>
           ))}
         </div>
-        <p className={styles.hint}>
-          Use Ctrl on Windows/Linux instead of &#8984;
-        </p>
+        {isMac && (
+          <p className={styles.hint}>
+            Use Ctrl on Windows/Linux instead of &#8984;
+          </p>
+        )}
       </div>
     </div>
   );

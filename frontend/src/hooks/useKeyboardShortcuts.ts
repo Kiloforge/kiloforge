@@ -86,14 +86,21 @@ export interface ShortcutEntry {
   description: string;
 }
 
-export const SHORTCUT_LIST: ShortcutEntry[] = [
-  { keys: "⌘⇧T", description: "Tile all windows" },
-  { keys: "⌘⇧]", description: "Focus next window" },
-  { keys: "⌘⇧[", description: "Focus previous window" },
-  { keys: "⌘⇧M", description: "Minimize / restore window" },
-  { keys: "⌘⇧F", description: "Toggle full-screen command mode" },
-  { keys: "⌘⇧W", description: "Close focused window" },
-  { keys: "⌘⇧←", description: "Snap window to left half" },
-  { keys: "⌘⇧→", description: "Snap window to right half" },
-  { keys: "⌘?", description: "Show keyboard shortcuts" },
-];
+export function getShortcutList(isMac: boolean): ShortcutEntry[] {
+  const mod = isMac ? "⌘" : "Ctrl+";
+  const shift = isMac ? "⇧" : "Shift+";
+  return [
+    { keys: `${mod}${shift}T`, description: "Tile all windows" },
+    { keys: `${mod}${shift}]`, description: "Focus next window" },
+    { keys: `${mod}${shift}[`, description: "Focus previous window" },
+    { keys: `${mod}${shift}M`, description: "Minimize / restore window" },
+    { keys: `${mod}${shift}F`, description: "Toggle full-screen command mode" },
+    { keys: `${mod}${shift}W`, description: "Close focused window" },
+    { keys: `${mod}${shift}←`, description: "Snap window to left half" },
+    { keys: `${mod}${shift}→`, description: "Snap window to right half" },
+    { keys: `${mod}?`, description: "Show keyboard shortcuts" },
+  ];
+}
+
+/** @deprecated Use getShortcutList(isMac) instead */
+export const SHORTCUT_LIST: ShortcutEntry[] = getShortcutList(true);
