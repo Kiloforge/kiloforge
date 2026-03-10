@@ -46,6 +46,13 @@ func (m *MockAgentStore) Save() error {
 func (m *MockAgentStore) AddAgent(info domain.AgentInfo) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	// Upsert: replace if exists, append if new.
+	for i := range m.AgentData {
+		if m.AgentData[i].ID == info.ID {
+			m.AgentData[i] = info
+			return nil
+		}
+	}
 	m.AgentData = append(m.AgentData, info)
 	return nil
 }

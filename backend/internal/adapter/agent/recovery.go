@@ -96,52 +96,47 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 
 	for _, a := range ordered {
 		if a.SessionID == "" {
-			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
-			if ag, err := rm.store.FindAgent(a.ID); err == nil {
-				ag.ResumeError = "no session ID"
-			}
+			rm.markResumeFailed(a, "no session ID")
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "no session ID"})
-			rm.recordResumeFail(a.ID, a.Role, "no session ID")
 			continue
 		}
 
 		workDir := a.WorktreeDir
 		if workDir != "" {
 			if _, err := os.Stat(workDir); err != nil {
-				_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
-				if ag, err := rm.store.FindAgent(a.ID); err == nil {
-					ag.ResumeError = "worktree missing"
-				}
+				rm.markResumeFailed(a, "worktree missing")
 				result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "worktree missing"})
-				rm.recordResumeFail(a.ID, a.Role, "worktree missing")
 				continue
 			}
 		}
 
 		pid, err := rm.starter.Start(ctx, a.SessionID, workDir, a.Model)
 		if err != nil {
-			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusResumeFailed))
 			errMsg := fmt.Sprintf("resume failed: %v", err)
-			if ag, err := rm.store.FindAgent(a.ID); err == nil {
-				ag.ResumeError = errMsg
-			}
+			rm.markResumeFailed(a, errMsg)
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: errMsg})
-			rm.recordResumeFail(a.ID, a.Role, errMsg)
 			continue
 		}
 
-		_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusRunning))
-		if ag, err := rm.store.FindAgent(a.ID); err == nil {
-			ag.PID = pid
-			ag.SuspendedAt = nil
-			ag.ShutdownReason = ""
-			ag.ResumeError = ""
-		}
+		a.Status = string(domain.AgentStatusRunning)
+		a.PID = pid
+		a.SuspendedAt = nil
+		a.ShutdownReason = ""
+		a.ResumeError = ""
+		_ = rm.store.AddAgent(a) // upsert with all fields
 		result.Resumed = append(result.Resumed, a.ID)
 	}
 
 	_ = rm.store.Save()
 	return result
+}
+
+// markResumeFailed sets an agent to resume-failed with a reason and persists via upsert.
+func (rm *RecoveryManager) markResumeFailed(a domain.AgentInfo, reason string) {
+	a.Status = string(domain.AgentStatusResumeFailed)
+	a.ResumeError = reason
+	_ = rm.store.AddAgent(a) // upsert with ResumeError set
+	rm.recordResumeFail(a.ID, a.Role, reason)
 }
 
 func (rm *RecoveryManager) recordResumeFail(agentID, role, reason string) {
