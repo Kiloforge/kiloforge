@@ -1,0 +1,70 @@
+id: change-default-port_20260311230000Z
+title: Change default orchestrator port from 4001 to 39517
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Change the default orchestrator port from 4001 to 39517 — an obscure port
+    unlikely to conflict with common services — across backend defaults,
+    frontend dev proxy, e2e test fixtures, and agent tooling scripts.
+  context: |
+    The default port 4001 is close to common service ports (3000, 4000, 5000)
+    and risks conflicts with other dev tools. Switching to 39517 (a non-round,
+    uncommon port) reduces the chance of collisions during local development.
+  codebase_analysis: |
+    Port 4001 appears in these locations:
+    - backend/internal/adapter/config/defaults.go:18 — OrchestratorPort default
+    - backend/internal/adapter/cli/up.go:34 — help text for --port flag
+    - frontend/vite.config.ts:32-39 — proxy targets for /api, /events, /ws, /webhook, /health, /gitea
+    - frontend/playwright.config.ts:3 — E2E base URL fallback
+    - frontend/e2e/fixtures.ts:16,20 — E2E API client and server URL defaults
+    - .agent/kf/bin/kf-merge-lock:41 — KF_ORCH_URL fallback
+    - .agent/kf/bin/kf-track:124 — KF_ORCH_URL fallback
+    
+    Configuration resolution order: defaults → config.json → env vars → CLI flags.
+    Changing the default in defaults.go propagates to all layers unless overridden.
+    Frontend and agent scripts hardcode the port as fallback values and must be
+    updated independently.
+  acceptance_criteria:
+    - Default OrchestratorPort in defaults.go is 39517
+    - CLI help text for --port shows new default
+    - Frontend vite proxy targets use localhost:39517
+    - E2E test defaults use localhost:39517
+    - Agent tooling scripts (kf-merge-lock, kf-track) default to localhost:39517
+    - Existing override mechanisms (KF_ORCH_PORT, --port flag, config.json) still work
+    - All existing tests pass with the new default
+  out_of_scope: |
+    - Adding new CLI flags (covered by server-host-port-config_20260312230100Z)
+    - Changing the Vite dev server port (5173) — that's Vite's concern
+    - Changing the OTLP tracing port (4318) — that's a Jaeger standard
+    - Updating archived track specs that reference 4001 — documentation only
+  technical_notes: |
+    Straightforward find-and-replace of the port value in 7 files. No structural
+    changes needed. The badge_test.go references to port 3001 are unrelated
+    test data and should not be changed.
+plan:
+  - phase: Update defaults
+    tasks:
+      - text: Change OrchestratorPort from 4001 to 39517 in backend/internal/adapter/config/defaults.go
+        done: false
+      - text: Update --port flag help text in backend/internal/adapter/cli/up.go to show new default
+        done: false
+      - text: Update proxy targets in frontend/vite.config.ts from localhost:4001 to localhost:39517
+        done: false
+      - text: Update default URLs in frontend/playwright.config.ts and frontend/e2e/fixtures.ts
+        done: false
+      - text: Update KF_ORCH_URL fallback in .agent/kf/bin/kf-merge-lock and .agent/kf/bin/kf-track
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run make test to verify all backend tests pass with new default
+        done: false
+      - text: Run frontend lint/type-check to verify no build errors
+        done: false
+extra:
+  created_by:
+    role: architect
+    session_id: 79386337-2ace-495b-a88d-a2d12fe9f9ae
+    timestamp: 2026-03-10T22:54:13Z

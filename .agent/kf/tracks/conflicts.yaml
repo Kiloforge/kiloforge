@@ -15,3 +15,4 @@
 agent-diff-panel-fe_20260312210900Z/agent-idle-suspend-fe_20260312020001Z: {"risk":"medium","note":"Both modify AgentTerminal.tsx","added":"2026-03-10"}
 agent-diff-panel-fe_20260312210900Z/agent-interrupt-fe_20260312220002Z: {"risk":"medium","note":"Both touch AgentTerminal.tsx","added":"2026-03-10"}
 agent-idle-suspend-fe_20260312020001Z/fix-terminal-render-crash-fe_20260311235900Z: {"risk":"medium","note":"Both touch AgentTerminal.tsx — rendering bugs vs status handling","added":"2026-03-10"}
+change-default-port_20260311230000Z/server-host-port-config_20260312230100Z: {"risk":"low","note":"Both touch defaults.go port config — this changes the value, that adds host config","added":"2026-03-10"}
