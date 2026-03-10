@@ -42,7 +42,7 @@ This line is designed to survive compaction summaries. If you see it in your con
 
 ## Worktree Convention
 
-This agent is expected to run in a worktree whose folder name starts with `developer-` (e.g., `developer-1`, `developer-2`, `developer-3`). The corresponding branch name matches the folder name.
+This agent is expected to run in a worktree whose folder name starts with `worker-` (e.g., `worker-1`, `worker-2`, `worker-3`). The corresponding branch name matches the folder name.
 
 ### Step 0 — Verify worktree identity and resolve primary branch
 
@@ -53,10 +53,10 @@ git rev-parse --git-dir 2>/dev/null
 git worktree list
 ```
 
-- The current branch should match `developer-*` (this is the **home branch**)
-- If not on a `developer-*` branch, warn but continue
+- The current branch should match `worker-*` (this is the **home branch**)
+- If not on a `worker-*` branch, warn but continue
 - Record the **main worktree path** from `git worktree list` — needed for merge operations
-- Record the **home branch** (the `developer-*` branch) — to return to after merge
+- Record the **home branch** (the `worker-*` branch) — to return to after merge
 
 **Resolve the primary branch** from `.agent/kf/config.yaml`:
 
@@ -213,7 +213,7 @@ ACTIVE ROLE: kf-developer — track {trackId} — skill at ~/.claude/skills/kf-d
 
 ### Step 5 — Sync home branch and create implementation branch
 
-The `developer-*` home branch is a dead/marker branch. Its only purpose is recording the point at which this worker last synced with the primary branch. Sync it now so the marker reflects where we're starting from, then branch off:
+The `worker-*` home branch is a dead/marker branch. Its only purpose is recording the point at which this worker last synced with the primary branch. Sync it now so the marker reflects where we're starting from, then branch off:
 
 ```bash
 # Sync home branch to primary branch (updates the marker)
@@ -568,7 +568,7 @@ On failure: lock released. Report and **HALT**.
 git -C {primary-branch-worktree-path} log --oneline -3
 
 # Return to developer home branch FIRST (can't delete current branch)
-git checkout {developer-home-branch}
+git checkout {worker-home-branch}
 
 # Delete implementation branch (safe — it's been merged and we've switched away)
 git branch -d {type}/{trackId}
@@ -590,7 +590,7 @@ Report:
 Track:       {trackId} - {title}
 Merged into: ${PRIMARY_BRANCH}
 Branch:      {type}/{trackId} (deleted)
-Home branch: {developer-home-branch} (synced to ${PRIMARY_BRANCH})
+Home branch: {worker-home-branch} (synced to ${PRIMARY_BRANCH})
 
 Developer is ready for next track.
 ================================================================================
@@ -652,7 +652,7 @@ Detection is automatic. Run `kf-merge-lock status` to inspect current lock state
 7. **ONE merge at a time** — enforce via cross-worktree merge lock (HTTP preferred, mkdir fallback)
 8. **HALT on any failure** — do not continue past errors without user input
 9. **Follow workflow.md** — all TDD, commit, and verification rules apply
-10. **Return to home branch** — always checkout back to `developer-*` branch after merge
+10. **Return to home branch** — always checkout back to `worker-*` branch after merge
 11. **Clean up remote on merge** — if `--with-review`, delete remote branch and close PR after merge
 12. **ALWAYS send heartbeat** — start heartbeat after lock acquire, stop after release
 13. **NEVER force-remove another worker's lock** — if the merge lock is held, HALT and wait for user instructions. Do not `rm -rf` the lock directory or force-release HTTP locks held by others.
