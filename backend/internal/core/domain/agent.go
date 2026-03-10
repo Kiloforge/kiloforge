@@ -13,6 +13,7 @@ const (
 	AgentRoleReviewer           AgentRole = "reviewer"
 	AgentRoleArchitect          AgentRole = "architect"
 	AgentRoleAdvisorProduct     AgentRole = "advisor-product"
+	AgentRoleInteractive        AgentRole = "interactive"
 	AgentRoleAdvisorReliability AgentRole = "advisor-reliability"
 )
 

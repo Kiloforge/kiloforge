@@ -244,7 +244,7 @@ func TestRequiredSkillsForRole(t *testing.T) {
 	}{
 		{"developer", "kf-developer"},
 		{"reviewer", "kf-reviewer"},
-		{"interactive", "kf-architect"},
+		{"interactive", "kf-interactive"},
 		{"architect", "kf-architect"},
 		{"advisor-product", "kf-advisor-product"},
 		{"advisor-reliability", "kf-advisor-reliability"},
@@ -276,7 +276,7 @@ func TestSkillCommandForRole(t *testing.T) {
 		{"architect", "/kf-architect"},
 		{"advisor-product", "/kf-advisor-product"},
 		{"advisor-reliability", "/kf-advisor-reliability"},
-		{"interactive", ""},
+		{"interactive", "/kf-interactive"},
 		{"developer", ""},
 		{"reviewer", ""},
 		{"unknown", ""},

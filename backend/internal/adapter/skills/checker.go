@@ -72,7 +72,7 @@ func RequiredSkillsForRole(role string) []RequiredSkill {
 		}
 	case "interactive":
 		return []RequiredSkill{
-			{Name: "kf-architect", Reason: "required for track generation"},
+			{Name: "kf-interactive", Reason: "required for interactive agent spawning"},
 		}
 	case "architect":
 		return []RequiredSkill{
@@ -109,6 +109,8 @@ func SkillCommandForRole(role string) string {
 		return "/kf-advisor-product"
 	case "advisor-reliability":
 		return "/kf-advisor-reliability"
+	case "interactive":
+		return "/kf-interactive"
 	case "conflict-resolver":
 		return "/kf-conflict-resolver"
 	default:
