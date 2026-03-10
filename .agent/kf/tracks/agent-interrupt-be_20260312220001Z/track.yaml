@@ -1,9 +1,9 @@
 id: agent-interrupt-be_20260312220001Z
-title: "Agent turn interrupt via WebSocket and input queueing in Bridge"
+title: Agent turn interrupt via WebSocket and input queueing in Bridge
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Add the ability to interrupt an agent mid-turn via a WebSocket "interrupt"
@@ -15,7 +15,7 @@ spec:
     The kiloforge dashboard has no equivalent — if the agent is mid-turn, the user
     must wait. Additionally, sending input while the agent is thinking returns
     "turn already in progress" error with no queueing.
-
+    
     The user wants:
     1. An interrupt mechanism (like Ctrl+C/Escape in CLI) to stop the agent mid-turn
     2. Input queueing so messages sent during the agent's turn are delivered after
@@ -27,20 +27,20 @@ spec:
     - Sets `s.querying = true` on entry, defers `s.querying = false` on exit
     - For interactive agents, ctx is `session.ctx` (session-level) — cancelling
       it would terminate the entire session
-
+    
     **relayResponse()** (`sdk_client.go:171-229`):
     - Reads from `s.client.ReceiveResponse(ctx)` channel
     - On context cancel: exits immediately (no turn_end emitted)
     - Defers `s.querying = false` — so after interrupt, new queries can proceed
-
+    
     **WS readLoop** (`backend/internal/adapter/ws/handler.go:144-173`):
     - Only handles `MsgInput` type currently
     - Calls `bridge.WriteInput(text)` which routes to InputHandler or Stdin
-
+    
     **Bridge.WriteInput()** (`ws/session.go:210-221`):
     - Routes to InputHandler (SDK) or Stdin (legacy)
     - No queueing — if SDK returns "turn already in progress", error is sent to client
-
+    
     **Message types** (`ws/message.go`):
     - No `MsgInterrupt` type exists
     - No input queue mechanism
@@ -62,12 +62,12 @@ spec:
     - Multi-turn interrupt (only current turn is interrupted)
   technical_notes: |
     **Implementation approach:**
-
+    
     1. **Per-query cancel context in SDKSession**
        In `Query()`, create `queryCtx, queryCancel := context.WithCancel(s.ctx)`.
        Store `queryCancel` as `s.queryCancel`. Pass `queryCtx` (not `s.ctx`) to
        `relayResponse()`. On interrupt, call `s.queryCancel()`.
-
+    
     2. **SDKSession.Interrupt() method**
        ```go
        func (s *SDKSession) Interrupt() {
@@ -80,16 +80,16 @@ spec:
        ```
        This cancels `queryCtx`, which causes `relayResponse` to exit via
        `ctx.Done()`. The defer in `relayResponse` sets `querying = false`.
-
+    
     3. **Emit turn_end on interrupt**
        In `relayResponse`, when exiting via `ctx.Done()`, emit a
        `turn_end` message with an `interrupted: true` field so the frontend
        knows the turn was interrupted (not completed naturally).
-
+    
     4. **WS message type "interrupt"**
        Add `MsgInterrupt = "interrupt"` to message.go constants.
        In readLoop, handle "interrupt" type by calling `bridge.Interrupt()`.
-
+    
     5. **Bridge.Interrupt()**
        Add `InterruptHandler func()` field to Bridge (set to SDKSession.Interrupt).
        ```go
@@ -99,7 +99,7 @@ spec:
            }
        }
        ```
-
+    
     6. **Input queue in Bridge**
        Add `inputQueue []string` and `mu sync.Mutex` to Bridge. When
        `WriteInput()` is called and InputHandler returns "turn already in
@@ -107,48 +107,48 @@ spec:
        `relayResponse` after `s.querying = false` to send queued input.
        Expose `QueueDepth() int` for frontend visibility.
 plan:
-  - phase: "SDK interrupt mechanism"
+  - phase: SDK interrupt mechanism
     tasks:
-      - text: "Add queryCancel context.CancelFunc field to SDKSession"
-        done: false
-      - text: "In Query(), create per-query context with cancel, store cancel func, pass to relayResponse"
-        done: false
-      - text: "Add Interrupt() method to SDKSession — cancels queryCancel if querying"
-        done: false
-      - text: "In relayResponse, emit turn_end with interrupted=true on context cancellation"
-        done: false
-      - text: "Write unit tests: interrupt during active turn cancels relay, emits turn_end"
-        done: false
-  - phase: "WebSocket protocol"
+      - text: Add queryCancel context.CancelFunc field to SDKSession
+        done: true
+      - text: In Query(), create per-query context with cancel, store cancel func, pass to relayResponse
+        done: true
+      - text: Add Interrupt() method to SDKSession — cancels queryCancel if querying
+        done: true
+      - text: In relayResponse, emit turn_end with interrupted=true on context cancellation
+        done: true
+      - text: Write unit tests: interrupt during active turn cancels relay, emits turn_end
+        done: true
+  - phase: WebSocket protocol
     tasks:
-      - text: "Add MsgInterrupt constant to message.go"
-        done: false
-      - text: "Add InterruptHandler field to Bridge, add Bridge.Interrupt() method"
-        done: false
-      - text: "Handle 'interrupt' message type in WS readLoop — call bridge.Interrupt(), only from primary session"
-        done: false
-      - text: "Write unit test: interrupt message from primary session triggers bridge interrupt"
-        done: false
-  - phase: "Input queueing"
+      - text: Add MsgInterrupt constant to message.go
+        done: true
+      - text: Add InterruptHandler field to Bridge, add Bridge.Interrupt() method
+        done: true
+      - text: Handle 'interrupt' message type in WS readLoop — call bridge.Interrupt(), only from primary session
+        done: true
+      - text: Write unit test: interrupt message from primary session triggers bridge interrupt
+        done: true
+  - phase: Input queueing
     tasks:
-      - text: "Add input queue ([]string) to Bridge with mutex protection"
-        done: false
-      - text: "In WriteInput, if InputHandler returns 'turn already in progress', queue the input instead of erroring"
-        done: false
-      - text: "Add DrainQueue callback — after relayResponse completes (querying=false), send queued input"
-        done: false
-      - text: "Add QueueDepth() int method to Bridge for frontend visibility"
-        done: false
-      - text: "Write unit tests: input queued during turn, drained after turn completes"
-        done: false
-  - phase: "Wiring and verification"
+      - text: Add input queue ([]string) to Bridge with mutex protection
+        done: true
+      - text: In WriteInput, if InputHandler returns 'turn already in progress', queue the input instead of erroring
+        done: true
+      - text: Add DrainQueue callback — after relayResponse completes (querying=false), send queued input
+        done: true
+      - text: Add QueueDepth() int method to Bridge for frontend visibility
+        done: true
+      - text: Write unit tests: input queued during turn, drained after turn completes
+        done: true
+  - phase: Wiring and verification
     tasks:
-      - text: "Wire InterruptHandler to SDKSession.Interrupt in api_handler.go SpawnInteractive/ResumeAgent"
-        done: false
-      - text: "Wire DrainQueue callback from SDKSession.relayResponse completion"
-        done: false
-      - text: "Run make test and make lint — all pass"
-        done: false
-      - text: "Run make build — compilation succeeds"
-        done: false
+      - text: Wire InterruptHandler to SDKSession.Interrupt in api_handler.go SpawnInteractive/ResumeAgent
+        done: true
+      - text: Wire DrainQueue callback from SDKSession.relayResponse completion
+        done: true
+      - text: Run make test and make lint — all pass
+        done: true
+      - text: Run make build — compilation succeeds
+        done: true
 extra: {}
