@@ -10,11 +10,19 @@ The story behind Kiloforge — from first encountering agentic coding tools to b
 
 ### [Getting Started](getting-started.md)
 
-Install Kiloforge, start the Cortex, register your first project, and spawn your first agent. Everything you need to go from zero to running agent swarms.
+Install Kiloforge, start the Cortex, register a project, and spawn the first agent. Covers the full onboarding flow: setup, track creation with the architect, the Command Deck walkthrough, and monitoring the Swarm.
 
 ### [Architecture Overview](architecture.md)
 
-How the pieces fit together — CLI, Cortex control plane, and Command Deck. Covers the system diagram, communication protocols, codebase structure, key abstractions (tracks, agents, projects), and data storage.
+How the pieces fit together — CLI, Cortex control plane, and Command Deck. Covers the system diagram, communication protocols, codebase structure, key abstractions (tracks, agents, projects), skills system, notification bus, Swarm coordination, and data storage.
+
+### [Skills Guide](skills.md)
+
+The full skills catalog and how they work. Covers the architect → developer → reviewer pipeline, all skill categories (Core Workflow, Management, Review & Advisory, Setup & Onboarding, Infrastructure), installation, and skill validation.
+
+### [Agents & Swarms](agents-and-swarms.md)
+
+Deep dive into agent roles, lifecycle states, and Swarm coordination. Covers agent statuses and transitions, the suspension mechanism (grace periods, worker protection), graceful shutdown, notifications, Swarm capacity and worktree pooling, the queue service, merge serialization, and dispatch.
 
 ## Additional Resources
 
