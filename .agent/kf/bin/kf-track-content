@@ -18,6 +18,8 @@ COMMANDS:
   progress <id>
   migrate <id>    # convert legacy spec.md/plan.md to track.yaml
   migrate-all     # convert all tracks
+  claim <id> [--show|--clear]   # record developer claim in extra.claim
+  register <id> [--role R] [--show|--clear]  # record creator in extra.created_by
 """
 
 import json
@@ -825,6 +827,185 @@ def cmd_extra(args):
     return 0
 
 
+# --- Agent identity helpers ---
+
+def _discover_session_id():
+    """Discover Claude session ID from filesystem (most recent .jsonl file)."""
+    cwd = os.getcwd()
+    sanitized = cwd.replace("/", "-").lstrip("-")
+    sessions_dir = Path.home() / ".claude" / "projects" / f"-{sanitized}"
+    if not sessions_dir.exists():
+        return None
+    jsonl_files = sorted(sessions_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not jsonl_files:
+        return None
+    return jsonl_files[0].stem  # filename without .jsonl
+
+
+def _discover_identity():
+    """Discover agent identity from env vars with filesystem fallback."""
+    import subprocess
+    identity = {}
+
+    # Agent ID — only from orchestrator env var
+    agent_id = os.environ.get("KF_AGENT_ID", "")
+    if agent_id:
+        identity["agent_id"] = agent_id
+
+    # Session ID — env var first, then filesystem discovery
+    session_id = os.environ.get("KF_SESSION_ID", "")
+    if not session_id:
+        session_id = _discover_session_id() or ""
+    if session_id:
+        identity["session_id"] = session_id
+
+    # Role — env var or default
+    role = os.environ.get("KF_AGENT_ROLE", "")
+    if role:
+        identity["role"] = role
+
+    # Worktree — basename of cwd
+    identity["worktree"] = os.path.basename(os.getcwd())
+
+    # Branch — from git
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, timeout=5
+        )
+        branch = result.stdout.strip()
+        if branch:
+            identity["branch"] = branch
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+    # Model — from env or claude CLI
+    model = os.environ.get("ANTHROPIC_MODEL", "")
+    if model:
+        identity["model"] = model
+
+    return identity
+
+
+def cmd_claim(args):
+    """Record developer claim metadata in extra.claim."""
+    import argparse
+    parser = argparse.ArgumentParser(prog="kf-track-content claim")
+    parser.add_argument("track_id")
+    parser.add_argument("--show", action="store_true", help="Display the claim record")
+    parser.add_argument("--clear", action="store_true", help="Remove the claim record")
+    parser.add_argument("--role", default=None, help="Override role (default: from env or 'developer')")
+    opts = parser.parse_args(args)
+
+    data = load_track(opts.track_id)
+    if not data:
+        print(f"ERROR: No track.yaml for {opts.track_id}", file=sys.stderr)
+        return 1
+
+    extra = data.get("extra", {})
+
+    if opts.show:
+        claim = extra.get("claim")
+        if claim:
+            print(yaml_dump({"claim": claim}))
+        else:
+            print("(no claim record)")
+        return 0
+
+    if opts.clear:
+        extra.pop("claim", None)
+        data["extra"] = extra
+        data["updated"] = today()
+        save_track(opts.track_id, data)
+        print("Claim record cleared")
+        return 0
+
+    # Write claim record
+    identity = _discover_identity()
+    claim = {}
+    if "agent_id" in identity:
+        claim["agent_id"] = identity["agent_id"]
+    claim["role"] = opts.role or identity.get("role", "developer")
+    if "session_id" in identity:
+        claim["session_id"] = identity["session_id"]
+    if "worktree" in identity:
+        claim["worktree"] = identity["worktree"]
+    if "branch" in identity:
+        claim["branch"] = identity["branch"]
+    claim["claimed_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if "model" in identity:
+        claim["model"] = identity["model"]
+
+    extra["claim"] = claim
+    data["extra"] = extra
+    data["updated"] = today()
+    save_track(opts.track_id, data)
+
+    session_str = claim.get("session_id", "(not discovered)")
+    print(f"Claim recorded for {opts.track_id}")
+    print(f"  session_id: {session_str}")
+    if "worktree" in claim:
+        print(f"  worktree: {claim['worktree']}")
+    if "branch" in claim:
+        print(f"  branch: {claim['branch']}")
+    return 0
+
+
+def cmd_register(args):
+    """Record architect/creator identity in extra.created_by."""
+    import argparse
+    parser = argparse.ArgumentParser(prog="kf-track-content register")
+    parser.add_argument("track_id")
+    parser.add_argument("--show", action="store_true", help="Display the created_by record")
+    parser.add_argument("--clear", action="store_true", help="Remove the created_by record")
+    parser.add_argument("--role", default=None, help="Override role (default: from env or 'architect')")
+    opts = parser.parse_args(args)
+
+    data = load_track(opts.track_id)
+    if not data:
+        print(f"ERROR: No track.yaml for {opts.track_id}", file=sys.stderr)
+        return 1
+
+    extra = data.get("extra", {})
+
+    if opts.show:
+        created_by = extra.get("created_by")
+        if created_by:
+            print(yaml_dump({"created_by": created_by}))
+        else:
+            print("(no created_by record)")
+        return 0
+
+    if opts.clear:
+        extra.pop("created_by", None)
+        data["extra"] = extra
+        data["updated"] = today()
+        save_track(opts.track_id, data)
+        print("Created_by record cleared")
+        return 0
+
+    # Write created_by record
+    identity = _discover_identity()
+    created_by = {}
+    if "agent_id" in identity:
+        created_by["agent_id"] = identity["agent_id"]
+    created_by["role"] = opts.role or identity.get("role", "architect")
+    if "session_id" in identity:
+        created_by["session_id"] = identity["session_id"]
+    created_by["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    extra["created_by"] = created_by
+    data["extra"] = extra
+    data["updated"] = today()
+    save_track(opts.track_id, data)
+
+    session_str = created_by.get("session_id", "(not discovered)")
+    print(f"Register recorded for {opts.track_id}")
+    print(f"  role: {created_by['role']}")
+    print(f"  session_id: {session_str}")
+    return 0
+
+
 # --- Migration from legacy format ---
 
 def _parse_spec_md(text):
@@ -1074,6 +1255,8 @@ COMMANDS = {
     "extra": cmd_extra,
     "migrate": cmd_migrate,
     "migrate-all": cmd_migrate_all,
+    "claim": cmd_claim,
+    "register": cmd_register,
 }
 
 def main():

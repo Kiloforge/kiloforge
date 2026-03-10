@@ -3,7 +3,7 @@ title: Record agent claim metadata in track.yaml for session restoration
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     When a developer agent claims a track, record its Claude session ID,
@@ -23,11 +23,11 @@ spec:
     but completely unused (extra: {}). The kf-track-content tool supports
     reading/writing scalar keys via `kf-track-content extra --key K --set V`.
     For structured data (nested YAML), we need a dedicated subcommand.
-
+    
     **Session ID discovery:** Agents can discover their Claude session ID by
     scanning ~/.claude/projects/-{sanitized_path}/*.jsonl for the most recent
     file. The kf-developer skill already documents this technique (Step 10r).
-
+    
     **Agent identity at claim time:** The agent knows its worktree name
     (basename of cwd or git branch --show-current), the branch it created
     (type/trackId), and can discover its session ID. If the agent was
@@ -36,12 +36,12 @@ spec:
     directly (no orchestrator), these are absent — the claim command must
     handle this gracefully by falling back to session ID discovery from
     the filesystem and omitting agent_id.
-
+    
     **Commit point:** The natural place to record the claim is right after
     the implementation branch is created (kf-developer Step 5), before the
     first implementation task. The claim record gets committed with the
     first task commit.
-
+    
     **Key files:**
     - .agent/kf/bin/kf-track-content — Python CLI (1093 lines)
     - .agent/kf/bin/kf-developer/SKILL.md — Developer workflow skill
@@ -82,20 +82,20 @@ spec:
         claimed_at: "2026-03-12T14:30:00Z"
         model: "claude-opus-4-6"
     ```
-
+    
     **Graceful fallback when env vars are absent (CLI-started agents):**
     - KF_AGENT_ID missing → omit agent_id field (session_id is sufficient for resume)
     - KF_SESSION_ID missing → fall back to filesystem discovery
     - KF_AGENT_ROLE missing → use --role flag or default to "unknown"
     - All fields are optional except session_id and timestamp
-
+    
     **Session ID discovery (reuse existing pattern from kf-developer):**
     ```bash
     PROJECT_DIR=$(echo "$PWD" | sed 's|/|-|g; s|^-||')
     SESSION_ID=$(ls -t ~/.claude/projects/-${PROJECT_DIR}/*.jsonl \
       2>/dev/null | head -1 | xargs basename | sed 's/.jsonl//')
     ```
-
+    
     **Implementation approach:**
     1. Add `cmd_claim()` to kf-track-content that writes a structured YAML
        block to extra.claim (not individual scalar keys)
@@ -105,7 +105,7 @@ spec:
        after creating the implementation branch
     4. The claim data is NOT committed separately — it gets included in
        the first task commit (or the track completion commit)
-
+    
     **Restoration usage (manual, outside the system):**
     ```bash
     # Find session for a track
@@ -117,21 +117,21 @@ plan:
   - phase: Tooling — Claim (developer)
     tasks:
       - text: Add cmd_claim() to kf-track-content — writes agent_id, role, session_id, worktree, branch, claimed_at, model to extra.claim
-        done: false
+        done: true
       - text: Add --show flag to cmd_claim() that reads and displays the claim record
-        done: false
+        done: true
       - text: Add --clear flag to cmd_claim() that removes the claim record
-        done: false
+        done: true
       - text: Auto-discover identity — read KF_AGENT_ID, KF_SESSION_ID, KF_AGENT_ROLE from env; fall back to filesystem session discovery and git branch when env vars absent
-        done: false
+        done: true
   - phase: Tooling — Register (architect)
     tasks:
       - text: Add cmd_register() to kf-track-content — writes agent_id, role, session_id, timestamp to extra.created_by
-        done: false
+        done: true
       - text: Add --show flag to cmd_register() that reads and displays the created_by record
-        done: false
+        done: true
       - text: Same graceful fallback as claim — omit agent_id when KF_AGENT_ID not set, discover session_id from filesystem
-        done: false
+        done: true
   - phase: Skill Integration
     tasks:
       - text: Update kf-developer SKILL.md Step 5 to call kf-track-content claim after branch creation
