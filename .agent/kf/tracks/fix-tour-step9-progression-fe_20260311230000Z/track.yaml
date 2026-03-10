@@ -29,22 +29,22 @@ spec:
     
     In TourOverlay.tsx, the isWaitStep branch (lines 169-174) should render a Next button alongside a 'Skip step' text link, instead of only 'Skip and finish tour'. The E2E test should be updated to verify the tour can progress past step 9 to step 10+.
 plan:
-  - phase: "Fix TourOverlay wait-step UI"
+  - phase: Fix TourOverlay wait-step UI
     tasks:
-      - text: "In TourOverlay.tsx, change the isWaitStep branch (lines 169-174) to render a Next button alongside the skip link. The skip link should call nextStep (skip this step) instead of completeTour (end tour)."
-        done: false
-      - text: "Verify the fix renders correctly — step 9 tooltip shows both 'Next' and a skip-step link."
-        done: false
-  - phase: "Update E2E test"
+      - text: In TourOverlay.tsx, change the isWaitStep branch (lines 169-174) to render a Next button alongside the skip link. The skip link should call nextStep (skip this step) instead of completeTour (end tour).
+        done: true
+      - text: Verify the fix renders correctly — step 9 tooltip shows both 'Next' and a skip-step link.
+        done: true
+  - phase: Update E2E test
     tasks:
-      - text: "In tour-inmemory-state.spec.ts, update the full tour flow test to click Next at step 9 and verify progression through steps 10-14 (deps-conflicts, agent-types, notification-center, traces, finish)."
-        done: false
-      - text: "Run the E2E test suite and verify all tour tests pass."
-        done: false
-  - phase: "Verification"
+      - text: In tour-inmemory-state.spec.ts, update the full tour flow test to click Next at step 9 and verify progression through steps 10-14 (deps-conflicts, agent-types, notification-center, traces, finish).
+        done: true
+      - text: Run the E2E test suite and verify all tour tests pass.
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make build-frontend to verify no TypeScript/build errors."
-        done: false
-      - text: "Run make test to verify no regressions."
-        done: false
+      - text: Run make build-frontend to verify no TypeScript/build errors.
+        done: true
+      - text: Run make test to verify no regressions.
+        done: true
 extra: {}
