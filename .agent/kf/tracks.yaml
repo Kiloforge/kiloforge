@@ -233,7 +233,7 @@ research-global-gitea-multiproject_20260307120001Z: {"title":"Research: Global G
 research-graceful-shutdown-recovery_20260307150001Z: {"title":"Research: Graceful Agent Shutdown, Session Persistence, and Recovery","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-native-track-board_20260308235000Z: {"title":"Research: Native Track Board in Kiloforge Dashboard","status":"archived","type":"research","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 research-otel-task-tracing_20260308233000Z: {"title":"Research: OpenTelemetry for Task-Level Tracing and Token Metrics","status":"archived","type":"research","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-responsive-kanban-fe_20260311220002Z: {"title":"Mobile-friendly kanban board with column tabs","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
+responsive-kanban-fe_20260311220002Z: {"title":"Mobile-friendly kanban board with column tabs","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
 responsive-nav-fe_20260311220000Z: {"title":"Responsive header navigation with hamburger menu","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-10"}
 responsive-tables-fe_20260311220001Z: {"title":"Responsive tables and fixed-width layouts","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-10"}
 review-cycle-relay_20260307125002Z: {"title":"Developer-Reviewer Relay Cycle","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}

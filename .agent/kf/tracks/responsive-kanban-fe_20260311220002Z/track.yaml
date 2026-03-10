@@ -1,7 +1,7 @@
 id: responsive-kanban-fe_20260311220002Z
 title: "Mobile-friendly kanban board with column tabs"
 type: feature
-status: pending
+status: completed
 created: 2026-03-11
 updated: 2026-03-11
 spec:
@@ -36,33 +36,33 @@ plan:
   - phase: "Foundation"
     tasks:
       - text: "Add @media (max-width: 767px) to KanbanBoard.module.css — column full width, remove min-width"
-        done: false
+        done: true
       - text: "Add .tabBar, .tab, and .moveButton styles"
-        done: false
+        done: true
       - text: "Add useMediaQuery hook (matchMedia 768px)"
-        done: false
+        done: true
   - phase: "Tab Navigation"
     tasks:
       - text: "Add activeColumn state to KanbanBoard.tsx"
-        done: false
+        done: true
       - text: "Render tab bar on mobile with column names and count badges"
-        done: false
+        done: true
       - text: "Conditionally render only active column's cards on mobile"
-        done: false
+        done: true
   - phase: "Card Movement"
     tasks:
       - text: "Add 'Move to...' dropdown on each card, visible only on mobile"
-        done: false
+        done: true
       - text: "Wire dropdown to existing card move handler"
-        done: false
+        done: true
       - text: "Hide RelationshipOverlay on mobile"
-        done: false
+        done: true
   - phase: "Verification"
     tasks:
       - text: "Verify tab switching at 375px — correct column, count badges"
-        done: false
+        done: true
       - text: "Verify 'Move to...' moves cards correctly"
-        done: false
+        done: true
       - text: "Verify desktop layout unchanged — run KanbanBoard tests"
-        done: false
+        done: true
 extra: {}
