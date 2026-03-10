@@ -71,33 +71,39 @@ plan:
   - phase: Core command (TDD)
     tasks:
       - text: Write unit tests for analytics enable, disable, and status subcommands
-        done: false
+        done: true
       - text: Create backend/internal/adapter/cli/analytics.go with analyticsCmd parent and enable/disable/status subcommands
-        done: false
+        done: true
       - text: Register analyticsCmd in root.go init()
-        done: false
+        done: true
       - text: Verify: make test, make build pass
-        done: false
+        done: true
   - phase: Status source enrichment
     tasks:
       - text: Add source detection to status output (config file / env override / default)
-        done: false
+        done: true
       - text: Update tests for source display variants
-        done: false
+        done: true
   - phase: Documentation
     tasks:
       - text: Add Analytics section to docs/getting-started.md documenting kf analytics enable/disable/status and KF_ANALYTICS_ENABLED
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make test, make build, make lint — all pass
-        done: false
+        done: true
       - text: Verify kf analytics --help output is clear and consistent
-        done: false
+        done: true
       - text: Verify docs render correctly with new section
-        done: false
+        done: true
 extra:
   created_by:
     role: architect
     session_id: a7a4797b-0fa2-4ab4-b7d0-f6348bc18fa1
     timestamp: 2026-03-10T22:15:21Z
+  claim:
+    role: developer
+    session_id: ba292e22-8e13-4ffc-9791-c815b94c7ad6
+    worktree: worker-2
+    branch: feature/analytics-cli-toggle-be_20260310221320Z
+    claimed_at: 2026-03-10T22:19:15Z
