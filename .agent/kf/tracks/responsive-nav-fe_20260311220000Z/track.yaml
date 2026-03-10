@@ -1,0 +1,32 @@
+id: responsive-nav-fe_20260311220000Z
+title: "Responsive header navigation with hamburger menu"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Add responsive navigation to the header — hamburger menu on mobile/tablet screens"
+  context: |
+    The header navigation currently assumes desktop width. On narrow screens,
+    nav links overflow and the header becomes unusable.
+  acceptance_criteria:
+    - Hamburger button visible on screens ≤768px, hidden on desktop
+    - Nav links collapse into vertical dropdown on mobile
+    - Hamburger animates to X when menu is open
+    - Nav links close menu on click
+    - Subtitle, dividers, and labels hidden on mobile to save space
+plan:
+  - phase: "Implementation"
+    tasks:
+      - text: "Add mobileNavOpen state and hamburger button to App.tsx header"
+        done: true
+      - text: "Add hamburger CSS with animated X transition"
+        done: true
+      - text: "Add @media (max-width: 768px) responsive rules for nav collapse"
+        done: true
+      - text: "Close mobile nav on link click"
+        done: true
+  - phase: "Verification"
+    tasks:
+      - text: "Build passes, lint clean, no TS errors"
+        done: true
