@@ -1,5 +1,5 @@
 id: auto-open-dashboard_20260310230000Z
-title: "Auto-open browser to dashboard on init and up"
+title: Auto-open browser to dashboard on init and up
 type: feature
 status: pending
 created: 2026-03-10
@@ -20,27 +20,27 @@ spec:
       and returns early. Browser open should happen here too.
     - Lines 148-150: prints Dashboard and Gitea URLs after successful init.
     - Line 176: end of function — ideal spot for browser open.
-
+    
     up.go (runUp):
     - Lines 39-52: already-running detection. Prints "Gitea already running" and
       continues (does NOT return early).
     - Lines 54-65: starts daemon or reports already running.
     - Lines 68-69: prints Dashboard and Gitea URLs.
     - Line 73: end of function — ideal spot for browser open.
-
+    
     No existing browser-opening utility in the codebase.
     No xdg-open, open (macOS), or start (Windows) calls anywhere.
-
+    
     Default orchestrator port: 4001 (defaults.go line 19).
     Dashboard served at root path / on orchestrator port.
   acceptance_criteria:
-    - "kf init opens the dashboard URL in the user's default browser after successful initialization"
-    - "kf up opens the dashboard URL in the user's default browser after services are confirmed running"
-    - "When Gitea/orchestrator is already running, init and up still report URLs and open browser (no error)"
-    - "--no-browser flag on both init and up suppresses browser opening"
-    - "KF_NO_BROWSER=1 environment variable suppresses browser opening"
-    - "Browser open failure is non-fatal — logged as warning, does not fail the command"
-    - "Cross-platform: macOS (open), Linux (xdg-open), Windows (start)"
+    - kf init opens the dashboard URL in the user's default browser after successful initialization
+    - kf up opens the dashboard URL in the user's default browser after services are confirmed running
+    - When Gitea/orchestrator is already running, init and up still report URLs and open browser (no error)
+    - --no-browser flag on both init and up suppresses browser opening
+    - KF_NO_BROWSER=1 environment variable suppresses browser opening
+    - Browser open failure is non-fatal — logged as warning, does not fail the command
+    - Cross-platform: macOS (open), Linux (xdg-open), Windows (start)
   out_of_scope: |
     - Dashboard UI changes
     - New API endpoints
@@ -51,32 +51,32 @@ spec:
     platform-appropriate command. The --no-browser flag and KF_NO_BROWSER env
     var provide opt-out for CI/headless environments.
 plan:
-  - phase: "Browser utility"
+  - phase: Browser utility
     tasks:
-      - text: "Create backend/internal/adapter/browser/open.go with Open(url string) error — uses runtime.GOOS to select open/xdg-open/start"
-        done: false
-      - text: "Write test for browser.Open — verify correct command is selected per platform (mock exec)"
-        done: false
-  - phase: "CLI integration"
+      - text: Create backend/internal/adapter/browser/open.go with Open(url string) error — uses runtime.GOOS to select open/xdg-open/start
+        done: true
+      - text: Write test for browser.Open — verify correct command is selected per platform (mock exec)
+        done: true
+  - phase: CLI integration
     tasks:
-      - text: "Add --no-browser persistent flag to root command (also reads KF_NO_BROWSER env var)"
-        done: false
-      - text: "In init.go: call browser.Open(dashboardURL) at end of runInit() and in the already-running early return path"
-        done: false
-      - text: "In up.go: call browser.Open(dashboardURL) at end of runUp()"
-        done: false
-      - text: "Ensure browser.Open errors are logged as warnings, never fatal"
-        done: false
-  - phase: "Already-running graceful handling"
+      - text: Add --no-browser persistent flag to root command (also reads KF_NO_BROWSER env var)
+        done: true
+      - text: In init.go: call browser.Open(dashboardURL) at end of runInit() and in the already-running early return path
+        done: true
+      - text: In up.go: call browser.Open(dashboardURL) at end of runUp()
+        done: true
+      - text: Ensure browser.Open errors are logged as warnings, never fatal
+        done: true
+  - phase: Already-running graceful handling
     tasks:
-      - text: "Verify init already-running path (line 84-91) prints URLs AND opens browser before returning"
-        done: false
-      - text: "Verify up already-running path reports URL and opens browser regardless of prior state"
-        done: false
-  - phase: "Verification"
+      - text: Verify init already-running path (line 84-91) prints URLs AND opens browser before returning
+        done: true
+      - text: Verify up already-running path reports URL and opens browser regardless of prior state
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test to verify no regressions"
-        done: false
-      - text: "Manual test: kf up with --no-browser flag, verify browser does not open"
-        done: false
+      - text: Run make test to verify no regressions
+        done: true
+      - text: Manual test: kf up with --no-browser flag, verify browser does not open
+        done: true
 extra: {}
