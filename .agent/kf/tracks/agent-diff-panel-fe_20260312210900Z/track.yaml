@@ -78,9 +78,9 @@ plan:
   - phase: Polish & Verification
     tasks:
       - text: Handle edge cases: hide diff toggle when slug/branch unavailable, show helpful empty state when diff has no changes
-        done: false
+        done: true
       - text: Ensure diff panel respects window resize/maximize/snap behaviors from useFloatingWindow
-        done: false
+        done: true
       - text: Run full frontend test suite (make test-frontend), verify no regressions
-        done: false
+        done: true
 extra: {}

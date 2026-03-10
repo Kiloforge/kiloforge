@@ -76,7 +76,7 @@ describe("AgentDiffPanel", () => {
       data: { ...mockDiff, files: [], stats: { files_changed: 0, insertions: 0, deletions: 0 } },
       isLoading: false,
       error: null,
-    } as ReturnType<typeof useProjectDiff>);
+    } as unknown as ReturnType<typeof useProjectDiff>);
     wrap(<AgentDiffPanel slug="my-proj" branch="feature/test" />);
     expect(screen.getByText("No changes on this branch")).toBeInTheDocument();
   });
