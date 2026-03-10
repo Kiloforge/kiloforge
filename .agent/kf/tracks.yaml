@@ -43,7 +43,7 @@ backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config v
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 board-clamp-forward-moves-be_20260312220000Z: {"title":"Clamp forward column moves — max one step, block beyond approved","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 board-clamp-forward-moves-fe_20260312220001Z: {"title":"Clamp forward column moves in board UI","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-board-layout-3col-fe_20260310210015Z: {"title":"Remove Done column and restructure board to 3-column layout with completion animation","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+board-layout-3col-fe_20260310210015Z: {"title":"Remove Done column and restructure board to 3-column layout with completion animation","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 board-link-polish-fe_20260311210000Z: {"title":"Polish board relationship link visuals","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
