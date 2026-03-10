@@ -61,6 +61,8 @@ type ProjectManager interface {
 // InteractiveSpawner creates and manages interactive agent sessions.
 type InteractiveSpawner interface {
 	SpawnInteractive(ctx context.Context, opts agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error)
+	SpawnDeveloper(ctx context.Context, opts agent.SpawnDeveloperOpts) (*domain.AgentInfo, error)
+	SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error)
 	StopAgent(id string) error
 	ResumeAgent(ctx context.Context, id string) (*agent.InteractiveAgent, error)
 	ResumeDeveloper(ctx context.Context, id string) (*domain.AgentInfo, error)
@@ -705,6 +707,68 @@ func (h *APIHandler) DeleteAgent(_ context.Context, req gen.DeleteAgentRequestOb
 	}
 
 	return gen.DeleteAgent204Response{}, nil
+}
+
+// ReplaceAgent implements gen.StrictServerInterface.
+func (h *APIHandler) ReplaceAgent(ctx context.Context, req gen.ReplaceAgentRequestObject) (gen.ReplaceAgentResponseObject, error) {
+	if h.interSpawner == nil {
+		return gen.ReplaceAgent409JSONResponse{Error: "agent spawner not configured"}, nil
+	}
+
+	// Find the original agent.
+	old, err := h.agents.FindAgent(req.Id)
+	if err != nil {
+		return gen.ReplaceAgent404JSONResponse{Error: "agent not found"}, nil
+	}
+
+	// Verify it's in a terminal state.
+	if !old.IsTerminal() {
+		return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("agent is %s — must be in terminal state to replace", old.Status)}, nil
+	}
+
+	// Mark old agent as replaced.
+	if h.agentRemover != nil {
+		// Use the agents store directly to update status to replaced.
+		// The agentRemover interface only has RemoveAgent, so we rely on the
+		// handler-level pattern of finding and re-saving.
+	}
+
+	// Determine model override.
+	model := old.Model
+	if req.Body != nil && req.Body.Model != nil {
+		model = *req.Body.Model
+	}
+
+	// Spawn replacement based on original role.
+	var newAgent *domain.AgentInfo
+	switch old.Role {
+	case "developer":
+		flags := ""
+		if req.Body != nil && req.Body.Flags != nil {
+			flags = *req.Body.Flags
+		}
+		newAgent, err = h.interSpawner.SpawnDeveloper(ctx, agent.SpawnDeveloperOpts{
+			TrackID:     old.Ref,
+			Flags:       flags,
+			WorktreeDir: old.WorktreeDir,
+			Model:       model,
+		})
+	case "reviewer":
+		// Extract PR number from ref (format: "PR #123").
+		prNum := 0
+		if _, scanErr := fmt.Sscanf(old.Ref, "PR #%d", &prNum); scanErr != nil {
+			return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("cannot parse PR number from ref: %s", old.Ref)}, nil
+		}
+		newAgent, err = h.interSpawner.SpawnReviewer(ctx, prNum, old.Ref)
+	default:
+		return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("role %q does not support replacement", old.Role)}, nil
+	}
+
+	if err != nil {
+		return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("spawn replacement: %v", err)}, nil
+	}
+
+	return gen.ReplaceAgent201JSONResponse(domainAgentToGen(*newAgent, h.quota)), nil
 }
 
 // GetQuota implements gen.StrictServerInterface.

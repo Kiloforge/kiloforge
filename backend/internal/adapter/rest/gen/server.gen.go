@@ -681,6 +681,15 @@ type ReliabilityTotals struct {
 	Total  int            `json:"total"`
 }
 
+// ReplaceAgentRequest defines model for ReplaceAgentRequest.
+type ReplaceAgentRequest struct {
+	// Flags Additional flags for the replacement agent (optional)
+	Flags *string `json:"flags,omitempty"`
+
+	// Model Override model for the replacement agent (optional, defaults to original agent's model)
+	Model *string `json:"model,omitempty"`
+}
+
 // ResolveConflictRequest defines model for ResolveConflictRequest.
 type ResolveConflictRequest struct {
 	// Direction Whether the conflict originated from a push or pull
@@ -1144,6 +1153,9 @@ type RunAdminOperationJSONRequestBody = AdminOperationRequest
 // SpawnInteractiveAgentJSONRequestBody defines body for SpawnInteractiveAgent for application/json ContentType.
 type SpawnInteractiveAgentJSONRequestBody = SpawnInteractiveRequest
 
+// ReplaceAgentJSONRequestBody defines body for ReplaceAgent for application/json ContentType.
+type ReplaceAgentJSONRequestBody = ReplaceAgentRequest
+
 // MoveCardJSONRequestBody defines body for MoveCard for application/json ContentType.
 type MoveCardJSONRequestBody = MoveCardRequest
 
@@ -1209,6 +1221,9 @@ type ServerInterface interface {
 	// Get recent log lines for an agent
 	// (GET /api/agents/{id}/log)
 	GetAgentLog(w http.ResponseWriter, r *http.Request, id string, params GetAgentLogParams)
+	// Replace a terminal agent with a fresh one using the same ref and role
+	// (POST /api/agents/{id}/replace)
+	ReplaceAgent(w http.ResponseWriter, r *http.Request, id string)
 	// Resume a stopped agent session
 	// (POST /api/agents/{id}/resume)
 	ResumeAgent(w http.ResponseWriter, r *http.Request, id string)
@@ -1520,6 +1535,31 @@ func (siw *ServerInterfaceWrapper) GetAgentLog(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAgentLog(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceAgent operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceAgent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceAgent(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2831,6 +2871,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/agents/{id}", wrapper.DeleteAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}", wrapper.GetAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/agents/{id}/log", wrapper.GetAgentLog)
+	m.HandleFunc("POST "+options.BaseURL+"/api/agents/{id}/replace", wrapper.ReplaceAgent)
 	m.HandleFunc("POST "+options.BaseURL+"/api/agents/{id}/resume", wrapper.ResumeAgent)
 	m.HandleFunc("POST "+options.BaseURL+"/api/agents/{id}/stop", wrapper.StopAgent)
 	m.HandleFunc("GET "+options.BaseURL+"/api/board/{project}", wrapper.GetBoard)
@@ -3170,6 +3211,42 @@ type GetAgentLog500JSONResponse ErrorResponse
 func (response GetAgentLog500JSONResponse) VisitGetAgentLogResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReplaceAgentRequestObject struct {
+	Id   string `json:"id"`
+	Body *ReplaceAgentJSONRequestBody
+}
+
+type ReplaceAgentResponseObject interface {
+	VisitReplaceAgentResponse(w http.ResponseWriter) error
+}
+
+type ReplaceAgent201JSONResponse Agent
+
+func (response ReplaceAgent201JSONResponse) VisitReplaceAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReplaceAgent404JSONResponse ErrorResponse
+
+func (response ReplaceAgent404JSONResponse) VisitReplaceAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReplaceAgent409JSONResponse ErrorResponse
+
+func (response ReplaceAgent409JSONResponse) VisitReplaceAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -4684,6 +4761,9 @@ type StrictServerInterface interface {
 	// Get recent log lines for an agent
 	// (GET /api/agents/{id}/log)
 	GetAgentLog(ctx context.Context, request GetAgentLogRequestObject) (GetAgentLogResponseObject, error)
+	// Replace a terminal agent with a fresh one using the same ref and role
+	// (POST /api/agents/{id}/replace)
+	ReplaceAgent(ctx context.Context, request ReplaceAgentRequestObject) (ReplaceAgentResponseObject, error)
 	// Resume a stopped agent session
 	// (POST /api/agents/{id}/resume)
 	ResumeAgent(ctx context.Context, request ResumeAgentRequestObject) (ResumeAgentResponseObject, error)
@@ -5019,6 +5099,39 @@ func (sh *strictHandler) GetAgentLog(w http.ResponseWriter, r *http.Request, id 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAgentLogResponseObject); ok {
 		if err := validResponse.VisitGetAgentLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceAgent operation middleware
+func (sh *strictHandler) ReplaceAgent(w http.ResponseWriter, r *http.Request, id string) {
+	var request ReplaceAgentRequestObject
+
+	request.Id = id
+
+	var body ReplaceAgentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceAgent(ctx, request.(ReplaceAgentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceAgent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceAgentResponseObject); ok {
+		if err := validResponse.VisitReplaceAgentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

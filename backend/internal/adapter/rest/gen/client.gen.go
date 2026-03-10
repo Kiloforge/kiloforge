@@ -111,6 +111,11 @@ type ClientInterface interface {
 	// GetAgentLog request
 	GetAgentLog(ctx context.Context, id string, params *GetAgentLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ReplaceAgentWithBody request with any body
+	ReplaceAgentWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceAgent(ctx context.Context, id string, body ReplaceAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ResumeAgent request
 	ResumeAgent(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -372,6 +377,30 @@ func (c *Client) GetAgent(ctx context.Context, id string, reqEditors ...RequestE
 
 func (c *Client) GetAgentLog(ctx context.Context, id string, params *GetAgentLogParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAgentLogRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceAgentWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceAgent(ctx context.Context, id string, body ReplaceAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1435,6 +1464,53 @@ func NewGetAgentLogRequest(server string, id string, params *GetAgentLogParams) 
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewReplaceAgentRequest calls the generic ReplaceAgent builder with application/json body
+func NewReplaceAgentRequest(server string, id string, body ReplaceAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceAgentRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewReplaceAgentRequestWithBody generates requests for ReplaceAgent with any type of body
+func NewReplaceAgentRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/agents/%s/replace", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -3602,6 +3678,11 @@ type ClientWithResponsesInterface interface {
 	// GetAgentLogWithResponse request
 	GetAgentLogWithResponse(ctx context.Context, id string, params *GetAgentLogParams, reqEditors ...RequestEditorFn) (*GetAgentLogResponse, error)
 
+	// ReplaceAgentWithBodyWithResponse request with any body
+	ReplaceAgentWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentResponse, error)
+
+	ReplaceAgentWithResponse(ctx context.Context, id string, body ReplaceAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentResponse, error)
+
 	// ResumeAgentWithResponse request
 	ResumeAgentWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ResumeAgentResponse, error)
 
@@ -3923,6 +4004,30 @@ func (r GetAgentLogResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetAgentLogResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReplaceAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Agent
+	JSON404      *ErrorResponse
+	JSON409      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5130,6 +5235,23 @@ func (c *ClientWithResponses) GetAgentLogWithResponse(ctx context.Context, id st
 	return ParseGetAgentLogResponse(rsp)
 }
 
+// ReplaceAgentWithBodyWithResponse request with arbitrary body returning *ReplaceAgentResponse
+func (c *ClientWithResponses) ReplaceAgentWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentResponse, error) {
+	rsp, err := c.ReplaceAgentWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceAgentResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceAgentWithResponse(ctx context.Context, id string, body ReplaceAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentResponse, error) {
+	rsp, err := c.ReplaceAgent(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceAgentResponse(rsp)
+}
+
 // ResumeAgentWithResponse request returning *ResumeAgentResponse
 func (c *ClientWithResponses) ResumeAgentWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ResumeAgentResponse, error) {
 	rsp, err := c.ResumeAgent(ctx, id, reqEditors...)
@@ -5972,6 +6094,46 @@ func ParseGetAgentLogResponse(rsp *http.Response) (*GetAgentLogResponse, error) 
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceAgentResponse parses an HTTP response from a ReplaceAgentWithResponse call
+func ParseReplaceAgentResponse(rsp *http.Response) (*ReplaceAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

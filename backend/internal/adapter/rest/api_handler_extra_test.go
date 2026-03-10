@@ -19,14 +19,30 @@ import (
 
 // stubInteractiveSpawner implements InteractiveSpawner for testing.
 type stubInteractiveSpawner struct {
-	resumeDevResult *domain.AgentInfo
-	resumeDevErr    error
-	resumeResult    *agent.InteractiveAgent
-	resumeErr       error
+	resumeDevResult  *domain.AgentInfo
+	resumeDevErr     error
+	resumeResult     *agent.InteractiveAgent
+	resumeErr        error
+	spawnDevResult   *domain.AgentInfo
+	spawnDevErr      error
+	spawnRevResult   *domain.AgentInfo
+	spawnRevErr      error
 }
 
 func (s *stubInteractiveSpawner) SpawnInteractive(_ context.Context, _ agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error) {
 	return nil, fmt.Errorf("not implemented in stub")
+}
+func (s *stubInteractiveSpawner) SpawnDeveloper(_ context.Context, _ agent.SpawnDeveloperOpts) (*domain.AgentInfo, error) {
+	if s.spawnDevErr != nil {
+		return nil, s.spawnDevErr
+	}
+	return s.spawnDevResult, nil
+}
+func (s *stubInteractiveSpawner) SpawnReviewer(_ context.Context, _ int, _ string) (*domain.AgentInfo, error) {
+	if s.spawnRevErr != nil {
+		return nil, s.spawnRevErr
+	}
+	return s.spawnRevResult, nil
 }
 func (s *stubInteractiveSpawner) StopAgent(_ string) error { return nil }
 func (s *stubInteractiveSpawner) ResumeAgent(_ context.Context, _ string) (*agent.InteractiveAgent, error) {
@@ -591,6 +607,126 @@ func TestResumeAgent_NotFoundReturns404(t *testing.T) {
 	}
 	if _, ok := resp.(gen.ResumeAgent404JSONResponse); !ok {
 		t.Fatalf("expected 404 for not found agent, got %T", resp)
+	}
+}
+
+// --- ReplaceAgent Tests ---
+
+func TestReplaceAgent_ResumeFailed_SpawnsNew(t *testing.T) {
+	t.Parallel()
+	oldAgent := domain.AgentInfo{
+		ID:     "dev-1",
+		Role:   "developer",
+		Status: "resume-failed",
+		Ref:    "my-track-123",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{agents: []domain.AgentInfo{oldAgent}},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{
+			spawnDevResult: &domain.AgentInfo{
+				ID:     "dev-2",
+				Role:   "developer",
+				Status: "running",
+				Ref:    "my-track-123",
+			},
+		},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "dev-1",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.ReplaceAgent201JSONResponse)
+	if !ok {
+		t.Fatalf("expected 201, got %T", resp)
+	}
+	if r.Id != "dev-2" {
+		t.Errorf("expected new agent ID dev-2, got %s", r.Id)
+	}
+	if r.Status != "running" {
+		t.Errorf("expected running, got %s", r.Status)
+	}
+}
+
+func TestReplaceAgent_RunningAgent_Returns409(t *testing.T) {
+	t.Parallel()
+	runningAgent := domain.AgentInfo{
+		ID:     "dev-1",
+		Role:   "developer",
+		Status: "running",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{agents: []domain.AgentInfo{runningAgent}},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "dev-1",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409 for running agent, got %T", resp)
+	}
+}
+
+func TestReplaceAgent_NotFound_Returns404(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "nonexistent",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent404JSONResponse); !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+}
+
+func TestReplaceAgent_InteractiveRole_Returns409(t *testing.T) {
+	t.Parallel()
+	iaAgent := domain.AgentInfo{
+		ID:     "ia-1",
+		Role:   "interactive",
+		Status: "stopped",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{agents: []domain.AgentInfo{iaAgent}},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "ia-1",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409 for interactive role, got %T", resp)
 	}
 }
 
