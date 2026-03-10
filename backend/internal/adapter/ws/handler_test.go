@@ -160,6 +160,101 @@ func TestHandlerAgentWS_OutputBroadcast(t *testing.T) {
 	}
 }
 
+func TestHandlerAgentWS_InterruptFromPrimary(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+	h := NewHandler(sm, nil, nil)
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	// Create an SDK bridge with an interrupt handler.
+	var interrupted bool
+	done := make(chan struct{})
+	bridge := NewSDKBridge("agent-int", func(text string) error { return nil }, done)
+	bridge.InterruptHandler = func() { interrupted = true }
+	sm.RegisterBridge("agent-int", bridge)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-int", nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.CloseNow()
+
+	// Read the initial status message.
+	_, _, err = conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("read status: %v", err)
+	}
+
+	// Send an interrupt message.
+	intMsg, _ := json.Marshal(Message{Type: MsgInterrupt})
+	if err := conn.Write(ctx, websocket.MessageText, intMsg); err != nil {
+		t.Fatalf("write interrupt: %v", err)
+	}
+
+	// Give readLoop time to process.
+	time.Sleep(100 * time.Millisecond)
+
+	if !interrupted {
+		t.Error("expected InterruptHandler to be called")
+	}
+}
+
+func TestHandlerAgentWS_InterruptFromObserver(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+	h := NewHandler(sm, nil, nil)
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	// Create an SDK bridge with an interrupt handler.
+	var interrupted bool
+	done := make(chan struct{})
+	bridge := NewSDKBridge("agent-int2", func(text string) error { return nil }, done)
+	bridge.InterruptHandler = func() { interrupted = true }
+	sm.RegisterBridge("agent-int2", bridge)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// First connection is primary.
+	conn1, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-int2", nil)
+	if err != nil {
+		t.Fatalf("dial primary: %v", err)
+	}
+	defer conn1.CloseNow()
+	_, _, _ = conn1.Read(ctx) // read status
+
+	// Second connection is observer (read-only).
+	conn2, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-int2", nil)
+	if err != nil {
+		t.Fatalf("dial observer: %v", err)
+	}
+	defer conn2.CloseNow()
+	_, _, _ = conn2.Read(ctx) // read status
+
+	// Observer sends interrupt — should be ignored (no readLoop for observers).
+	intMsg, _ := json.Marshal(Message{Type: MsgInterrupt})
+	if err := conn2.Write(ctx, websocket.MessageText, intMsg); err != nil {
+		t.Fatalf("write interrupt: %v", err)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	if interrupted {
+		t.Error("observer should NOT be able to trigger interrupt")
+	}
+}
+
 func TestHandlerAgentWS_NoBridge_TerminalAgent(t *testing.T) {
 	t.Parallel()
 	sm := NewSessionManager()

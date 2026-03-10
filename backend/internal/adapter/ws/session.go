@@ -176,12 +176,13 @@ type InputHandler func(text string) error
 
 // Bridge manages the IO between an interactive agent process and WebSocket clients.
 type Bridge struct {
-	AgentID      string
-	Stdin        io.WriteCloser  // write to agent's stdin (legacy)
-	InputHandler InputHandler    // SDK-based input handler (takes precedence over Stdin)
-	Buffer       *RingBuffer     // output ring buffer for reconnection
-	Done         <-chan struct{} // closed when agent exits
-	mu           sync.Mutex
+	AgentID          string
+	Stdin            io.WriteCloser  // write to agent's stdin (legacy)
+	InputHandler     InputHandler    // SDK-based input handler (takes precedence over Stdin)
+	InterruptHandler func()          // called to interrupt the current agent turn
+	Buffer           *RingBuffer     // output ring buffer for reconnection
+	Done             <-chan struct{} // closed when agent exits
+	mu               sync.Mutex
 }
 
 // NewBridge creates a new bridge for an interactive agent.
@@ -202,6 +203,13 @@ func NewSDKBridge(agentID string, handler InputHandler, done <-chan struct{}) *B
 		InputHandler: handler,
 		Buffer:       NewRingBuffer(500),
 		Done:         done,
+	}
+}
+
+// Interrupt interrupts the current agent turn. No-op if no handler is set.
+func (b *Bridge) Interrupt() {
+	if b.InterruptHandler != nil {
+		b.InterruptHandler()
 	}
 }
 

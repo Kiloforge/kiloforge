@@ -156,18 +156,22 @@ func (h *Handler) readLoop(session *Session, bridge *Bridge) {
 			continue
 		}
 
-		if msg.Type != MsgInput {
-			continue
-		}
+		switch msg.Type {
+		case MsgInterrupt:
+			bridge.Interrupt()
 
-		text := strings.TrimSpace(msg.Text)
-		if text == "" {
-			continue
-		}
+		case MsgInput:
+			text := strings.TrimSpace(msg.Text)
+			if text == "" {
+				continue
+			}
+			if err := bridge.WriteInput(text); err != nil {
+				_ = session.conn.Write(session.ctx, websocket.MessageText,
+					ErrorMsg(fmt.Sprintf("failed to send input to agent: %v", err)))
+			}
 
-		if err := bridge.WriteInput(text); err != nil {
-			_ = session.conn.Write(session.ctx, websocket.MessageText,
-				ErrorMsg(fmt.Sprintf("failed to send input to agent: %v", err)))
+		default:
+			continue
 		}
 	}
 }
