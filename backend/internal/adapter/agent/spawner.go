@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -489,6 +490,14 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	workDir := opts.WorkDir
 	if workDir == "" {
 		workDir, _ = os.Getwd()
+	}
+
+	// Ensure workDir is a git repository — the Claude SDK requires it.
+	if _, err := os.Stat(filepath.Join(workDir, ".git")); os.IsNotExist(err) {
+		initCmd := exec.CommandContext(ctx, "git", "init", workDir)
+		if out, initErr := initCmd.CombinedOutput(); initErr != nil {
+			return nil, fmt.Errorf("initializing git repository in %s: %s: %w", workDir, string(out), initErr)
+		}
 	}
 
 	model := opts.Model
