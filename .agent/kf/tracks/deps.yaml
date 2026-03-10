@@ -34,9 +34,6 @@
 # UPDATED: 2026-03-10
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-header-title-link_20260310070000Z: []
-
 work-queue-be_20260311010002Z: []
 
 work-queue-fe_20260311010003Z:

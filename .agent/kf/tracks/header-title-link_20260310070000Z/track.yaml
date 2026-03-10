@@ -1,13 +1,11 @@
 id: header-title-link_20260310070000Z
-title: "Make header logo and title link to dashboard"
+title: Make header logo and title link to dashboard
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Wrap the kiloforge logo and h1 title in the App.tsx header with a React
-    Router Link to "/" so clicking them navigates back to the overview dashboard.
+  summary: ">"
   context: |
     The header logo (kf_logo.webp) and h1 "kiloforge" title in App.tsx are
     static elements with no navigation behavior. Users on sub-pages (project
@@ -15,7 +13,7 @@ spec:
     overview dashboard by clicking the brand/title area — a standard UX pattern.
   codebase_analysis: |
     Key file: frontend/src/App.tsx (lines 126-134)
-
+    
     Current header structure:
       <header className={styles.header}>
         <div className={styles.headerLeft}>
@@ -24,10 +22,10 @@ spec:
           <ConnectionStatus ... />
           <span className={styles.headerDivider} />
           ...
-
+    
     React Router's Link component is already imported in App.tsx (line 2).
     The overview page is at route "/".
-
+    
     CSS modules: frontend/src/App.module.css contains styles.logo and
     styles.title. The Link wrapper will need styling to remove default anchor
     decoration and preserve the existing flex layout.
@@ -48,16 +46,16 @@ spec:
     is already imported. May need a new CSS class like styles.homeLink in
     App.module.css.
 plan:
-  - phase: "Implementation"
+  - phase: Implementation
     tasks:
-      - text: "Wrap logo img and h1 title in App.tsx with <Link to='/'> and add homeLink CSS class to App.module.css"
-        done: false
-      - text: "Verify header layout is visually unchanged with the link wrapper"
-        done: false
-  - phase: "Verification"
+      - text: Wrap logo img and h1 title in App.tsx with <Link to='/'> and add homeLink CSS class to App.module.css
+        done: true
+      - text: Verify header layout is visually unchanged with the link wrapper
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make build-frontend to verify no build errors"
-        done: false
-      - text: "Run make test-e2e to verify existing E2E tests pass"
-        done: false
+      - text: Run make build-frontend to verify no build errors
+        done: true
+      - text: Run make test-e2e to verify existing E2E tests pass
+        done: true
 extra: {}
