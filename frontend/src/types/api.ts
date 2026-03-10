@@ -218,6 +218,27 @@ export interface PullResult {
   new_head: string;
 }
 
+export interface QueueItem {
+  track_id: string;
+  project_slug: string;
+  status: "queued" | "assigned" | "completed" | "failed";
+  agent_id?: string;
+  enqueued_at: string;
+  assigned_at?: string | null;
+  completed_at?: string | null;
+}
+
+export interface QueueStatus {
+  running: boolean;
+  max_workers: number;
+  active_workers: number;
+  items: QueueItem[];
+}
+
+export interface QueueSettings {
+  max_workers: number;
+}
+
 export interface ConfigResponse {
   dashboard_enabled: boolean;
 }
