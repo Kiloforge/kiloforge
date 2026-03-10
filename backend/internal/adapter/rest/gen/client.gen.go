@@ -229,6 +229,12 @@ type ClientInterface interface {
 	// GetQuota request
 	GetQuota(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListReliabilityEvents request
+	ListReliabilityEvents(ctx context.Context, params *ListReliabilityEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetReliabilitySummary request
+	GetReliabilitySummary(ctx context.Context, params *GetReliabilitySummaryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetSkillsStatus request
 	GetSkillsStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -877,6 +883,30 @@ func (c *Client) StopQueue(ctx context.Context, reqEditors ...RequestEditorFn) (
 
 func (c *Client) GetQuota(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetQuotaRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListReliabilityEvents(ctx context.Context, params *ListReliabilityEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListReliabilityEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetReliabilitySummary(ctx context.Context, params *GetReliabilitySummaryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetReliabilitySummaryRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2646,6 +2676,232 @@ func NewGetQuotaRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListReliabilityEventsRequest generates requests for ListReliabilityEvents
+func NewListReliabilityEventsRequest(server string, params *ListReliabilityEventsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/reliability/events")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.EventType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "event_type", runtime.ParamLocationQuery, *params.EventType); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Severity != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "severity", runtime.ParamLocationQuery, *params.Severity); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "agent_id", runtime.ParamLocationQuery, *params.AgentId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "since", runtime.ParamLocationQuery, *params.Since); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Until != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "until", runtime.ParamLocationQuery, *params.Until); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetReliabilitySummaryRequest generates requests for GetReliabilitySummary
+func NewGetReliabilitySummaryRequest(server string, params *GetReliabilitySummaryParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/reliability/summary")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "since", runtime.ParamLocationQuery, *params.Since); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Until != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "until", runtime.ParamLocationQuery, *params.Until); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Bucket != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "bucket", runtime.ParamLocationQuery, *params.Bucket); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetSkillsStatusRequest generates requests for GetSkillsStatus
 func NewGetSkillsStatusRequest(server string) (*http.Request, error) {
 	var err error
@@ -3419,6 +3675,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetQuotaWithResponse request
 	GetQuotaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQuotaResponse, error)
+
+	// ListReliabilityEventsWithResponse request
+	ListReliabilityEventsWithResponse(ctx context.Context, params *ListReliabilityEventsParams, reqEditors ...RequestEditorFn) (*ListReliabilityEventsResponse, error)
+
+	// GetReliabilitySummaryWithResponse request
+	GetReliabilitySummaryWithResponse(ctx context.Context, params *GetReliabilitySummaryParams, reqEditors ...RequestEditorFn) (*GetReliabilitySummaryResponse, error)
 
 	// GetSkillsStatusWithResponse request
 	GetSkillsStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSkillsStatusResponse, error)
@@ -4370,6 +4632,54 @@ func (r GetQuotaResponse) StatusCode() int {
 	return 0
 }
 
+type ListReliabilityEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedReliabilityEvents
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListReliabilityEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListReliabilityEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetReliabilitySummaryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReliabilitySummary
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetReliabilitySummaryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetReliabilitySummaryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetSkillsStatusResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5119,6 +5429,24 @@ func (c *ClientWithResponses) GetQuotaWithResponse(ctx context.Context, reqEdito
 		return nil, err
 	}
 	return ParseGetQuotaResponse(rsp)
+}
+
+// ListReliabilityEventsWithResponse request returning *ListReliabilityEventsResponse
+func (c *ClientWithResponses) ListReliabilityEventsWithResponse(ctx context.Context, params *ListReliabilityEventsParams, reqEditors ...RequestEditorFn) (*ListReliabilityEventsResponse, error) {
+	rsp, err := c.ListReliabilityEvents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListReliabilityEventsResponse(rsp)
+}
+
+// GetReliabilitySummaryWithResponse request returning *GetReliabilitySummaryResponse
+func (c *ClientWithResponses) GetReliabilitySummaryWithResponse(ctx context.Context, params *GetReliabilitySummaryParams, reqEditors ...RequestEditorFn) (*GetReliabilitySummaryResponse, error) {
+	rsp, err := c.GetReliabilitySummary(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetReliabilitySummaryResponse(rsp)
 }
 
 // GetSkillsStatusWithResponse request returning *GetSkillsStatusResponse
@@ -6720,6 +7048,86 @@ func ParseGetQuotaResponse(rsp *http.Response) (*GetQuotaResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListReliabilityEventsResponse parses an HTTP response from a ListReliabilityEventsWithResponse call
+func ParseListReliabilityEventsResponse(rsp *http.Response) (*ListReliabilityEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListReliabilityEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedReliabilityEvents
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetReliabilitySummaryResponse parses an HTTP response from a GetReliabilitySummaryWithResponse call
+func ParseGetReliabilitySummaryResponse(rsp *http.Response) (*GetReliabilitySummaryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetReliabilitySummaryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReliabilitySummary
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 

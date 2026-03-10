@@ -1624,6 +1624,127 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/reliability/events:
+    get:
+      operationId: listReliabilityEvents
+      summary: List reliability events with optional filters
+      tags: [Reliability]
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by event type (comma-separated). Values lock_contention, lock_timeout, agent_timeout, agent_spawn_failure, agent_resume_failure, merge_conflict, quota_exceeded.
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by severity (comma-separated). Values warn, error, critical.
+        - name: agent_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by agent ID.
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Filter events created at or after this timestamp (RFC 3339).
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Filter events created before this timestamp (RFC 3339).
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Maximum number of items to return per page.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor for pagination. Omit for first page.
+      responses:
+        "200":
+          description: Paginated list of reliability events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedReliabilityEvents"
+        "400":
+          description: Invalid filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/reliability/summary:
+    get:
+      operationId: getReliabilitySummary
+      summary: Get aggregated reliability event counts by type and time bucket
+      tags: [Reliability]
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Start of time range (RFC 3339). Defaults to 24 hours ago.
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: End of time range (RFC 3339). Defaults to now.
+        - name: bucket
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [hour, day]
+            default: hour
+          description: Time bucket granularity for aggregation.
+      responses:
+        "200":
+          description: Aggregated reliability summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReliabilitySummary"
+        "400":
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     SwarmCapacity:
@@ -2726,3 +2847,77 @@ components:
         total_count:
           type: integer
           description: Total number of items matching the current filters.
+
+    ReliabilityEvent:
+      type: object
+      required: [id, event_type, severity, created_at]
+      properties:
+        id:
+          type: string
+          description: Unique event identifier (UUID).
+        event_type:
+          type: string
+          enum: [lock_contention, lock_timeout, agent_timeout, agent_spawn_failure, agent_resume_failure, merge_conflict, quota_exceeded]
+          description: Category of reliability event.
+        severity:
+          type: string
+          enum: [warn, error, critical]
+          description: Severity level.
+        agent_id:
+          type: string
+          description: Associated agent ID, if applicable.
+        scope:
+          type: string
+          description: Event scope (e.g. merge for lock events, track ID for agent events).
+        detail:
+          type: object
+          additionalProperties: true
+          description: Event-specific detail as a JSON object.
+        created_at:
+          type: string
+          format: date-time
+          description: When the event occurred (RFC 3339).
+
+    PaginatedReliabilityEvents:
+      type: object
+      required: [items, total_count]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReliabilityEvent"
+        next_cursor:
+          type: string
+          description: Opaque cursor for the next page. Empty string means no more pages.
+        total_count:
+          type: integer
+          description: Total number of items matching the current filters.
+
+    ReliabilitySummary:
+      type: object
+      required: [buckets, totals]
+      properties:
+        buckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReliabilityBucket"
+          description: Time-bucketed event counts.
+        totals:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total counts keyed by event_type over the entire range.
+
+    ReliabilityBucket:
+      type: object
+      required: [timestamp, counts]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Start of the time bucket (RFC 3339).
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Event counts keyed by event_type within this bucket.
