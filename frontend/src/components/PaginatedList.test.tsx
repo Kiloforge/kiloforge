@@ -45,13 +45,13 @@ describe("PaginatedList", () => {
     expect(onLoadMore).toHaveBeenCalledTimes(1);
   });
 
-  it("shows loading state when fetching next page", () => {
+  it("shows loading spinner when fetching next page", () => {
     render(
       <PaginatedList remainingCount={10} hasNextPage={true} isFetchingNextPage={true} onLoadMore={() => {}}>
         <div>Item 1</div>
       </PaginatedList>,
     );
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("does not show footer when hasNextPage is false", () => {
@@ -61,7 +61,7 @@ describe("PaginatedList", () => {
       </PaginatedList>,
     );
     expect(screen.queryByText(/more/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("does not show footer when remainingCount is 0 even if hasNextPage", () => {

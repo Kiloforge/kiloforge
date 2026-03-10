@@ -5,6 +5,7 @@ import type { Agent, LogResponse } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
 import { StatusBadge } from "../components/StatusBadge";
+import { InlineSpinner } from "../components/InlineSpinner";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../hooks/useAgentWebSocket";
@@ -116,7 +117,7 @@ export function AgentDetailPage() {
     return (
       <div className={styles.page}>
         <Link to="/" className={styles.back}>&larr; Back</Link>
-        <p className={styles.loading}>Loading agent...</p>
+        <InlineSpinner label="Loading agent..." />
       </div>
     );
   }
@@ -264,7 +265,7 @@ export function AgentDetailPage() {
           </label>
         </div>
         <pre ref={logRef} className={styles.logViewer}>
-          {logLoading ? "Loading..." : logLines.join("\n") || "No log data available."}
+          {logLoading ? <InlineSpinner label="Loading log..." /> : logLines.join("\n") || "No log data available."}
         </pre>
       </div>
 

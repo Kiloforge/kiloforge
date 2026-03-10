@@ -13,6 +13,7 @@ import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { SwarmPanel } from "../components/SwarmPanel";
 import { PaginatedList } from "../components/PaginatedList";
+import { InlineSpinner } from "../components/InlineSpinner";
 import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
 import { HelpTooltip } from "../components/HelpTooltip";
 import { AdvisorHub } from "../components/AdvisorHub";
@@ -216,7 +217,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
           </div>
         </div>
         {agentsLoading ? (
-          <p className={appStyles.empty}>Loading agents...</p>
+          <InlineSpinner label="Loading agents..." />
         ) : (
           <PaginatedList
             remainingCount={agentRemainingCount}
@@ -246,7 +247,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
         </h2>
         <AddProjectForm adding={adding} error={error} onAdd={addProject} onClearError={clearError} />
         {projectsLoading ? (
-          <p className={appStyles.empty}>Loading projects...</p>
+          <InlineSpinner label="Loading projects..." />
         ) : projects.length === 0 ? (
           <div className={appStyles.empty}>
             <p>No projects registered yet, Kiloforger.</p>

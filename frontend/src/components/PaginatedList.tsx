@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InlineSpinner } from "./InlineSpinner";
 import styles from "./PaginatedList.module.css";
 
 interface PaginatedListProps {
@@ -25,7 +26,7 @@ export function PaginatedList({
       {children}
       {isFetchingNextPage && (
         <div className={styles.footer}>
-          <span className={styles.loading}>Loading...</span>
+          <InlineSpinner />
         </div>
       )}
       {showFooter && !isFetchingNextPage && (

@@ -69,9 +69,9 @@ describe("SwarmPanel", () => {
     vi.clearAllMocks();
   });
 
-  it("shows loading state", () => {
+  it("shows loading spinner", () => {
     render(<SwarmPanel {...defaultProps} loading={true} />);
-    expect(screen.getByText("Loading swarm...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("shows empty state when swarm is null", () => {

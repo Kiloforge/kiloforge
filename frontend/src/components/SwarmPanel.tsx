@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { SwarmStatus, SwarmSettings } from "../types/api";
+import { InlineSpinner } from "./InlineSpinner";
 import styles from "./SwarmPanel.module.css";
 
 interface SwarmPanelProps {
@@ -30,7 +31,7 @@ export function SwarmPanel({
   const displaySize = dirty ? maxSwarmSize : String(swarm?.max_workers ?? "");
 
   if (loading) {
-    return <p className={styles.empty}>Loading swarm...</p>;
+    return <InlineSpinner label="Loading swarm..." />;
   }
 
   if (!swarm) {

@@ -24,6 +24,7 @@ import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
 import { AgentLauncher } from "../components/AgentLauncher";
 import { PaginatedList } from "../components/PaginatedList";
+import { InlineSpinner } from "../components/InlineSpinner";
 import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
@@ -334,7 +335,7 @@ export function ProjectPage() {
           </div>
         </div>
         {boardLoading ? (
-          <p className={appStyles.empty}>Loading board...</p>
+          <InlineSpinner label="Loading board..." />
         ) : (
           <KanbanBoard
             board={board ?? { columns: ["backlog", "approved", "in_progress", "in_review", "done"], cards: {} }}
@@ -410,7 +411,7 @@ export function ProjectPage() {
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>
         {tracksLoading ? (
-          <p className={appStyles.empty}>Loading tracks...</p>
+          <InlineSpinner label="Loading tracks..." />
         ) : (
           <PaginatedList
             remainingCount={trackRemaining}

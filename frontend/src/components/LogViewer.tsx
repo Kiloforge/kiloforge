@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { LogResponse } from "../types/api";
+import { InlineSpinner } from "./InlineSpinner";
 import styles from "./LogViewer.module.css";
 
 interface Props {
@@ -99,7 +100,7 @@ export function LogViewer({ agentId, onClose }: Props) {
           </div>
         </div>
         <pre ref={preRef} className={styles.viewer}>
-          {loading ? "Loading..." : lines.join("\n") || "No log data available."}
+          {loading ? <InlineSpinner label="Loading log..." /> : lines.join("\n") || "No log data available."}
         </pre>
       </div>
     </div>

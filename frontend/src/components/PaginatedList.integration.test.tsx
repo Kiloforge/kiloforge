@@ -115,7 +115,7 @@ describe("PaginatedList integration", () => {
       { wrapper: createWrapper() },
     );
 
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
     expect(screen.queryByText(/more/)).not.toBeInTheDocument();
   });
 
@@ -133,6 +133,6 @@ describe("PaginatedList integration", () => {
     );
 
     expect(screen.queryByText(/more/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

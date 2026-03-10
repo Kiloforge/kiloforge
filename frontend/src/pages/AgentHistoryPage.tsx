@@ -5,6 +5,7 @@ import { useAgents } from "../hooks/useAgents";
 import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "../components/StatusBadge";
 import { PaginatedList } from "../components/PaginatedList";
+import { InlineSpinner } from "../components/InlineSpinner";
 import { formatUSD, formatUptime } from "../utils/format";
 import styles from "./AgentHistoryPage.module.css";
 import appStyles from "../App.module.css";
@@ -49,7 +50,7 @@ export function AgentHistoryPage() {
       </div>
 
       {loading ? (
-        <p className={appStyles.empty}>Loading agents...</p>
+        <InlineSpinner label="Loading agents..." />
       ) : sorted.length === 0 ? (
         <p className={appStyles.empty}>No agents found</p>
       ) : (
