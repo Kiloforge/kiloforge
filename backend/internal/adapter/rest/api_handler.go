@@ -2282,7 +2282,73 @@ func (h *APIHandler) GetTrackDetail(_ context.Context, req gen.GetTrackDetailReq
 		resp.Conflicts = &conflicts
 	}
 
+	// Map agent register.
+	if detail.AgentRegister != nil {
+		reg := &gen.AgentRegister{}
+		if detail.AgentRegister.CreatedBy != nil {
+			reg.CreatedBy = mapAgentIdentity(detail.AgentRegister.CreatedBy)
+		}
+		if detail.AgentRegister.ClaimedBy != nil {
+			reg.ClaimedBy = mapAgentIdentity(detail.AgentRegister.ClaimedBy)
+		}
+		resp.AgentRegister = reg
+	}
+
+	// Query traces for this track (capped at 20).
+	if h.traceStore != nil {
+		allTraces := h.traceStore.FindByTrackID(req.TrackId)
+		limit := 20
+		if len(allTraces) < limit {
+			limit = len(allTraces)
+		}
+		if limit > 0 {
+			traces := make([]gen.TraceSummary, limit)
+			for i, t := range allTraces[:limit] {
+				traces[i] = gen.TraceSummary{
+					TraceId:   t.TraceID,
+					RootName:  t.RootName,
+					SpanCount: t.SpanCount,
+					StartTime: t.StartTime,
+					EndTime:   t.EndTime,
+				}
+			}
+			resp.Traces = &traces
+		}
+	}
+
 	return gen.GetTrackDetail200JSONResponse(resp), nil
+}
+
+// mapAgentIdentity converts a port.AgentIdentity to gen.AgentIdentity.
+func mapAgentIdentity(id *port.AgentIdentity) *gen.AgentIdentity {
+	if id == nil {
+		return nil
+	}
+	gi := &gen.AgentIdentity{}
+	if id.AgentID != "" {
+		gi.AgentId = &id.AgentID
+	}
+	if id.Role != "" {
+		gi.Role = &id.Role
+	}
+	if id.SessionID != "" {
+		gi.SessionId = &id.SessionID
+	}
+	if id.Worktree != "" {
+		gi.Worktree = &id.Worktree
+	}
+	if id.Branch != "" {
+		gi.Branch = &id.Branch
+	}
+	if id.Model != "" {
+		gi.Model = &id.Model
+	}
+	if id.Timestamp != "" {
+		if ts, err := time.Parse(time.RFC3339, id.Timestamp); err == nil {
+			gi.Timestamp = &ts
+		}
+	}
+	return gi
 }
 
 // DeleteTrack implements gen.StrictServerInterface.

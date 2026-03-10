@@ -168,6 +168,9 @@ func (r *TrackReaderImpl) GetTrackDetail(projectDir, trackID string) (*port.Trac
 		}
 	}
 
+	// Parse agent register from extra fields.
+	detail.AgentRegister = parseAgentRegister(track.Extra)
+
 	return detail, nil
 }
 
@@ -182,6 +185,105 @@ func buildRegistryMap(client *kf.Client) map[string]kf.TrackEntry {
 		m[e.ID] = e
 	}
 	return m
+}
+
+// parseAgentRegister extracts agent identity data from the track's extra map.
+// Returns nil if no register data is present.
+func parseAgentRegister(extra map[string]interface{}) *port.AgentRegister {
+	if len(extra) == 0 {
+		return nil
+	}
+
+	var reg port.AgentRegister
+	hasData := false
+
+	if raw, ok := extra["created_by"]; ok {
+		if identity := parseAgentIdentity(raw, "created_at"); identity != nil {
+			reg.CreatedBy = identity
+			hasData = true
+		}
+	}
+	if raw, ok := extra["claim"]; ok {
+		if identity := parseAgentIdentity(raw, "claimed_at"); identity != nil {
+			reg.ClaimedBy = identity
+			hasData = true
+		}
+	}
+
+	if !hasData {
+		return nil
+	}
+	return &reg
+}
+
+// parseAgentIdentity extracts an AgentIdentity from a YAML-unmarshaled value.
+// The timestampKey parameter specifies which key holds the timestamp (e.g., "created_at" or "claimed_at").
+func parseAgentIdentity(raw interface{}, timestampKey string) *port.AgentIdentity {
+	m, ok := raw.(map[string]interface{})
+	if !ok {
+		// Try map[interface{}]interface{} which some YAML parsers produce.
+		if mi, ok2 := raw.(map[interface{}]interface{}); ok2 {
+			m = make(map[string]interface{}, len(mi))
+			for k, v := range mi {
+				if ks, ok3 := k.(string); ok3 {
+					m[ks] = v
+				}
+			}
+		} else {
+			return nil
+		}
+	}
+
+	identity := &port.AgentIdentity{}
+	hasData := false
+
+	if v, ok := m["agent_id"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.AgentID = s
+			hasData = true
+		}
+	}
+	if v, ok := m["role"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.Role = s
+			hasData = true
+		}
+	}
+	if v, ok := m["session_id"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.SessionID = s
+			hasData = true
+		}
+	}
+	if v, ok := m["worktree"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.Worktree = s
+			hasData = true
+		}
+	}
+	if v, ok := m["branch"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.Branch = s
+			hasData = true
+		}
+	}
+	if v, ok := m["model"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.Model = s
+			hasData = true
+		}
+	}
+	if v, ok := m[timestampKey]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			identity.Timestamp = s
+			hasData = true
+		}
+	}
+
+	if !hasData {
+		return nil
+	}
+	return identity
 }
 
 func (r *TrackReaderImpl) RemoveTrack(projectDir, trackID string) error {

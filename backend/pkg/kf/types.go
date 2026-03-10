@@ -65,7 +65,7 @@ type Track struct {
 	Updated string            `yaml:"updated"`
 	Spec    Spec              `yaml:"spec"`
 	Plan    []Phase           `yaml:"plan"`
-	Extra   map[string]string `yaml:"extra,omitempty"`
+	Extra   map[string]interface{} `yaml:"extra,omitempty"`
 }
 
 // Progress computes completion statistics for a track's plan.

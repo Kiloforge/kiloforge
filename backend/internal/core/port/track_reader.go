@@ -27,20 +27,48 @@ type TrackConflict struct {
 	Note       string
 }
 
+// AgentIdentity represents a single agent's identity record.
+type AgentIdentity struct {
+	AgentID   string
+	Role      string
+	SessionID string
+	Worktree  string
+	Branch    string
+	Model     string
+	Timestamp string
+}
+
+// AgentRegister contains the creator and claimer identities for a track.
+type AgentRegister struct {
+	CreatedBy *AgentIdentity
+	ClaimedBy *AgentIdentity
+}
+
 // TrackDetail contains the full detail of a track including artifact contents.
 type TrackDetail struct {
-	ID           string
-	Title        string
-	Status       string
-	Type         string
-	Spec         string
-	Plan         string
-	Phases       ProgressCount
-	Tasks        ProgressCount
-	CreatedAt    string
-	UpdatedAt    string
-	Dependencies []TrackDependency
-	Conflicts    []TrackConflict
+	ID            string
+	Title         string
+	Status        string
+	Type          string
+	Spec          string
+	Plan          string
+	Phases        ProgressCount
+	Tasks         ProgressCount
+	CreatedAt     string
+	UpdatedAt     string
+	Dependencies  []TrackDependency
+	Conflicts     []TrackConflict
+	AgentRegister *AgentRegister
+	Traces        []TraceSummary
+}
+
+// TraceSummary is a lightweight trace summary for embedding in TrackDetail.
+type TraceSummary struct {
+	TraceID   string
+	RootName  string
+	SpanCount int
+	StartTime string
+	EndTime   string
 }
 
 // ProgressCount tracks total vs completed counts.

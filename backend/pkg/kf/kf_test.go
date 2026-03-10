@@ -365,7 +365,7 @@ func TestTrackYAMLRoundtrip(t *testing.T) {
 				{Text: "Do thing 2", Done: true},
 			}},
 		},
-		Extra: map[string]string{"key1": "val1"},
+		Extra: map[string]interface{}{"key1": "val1"},
 	}
 
 	path := filepath.Join(trackDir, "track.yaml")
