@@ -1,5 +1,7 @@
 package port
 
+import "kiloforge/internal/core/domain"
+
 // TrackEntry represents a parsed track from the registry.
 type TrackEntry struct {
 	ID            string
@@ -50,6 +52,8 @@ type ProgressCount struct {
 // TrackReader discovers and reads track information.
 type TrackReader interface {
 	DiscoverTracks(projectDir string) ([]TrackEntry, error)
+	// DiscoverTracksPaginated returns a paginated list of tracks, optionally filtered by statuses.
+	DiscoverTracksPaginated(projectDir string, opts domain.PageOpts, statuses ...string) (domain.Page[TrackEntry], error)
 	GetTrackDetail(projectDir, trackID string) (*TrackDetail, error)
 	RemoveTrack(projectDir, trackID string) error
 	IsInitialized(projectDir string) bool

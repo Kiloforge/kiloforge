@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"kiloforge/internal/core/domain"
+
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -8,6 +10,8 @@ import (
 // Both the in-memory Store and sqlite.TraceStore implement this interface.
 type TraceReader interface {
 	ListTraces() []TraceSummary
+	// ListTracesPaginated returns a paginated list of traces, optionally filtered by trackID or sessionID.
+	ListTracesPaginated(opts domain.PageOpts, trackID, sessionID string) (domain.Page[TraceSummary], error)
 	GetTrace(traceID string) []SpanSummary
 	FindByTrackID(trackID string) []TraceSummary
 	FindBySessionID(sessionID string) []TraceSummary

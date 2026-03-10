@@ -14,4 +14,6 @@ type AgentStore interface {
 	RemoveAgent(id string) error
 	Agents() []domain.AgentInfo
 	AgentsByStatus(statuses ...string) []domain.AgentInfo
+	// ListAgents returns a paginated list of agents, optionally filtered by statuses.
+	ListAgents(opts domain.PageOpts, statuses ...string) (domain.Page[domain.AgentInfo], error)
 }
