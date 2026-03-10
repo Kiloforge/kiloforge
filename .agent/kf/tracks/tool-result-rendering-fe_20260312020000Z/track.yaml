@@ -1,0 +1,85 @@
+id: tool-result-rendering-fe_20260312020000Z
+title: "Show tool results in agent terminal"
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Relay ToolResultBlock from Claude SDK through WebSocket and render tool
+    results as collapsible bubbles paired with their tool_use invocation,
+    with error state styling. Completes the tool call UX to match Claude
+    Code's display.
+  context: |
+    The agent terminal already renders tool invocations (name, ID, collapsible
+    input JSON) via ToolUseBubble. But tool results are completely missing —
+    the SDK provides ToolResultBlock (with Content, ToolUseID, IsError) but
+    the backend ignores it and the frontend has no component for it. Users
+    see "Bash" with the command but never see what it returned.
+  codebase_analysis: |
+    SDK: ToolResultBlock has Type, ToolUseID, Content (interface{}), IsError (*bool).
+    It appears as a ContentBlock inside AssistantMessage.Content but is ignored
+    in sdk_client.go relayResponse (lines 156-168 only handle Text/ToolUse/Thinking).
+
+    Backend WS protocol (ws/message.go): No MsgToolResult constant, no
+    ToolResultMessage struct, no ToolResultMsg() constructor. Tool names come
+    through as strings like "Bash", "Read", "Edit", "Grep", "Glob", "Write",
+    "Agent", "WebFetch", "WebSearch".
+
+    Frontend: useAgentWebSocket.ts WSMessageType has no "tool_result".
+    TerminalBubbles.tsx MessageDispatch has no tool_result case.
+    ToolUseBubble renders tool name (orange badge), tool ID, and collapsible
+    JSON input. No result rendering exists.
+  acceptance_criteria:
+    - Backend relays ToolResultBlock as "tool_result" WebSocket message with tool_use_id, content, and is_error fields
+    - Frontend renders tool results below their corresponding tool_use bubble
+    - Tool results are collapsible (collapsed by default for long output, expanded for short)
+    - Error results styled distinctly (red/error theme vs normal result theme)
+    - Tool result content truncated with "Show more" for very long output (>50 lines)
+    - Existing tool_use rendering unchanged
+    - Desktop and mobile layouts work correctly
+  out_of_scope: |
+    - Diff visualization for file Edit/Write operations
+    - Syntax highlighting of tool output
+    - Tool execution progress spinners or streaming indicators
+    - Pairing tool_use and tool_result into a single grouped component
+  technical_notes: |
+    Backend: Add ToolResultBlock case in sdk_client.go relayResponse switch.
+    Add MsgToolResult const, ToolResultMessage struct, ToolResultMsg() to
+    ws/message.go. Content field is interface{} — may be string or
+    []map[string]interface{} (array of content blocks). Normalize to string
+    before sending.
+
+    Frontend: Add "tool_result" to WSMessageType. Add ToolResultBubble
+    component with collapsible content, error styling, and line truncation.
+    Add case to MessageDispatch.
+plan:
+  - phase: "Backend Protocol"
+    tasks:
+      - text: "Add MsgToolResult constant and ToolResultMessage struct to ws/message.go"
+        done: false
+      - text: "Add ToolResultMsg() constructor function in ws/message.go"
+        done: false
+      - text: "Handle ToolResultBlock in sdk_client.go relayResponse — normalize Content to string, emit via ToolResultMsg"
+        done: false
+  - phase: "Frontend Message Handling"
+    tasks:
+      - text: "Add 'tool_result' to WSMessageType union and WSMessage fields (toolUseId, toolResult, isToolError) in useAgentWebSocket.ts"
+        done: false
+      - text: "Add tool_result case to message processing switch in useAgentWebSocket.ts"
+        done: false
+  - phase: "Frontend Rendering"
+    tasks:
+      - text: "Add ToolResultBubble component to TerminalBubbles.tsx — collapsible content, line truncation at 50 lines, error state"
+        done: false
+      - text: "Add tool_result case to MessageDispatch in TerminalBubbles.tsx"
+        done: false
+      - text: "Add .toolResultMessage, .toolResultContent, .toolResultError styles to TerminalBubbles.module.css"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Build backend (make build) — verify no compilation errors"
+        done: false
+      - text: "Build frontend (make build-frontend) — verify no type errors or build failures"
+        done: false
+extra: {}
