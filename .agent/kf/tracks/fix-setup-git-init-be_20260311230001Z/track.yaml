@@ -1,7 +1,7 @@
 id: fix-setup-git-init-be_20260311230001Z
 title: "Fix setup 500 on repos without git — auto-run git init"
 type: bug
-status: pending
+status: completed
 created: 2026-03-11
 updated: 2026-03-11
 spec:
@@ -48,19 +48,19 @@ plan:
   - phase: "Implementation"
     tasks:
       - text: "In spawner.go SpawnInteractive(), add git repo check before SDK session creation — os.Stat(filepath.Join(workDir, '.git'))"
-        done: false
+        done: true
       - text: "If .git missing, run exec.CommandContext(ctx, 'git', 'init', workDir) with combined output capture"
-        done: false
+        done: true
       - text: "If git init fails, return fmt.Errorf('initializing git repository: %w', err) instead of proceeding"
-        done: false
+        done: true
   - phase: "Testing"
     tasks:
       - text: "Add test: SpawnInteractive on non-git directory auto-initializes git (verify .git created)"
-        done: false
+        done: true
       - text: "Add test: SpawnInteractive on existing git directory skips init (no error)"
-        done: false
+        done: true
   - phase: "Verification"
     tasks:
       - text: "Run make test and make build to verify no regressions"
-        done: false
+        done: true
 extra: {}
