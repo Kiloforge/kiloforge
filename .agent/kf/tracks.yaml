@@ -17,6 +17,7 @@ advisor-project-scoped-be_20260310192600Z: {"title":"Scope advisors to existing 
 advisor-project-scoped-fe_20260310192601Z: {"title":"Scope advisors to project context (frontend)","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename advisors to kf-advisor-* prefix","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+agent-diff-panel-fe_20260312210900Z: {"title":"Per-file diff panel in agent terminal windows","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-fe_20260310014001Z: {"title":"Agent Display TTL and History Page (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-lifecycle-be_20260310030000Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
