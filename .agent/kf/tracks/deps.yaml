@@ -40,7 +40,8 @@ advisor-project-create-be_20260311230000Z: []
 
 advisor-skills-be_20260310115559Z: []
 
-agent-identity-env-be_20260312231000Z: []
+board-clamp-forward-moves-fe_20260312220001Z:
+  - board-clamp-forward-moves-be_20260312220000Z
 
 cmd-mode-help-fe_20260310121738Z: []
 
@@ -69,15 +70,7 @@ replace-tracing-be_20260310144200Z: []
 
 responsive-kanban-fe_20260311220002Z:
   - responsive-nav-fe_20260311220000Z
-
-track-claim-register_20260312230000Z:
-  - agent-identity-env-be_20260312231000Z
-
-track-detail-register-traces-be_20260312231001Z:
-  - track-claim-register_20260312230000Z
-
-track-detail-register-traces-fe_20260312231002Z:
-  - track-detail-register-traces-be_20260312231001Z
+track-claim-register_20260312230000Z: []
 
 ui-polish-states-fe_20260311150000Z: []
 

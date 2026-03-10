@@ -126,5 +126,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make test, make lint, make build — verify no regressions
-        done: false
+        done: true
 extra: {}
