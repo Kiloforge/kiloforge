@@ -1638,3 +1638,36 @@ func TestUpdateProjectSettings_ProjectNotFound(t *testing.T) {
 		t.Fatalf("expected 404, got %T", resp)
 	}
 }
+
+func TestDomainAgentToGen_IncludesName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("name is set", func(t *testing.T) {
+		a := domain.AgentInfo{
+			ID:        "abc123",
+			Name:      "curiously brave ruby",
+			Role:      "developer",
+			Status:    "running",
+			StartedAt: time.Now(),
+		}
+		g := domainAgentToGen(a, nil)
+		if g.Name == nil {
+			t.Fatal("expected Name to be set, got nil")
+		}
+		if *g.Name != "curiously brave ruby" {
+			t.Errorf("Name = %q, want %q", *g.Name, "curiously brave ruby")
+		}
+	})
+
+	t.Run("name is empty", func(t *testing.T) {
+		a := domain.AgentInfo{
+			ID:     "abc123",
+			Role:   "interactive",
+			Status: "running",
+		}
+		g := domainAgentToGen(a, nil)
+		if g.Name != nil {
+			t.Errorf("expected Name to be nil for empty name, got %q", *g.Name)
+		}
+	})
+}
