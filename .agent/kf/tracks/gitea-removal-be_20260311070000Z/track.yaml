@@ -100,23 +100,23 @@ plan:
   - phase: Phase 2: Fix services and config
     tasks:
       - text: Update pr_service.go — remove Merger/GiteaClient dependencies, simplify or remove Escalate method. Remove cleanup_service.go's MergePR/CommentOnPR/DeleteBranch calls (replace with no-op or remove entirely)
-        done: false
+        done: true
       - text: Update project_service.go — remove ProjectGiteaClient dependency, remove Gitea repo creation and webhook registration from AddProject/RemoveProject
-        done: false
+        done: true
       - text: Update config.go — remove GiteaPort, GiteaAdminUser, GiteaAdminPass, GiteaAdminEmail, APIToken fields and GiteaURL() method
-        done: false
+        done: true
   - phase: Phase 3: Fix CLI and REST server
     tasks:
       - text: Update CLI init.go — remove Gitea startup logic, admin user setup, token creation, SSH key registration. Keep orchestrator startup and other non-Gitea init steps
-        done: false
+        done: true
       - text: Update CLI up.go, down.go, serve.go — remove Gitea check/start/stop calls and WithGiteaProxy option
-        done: false
+        done: true
       - text: Update REST server.go — remove gitea.Client field, WithGiteaProxy option, handleWebhook and all event handlers (~200 lines), proxy route mount. Keep all non-Gitea endpoints
-        done: false
+        done: true
       - text: Update docker compose template.go — remove gitea service definition from embedded template
-        done: false
+        done: true
   - phase: Phase 4: Verification
     tasks:
       - text: Run 'make build' — verify clean compilation with no Gitea references remaining. Run 'make test' — verify all tests pass (Gitea-specific tests removed, remaining tests unaffected)
-        done: false
+        done: true
 extra: {}
