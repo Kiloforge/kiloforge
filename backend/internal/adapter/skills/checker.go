@@ -90,6 +90,10 @@ func RequiredSkillsForRole(role string) []RequiredSkill {
 		return []RequiredSkill{
 			{Name: "kf-setup", Reason: "required for project setup"},
 		}
+	case "conflict-resolver":
+		return []RequiredSkill{
+			{Name: "kf-conflict-resolver", Reason: "required for conflict resolver agent spawning"},
+		}
 	default:
 		return nil
 	}
@@ -105,6 +109,8 @@ func SkillCommandForRole(role string) string {
 		return "/kf-advisor-product"
 	case "advisor-reliability":
 		return "/kf-advisor-reliability"
+	case "conflict-resolver":
+		return "/kf-conflict-resolver"
 	default:
 		return ""
 	}
@@ -167,7 +173,7 @@ func ListEmbedded() []string {
 func AllRequiredSkills() []RequiredSkill {
 	var all []RequiredSkill
 	seen := map[string]bool{}
-	for _, role := range []string{"developer", "reviewer", "interactive", "architect", "advisor-product", "advisor-reliability", "setup"} {
+	for _, role := range []string{"developer", "reviewer", "interactive", "architect", "advisor-product", "advisor-reliability", "setup", "conflict-resolver"} {
 		for _, r := range RequiredSkillsForRole(role) {
 			if !seen[r.Name] {
 				seen[r.Name] = true

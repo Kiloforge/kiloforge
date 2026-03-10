@@ -1542,6 +1542,14 @@ func (h *APIHandler) PushProject(ctx context.Context, req gen.PushProjectRequest
 
 	result, err := h.gitSync.PushToRemote(ctx, p.ProjectDir, "main", req.Body.RemoteBranch, p.SSHKeyPath)
 	if err != nil {
+		if conflict := gitadapter.IsErrSyncConflict(err); conflict != nil {
+			return gen.PushProject409JSONResponse{
+				Error:     conflict.Error(),
+				Direction: gen.SyncConflictResponseDirectionPush,
+				Ahead:     &conflict.Ahead,
+				Behind:    &conflict.Behind,
+			}, nil
+		}
 		return gen.PushProject500JSONResponse{Error: err.Error()}, nil
 	}
 
@@ -1576,7 +1584,7 @@ func (h *APIHandler) PullProject(ctx context.Context, req gen.PullProjectRequest
 
 	result, err := h.gitSync.PullFromRemote(ctx, p.ProjectDir, remoteBranch, p.SSHKeyPath)
 	if err != nil {
-		if strings.Contains(err.Error(), "diverged") {
+		if gitadapter.IsErrSyncConflict(err) != nil {
 			return gen.PullProject409JSONResponse{Error: err.Error()}, nil
 		}
 		return gen.PullProject500JSONResponse{Error: err.Error()}, nil

@@ -2,12 +2,34 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 )
+
+// ErrSyncConflict indicates a push or pull failed because branches have diverged.
+type ErrSyncConflict struct {
+	Direction string // "push" or "pull"
+	Ahead     int
+	Behind    int
+	Message   string
+}
+
+func (e *ErrSyncConflict) Error() string {
+	return e.Message
+}
+
+// IsErrSyncConflict returns the ErrSyncConflict if err wraps one, or nil.
+func IsErrSyncConflict(err error) *ErrSyncConflict {
+	var e *ErrSyncConflict
+	if errors.As(err, &e) {
+		return e
+	}
+	return nil
+}
 
 // Sync status constants.
 const (
@@ -59,11 +81,26 @@ func (gs *GitSync) FetchOrigin(ctx context.Context, projectDir, sshKeyPath strin
 
 // PushToRemote pushes local main to a remote branch.
 // Runs: git push origin localBranch:refs/heads/remoteBranch
+// Returns ErrSyncConflict when the remote has diverged (non-fast-forward).
 func (gs *GitSync) PushToRemote(ctx context.Context, projectDir, localBranch, remoteBranch, sshKeyPath string) (*PushResult, error) {
 	refspec := fmt.Sprintf("%s:refs/heads/%s", localBranch, remoteBranch)
 	cmd := gs.gitCmd(ctx, projectDir, sshKeyPath, "push", "origin", refspec)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("push failed: %s: %w", strings.TrimSpace(string(out)), err)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		outStr := strings.TrimSpace(string(out))
+		// Detect non-fast-forward rejection — git stderr contains these patterns.
+		if strings.Contains(outStr, "non-fast-forward") || strings.Contains(outStr, "rejected") {
+			// Fetch and check ahead/behind for richer conflict info.
+			_ = gs.FetchOrigin(ctx, projectDir, sshKeyPath)
+			ahead, behind, _ := gs.revListCounts(ctx, projectDir, localBranch, "origin/"+remoteBranch)
+			return nil, &ErrSyncConflict{
+				Direction: "push",
+				Ahead:     ahead,
+				Behind:    behind,
+				Message:   fmt.Sprintf("push rejected: branches have diverged (local %d ahead, %d behind origin/%s)", ahead, behind, remoteBranch),
+			}
+		}
+		return nil, fmt.Errorf("push failed: %s: %w", outStr, err)
 	}
 	return &PushResult{
 		Success:      true,
@@ -86,7 +123,12 @@ func (gs *GitSync) PullFromRemote(ctx context.Context, projectDir, remoteBranch,
 		return nil, fmt.Errorf("check divergence: %w", err)
 	}
 	if ahead > 0 && behind > 0 {
-		return nil, fmt.Errorf("branches have diverged (local %d ahead, %d behind origin/%s) — resolve manually", ahead, behind, remoteBranch)
+		return nil, &ErrSyncConflict{
+			Direction: "pull",
+			Ahead:     ahead,
+			Behind:    behind,
+			Message:   fmt.Sprintf("branches have diverged (local %d ahead, %d behind origin/%s) — resolve manually", ahead, behind, remoteBranch),
+		}
 	}
 
 	// Fast-forward merge.
