@@ -104,12 +104,24 @@ const (
 	Warn     ReliabilityEventSeverity = "warn"
 )
 
+// Defines values for ResolveConflictRequestDirection.
+const (
+	ResolveConflictRequestDirectionPull ResolveConflictRequestDirection = "pull"
+	ResolveConflictRequestDirectionPush ResolveConflictRequestDirection = "push"
+)
+
 // Defines values for SpawnInteractiveRequestRole.
 const (
 	SpawnInteractiveRequestRoleAdvisorProduct     SpawnInteractiveRequestRole = "advisor-product"
 	SpawnInteractiveRequestRoleAdvisorReliability SpawnInteractiveRequestRole = "advisor-reliability"
 	SpawnInteractiveRequestRoleArchitect          SpawnInteractiveRequestRole = "architect"
 	SpawnInteractiveRequestRoleInteractive        SpawnInteractiveRequestRole = "interactive"
+)
+
+// Defines values for SyncConflictResponseDirection.
+const (
+	SyncConflictResponseDirectionPull SyncConflictResponseDirection = "pull"
+	SyncConflictResponseDirectionPush SyncConflictResponseDirection = "push"
 )
 
 // Defines values for SyncStatusResponseStatus.
@@ -669,6 +681,18 @@ type ReliabilityTotals struct {
 	Total  int            `json:"total"`
 }
 
+// ResolveConflictRequest defines model for ResolveConflictRequest.
+type ResolveConflictRequest struct {
+	// Direction Whether the conflict originated from a push or pull
+	Direction ResolveConflictRequestDirection `json:"direction"`
+
+	// RemoteBranch Remote branch involved in the conflict
+	RemoteBranch string `json:"remote_branch"`
+}
+
+// ResolveConflictRequestDirection Whether the conflict originated from a push or pull
+type ResolveConflictRequestDirection string
+
 // SSHKeyInfo defines model for SSHKeyInfo.
 type SSHKeyInfo struct {
 	// Comment Key comment from public key file
@@ -831,6 +855,22 @@ type SyncBoardResult struct {
 	Unchanged int `json:"unchanged"`
 	Updated   int `json:"updated"`
 }
+
+// SyncConflictResponse defines model for SyncConflictResponse.
+type SyncConflictResponse struct {
+	// Ahead Number of commits local is ahead of remote
+	Ahead *int `json:"ahead,omitempty"`
+
+	// Behind Number of commits local is behind remote
+	Behind *int `json:"behind,omitempty"`
+
+	// Direction Whether the conflict was detected during push or pull
+	Direction SyncConflictResponseDirection `json:"direction"`
+	Error     string                        `json:"error"`
+}
+
+// SyncConflictResponseDirection Whether the conflict was detected during push or pull
+type SyncConflictResponseDirection string
 
 // SyncStatusResponse defines model for SyncStatusResponse.
 type SyncStatusResponse struct {
@@ -1125,6 +1165,9 @@ type PullProjectJSONRequestBody = PullProjectRequest
 // PushProjectJSONRequestBody defines body for PushProject for application/json ContentType.
 type PushProjectJSONRequestBody = PushProjectRequest
 
+// ResolveConflictJSONRequestBody defines body for ResolveConflict for application/json ContentType.
+type ResolveConflictJSONRequestBody = ResolveConflictRequest
+
 // UpdateProjectSettingsJSONRequestBody defines body for UpdateProjectSettings for application/json ContentType.
 type UpdateProjectSettingsJSONRequestBody = UpdateProjectSettingsRequest
 
@@ -1229,6 +1272,9 @@ type ServerInterface interface {
 	// Push local main to a remote branch
 	// (POST /api/projects/{slug}/push)
 	PushProject(w http.ResponseWriter, r *http.Request, slug string)
+	// Spawn a conflict resolver agent to resolve diverged branches
+	// (POST /api/projects/{slug}/resolve-conflict)
+	ResolveConflict(w http.ResponseWriter, r *http.Request, slug string)
 	// Get project settings from kf config.yaml
 	// (GET /api/projects/{slug}/settings)
 	GetProjectSettings(w http.ResponseWriter, r *http.Request, slug string)
@@ -1970,6 +2016,31 @@ func (siw *ServerInterfaceWrapper) PushProject(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PushProject(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResolveConflict operation middleware
+func (siw *ServerInterfaceWrapper) ResolveConflict(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResolveConflict(w, r, slug)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2779,6 +2850,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/metadata", wrapper.GetProjectMetadata)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/pull", wrapper.PullProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/push", wrapper.PushProject)
+	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/resolve-conflict", wrapper.ResolveConflict)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/settings", wrapper.GetProjectSettings)
 	m.HandleFunc("PUT "+options.BaseURL+"/api/projects/{slug}/settings", wrapper.UpdateProjectSettings)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/setup", wrapper.StartProjectSetup)
@@ -3780,9 +3852,81 @@ func (response PushProject404JSONResponse) VisitPushProjectResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PushProject409JSONResponse SyncConflictResponse
+
+func (response PushProject409JSONResponse) VisitPushProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PushProject500JSONResponse ErrorResponse
 
 func (response PushProject500JSONResponse) VisitPushProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveConflictRequestObject struct {
+	Slug string `json:"slug"`
+	Body *ResolveConflictJSONRequestBody
+}
+
+type ResolveConflictResponseObject interface {
+	VisitResolveConflictResponse(w http.ResponseWriter) error
+}
+
+type ResolveConflict201JSONResponse Agent
+
+func (response ResolveConflict201JSONResponse) VisitResolveConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveConflict400JSONResponse ErrorResponse
+
+func (response ResolveConflict400JSONResponse) VisitResolveConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveConflict404JSONResponse ErrorResponse
+
+func (response ResolveConflict404JSONResponse) VisitResolveConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveConflict412JSONResponse SkillsMissingResponse
+
+func (response ResolveConflict412JSONResponse) VisitResolveConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(412)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveConflict429JSONResponse ErrorResponse
+
+func (response ResolveConflict429JSONResponse) VisitResolveConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveConflict500JSONResponse ErrorResponse
+
+func (response ResolveConflict500JSONResponse) VisitResolveConflictResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -4603,6 +4747,9 @@ type StrictServerInterface interface {
 	// Push local main to a remote branch
 	// (POST /api/projects/{slug}/push)
 	PushProject(ctx context.Context, request PushProjectRequestObject) (PushProjectResponseObject, error)
+	// Spawn a conflict resolver agent to resolve diverged branches
+	// (POST /api/projects/{slug}/resolve-conflict)
+	ResolveConflict(ctx context.Context, request ResolveConflictRequestObject) (ResolveConflictResponseObject, error)
 	// Get project settings from kf config.yaml
 	// (GET /api/projects/{slug}/settings)
 	GetProjectSettings(ctx context.Context, request GetProjectSettingsRequestObject) (GetProjectSettingsResponseObject, error)
@@ -5483,6 +5630,39 @@ func (sh *strictHandler) PushProject(w http.ResponseWriter, r *http.Request, slu
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PushProjectResponseObject); ok {
 		if err := validResponse.VisitPushProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResolveConflict operation middleware
+func (sh *strictHandler) ResolveConflict(w http.ResponseWriter, r *http.Request, slug string) {
+	var request ResolveConflictRequestObject
+
+	request.Slug = slug
+
+	var body ResolveConflictJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResolveConflict(ctx, request.(ResolveConflictRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResolveConflict")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResolveConflictResponseObject); ok {
+		if err := validResponse.VisitResolveConflictResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

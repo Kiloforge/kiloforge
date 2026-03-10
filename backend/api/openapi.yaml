@@ -432,8 +432,70 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Branches have diverged (non-fast-forward)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncConflictResponse"
         "500":
           description: Push failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/projects/{slug}/resolve-conflict:
+    post:
+      operationId: resolveConflict
+      summary: Spawn a conflict resolver agent to resolve diverged branches
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveConflictRequest"
+      responses:
+        "201":
+          description: Conflict resolver agent spawned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "412":
+          description: Required skills not installed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillsMissingResponse"
+        "429":
+          description: At capacity or rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Spawn failed
           content:
             application/json:
               schema:
@@ -2662,6 +2724,35 @@ components:
         status:
           type: string
           enum: [synced, ahead, behind, diverged, unknown]
+
+    SyncConflictResponse:
+      type: object
+      required: [error, direction]
+      properties:
+        error:
+          type: string
+        direction:
+          type: string
+          enum: [push, pull]
+          description: Whether the conflict was detected during push or pull
+        ahead:
+          type: integer
+          description: Number of commits local is ahead of remote
+        behind:
+          type: integer
+          description: Number of commits local is behind remote
+
+    ResolveConflictRequest:
+      type: object
+      required: [direction, remote_branch]
+      properties:
+        direction:
+          type: string
+          enum: [push, pull]
+          description: Whether the conflict originated from a push or pull
+        remote_branch:
+          type: string
+          description: Remote branch involved in the conflict
 
     DiffResponse:
       type: object
