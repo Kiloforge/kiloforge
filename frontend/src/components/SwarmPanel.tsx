@@ -41,6 +41,9 @@ export function SwarmPanel({
   const activeItems = swarm.items.filter((i) => i.status === "assigned");
   const queuedItems = swarm.items.filter((i) => i.status === "queued");
 
+  const parsedSize = parseInt(displaySize, 10);
+  const sizeInvalid = dirty && (isNaN(parsedSize) || parsedSize < 1 || parsedSize > 10);
+
   const handleSave = () => {
     const val = parseInt(displaySize, 10);
     if (val > 0 && val <= 10) {
@@ -93,7 +96,7 @@ export function SwarmPanel({
         <span className={styles.settingsLabel}>Max Swarm Size:</span>
         <input
           type="number"
-          className={styles.sizeInput}
+          className={`${styles.sizeInput}${sizeInvalid ? ` ${styles.sizeInputError}` : ""}`}
           value={displaySize}
           min={1}
           max={10}

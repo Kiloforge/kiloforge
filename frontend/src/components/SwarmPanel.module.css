@@ -93,6 +93,14 @@
   border-color: var(--accent);
 }
 
+.sizeInputError {
+  border-color: var(--red);
+}
+
+.sizeInputError:focus {
+  border-color: var(--red);
+}
+
 .saveBtn {
   font-size: 11px;
   padding: 3px 8px;

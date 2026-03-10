@@ -161,4 +161,22 @@ describe("SwarmPanel", () => {
     await user.click(screen.getByText("Save"));
     expect(onUpdateSettings).toHaveBeenCalledWith({ max_workers: 5 });
   });
+
+  it("applies error styling to size input when value is out of range", async () => {
+    const user = userEvent.setup();
+    render(<SwarmPanel {...defaultProps} swarm={stoppedSwarm} />);
+    const input = screen.getByDisplayValue("3");
+    await user.clear(input);
+    await user.type(input, "0");
+    expect(input.className).toMatch(/sizeInputError/);
+  });
+
+  it("does not apply error styling for valid size value", async () => {
+    const user = userEvent.setup();
+    render(<SwarmPanel {...defaultProps} swarm={stoppedSwarm} />);
+    const input = screen.getByDisplayValue("3");
+    await user.clear(input);
+    await user.type(input, "5");
+    expect(input.className).not.toMatch(/sizeInputError/);
+  });
 });

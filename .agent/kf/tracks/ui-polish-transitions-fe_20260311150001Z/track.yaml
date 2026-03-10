@@ -71,7 +71,7 @@ plan:
       - text: Add .inputError class to AddProjectForm — red border on invalid URL and slug inputs, wire to validation state
         done: true
       - text: Add error border styling to SwarmPanel size input when value is invalid
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run npm test and make build
