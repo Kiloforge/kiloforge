@@ -54,8 +54,6 @@ func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*port.Boa
 	}
 
 	fromColumn := card.Column
-	// Clamp forward moves: users can only promote backlog→approved manually.
-	toColumn = domain.ClampForwardMove(fromColumn, toColumn)
 	if fromColumn == toColumn {
 		return &port.BoardMoveCardResult{TrackID: trackID, FromColumn: fromColumn, ToColumn: toColumn}, nil
 	}

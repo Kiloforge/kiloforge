@@ -236,62 +236,6 @@ func TestNativeBoardService_StoreAndGetTraceID(t *testing.T) {
 	}
 }
 
-func TestNativeBoardService_MoveCard_ClampsForwardMoves(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name       string
-		fromCol    string
-		toCol      string
-		wantToCol  string
-		wantSaved  bool // whether the board should be persisted (false = no-op)
-	}{
-		{"backlog→done clamps to approved", domain.ColumnBacklog, domain.ColumnDone, domain.ColumnApproved, true},
-		{"approved→done is no-op", domain.ColumnApproved, domain.ColumnDone, domain.ColumnApproved, false},
-		{"in_progress→done is no-op", domain.ColumnInProgress, domain.ColumnDone, domain.ColumnInProgress, false},
-		{"backlog→in_progress clamps to approved", domain.ColumnBacklog, domain.ColumnInProgress, domain.ColumnApproved, true},
-		{"backlog→approved allowed", domain.ColumnBacklog, domain.ColumnApproved, domain.ColumnApproved, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			store := newMockNativeBoardStore()
-			now := time.Now().Truncate(time.Second)
-			store.boards["myapp"] = &domain.BoardState{
-				Columns: domain.BoardColumns,
-				Cards: map[string]domain.BoardCard{
-					"track-1": {TrackID: "track-1", Column: tt.fromCol, MovedAt: now},
-				},
-			}
-			svc := service.NewNativeBoardService(store)
-
-			result, err := svc.MoveCard("myapp", "track-1", tt.toCol)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if result.FromColumn != tt.fromCol {
-				t.Errorf("FromColumn: want %q, got %q", tt.fromCol, result.FromColumn)
-			}
-			if result.ToColumn != tt.wantToCol {
-				t.Errorf("ToColumn: want %q, got %q", tt.wantToCol, result.ToColumn)
-			}
-
-			// Verify persisted column matches.
-			stored := store.boards["myapp"].Cards["track-1"]
-			if tt.wantSaved {
-				if stored.Column != tt.wantToCol {
-					t.Errorf("stored column: want %q, got %q", tt.wantToCol, stored.Column)
-				}
-			} else {
-				// No-op: card should remain in original column.
-				if stored.Column != tt.fromCol {
-					t.Errorf("stored column should be unchanged: want %q, got %q", tt.fromCol, stored.Column)
-				}
-			}
-		})
-	}
-}
-
 func TestDomainBoard_IsValidColumn(t *testing.T) {
 	t.Parallel()
 	if !domain.IsValidColumn("backlog") {
@@ -305,10 +249,10 @@ func TestDomainBoard_IsValidColumn(t *testing.T) {
 func TestDomainBoard_ClampForwardMove(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		from    string
-		to      string
-		want    string
+		name string
+		from string
+		to   string
+		want string
 	}{
 		// Forward moves that should be clamped
 		{"backlog→approved (1 step, allowed)", domain.ColumnBacklog, domain.ColumnApproved, domain.ColumnApproved},

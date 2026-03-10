@@ -1590,7 +1590,14 @@ func (h *APIHandler) MoveCard(_ context.Context, req gen.MoveCardRequestObject) 
 	if req.Body == nil {
 		return gen.MoveCard400JSONResponse{Error: "request body required"}, nil
 	}
-	result, err := h.boardSvc.MoveCard(req.Project, req.Body.TrackId, string(req.Body.ToColumn))
+	// Clamp forward moves: users can only manually promote backlog→approved.
+	toColumn := string(req.Body.ToColumn)
+	if board, bErr := h.boardSvc.GetBoard(req.Project); bErr == nil && board != nil {
+		if card, ok := board.Cards[req.Body.TrackId]; ok {
+			toColumn = domain.ClampForwardMove(card.Column, toColumn)
+		}
+	}
+	result, err := h.boardSvc.MoveCard(req.Project, req.Body.TrackId, toColumn)
 	if err != nil {
 		code, msg := mapServiceError(err)
 		slog.Warn("MoveCard failed", "project", req.Project, "track", req.Body.TrackId, "error", err)

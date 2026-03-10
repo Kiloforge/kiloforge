@@ -1027,6 +1027,48 @@ func TestMoveCard_EmitsBoardUpdate(t *testing.T) {
 	}
 }
 
+func TestMoveCard_ClampsForwardMoves(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	boardSvc := service.NewNativeBoardService(newTestBoardStore(dir))
+
+	// Create a board with a card in backlog.
+	_, _ = boardSvc.SyncFromTracks("proj", []port.TrackEntry{
+		{ID: "track-1", Title: "Test Track", Status: "pending"},
+	}, nil)
+
+	spy := &spyEventBus{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		BoardSvc: boardSvc,
+		EventBus: spy,
+	})
+
+	// Attempt to move backlog→done: should clamp to approved.
+	resp, err := h.MoveCard(context.Background(), gen.MoveCardRequestObject{
+		Project: "proj",
+		Body:    &gen.MoveCardJSONRequestBody{TrackId: "track-1", ToColumn: gen.MoveCardRequestToColumnDone},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	okResp, ok := resp.(gen.MoveCard200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200 response, got %T", resp)
+	}
+	if okResp.ToColumn != domain.ColumnApproved {
+		t.Errorf("ToColumn: want %q, got %q", domain.ColumnApproved, okResp.ToColumn)
+	}
+
+	// Verify the card is now in approved.
+	board, _ := boardSvc.GetBoard("proj")
+	if board.Cards["track-1"].Column != domain.ColumnApproved {
+		t.Errorf("stored column: want %q, got %q", domain.ColumnApproved, board.Cards["track-1"].Column)
+	}
+}
+
 func TestLockAcquireRelease_EmitsEvents(t *testing.T) {
 	t.Parallel()
 	spy := &spyEventBus{}
