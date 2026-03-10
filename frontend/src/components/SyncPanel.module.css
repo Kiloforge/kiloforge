@@ -68,6 +68,22 @@
   cursor: default;
 }
 
+.conflict {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(240, 197, 65, 0.08);
+  border: 1px solid rgba(240, 197, 65, 0.25);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--yellow);
+}
+
+.conflict span {
+  flex: 1;
+}
+
 .error {
   display: flex;
   align-items: center;

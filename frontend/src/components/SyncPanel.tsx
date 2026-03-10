@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { SyncStatus } from "../types/api";
+import type { SyncConflict } from "../hooks/useOriginSync";
 import styles from "./SyncPanel.module.css";
 
 interface Props {
@@ -8,10 +9,12 @@ interface Props {
   pushing: boolean;
   pulling: boolean;
   error: string | null;
+  conflict: SyncConflict | null;
   onPush: (remoteBranch: string) => void;
   onPull: (remoteBranch?: string) => void;
   onRefresh: () => void;
   onClearError: () => void;
+  onResolveConflict: () => void;
 }
 
 const statusLabels: Record<string, string> = {
@@ -30,7 +33,7 @@ const statusColors: Record<string, string> = {
   unknown: "var(--text-dim)",
 };
 
-export function SyncPanel({ syncStatus, loading, pushing, pulling, error, onPush, onPull, onRefresh, onClearError }: Props) {
+export function SyncPanel({ syncStatus, loading, pushing, pulling, error, conflict, onPush, onPull, onRefresh, onClearError, onResolveConflict }: Props) {
   const [pushBranch, setPushBranch] = useState("kf/main");
   const [showPushInput, setShowPushInput] = useState(false);
 
@@ -81,7 +84,19 @@ export function SyncPanel({ syncStatus, loading, pushing, pulling, error, onPush
         </button>
       </div>
 
-      {error && (
+      {conflict?.active && (
+        <div className={styles.conflict}>
+          <span>
+            {conflict.direction === "push" ? "Push conflict" : "Pull conflict"}
+            {" — branches have diverged and cannot be fast-forwarded."}
+          </span>
+          <button className={styles.btn} onClick={onResolveConflict}>
+            Resolve Conflicts
+          </button>
+        </div>
+      )}
+
+      {error && !conflict?.active && (
         <div className={styles.error}>
           <span>{error}</span>
           <button className={styles.dismissBtn} onClick={onClearError}>&times;</button>

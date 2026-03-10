@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SyncPanel } from "./SyncPanel";
 import type { SyncStatus } from "../types/api";
+import type { SyncConflict } from "../hooks/useOriginSync";
 
 const baseSyncStatus: SyncStatus = {
   status: "synced",
@@ -19,10 +20,12 @@ function renderPanel(overrides: Partial<Parameters<typeof SyncPanel>[0]> = {}) {
     pushing: false,
     pulling: false,
     error: null,
+    conflict: null as SyncConflict | null,
     onPush: vi.fn(),
     onPull: vi.fn(),
     onRefresh: vi.fn(),
     onClearError: vi.fn(),
+    onResolveConflict: vi.fn(),
     ...overrides,
   };
   return { ...render(<SyncPanel {...props} />), props };
@@ -106,5 +109,29 @@ describe("SyncPanel", () => {
   it("hides actions when syncStatus is null", () => {
     renderPanel({ syncStatus: null });
     expect(screen.queryByText("Push to Upstream")).not.toBeInTheDocument();
+  });
+
+  it("shows conflict banner with Resolve button for push conflict", () => {
+    renderPanel({ conflict: { active: true, direction: "push" } });
+    expect(screen.getByText(/push conflict/i)).toBeInTheDocument();
+    expect(screen.getByText("Resolve Conflicts")).toBeInTheDocument();
+  });
+
+  it("shows conflict banner with Resolve button for pull conflict", () => {
+    renderPanel({ conflict: { active: true, direction: "pull" } });
+    expect(screen.getByText(/pull conflict/i)).toBeInTheDocument();
+    expect(screen.getByText("Resolve Conflicts")).toBeInTheDocument();
+  });
+
+  it("calls onResolveConflict when Resolve Conflicts clicked", async () => {
+    const user = userEvent.setup();
+    const { props } = renderPanel({ conflict: { active: true, direction: "push" } });
+    await user.click(screen.getByText("Resolve Conflicts"));
+    expect(props.onResolveConflict).toHaveBeenCalled();
+  });
+
+  it("does not show generic error when conflict is active", () => {
+    renderPanel({ conflict: { active: true, direction: "push" }, error: null });
+    expect(screen.queryByText("Push failed")).not.toBeInTheDocument();
   });
 });
