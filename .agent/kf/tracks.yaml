@@ -126,7 +126,7 @@ keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling 
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 kf-repair-skill_20260311060000Z: {"title":"System repair agent skill — KF health auditing, diagnostics, and auto-repair","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-kiloforger-branding_20260310073720Z: {"title":"Kiloforger branding — name the human user across CLI and dashboard","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+kiloforger-branding_20260310073720Z: {"title":"Kiloforger branding — name the human user across CLI and dashboard","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 list-pagination-be_20260310200000Z: {"title":"Cursor pagination and filtering for all list API endpoints","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 list-pagination-fe_20260310200001Z: {"title":"Paginated lists with +N overflow in dashboard","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
