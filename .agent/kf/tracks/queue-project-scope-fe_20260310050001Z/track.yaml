@@ -1,5 +1,5 @@
 id: queue-project-scope-fe_20260310050001Z
-title: "Work queue project scoping — dual views (project-scoped and global) in dashboard"
+title: Work queue project scoping — dual views (project-scoped and global) in dashboard
 type: feature
 status: pending
 created: 2026-03-10
@@ -19,22 +19,22 @@ spec:
     - Already displays items, active workers, start/stop, max workers
     - No project awareness — just renders whatever data it gets
     - Can be reused as-is for both views (data filtering happens in the hook)
-
+    
     ### useQueue hook (hooks/useQueue.ts)
     - Fetches from /api/queue with no project filter
     - start() accepts optional project?: string but callers don't pass it
     - handleQueueUpdate handles SSE queue events
     - Need: accept optional projectSlug param to filter queries
-
+    
     ### OverviewPage (pages/OverviewPage.tsx)
     - Already integrates QueuePanel with global data
     - Should continue showing global view (no changes needed)
-
+    
     ### ProjectPage (pages/ProjectPage.tsx)
     - Currently has no queue panel
     - Should add QueuePanel with project-scoped data
     - Start button should pass project slug
-
+    
     ### API types (types/api.ts)
     - QueueStatus, QueueItem, QueueSettings already defined
     - No changes needed to types
@@ -52,7 +52,7 @@ spec:
     - Project selector dropdown on the queue panel
   technical_notes: |
     ### useQueue hook changes
-
+    
     Accept optional projectSlug parameter:
     ```typescript
     function useQueue(projectSlug?: string): UseQueueResult {
@@ -62,48 +62,48 @@ spec:
           projectSlug ? `/api/queue?project=${projectSlug}` : '/api/queue'
         ),
       });
-
+    
       const start = async (project?: string) => {
         await startMutation.mutateAsync(project ?? projectSlug);
       };
       // ...
     }
     ```
-
+    
     ### ProjectPage integration
-
+    
     Add QueuePanel to ProjectPage, passing the slug:
     ```typescript
     const { queue, loading, start, stop, ... } = useQueue(project.slug);
     // render QueuePanel with these props
     ```
-
+    
     ### SSE handling
-
+    
     The handleQueueUpdate callback should invalidate the correct query key.
     When project-scoped, invalidate ['queue', slug]. When global, invalidate ['queue'].
     Both should invalidate on queue events since a project event affects the global view too.
 plan:
-  - phase: "Hook updates"
+  - phase: Hook updates
     tasks:
-      - text: "Update useQueue hook to accept optional projectSlug param and pass ?project= query param to API"
-        done: false
-      - text: "Update query key to include projectSlug for proper cache separation"
-        done: false
-      - text: "Pass projectSlug as default to start() when starting from project context"
-        done: false
-      - text: "Update SSE handler to invalidate both project-scoped and global query keys"
-        done: false
-  - phase: "Project page integration"
+      - text: Update useQueue hook to accept optional projectSlug param and pass ?project= query param to API
+        done: true
+      - text: Update query key to include projectSlug for proper cache separation
+        done: true
+      - text: Pass projectSlug as default to start() when starting from project context
+        done: true
+      - text: Update SSE handler to invalidate both project-scoped and global query keys
+        done: true
+  - phase: Project page integration
     tasks:
-      - text: "Add QueuePanel to ProjectPage with project-scoped useQueue(slug)"
-        done: false
-      - text: "Verify QueuePanel renders correctly with project-filtered data"
-        done: false
-  - phase: "Verification"
+      - text: Add QueuePanel to ProjectPage with project-scoped useQueue(slug)
+        done: true
+      - text: Verify QueuePanel renders correctly with project-filtered data
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Verify OverviewPage global queue still works unchanged"
-        done: false
-      - text: "E2E test: start queue from project page, verify only that project's tracks appear"
-        done: false
+      - text: Verify OverviewPage global queue still works unchanged
+        done: true
+      - text: E2E test: start queue from project page, verify only that project's tracks appear
+        done: true
 extra: {}
