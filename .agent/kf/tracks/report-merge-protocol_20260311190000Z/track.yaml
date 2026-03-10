@@ -71,7 +71,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify SKILL.md is valid markdown and all steps are internally consistent
-        done: false
+        done: true
       - text: Run make build to ensure embedded skill compiles into binary
-        done: false
+        done: true
 extra: {}
