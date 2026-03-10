@@ -18,7 +18,7 @@ import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
-import { TerminalDock } from "./components/TerminalDock";
+import { MiniCardDock } from "./components/MiniCardDock";
 import { useWindowManager } from "./hooks/useWindowManager";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { usePlatform } from "./hooks/usePlatform";
@@ -313,7 +313,7 @@ export default function App() {
         />
       ))}
       {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
-      <TerminalDock
+      <MiniCardDock
         windows={wm.getMinimizedWindows()}
         onRestore={(id) => wm.restore(id)}
         onClose={(id) => wm.close(id)}
