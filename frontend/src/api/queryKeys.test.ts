@@ -33,6 +33,14 @@ describe("queryKeys", () => {
     expect(queryKeys.tracks("proj")).toEqual(["tracks", "proj"]);
   });
 
+  it("paginated keys include 'paginated' suffix", () => {
+    expect(queryKeys.agentsPaginated()).toEqual(["agents", "active", "paginated"]);
+    expect(queryKeys.agentsPaginated(false)).toEqual(["agents", "all", "paginated"]);
+    expect(queryKeys.tracesPaginated).toEqual(["traces", "paginated"]);
+    expect(queryKeys.tracksPaginated()).toEqual(["tracks", undefined, "paginated"]);
+    expect(queryKeys.tracksPaginated("proj")).toEqual(["tracks", "proj", "paginated"]);
+  });
+
   it("syncStatus() produces scoped key", () => {
     expect(queryKeys.syncStatus("my-slug")).toEqual(["syncStatus", "my-slug"]);
   });

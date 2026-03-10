@@ -1,5 +1,6 @@
 export const queryKeys = {
   agents: (active?: boolean) => active === false ? ["agents", "all"] as const : ["agents", "active"] as const,
+  agentsPaginated: (active?: boolean) => active === false ? ["agents", "all", "paginated"] as const : ["agents", "active", "paginated"] as const,
   agent: (id: string) => ["agents", id] as const,
   board: (project: string) => ["board", project] as const,
   config: ["config"] as const,
@@ -7,8 +8,10 @@ export const queryKeys = {
   quota: ["quota"] as const,
   skills: ["skills"] as const,
   traces: ["traces"] as const,
+  tracesPaginated: ["traces", "paginated"] as const,
   trace: (id: string) => ["traces", id] as const,
   tracks: (project?: string) => ["tracks", project] as const,
+  tracksPaginated: (project?: string) => ["tracks", project, "paginated"] as const,
   syncStatus: (slug: string) => ["syncStatus", slug] as const,
   status: ["status"] as const,
   sshKeys: ["sshKeys"] as const,
