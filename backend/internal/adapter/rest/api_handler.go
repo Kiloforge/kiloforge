@@ -41,6 +41,8 @@ type QuotaReader interface {
 	GetTotalUsage() agent.TotalUsage
 	IsRateLimited() bool
 	RetryAfter() time.Duration
+	TokensPerMin(window time.Duration) float64
+	CostPerHour(window time.Duration) float64
 }
 
 // ProjectLister provides read access to registered projects for API handlers.
@@ -108,8 +110,9 @@ type APIHandler struct {
 	wsSessions   *wsAdapter.SessionManager
 	consent      ConsentChecker
 	agentRemover AgentRemover
-	queueSvc     QueueServicer
-	analytics    port.AnalyticsTracker
+	queueSvc       QueueServicer
+	analytics      port.AnalyticsTracker
+	reliabilitySvc *service.ReliabilityService
 
 	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -135,8 +138,9 @@ type APIHandlerOpts struct {
 	WSSessions   *wsAdapter.SessionManager
 	Consent      ConsentChecker
 	AgentRemover AgentRemover
-	QueueSvc     QueueServicer
-	Analytics    port.AnalyticsTracker
+	QueueSvc       QueueServicer
+	Analytics      port.AnalyticsTracker
+	ReliabilitySvc *service.ReliabilityService
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -160,8 +164,9 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		wsSessions:   opts.WSSessions,
 		consent:      opts.Consent,
 		agentRemover: opts.AgentRemover,
-		queueSvc:     opts.QueueSvc,
-		analytics:    opts.Analytics,
+		queueSvc:       opts.QueueSvc,
+		analytics:      opts.Analytics,
+		reliabilitySvc: opts.ReliabilitySvc,
 	}
 }
 
@@ -978,6 +983,15 @@ func (h *APIHandler) AcquireLock(ctx context.Context, req gen.AcquireLockRequest
 				currentHolder = existing.Holder
 				break
 			}
+		}
+		if h.reliabilitySvc != nil {
+			_ = h.reliabilitySvc.RecordEvent(
+				domain.RelEventLockContention,
+				domain.SeverityWarn,
+				req.Body.Holder,
+				req.Scope,
+				map[string]any{"current_holder": currentHolder},
+			)
 		}
 		return gen.AcquireLock409JSONResponse{
 			Error:         "timeout waiting for lock",
@@ -2492,6 +2506,125 @@ func extractPageOpts(limit *int, cursor *string) domain.PageOpts {
 	}
 	return opts
 }
+
+// GetReliabilityEvents implements gen.StrictServerInterface.
+func (h *APIHandler) GetReliabilityEvents(_ context.Context, req gen.GetReliabilityEventsRequestObject) (gen.GetReliabilityEventsResponseObject, error) {
+	if h.reliabilitySvc == nil {
+		return gen.GetReliabilityEvents500JSONResponse{Error: "reliability service not configured"}, nil
+	}
+
+	filter := domain.ReliabilityFilter{}
+	if req.Params.EventType != nil {
+		filter.EventTypes = splitCSV(*req.Params.EventType)
+	}
+	if req.Params.Severity != nil {
+		filter.Severities = splitCSV(*req.Params.Severity)
+	}
+	filter.Since = req.Params.Since
+	filter.Until = req.Params.Until
+
+	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
+
+	page, err := h.reliabilitySvc.ListEvents(filter, opts)
+	if err != nil {
+		return gen.GetReliabilityEvents500JSONResponse{Error: err.Error()}, nil
+	}
+
+	items := make([]gen.ReliabilityEvent, 0, len(page.Items))
+	for _, ev := range page.Items {
+		items = append(items, domainReliabilityEventToGen(ev))
+	}
+
+	resp := gen.GetReliabilityEvents200JSONResponse{
+		Items:      items,
+		TotalCount: page.TotalCount,
+	}
+	if page.NextCursor != "" {
+		resp.NextCursor = strPtr(page.NextCursor)
+	}
+	return resp, nil
+}
+
+// GetReliabilitySummary implements gen.StrictServerInterface.
+func (h *APIHandler) GetReliabilitySummary(_ context.Context, req gen.GetReliabilitySummaryRequestObject) (gen.GetReliabilitySummaryResponseObject, error) {
+	if h.reliabilitySvc == nil {
+		return gen.GetReliabilitySummary500JSONResponse{Error: "reliability service not configured"}, nil
+	}
+
+	windowStr := "24h"
+	if req.Params.Window != nil {
+		windowStr = string(*req.Params.Window)
+	}
+	window, err := time.ParseDuration(windowStr)
+	if err != nil {
+		switch windowStr {
+		case "7d":
+			window = 7 * 24 * time.Hour
+		case "30d":
+			window = 30 * 24 * time.Hour
+		default:
+			return gen.GetReliabilitySummary500JSONResponse{Error: fmt.Sprintf("invalid window: %s", windowStr)}, nil
+		}
+	}
+
+	buckets := 12
+	if req.Params.Buckets != nil && *req.Params.Buckets > 0 {
+		buckets = *req.Params.Buckets
+	}
+
+	now := time.Now().UTC()
+	filter := domain.ReliabilityFilter{
+		Since: ptrTime(now.Add(-window)),
+		Until: ptrTime(now),
+	}
+
+	summary, err := h.reliabilitySvc.GetSummary(filter, buckets)
+	if err != nil {
+		return gen.GetReliabilitySummary500JSONResponse{Error: err.Error()}, nil
+	}
+
+	genBuckets := make([]gen.ReliabilityBucket, 0, len(summary.Buckets))
+	for _, b := range summary.Buckets {
+		genBuckets = append(genBuckets, gen.ReliabilityBucket{
+			Start:  b.Start,
+			End:    b.End,
+			Counts: b.Counts,
+		})
+	}
+
+	resp := gen.GetReliabilitySummary200JSONResponse{
+		Window:         windowStr,
+		BucketDuration: strPtr(summary.BucketDuration),
+		Buckets:        genBuckets,
+		Totals: gen.ReliabilityTotals{
+			Total:      summary.Totals.Total,
+			ByType:     summary.Totals.ByType,
+			BySeverity: summary.Totals.BySeverity,
+		},
+	}
+	return resp, nil
+}
+
+func domainReliabilityEventToGen(ev domain.ReliabilityEvent) gen.ReliabilityEvent {
+	g := gen.ReliabilityEvent{
+		Id:        ev.ID,
+		EventType: gen.ReliabilityEventEventType(ev.EventType),
+		Severity:  gen.ReliabilityEventSeverity(ev.Severity),
+		CreatedAt: ev.CreatedAt,
+	}
+	if ev.AgentID != "" {
+		g.AgentId = strPtr(ev.AgentID)
+	}
+	if ev.Scope != "" {
+		g.Scope = strPtr(ev.Scope)
+	}
+	if len(ev.Detail) > 0 {
+		g.Detail = &ev.Detail
+	}
+	return g
+}
+
+func ptrTime(t time.Time) *time.Time { return &t }
 
 // splitCSV splits a comma-separated string into trimmed tokens.
 func splitCSV(s string) []string {

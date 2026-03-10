@@ -73,6 +73,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	prTracker := sqlite.NewPRTrackingStore(db)
 	traceStore := sqlite.NewTraceStore(db)
 	boardStore := sqlite.NewBoardStore(db)
+	reliabilityStore := sqlite.NewReliabilityStore(db)
 
 	// Initialize tracing (always on).
 	result, tracingErr := tracing.Init(ctx, "", tracing.WithSpanRecorder(traceStore))
@@ -108,7 +109,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		rest.WithTracer(tracing.NewOTelTracer()),
 	}
 	if cfg.IsDashboardEnabled() {
-		opts = append(opts, rest.WithDashboard(agentStore, quotaTracker, "/", reg))
+		opts = append(opts, rest.WithDashboard(agentStore, quotaTracker, reg))
 	}
 
 	// Enable native board service.
@@ -123,12 +124,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 	tourStore := sqlite.NewTourStore(db)
 	opts = append(opts, rest.WithTourStore(tourStore))
 
+	// Wire reliability metrics service.
+	reliabilitySvc := service.NewReliabilityService(reliabilityStore, nil)
+	opts = append(opts, rest.WithReliability(reliabilitySvc))
+
 	// Wire analytics tracker into server for API-level events.
 	opts = append(opts, rest.WithAnalytics(tracker))
 
 	// Wire interactive agent spawner for WebSocket-based agent sessions.
 	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
 	spawner.SetAnalyticsTracker(tracker)
+	spawner.SetReliabilityRecorder(reliabilitySvc)
 	opts = append(opts, rest.WithInteractiveSpawner(spawner))
 
 	// Start auto-update checker if enabled.

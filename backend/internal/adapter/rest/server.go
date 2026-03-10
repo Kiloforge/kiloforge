@@ -33,10 +33,10 @@ var defaultTracer port.Tracer = port.NoopTracer{}
 type ServerOption func(*Server)
 
 // WithDashboard enables dashboard routes on the unified server.
-func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
+func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, projects dashboard.ProjectLister) ServerOption {
 	return func(s *Server) {
 		hub := dashboard.NewSSEHub()
-		d := dashboard.New(0, agents, quota, giteaURL, projects, hub)
+		d := dashboard.New(0, agents, quota, projects, hub)
 		d.SetTrackReader(service.NewTrackReader())
 		s.dashboard = d
 		s.quotaReader = quota
@@ -105,6 +105,13 @@ func WithAnalytics(t port.AnalyticsTracker) ServerOption {
 	}
 }
 
+// WithReliability enables the reliability metrics service.
+func WithReliability(svc *service.ReliabilityService) ServerOption {
+	return func(s *Server) {
+		s.reliabilitySvc = svc
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -132,8 +139,9 @@ type Server struct {
 	wsSessions   *wsAdapter.SessionManager
 	consent      ConsentChecker
 	tourStore    *sqlite.TourStore
-	queueSvc     QueueServicer
-	analytics    port.AnalyticsTracker
+	queueSvc       QueueServicer
+	analytics      port.AnalyticsTracker
+	reliabilitySvc *service.ReliabilityService
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -211,6 +219,9 @@ func (s *Server) Run(ctx context.Context) error {
 		eventBusForReaper = s.dashboard.EventBus()
 	}
 	timeoutReaper := agent.NewTimeoutReaper(s.store, s.cfg, eventBusForReaper)
+	if s.reliabilitySvc != nil {
+		timeoutReaper.SetReliabilityRecorder(s.reliabilitySvc)
+	}
 	timeoutReaper.Start(ctx)
 
 	// Wire generated OpenAPI routes (health, agents, quota, tracks, status, locks).
@@ -246,8 +257,9 @@ func (s *Server) Run(ctx context.Context) error {
 		WSSessions:   s.wsSessions,
 		Consent:      s.consent,
 		AgentRemover: s.store,
-		QueueSvc:     s.queueSvc,
-		Analytics:    s.analytics,
+		QueueSvc:       s.queueSvc,
+		Analytics:      s.analytics,
+		ReliabilitySvc: s.reliabilitySvc,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
