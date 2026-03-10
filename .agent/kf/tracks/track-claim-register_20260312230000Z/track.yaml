@@ -143,13 +143,13 @@ plan:
   - phase: Verification
     tasks:
       - text: Test kf-track-content claim writes correct YAML structure to extra.claim
-        done: false
+        done: true
       - text: Test kf-track-content register writes correct YAML structure to extra.created_by
-        done: false
+        done: true
       - text: Test graceful fallback when KF_AGENT_ID env var is absent
-        done: false
+        done: true
       - text: Test --show and --clear flags for both claim and register
-        done: false
+        done: true
       - text: Verify claim/register records do not interfere with existing kf-track-content commands
-        done: false
+        done: true
 extra: {}
