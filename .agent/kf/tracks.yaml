@@ -79,7 +79,7 @@ fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --
 fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-stale-frontend-build_20260309210000Z: {"title":"Fix Stale Frontend Build — Rebuild dist with Correct Base Path","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-test-ci-pr-tracking_20260309173000Z: {"title":"Fix CI Test Failure — PR Tracking Store References","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-fix-test-failures_20260310140000Z: {"title":"Fix TestBinaryBuilds and TestGooseDown_RollsBack test failures","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-test-failures_20260310140000Z: {"title":"Fix TestBinaryBuilds and TestGooseDown_RollsBack test failures","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-tour-api-mismatch_20260309223000Z: {"title":"Fix Tour API Request Body Mismatch","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Errors in TraceTimeline","status":"archived","type":"bug","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -87,7 +87,6 @@ fix-ws-context-lifecycle_20260310041005Z: {"title":"Fix WebSocket Session Contex
 frontend-test-hooks_20260310041006Z: {"title":"Frontend Test Coverage — Critical Hooks","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 frontend-test-infra_20260309225000Z: {"title":"Frontend Test Infrastructure and Makefile Integration","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 frontend-test-pages_20260310041007Z: {"title":"Frontend Test Coverage — Pages and Components","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-getting-started-skill_20260310055656Z: {"title":"Getting Started skill — interactive project bootstrapper with platform-aware defaults","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 gitea-proxy-authn_20260309123000Z: {"title":"Passwordless Gitea Login via Reverse Proxy Authentication","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 github-repo-templates_20260310001945Z: {"title":"GitHub repo templates — issue templates, PR template, and external PR auto-close workflow","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 gitignore-frontend-dist_20260310000000Z: {"title":"Stop Committing Frontend Dist — Build Before Backend Instead","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
