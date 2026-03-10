@@ -95,12 +95,12 @@ func TestProjectStore_MirrorDir_RoundTrip(t *testing.T) {
 	store := NewProjectStore(db)
 
 	p := domain.Project{
-		Slug:       "mirror-rt",
-		RepoName:   "mirror-rt",
-		ProjectDir: "/tmp/mirror-rt",
-		MirrorDir:  "/home/user/projects/mirror-rt",
+		Slug:         "mirror-rt",
+		RepoName:     "mirror-rt",
+		ProjectDir:   "/tmp/mirror-rt",
+		MirrorDir:    "/home/user/projects/mirror-rt",
 		RegisteredAt: time.Now().Truncate(time.Second),
-		Active:     true,
+		Active:       true,
 	}
 	if err := store.Add(p); err != nil {
 		t.Fatalf("Add: %v", err)

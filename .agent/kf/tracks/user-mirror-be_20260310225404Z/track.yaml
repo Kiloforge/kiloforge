@@ -143,9 +143,9 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make test, make build, make lint — all pass
-        done: false
+        done: true
       - text: Run make verify-codegen — generated code matches schema
-        done: false
+        done: true
 extra:
   created_by:
     role: architect
