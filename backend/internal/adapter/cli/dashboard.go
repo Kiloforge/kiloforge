@@ -94,7 +94,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	gen.HandlerFromMux(strictHandler, srv.Mux())
 
 	// Register WebSocket handler for interactive agent sessions.
-	wsHandler := wsAdapter.NewHandler(wsSessions, nil)
+	wsHandler := wsAdapter.NewHandler(wsSessions, store, nil)
 	wsHandler.RegisterRoutes(srv.Mux())
 
 	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.OrchestratorPort)

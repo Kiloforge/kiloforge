@@ -81,7 +81,7 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 	gen.HandlerFromMux(strictHandler, mux)
 
 	// Register WebSocket routes.
-	wsHandler := wsAdapter.NewHandler(wsSessions, nil)
+	wsHandler := wsAdapter.NewHandler(wsSessions, store, nil)
 	wsHandler.RegisterRoutes(mux)
 
 	// Webhook route.

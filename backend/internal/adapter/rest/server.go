@@ -279,7 +279,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// WebSocket routes for interactive agents.
 	if s.wsSessions != nil {
-		wsHandler := wsAdapter.NewHandler(s.wsSessions, nil)
+		wsHandler := wsAdapter.NewHandler(s.wsSessions, s.store, nil)
 		wsHandler.RegisterRoutes(mux)
 	}
 
