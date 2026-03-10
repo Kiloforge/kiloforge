@@ -8,6 +8,8 @@ type AgentRole string
 const (
 	AgentRoleDeveloper AgentRole = "developer"
 	AgentRoleReviewer  AgentRole = "reviewer"
+	AgentRoleArchitect AgentRole = "architect"
+	AgentRoleAdvisor   AgentRole = "product-advisor"
 )
 
 // AgentStatus defines the lifecycle state of an agent.

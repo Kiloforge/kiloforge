@@ -74,12 +74,33 @@ func RequiredSkillsForRole(role string) []RequiredSkill {
 		return []RequiredSkill{
 			{Name: "kf-architect", Reason: "required for track generation"},
 		}
+	case "architect":
+		return []RequiredSkill{
+			{Name: "kf-architect", Reason: "required for architect agent spawning"},
+		}
+	case "product-advisor":
+		return []RequiredSkill{
+			{Name: "kf-product-advisor", Reason: "required for product advisor agent spawning"},
+		}
 	case "setup":
 		return []RequiredSkill{
 			{Name: "kf-setup", Reason: "required for project setup"},
 		}
 	default:
 		return nil
+	}
+}
+
+// SkillCommandForRole returns the slash command prefix for a role.
+// Returns empty string if the role has no skill command (e.g., "interactive").
+func SkillCommandForRole(role string) string {
+	switch role {
+	case "architect":
+		return "/kf-architect"
+	case "product-advisor":
+		return "/kf-product-advisor"
+	default:
+		return ""
 	}
 }
 
@@ -140,7 +161,7 @@ func ListEmbedded() []string {
 func AllRequiredSkills() []RequiredSkill {
 	var all []RequiredSkill
 	seen := map[string]bool{}
-	for _, role := range []string{"developer", "reviewer", "interactive", "setup"} {
+	for _, role := range []string{"developer", "reviewer", "interactive", "architect", "product-advisor", "setup"} {
 		for _, r := range RequiredSkillsForRole(role) {
 			if !seen[r.Name] {
 				seen[r.Name] = true
