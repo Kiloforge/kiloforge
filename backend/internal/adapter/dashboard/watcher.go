@@ -147,7 +147,7 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 				// For worker agents without bridges, scan log for turn_end.
 				hasBridge := false
 				if s.bridgeChecker != nil {
-					_, hasBridge = s.bridgeChecker.GetBridge(a.ID)
+					hasBridge = s.bridgeChecker.HasBridge(a.ID)
 				}
 				if !hasBridge && a.LogFile != "" && lastLogMessageType(a.LogFile) == "turn_end" {
 					_ = s.notifChecker.Create(a.ID, title, "waiting for input")

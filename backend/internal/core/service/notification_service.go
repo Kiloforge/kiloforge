@@ -21,6 +21,12 @@ func NewNotificationService(store port.NotificationStore, eventBus port.EventBus
 	return &NotificationService{store: store, eventBus: eventBus}
 }
 
+// SetEventBus sets the event bus for publishing notification events.
+// Used when the event bus is not available at construction time.
+func (s *NotificationService) SetEventBus(bus port.EventBus) {
+	s.eventBus = bus
+}
+
 // Create creates a notification for an agent. Deduplicates: if an active notification
 // already exists for this agent, no new notification is created.
 func (s *NotificationService) Create(agentID, title, body string) error {

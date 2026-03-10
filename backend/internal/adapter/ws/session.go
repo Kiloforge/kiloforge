@@ -81,6 +81,14 @@ func (sm *SessionManager) GetBridge(agentID string) (*Bridge, bool) {
 	return b, ok
 }
 
+// HasBridge reports whether a bridge exists for an agent.
+func (sm *SessionManager) HasBridge(agentID string) bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	_, ok := sm.bridges[agentID]
+	return ok
+}
+
 // AddSession registers a WebSocket connection for an agent.
 // The parent context should be derived from the HTTP request so that
 // server shutdown automatically cancels all sessions.
