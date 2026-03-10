@@ -1,11 +1,11 @@
 id: gitea-dead-code-be_20260311120001Z
-title: "Remove remaining giteaURL dead code from API, dashboard, and schema"
+title: Remove remaining giteaURL dead code from API, dashboard, and schema
 type: refactor
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
-  summary: "Remove giteaURL field from APIHandler, dashboard.Server, OpenAPI schema, and CLI doc strings left over from Gitea removal."
+  summary: Remove giteaURL field from APIHandler, dashboard.Server, OpenAPI schema, and CLI doc strings left over from Gitea removal.
   context: |
     The gitea-removal-be track deleted all Gitea adapter code but left behind the giteaURL
     plumbing — the field is still threaded through server options, API handler, dashboard,
@@ -32,34 +32,34 @@ spec:
     This is a surgical cleanup — remove the field from structs, update constructors, regenerate
     OpenAPI code. The WithDashboard option signature changes (drops giteaURL param), so all
     callers (cli/serve.go, cli/dashboard.go) must be updated.
-
+    
     IMPORTANT: After modifying openapi.yaml, run `make gen-api` to regenerate server.gen.go
     and client.gen.go, then `make verify-codegen` to confirm sync.
 plan:
-  - phase: "Schema and API cleanup"
+  - phase: Schema and API cleanup
     tasks:
-      - text: "Remove gitea_url field from StatusInfo in backend/api/openapi.yaml"
-        done: false
-      - text: "Run make gen-api to regenerate Go code from updated schema"
-        done: false
-      - text: "Remove giteaURL field from APIHandlerOpts and APIHandler struct in api_handler.go"
-        done: false
-      - text: "Remove giteaURL parameter from WithDashboard option in server.go and update callers"
-        done: false
-  - phase: "Dashboard and CLI cleanup"
+      - text: Remove gitea_url field from StatusInfo in backend/api/openapi.yaml
+        done: true
+      - text: Run make gen-api to regenerate Go code from updated schema
+        done: true
+      - text: Remove giteaURL field from APIHandlerOpts and APIHandler struct in api_handler.go
+        done: true
+      - text: Remove giteaURL parameter from WithDashboard option in server.go and update callers
+        done: true
+  - phase: Dashboard and CLI cleanup
     tasks:
-      - text: "Remove giteaURL field from dashboard.Server struct and New() constructor"
-        done: false
-      - text: "Update dashboard callers (cli/serve.go, cli/dashboard.go) to drop giteaURL arg"
-        done: false
-      - text: "Update CLI root.go doc string to remove Gitea mentions"
-        done: false
-  - phase: "Verification"
+      - text: Remove giteaURL field from dashboard.Server struct and New() constructor
+        done: true
+      - text: Update dashboard callers (cli/serve.go, cli/dashboard.go) to drop giteaURL arg
+        done: true
+      - text: Update CLI root.go doc string to remove Gitea mentions
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make verify-codegen — confirm generated code matches schema"
-        done: false
-      - text: "Run make test — all tests pass"
-        done: false
-      - text: "Run make build — clean compilation"
-        done: false
+      - text: Run make verify-codegen — confirm generated code matches schema
+        done: true
+      - text: Run make test — all tests pass
+        done: true
+      - text: Run make build — clean compilation
+        done: true
 extra: {}
