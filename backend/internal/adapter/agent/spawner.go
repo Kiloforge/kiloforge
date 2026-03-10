@@ -623,6 +623,50 @@ func (s *Spawner) StopAgent(id string) error {
 	return nil
 }
 
+// ResumeDeveloper resumes a suspended developer/reviewer agent as a one-shot
+// process (no WS bridge). Returns the updated AgentInfo.
+func (s *Spawner) ResumeDeveloper(ctx context.Context, id string) (*domain.AgentInfo, error) {
+	agent, err := s.store.FindAgent(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if agent.IsActive() {
+		return nil, fmt.Errorf("agent already active: %s", id)
+	}
+
+	if agent.SessionID == "" {
+		return nil, fmt.Errorf("agent has no session ID: %s", id)
+	}
+
+	workDir := agent.WorktreeDir
+	if workDir != "" {
+		if _, err := os.Stat(workDir); err != nil {
+			return nil, fmt.Errorf("worktree missing: %s", workDir)
+		}
+	}
+
+	model := agent.Model
+	if model == "" {
+		model = s.cfg.Model
+	}
+
+	pid, err := execClaudeResume(ctx, agent.SessionID, workDir, model)
+	if err != nil {
+		return nil, fmt.Errorf("resume process: %w", err)
+	}
+
+	_ = s.store.UpdateStatus(id, string(domain.AgentStatusRunning))
+	agent.Status = string(domain.AgentStatusRunning)
+	agent.PID = pid
+	agent.SuspendedAt = nil
+	agent.ResumeError = ""
+	_ = s.store.AddAgent(*agent) // upsert
+	_ = s.store.Save()
+
+	return agent, nil
+}
+
 // ResumeAgent resumes a stopped/completed/failed interactive agent session.
 func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent, error) {
 	// Check not already running.
