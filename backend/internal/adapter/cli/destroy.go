@@ -2,13 +2,10 @@ package cli
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"strings"
 
-	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 
 	"github.com/spf13/cobra"
@@ -17,7 +14,7 @@ import (
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Permanently destroy all kiloforge data",
-	Long: `Removes the Gitea Docker Compose stack, volumes, and the entire data directory.
+	Long: `Removes the orchestrator, all project registrations, and the entire data directory.
 
 This action cannot be undone. You will be prompted to confirm unless --force is used.`,
 	RunE: runDestroy,
@@ -30,9 +27,6 @@ func init() {
 }
 
 func runDestroy(cmd *cobra.Command, args []string) error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
 	cfg, err := config.Resolve()
 	if err != nil {
 		fmt.Println("Nothing to destroy — kiloforge is not initialized.")
@@ -42,7 +36,6 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 	if !flagDestroyForce {
 		fmt.Println()
 		fmt.Println("  WARNING: This will permanently delete:")
-		fmt.Println("    - Gitea server and all repositories")
 		fmt.Println("    - All project registrations")
 		fmt.Println("    - All agent state and logs")
 		fmt.Printf("    - Data directory: %s\n", cfg.DataDir)
@@ -62,15 +55,6 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Stopping orchestrator...")
 	if err := stopDaemon(cfg.DataDir); err != nil {
 		fmt.Printf("    Warning: stop orchestrator: %v\n", err)
-	}
-
-	// Try to bring down compose stack with volumes.
-	runner, err := compose.Detect()
-	if err == nil {
-		fmt.Println("==> Removing Gitea containers and volumes...")
-		if err := runner.Down(ctx, cfg.DataDir, true); err != nil {
-			fmt.Printf("    Warning: compose down failed: %v\n", err)
-		}
 	}
 
 	fmt.Printf("==> Removing data directory %s...\n", cfg.DataDir)

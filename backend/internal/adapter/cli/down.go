@@ -1,14 +1,9 @@
 package cli
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"os/signal"
 
-	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/pidfile"
 
 	"github.com/spf13/cobra"
@@ -16,15 +11,12 @@ import (
 
 var downCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Stop the orchestrator and Gitea server",
-	Long:  `Stops the orchestrator and the Gitea Docker Compose stack without removing containers or data.`,
+	Short: "Stop the orchestrator",
+	Long:  `Stops the orchestrator daemon.`,
 	RunE:  runDown,
 }
 
 func runDown(cmd *cobra.Command, args []string) error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
 	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
@@ -41,22 +33,6 @@ func runDown(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		fmt.Println("Orchestrator is not running.")
-	}
-
-	// Stop Gitea.
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	if _, err := client.CheckVersion(ctx); err != nil {
-		fmt.Println("Gitea is not running.")
-	} else {
-		runner, err := compose.Detect()
-		if err != nil {
-			return err
-		}
-		fmt.Println("==> Stopping Gitea...")
-		if err := runner.Stop(ctx, cfg.DataDir); err != nil {
-			return fmt.Errorf("compose stop: %w", err)
-		}
-		fmt.Println("    Gitea stopped.")
 	}
 
 	fmt.Println()

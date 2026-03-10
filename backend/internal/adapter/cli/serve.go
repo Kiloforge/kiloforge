@@ -12,9 +12,7 @@ import (
 
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/analytics"
-	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pidfile"
 	"kiloforge/internal/adapter/rest"
@@ -62,16 +60,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Ensure PID file is removed on exit.
 	defer func() { _ = pidMgr.Remove() }()
 
-	// Start Gitea if not running.
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	if _, err := client.CheckVersion(ctx); err != nil {
-		runner, detectErr := compose.Detect()
-		if detectErr == nil {
-			manager := gitea.NewManager(cfg, runner)
-			_ = manager.Start(ctx)
-		}
-	}
-
 	// Open SQLite database (creates if needed, runs migrations).
 	db, err := sqlite.Open(cfg.DataDir)
 	if err != nil {
@@ -116,7 +104,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Build server options.
 	opts := []rest.ServerOption{
-		rest.WithGiteaProxy(cfg.GiteaURL(), cfg.GiteaAdminUser),
 		rest.WithTracing(traceStore),
 		rest.WithTracer(tracing.NewOTelTracer()),
 	}

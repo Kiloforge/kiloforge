@@ -8,40 +8,11 @@ import (
 
 // ComposeConfig holds the values used to render the docker-compose.yml template.
 type ComposeConfig struct {
-	GiteaPort        int
 	OrchestratorPort int
 	DataDir          string
 }
 
-const composeTemplate = `services:
-  gitea:
-    image: gitea/gitea:latest
-    container_name: kf-gitea
-    restart: unless-stopped
-    ports:
-      - "{{ .GiteaPort }}:3000"
-      - "2222:22"
-    volumes:
-      - gitea-data:/data
-    environment:
-      - GITEA__security__INSTALL_LOCK=true
-      - GITEA__server__ROOT_URL=http://localhost:{{ .OrchestratorPort }}/gitea/
-      - GITEA__server__HTTP_PORT=3000
-      - GITEA__database__DB_TYPE=sqlite3
-      - GITEA__service__DISABLE_REGISTRATION=true
-      - GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true
-      - GITEA__webhook__ALLOWED_HOST_LIST=*
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:3000/api/v1/version"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 10s
-
-volumes:
-  gitea-data:
+const composeTemplate = `services: {}
 `
 
 // GenerateComposeFile renders the docker-compose.yml template with the given config.

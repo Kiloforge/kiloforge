@@ -8,15 +8,14 @@ func TestMerge_PriorityOrdering(t *testing.T) {
 	t.Parallel()
 
 	low := &testProvider{cfg: &Config{
-		GiteaPort:      3000,
-		DataDir:        "/low",
-		ContainerName:  "low-gitea",
-		GiteaAdminUser: "lowadmin",
+		OrchestratorPort: 3000,
+		DataDir:          "/low",
+		ContainerName:    "low-gitea",
 	}}
 
 	high := &testProvider{cfg: &Config{
-		GiteaPort: 5000,
-		DataDir:   "/high",
+		OrchestratorPort: 5000,
+		DataDir:          "/high",
 	}}
 
 	cfg, err := Merge(low, high)
@@ -25,8 +24,8 @@ func TestMerge_PriorityOrdering(t *testing.T) {
 	}
 
 	// High priority wins for fields it sets.
-	if cfg.GiteaPort != 5000 {
-		t.Errorf("GiteaPort: want 5000, got %d", cfg.GiteaPort)
+	if cfg.OrchestratorPort != 5000 {
+		t.Errorf("OrchestratorPort: want 5000, got %d", cfg.OrchestratorPort)
 	}
 	if cfg.DataDir != "/high" {
 		t.Errorf("DataDir: want %q, got %q", "/high", cfg.DataDir)
@@ -36,53 +35,36 @@ func TestMerge_PriorityOrdering(t *testing.T) {
 	if cfg.ContainerName != "low-gitea" {
 		t.Errorf("ContainerName: want %q, got %q", "low-gitea", cfg.ContainerName)
 	}
-	if cfg.GiteaAdminUser != "lowadmin" {
-		t.Errorf("GiteaAdminUser: want %q, got %q", "lowadmin", cfg.GiteaAdminUser)
-	}
 }
 
 func TestMerge_PartialOverlays(t *testing.T) {
 	t.Parallel()
 
 	defaults := &testProvider{cfg: &Config{
-		GiteaPort:       3000,
-		DataDir:         "/default",
-		ContainerName:   "kf-gitea",
-		GiteaImage:      "gitea/gitea:latest",
-		GiteaAdminUser:  "kiloforger",
-		GiteaAdminPass:  "kiloforger123",
-		GiteaAdminEmail: "kiloforger@local.dev",
+		OrchestratorPort: 4001,
+		DataDir:          "/default",
+		ContainerName:    "kf-gitea",
 	}}
 
 	jsonCfg := &testProvider{cfg: &Config{
-		GiteaPort: 4000,
-		DataDir:   "/custom",
-	}}
-
-	env := &testProvider{cfg: &Config{
-		GiteaAdminPass: "env-secret",
+		OrchestratorPort: 4000,
+		DataDir:          "/custom",
 	}}
 
 	flags := &testProvider{cfg: &Config{
-		GiteaPort: 9000,
+		OrchestratorPort: 9000,
 	}}
 
-	cfg, err := Merge(defaults, jsonCfg, env, flags)
+	cfg, err := Merge(defaults, jsonCfg, flags)
 	if err != nil {
 		t.Fatalf("Merge: %v", err)
 	}
 
-	if cfg.GiteaPort != 9000 {
-		t.Errorf("GiteaPort: want 9000 (flags), got %d", cfg.GiteaPort)
+	if cfg.OrchestratorPort != 9000 {
+		t.Errorf("OrchestratorPort: want 9000 (flags), got %d", cfg.OrchestratorPort)
 	}
 	if cfg.DataDir != "/custom" {
 		t.Errorf("DataDir: want %q (json), got %q", "/custom", cfg.DataDir)
-	}
-	if cfg.GiteaAdminPass != "env-secret" {
-		t.Errorf("GiteaAdminPass: want %q (env), got %q", "env-secret", cfg.GiteaAdminPass)
-	}
-	if cfg.GiteaAdminUser != "kiloforger" {
-		t.Errorf("GiteaAdminUser: want %q (defaults), got %q", "kiloforger", cfg.GiteaAdminUser)
 	}
 	if cfg.ContainerName != "kf-gitea" {
 		t.Errorf("ContainerName: want %q (defaults), got %q", "kf-gitea", cfg.ContainerName)
@@ -96,7 +78,7 @@ func TestMerge_NoProviders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge: %v", err)
 	}
-	if cfg.GiteaPort != 0 {
-		t.Errorf("GiteaPort: want 0, got %d", cfg.GiteaPort)
+	if cfg.OrchestratorPort != 0 {
+		t.Errorf("OrchestratorPort: want 0, got %d", cfg.OrchestratorPort)
 	}
 }

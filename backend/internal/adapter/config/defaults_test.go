@@ -15,8 +15,8 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if cfg.GiteaPort != 4000 {
-		t.Errorf("GiteaPort: want 4000, got %d", cfg.GiteaPort)
+	if cfg.OrchestratorPort != 4001 {
+		t.Errorf("OrchestratorPort: want 4001, got %d", cfg.OrchestratorPort)
 	}
 
 	home, _ := os.UserHomeDir()
@@ -27,18 +27,6 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 
 	if cfg.ContainerName != "kf-gitea" {
 		t.Errorf("ContainerName: want %q, got %q", "kf-gitea", cfg.ContainerName)
-	}
-	if cfg.GiteaImage != "gitea/gitea:latest" {
-		t.Errorf("GiteaImage: want %q, got %q", "gitea/gitea:latest", cfg.GiteaImage)
-	}
-	if cfg.GiteaAdminUser != "kiloforger" {
-		t.Errorf("GiteaAdminUser: want %q, got %q", "kiloforger", cfg.GiteaAdminUser)
-	}
-	if cfg.GiteaAdminPass != "" {
-		t.Errorf("GiteaAdminPass: want empty (resolved elsewhere), got %q", cfg.GiteaAdminPass)
-	}
-	if cfg.GiteaAdminEmail != "kiloforger@local.dev" {
-		t.Errorf("GiteaAdminEmail: want %q, got %q", "kiloforger@local.dev", cfg.GiteaAdminEmail)
 	}
 	// DashboardEnabled defaults to nil (meaning enabled via IsDashboardEnabled()).
 	if cfg.DashboardEnabled != nil {

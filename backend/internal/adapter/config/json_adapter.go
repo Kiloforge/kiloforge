@@ -36,11 +36,8 @@ func (a *JSONAdapter) Load() (*Config, error) {
 }
 
 // Save writes the config to the JSON file.
-// Sensitive fields (e.g. GiteaAdminPass) are stripped before writing.
 func (a *JSONAdapter) Save(cfg *Config) error {
-	safe := *cfg
-	safe.GiteaAdminPass = ""
-	data, err := json.MarshalIndent(&safe, "", "  ")
+	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}

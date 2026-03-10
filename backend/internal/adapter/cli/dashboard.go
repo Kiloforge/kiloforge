@@ -10,7 +10,6 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/dashboard"
 	gitadapter "kiloforge/internal/adapter/git"
-	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest"
@@ -24,7 +23,7 @@ import (
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start the web dashboard (standalone)",
-	Long: `Starts the web dashboard server without starting Gitea or the orchestrator.
+	Long: `Starts the web dashboard server without starting the orchestrator.
 Useful when the orchestrator is already running via 'kf up' and you want
 to view the dashboard separately.`,
 	RunE: runDashboard,
@@ -57,7 +56,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	boardSvc := service.NewNativeBoardService(boardStore)
 	consentStore := sqlite.NewConsentStore(db)
 
-	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, cfg.GiteaURL(), reg, nil)
+	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, "/", reg, nil)
 	srv.SetTraceStore(traceStore)
 	srv.SetTrackReader(service.NewTrackReader())
 
@@ -65,13 +64,10 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	spawner := agent.NewSpawner(cfg, store, tracker)
 	wsSessions := wsAdapter.NewSessionManager()
 
-	// Create Gitea client and project service for project management.
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	projectSvc := service.NewProjectService(reg, client, service.ProjectServiceConfig{
+	// Create project service for project management.
+	projectSvc := service.NewProjectService(reg, service.ProjectServiceConfig{
 		DataDir:          cfg.DataDir,
 		OrchestratorPort: cfg.OrchestratorPort,
-		GiteaAdminUser:   cfg.GiteaAdminUser,
-		APIToken:         cfg.APIToken,
 	})
 
 	// Register OpenAPI generated API handlers on the dashboard mux.
@@ -87,7 +83,6 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		TraceStore:   traceStore,
 		BoardSvc:     boardSvc,
 		EventBus:     srv.EventBus(),
-		GiteaURL:     cfg.GiteaURL(),
 		SSEClients:   srv.SSEClientCount,
 		Cfg:          cfg,
 		InterSpawner: spawner,

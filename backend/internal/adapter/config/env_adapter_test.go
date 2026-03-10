@@ -12,15 +12,9 @@ func TestEnvAdapter_ImplementsConfigProvider(t *testing.T) {
 
 func TestEnvAdapter_Load(t *testing.T) {
 	// Not parallel — modifies env vars.
-	t.Setenv("KF_GITEA_PORT", "4000")
 	t.Setenv("KF_DATA_DIR", "/opt/kf")
-	t.Setenv("KF_API_TOKEN", "env-token")
 	t.Setenv("KF_COMPOSE_FILE", "/opt/compose.yml")
 	t.Setenv("KF_CONTAINER_NAME", "env-gitea")
-	t.Setenv("KF_GITEA_IMAGE", "gitea/gitea:1.21")
-	t.Setenv("KF_GITEA_ADMIN_USER", "envadmin")
-	t.Setenv("KF_GITEA_ADMIN_PASS", "envpass")
-	t.Setenv("KF_GITEA_ADMIN_EMAIL", "env@test.com")
 
 	adapter := &EnvAdapter{}
 	cfg, err := adapter.Load()
@@ -28,32 +22,14 @@ func TestEnvAdapter_Load(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if cfg.GiteaPort != 4000 {
-		t.Errorf("GiteaPort: want 4000, got %d", cfg.GiteaPort)
-	}
 	if cfg.DataDir != "/opt/kf" {
 		t.Errorf("DataDir: want %q, got %q", "/opt/kf", cfg.DataDir)
-	}
-	if cfg.APIToken != "env-token" {
-		t.Errorf("APIToken: want %q, got %q", "env-token", cfg.APIToken)
 	}
 	if cfg.ComposeFile != "/opt/compose.yml" {
 		t.Errorf("ComposeFile: want %q, got %q", "/opt/compose.yml", cfg.ComposeFile)
 	}
 	if cfg.ContainerName != "env-gitea" {
 		t.Errorf("ContainerName: want %q, got %q", "env-gitea", cfg.ContainerName)
-	}
-	if cfg.GiteaImage != "gitea/gitea:1.21" {
-		t.Errorf("GiteaImage: want %q, got %q", "gitea/gitea:1.21", cfg.GiteaImage)
-	}
-	if cfg.GiteaAdminUser != "envadmin" {
-		t.Errorf("GiteaAdminUser: want %q, got %q", "envadmin", cfg.GiteaAdminUser)
-	}
-	if cfg.GiteaAdminPass != "envpass" {
-		t.Errorf("GiteaAdminPass: want %q, got %q", "envpass", cfg.GiteaAdminPass)
-	}
-	if cfg.GiteaAdminEmail != "env@test.com" {
-		t.Errorf("GiteaAdminEmail: want %q, got %q", "env@test.com", cfg.GiteaAdminEmail)
 	}
 }
 
@@ -67,9 +43,6 @@ func TestEnvAdapter_UnsetVars_ReturnZero(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if cfg.GiteaPort != 0 {
-		t.Errorf("GiteaPort: want 0, got %d", cfg.GiteaPort)
-	}
 	if cfg.DataDir != "" {
 		t.Errorf("DataDir: want empty, got %q", cfg.DataDir)
 	}
@@ -162,7 +135,6 @@ func TestGetAgentMaxDuration_InvalidFallsBackToDefault(t *testing.T) {
 	}
 }
 
-
 func TestEnvAdapter_AnalyticsEnabled(t *testing.T) {
 	t.Setenv("KF_ANALYTICS_ENABLED", "false")
 	adapter := &EnvAdapter{}
@@ -187,19 +159,5 @@ func TestEnvAdapter_PostHogAPIKey(t *testing.T) {
 	}
 	if cfg.PostHogAPIKey != "phc_test123" {
 		t.Errorf("PostHogAPIKey: want %q, got %q", "phc_test123", cfg.PostHogAPIKey)
-	}
-}
-
-func TestEnvAdapter_InvalidPort_Ignored(t *testing.T) {
-	t.Setenv("KF_GITEA_PORT", "notanumber")
-
-	adapter := &EnvAdapter{}
-	cfg, err := adapter.Load()
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-
-	if cfg.GiteaPort != 0 {
-		t.Errorf("GiteaPort: want 0 for invalid, got %d", cfg.GiteaPort)
 	}
 }

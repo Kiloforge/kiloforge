@@ -12,10 +12,9 @@ func TestConfig_SaveAndLoad(t *testing.T) {
 	dir := t.TempDir()
 
 	cfg := &Config{
-		GiteaPort:   3000,
-		DataDir:     dir,
-		APIToken:    "test-token",
-		ComposeFile: filepath.Join(dir, "docker-compose.yml"),
+		OrchestratorPort: 4001,
+		DataDir:          dir,
+		ComposeFile:      filepath.Join(dir, "docker-compose.yml"),
 	}
 
 	if err := cfg.Save(); err != nil {
@@ -27,27 +26,14 @@ func TestConfig_SaveAndLoad(t *testing.T) {
 		t.Fatalf("load: %v", err)
 	}
 
-	if loaded.GiteaPort != cfg.GiteaPort {
-		t.Errorf("GiteaPort: want %d, got %d", cfg.GiteaPort, loaded.GiteaPort)
+	if loaded.OrchestratorPort != cfg.OrchestratorPort {
+		t.Errorf("OrchestratorPort: want %d, got %d", cfg.OrchestratorPort, loaded.OrchestratorPort)
 	}
 	if loaded.DataDir != cfg.DataDir {
 		t.Errorf("DataDir: want %q, got %q", cfg.DataDir, loaded.DataDir)
 	}
-	if loaded.APIToken != cfg.APIToken {
-		t.Errorf("APIToken: want %q, got %q", cfg.APIToken, loaded.APIToken)
-	}
 	if loaded.ComposeFile != cfg.ComposeFile {
 		t.Errorf("ComposeFile: want %q, got %q", cfg.ComposeFile, loaded.ComposeFile)
-	}
-}
-
-func TestConfig_GiteaURL(t *testing.T) {
-	t.Parallel()
-
-	cfg := &Config{GiteaPort: 4000}
-	want := "http://localhost:4000"
-	if got := cfg.GiteaURL(); got != want {
-		t.Errorf("GiteaURL: want %q, got %q", want, got)
 	}
 }
 
@@ -75,7 +61,6 @@ func TestConfig_IsDashboardEnabled(t *testing.T) {
 	}
 }
 
-
 func TestConfig_IsAnalyticsEnabled(t *testing.T) {
 	t.Parallel()
 
@@ -102,7 +87,7 @@ func TestConfig_NoProjectFields(t *testing.T) {
 
 	// Write a config with old project fields — they should be ignored on load.
 	dir := t.TempDir()
-	data := []byte(`{"gitea_port":3000,"data_dir":"` + dir + `","repo_name":"old","project_dir":"/old"}`)
+	data := []byte(`{"orchestrator_port":4001,"data_dir":"` + dir + `","repo_name":"old","project_dir":"/old"}`)
 	if err := os.WriteFile(filepath.Join(dir, ConfigFileName), data, 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
@@ -113,7 +98,7 @@ func TestConfig_NoProjectFields(t *testing.T) {
 	}
 
 	// Config should load without error; unknown fields are silently ignored by encoding/json.
-	if loaded.GiteaPort != 3000 {
-		t.Errorf("GiteaPort: want 3000, got %d", loaded.GiteaPort)
+	if loaded.OrchestratorPort != 4001 {
+		t.Errorf("OrchestratorPort: want 4001, got %d", loaded.OrchestratorPort)
 	}
 }

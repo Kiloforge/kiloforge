@@ -1,14 +1,11 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"kiloforge/internal/adapter/agent"
-	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/adapter/pidfile"
 	"kiloforge/internal/core/service"
 
@@ -22,8 +19,6 @@ var statusCmd = &cobra.Command{
 }
 
 func runStatus(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
 	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
@@ -32,23 +27,6 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	// Check orchestrator daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	orchRunning, orchPID, _ := pidMgr.IsRunning()
-
-	// Check Gitea via API.
-	giteaStatus := "stopped"
-	giteaVersion := ""
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	if v, err := client.CheckVersion(ctx); err == nil {
-		giteaStatus = "running"
-		giteaVersion = v
-	}
-
-	// Try compose ps for container details.
-	composeInfo := ""
-	if runner, err := compose.Detect(); err == nil {
-		if ps, err := runner.Ps(ctx, cfg.DataDir); err == nil {
-			composeInfo = strings.TrimSpace(ps)
-		}
-	}
 
 	fmt.Println("Kiloforge Status — Kiloforger")
 	fmt.Println("================================")
@@ -59,13 +37,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Println("Orchestrator: stopped")
 	}
 
-	if giteaVersion != "" {
-		fmt.Printf("Gitea:       %s (v%s) — %s\n", giteaStatus, giteaVersion, cfg.GiteaURL())
-	} else {
-		fmt.Printf("Gitea:       %s\n", giteaStatus)
-	}
 	fmt.Printf("Data:        %s\n", cfg.DataDir)
-	fmt.Printf("Compose:     %s\n", cfg.ComposeFile)
 	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
 	if cfg.IsDashboardEnabled() {
 		fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
@@ -78,11 +50,6 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		defer func() { _ = rt.Close() }()
 		printQuotaStatus(rt.Quota, cfg)
 		printAgentCosts(rt.Quota, rt.Agents)
-	}
-
-	if composeInfo != "" {
-		fmt.Println()
-		fmt.Println(composeInfo)
 	}
 
 	return nil

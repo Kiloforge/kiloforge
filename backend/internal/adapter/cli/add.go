@@ -10,7 +10,6 @@ import (
 
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/gitea"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/service"
 
@@ -19,10 +18,9 @@ import (
 
 var addCmd = &cobra.Command{
 	Use:   "add <remote-url>",
-	Short: "Clone a remote repo and register it with the Gitea server",
-	Long: `Clones a git remote URL into a managed directory and registers it with the
-global Gitea instance. Creates a Gitea repo, adds a 'gitea' remote, pushes
-the main branch, and sets up a webhook.
+	Short: "Clone a remote repo and register it as a project",
+	Long: `Clones a git remote URL into a managed directory and registers it
+as a kiloforge project.
 
 The repo name is derived from the remote URL (e.g., git@github.com:user/repo.git → repo).
 Use --name to override the derived name.
@@ -82,15 +80,10 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		// SSH remote without --ssh-key: discover and prompt.
 		sshKeyPath = discoverAndSelectSSHKey()
 	}
-	// Load global config, verify Gitea is initialized and running.
+	// Load global config.
 	cfg, err := config.Resolve()
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
-	}
-
-	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
-	if _, err := client.CheckVersion(ctx); err != nil {
-		return fmt.Errorf("Gitea is not running — run 'kf init' or 'kf up' first")
 	}
 
 	// Open database and wire up project service.
@@ -100,22 +93,17 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = rt.Close() }()
 
-	// Build a project service with the real Gitea client for add operations.
 	projectSvc := service.NewProjectService(
 		rt.Projects.Store(),
-		client,
 		service.ProjectServiceConfig{
 			DataDir:          cfg.DataDir,
 			OrchestratorPort: cfg.OrchestratorPort,
-			GiteaAdminUser:   cfg.GiteaAdminUser,
-			APIToken:         cfg.APIToken,
 		},
 	)
 
 	if p, err := rt.Projects.GetProject(slug); err == nil {
 		fmt.Printf("Project %q is already registered.\n", slug)
 		fmt.Printf("  Path:   %s\n", p.ProjectDir)
-		fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, p.RepoName)
 		return nil
 	}
 
@@ -128,29 +116,13 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	if result.EmptyRepo {
-		fmt.Println("==> Repository has no commits — skipping push to Gitea.")
-		fmt.Println("    Push commits to the repository and run 'kf sync' to update Gitea.")
-	}
-
-	// Register SSH public key with Gitea if --ssh-key was given.
-	if sshKeyPath != "" {
-		pubKeyPath := sshKeyPath + ".pub"
-		if pubData, err := os.ReadFile(pubKeyPath); err == nil {
-			fmt.Println("==> Registering SSH public key with Gitea...")
-			keyTitle := fmt.Sprintf("kf-%s", slug)
-			if err := client.AddSSHKey(ctx, keyTitle, strings.TrimSpace(string(pubData))); err != nil {
-				fmt.Printf("    Warning: SSH key registration failed: %v\n", err)
-			}
-		} else {
-			fmt.Printf("    Warning: public key not found at %s — skipping Gitea registration\n", pubKeyPath)
-		}
+		fmt.Println("==> Repository has no commits — push commits to get started.")
 	}
 
 	p := result.Project
 	fmt.Println()
 	fmt.Printf("Project '%s' registered!\n", p.Slug)
 	fmt.Printf("  Path:   %s\n", p.ProjectDir)
-	fmt.Printf("  Gitea:  %s/%s/%s\n", cfg.GiteaURL(), cfg.GiteaAdminUser, p.RepoName)
 	fmt.Printf("  Origin: %s\n", p.OriginRemote)
 	fmt.Println()
 	fmt.Println("View registered projects with 'kf projects'.")
