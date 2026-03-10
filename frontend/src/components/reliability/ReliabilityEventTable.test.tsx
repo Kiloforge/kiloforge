@@ -48,15 +48,17 @@ describe("ReliabilityEventTable", () => {
   it("renders filter chips for event types", () => {
     renderTable();
     expect(screen.getByText("All Types")).toBeInTheDocument();
-    expect(screen.getByText("agent timeout")).toBeInTheDocument();
-    expect(screen.getByText("lock contention")).toBeInTheDocument();
+    // Type labels appear in both chips and table rows
+    expect(screen.getAllByText("agent timeout").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("lock contention").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders severity filter chips", () => {
     renderTable();
     expect(screen.getByText("All Severities")).toBeInTheDocument();
-    expect(screen.getByText("warn")).toBeInTheDocument();
-    expect(screen.getByText("error")).toBeInTheDocument();
+    // "warn" and "error" appear in both chips and table rows
+    expect(screen.getAllByText("warn").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("error").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("critical")).toBeInTheDocument();
   });
 
