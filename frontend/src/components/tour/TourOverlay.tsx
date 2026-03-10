@@ -112,7 +112,7 @@ export function TourOverlay() {
   return (
     <>
       {/* Backdrop with spotlight cutout */}
-      <div className={styles.backdrop}>
+      <div className={`${styles.backdrop}${spotlightStyle ? "" : ` ${styles.backdropNoTarget}`}`}>
         {spotlightStyle && (
           <div className={styles.spotlight} style={spotlightStyle} />
         )}

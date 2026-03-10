@@ -15,6 +15,10 @@
   inset: 0;
   z-index: 9998;
   pointer-events: none;
+}
+
+/* Fallback when no spotlight target — backdrop itself must darken */
+.backdropNoTarget {
   background: rgba(0, 0, 0, 0.75);
 }
 
