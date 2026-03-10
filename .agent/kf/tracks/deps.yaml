@@ -46,6 +46,8 @@ docker-gitea-dead-code-be_20260311195000Z: []
 
 fix-consent-zindex-fe_20260311230000Z: []
 
+fix-disabled-btn-styles-fe_20260312020000Z: []
+
 fix-merge-protocol-be_20260311160000Z: []
 
 gitea-removal-be_20260311070000Z: []
