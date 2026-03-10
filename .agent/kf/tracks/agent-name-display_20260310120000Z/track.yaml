@@ -80,7 +80,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make build-frontend to verify no build errors
-        done: false
+        done: true
       - text: Run make test-e2e to verify tests pass
-        done: false
+        done: true
 extra: {}
