@@ -1,9 +1,9 @@
 id: terminal-tool-display-fe_20260312030000Z
-title: "Human-readable tool call display in agent terminal"
+title: Human-readable tool call display in agent terminal
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Replace raw JSON tool input display with human-readable summaries per tool
@@ -14,14 +14,14 @@ spec:
     {"command": "...", "description": "..."} object). Users want a Claude
     Code-like experience where each tool type shows its most relevant field
     as a summary line, with full detail available on expand.
-
+    
     System "init" messages currently render as "sys init {JSON}" which is
     noise — Claude CLI hides these entirely.
   codebase_analysis: |
     ToolUseBubble in TerminalBubbles.tsx renders toolName badge + raw
     JSON.stringify(msg.toolInput, null, 2) in a <pre> block on expand.
     toolInput is Record<string, unknown> — already parsed, not a string.
-
+    
     Known tool input shapes (from Claude SDK):
       Bash: {command: string, description?: string}
       Read: {file_path: string, offset?: number, limit?: number}
@@ -33,7 +33,7 @@ spec:
       WebFetch: {url: string}
       WebSearch: {query: string}
       NotebookEdit: {notebook_path: string, ...}
-
+    
     SystemBubble renders all system messages including init/debug. These
     should be filtered or displayed as minimal indicators.
   acceptance_criteria:
@@ -59,22 +59,22 @@ spec:
     current JSON.stringify display with this. For SystemBubble, return
     null for init/debug subtypes.
 plan:
-  - phase: "Tool Display Formatting"
+  - phase: Tool Display Formatting
     tasks:
-      - text: "Add formatToolSummary() function that extracts label and detail per tool type (Bash, Read, Write, Edit, Glob, Grep, Agent, WebFetch, WebSearch, fallback)"
-        done: false
-      - text: "Refactor ToolUseBubble to use formatToolSummary — show label as primary text, detail in collapsible block"
-        done: false
-      - text: "Update CSS: add .toolSummary style for the label line, keep .toolInput for detail block"
-        done: false
-  - phase: "System Message Filtering"
+      - text: Add formatToolSummary() function that extracts label and detail per tool type (Bash, Read, Write, Edit, Glob, Grep, Agent, WebFetch, WebSearch, fallback)
+        done: true
+      - text: Refactor ToolUseBubble to use formatToolSummary — show label as primary text, detail in collapsible block
+        done: true
+      - text: Update CSS: add .toolSummary style for the label line, keep .toolInput for detail block
+        done: true
+  - phase: System Message Filtering
     tasks:
-      - text: "In SystemBubble (or MessageDispatch), return null for system messages with subtype 'init' or 'debug'"
-        done: false
-  - phase: "Verification"
+      - text: In SystemBubble (or MessageDispatch), return null for system messages with subtype 'init' or 'debug'
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Build frontend (make build-frontend) — verify no type errors"
-        done: false
-      - text: "Run frontend tests (make test) — verify no regressions"
-        done: false
+      - text: Build frontend (make build-frontend) — verify no type errors
+        done: true
+      - text: Run frontend tests (make test) — verify no regressions
+        done: true
 extra: {}
