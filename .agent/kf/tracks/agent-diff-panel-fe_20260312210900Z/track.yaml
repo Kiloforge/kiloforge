@@ -58,13 +58,13 @@ plan:
   - phase: Single-File Diff Component
     tasks:
       - text: Write tests for AgentDiffPanel: renders file tree, shows single file diff on selection, handles loading/error/empty states
-        done: false
+        done: true
       - text: Create AgentDiffPanel.tsx — file tree sidebar using FileList + single-file content area rendering only selected file's FileDiff via useProjectDiff hook
-        done: false
+        done: true
       - text: Create AgentDiffPanel.module.css — dark theme matching terminal aesthetic, sticky sidebar, scrollable single-file content area
-        done: false
+        done: true
       - text: Verify AgentDiffPanel tests pass in isolation
-        done: false
+        done: true
   - phase: Terminal Integration
     tasks:
       - text: Write tests for chat/diff toggle in AgentTerminal: toggle renders when slug/branch present, hidden when missing, switches view mode
