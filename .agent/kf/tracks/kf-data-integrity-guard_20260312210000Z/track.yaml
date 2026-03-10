@@ -94,15 +94,15 @@ plan:
   - phase: Embed Guard in Management Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-manage SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-bulk-archive SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-compact-archive SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-revert SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-validate SKILL.md
-        done: false
+        done: true
   - phase: Embed Guard in Review & Advisory Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-reviewer SKILL.md
