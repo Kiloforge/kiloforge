@@ -38,17 +38,22 @@ advisor-hub-fe_20260310115600Z:
 
 advisor-project-create-be_20260311230000Z: []
 
+advisor-project-scoped-fe_20260310192601Z:
+  - advisor-project-scoped-be_20260310192600Z
+
 advisor-skills-be_20260310115559Z: []
 
 cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
 
+fix-agent-name-in-api-be_20260312200000Z: []
 fix-consent-zindex-fe_20260311230000Z: []
 
 fix-disabled-btn-styles-fe_20260312020000Z: []
 
 fix-merge-protocol-be_20260311160000Z: []
+
 gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
@@ -58,12 +63,16 @@ hide-advisor-hub-fe_20260312000100Z: []
 
 onboarding-ux-fe_20260310073721Z: []
 
+project-mirror-egress-be_20260312192305Z: []
+
 quota-gauges-be_20260310092417Z: []
 
 replace-tracing-be_20260310144200Z: []
 
 responsive-kanban-fe_20260311220002Z:
   - responsive-nav-fe_20260311220000Z
+
+terminal-tool-display-fe_20260312030000Z: []
 
 ui-polish-states-fe_20260311150000Z: []
 
