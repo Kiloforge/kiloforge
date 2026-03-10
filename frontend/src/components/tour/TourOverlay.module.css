@@ -178,29 +178,3 @@
   color: var(--text);
 }
 
-/* Completion banner */
-.completeBanner {
-  background: rgba(61, 214, 140, 0.1);
-  border: 1px solid rgba(61, 214, 140, 0.25);
-  border-radius: var(--radius);
-  padding: 10px 16px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--green);
-}
-
-.restartLink {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.restartLink:hover {
-  color: var(--text);
-}
