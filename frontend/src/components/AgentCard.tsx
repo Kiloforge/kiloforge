@@ -28,7 +28,7 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
     <div className={styles.card}>
       <div className={styles.header}>
         <Link to={`/agents/${agent.id}`} className={styles.name}>{agent.name || agent.id}</Link>
-        <span className={`${styles.role} ${styles[agent.role] ?? ""}`}>{agent.role}</span>
+        <span className={`${styles.role} ${agent.role.startsWith("advisor-") ? styles.advisor : (styles[agent.role] ?? "")}`}>{agent.role}</span>
       </div>
       {agent.name && (
         <div className={styles.idRow}>{agent.id}</div>

@@ -56,6 +56,11 @@
   color: var(--orange);
 }
 
+.advisor {
+  background: rgba(147, 130, 232, 0.15);
+  color: var(--purple, #9382e8);
+}
+
 .tokens {
   font-size: 12px;
   font-family: var(--font-mono);

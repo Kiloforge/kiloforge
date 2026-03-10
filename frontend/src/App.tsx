@@ -265,6 +265,8 @@ export default function App() {
                 trackHasNextPage={trackHasNextPage}
                 trackFetchingNextPage={trackFetchingNextPage}
                 onTrackLoadMore={trackFetchNextPage}
+                onAdvisorLaunch={handleLaunch}
+                advisorLaunching={spawnMutation.isPending}
               />
             }
           />

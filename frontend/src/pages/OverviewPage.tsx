@@ -15,6 +15,8 @@ import { SwarmPanel } from "../components/SwarmPanel";
 import { PaginatedList } from "../components/PaginatedList";
 import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
 import { HelpTooltip } from "../components/HelpTooltip";
+import { AdvisorHub } from "../components/AdvisorHub";
+import type { AgentRole } from "../components/AgentLauncher";
 import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
@@ -44,6 +46,8 @@ interface OverviewPageProps {
   trackHasNextPage?: boolean;
   trackFetchingNextPage?: boolean;
   onTrackLoadMore?: () => void;
+  onAdvisorLaunch?: (role: AgentRole, prompt: string) => void;
+  advisorLaunching?: boolean;
 }
 
 function trackCountsByStatus(tracks: Track[], slug: string) {
@@ -122,7 +126,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore, onAdvisorLaunch, advisorLaunching }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -131,7 +135,13 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
 
   const filteredAgents = useMemo(() => {
     return agents.filter((a) => {
-      if (roleFilter && a.role !== roleFilter) return false;
+      if (roleFilter) {
+        if (roleFilter === "advisor") {
+          if (!a.role.startsWith("advisor-")) return false;
+        } else if (a.role !== roleFilter) {
+          return false;
+        }
+      }
       if (statusFilter) {
         if (statusFilter === "active") {
           if (a.status !== "running" && a.status !== "waiting") return false;
@@ -179,7 +189,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
         </div>
         <div className={styles.filterRow}>
           <div className={styles.filterGroup}>
-            {["developer", "reviewer", "interactive"].map((role) => (
+            {["developer", "reviewer", "interactive", "advisor"].map((role) => (
               <button
                 key={role}
                 className={`${styles.chip} ${roleFilter === role ? styles.chipActive : ""}`}
@@ -218,6 +228,16 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
           </PaginatedList>
         )}
       </section>
+
+      {onAdvisorLaunch && (
+        <AdvisorHub
+          agents={agents}
+          onLaunch={onAdvisorLaunch}
+          launching={advisorLaunching}
+          onViewLog={onViewLog}
+          onAttach={onAttach}
+        />
+      )}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>
