@@ -46,6 +46,9 @@ board-clamp-forward-moves-fe_20260312220001Z:
 cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
+
+fix-ci-gofmt-lint_20260311220000Z: []
+
 fix-consent-zindex-fe_20260311230000Z: []
 
 fix-disabled-btn-styles-fe_20260312020000Z: []
@@ -72,6 +75,7 @@ responsive-kanban-fe_20260311220002Z:
   - responsive-nav-fe_20260311220000Z
 
 server-host-port-config_20260312230100Z: []
+
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
