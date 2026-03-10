@@ -1,13 +1,11 @@
 id: ci-reliability-hardening_20260310001316Z
-title: "CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing"
+title: CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing
 type: chore
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Add strict golangci-lint configuration, enforce test coverage thresholds in CI,
-    and add dependency security auditing to close the most impactful reliability gaps.
+  summary: ">"
   context: |
     The project currently runs golangci-lint with default settings (no custom config), has no
     test coverage thresholds, and does not audit dependencies for known vulnerabilities. These
@@ -21,11 +19,11 @@ spec:
     - CI (ci.yml) runs unit tests and builds but does not enforce coverage or lint strictly
     - No `go mod verify`, `go mod tidy` check, or `npm audit` in CI
     - `make verify-codegen` exists and validates OpenAPI gen — good pattern to follow
-
+    
     Makefile targets to modify: `lint`, potentially new `lint-strict`, `test-coverage`
     CI file: `.github/workflows/ci.yml`
     New files: `backend/.golangci.yaml`
-
+    
     Key considerations:
     - Must not break existing passing builds — start with warning-level for new linters
     - Coverage thresholds should be set at current level initially, then ratcheted up
@@ -52,7 +50,7 @@ spec:
     4. Add go mod tidy check (run tidy, diff, fail if changes)
     5. Add ESLint complexity rule (max cyclomatic complexity ~15)
     6. Update CI workflow to include new checks
-
+    
     Linter selection rationale:
     - gosec: security-focused static analysis (SQL injection, hardcoded creds, etc.)
     - gocritic: opinionated but catches real bugs (range copy, unnecessary conversions)
@@ -61,48 +59,48 @@ spec:
     - staticcheck: advanced static analysis (unreachable code, deprecated usage)
     - gofmt: canonical formatting
 plan:
-  - phase: "Go Linting Setup"
+  - phase: Go Linting Setup
     tasks:
-      - text: "Create backend/.golangci.yaml with strict linter configuration"
-        done: false
-      - text: "Run golangci-lint with new config, identify and fix all new lint failures"
-        done: false
-      - text: "Verify make lint passes cleanly with new config"
-        done: false
-  - phase: "Coverage Thresholds"
+      - text: Create backend/.golangci.yaml with strict linter configuration
+        done: true
+      - text: Run golangci-lint with new config, identify and fix all new lint failures
+        done: true
+      - text: Verify make lint passes cleanly with new config
+        done: true
+  - phase: Coverage Thresholds
     tasks:
-      - text: "Measure current Go test coverage baseline (go test -coverprofile)"
-        done: false
-      - text: "Add make test-coverage target that enforces minimum threshold"
-        done: false
-      - text: "Measure current frontend test coverage baseline"
-        done: false
-      - text: "Add vitest coverage reporting with threshold enforcement"
-        done: false
-  - phase: "Dependency Auditing"
+      - text: Measure current Go test coverage baseline (go test -coverprofile)
+        done: true
+      - text: Add make test-coverage target that enforces minimum threshold
+        done: true
+      - text: Measure current frontend test coverage baseline
+        done: true
+      - text: Add vitest coverage reporting with threshold enforcement
+        done: true
+  - phase: Dependency Auditing
     tasks:
-      - text: "Add go mod verify and go mod tidy check to Makefile"
-        done: false
-      - text: "Add npm audit check to Makefile (non-blocking initially)"
-        done: false
-      - text: "Verify all dependency checks pass on current codebase"
-        done: false
-  - phase: "CI Integration"
+      - text: Add go mod verify and go mod tidy check to Makefile
+        done: true
+      - text: Add npm audit check to Makefile (non-blocking initially)
+        done: true
+      - text: Verify all dependency checks pass on current codebase
+        done: true
+  - phase: CI Integration
     tasks:
-      - text: "Update .github/workflows/ci.yml to run lint with new config"
-        done: false
-      - text: "Add coverage reporting step to CI"
-        done: false
-      - text: "Add dependency audit steps to CI"
-        done: false
-      - text: "Verify full CI pipeline passes with all new checks"
-        done: false
-  - phase: "Frontend Lint Hardening"
+      - text: Update .github/workflows/ci.yml to run lint with new config
+        done: true
+      - text: Add coverage reporting step to CI
+        done: true
+      - text: Add dependency audit steps to CI
+        done: true
+      - text: Verify full CI pipeline passes with all new checks
+        done: true
+  - phase: Frontend Lint Hardening
     tasks:
-      - text: "Add cyclomatic complexity rule to ESLint config (max ~15)"
+      - text: Add cyclomatic complexity rule to ESLint config (max ~15)
         done: false
-      - text: "Fix any new ESLint failures from complexity rule"
+      - text: Fix any new ESLint failures from complexity rule
         done: false
-      - text: "Verify make lint-frontend passes cleanly"
+      - text: Verify make lint-frontend passes cleanly
         done: false
 extra: {}
