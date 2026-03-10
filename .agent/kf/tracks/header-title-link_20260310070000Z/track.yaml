@@ -1,0 +1,63 @@
+id: header-title-link_20260310070000Z
+title: "Make header logo and title link to dashboard"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Wrap the kiloforge logo and h1 title in the App.tsx header with a React
+    Router Link to "/" so clicking them navigates back to the overview dashboard.
+  context: |
+    The header logo (kf_logo.webp) and h1 "kiloforge" title in App.tsx are
+    static elements with no navigation behavior. Users on sub-pages (project
+    board, agent detail, track detail) have no quick way to return to the
+    overview dashboard by clicking the brand/title area — a standard UX pattern.
+  codebase_analysis: |
+    Key file: frontend/src/App.tsx (lines 126-134)
+
+    Current header structure:
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <img src="/kf_logo.webp" alt="kiloforge" className={styles.logo} />
+          <h1 className={styles.title}>kiloforge</h1>
+          <ConnectionStatus ... />
+          <span className={styles.headerDivider} />
+          ...
+
+    React Router's Link component is already imported in App.tsx (line 2).
+    The overview page is at route "/".
+
+    CSS modules: frontend/src/App.module.css contains styles.logo and
+    styles.title. The Link wrapper will need styling to remove default anchor
+    decoration and preserve the existing flex layout.
+  acceptance_criteria:
+    - Clicking the logo or "kiloforge" title navigates to "/" (overview page)
+    - Link has no underline or color change (preserves current visual style)
+    - Header layout and spacing unchanged
+    - Works from all sub-pages (project, agent detail, track detail)
+    - E2E tests pass
+  out_of_scope: |
+    - Changing the logo image or title text
+    - Adding breadcrumbs or other navigation aids
+    - Backend changes
+  technical_notes: |
+    Wrap the img and h1 in a <Link to="/"> with appropriate CSS to reset
+    anchor styling (text-decoration: none, color: inherit, display: flex,
+    align-items: center, gap matching current layout). The Link component
+    is already imported. May need a new CSS class like styles.homeLink in
+    App.module.css.
+plan:
+  - phase: "Implementation"
+    tasks:
+      - text: "Wrap logo img and h1 title in App.tsx with <Link to='/'> and add homeLink CSS class to App.module.css"
+        done: false
+      - text: "Verify header layout is visually unchanged with the link wrapper"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build-frontend to verify no build errors"
+        done: false
+      - text: "Run make test-e2e to verify existing E2E tests pass"
+        done: false
+extra: {}

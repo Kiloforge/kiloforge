@@ -89,6 +89,7 @@ gitignore-frontend-dist_20260310000000Z: {"title":"Stop Committing Frontend Dist
 goose-migrations_20260309184000Z: {"title":"Migrate to Goose for Database Schema Migrations","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 guided-tour-be_20260309203000Z: {"title":"Guided Tour State API and Demo Seed Data (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 guided-tour-fe_20260309203001Z: {"title":"Guided Tour Overlay with Simulated Onboarding Flow (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+header-title-link_20260310070000Z: {"title":"Make header logo and title link to dashboard","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 impl-board-webhook-sync_20260308170002Z: {"title":"Webhook-Driven Board State Synchronization","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
 impl-conductor-lock-migration_20260308150001Z: {"title":"Migrate Conductor Skills to Use Kiloforge Lock API","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 impl-gitea-issue-api_20260308170000Z: {"title":"Extend Gitea Client with Issue, Label, and Project Board APIs","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
