@@ -133,7 +133,7 @@ merge-lock-hardening-be_20260310220000Z: {"title":"Harden merge lock manager —
 merge-lock-skill-consolidation_20260310220001Z: {"title":"Consolidate merge lock protocol into shared kf-merge-lock helper","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 minimizable-terminals_20260310070000Z: {"title":"Minimizable agent terminals with activity notifications","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-model-warning-banner_20260310072515Z: {"title":"One-time model compatibility warning banner on first dashboard load","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+model-warning-banner_20260310072515Z: {"title":"One-time model compatibility warning banner on first dashboard load","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}

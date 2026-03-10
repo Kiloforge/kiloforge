@@ -37,11 +37,8 @@ auto-open-dashboard_20260310230000Z: []
 
 create-project-fe_20260310150001Z:
   - create-project-be_20260310150000Z
+
 list-pagination-fe_20260310200001Z:
   - list-pagination-be_20260310200000Z
 
 merge-lock-hardening-be_20260310220000Z: []
-swarm-capacity-be_20260311000000Z: []
-
-swarm-capacity-fe_20260311000001Z:
-  - swarm-capacity-be_20260311000000Z

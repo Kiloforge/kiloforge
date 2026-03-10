@@ -1,14 +1,11 @@
 id: model-warning-banner_20260310072515Z
-title: "One-time model compatibility warning banner on first dashboard load"
+title: One-time model compatibility warning banner on first dashboard load
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Show a one-time warning banner on the first dashboard load informing users
-    that Kiloforge requires Claude Code and has only been thoroughly tested with
-    Claude Opus 4.6. Dismiss state persisted in localStorage so it appears only once.
+  summary: ">"
   context: |
     Kiloforge orchestrates Claude Code agents. While the product is model-agnostic
     in theory, it has only been thoroughly validated with Claude Opus 4.6. Users
@@ -23,11 +20,11 @@ spec:
       uses localStorage for dismiss state. Closest match for this feature.
     - **ConsentDialog** — conditional dialog triggered by API 403. Different pattern.
     - **ToastContainer** — auto-dismiss toasts. Too transient for this use case.
-
+    
     The SkillsBanner pattern is the best fit: a top-level banner component that
     checks localStorage on mount, renders if not dismissed, and writes to
     localStorage on dismiss. It lives in App.tsx above the header.
-
+    
     Component placement in App.tsx: SkillsBanner renders after TourOverlay and
     before the header. The new warning banner should render in the same area.
   acceptance_criteria:
@@ -52,20 +49,20 @@ spec:
     6. Add to App.tsx alongside SkillsBanner (before header)
     7. Use CSS modules consistent with existing component styling
 plan:
-  - phase: "Component Implementation"
+  - phase: Component Implementation
     tasks:
-      - text: "Create ModelWarningBanner component with localStorage check, warning message, and dismiss button"
-        done: false
-      - text: "Create ModelWarningBanner.module.css with amber/warning styling consistent with SkillsBanner"
-        done: false
-  - phase: "Integration"
+      - text: Create ModelWarningBanner component with localStorage check, warning message, and dismiss button
+        done: true
+      - text: Create ModelWarningBanner.module.css with amber/warning styling consistent with SkillsBanner
+        done: true
+  - phase: Integration
     tasks:
-      - text: "Import and render ModelWarningBanner in App.tsx alongside SkillsBanner"
-        done: false
-  - phase: "Verification"
+      - text: Import and render ModelWarningBanner in App.tsx alongside SkillsBanner
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Verify banner appears on first load (clear localStorage), dismisses on click, and stays dismissed on reload"
-        done: false
-      - text: "Run frontend type-check (npx tsc --noEmit) and lint to confirm no errors"
-        done: false
+      - text: Verify banner appears on first load (clear localStorage), dismisses on click, and stays dismissed on reload
+        done: true
+      - text: Run frontend type-check (npx tsc --noEmit) and lint to confirm no errors
+        done: true
 extra: {}
