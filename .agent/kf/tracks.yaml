@@ -32,7 +32,6 @@ agent-recovery-fe_20260310142301Z: {"title":"Agent recovery UI — resume, repla
 agent-timeout_20260310160002Z: {"title":"Agent timeout enforcement with configurable max duration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-be_20260310121626Z: {"title":"Agent work stash — backend pool/git stash branch operations","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-skill_20260310121627Z: {"title":"Agent work stash — kf-developer skill and CLI tooling","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-alpha-release_20260310214101Z: {"title":"Prepare and tag v0.1.0-alpha.1 release","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 analytics-be_20260310060644Z: {"title":"PostHog product analytics — backend integration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 analytics-fe_20260310060645Z: {"title":"Analytics opt-out toggle in dashboard settings","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 api-polish-errors-be_20260311150003Z: {"title":"API polish — structured error responses, status code consistency, and request logging","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
@@ -70,7 +69,6 @@ dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation
 design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 docker-gitea-dead-code-be_20260311195000Z: {"title":"Remove Docker/Gitea dead code from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 docs-branding-cleanup_20260311194000Z: {"title":"Docs branding cleanup — Cortex/Command Deck terminology and remove SECURITY.md","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-docs-overhaul_20260311210000Z: {"title":"Major documentation overhaul with Kiloforger branding and full feature coverage","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 draggable-resizable-windows_20260310062703Z: {"title":"Draggable and resizable agent terminal windows","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -205,7 +203,6 @@ orch-url-inject-be_20260310122108Z: {"title":"Inject KF_ORCH_URL into spawned ag
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-ui_20260309143001Z: {"title":"Origin Push/Pull Dashboard UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-posthog-analytics_20260310214100Z: {"title":"Activate PostHog analytics with real API key and frontend SDK","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 prereq-check-init_20260308230000Z: {"title":"Prerequisite Check During Init","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 prod-security-ci_20260311120000Z: {"title":"Harden CI pipeline — add security scanning, block vulnerable deps","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 product-advisor-skill_20260310080000Z: {"title":"Add kf-product-advisor embedded skill","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -309,8 +306,8 @@ tracing-default-on-be_20260309133000Z: {"title":"Enable Tracing by Default with 
 tracing-default-on-fe_20260309133001Z: {"title":"Tracing Toggle in Dashboard UI (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-claim-api_20260310120000Z: {"title":"Track claim API — server-side claim detection via scoped locks","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 track-claim-register_20260312230000Z: {"title":"Record agent claim metadata in track.yaml for session restoration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-track-detail-register-traces-be_20260312231001Z: {"title":"Add agent register and traces to TrackDetail API response","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-track-detail-register-traces-fe_20260312231002Z: {"title":"Display agent register and traces in track detail view","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+track-detail-register-traces-be_20260312231001Z: {"title":"Add agent register and traces to TrackDetail API response","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+track-detail-register-traces-fe_20260312231002Z: {"title":"Display agent register and traces in track detail view","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 track-detail-view-be_20260309001726Z: {"title":"Track Detail View API","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-detail-view-fe_20260309001727Z: {"title":"Track Detail View UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-gen-auto-approve_20260309220000Z: {"title":"Track Generator Auto-Approve for Non-Code Tracks","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
