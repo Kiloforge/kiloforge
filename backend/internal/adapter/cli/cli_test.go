@@ -11,7 +11,7 @@ func TestAllCommandsRegistered(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{
-		"init", "up", "down", "status", "add", "projects",
+		"init", "up", "down", "status", "add", "create", "projects",
 		"destroy", "pool", "implement", "agents", "logs",
 		"stop", "attach", "escalated", "cost", "dashboard",
 		"sync", "push", "serve",

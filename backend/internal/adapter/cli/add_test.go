@@ -105,6 +105,15 @@ func TestExpandPath(t *testing.T) {
 	}
 }
 
+func TestCreateCmd_Registered(t *testing.T) {
+	if createCmd == nil {
+		t.Fatal("createCmd is nil")
+	}
+	if createCmd.Use != "create <name>" {
+		t.Errorf("expected Use 'create <name>', got %q", createCmd.Use)
+	}
+}
+
 func TestAddCmd_SSHKeyFlagRegistered(t *testing.T) {
 	f := addCmd.Flags().Lookup("ssh-key")
 	if f == nil {
