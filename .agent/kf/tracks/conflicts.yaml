@@ -12,5 +12,5 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+advisor-hub-fe_20260310115600Z/frontend-bundle-opt-fe_20260311120006Z: {"risk":"medium","note":"Both modify OverviewPage.tsx and AgentLauncher.tsx","added":"2026-03-10"}
 command-deck-fe_20260311100002Z/frontend-stability-fe_20260311120002Z: {"risk":"low","note":"Both touch App.tsx but different sections","added":"2026-03-10"}
-ui-polish-transitions-fe_20260311150001Z/ui-responsive-forms-fe_20260310123913Z: {"risk":"low","note":"Both touch form validation styling in AddProjectForm","added":"2026-03-10"}

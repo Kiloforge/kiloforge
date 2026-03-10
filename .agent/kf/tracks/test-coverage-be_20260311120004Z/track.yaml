@@ -1,9 +1,9 @@
 id: test-coverage-be_20260311120004Z
-title: "Increase backend test coverage — CLI, REST, persistence layers"
+title: Increase backend test coverage — CLI, REST, persistence layers
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: "Add unit tests for CLI commands (14.9%→60%+), REST handlers (31.4%→60%+), and SQLite stores (28.5%→60%+). Fix broken Makefile coverage reporting."
   context: |
@@ -18,7 +18,7 @@ spec:
     - persistence/sqlite: 28.5% — Store CRUD operations lack direct unit tests.
     - dashboard: 32.0% — handlers.go has no tests.
     - cmd/kf: 0% — Main entrypoint completely untested.
-
+    
     Makefile lines 72-79: test-coverage target uses 'go tool covdata' which doesn't exist
     in standard Go toolchain. Needs to use 'go test -coverprofile' + 'go tool cover' instead.
   acceptance_criteria:
@@ -36,47 +36,47 @@ spec:
   technical_notes: |
     For CLI tests: use cobra's testing patterns — execute commands with test args and
     capture output. Mock external dependencies (database, filesystem) via interfaces.
-
+    
     For REST tests: use httptest.NewRequest + httptest.NewRecorder pattern already
     established in routes_test.go. Add tests for individual handler methods.
-
+    
     For SQLite tests: use t.TempDir() + sqlite.Open() pattern from existing tests.
     Test CRUD operations, edge cases (not found, duplicate), and error paths.
-
+    
     For Makefile fix: replace covdata approach with standard:
     go test -coverprofile=coverage.out ./...
     go tool cover -func=coverage.out | tail -1
 plan:
-  - phase: "Fix coverage infrastructure"
+  - phase: Fix coverage infrastructure
     tasks:
-      - text: "Fix Makefile test-coverage target to use go test -coverprofile + go tool cover"
-        done: false
-      - text: "Verify make test-coverage runs and reports correct percentage"
-        done: false
-  - phase: "CLI test coverage"
+      - text: Fix Makefile test-coverage target to use go test -coverprofile + go tool cover
+        done: true
+      - text: Verify make test-coverage runs and reports correct percentage
+        done: true
+  - phase: CLI test coverage
     tasks:
-      - text: "Add tests for cli/init.go — config creation, data dir setup"
-        done: false
-      - text: "Add tests for cli/add.go and cli/create.go — project registration"
-        done: false
-      - text: "Add tests for cli/up.go and cli/down.go — daemon start/stop"
-        done: false
-      - text: "Add tests for cli/status.go — status output formatting"
-        done: false
-  - phase: "REST and persistence test coverage"
+      - text: Add tests for cli/init.go — config creation, data dir setup
+        done: true
+      - text: Add tests for cli/add.go and cli/create.go — project registration
+        done: true
+      - text: Add tests for cli/up.go and cli/down.go — daemon start/stop
+        done: true
+      - text: Add tests for cli/status.go — status output formatting
+        done: true
+  - phase: REST and persistence test coverage
     tasks:
-      - text: "Add unit tests for REST handler methods (spawn, agents list, project CRUD)"
-        done: false
-      - text: "Add unit tests for SQLite agent_store.go CRUD operations"
-        done: false
-      - text: "Add unit tests for SQLite project_store.go CRUD operations"
-        done: false
-      - text: "Add unit tests for SQLite board_store.go operations"
-        done: false
-  - phase: "Verification"
+      - text: Add unit tests for REST handler methods (spawn, agents list, project CRUD)
+        done: true
+      - text: Add unit tests for SQLite agent_store.go CRUD operations
+        done: true
+      - text: Add unit tests for SQLite project_store.go CRUD operations
+        done: true
+      - text: Add unit tests for SQLite board_store.go operations
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test-coverage — verify all target modules meet 50% threshold"
-        done: false
-      - text: "Run make test — all tests pass including new ones"
-        done: false
+      - text: Run make test-coverage — verify all target modules meet 50% threshold
+        done: true
+      - text: Run make test — all tests pass including new ones
+        done: true
 extra: {}

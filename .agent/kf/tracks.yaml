@@ -182,7 +182,7 @@ project-settings-be_20260311030001Z: {"title":"Project settings REST API — rea
 project-settings-fe_20260311030002Z: {"title":"Project settings UI — settings panel in dashboard with live sync","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 push-conflict-resolver-be_20260311140000Z: {"title":"Sync conflict detection and resolver agent spawn — backend","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 push-conflict-resolver-fe_20260311140002Z: {"title":"Sync conflict resolution UI — detect 409 on push/pull and offer resolver agent","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-push-conflict-resolver-skill_20260311140001Z: {"title":"Embedded kf-conflict-resolver skill for AI-assisted merge conflict resolution","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+push-conflict-resolver-skill_20260311140001Z: {"title":"Embedded kf-conflict-resolver skill for AI-assisted merge conflict resolution","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 queue-project-scope-be_20260310050000Z: {"title":"Work queue project scoping — backend filtering, multi-project support, and service wiring","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 queue-project-scope-fe_20260310050001Z: {"title":"Work queue project scoping — dual views (project-scoped and global) in dashboard","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 quota-gauges-be_20260310092417Z: {"title":"Quota gauges backend — budget config, rate tracking, and time-windowed metrics","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
@@ -240,8 +240,8 @@ swarm-dispatch-skill_20260311110000Z: {"title":"Add kf-dispatch skill — AI swa
 tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-test-coverage-be_20260311120004Z: {"title":"Increase backend test coverage — CLI, REST, persistence layers","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+test-coverage-be_20260311120004Z: {"title":"Increase backend test coverage — CLI, REST, persistence layers","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 tooltip-z-index-fix-fe_20260310210000Z: {"title":"Fix HelpTooltip popover clipped by panel stacking context","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 tour-inmemory-state_20260310120000Z: {"title":"Tour In-Memory State — Controlled Demo Data for Guided Tour","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
