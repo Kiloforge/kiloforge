@@ -528,6 +528,42 @@ func TestResumeDeveloper_NoSessionID(t *testing.T) {
 	}
 }
 
+func TestAgentEnv_ContainsIdentityVars(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{OrchestratorPort: 4001}, nil, nil)
+	env := s.agentEnv("agent-123", "sess-456", "developer")
+
+	expected := map[string]string{
+		"KF_ORCH_URL":   "http://localhost:4001",
+		"KF_AGENT_ID":   "agent-123",
+		"KF_SESSION_ID": "sess-456",
+		"KF_AGENT_ROLE": "developer",
+	}
+	for k, v := range expected {
+		if env[k] != v {
+			t.Errorf("%s = %q, want %q", k, env[k], v)
+		}
+	}
+	if len(env) != len(expected) {
+		t.Errorf("env has %d keys, want %d", len(env), len(expected))
+	}
+}
+
+func TestAgentEnv_EmptyValues(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{OrchestratorPort: 4001}, nil, nil)
+	env := s.agentEnv("", "", "")
+
+	// Even with empty values, all keys should be present
+	for _, k := range []string{"KF_ORCH_URL", "KF_AGENT_ID", "KF_SESSION_ID", "KF_AGENT_ROLE"} {
+		if _, ok := env[k]; !ok {
+			t.Errorf("missing key %s", k)
+		}
+	}
+}
+
 func TestEnsureGitRepo_InitializesWhenMissing(t *testing.T) {
 	t.Parallel()
 	if _, err := exec.LookPath("git"); err != nil {

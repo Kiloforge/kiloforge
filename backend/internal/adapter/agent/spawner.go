@@ -156,9 +156,14 @@ func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
 }
 
 // agentEnv returns environment variables to inject into spawned agent processes.
-func (s *Spawner) agentEnv() map[string]string {
+// Identity fields (agentID, sessionID, role) enable agents to self-identify
+// without needing the orchestrator, supporting claim-register and session restoration.
+func (s *Spawner) agentEnv(agentID, sessionID, role string) map[string]string {
 	return map[string]string{
-		"KF_ORCH_URL": fmt.Sprintf("http://localhost:%d", s.cfg.OrchestratorPort),
+		"KF_ORCH_URL":   fmt.Sprintf("http://localhost:%d", s.cfg.OrchestratorPort),
+		"KF_AGENT_ID":   agentID,
+		"KF_SESSION_ID": sessionID,
+		"KF_AGENT_ROLE": role,
 	}
 }
 
@@ -293,7 +298,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	span.AddEvent("agent.spawned")
 	s.trackEvent("agent_spawned", map[string]any{"role": "reviewer", "model": model})
 
-	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span, s.agentEnv())
+	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span, s.agentEnv(agentID, sessionID, "reviewer"))
 
 	return &info, nil
 }
@@ -378,7 +383,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 	span.AddEvent("agent.spawned")
 	s.trackEvent("agent_spawned", map[string]any{"role": "developer", "model": model})
 
-	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span, s.agentEnv())
+	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span, s.agentEnv(agentID, sessionID, "developer"))
 
 	return &info, nil
 }
@@ -538,7 +543,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	// Create SDK session with a detached context so the agent process
 	// outlives the HTTP request that spawned it. The session manages its
 	// own lifecycle via session.Close() / session.cancel.
-	session, err := NewSDKSession(context.Background(), workDir, model, logFile, s.agentEnv())
+	session, err := NewSDKSession(context.Background(), workDir, model, logFile, s.agentEnv(agentID, sessionID, "interactive"))
 	if err != nil {
 		return nil, fmt.Errorf("create SDK session: %w", err)
 	}
@@ -714,7 +719,7 @@ func (s *Spawner) ResumeDeveloper(ctx context.Context, id string) (*domain.Agent
 		model = s.cfg.Model
 	}
 
-	pid, err := execClaudeResume(ctx, agent.SessionID, workDir, model)
+	pid, err := execClaudeResume(ctx, agent.SessionID, workDir, model, s.agentEnv(id, agent.SessionID, agent.Role))
 	if err != nil {
 		return nil, fmt.Errorf("resume process: %w", err)
 	}
@@ -769,7 +774,7 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	logFile := agent.LogFile
 
 	// Create SDK session with resume — detached from HTTP request context.
-	session, err := NewSDKSessionWithResume(context.Background(), workDir, model, logFile, agent.SessionID, s.agentEnv())
+	session, err := NewSDKSessionWithResume(context.Background(), workDir, model, logFile, agent.SessionID, s.agentEnv(id, agent.SessionID, agent.Role))
 	if err != nil {
 		return nil, fmt.Errorf("create resumed SDK session: %w", err)
 	}

@@ -15,11 +15,13 @@ type ProcessStarter interface {
 }
 
 // ExecProcessStarter starts a real claude --resume process.
-type ExecProcessStarter struct{}
+type ExecProcessStarter struct {
+	EnvVars map[string]string
+}
 
 // Start launches claude --resume <sessionID> in the given directory.
 func (e *ExecProcessStarter) Start(ctx context.Context, sessionID, workDir, model string) (int, error) {
-	return execClaudeResume(ctx, sessionID, workDir, model)
+	return execClaudeResume(ctx, sessionID, workDir, model, e.EnvVars)
 }
 
 // RecoveryResult summarizes the outcome of recovering agents.
@@ -150,7 +152,8 @@ func (rm *RecoveryManager) recordResumeFail(agentID, role, reason string) {
 }
 
 // execClaudeResume runs `claude --resume <sessionID>` in the given directory.
-func execClaudeResume(ctx context.Context, sessionID, workDir, model string) (int, error) {
+// envVars are injected into the process environment as additional variables.
+func execClaudeResume(ctx context.Context, sessionID, workDir, model string, envVars map[string]string) (int, error) {
 	args := []string{"--resume", sessionID, "--output-format", "stream-json", "--verbose"}
 	if model != "" {
 		args = append([]string{"--model", model}, args...)
@@ -159,6 +162,13 @@ func execClaudeResume(ctx context.Context, sessionID, workDir, model string) (in
 	cmd.Dir = workDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	// Inject identity env vars into the process environment.
+	if len(envVars) > 0 {
+		cmd.Env = CleanClaudeEnv()
+		for k, v := range envVars {
+			cmd.Env = append(cmd.Env, k+"="+v)
+		}
+	}
 	if err := cmd.Start(); err != nil {
 		return 0, fmt.Errorf("start claude: %w", err)
 	}
