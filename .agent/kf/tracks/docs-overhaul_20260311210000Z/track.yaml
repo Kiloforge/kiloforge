@@ -1,0 +1,146 @@
+id: docs-overhaul_20260311210000Z
+title: Major documentation overhaul with Kiloforger branding and full feature coverage
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Rewrite and expand all user-facing documentation to cover the full Kiloforge
+    feature set: Cortex setup and operation, skills system, agent lifecycle and
+    suspension, notifications, swarm coordination, Command Deck, tracing, and
+    CLI reference. Brand consistently with Kiloforger/Cortex/Swarm terminology.
+  context: |
+    The existing docs (README.md, docs/getting-started.md, docs/architecture.md)
+    were written early in the project and haven't been updated to reflect the
+    many features added since. Key gaps:
+
+    - **Skills system** — No documentation on what skills are, the full skill
+      catalog, or how they work together (architect → developer → reviewer cycle)
+    - **Agent lifecycle** — No coverage of agent statuses (running, waiting,
+      halted, suspended, completed, failed), suspension mechanism, or recovery
+    - **Notifications** — No mention of the notification system (agent-needs-
+      attention alerts, dismissal, acknowledgment)
+    - **Swarm coordination** — No docs on swarm capacity, worktree pooling,
+      queue service, or dispatch system
+    - **Command Deck features** — Dashboard docs only mention basic monitoring;
+      missing interactive terminals, kanban board, trace viewer, swarm panel,
+      admin operations, reliability dashboard, agent launcher
+    - **Branding inconsistency** — Some docs use "user" instead of "Kiloforger",
+      some mention "Conductor" (legacy name for track system)
+
+    The user wants thorough, high-level documentation that helps Kiloforgers
+    understand the full platform. Internally consistent branding: the person is
+    always a "Kiloforger", the control plane is "the Cortex", the dashboard is
+    "the Command Deck", agent groups are "the Swarm".
+  codebase_analysis: |
+    **Existing documentation files:**
+    - `README.md` — Main project readme (406 lines). Has installation, quick
+      start, command reference, architecture diagram, data directory, tracing,
+      analytics. Uses "Kiloforger" in some places but inconsistently. References
+      deprecated `kf init` command. Quick Start still says `kf init`.
+    - `docs/README.md` — Index page (25 lines). Links to 3 guides + resources.
+    - `docs/getting-started.md` — Getting started guide (118 lines). Covers
+      install, Cortex start, project registration, first agent. Light coverage.
+    - `docs/architecture.md` — Architecture overview (168 lines). System diagram,
+      components, communication protocols, codebase structure, key abstractions.
+      Good foundation but missing skills, swarm, notifications.
+    - `docs/why-i-built-this.md` — Origin story (57 lines). Well-branded already.
+    - `docs/kiloforge-data-formats.md` — Data format spec (456 lines). Technical
+      reference for track formats. Not user-facing — leave as-is.
+
+    **Skills catalog** (from backend/internal/adapter/skills/embedded/):
+    Core workflow: kf-architect, kf-developer, kf-implement, kf-reviewer,
+    kf-dispatch, kf-status, kf-conflict-resolver
+    Management: kf-manage, kf-bulk-archive, kf-compact-archive, kf-revert
+    Advisory: kf-advisor-product, kf-advisor-reliability
+    Setup: kf-setup, kf-getting-started, kf-interactive, kf-new-track
+    Infrastructure: kf-validate, kf-repair, kf-report, kf-data-guardian,
+    kf-parallel (deprecated)
+
+    **Agent roles** (from domain/agent.go): developer, reviewer, architect,
+    advisor-product, advisor-reliability, interactive
+
+    **Agent statuses**: running, waiting, halted, stopped, completed, failed,
+    suspended, suspending, force-killed, resume-failed, replaced
+
+    **Notifications**: Agent-needs-attention alerts with create/dismiss/
+    acknowledge lifecycle. SSE delivery to Command Deck.
+
+    **Suspension**: ConnectionSuspender with grace-period timers. Worker roles
+    (developer, reviewer) never auto-suspend. Advisor roles suspend after
+    inactivity grace period.
+  acceptance_criteria:
+    - README.md rewritten with consistent Kiloforger branding throughout
+    - README.md Quick Start updated to use kf up (not deprecated kf init)
+    - README.md command reference updated with all current commands including kf cost, kf skills, kf dashboard
+    - New docs/skills.md covering the full skills catalog, grouped by category, with descriptions of the architect→developer→reviewer pipeline
+    - New docs/agents-and-swarms.md covering agent roles, lifecycle states, suspension/resume, notifications, swarm capacity, worktree pooling, and dispatch
+    - docs/getting-started.md expanded with Command Deck walkthrough, first track creation, and monitoring guidance
+    - docs/architecture.md expanded to cover skills system, notification bus, swarm coordination, and suspension
+    - docs/README.md index updated to include new pages
+    - All user references use "Kiloforger" consistently
+    - All references to the control plane use "Cortex"
+    - All references to the dashboard use "Command Deck"
+    - All references to agent groups use "Swarm"
+    - No mentions of "Conductor" remain (replaced with "Kiloforge track system")
+    - docs/why-i-built-this.md preserved unchanged
+    - docs/kiloforge-data-formats.md preserved unchanged
+  out_of_scope: |
+    - Backend or frontend code changes — this is docs-only
+    - docs/why-i-built-this.md — already well-written and branded
+    - docs/kiloforge-data-formats.md — internal technical reference
+    - backend/docs/ — legacy backend-specific docs (separate cleanup)
+    - API documentation (openapi.yaml, asyncapi.yaml) — schema docs
+    - E2E test documentation (frontend/e2e/README.md)
+  technical_notes: |
+    **Approach:**
+    All changes are to markdown files in `docs/` and `README.md` at the repo
+    root. No code changes, no test changes, no build impact.
+
+    **Branding glossary:**
+    - Person using Kiloforge: "Kiloforger" (always capitalized)
+    - Control plane server: "the Cortex" (always capitalized)
+    - Dashboard UI: "the Command Deck" (always capitalized)
+    - Agent collective: "the Swarm" (always capitalized when referring to the
+      concept; lowercase "swarm" when used as a general noun)
+    - Track system: "Kiloforge track system" (not "Conductor")
+
+    **File plan:**
+    1. README.md — Major rewrite maintaining structure but updating content
+    2. docs/README.md — Add new pages to index
+    3. docs/getting-started.md — Expand significantly
+    4. docs/architecture.md — Expand with skills, notifications, swarm
+    5. docs/skills.md — NEW: Full skills catalog and workflow
+    6. docs/agents-and-swarms.md — NEW: Agent lifecycle, notifications, swarm
+
+    **Verification:** `make build` (ensure no broken embeds), visual review of
+    markdown rendering. No test impact since these are docs-only changes.
+plan:
+  - phase: Core documentation rewrite
+    tasks:
+      - text: "Rewrite README.md: update Quick Start (kf up not kf init), refresh command reference with all current commands, ensure consistent Kiloforger/Cortex/Swarm branding, remove Conductor references"
+        done: false
+      - text: "Rewrite docs/getting-started.md: expand with Command Deck walkthrough, first interactive agent session, track creation via kf-architect, monitoring with kf agents/logs, and shutdown with kf down"
+        done: false
+      - text: "Expand docs/architecture.md: add Skills System section, Notification Bus section, Swarm Coordination section (worktree pool, queue, dispatch, capacity), Agent Suspension section, update diagram"
+        done: false
+  - phase: New documentation pages
+    tasks:
+      - text: "Create docs/skills.md: overview of skills system, full catalog grouped by category (Core Workflow, Management, Review & Advisory, Setup & Onboarding, Infrastructure), describe the architect→developer→reviewer pipeline, explain how skills are installed and invoked"
+        done: false
+      - text: "Create docs/agents-and-swarms.md: agent roles (developer, reviewer, architect, advisor, interactive), lifecycle states and transitions, suspension mechanism (grace periods, auto-suspend for non-worker roles), resume/attach flow, notification system (agent-needs-attention, dismiss, acknowledge), swarm capacity and pooling, dispatch system"
+        done: false
+  - phase: Index and cross-references
+    tasks:
+      - text: "Update docs/README.md: add skills.md and agents-and-swarms.md to contents with descriptions, verify all links work"
+        done: false
+      - text: "Cross-reference audit: ensure all docs link to each other appropriately, README links to new pages, getting-started references skills and agents pages for deeper reading"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Run make build to verify no broken embeds or build issues from documentation changes"
+        done: false
+      - text: "Grep all docs for stale references: 'Conductor', 'kf init' (except in deprecation note), 'the user' (should be 'the Kiloforger'), inconsistent branding"
+        done: false
+extra: {}
