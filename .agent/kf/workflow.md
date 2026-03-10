@@ -27,9 +27,18 @@ Format: `<type>(<optional scope>): <description>`
 
 ## Verification Commands
 
-The following commands must pass at phase completion and before merge (post-rebase):
+Before running verification, **apply autoformatters first** so any formatting fixes are captured in the commit:
 
 ```bash
+# Step 1: Autoformat (run before verification, commit any changes)
+cd backend && gofmt -w . && goimports -w -local github.com/benbaldivia/crelay .
+# If files changed, stage and amend the last commit (or add a `chore: format` commit)
+```
+
+Then the following commands must pass at phase completion and before merge (post-rebase):
+
+```bash
+# Step 2: Verify
 make test    # Go unit/integration tests
 make build   # Full build (frontend + backend) — catches TS errors, embed failures, etc.
 make lint    # Fast linters: go vet + staticcheck + gofmt + goimports (Go) + npm lint (frontend)
