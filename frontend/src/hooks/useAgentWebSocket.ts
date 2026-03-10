@@ -286,9 +286,14 @@ export function useAgentWebSocket(agentId: string | null) {
     [],
   );
 
+  const sendInterrupt = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: "interrupt" }));
+  }, []);
+
   const clearMessages = useCallback(() => {
     setMessages([]);
   }, []);
 
-  return { messages, sendMessage, clearMessages, status, agentStatus, turnActive };
+  return { messages, sendMessage, sendInterrupt, clearMessages, status, agentStatus, turnActive };
 }

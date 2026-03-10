@@ -50,7 +50,8 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
 }
 
 export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, onNotification, registerControls, unregisterControls }: Props) {
-  const { messages, sendMessage, status, agentStatus, turnActive } = useAgentWebSocket(agentId);
+  const { messages, sendMessage, sendInterrupt, status, agentStatus, turnActive } = useAgentWebSocket(agentId);
+  const [queueDepth, setQueueDepth] = useState(0);
   const [input, setInput] = useState("");
   const [viewMode, setViewMode] = useState<"chat" | "diff">("chat");
   const hasDiff = !!(slug && branch);
@@ -83,6 +84,11 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
     }
   }, [messages, minimized]);
 
+  // Reset queue depth when turn ends (backend will have delivered queued messages)
+  useEffect(() => {
+    if (!turnActive) setQueueDepth(0);
+  }, [turnActive]);
+
   // Set notification type based on turn state and agent status when minimized
   useEffect(() => {
     if (!minimized || !onNotification) return;
@@ -114,9 +120,10 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
     const text = input.trim();
     if (!text) return;
     sendMessage(text);
+    if (turnActive) setQueueDepth((d) => d + 1);
     setInput("");
     inputRef.current?.focus();
-  }, [input, sendMessage]);
+  }, [input, sendMessage, turnActive]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -124,8 +131,12 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
         e.preventDefault();
         handleSend();
       }
+      if (e.key === "Escape" && turnActive) {
+        e.preventDefault();
+        sendInterrupt();
+      }
     },
-    [handleSend],
+    [handleSend, turnActive, sendInterrupt],
   );
 
   const handlePanelPointerDown = useCallback(
@@ -168,6 +179,7 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
 
   const isTerminal = agentStatus !== null && TERMINAL_STATUSES.has(agentStatus);
   const canSend = status === "connected" && !isTerminal;
+  const canInterrupt = canSend && turnActive;
 
   // Compute turn numbers for turn_start messages
   let turnCounter = 0;
@@ -226,6 +238,11 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
           )}
         </div>
         <div className={styles.headerActions}>
+          {canInterrupt && (
+            <button className={styles.interruptBtn} onClick={sendInterrupt} title="Interrupt (Esc)">
+              &#x25A0;
+            </button>
+          )}
           <span className={styles.shortcutHint} title="Keyboard shortcuts: ⌘?">?</span>
           {onMinimize && (
             <button className={styles.minimizeBtn} onClick={onMinimize} title="Minimize (⌘⇧M)">
@@ -271,12 +288,15 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={canSend ? "Type a message... (Enter to send)" : isTerminal ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited") : "Connecting..."}
+              placeholder={canSend ? (turnActive ? "Type to queue a message... (Esc to interrupt)" : "Type a message... (Enter to send)") : isTerminal ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited") : "Connecting..."}
               disabled={!canSend}
               rows={1}
             />
+            {queueDepth > 0 && (
+              <span className={styles.queueBadge}>{queueDepth} queued</span>
+            )}
             <button className={styles.sendBtn} onClick={handleSend} disabled={!canSend || !input.trim()}>
-              Send
+              {turnActive ? "Queue" : "Send"}
             </button>
           </div>
         </>
