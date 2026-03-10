@@ -89,5 +89,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Run frontend type-check and build, update or replace StatCards tests, verify all tests pass
-        done: false
+        done: true
 extra: {}
