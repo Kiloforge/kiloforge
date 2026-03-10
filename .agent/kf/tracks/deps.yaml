@@ -37,6 +37,7 @@ advisor-hub-fe_20260310115600Z:
   - advisor-skills-be_20260310115559Z
 
 advisor-skills-be_20260310115559Z: []
+
 cmd-mode-help-fe_20260310121738Z: []
 
 gitea-removal-be_20260311070000Z: []
@@ -44,9 +45,12 @@ gitea-removal-be_20260311070000Z: []
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
+local-skills-install-be_20260311160000Z: []
+
 onboarding-ux-fe_20260310073721Z: []
 
 quota-gauges-be_20260310092417Z: []
+
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
