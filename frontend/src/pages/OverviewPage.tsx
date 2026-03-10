@@ -12,6 +12,7 @@ import { TraceList } from "../components/TraceList";
 import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { QueuePanel } from "../components/QueuePanel";
+import { PaginatedList } from "../components/PaginatedList";
 import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
@@ -19,6 +20,10 @@ import appStyles from "../App.module.css";
 interface OverviewPageProps {
   agents: Agent[];
   agentsLoading: boolean;
+  agentRemainingCount?: number;
+  agentHasNextPage?: boolean;
+  agentFetchingNextPage?: boolean;
+  onAgentLoadMore?: () => void;
   quota: QuotaResponse | null;
   tracks: Track[];
   onViewLog: (agentId: string) => void;
@@ -111,7 +116,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -192,7 +197,14 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
         {agentsLoading ? (
           <p className={appStyles.empty}>Loading agents...</p>
         ) : (
-          <AgentGrid agents={filteredAgents} onViewLog={onViewLog} onAttach={onAttach} />
+          <PaginatedList
+            remainingCount={agentRemainingCount}
+            hasNextPage={agentHasNextPage}
+            isFetchingNextPage={agentFetchingNextPage}
+            onLoadMore={onAgentLoadMore ?? (() => {})}
+          >
+            <AgentGrid agents={filteredAgents} onViewLog={onViewLog} onAttach={onAttach} />
+          </PaginatedList>
         )}
       </section>
 

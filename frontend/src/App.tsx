@@ -37,7 +37,7 @@ import { TrackDetailPage } from "./pages/TrackDetailPage";
 import styles from "./App.module.css";
 
 export default function App() {
-  const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved } = useAgents();
+  const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved, remainingCount: agentRemainingCount, hasNextPage: agentHasNextPage, isFetchingNextPage: agentFetchingNextPage, fetchNextPage: agentFetchNextPage } = useAgents();
   const { quota, handleQuotaUpdate } = useQuota();
   const { tracks, handleTrackUpdate, handleTrackRemoved } = useTracks();
   const { handleProjectUpdate, handleProjectRemoved } = useProjects();
@@ -178,6 +178,10 @@ export default function App() {
               <OverviewPage
                 agents={agents}
                 agentsLoading={agentsLoading}
+                agentRemainingCount={agentRemainingCount}
+                agentHasNextPage={agentHasNextPage}
+                agentFetchingNextPage={agentFetchingNextPage}
+                onAgentLoadMore={agentFetchNextPage}
                 quota={quota}
                 tracks={tracks}
                 onViewLog={handleViewLog}
