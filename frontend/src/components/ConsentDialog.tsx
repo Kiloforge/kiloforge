@@ -15,7 +15,7 @@ export function ConsentDialog({ onAccept, onDeny }: Props) {
   };
 
   return (
-    <div className={styles.overlay} onClick={onDeny}>
+    <div className={styles.consentOverlay} onClick={onDeny}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <h3 className={styles.title}>Agent Permissions Required</h3>
         <p className={styles.message}>

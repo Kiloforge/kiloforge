@@ -9,6 +9,11 @@
   animation: fadeIn 0.2s ease;
 }
 
+.consentOverlay {
+  composes: overlay;
+  z-index: 110;
+}
+
 .dialog {
   background: var(--bg-surface-elevated);
   backdrop-filter: blur(var(--blur));
