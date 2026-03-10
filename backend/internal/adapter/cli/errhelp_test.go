@@ -17,24 +17,6 @@ func TestNotInitializedError(t *testing.T) {
 	}
 }
 
-func TestGiteaNotRunningError(t *testing.T) {
-	t.Parallel()
-	msg := giteaNotRunningError()
-	if !strings.Contains(msg, "not running") {
-		t.Errorf("expected 'not running' in message, got: %q", msg)
-	}
-	if !strings.Contains(msg, "kf up") {
-		t.Errorf("expected 'kf up' guidance in message, got: %q", msg)
-	}
-}
-
-func TestNotInitializedDistinctFromGiteaDown(t *testing.T) {
-	t.Parallel()
-	if notInitializedError() == giteaNotRunningError() {
-		t.Error("not-initialized and gitea-not-running errors should be distinct")
-	}
-}
-
 func TestConfigLoadError(t *testing.T) {
 	t.Parallel()
 	msg := configLoadError(fmt.Errorf("file not found"))

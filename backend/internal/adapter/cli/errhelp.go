@@ -17,17 +17,6 @@ func notInitializedError() string {
   Run 'kf up' to get started.`
 }
 
-// giteaNotRunningError returns an error message for when Kiloforge is
-// initialized but the Gitea server is not currently running.
-func giteaNotRunningError() string {
-	return `Gitea is not running.
-
-  The Kiloforge data directory exists, but the Gitea server isn't
-  responding. It may have been stopped or failed to start.
-
-  Run 'kf up' to start the Cortex.`
-}
-
 // configLoadError returns an error message for when config resolution fails,
 // wrapping the underlying error with guidance.
 func configLoadError(err error) string {
