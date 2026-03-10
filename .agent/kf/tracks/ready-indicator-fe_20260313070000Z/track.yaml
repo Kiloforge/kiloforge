@@ -129,13 +129,13 @@ plan:
   - phase: Kanban board indicator
     tasks:
       - text: Add isReady prop to CardItem derived from dependencies map in KanbanBoard
-        done: false
+        done: true
       - text: Render ready badge/indicator on backlog cards when isReady is true
-        done: false
+        done: true
       - text: Add CSS styles for ready backlog card (green accent, subtle differentiation from blocked backlog)
-        done: false
+        done: true
       - text: Write tests for CardItem ready indicator rendering
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build-frontend — no TypeScript errors

@@ -202,6 +202,10 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     isClamped={clampedCardId === card.track_id}
                     isEntering={enteringCards.has(card.track_id)}
                     isBacklog={col === "backlog"}
+                    isReady={col === "backlog" && (
+                      !dependencies?.get(card.track_id)?.length ||
+                      dependencies?.get(card.track_id)?.every(d => d.status === "completed") === true
+                    )}
                     dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
                     confirmingReject={confirmReject === card.track_id}
                     onDragStart={isMobile ? undefined : () => handleDragStart(card.track_id)}
@@ -239,6 +243,7 @@ interface CardItemProps {
   isClamped?: boolean;
   isEntering?: boolean;
   isBacklog: boolean;
+  isReady?: boolean;
   confirmingReject: boolean;
   dataTour?: string;
   cardRef?: (el: HTMLDivElement | null) => void;
@@ -254,10 +259,10 @@ interface CardItemProps {
   onMobileMove?: (trackId: string, toColumn: string) => void;
 }
 
-function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isBacklog, isReady, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
   return (
     <div
-      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isEntering ? styles.cardEntering : ""} ${isBacklog ? styles.cardBacklog : ""}`}
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isEntering ? styles.cardEntering : ""} ${isReady ? styles.cardReady : isBacklog ? styles.cardBacklog : ""}`}
       draggable={!isMobile}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -267,7 +272,8 @@ function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isBack
     >
       <div className={styles.cardHeader}>
         {card.type && <span className={styles.cardType}>{card.type}</span>}
-        {isBacklog && <span className={styles.reviewBadge}>Pending Review</span>}
+        {isBacklog && !isReady && <span className={styles.reviewBadge}>Pending Review</span>}
+        {isReady && <span className={styles.readyBadge}>Ready</span>}
         {card.pr_number && card.pr_number > 0 && (
           <span className={styles.cardPR}>PR #{card.pr_number}</span>
         )}

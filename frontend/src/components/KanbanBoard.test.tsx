@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { KanbanBoard } from "./KanbanBoard";
-import type { BoardState } from "../types/api";
+import type { BoardState, TrackDependency } from "../types/api";
 
 vi.mock("./tour/TourProvider", () => ({
   useTourContextSafe: () => null,
@@ -149,6 +149,34 @@ describe("KanbanBoard", () => {
     renderBoard();
     const link = screen.getByText("Feature Alpha");
     expect(link.closest("a")).toHaveAttribute("href", "/projects/test-proj/tracks/track-1");
+  });
+
+  it("shows ready badge on backlog card with no dependencies", () => {
+    renderBoard({ dependencies: new Map() });
+    expect(screen.getByText("Ready")).toBeInTheDocument();
+  });
+
+  it("shows ready badge on backlog card with all deps completed", () => {
+    const deps = new Map<string, TrackDependency[]>([
+      ["track-1", [{ id: "dep-1", title: "Dep", status: "completed" }]],
+    ]);
+    renderBoard({ dependencies: deps });
+    expect(screen.getByText("Ready")).toBeInTheDocument();
+  });
+
+  it("does not show ready badge on backlog card with unmet deps", () => {
+    const deps = new Map<string, TrackDependency[]>([
+      ["track-1", [{ id: "dep-1", title: "Dep", status: "pending" }]],
+    ]);
+    renderBoard({ dependencies: deps });
+    expect(screen.queryByText("Ready")).not.toBeInTheDocument();
+  });
+
+  it("does not show ready badge on non-backlog cards", () => {
+    renderBoard({ dependencies: new Map() });
+    // track-2 is in_progress, track-3 is done — neither should have Ready badge
+    const track2Card = screen.getByText("Bug Fix Beta").closest("[data-track-id]");
+    expect(track2Card?.textContent).not.toContain("Ready");
   });
 
   it("applies entering animation class only to newly added cards", () => {

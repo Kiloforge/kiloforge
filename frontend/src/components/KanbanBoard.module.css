@@ -186,6 +186,21 @@
   border-left: 3px solid var(--yellow);
 }
 
+.cardReady {
+  border-left: 3px solid var(--green);
+}
+
+.readyBadge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
 .reviewBadge {
   font-size: 9px;
   font-weight: 600;
