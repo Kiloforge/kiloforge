@@ -22,6 +22,7 @@ agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names"
 analytics-be_20260310060644Z: {"title":"PostHog product analytics — backend integration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 analytics-fe_20260310060645Z: {"title":"Analytics opt-out toggle in dashboard settings","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"archived","type":"research","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+auto-open-dashboard_20260310230000Z: {"title":"Auto-open browser to dashboard on init and up","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
