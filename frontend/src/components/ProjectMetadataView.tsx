@@ -34,18 +34,15 @@ export function ProjectMetadataView({ metadata }: Props) {
   const currentTab = tabs.find((t) => t.id === activeTab) ? activeTab : tabs[0]?.id ?? "product";
 
   const { track_summary: summary } = metadata;
+  const done = summary.completed + summary.archived;
 
   return (
     <div>
       {/* Track summary stats */}
       <div className={styles.summaryRow}>
         <div className={styles.summaryItem}>
-          <span>Total</span>
-          <span className={styles.summaryValue}>{summary.total}</span>
-        </div>
-        <div className={styles.summaryItem}>
-          <span>Completed</span>
-          <span className={`${styles.summaryValue} ${styles.summaryCompleted}`}>{summary.completed}</span>
+          <span>Done</span>
+          <span className={`${styles.summaryValue} ${styles.summaryCompleted}`}>{done}/{summary.total}</span>
         </div>
         <div className={styles.summaryItem}>
           <span>In Progress</span>
@@ -55,12 +52,6 @@ export function ProjectMetadataView({ metadata }: Props) {
           <span>Pending</span>
           <span className={`${styles.summaryValue} ${styles.summaryPending}`}>{summary.pending}</span>
         </div>
-        {summary.archived > 0 && (
-          <div className={styles.summaryItem}>
-            <span>Archived</span>
-            <span className={`${styles.summaryValue} ${styles.summaryArchived}`}>{summary.archived}</span>
-          </div>
-        )}
       </div>
 
       {/* Quick links */}
