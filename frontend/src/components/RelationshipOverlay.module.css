@@ -10,40 +10,45 @@
 
 .depLine {
   fill: none;
-  stroke-width: 1.5;
+  stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 8 4;
-  animation: flowDash 1.5s linear infinite;
+  opacity: 0.55;
+  animation: flowDash 3s linear infinite;
 }
 
 .depLineSatisfied {
   stroke: var(--accent);
-  opacity: 0.5;
+  filter: url(#glow-accent);
 }
 
 .depLinePending {
   stroke: var(--text-dim);
-  opacity: 0.35;
+  filter: url(#glow-dim);
 }
 
 .conflictLine {
   fill: none;
-  stroke-width: 1.5;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-dasharray: 4 6;
-  animation: pulseLine 2s ease-in-out infinite;
+  opacity: 0.55;
+  animation: pulseGlow 2s ease-in-out infinite;
 }
 
 .conflictHigh {
   stroke: var(--red);
+  filter: url(#glow-red);
 }
 
 .conflictMedium {
   stroke: var(--orange);
+  filter: url(#glow-orange);
 }
 
 .conflictLow {
   stroke: var(--yellow);
+  filter: url(#glow-yellow);
 }
 
 .toggle {
@@ -76,15 +81,15 @@
 
 @keyframes flowDash {
   to {
-    stroke-dashoffset: -12;
+    stroke-dashoffset: -24;
   }
 }
 
-@keyframes pulseLine {
+@keyframes pulseGlow {
   0%, 100% {
-    opacity: 0.3;
+    opacity: 0.4;
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.65;
   }
 }
