@@ -3,9 +3,9 @@ title: Add serial merge protocol to kf-report skill
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
-  summary: "Modify kf-report SKILL.md to create a temp branch from main, commit report files, then use the merge lock/rebase/ff-merge protocol to land reports on main."
+  summary: Modify kf-report SKILL.md to create a temp branch from main, commit report files, then use the merge lock/rebase/ff-merge protocol to land reports on main.
   context: |
     kf-report currently writes reports to .agent/kf/_reports/ but never commits
     or merges them. Reports are ephemeral local files that get lost across
@@ -17,12 +17,12 @@ spec:
     - Currently writes reports via Write tool to .agent/kf/_reports/
     - Has no git operations, no commit, no merge
     - Allowed tools: Read, Glob, Grep, Bash, Write
-
+    
     Merge protocol reference:
     - kf-developer SKILL.md Phase 5 (Steps 11a-11e): full merge protocol
     - .agent/kf/bin/kf-merge-lock: shared lock helper (HTTP + mkdir modes)
     - Pattern: acquire lock → rebase main → ff-merge in main worktree → release → cleanup
-
+    
     Key considerations:
     - Reports only touch .agent/kf/_reports/ — no source code, no tests needed
     - No post-rebase verification needed (like kf-architect, unlike kf-developer)
@@ -46,7 +46,7 @@ spec:
     1. No post-rebase verification needed (no source code changes)
     2. No track state files to reconcile (reports don't modify tracks.yaml)
     3. Conflicts are extremely unlikely (date-stamped report files)
-
+    
     Flow to add to SKILL.md:
     1. Resolve primary branch from config.yaml
     2. Record home branch (worker-* branch)
@@ -62,16 +62,16 @@ spec:
 plan:
   - phase: Skill modification
     tasks:
-      - text: "Read the full kf-report SKILL.md and understand current output flow"
-        done: false
-      - text: "Add merge protocol section to SKILL.md: resolve primary branch, create temp branch, commit reports, acquire lock, rebase, ff-merge, cleanup"
-        done: false
-      - text: "Update the allowed-tools metadata to include Bash (needed for git operations) if not already present"
-        done: false
+      - text: Read the full kf-report SKILL.md and understand current output flow
+        done: true
+      - text: Add merge protocol section to SKILL.md: resolve primary branch, create temp branch, commit reports, acquire lock, rebase, ff-merge, cleanup
+        done: true
+      - text: Update the allowed-tools metadata to include Bash (needed for git operations) if not already present
+        done: true
   - phase: Verification
     tasks:
-      - text: "Verify SKILL.md is valid markdown and all steps are internally consistent"
+      - text: Verify SKILL.md is valid markdown and all steps are internally consistent
         done: false
-      - text: "Run make build to ensure embedded skill compiles into binary"
+      - text: Run make build to ensure embedded skill compiles into binary
         done: false
 extra: {}

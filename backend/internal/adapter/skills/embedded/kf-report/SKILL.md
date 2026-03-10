@@ -602,3 +602,103 @@ Then use the manual git ls-files + grep fallback for SLOC, and compute COCOMO ma
 8. **Sort tables by most relevant metric** — SLOC by code descending, tracks by status then date.
 9. **Handle missing data gracefully** — If a section has no data, show a warning note, do not skip the section.
 10. **Account for compacted archives** — Always check for and include compacted track data in totals.
+11. **Always merge reports to the primary branch** — Follow the Merge Protocol below so reports are visible to all worktrees.
+
+---
+
+## Merge Protocol
+
+After writing report files, merge them to the primary branch so all worktrees can access the reports. Reports only touch `.agent/kf/_reports/` — no post-rebase verification is needed.
+
+### Step 1 — Resolve primary branch and record home branch
+
+```bash
+PRIMARY_BRANCH=$(git show main:.agent/kf/config.yaml 2>/dev/null | grep '^primary_branch:' | awk '{print $2}')
+PRIMARY_BRANCH="${PRIMARY_BRANCH:-main}"
+HOME_BRANCH=$(git branch --show-current)
+MAIN_WORKTREE=$(git worktree list | grep -E '\['"$PRIMARY_BRANCH"'\]' | awk '{print $1}')
+```
+
+### Step 2 — Create a temporary branch from the primary branch
+
+```bash
+REPORT_BRANCH="report/$(date -u +%Y%m%d-%H%M%SZ)"
+git checkout -b "$REPORT_BRANCH" "$PRIMARY_BRANCH"
+```
+
+### Step 3 — Write reports (existing logic)
+
+Execute the report generation sections as described above. All report files are written to `.agent/kf/_reports/`.
+
+### Step 4 — Commit report files
+
+```bash
+git add .agent/kf/_reports/
+git commit -m "chore: add project report $(date -u +%Y-%m-%d)"
+```
+
+If there are no changes to commit (report identical to existing), skip the merge protocol and clean up:
+```bash
+git checkout "$HOME_BRANCH"
+git branch -d "$REPORT_BRANCH"
+```
+
+### Step 5 — Acquire merge lock
+
+Use the shared merge lock helper with a blocking timeout:
+
+```bash
+.agent/kf/bin/kf-merge-lock acquire --timeout 300
+```
+
+Start heartbeat after acquisition:
+```bash
+while true; do .agent/kf/bin/kf-merge-lock heartbeat; sleep 30; done &
+HEARTBEAT_PID=$!
+```
+
+**From this point, release the lock on ANY failure:**
+```bash
+kill $HEARTBEAT_PID 2>/dev/null; wait $HEARTBEAT_PID 2>/dev/null
+.agent/kf/bin/kf-merge-lock release
+```
+
+### Step 6 — Rebase onto latest primary branch
+
+```bash
+git rebase "$PRIMARY_BRANCH"
+```
+
+Report files rarely conflict. If a conflict occurs in `.agent/kf/_reports/`, accept ours (the new report overwrites the old):
+
+```bash
+git checkout --ours .agent/kf/_reports/
+git add .agent/kf/_reports/
+git rebase --continue
+```
+
+If any non-report file conflicts: release lock, report, and **HALT**.
+
+### Step 7 — Fast-forward merge into the primary branch
+
+```bash
+git -C "$MAIN_WORKTREE" merge "$REPORT_BRANCH" --ff-only
+```
+
+On success:
+```bash
+kill $HEARTBEAT_PID 2>/dev/null; wait $HEARTBEAT_PID 2>/dev/null
+.agent/kf/bin/kf-merge-lock release
+```
+
+On failure: release lock, report, and **HALT**.
+
+### Step 8 — Cleanup and return to home branch
+
+```bash
+git checkout "$HOME_BRANCH"
+git branch -d "$REPORT_BRANCH"
+git reset --hard "$PRIMARY_BRANCH"
+```
+
+Report the file path to the user and confirm the merge.
