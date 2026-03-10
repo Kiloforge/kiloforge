@@ -542,6 +542,8 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 
 	// Create SDK bridge and register with WS session manager.
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge.InterruptHandler = ia.SDKInterrupt
+	ia.SetOnTurnEnd(func() { bridge.DrainQueue() })
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
 	// Start structured message relay in background with cancellable context.
@@ -2020,6 +2022,8 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 
 	// Create bridge and register with WS session manager.
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge.InterruptHandler = ia.SDKInterrupt
+	ia.SetOnTurnEnd(func() { bridge.DrainQueue() })
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
 	// Start structured message relay in background with cancellable context.
@@ -2156,6 +2160,8 @@ func (h *APIHandler) RunAdminOperation(ctx context.Context, req gen.RunAdminOper
 
 	// Create bridge and register with WS session manager.
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge.InterruptHandler = ia.SDKInterrupt
+	ia.SetOnTurnEnd(func() { bridge.DrainQueue() })
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
 	// Start structured message relay in background with cancellable context.
@@ -2549,6 +2555,8 @@ func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProject
 
 	// Create bridge and register with WS session manager.
 	bridge := wsAdapter.NewSDKBridge(ia.Info.ID, ia.Stdin, ia.Done)
+	bridge.InterruptHandler = ia.SDKInterrupt
+	ia.SetOnTurnEnd(func() { bridge.DrainQueue() })
 	h.wsSessions.RegisterBridge(ia.Info.ID, bridge)
 
 	// Start structured message relay in background with cancellable context.

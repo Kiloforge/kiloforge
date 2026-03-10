@@ -465,6 +465,20 @@ func (ia *InteractiveAgent) CancelRelay() {
 	}
 }
 
+// SDKInterrupt interrupts the current agent turn.
+func (ia *InteractiveAgent) SDKInterrupt() {
+	if ia.sdkSession != nil {
+		ia.sdkSession.Interrupt()
+	}
+}
+
+// SetOnTurnEnd sets a callback invoked after each turn completes.
+func (ia *InteractiveAgent) SetOnTurnEnd(fn func()) {
+	if ia.sdkSession != nil {
+		ia.sdkSession.SetOnTurnEnd(fn)
+	}
+}
+
 // SpawnInteractive launches a Claude agent in interactive mode using the SDK Client.
 // Returns ErrAtCapacity if the swarm is at maximum capacity.
 func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpts) (*InteractiveAgent, error) {

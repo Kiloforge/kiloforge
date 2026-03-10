@@ -47,6 +47,7 @@ type SDKSession struct {
 	mu          sync.Mutex
 	querying    bool               // prevents concurrent turns
 	queryCancel context.CancelFunc // cancels the current turn's relay context
+	onTurnEnd   func()             // called after each turn completes (e.g., to drain queued input)
 	closeOnce   sync.Once
 }
 
@@ -171,6 +172,14 @@ func (s *SDKSession) Query(ctx context.Context, prompt string, tracker *QuotaTra
 	return nil
 }
 
+// SetOnTurnEnd sets a callback invoked after each turn completes (relayResponse exits).
+// Used to wire input queue draining from the Bridge.
+func (s *SDKSession) SetOnTurnEnd(fn func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onTurnEnd = fn
+}
+
 // Interrupt cancels the current turn's relay context if a turn is in progress.
 // If no turn is active, this is a no-op.
 func (s *SDKSession) Interrupt() {
@@ -191,7 +200,11 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 		s.mu.Lock()
 		s.querying = false
 		s.queryCancel = nil
+		cb := s.onTurnEnd
 		s.mu.Unlock()
+		if cb != nil {
+			cb()
+		}
 	}()
 
 	turnID := uuid.New().String()

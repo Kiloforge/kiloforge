@@ -171,10 +171,15 @@ func TestHandlerAgentWS_InterruptFromPrimary(t *testing.T) {
 	defer srv.Close()
 
 	// Create an SDK bridge with an interrupt handler.
-	var interrupted bool
+	interruptCh := make(chan struct{}, 1)
 	done := make(chan struct{})
 	bridge := NewSDKBridge("agent-int", func(text string) error { return nil }, done)
-	bridge.InterruptHandler = func() { interrupted = true }
+	bridge.InterruptHandler = func() {
+		select {
+		case interruptCh <- struct{}{}:
+		default:
+		}
+	}
 	sm.RegisterBridge("agent-int", bridge)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -198,10 +203,11 @@ func TestHandlerAgentWS_InterruptFromPrimary(t *testing.T) {
 		t.Fatalf("write interrupt: %v", err)
 	}
 
-	// Give readLoop time to process.
-	time.Sleep(100 * time.Millisecond)
-
-	if !interrupted {
+	// Wait for interrupt handler to be called.
+	select {
+	case <-interruptCh:
+		// success
+	case <-time.After(2 * time.Second):
 		t.Error("expected InterruptHandler to be called")
 	}
 }
@@ -217,10 +223,15 @@ func TestHandlerAgentWS_InterruptFromObserver(t *testing.T) {
 	defer srv.Close()
 
 	// Create an SDK bridge with an interrupt handler.
-	var interrupted bool
+	interruptCh := make(chan struct{}, 1)
 	done := make(chan struct{})
 	bridge := NewSDKBridge("agent-int2", func(text string) error { return nil }, done)
-	bridge.InterruptHandler = func() { interrupted = true }
+	bridge.InterruptHandler = func() {
+		select {
+		case interruptCh <- struct{}{}:
+		default:
+		}
+	}
 	sm.RegisterBridge("agent-int2", bridge)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -248,10 +259,11 @@ func TestHandlerAgentWS_InterruptFromObserver(t *testing.T) {
 		t.Fatalf("write interrupt: %v", err)
 	}
 
-	time.Sleep(100 * time.Millisecond)
-
-	if interrupted {
+	select {
+	case <-interruptCh:
 		t.Error("observer should NOT be able to trigger interrupt")
+	case <-time.After(200 * time.Millisecond):
+		// expected — no interrupt
 	}
 }
 
