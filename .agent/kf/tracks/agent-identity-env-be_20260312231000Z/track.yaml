@@ -3,7 +3,7 @@ title: Pass agent identity (ID, role, session ID) as environment variables to sp
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Modify the spawner to pass KF_AGENT_ID, KF_SESSION_ID, and KF_AGENT_ROLE
@@ -19,17 +19,17 @@ spec:
     **agentEnv() in spawner.go:158-163** — returns map[string]string with only
     KF_ORCH_URL. Called from SpawnDeveloper (line 381), SpawnReviewer (line 296),
     SpawnInteractive (line 527), and ResumeAgent (line 758).
-
+    
     **SDK env var injection** — NewSDKSession and QueryOneShot both call
     opts.WithEnvVar(k, v) for each entry in the env map. The SDK passes these
     to the subprocess environment. Agents can read them via os.Getenv().
-
+    
     **Change surface:**
     - Modify agentEnv() signature to accept agentID, sessionID, role
     - Update 4 callsites: SpawnDeveloper, SpawnReviewer, SpawnInteractive, ResumeAgent
     - ResumeDeveloper uses execClaudeResume() which uses exec.Command directly —
       needs env vars added to cmd.Env
-
+    
     **Key files:**
     - backend/internal/adapter/agent/spawner.go
     - backend/internal/adapter/agent/sdk_client.go (NewSDKSession, NewSDKSessionWithResume)
@@ -61,23 +61,23 @@ plan:
   - phase: Implementation
     tasks:
       - text: Modify agentEnv() to accept agentID, sessionID, role params and include KF_AGENT_ID, KF_SESSION_ID, KF_AGENT_ROLE
-        done: false
+        done: true
       - text: Update SpawnDeveloper callsite to pass agent identity to agentEnv()
-        done: false
+        done: true
       - text: Update SpawnReviewer callsite to pass agent identity to agentEnv()
-        done: false
+        done: true
       - text: Update SpawnInteractive callsite to pass agent identity to agentEnv()
-        done: false
+        done: true
       - text: Update ResumeAgent callsite to pass agent identity to agentEnv()
-        done: false
+        done: true
       - text: Update ResumeDeveloper (execClaudeResume path) to include env vars in cmd.Env
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Update existing spawner tests to match new agentEnv() signature
-        done: false
+        done: true
       - text: Add test verifying env map contains all three identity vars
-        done: false
+        done: true
       - text: Run make test and make build to verify no regressions
-        done: false
+        done: true
 extra: {}
