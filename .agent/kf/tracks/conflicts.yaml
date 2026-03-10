@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+cli-error-ux-be_20260310073722Z/gitea-removal-be_20260311070000Z: {"risk":"medium","note":"Both modify CLI commands (init/up/down/serve). cli-error-ux-be plans to improve Gitea-not-running errors which become irrelevant after Gitea removal. cli-error-ux-be should run AFTER gitea-removal-be.","added":"2026-03-10"}

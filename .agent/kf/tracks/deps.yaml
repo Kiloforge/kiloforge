@@ -33,19 +33,8 @@
 #
 # UPDATED: 2026-03-10
 
-auto-open-dashboard_20260310230000Z: []
-
 cli-error-ux-be_20260310073722Z: []
 
-create-project-fe_20260310150001Z:
-  - create-project-be_20260310150000Z
-list-pagination-be_20260310200000Z: []
-
-list-pagination-fe_20260310200001Z:
-  - list-pagination-be_20260310200000Z
-
-merge-lock-hardening-be_20260310220000Z: []
+gitea-removal-be_20260311070000Z: []
 
 onboarding-ux-fe_20260310073721Z: []
-
-queue-project-scope-fe_20260310050001Z: []
