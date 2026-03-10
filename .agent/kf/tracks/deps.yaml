@@ -33,6 +33,8 @@
 #
 # UPDATED: 2026-03-10
 
+agent-name-display_20260310120000Z: []
+
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
 

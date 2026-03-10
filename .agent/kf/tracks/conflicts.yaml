@@ -12,3 +12,6 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+agent-name-display_20260310120000Z/immersive-views_20260310110000Z: {"risk":"low","note":"Both modify AgentTerminal header area","added":"2026-03-10"}
+agent-name-display_20260310120000Z/interactive-roles-fe_20260310100001Z: {"risk":"low","note":"Both modify App.tsx terminal rendering","added":"2026-03-10"}
+immersive-views_20260310110000Z/interactive-roles-fe_20260310100001Z: {"risk":"medium","note":"Both modify App.tsx terminal rendering and AgentTerminal component usage","added":"2026-03-10"}

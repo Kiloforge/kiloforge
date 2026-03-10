@@ -16,6 +16,7 @@ agent-display-ttl-fe_20260310014001Z: {"title":"Agent Display TTL and History Pa
 agent-lifecycle-be_20260310030000Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-lifecycle-fe_20260310030001Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track Links and Monitoring View","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+agent-name-display_20260310120000Z: {"title":"Show agent name instead of ID in AgentTerminal header","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"completed","type":"research","created":"2026-03-10","updated":"2026-03-10"}
