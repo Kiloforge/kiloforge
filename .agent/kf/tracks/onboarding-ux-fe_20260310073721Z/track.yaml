@@ -71,27 +71,27 @@ plan:
   - phase: "Foundation Components"
     tasks:
       - text: "Create HelpTooltip component with hover/click trigger, definition text, and optional 'learn more' link"
-        done: false
+        done: true
       - text: "Create HelpTooltip.module.css with glassmorphic card styling consistent with design system"
-        done: false
+        done: true
       - text: "Create GettingStartedChecklist component that reads status/projects data and shows progress"
-        done: false
+        done: true
       - text: "Create GettingStartedChecklist.module.css with checklist styling and dismiss button"
-        done: false
+        done: true
   - phase: "Integration"
     tasks:
       - text: "Add GettingStartedChecklist to OverviewPage, shown when fewer than 2 projects exist"
-        done: false
+        done: true
       - text: "Add HelpTooltip to section headers in OverviewPage (Agents, Tracks, Queue concepts)"
-        done: false
+        done: true
       - text: "Enhance empty state messages in OverviewPage with actionable CLI examples"
-        done: false
+        done: true
       - text: "Update tour completion toast to suggest specific next action"
-        done: false
+        done: true
   - phase: "Verification"
     tasks:
       - text: "Run frontend type-check and build to confirm no errors"
-        done: false
+        done: true
       - text: "Verify checklist renders correctly with 0 projects, 1 project, and 2+ projects"
-        done: false
+        done: true
 extra: {}
