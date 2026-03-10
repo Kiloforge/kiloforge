@@ -34,7 +34,7 @@ type SDKSession struct {
 // The ctx parameter controls the session's process lifetime — pass context.Background()
 // to decouple from any HTTP request context. The session has its own cancel func
 // (called by Close) for explicit shutdown.
-func NewSDKSession(ctx context.Context, workDir, model, logFilePath string) (*SDKSession, error) {
+func NewSDKSession(ctx context.Context, workDir, model, logFilePath string, envVars map[string]string) (*SDKSession, error) {
 	opts := types.NewClaudeAgentOptions().
 		WithCWD(workDir).
 		WithDangerouslySkipPermissions(true).
@@ -47,6 +47,10 @@ func NewSDKSession(ctx context.Context, workDir, model, logFilePath string) (*SD
 
 	if logFilePath != "" {
 		opts = opts.WithCustomStderrLogFile(logFilePath)
+	}
+
+	for k, v := range envVars {
+		opts = opts.WithEnvVar(k, v)
 	}
 
 	client, err := claude.NewClient(ctx, opts)
@@ -69,7 +73,7 @@ func NewSDKSession(ctx context.Context, workDir, model, logFilePath string) (*SD
 // NewSDKSessionWithResume creates an SDK session that resumes a previous session.
 // The ctx parameter controls the session's process lifetime — pass context.Background()
 // to decouple from any HTTP request context.
-func NewSDKSessionWithResume(ctx context.Context, workDir, model, logFilePath, sessionID string) (*SDKSession, error) {
+func NewSDKSessionWithResume(ctx context.Context, workDir, model, logFilePath, sessionID string, envVars map[string]string) (*SDKSession, error) {
 	opts := types.NewClaudeAgentOptions().
 		WithCWD(workDir).
 		WithDangerouslySkipPermissions(true).
@@ -83,6 +87,10 @@ func NewSDKSessionWithResume(ctx context.Context, workDir, model, logFilePath, s
 
 	if logFilePath != "" {
 		opts = opts.WithCustomStderrLogFile(logFilePath)
+	}
+
+	for k, v := range envVars {
+		opts = opts.WithEnvVar(k, v)
 	}
 
 	client, err := claude.NewClient(ctx, opts)
@@ -295,7 +303,7 @@ func resultToStreamEvent(m *types.ResultMessage) StreamEvent {
 // QueryOneShot executes a one-shot SDK query (for non-interactive agents)
 // and processes messages until completion. Returns the final status.
 func QueryOneShot(ctx context.Context, prompt, workDir, model, logFilePath string,
-	tracker *QuotaTracker, agentID string, span port.SpanEnder) (string, error) {
+	tracker *QuotaTracker, agentID string, span port.SpanEnder, envVars map[string]string) (string, error) {
 
 	opts := types.NewClaudeAgentOptions().
 		WithCWD(workDir).
@@ -309,6 +317,10 @@ func QueryOneShot(ctx context.Context, prompt, workDir, model, logFilePath strin
 
 	if logFilePath != "" {
 		opts = opts.WithCustomStderrLogFile(logFilePath)
+	}
+
+	for k, v := range envVars {
+		opts = opts.WithEnvVar(k, v)
 	}
 
 	messages, err := claude.Query(ctx, prompt, opts)

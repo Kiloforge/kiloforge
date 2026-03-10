@@ -154,6 +154,13 @@ func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
 	s.sessionEndCallback = fn
 }
 
+// agentEnv returns environment variables to inject into spawned agent processes.
+func (s *Spawner) agentEnv() map[string]string {
+	return map[string]string{
+		"KF_ORCH_URL": fmt.Sprintf("http://localhost:%d", s.cfg.OrchestratorPort),
+	}
+}
+
 // ActiveCount returns the number of currently active agents.
 func (s *Spawner) ActiveCount() int {
 	s.activeMu.RLock()
@@ -285,7 +292,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	span.AddEvent("agent.spawned")
 	s.trackEvent("agent_spawned", map[string]any{"role": "reviewer", "model": model})
 
-	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span)
+	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span, s.agentEnv())
 
 	return &info, nil
 }
@@ -365,17 +372,17 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 	span.AddEvent("agent.spawned")
 	s.trackEvent("agent_spawned", map[string]any{"role": "developer", "model": model})
 
-	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span)
+	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span, s.agentEnv())
 
 	return &info, nil
 }
 
 // runSDKAgent executes a one-shot SDK Query and updates agent state on completion.
-func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir, model, logFile string, span port.SpanEnder) {
+func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir, model, logFile string, span port.SpanEnder, envVars map[string]string) {
 	defer span.End()
 
 	startTime := time.Now()
-	finalStatus, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span)
+	finalStatus, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span, envVars)
 	if err != nil {
 		finalStatus = "failed"
 		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {
@@ -506,7 +513,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	// Create SDK session with a detached context so the agent process
 	// outlives the HTTP request that spawned it. The session manages its
 	// own lifecycle via session.Close() / session.cancel.
-	session, err := NewSDKSession(context.Background(), workDir, model, logFile)
+	session, err := NewSDKSession(context.Background(), workDir, model, logFile, s.agentEnv())
 	if err != nil {
 		return nil, fmt.Errorf("create SDK session: %w", err)
 	}
@@ -655,7 +662,7 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	logFile := agent.LogFile
 
 	// Create SDK session with resume — detached from HTTP request context.
-	session, err := NewSDKSessionWithResume(context.Background(), workDir, model, logFile, agent.SessionID)
+	session, err := NewSDKSessionWithResume(context.Background(), workDir, model, logFile, agent.SessionID, s.agentEnv())
 	if err != nil {
 		return nil, fmt.Errorf("create resumed SDK session: %w", err)
 	}
