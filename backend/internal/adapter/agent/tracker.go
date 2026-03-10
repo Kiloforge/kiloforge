@@ -9,7 +9,18 @@ import (
 	"time"
 )
 
-const quotaFile = "quota-usage.json"
+const (
+	quotaFile    = "quota-usage.json"
+	maxSnapshots = 60 // ~1 per minute, keep last hour of data
+)
+
+// RateSnapshot records a point-in-time usage sample for rate computation.
+type RateSnapshot struct {
+	Timestamp    time.Time `json:"timestamp"`
+	CostUSD      float64   `json:"cost_usd"`
+	InputTokens  int       `json:"input_tokens"`
+	OutputTokens int       `json:"output_tokens"`
+}
 
 // AgentUsage holds cumulative usage for a single agent.
 type AgentUsage struct {
@@ -43,6 +54,7 @@ type quotaSnapshot struct {
 type QuotaTracker struct {
 	mu             sync.RWMutex
 	agents         map[string]*AgentUsage
+	snapshots      []RateSnapshot
 	rateLimitUntil time.Time
 	dataDir        string
 }
@@ -89,6 +101,20 @@ func (t *QuotaTracker) RecordEvent(agentID string, event StreamEvent) {
 		usage.CacheReadTokens += event.Usage.CacheReadTokens
 		usage.CacheCreationTokens += event.Usage.CacheCreationTokens
 	}
+
+	// Append rate snapshot for time-windowed metrics.
+	snap := RateSnapshot{
+		Timestamp: time.Now(),
+		CostUSD:   event.CostUSD,
+	}
+	if event.Usage != nil {
+		snap.InputTokens = event.Usage.InputTokens
+		snap.OutputTokens = event.Usage.OutputTokens
+	}
+	t.snapshots = append(t.snapshots, snap)
+	if len(t.snapshots) > maxSnapshots {
+		t.snapshots = t.snapshots[len(t.snapshots)-maxSnapshots:]
+	}
 }
 
 // GetAgentUsage returns usage for a specific agent, or nil if not found.
@@ -129,6 +155,65 @@ func (t *QuotaTracker) IsRateLimited() bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return time.Now().Before(t.rateLimitUntil)
+}
+
+// TokensPerMin returns the rate of total tokens (input+output) per minute
+// over the given time window, computed from recent snapshots.
+func (t *QuotaTracker) TokensPerMin(window time.Duration) float64 {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	cutoff := time.Now().Add(-window)
+	var totalTokens int
+	var oldest time.Time
+	var count int
+	for _, s := range t.snapshots {
+		if s.Timestamp.Before(cutoff) {
+			continue
+		}
+		totalTokens += s.InputTokens + s.OutputTokens
+		if count == 0 || s.Timestamp.Before(oldest) {
+			oldest = s.Timestamp
+		}
+		count++
+	}
+	if count == 0 {
+		return 0
+	}
+	elapsed := time.Since(oldest).Minutes()
+	if elapsed < 0.01 {
+		return 0
+	}
+	return float64(totalTokens) / elapsed
+}
+
+// CostPerHour returns the cost rate in USD/hour over the given time window.
+func (t *QuotaTracker) CostPerHour(window time.Duration) float64 {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	cutoff := time.Now().Add(-window)
+	var totalCost float64
+	var oldest time.Time
+	var count int
+	for _, s := range t.snapshots {
+		if s.Timestamp.Before(cutoff) {
+			continue
+		}
+		totalCost += s.CostUSD
+		if count == 0 || s.Timestamp.Before(oldest) {
+			oldest = s.Timestamp
+		}
+		count++
+	}
+	if count == 0 {
+		return 0
+	}
+	elapsed := time.Since(oldest).Minutes()
+	if elapsed < 0.01 {
+		return 0
+	}
+	return totalCost / elapsed * 60.0
 }
 
 // RetryAfter returns the duration until the rate limit expires.
