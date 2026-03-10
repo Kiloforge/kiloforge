@@ -221,7 +221,7 @@ describe("ProjectPage", () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByText("New Agent"));
-    expect(screen.getByText("Architect")).toBeInTheDocument();
+    expect(screen.getByText("Interactive")).toBeInTheDocument();
     expect(screen.getByText("Product Advisor")).toBeInTheDocument();
     expect(screen.getByText("Start")).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeInTheDocument();
