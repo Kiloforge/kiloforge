@@ -53,7 +53,7 @@ export function SwarmPanel({
   };
 
   return (
-    <div>
+    <div data-tour="swarm-panel">
       <div className={styles.header}>
         <div className={styles.stats}>
           <span>

@@ -158,17 +158,17 @@ plan:
   - phase: Component integration
     tasks:
       - text: Add data-tour attributes to SwarmPanel, RelationshipOverlay toggle, and trace links
-        done: false
+        done: true
       - text: Update TourProvider.tsx to handle new step count and navigation for new routes
-        done: false
+        done: true
       - text: Update TourOverlay.tsx if new step types need different rendering (e.g., multi-highlight)
-        done: false
+        done: true
       - text: Ensure spotlight positioning works for all new target elements
-        done: false
+        done: true
   - phase: Agent type display
     tasks:
       - text: In tour content, describe developer/reviewer agents as 'autonomous' type — update step text and demo labels
-        done: false
+        done: true
   - phase: Testing and verification
     tasks:
       - text: Update tour unit tests for new step count and step IDs

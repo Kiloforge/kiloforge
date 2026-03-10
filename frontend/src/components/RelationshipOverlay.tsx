@@ -169,7 +169,7 @@ export function RelationshipOverlay({
 
   return (
     <>
-      <div className={styles.toggle} onClick={onToggle}>
+      <div className={styles.toggle} onClick={onToggle} data-tour="relationship-toggle">
         <span className={`${styles.toggleIcon} ${!visible ? styles.toggleIconOff : ""}`}>
           &#x2194;
         </span>

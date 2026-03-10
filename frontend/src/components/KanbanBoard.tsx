@@ -339,6 +339,7 @@ function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isComp
             to={`/traces/${card.trace_id}`}
             className={styles.cardTrace}
             onClick={(e) => e.stopPropagation()}
+            data-tour="trace-link"
           >
             Trace
           </Link>
