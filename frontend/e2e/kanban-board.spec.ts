@@ -28,7 +28,6 @@ test.describe("Kanban Board — Board API", () => {
         "backlog",
         "approved",
         "in_progress",
-        "in_review",
         "done",
       ]);
     }
@@ -53,7 +52,7 @@ test.describe("Kanban Board — Board API", () => {
 
     const firstCard = board.cards[cardIds[0]];
     const targetColumn =
-      firstCard.column === "in_progress" ? "in_review" : "in_progress";
+      firstCard.column === "in_progress" ? "done" : "in_progress";
 
     const moveResp = await apiClient.post(
       "/api/board/test-project/move",
@@ -101,7 +100,7 @@ test.describe("Kanban Board — UI Rendering", () => {
     await page.goto(`${serverURL}/projects/test-project`);
     const board = page.locator('[data-tour="kanban-board"]');
     if (await board.isVisible({ timeout: 5000 }).catch(() => false)) {
-      const columnLabels = ["Backlog", "Approved", "In Progress", "In Review", "Done"];
+      const columnLabels = ["Backlog", "Approved", "In Progress", "Done"];
       for (const label of columnLabels) {
         const col = page.getByText(label, { exact: true });
         await expect(col).toBeVisible({ timeout: 3000 });

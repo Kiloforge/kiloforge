@@ -21,7 +21,7 @@ export const DEMO_PROJECTS: Project[] = [
 const now = new Date().toISOString();
 
 export const DEMO_BOARD: BoardState = {
-  columns: ["backlog", "approved", "in_progress", "in_review", "done"],
+  columns: ["backlog", "approved", "in_progress", "done"],
   cards: {
     "auth-login_demo": {
       track_id: "auth-login_demo",

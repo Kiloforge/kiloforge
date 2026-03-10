@@ -19,7 +19,7 @@ const mockTracks: Track[] = [
 ];
 
 const mockBoard: BoardState = {
-  columns: ["backlog", "approved", "in_progress", "in_review", "done"],
+  columns: ["backlog", "approved", "in_progress", "done"],
   cards: {
     "track-1": {
       track_id: "track-1",

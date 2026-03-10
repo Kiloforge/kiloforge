@@ -10,7 +10,7 @@ vi.mock("./tour/TourProvider", () => ({
 }));
 
 const mockBoard: BoardState = {
-  columns: ["backlog", "approved", "in_progress", "in_review", "done"],
+  columns: ["backlog", "approved", "in_progress", "done"],
   cards: {
     "track-1": {
       track_id: "track-1",
@@ -65,7 +65,6 @@ describe("KanbanBoard", () => {
     expect(screen.getByText("Backlog")).toBeInTheDocument();
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
-    expect(screen.getByText("In Review")).toBeInTheDocument();
     expect(screen.getByText("Done")).toBeInTheDocument();
   });
 
@@ -129,14 +128,14 @@ describe("KanbanBoard", () => {
 
   it("renders empty board with no cards", () => {
     const emptyBoard: BoardState = {
-      columns: ["backlog", "approved", "in_progress", "in_review", "done"],
+      columns: ["backlog", "approved", "in_progress", "done"],
       cards: {},
     };
     renderBoard({ board: emptyBoard });
     expect(screen.getByText("Backlog")).toBeInTheDocument();
     // All counts should be 0
     const zeros = screen.getAllByText("0");
-    expect(zeros.length).toBe(5);
+    expect(zeros.length).toBe(4);
   });
 
   it("renders card type badges", () => {

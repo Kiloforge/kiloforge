@@ -380,7 +380,7 @@ export function ProjectPage() {
           <InlineSpinner label="Loading board..." />
         ) : (
           <KanbanBoard
-            board={board ?? { columns: ["backlog", "approved", "in_progress", "in_review", "done"], cards: {} }}
+            board={board ?? { columns: ["backlog", "approved", "in_progress", "done"], cards: {} }}
             projectSlug={slug}
             onMoveCard={moveCard}
             onDeleteTrack={handleDeleteTrack}

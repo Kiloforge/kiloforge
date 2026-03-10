@@ -10,7 +10,6 @@ const COLUMN_LABELS: Record<string, string> = {
   backlog: "Backlog",
   approved: "Approved",
   in_progress: "In Progress",
-  in_review: "In Review",
   done: "Done",
 };
 
@@ -18,7 +17,6 @@ const COLUMN_COLORS: Record<string, string> = {
   backlog: "var(--text-dim)",
   approved: "var(--accent)",
   in_progress: "var(--yellow)",
-  in_review: "var(--orange)",
   done: "var(--green)",
 };
 
