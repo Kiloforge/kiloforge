@@ -90,13 +90,13 @@ plan:
   - phase: Rename UI components
     tasks:
       - text: Rename QueuePanel.tsx → SwarmPanel.tsx and QueuePanel.module.css → SwarmPanel.module.css
-        done: false
+        done: true
       - text: Update SwarmPanel labels: 'Workers' → 'Agents', 'Max workers' → 'Max Swarm Size', 'queued' → 'queued'
-        done: false
+        done: true
       - text: Update OverviewPage.tsx: swap QueuePanel → SwarmPanel, rename all queue* props to swarm*
-        done: false
+        done: true
       - text: Update App.tsx: rename all queue* variables to swarm*, update useSwarm() call
-        done: false
+        done: true
   - phase: Capacity gating UX
     tasks:
       - text: Add useSwarmCapacity hook that fetches GET /api/swarm/capacity and listens for capacity_changed SSE events

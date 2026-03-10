@@ -20,7 +20,7 @@ const SETTINGS_META: Record<
   enforce_dep_ordering: {
     label: "Enforce Dependency Ordering",
     description:
-      "Work queue skips tracks with unmet dependencies and tries the next one",
+      "AI Agent Swarm skips tracks with unmet dependencies and tries the next one",
   },
 };
 

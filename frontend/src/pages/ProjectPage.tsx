@@ -9,10 +9,10 @@ import { useAgents } from "../hooks/useAgents";
 import { useBoard } from "../hooks/useBoard";
 import { useTrackRelations } from "../hooks/useTrackRelations";
 import { useOriginSync } from "../hooks/useOriginSync";
-import { useQueue } from "../hooks/useQueue";
+import { useSwarm } from "../hooks/useSwarm";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher, FetchError } from "../api/fetcher";
-import { QueuePanel } from "../components/QueuePanel";
+import { SwarmPanel } from "../components/SwarmPanel";
 import { TrackList } from "../components/TrackList";
 import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
@@ -41,7 +41,7 @@ export function ProjectPage() {
   const boardTrackIds = useMemo(() => board ? Object.keys(board.cards) : [], [board]);
   const { dependencies, conflicts } = useTrackRelations(boardTrackIds, slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
-  const { queue, loading: queueLoading, starting: queueStarting, stopping: queueStopping, updatingSettings: queueUpdatingSettings, start: queueStart, stop: queueStop, updateSettings: queueUpdateSettings } = useQueue(slug);
+  const { swarm, loading: swarmLoading, starting: swarmStarting, stopping: swarmStopping, updatingSettings: swarmUpdatingSettings, start: swarmStart, stop: swarmStop, updateSettings: swarmUpdateSettings } = useSwarm(slug);
   const project = projects.find((p) => p.slug === slug);
   const { agents } = useAgents();
 
@@ -295,16 +295,16 @@ export function ProjectPage() {
       )}
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Work Queue</h2>
-        <QueuePanel
-          queue={queue}
-          loading={queueLoading}
-          starting={queueStarting}
-          stopping={queueStopping}
-          updatingSettings={queueUpdatingSettings}
-          onStart={() => queueStart()}
-          onStop={queueStop}
-          onUpdateSettings={queueUpdateSettings}
+        <h2 className={appStyles.panelTitle}>AI Agent Swarm</h2>
+        <SwarmPanel
+          swarm={swarm}
+          loading={swarmLoading}
+          starting={swarmStarting}
+          stopping={swarmStopping}
+          updatingSettings={swarmUpdatingSettings}
+          onStart={() => swarmStart()}
+          onStop={swarmStop}
+          onUpdateSettings={swarmUpdateSettings}
         />
       </section>
 

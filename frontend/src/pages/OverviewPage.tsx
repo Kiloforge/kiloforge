@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, QuotaResponse, Track, Project, SyncStatus, QueueStatus, QueueSettings } from "../types/api";
+import type { Agent, QuotaResponse, Track, Project, SyncStatus, SwarmStatus, SwarmSettings } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
@@ -11,7 +11,7 @@ import { TrackList } from "../components/TrackList";
 import { TraceList } from "../components/TraceList";
 import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
-import { QueuePanel } from "../components/QueuePanel";
+import { SwarmPanel } from "../components/SwarmPanel";
 import { PaginatedList } from "../components/PaginatedList";
 import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
@@ -30,14 +30,14 @@ interface OverviewPageProps {
   onAttach?: (agentId: string) => void;
   onSpawnInteractive?: () => void;
   spawningInteractive?: boolean;
-  queue?: QueueStatus | null;
-  queueLoading?: boolean;
-  queueStarting?: boolean;
-  queueStopping?: boolean;
-  queueUpdatingSettings?: boolean;
-  onQueueStart?: () => void;
-  onQueueStop?: () => void;
-  onQueueUpdateSettings?: (settings: QueueSettings) => void;
+  swarm?: SwarmStatus | null;
+  swarmLoading?: boolean;
+  swarmStarting?: boolean;
+  swarmStopping?: boolean;
+  swarmUpdatingSettings?: boolean;
+  onSwarmStart?: () => void;
+  onSwarmStop?: () => void;
+  onSwarmUpdateSettings?: (settings: SwarmSettings) => void;
   trackRemainingCount?: number;
   trackHasNextPage?: boolean;
   trackFetchingNextPage?: boolean;
@@ -120,7 +120,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -238,16 +238,16 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
       </section>
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Work Queue</h2>
-        <QueuePanel
-          queue={queue ?? null}
-          loading={queueLoading ?? false}
-          starting={queueStarting ?? false}
-          stopping={queueStopping ?? false}
-          updatingSettings={queueUpdatingSettings ?? false}
-          onStart={onQueueStart ?? (() => {})}
-          onStop={onQueueStop ?? (() => {})}
-          onUpdateSettings={onQueueUpdateSettings ?? (() => {})}
+        <h2 className={appStyles.panelTitle}>AI Agent Swarm</h2>
+        <SwarmPanel
+          swarm={swarm ?? null}
+          loading={swarmLoading ?? false}
+          starting={swarmStarting ?? false}
+          stopping={swarmStopping ?? false}
+          updatingSettings={swarmUpdatingSettings ?? false}
+          onStart={onSwarmStart ?? (() => {})}
+          onStop={onSwarmStop ?? (() => {})}
+          onUpdateSettings={onSwarmUpdateSettings ?? (() => {})}
         />
       </section>
 

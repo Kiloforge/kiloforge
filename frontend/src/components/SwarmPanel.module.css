@@ -76,7 +76,7 @@
   color: var(--text-dim);
 }
 
-.workersInput {
+.sizeInput {
   width: 48px;
   padding: 3px 6px;
   font-size: 12px;
@@ -88,7 +88,7 @@
   text-align: center;
 }
 
-.workersInput:focus {
+.sizeInput:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -126,7 +126,7 @@
   margin-bottom: 6px;
 }
 
-.workerRow {
+.agentRow {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -135,17 +135,17 @@
   border-bottom: 1px solid var(--border);
 }
 
-.workerRow:last-child {
+.agentRow:last-child {
   border-bottom: none;
 }
 
-.workerAgent {
+.agentName {
   font-family: var(--font-mono);
   color: var(--accent);
   min-width: 100px;
 }
 
-.workerTrack {
+.agentTrack {
   font-family: var(--font-mono);
   color: var(--text-dim);
   flex: 1;

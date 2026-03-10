@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueuePanel } from "./QueuePanel";
-import type { QueueStatus } from "../types/api";
+import { SwarmPanel } from "./SwarmPanel";
+import type { SwarmStatus } from "../types/api";
 
-const stoppedQueue: QueueStatus = {
+const stoppedSwarm: SwarmStatus = {
   running: false,
   max_workers: 3,
   active_workers: 0,
   items: [],
 };
 
-const runningQueue: QueueStatus = {
+const runningSwarm: SwarmStatus = {
   running: true,
   max_workers: 3,
   active_workers: 2,
@@ -53,9 +53,9 @@ const runningQueue: QueueStatus = {
   ],
 };
 
-describe("QueuePanel", () => {
+describe("SwarmPanel", () => {
   const defaultProps = {
-    queue: null as QueueStatus | null,
+    swarm: null as SwarmStatus | null,
     loading: false,
     starting: false,
     stopping: false,
@@ -70,29 +70,29 @@ describe("QueuePanel", () => {
   });
 
   it("shows loading state", () => {
-    render(<QueuePanel {...defaultProps} loading={true} />);
-    expect(screen.getByText("Loading queue...")).toBeInTheDocument();
+    render(<SwarmPanel {...defaultProps} loading={true} />);
+    expect(screen.getByText("Loading swarm...")).toBeInTheDocument();
   });
 
-  it("shows empty state when queue is null", () => {
-    render(<QueuePanel {...defaultProps} />);
-    expect(screen.getByText(/Queue not configured/)).toBeInTheDocument();
+  it("shows empty state when swarm is null", () => {
+    render(<SwarmPanel {...defaultProps} />);
+    expect(screen.getByText(/Swarm not configured/)).toBeInTheDocument();
   });
 
-  it("renders Start button when queue is stopped", () => {
-    render(<QueuePanel {...defaultProps} queue={stoppedQueue} />);
+  it("renders Start button when swarm is stopped", () => {
+    render(<SwarmPanel {...defaultProps} swarm={stoppedSwarm} />);
     expect(screen.getByText("Start")).toBeInTheDocument();
   });
 
-  it("renders Stop button when queue is running", () => {
-    render(<QueuePanel {...defaultProps} queue={runningQueue} />);
+  it("renders Stop button when swarm is running", () => {
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
     expect(screen.getByText("Stop")).toBeInTheDocument();
   });
 
   it("calls onStart when Start is clicked", async () => {
     const user = userEvent.setup();
     const onStart = vi.fn();
-    render(<QueuePanel {...defaultProps} queue={stoppedQueue} onStart={onStart} />);
+    render(<SwarmPanel {...defaultProps} swarm={stoppedSwarm} onStart={onStart} />);
     await user.click(screen.getByText("Start"));
     expect(onStart).toHaveBeenCalledTimes(1);
   });
@@ -100,29 +100,29 @@ describe("QueuePanel", () => {
   it("calls onStop when Stop is clicked", async () => {
     const user = userEvent.setup();
     const onStop = vi.fn();
-    render(<QueuePanel {...defaultProps} queue={runningQueue} onStop={onStop} />);
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} onStop={onStop} />);
     await user.click(screen.getByText("Stop"));
     expect(onStop).toHaveBeenCalledTimes(1);
   });
 
   it("disables Start button while starting", () => {
-    render(<QueuePanel {...defaultProps} queue={stoppedQueue} starting={true} />);
+    render(<SwarmPanel {...defaultProps} swarm={stoppedSwarm} starting={true} />);
     expect(screen.getByText("Starting...")).toBeDisabled();
   });
 
   it("disables Stop button while stopping", () => {
-    render(<QueuePanel {...defaultProps} queue={runningQueue} stopping={true} />);
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} stopping={true} />);
     expect(screen.getByText("Stopping...")).toBeDisabled();
   });
 
-  it("shows worker count and stats", () => {
-    render(<QueuePanel {...defaultProps} queue={runningQueue} />);
+  it("shows agent count and stats", () => {
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
     expect(screen.getByText("2 / 3")).toBeInTheDocument(); // active / max
     expect(screen.getByText("2 queued")).toBeInTheDocument();
   });
 
-  it("shows active workers list", () => {
-    render(<QueuePanel {...defaultProps} queue={runningQueue} />);
+  it("shows active agents list", () => {
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
     expect(screen.getByText("developer-1")).toBeInTheDocument();
     expect(screen.getByText("developer-2")).toBeInTheDocument();
     expect(screen.getByText("track-abc")).toBeInTheDocument();
@@ -130,21 +130,31 @@ describe("QueuePanel", () => {
   });
 
   it("shows queued tracks list", () => {
-    render(<QueuePanel {...defaultProps} queue={runningQueue} />);
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
     expect(screen.getByText("track-ghi")).toBeInTheDocument();
     expect(screen.getByText("track-jkl")).toBeInTheDocument();
   });
 
-  it("shows max workers input with current value", () => {
-    render(<QueuePanel {...defaultProps} queue={runningQueue} />);
+  it("shows max swarm size input with current value", () => {
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
     const input = screen.getByDisplayValue("3");
     expect(input).toBeInTheDocument();
   });
 
-  it("calls onUpdateSettings when max workers is changed", async () => {
+  it("uses 'Max Swarm Size' label", () => {
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
+    expect(screen.getByText("Max Swarm Size:")).toBeInTheDocument();
+  });
+
+  it("uses 'Agents' label instead of 'Workers'", () => {
+    render(<SwarmPanel {...defaultProps} swarm={runningSwarm} />);
+    expect(screen.getByText("Agents:")).toBeInTheDocument();
+  });
+
+  it("calls onUpdateSettings when max swarm size is changed", async () => {
     const user = userEvent.setup();
     const onUpdateSettings = vi.fn();
-    render(<QueuePanel {...defaultProps} queue={stoppedQueue} onUpdateSettings={onUpdateSettings} />);
+    render(<SwarmPanel {...defaultProps} swarm={stoppedSwarm} onUpdateSettings={onUpdateSettings} />);
     const input = screen.getByDisplayValue("3");
     await user.clear(input);
     await user.type(input, "5");
