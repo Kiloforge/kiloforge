@@ -12,6 +12,7 @@ const entry: WindowEntry = {
   initialY: 0,
   minimized: true,
   unreadCount: 0,
+  notificationType: null,
 };
 
 function renderDock(windows: WindowEntry[] = [entry]) {

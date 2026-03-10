@@ -64,6 +64,7 @@ function setup(overrides: Partial<ReturnType<typeof useAgentWebSocket>> = {}, pr
     clearMessages: vi.fn(),
     status: "connected" as const,
     agentStatus: "running",
+    turnActive: false,
     ...overrides,
   };
   mockUseAgentWebSocket.mockReturnValue(defaultWs);
