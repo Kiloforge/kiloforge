@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"syscall"
@@ -39,7 +40,11 @@ func (s *AgentStore) Agents() []domain.AgentInfo {
 		return nil
 	}
 	defer rows.Close()
-	return scanAgents(rows)
+	agents, err := scanAgents(rows)
+	if err != nil {
+		log.Printf("warn: agents query: %v", err)
+	}
+	return agents
 }
 
 func (s *AgentStore) AddAgent(info domain.AgentInfo) error {
@@ -78,7 +83,10 @@ func (s *AgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	}
 	defer rows.Close()
 
-	agents := scanAgents(rows)
+	agents, err := scanAgents(rows)
+	if err != nil {
+		return nil, err
+	}
 	if len(agents) == 0 {
 		return nil, fmt.Errorf("agent %s: %w", idPrefix, domain.ErrAgentNotFound)
 	}
@@ -95,7 +103,11 @@ func (s *AgentStore) FindByRef(ref string) *domain.AgentInfo {
 	}
 	defer rows.Close()
 
-	agents := scanAgents(rows)
+	agents, err := scanAgents(rows)
+	if err != nil {
+		log.Printf("warn: find by ref: %v", err)
+		return nil
+	}
 	if len(agents) == 0 {
 		return nil
 	}
@@ -166,7 +178,11 @@ func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 		return nil
 	}
 	defer rows.Close()
-	return scanAgents(rows)
+	agents, err := scanAgents(rows)
+	if err != nil {
+		log.Printf("warn: agents by status: %v", err)
+	}
+	return agents
 }
 
 // ListAgents returns a paginated list of agents, optionally filtered by statuses.
@@ -228,7 +244,10 @@ func (s *AgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domai
 	}
 	defer rows.Close()
 
-	agents := scanAgents(rows)
+	agents, err := scanAgents(rows)
+	if err != nil {
+		return domain.Page[domain.AgentInfo]{}, err
+	}
 	var nextCursor string
 	if len(agents) > opts.Limit {
 		last := agents[opts.Limit-1]
@@ -243,7 +262,7 @@ func (s *AgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domai
 	}, nil
 }
 
-func scanAgents(rows *sql.Rows) []domain.AgentInfo {
+func scanAgents(rows *sql.Rows) ([]domain.AgentInfo, error) {
 	var agents []domain.AgentInfo
 	for rows.Next() {
 		var a domain.AgentInfo
@@ -254,6 +273,7 @@ func scanAgents(rows *sql.Rows) []domain.AgentInfo {
 			&a.WorktreeDir, &a.LogFile,
 			&startedAt, &updatedAt, &suspendedAt, &finishedAt, &a.ShutdownReason, &a.ResumeError, &a.Model,
 		); err != nil {
+			log.Printf("warn: scan agent row: %v", err)
 			continue
 		}
 		a.StartedAt, _ = time.Parse(time.RFC3339, startedAt)
@@ -268,5 +288,8 @@ func scanAgents(rows *sql.Rows) []domain.AgentInfo {
 		}
 		agents = append(agents, a)
 	}
-	return agents
+	if err := rows.Err(); err != nil {
+		return agents, fmt.Errorf("iterate agent rows: %w", err)
+	}
+	return agents, nil
 }
