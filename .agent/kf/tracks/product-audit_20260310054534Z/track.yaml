@@ -1,19 +1,16 @@
 id: product-audit_20260310054534Z
-title: "Comprehensive product audit — feature inventory, gap analysis, and roadmap recommendations"
+title: Comprehensive product audit — feature inventory, gap analysis, and roadmap recommendations
 type: chore
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Audit the entire kiloforge product surface — CLI, API, dashboard, skills, and orchestration —
-    to produce a structured report identifying feature gaps, UX improvements, and high-impact
-    new capabilities for a product with no direct competition.
+  summary: ">"
   context: |
     kiloforge is a local collaboration platform that orchestrates Claude Code agents for
     automated development and review workflows. It bridges Gitea (local git forge) with
     Claude Code to enable multi-agent parallel development with full PR lifecycle automation.
-
+    
     The product is currently at ~200 completed tracks with a mature feature set spanning:
     - CLI (20+ commands for lifecycle, agents, projects, skills, sync)
     - REST API (48 endpoints across 11 categories)
@@ -23,20 +20,20 @@ spec:
     - Work queue with dependency-aware scheduling
     - OpenTelemetry tracing across agents
     - Multi-project support with per-project settings
-
+    
     The user believes there is no comparable product on the market, making this a
     bleeding-edge tool. This audit should identify what's working well, what needs
     polish, and what transformative features could differentiate further.
   codebase_analysis: |
     Current system inventory (key dimensions):
-
+    
     CLI COMMANDS:
     - Lifecycle: init, up, down, destroy, status, version
     - Projects: add, projects, push, sync
     - Agents: agents, logs, stop, attach, escalated, cost
     - Orchestration: implement, pool, dashboard, serve
     - Skills: skills (update, list)
-
+    
     REST API CATEGORIES:
     - System (health, preflight, config, status, ssh-keys)
     - Agents (list, spawn interactive, get, delete, log, stop, resume)
@@ -47,7 +44,7 @@ spec:
     - Locks (list, acquire, heartbeat, release)
     - Traces (list, get detail)
     - Skills, Consent, Admin, Quota
-
+    
     FRONTEND PAGES:
     - Overview (stats, agent grid, projects, queue panel, tracks, traces)
     - AgentHistory (filterable table of all agents)
@@ -55,13 +52,13 @@ spec:
     - ProjectPage (board tab with Kanban, project info tab, settings tab)
     - TrackDetail (spec/plan display)
     - TracePage (span timeline visualization)
-
+    
     SERVICES (BUSINESS LOGIC):
     - AgentService, ProjectService, NativeBoardService, PRService
     - QueueService (dependency-aware scheduling), LifecycleService
     - GitSyncService, ImplementService, SkillsService, TrackService
     - CleanupService, TrackReaderImpl
-
+    
     EMBEDDED SKILLS: kf-architect, kf-developer, kf-reviewer, kf-implement,
     kf-new-track, kf-manage, kf-setup, kf-status, kf-report, kf-product-advisor,
     kf-validate, kf-revert, kf-bulk-archive, kf-compact-archive, kf-parallel (deprecated)
@@ -80,16 +77,16 @@ spec:
     - Pricing, marketing, or go-to-market strategy
   technical_notes: |
     Implementation approach:
-
+    
     This is a research track best implemented by a product-advisor agent or an
     architect. The implementer should:
-
+    
     1. Walk through every CLI command and assess completeness, UX, error handling
     2. Audit every API endpoint for consistency, missing CRUD operations, pagination
     3. Evaluate the dashboard for workflow completeness, missing pages/features
     4. Assess the skills system for coverage gaps and improvement areas
     5. Evaluate the orchestration pipeline (spawn → implement → review → merge)
-
+    
     Report structure (suggested):
     - EXECUTIVE SUMMARY — Key findings and top 5 recommendations
     - FEATURE INVENTORY — Complete matrix of capabilities with maturity rating
@@ -97,7 +94,7 @@ spec:
     - IMPROVEMENT RECOMMENDATIONS — Enhancements to existing features
     - NEW FEATURE PROPOSALS — Net-new capabilities with user stories
     - PRIORITIZED ROADMAP — Tiered recommendations with effort/impact
-
+    
     Areas to specifically investigate:
     - Multi-user/team support (currently single-user local)
     - Notification system (no alerts when agents complete/fail/escalate)
@@ -112,40 +109,40 @@ spec:
 plan:
   - phase: Feature inventory
     tasks:
-      - text: "Audit all CLI commands — document each command's purpose, flags, output quality, error handling, and UX"
-        done: false
-      - text: "Audit all REST API endpoints — check consistency, missing CRUD ops, pagination, error responses, documentation"
-        done: false
-      - text: "Audit dashboard pages — evaluate each page for completeness, usability, missing features, responsive design"
-        done: false
-      - text: "Audit embedded skills — assess coverage, quality, role mapping, update mechanism"
-        done: false
-      - text: "Audit orchestration pipeline — evaluate spawn→implement→review→merge flow for reliability and gaps"
-        done: false
+      - text: Audit all CLI commands — document each command's purpose, flags, output quality, error handling, and UX
+        done: true
+      - text: Audit all REST API endpoints — check consistency, missing CRUD ops, pagination, error responses, documentation
+        done: true
+      - text: Audit dashboard pages — evaluate each page for completeness, usability, missing features, responsive design
+        done: true
+      - text: Audit embedded skills — assess coverage, quality, role mapping, update mechanism
+        done: true
+      - text: Audit orchestration pipeline — evaluate spawn→implement→review→merge flow for reliability and gaps
+        done: true
   - phase: Gap analysis and recommendations
     tasks:
-      - text: "Identify missing capabilities by category (agent management, project management, observability, UX, extensibility)"
-        done: false
-      - text: "Evaluate existing features for improvement — rate maturity and identify enhancement opportunities"
-        done: false
-      - text: "Research potential new features — multi-user, notifications, plugin system, advanced analytics"
-        done: false
-      - text: "Assess infrastructure gaps — testing coverage, documentation, CI/CD, deployment"
-        done: false
+      - text: Identify missing capabilities by category (agent management, project management, observability, UX, extensibility)
+        done: true
+      - text: Evaluate existing features for improvement — rate maturity and identify enhancement opportunities
+        done: true
+      - text: Research potential new features — multi-user, notifications, plugin system, advanced analytics
+        done: true
+      - text: Assess infrastructure gaps — testing coverage, documentation, CI/CD, deployment
+        done: true
   - phase: Report generation
     tasks:
-      - text: "Write executive summary with top findings and recommendations"
-        done: false
-      - text: "Compile feature inventory matrix with maturity ratings"
-        done: false
-      - text: "Write gap analysis section with categorized missing capabilities"
-        done: false
-      - text: "Write improvement recommendations with effort/impact ratings"
-        done: false
-      - text: "Write new feature proposals with user stories and scope estimates"
-        done: false
-      - text: "Create prioritized roadmap (immediate / near-term / strategic tiers)"
-        done: false
-      - text: "Output final report to .agent/kf/_reports/product-audit/"
-        done: false
+      - text: Write executive summary with top findings and recommendations
+        done: true
+      - text: Compile feature inventory matrix with maturity ratings
+        done: true
+      - text: Write gap analysis section with categorized missing capabilities
+        done: true
+      - text: Write improvement recommendations with effort/impact ratings
+        done: true
+      - text: Write new feature proposals with user stories and scope estimates
+        done: true
+      - text: Create prioritized roadmap (immediate / near-term / strategic tiers)
+        done: true
+      - text: Output final report to .agent/kf/_reports/product-audit/
+        done: true
 extra: {}
