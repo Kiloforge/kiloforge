@@ -112,7 +112,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify all QueuePanel/useQueue references are gone (grep for old names)
-        done: false
+        done: true
       - text: E2E test: spawn agent when at capacity → verify waiting overlay appears with correct messaging → simulate capacity_changed → verify auto-retry
-        done: false
+        done: true
 extra: {}
