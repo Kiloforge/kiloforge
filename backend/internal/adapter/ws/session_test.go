@@ -436,6 +436,106 @@ func TestStartOutputRelay_ContextCancel(t *testing.T) {
 	}
 }
 
+func TestSessionManager_OnDisconnect(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	var disconnectedAgent string
+	sm.SetOnDisconnect(func(agentID string) {
+		disconnectedAgent = agentID
+	})
+
+	// Add two sessions for the same agent.
+	s1, _ := sm.AddSession(context.Background(), "agent-dc", nil)
+	s2, _ := sm.AddSession(context.Background(), "agent-dc", nil)
+
+	// Remove first session — still one left, no callback.
+	sm.RemoveSession("agent-dc", s1)
+	if disconnectedAgent != "" {
+		t.Error("OnDisconnect should not fire while sessions remain")
+	}
+
+	// Remove last session — fires callback.
+	sm.RemoveSession("agent-dc", s2)
+	if disconnectedAgent != "agent-dc" {
+		t.Errorf("OnDisconnect agent = %q, want %q", disconnectedAgent, "agent-dc")
+	}
+}
+
+func TestSessionManager_OnReconnect(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	var reconnectedAgent string
+	var callCount int
+	sm.SetOnReconnect(func(agentID string) {
+		reconnectedAgent = agentID
+		callCount++
+	})
+
+	// First session triggers reconnect.
+	sm.AddSession(context.Background(), "agent-rc", nil)
+	if reconnectedAgent != "agent-rc" {
+		t.Errorf("OnReconnect agent = %q, want %q", reconnectedAgent, "agent-rc")
+	}
+	if callCount != 1 {
+		t.Errorf("OnReconnect call count = %d, want 1", callCount)
+	}
+
+	// Second session does NOT trigger reconnect (already has sessions).
+	sm.AddSession(context.Background(), "agent-rc", nil)
+	if callCount != 1 {
+		t.Errorf("OnReconnect should not fire for additional sessions, count = %d", callCount)
+	}
+}
+
+func TestSessionManager_DisconnectThenReconnect(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	var disconnected, reconnected bool
+	sm.SetOnDisconnect(func(_ string) { disconnected = true })
+	sm.SetOnReconnect(func(_ string) { reconnected = true })
+
+	s1, _ := sm.AddSession(context.Background(), "agent-dr", nil)
+	reconnected = false // reset from first add
+
+	sm.RemoveSession("agent-dr", s1)
+	if !disconnected {
+		t.Error("expected disconnect after removing last session")
+	}
+
+	// Reconnect by adding new session.
+	sm.AddSession(context.Background(), "agent-dr", nil)
+	if !reconnected {
+		t.Error("expected reconnect after adding session to disconnected agent")
+	}
+}
+
+func TestSessionManager_SessionCount(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+
+	if sm.SessionCount("no-agent") != 0 {
+		t.Error("expected 0 for unknown agent")
+	}
+
+	s1, _ := sm.AddSession(context.Background(), "agent-cnt", nil)
+	if sm.SessionCount("agent-cnt") != 1 {
+		t.Errorf("expected 1, got %d", sm.SessionCount("agent-cnt"))
+	}
+
+	sm.AddSession(context.Background(), "agent-cnt", nil)
+	if sm.SessionCount("agent-cnt") != 2 {
+		t.Errorf("expected 2, got %d", sm.SessionCount("agent-cnt"))
+	}
+
+	sm.RemoveSession("agent-cnt", s1)
+	if sm.SessionCount("agent-cnt") != 1 {
+		t.Errorf("expected 1 after remove, got %d", sm.SessionCount("agent-cnt"))
+	}
+}
+
 func TestOutputMsg_BackwardCompat(t *testing.T) {
 	t.Parallel()
 

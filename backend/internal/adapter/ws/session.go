@@ -16,12 +16,17 @@ type Session struct {
 	cancel  context.CancelFunc
 }
 
+// ConnectionCallback is called when an agent's WebSocket connection count changes.
+type ConnectionCallback func(agentID string)
+
 // SessionManager tracks active WebSocket sessions per agent.
 // It supports multiple observers per agent (first is read-write, rest are read-only).
 type SessionManager struct {
-	mu       sync.RWMutex
-	sessions map[string][]*Session // agentID → list of sessions
-	bridges  map[string]*Bridge    // agentID → bridge (agent IO)
+	mu           sync.RWMutex
+	sessions     map[string][]*Session // agentID → list of sessions
+	bridges      map[string]*Bridge    // agentID → bridge (agent IO)
+	onDisconnect ConnectionCallback    // called when agent sessions drop to zero
+	onReconnect  ConnectionCallback    // called when agent sessions go from zero to non-zero
 }
 
 // NewSessionManager creates a new session manager.
@@ -30,6 +35,16 @@ func NewSessionManager() *SessionManager {
 		sessions: make(map[string][]*Session),
 		bridges:  make(map[string]*Bridge),
 	}
+}
+
+// SetOnDisconnect sets the callback fired when an agent's last session disconnects.
+func (sm *SessionManager) SetOnDisconnect(fn ConnectionCallback) {
+	sm.onDisconnect = fn
+}
+
+// SetOnReconnect sets the callback fired when an agent gains its first session.
+func (sm *SessionManager) SetOnReconnect(fn ConnectionCallback) {
+	sm.onReconnect = fn
 }
 
 // RegisterBridge registers an agent's IO bridge so WebSocket sessions can connect.
@@ -58,6 +73,7 @@ func (sm *SessionManager) GetBridge(agentID string) (*Bridge, bool) {
 // The parent context should be derived from the HTTP request so that
 // server shutdown automatically cancels all sessions.
 // Returns true if this is the primary (read-write) session.
+// Fires OnReconnect when sessions go from zero to non-zero.
 func (sm *SessionManager) AddSession(parent context.Context, agentID string, conn *websocket.Conn) (*Session, bool) {
 	ctx, cancel := context.WithCancel(parent)
 	s := &Session{
@@ -67,17 +83,21 @@ func (sm *SessionManager) AddSession(parent context.Context, agentID string, con
 		cancel:  cancel,
 	}
 	sm.mu.Lock()
-	defer sm.mu.Unlock()
 	isPrimary := len(sm.sessions[agentID]) == 0
 	sm.sessions[agentID] = append(sm.sessions[agentID], s)
+	sm.mu.Unlock()
+	if isPrimary && sm.onReconnect != nil {
+		sm.onReconnect(agentID)
+	}
 	return s, isPrimary
 }
 
 // RemoveSession removes a WebSocket session.
+// Fires OnDisconnect when the last session for an agent is removed.
 func (sm *SessionManager) RemoveSession(agentID string, s *Session) {
 	s.cancel()
+	var fireDisconnect bool
 	sm.mu.Lock()
-	defer sm.mu.Unlock()
 	sessions := sm.sessions[agentID]
 	for i, ss := range sessions {
 		if ss == s {
@@ -87,7 +107,19 @@ func (sm *SessionManager) RemoveSession(agentID string, s *Session) {
 	}
 	if len(sm.sessions[agentID]) == 0 {
 		delete(sm.sessions, agentID)
+		fireDisconnect = true
 	}
+	sm.mu.Unlock()
+	if fireDisconnect && sm.onDisconnect != nil {
+		sm.onDisconnect(agentID)
+	}
+}
+
+// SessionCount returns the number of active WebSocket sessions for an agent.
+func (sm *SessionManager) SessionCount(agentID string) int {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return len(sm.sessions[agentID])
 }
 
 // BroadcastToAgent sends a message to all WebSocket clients observing an agent.
