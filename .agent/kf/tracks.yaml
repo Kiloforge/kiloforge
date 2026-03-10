@@ -136,6 +136,7 @@ goose-migrations_20260309184000Z: {"title":"Migrate to Goose for Database Schema
 guided-tour-be_20260309203000Z: {"title":"Guided Tour State API and Demo Seed Data (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 guided-tour-fe_20260309203001Z: {"title":"Guided Tour Overlay with Simulated Onboarding Flow (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 header-title-link_20260310070000Z: {"title":"Make header logo and title link to dashboard","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+hide-advisor-hub-fe_20260312000100Z: {"title":"Hide AdvisorHub section from dashboard","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 immersive-views_20260310110000Z: {"title":"Add fullscreen immersive mode for terminal and diff views","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 impl-board-webhook-sync_20260308170002Z: {"title":"Webhook-Driven Board State Synchronization","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 impl-conductor-lock-migration_20260308150001Z: {"title":"Migrate Conductor Skills to Use Kiloforge Lock API","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}

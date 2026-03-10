@@ -48,15 +48,12 @@ fix-consent-zindex-fe_20260311230000Z: []
 
 fix-merge-protocol-be_20260311160000Z: []
 
-fix-ws-reconnect-be_20260312010000Z: []
-
-fix-ws-reconnect-fe_20260312010001Z:
-  - fix-ws-reconnect-be_20260312010000Z
-
 gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
+
+hide-advisor-hub-fe_20260312000100Z: []
 
 onboarding-ux-fe_20260310073721Z: []
 

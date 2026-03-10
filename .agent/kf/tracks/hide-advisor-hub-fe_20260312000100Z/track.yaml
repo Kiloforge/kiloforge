@@ -1,0 +1,59 @@
+id: hide-advisor-hub-fe_20260312000100Z
+title: "Hide AdvisorHub section from dashboard"
+type: refactor
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Remove the AdvisorHub rendering from OverviewPage and clean up the
+    associated prop chain. Keep the AdvisorHub component files intact for
+    future re-enablement.
+  context: |
+    The AdvisorHub section on the dashboard lets users launch Product Advisor
+    and Reliability Advisor agents. The user wants to hide this section for now
+    (UI only) — the backend advisor spawn endpoint remains unchanged.
+  codebase_analysis: |
+    Usage chain:
+    - OverviewPage.tsx line 18: import { AdvisorHub }
+    - OverviewPage.tsx line 48-49: onAdvisorLaunch and advisorLaunching props
+    - OverviewPage.tsx lines 229-237: conditional render of <AdvisorHub />
+    - App.tsx lines 282-283: passes onAdvisorLaunch={handleLaunch} and
+      advisorLaunching={spawnMutation.isPending} to OverviewPage
+
+    Files to keep (NOT delete):
+    - frontend/src/components/AdvisorHub.tsx
+    - frontend/src/components/AdvisorHub.module.css
+    - frontend/src/components/AdvisorHub.test.tsx
+
+    The isAdvisorRole export from AdvisorHub.tsx is not used outside
+    AdvisorHub itself (checked via grep). The AgentRole type import in
+    OverviewPage is only used for the onAdvisorLaunch prop signature.
+  acceptance_criteria:
+    - AdvisorHub section no longer renders on the dashboard
+    - AdvisorHub component files are preserved (not deleted)
+    - onAdvisorLaunch and advisorLaunching props removed from OverviewPage
+    - App.tsx no longer passes advisor props to OverviewPage
+    - make build and make test pass
+    - No dead imports or unused variables
+  out_of_scope: |
+    - Deleting AdvisorHub component files
+    - Backend changes to advisor spawn endpoint
+    - Removing the AgentLauncher or its advisor role support
+  technical_notes: |
+    Pure UI hiding — remove JSX, imports, and props. Keep component files
+    so the feature can be re-enabled later by reversing these changes.
+plan:
+  - phase: "Remove usage"
+    tasks:
+      - text: "Remove AdvisorHub JSX block and import from OverviewPage.tsx"
+        done: false
+      - text: "Remove onAdvisorLaunch and advisorLaunching props from OverviewPageProps interface"
+        done: false
+      - text: "Remove onAdvisorLaunch and advisorLaunching prop pass-through from App.tsx"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build and make test — all pass with no dead code warnings"
+        done: false
+extra: {}
