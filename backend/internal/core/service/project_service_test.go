@@ -251,6 +251,98 @@ func TestProjectService_AddProject_InvalidURL(t *testing.T) {
 	}
 }
 
+func TestProjectService_CreateProject_Success(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	gitea := &mockGiteaClient{}
+	dataDir := t.TempDir()
+
+	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+		DataDir:          dataDir,
+		OrchestratorPort: 4001,
+		GiteaAdminUser:   "kf-admin",
+		APIToken:         "test-token",
+	})
+
+	result, err := svc.CreateProject(context.Background(), "my-new-project")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Project.Slug != "my-new-project" {
+		t.Errorf("expected slug my-new-project, got %s", result.Project.Slug)
+	}
+	if result.Project.RepoName != "my-new-project" {
+		t.Errorf("expected repo name my-new-project, got %s", result.Project.RepoName)
+	}
+	if result.Project.OriginRemote != "" {
+		t.Errorf("expected empty origin remote, got %s", result.Project.OriginRemote)
+	}
+	if !result.Project.Active {
+		t.Error("expected project to be active")
+	}
+
+	p, err := store.Get("my-new-project")
+	if err != nil {
+		t.Fatalf("project not found in store: %v", err)
+	}
+	if p.Slug != "my-new-project" {
+		t.Errorf("store slug mismatch: got %s", p.Slug)
+	}
+}
+
+func TestProjectService_CreateProject_EmptyName(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	gitea := &mockGiteaClient{}
+
+	svc := NewProjectService(store, gitea, ProjectServiceConfig{DataDir: t.TempDir()})
+
+	_, err := svc.CreateProject(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected error for empty name")
+	}
+}
+
+func TestProjectService_CreateProject_DuplicateSlug(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	store.projects["existing"] = domain.Project{Slug: "existing", RepoName: "existing"}
+	gitea := &mockGiteaClient{}
+
+	svc := NewProjectService(store, gitea, ProjectServiceConfig{DataDir: t.TempDir()})
+
+	_, err := svc.CreateProject(context.Background(), "existing")
+	if err == nil {
+		t.Fatal("expected error for duplicate slug")
+	}
+	if !errors.Is(err, domain.ErrProjectExists) {
+		t.Errorf("expected ErrProjectExists, got: %v", err)
+	}
+}
+
+func TestProjectService_CreateProject_RollbackOnGiteaFailure(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	gitea := &mockGiteaClient{createRepoErr: fmt.Errorf("gitea down")}
+	dataDir := t.TempDir()
+
+	svc := NewProjectService(store, gitea, ProjectServiceConfig{DataDir: dataDir})
+
+	_, err := svc.CreateProject(context.Background(), "fail-project")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if _, err := store.Get("fail-project"); err == nil {
+		t.Error("project should not be in store after rollback")
+	}
+}
+
 func TestIsRemoteURL(t *testing.T) {
 	t.Parallel()
 

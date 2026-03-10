@@ -580,6 +580,8 @@ func TestListTraces_NilStore(t *testing.T) {
 type stubProjectManager struct {
 	addResult      *domain.AddProjectResult
 	addErr         error
+	createResult   *domain.AddProjectResult
+	createErr      error
 	removeErr      error
 	removedSlug    string
 	removedCleanup bool
@@ -590,6 +592,13 @@ func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name strin
 		return nil, m.addErr
 	}
 	return m.addResult, nil
+}
+
+func (m *stubProjectManager) CreateProject(_ context.Context, name string) (*domain.AddProjectResult, error) {
+	if m.createErr != nil {
+		return nil, m.createErr
+	}
+	return m.createResult, nil
 }
 
 func (m *stubProjectManager) RemoveProject(_ context.Context, slug string, cleanup bool) error {
@@ -622,7 +631,7 @@ func TestAddProject_Success(t *testing.T) {
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
 		Body: &gen.AddProjectJSONRequestBody{
-			RemoteUrl: "git@github.com:user/myapp.git",
+			RemoteUrl: strPtr("git@github.com:user/myapp.git"),
 		},
 	})
 	if err != nil {
@@ -656,7 +665,7 @@ func TestAddProject_Duplicate(t *testing.T) {
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
 		Body: &gen.AddProjectJSONRequestBody{
-			RemoteUrl: "git@github.com:user/myapp.git",
+			RemoteUrl: strPtr("git@github.com:user/myapp.git"),
 		},
 	})
 	if err != nil {
@@ -683,7 +692,7 @@ func TestAddProject_BadURL(t *testing.T) {
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
 		Body: &gen.AddProjectJSONRequestBody{
-			RemoteUrl: "/local/path",
+			RemoteUrl: strPtr("/local/path"),
 		},
 	})
 	if err != nil {
@@ -706,7 +715,7 @@ func TestAddProject_MissingURL(t *testing.T) {
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
-		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: ""},
+		Body: &gen.AddProjectJSONRequestBody{},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -960,7 +969,7 @@ func TestAddProject_EmitsProjectUpdate(t *testing.T) {
 	})
 
 	_, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
-		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: "git@github.com:user/myapp.git"},
+		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: strPtr("git@github.com:user/myapp.git")},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -1011,7 +1020,7 @@ func TestAddProject_NilManager(t *testing.T) {
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
-		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: "git@github.com:user/repo.git"},
+		Body: &gen.AddProjectJSONRequestBody{RemoteUrl: strPtr("git@github.com:user/repo.git")},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -1048,7 +1057,7 @@ func TestAddProject_WithSSHKey(t *testing.T) {
 	sshKeyPath := "/home/user/.ssh/id_ed25519"
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
 		Body: &gen.AddProjectJSONRequestBody{
-			RemoteUrl: "git@github.com:user/myapp.git",
+			RemoteUrl: strPtr("git@github.com:user/myapp.git"),
 			SshKey:    &sshKeyPath,
 		},
 	})

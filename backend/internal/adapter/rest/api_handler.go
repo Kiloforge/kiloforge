@@ -50,6 +50,7 @@ type ProjectLister interface {
 // ProjectManager handles project add/remove operations.
 type ProjectManager interface {
 	AddProject(ctx context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
+	CreateProject(ctx context.Context, name string) (*domain.AddProjectResult, error)
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
 }
 
@@ -652,8 +653,13 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 	if h.projectMgr == nil {
 		return gen.AddProject500JSONResponse{Error: "project management not configured"}, nil
 	}
-	if req.Body == nil || req.Body.RemoteUrl == "" {
-		return gen.AddProject400JSONResponse{Error: "remote_url is required"}, nil
+	if req.Body == nil {
+		return gen.AddProject400JSONResponse{Error: "request body is required"}, nil
+	}
+
+	remoteURL := ""
+	if req.Body.RemoteUrl != nil {
+		remoteURL = *req.Body.RemoteUrl
 	}
 
 	name := ""
@@ -661,12 +667,24 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 		name = *req.Body.Name
 	}
 
-	var opts []domain.AddProjectOpts
-	if req.Body.SshKey != nil && *req.Body.SshKey != "" {
-		opts = append(opts, domain.AddProjectOpts{SSHKeyPath: *req.Body.SshKey})
+	var result *domain.AddProjectResult
+	var err error
+
+	if remoteURL == "" {
+		// Create from scratch — name is required.
+		if name == "" {
+			return gen.AddProject400JSONResponse{Error: "name is required when remote_url is not provided"}, nil
+		}
+		result, err = h.projectMgr.CreateProject(ctx, name)
+	} else {
+		// Clone from remote URL.
+		var opts []domain.AddProjectOpts
+		if req.Body.SshKey != nil && *req.Body.SshKey != "" {
+			opts = append(opts, domain.AddProjectOpts{SSHKeyPath: *req.Body.SshKey})
+		}
+		result, err = h.projectMgr.AddProject(ctx, remoteURL, name, opts...)
 	}
 
-	result, err := h.projectMgr.AddProject(ctx, req.Body.RemoteUrl, name, opts...)
 	if err != nil {
 		if errors.Is(err, domain.ErrProjectExists) {
 			return gen.AddProject409JSONResponse{Error: err.Error()}, nil

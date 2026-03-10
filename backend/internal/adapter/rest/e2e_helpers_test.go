@@ -490,6 +490,29 @@ func (m *e2eProjectManager) AddProject(_ context.Context, remoteURL, name string
 	return &domain.AddProjectResult{Project: p}, nil
 }
 
+func (m *e2eProjectManager) CreateProject(_ context.Context, name string) (*domain.AddProjectResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	if _, ok := m.store.FindByRepoName(name); ok {
+		return nil, domain.ErrProjectExists
+	}
+
+	p := domain.Project{
+		Slug:         name,
+		RepoName:     name,
+		Active:       true,
+		RegisteredAt: time.Now(),
+	}
+	if err := m.store.Add(p); err != nil {
+		return nil, err
+	}
+	return &domain.AddProjectResult{Project: p}, nil
+}
+
 func (m *e2eProjectManager) RemoveProject(_ context.Context, slug string, _ bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
