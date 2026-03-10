@@ -1,9 +1,9 @@
 id: tool-result-rendering-fe_20260312020000Z
-title: "Show tool results in agent terminal"
+title: Show tool results in agent terminal
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Relay ToolResultBlock from Claude SDK through WebSocket and render tool
@@ -20,12 +20,12 @@ spec:
     SDK: ToolResultBlock has Type, ToolUseID, Content (interface{}), IsError (*bool).
     It appears as a ContentBlock inside AssistantMessage.Content but is ignored
     in sdk_client.go relayResponse (lines 156-168 only handle Text/ToolUse/Thinking).
-
+    
     Backend WS protocol (ws/message.go): No MsgToolResult constant, no
     ToolResultMessage struct, no ToolResultMsg() constructor. Tool names come
     through as strings like "Bash", "Read", "Edit", "Grep", "Glob", "Write",
     "Agent", "WebFetch", "WebSearch".
-
+    
     Frontend: useAgentWebSocket.ts WSMessageType has no "tool_result".
     TerminalBubbles.tsx MessageDispatch has no tool_result case.
     ToolUseBubble renders tool name (orange badge), tool ID, and collapsible
@@ -49,37 +49,37 @@ spec:
     ws/message.go. Content field is interface{} — may be string or
     []map[string]interface{} (array of content blocks). Normalize to string
     before sending.
-
+    
     Frontend: Add "tool_result" to WSMessageType. Add ToolResultBubble
     component with collapsible content, error styling, and line truncation.
     Add case to MessageDispatch.
 plan:
-  - phase: "Backend Protocol"
+  - phase: Backend Protocol
     tasks:
-      - text: "Add MsgToolResult constant and ToolResultMessage struct to ws/message.go"
-        done: false
-      - text: "Add ToolResultMsg() constructor function in ws/message.go"
-        done: false
-      - text: "Handle ToolResultBlock in sdk_client.go relayResponse — normalize Content to string, emit via ToolResultMsg"
-        done: false
-  - phase: "Frontend Message Handling"
+      - text: Add MsgToolResult constant and ToolResultMessage struct to ws/message.go
+        done: true
+      - text: Add ToolResultMsg() constructor function in ws/message.go
+        done: true
+      - text: Handle ToolResultBlock in sdk_client.go relayResponse — normalize Content to string, emit via ToolResultMsg
+        done: true
+  - phase: Frontend Message Handling
     tasks:
-      - text: "Add 'tool_result' to WSMessageType union and WSMessage fields (toolUseId, toolResult, isToolError) in useAgentWebSocket.ts"
-        done: false
-      - text: "Add tool_result case to message processing switch in useAgentWebSocket.ts"
-        done: false
-  - phase: "Frontend Rendering"
+      - text: Add 'tool_result' to WSMessageType union and WSMessage fields (toolUseId, toolResult, isToolError) in useAgentWebSocket.ts
+        done: true
+      - text: Add tool_result case to message processing switch in useAgentWebSocket.ts
+        done: true
+  - phase: Frontend Rendering
     tasks:
-      - text: "Add ToolResultBubble component to TerminalBubbles.tsx — collapsible content, line truncation at 50 lines, error state"
-        done: false
-      - text: "Add tool_result case to MessageDispatch in TerminalBubbles.tsx"
-        done: false
-      - text: "Add .toolResultMessage, .toolResultContent, .toolResultError styles to TerminalBubbles.module.css"
-        done: false
-  - phase: "Verification"
+      - text: Add ToolResultBubble component to TerminalBubbles.tsx — collapsible content, line truncation at 50 lines, error state
+        done: true
+      - text: Add tool_result case to MessageDispatch in TerminalBubbles.tsx
+        done: true
+      - text: Add .toolResultMessage, .toolResultContent, .toolResultError styles to TerminalBubbles.module.css
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Build backend (make build) — verify no compilation errors"
-        done: false
-      - text: "Build frontend (make build-frontend) — verify no type errors or build failures"
-        done: false
+      - text: Build backend (make build) — verify no compilation errors
+        done: true
+      - text: Build frontend (make build-frontend) — verify no type errors or build failures
+        done: true
 extra: {}

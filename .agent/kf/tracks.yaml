@@ -272,7 +272,7 @@ test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with 
 test-coverage-be_20260311120004Z: {"title":"Increase backend test coverage — CLI, REST, persistence layers","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-tool-result-rendering-fe_20260312020000Z: {"title":"Show tool results in agent terminal","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+tool-result-rendering-fe_20260312020000Z: {"title":"Show tool results in agent terminal","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tooltip-z-index-fix-fe_20260310210000Z: {"title":"Fix HelpTooltip popover clipped by panel stacking context","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 tour-inmemory-state_20260310120000Z: {"title":"Tour In-Memory State — Controlled Demo Data for Guided Tour","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 tour-settings-menu_20260310041000Z: {"title":"Tour UX — Settings Menu with Take Tour Option and Auto-Dismiss Banner","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}

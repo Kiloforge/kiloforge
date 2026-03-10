@@ -45,6 +45,9 @@ cmd-mode-help-fe_20260310121738Z: []
 docker-gitea-dead-code-be_20260311195000Z: []
 
 fix-consent-zindex-fe_20260311230000Z: []
+
+fix-disabled-btn-styles-fe_20260312020000Z: []
+
 fix-merge-protocol-be_20260311160000Z: []
 
 gitea-removal-be_20260311070000Z: []
@@ -62,7 +65,6 @@ replace-tracing-be_20260310144200Z: []
 
 responsive-kanban-fe_20260311220002Z:
   - responsive-nav-fe_20260311220000Z
-
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
