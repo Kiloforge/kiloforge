@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Agent, SpawnInteractiveRequest, StatusResponse } from "./types/api";
@@ -33,14 +33,16 @@ import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay } from "./components/tour/TourOverlay";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { FullScreenCommand } from "./components/fullscreen/FullScreenCommand";
-import { OverviewPage } from "./pages/OverviewPage";
-import { AgentDetailPage } from "./pages/AgentDetailPage";
-import { AgentHistoryPage } from "./pages/AgentHistoryPage";
-import { ProjectPage } from "./pages/ProjectPage";
-import { TracePage } from "./pages/TracePage";
-import { TrackDetailPage } from "./pages/TrackDetailPage";
-import { ReliabilityPage } from "./pages/ReliabilityPage";
+import { LoadingFallback } from "./components/LoadingFallback";
 import styles from "./App.module.css";
+
+const OverviewPage = lazy(() => import("./pages/OverviewPage").then(m => ({ default: m.OverviewPage })));
+const AgentDetailPage = lazy(() => import("./pages/AgentDetailPage").then(m => ({ default: m.AgentDetailPage })));
+const AgentHistoryPage = lazy(() => import("./pages/AgentHistoryPage").then(m => ({ default: m.AgentHistoryPage })));
+const ProjectPage = lazy(() => import("./pages/ProjectPage").then(m => ({ default: m.ProjectPage })));
+const TracePage = lazy(() => import("./pages/TracePage").then(m => ({ default: m.TracePage })));
+const TrackDetailPage = lazy(() => import("./pages/TrackDetailPage").then(m => ({ default: m.TrackDetailPage })));
+const ReliabilityPage = lazy(() => import("./pages/ReliabilityPage").then(m => ({ default: m.ReliabilityPage })));
 
 export default function App() {
   const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved, remainingCount: agentRemainingCount, hasNextPage: agentHasNextPage, isFetchingNextPage: agentFetchingNextPage, fetchNextPage: agentFetchNextPage } = useAgents();
@@ -238,6 +240,7 @@ export default function App() {
       </header>
 
       <main className={styles.main}>
+        <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route
             path="/"
@@ -279,6 +282,7 @@ export default function App() {
           <Route path="/traces/:traceId" element={<TracePage />} />
           <Route path="/reliability" element={<ReliabilityPage />} />
         </Routes>
+        </Suspense>
       </main>
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
