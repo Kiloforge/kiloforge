@@ -3,8 +3,9 @@ package config
 // FlagOption sets a field on the flags adapter config.
 type FlagOption func(*Config)
 
-func WithOrchestratorPort(v int) FlagOption  { return func(c *Config) { c.OrchestratorPort = v } }
-func WithDataDir(v string) FlagOption        { return func(c *Config) { c.DataDir = v } }
+func WithOrchestratorPort(v int) FlagOption    { return func(c *Config) { c.OrchestratorPort = v } }
+func WithOrchestratorHost(v string) FlagOption { return func(c *Config) { c.OrchestratorHost = v } }
+func WithDataDir(v string) FlagOption          { return func(c *Config) { c.DataDir = v } }
 func WithDashboardEnabled(v bool) FlagOption { return func(c *Config) { c.DashboardEnabled = &v } }
 
 // FlagsAdapter provides config values from explicitly set CLI flags.

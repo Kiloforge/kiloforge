@@ -32,6 +32,9 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 	if cfg.Model != "opus" {
 		t.Errorf("Model: want %q, got %q", "opus", cfg.Model)
 	}
+	if cfg.OrchestratorHost != "127.0.0.1" {
+		t.Errorf("OrchestratorHost: want %q, got %q", "127.0.0.1", cfg.OrchestratorHost)
+	}
 }
 
 func TestDefaultsAdapter_ImplementsConfigProvider(t *testing.T) {

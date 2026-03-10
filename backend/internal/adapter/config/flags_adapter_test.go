@@ -50,6 +50,7 @@ func TestFlagsAdapter_AllOptions(t *testing.T) {
 
 	adapter := NewFlagsAdapter(
 		WithOrchestratorPort(9000),
+		WithOrchestratorHost("0.0.0.0"),
 		WithDataDir("/flags"),
 	)
 
@@ -60,6 +61,9 @@ func TestFlagsAdapter_AllOptions(t *testing.T) {
 
 	if cfg.OrchestratorPort != 9000 {
 		t.Errorf("OrchestratorPort: want 9000, got %d", cfg.OrchestratorPort)
+	}
+	if cfg.OrchestratorHost != "0.0.0.0" {
+		t.Errorf("OrchestratorHost: want %q, got %q", "0.0.0.0", cfg.OrchestratorHost)
 	}
 	if cfg.DataDir != "/flags" {
 		t.Errorf("DataDir: want %q, got %q", "/flags", cfg.DataDir)

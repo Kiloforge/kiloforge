@@ -71,6 +71,42 @@ func TestMerge_PartialOverlays(t *testing.T) {
 	}
 }
 
+func TestMerge_HostOverlay(t *testing.T) {
+	t.Parallel()
+
+	defaults := &testProvider{cfg: &Config{
+		OrchestratorHost: "127.0.0.1",
+	}}
+	env := &testProvider{cfg: &Config{
+		OrchestratorHost: "0.0.0.0",
+	}}
+
+	cfg, err := Merge(defaults, env)
+	if err != nil {
+		t.Fatalf("Merge: %v", err)
+	}
+	if cfg.OrchestratorHost != "0.0.0.0" {
+		t.Errorf("OrchestratorHost: want %q, got %q", "0.0.0.0", cfg.OrchestratorHost)
+	}
+}
+
+func TestMerge_HostPreservedWhenNotSet(t *testing.T) {
+	t.Parallel()
+
+	defaults := &testProvider{cfg: &Config{
+		OrchestratorHost: "127.0.0.1",
+	}}
+	empty := &testProvider{cfg: &Config{}}
+
+	cfg, err := Merge(defaults, empty)
+	if err != nil {
+		t.Fatalf("Merge: %v", err)
+	}
+	if cfg.OrchestratorHost != "127.0.0.1" {
+		t.Errorf("OrchestratorHost: want %q, got %q", "127.0.0.1", cfg.OrchestratorHost)
+	}
+}
+
 func TestMerge_NoProviders(t *testing.T) {
 	t.Parallel()
 

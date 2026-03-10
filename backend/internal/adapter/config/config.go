@@ -13,6 +13,7 @@ const (
 
 type Config struct {
 	OrchestratorPort int    `json:"orchestrator_port"`
+	OrchestratorHost string `json:"orchestrator_host,omitempty"`
 	DataDir          string `json:"data_dir"`
 	// Deprecated: MaxSessionCostUSD is no longer enforced. Subscription rate
 	// limits are the primary constraint. Retained for backward compatibility.
@@ -114,6 +115,9 @@ func (c *Config) Validate() error {
 	}
 	if c.OrchestratorPort < 1 || c.OrchestratorPort > 65535 {
 		return fmt.Errorf("config: orchestrator_port %d out of range (1-65535)", c.OrchestratorPort)
+	}
+	if c.OrchestratorHost == "" {
+		return fmt.Errorf("config: orchestrator_host must not be empty")
 	}
 	return nil
 }

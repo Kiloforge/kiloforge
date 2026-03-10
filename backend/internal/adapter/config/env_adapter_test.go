@@ -142,6 +142,19 @@ func TestEnvAdapter_AnalyticsEnabled(t *testing.T) {
 	}
 }
 
+func TestEnvAdapter_OrchestratorHost(t *testing.T) {
+	t.Setenv("KF_ORCH_HOST", "0.0.0.0")
+
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OrchestratorHost != "0.0.0.0" {
+		t.Errorf("OrchestratorHost: want %q, got %q", "0.0.0.0", cfg.OrchestratorHost)
+	}
+}
+
 func TestEnvAdapter_PostHogAPIKey(t *testing.T) {
 	t.Setenv("KF_POSTHOG_API_KEY", "phc_test123")
 	adapter := &EnvAdapter{}

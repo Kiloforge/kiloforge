@@ -20,6 +20,9 @@ func overlay(dst, src *Config) {
 	if src.OrchestratorPort != 0 {
 		dst.OrchestratorPort = src.OrchestratorPort
 	}
+	if src.OrchestratorHost != "" {
+		dst.OrchestratorHost = src.OrchestratorHost
+	}
 	if src.DataDir != "" {
 		dst.DataDir = src.DataDir
 	}
