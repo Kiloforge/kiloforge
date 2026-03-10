@@ -89,17 +89,17 @@ plan:
   - phase: Skill Implementation
     tasks:
       - text: Create ~/.claude/skills/kf-reliability/SKILL.md with YAML frontmatter
-        done: false
+        done: true
       - text: Write Phase 1 — Pre-flight (verify project context, load tech stack, check existing audit history)
-        done: false
+        done: true
       - text: Write Phase 2 — Audit (systematic check of each reliability dimension with pass/fail/warning)
-        done: false
+        done: true
       - text: Write Phase 3 — Analysis (prioritize findings by impact and effort, group related items)
-        done: false
+        done: true
       - text: Write Phase 4 — Recommendations (generate actionable items — direct fixes vs track generation)
-        done: false
+        done: true
       - text: Write Phase 5 — Execution (apply small fixes directly, create tracks for larger work via kf-architect)
-        done: false
+        done: true
   - phase: Testing & Verification
     tasks:
       - text: Verify skill file has correct frontmatter and is parseable
