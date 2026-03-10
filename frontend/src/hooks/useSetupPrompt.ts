@@ -1,17 +1,25 @@
 import { useState, useCallback, useRef } from "react";
 
+interface UseSetupPromptOptions {
+  onConsentRequired?: (retry: () => void) => void;
+}
+
 /**
  * Hook for prompting kiloforge setup when a 428 is received.
  * Mirrors the useConsent/useSkillsPrompt pattern: call `requestSetup(slug, retryFn)`
  * to show the dialog. After setup completes, retryFn is called automatically.
+ *
+ * Pass onConsentRequired to handle 403 responses by cascading to the consent dialog.
  */
-export function useSetupPrompt() {
+export function useSetupPrompt(options?: UseSetupPromptOptions) {
   const [showDialog, setShowDialog] = useState(false);
   const [projectSlug, setProjectSlug] = useState("");
   const [agentId, setAgentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const retryRef = useRef<(() => void) | null>(null);
+  const onConsentRequiredRef = useRef(options?.onConsentRequired);
+  onConsentRequiredRef.current = options?.onConsentRequired;
 
   const requestSetup = useCallback((slug: string, retry: () => void) => {
     setProjectSlug(slug);
@@ -29,6 +37,11 @@ export function useSetupPrompt() {
         method: "POST",
       });
       if (!res.ok) {
+        if (res.status === 403 && onConsentRequiredRef.current) {
+          setStarting(false);
+          onConsentRequiredRef.current(() => startSetup());
+          return;
+        }
         const body = await res.json().catch(() => ({ error: `Error ${res.status}` }));
         throw new Error(body.error || `Setup failed with status ${res.status}`);
       }

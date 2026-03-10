@@ -83,7 +83,9 @@ export function ProjectPage() {
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
-  const setupPrompt = useSetupPrompt();
+  const setupPrompt = useSetupPrompt({
+    onConsentRequired: (retry) => consent.requestConsent(retry),
+  });
   const handleSetupComplete = useCallback(() => {
     if (slug) {
       queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
