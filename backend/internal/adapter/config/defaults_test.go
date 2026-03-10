@@ -15,8 +15,8 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if cfg.OrchestratorPort != 4001 {
-		t.Errorf("OrchestratorPort: want 4001, got %d", cfg.OrchestratorPort)
+	if cfg.OrchestratorPort != 39517 {
+		t.Errorf("OrchestratorPort: want 39517, got %d", cfg.OrchestratorPort)
 	}
 
 	home, _ := os.UserHomeDir()

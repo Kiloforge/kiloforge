@@ -18,8 +18,8 @@ func TestResolve_DefaultChain(t *testing.T) {
 		t.Fatalf("Resolve: %v", err)
 	}
 
-	if cfg.OrchestratorPort != 4001 {
-		t.Errorf("OrchestratorPort: want 4001, got %d", cfg.OrchestratorPort)
+	if cfg.OrchestratorPort != 39517 {
+		t.Errorf("OrchestratorPort: want 39517, got %d", cfg.OrchestratorPort)
 	}
 }
 
