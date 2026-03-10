@@ -1,45 +1,42 @@
 id: create-project-fe_20260310150001Z
-title: "Add create-from-scratch mode to Add Project UI"
+title: Add create-from-scratch mode to Add Project UI
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Update the AddProjectForm component to support creating a brand-new project
-    without a remote URL, adding a mode toggle and adjusting validation so users
-    can either clone from a remote or start fresh.
+  summary: ">"
   context: |
     The backend track (create-project-be) adds a CreateProject endpoint that
     accepts a name with no remote_url. The frontend currently requires a valid
     remote URL in AddProjectForm — the URL_PATTERN regex rejects anything that
     isn't a git remote, and the name field is optional (auto-derived from URL).
-
+    
     This track updates the UI so users can toggle between "Clone from remote"
     and "Create new" modes. In "Create new" mode the remote URL field is hidden,
     name becomes required, and the form POSTs with only the name field.
   codebase_analysis: |
     Key files to modify:
-
+    
     1. frontend/src/components/AddProjectForm.tsx
        - Currently has URL_PATTERN validation, remote_url required
        - Name field is optional, derived from URL when empty
        - Uses useProjects().addProject(url, name?, sshKey?)
        - Need: mode toggle, conditional field visibility, adjusted validation
-
+    
     2. frontend/src/hooks/useProjects.ts
        - addProject(url, name?, sshKey?) calls POST /api/projects
        - Need: support calling with no URL (name-only) for create mode
        - AddProjectRequest type needs remote_url made optional
-
+    
     3. frontend/src/types/api.ts
        - AddProjectRequest has remote_url: string (required)
        - Need: make remote_url optional to match backend schema change
-
+    
     4. frontend/src/components/AddProjectForm.test.tsx
        - Existing tests cover clone mode
        - Need: tests for create mode toggle, validation, submission
-
+    
     5. frontend/src/pages/OverviewPage.tsx / OverviewPage.test.tsx
        - AddProjectForm is rendered here
        - No changes needed unless form props change
@@ -62,41 +59,41 @@ spec:
     at the top of the form. Conditionally render fields based on mode:
     - Clone mode: URL (required) + Name (optional) + SSH Key selector
     - Create mode: Name (required) only
-
+    
     The useProjects hook's addProject function needs to accept an optional URL.
     When URL is empty/undefined, send { name } only in the request body.
-
+    
     Keep the toggle simple — two buttons or a segmented control that matches
     the existing glass-morphism design system.
 plan:
   - phase: Type updates
     tasks:
       - text: Make remote_url optional in AddProjectRequest type (frontend/src/types/api.ts)
-        done: false
+        done: true
   - phase: Hook updates
     tasks:
       - text: Update useProjects addProject to accept optional URL and send appropriate request body
-        done: false
+        done: true
   - phase: Form component
     tasks:
       - text: Add mode toggle state (clone/create) to AddProjectForm
-        done: false
+        done: true
       - text: Conditionally render URL field (hidden in create mode) and make name required in create mode
-        done: false
+        done: true
       - text: Adjust form validation — require name in create mode, require URL in clone mode
-        done: false
+        done: true
       - text: Style mode toggle to match existing glass-morphism design
-        done: false
+        done: true
   - phase: Testing
     tasks:
       - text: Add unit tests for create mode — toggle, validation, submission with name only
-        done: false
+        done: true
       - text: Verify existing clone-mode tests still pass
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run frontend build (make build-frontend) with no errors
-        done: false
+        done: true
       - text: Run frontend tests (make test-frontend) — all pass
-        done: false
+        done: true
 extra: {}
