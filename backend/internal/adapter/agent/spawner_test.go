@@ -24,9 +24,12 @@ type stubAgentStore struct {
 
 var _ port.AgentStore = (*stubAgentStore)(nil)
 
-func (s *stubAgentStore) Load() error                                  { return nil }
-func (s *stubAgentStore) Save() error                                  { return nil }
-func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error         { s.agents = append(s.agents, info); return nil }
+func (s *stubAgentStore) Load() error { return nil }
+func (s *stubAgentStore) Save() error { return nil }
+func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error {
+	s.agents = append(s.agents, info)
+	return nil
+}
 func (s *stubAgentStore) FindAgent(id string) (*domain.AgentInfo, error) {
 	for i := range s.agents {
 		if s.agents[i].ID == id {
@@ -44,7 +47,7 @@ func (s *stubAgentStore) UpdateStatus(id, status string) error {
 	}
 	return nil
 }
-func (s *stubAgentStore) HaltAgent(string) error                            { return nil }
+func (s *stubAgentStore) HaltAgent(string) error { return nil }
 func (s *stubAgentStore) RemoveAgent(id string) error {
 	for i := range s.agents {
 		if s.agents[i].ID == id {
@@ -54,8 +57,8 @@ func (s *stubAgentStore) RemoveAgent(id string) error {
 	}
 	return fmt.Errorf("not found: %s", id)
 }
-func (s *stubAgentStore) Agents() []domain.AgentInfo                        { return s.agents }
-func (s *stubAgentStore) AgentsByStatus(...string) []domain.AgentInfo       { return nil }
+func (s *stubAgentStore) Agents() []domain.AgentInfo                  { return s.agents }
+func (s *stubAgentStore) AgentsByStatus(...string) []domain.AgentInfo { return nil }
 
 func TestCheckQuota_NilTracker(t *testing.T) {
 	t.Parallel()

@@ -26,7 +26,7 @@ func runAgents(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	agents := rt.Agents.ListAgents()
 

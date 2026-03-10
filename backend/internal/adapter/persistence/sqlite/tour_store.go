@@ -8,11 +8,11 @@ import (
 
 // TourState holds the guided tour progress for onboarding.
 type TourState struct {
-	Status      string     `json:"status"`                  // pending|active|dismissed|completed
-	CurrentStep int        `json:"current_step"`            // 0-indexed step number
-	StartedAt   *time.Time `json:"started_at,omitempty"`    // when tour was accepted
-	DismissedAt *time.Time `json:"dismissed_at,omitempty"`  // when tour was dismissed
-	CompletedAt *time.Time `json:"completed_at,omitempty"`  // when tour was completed
+	Status      string     `json:"status"`                 // pending|active|dismissed|completed
+	CurrentStep int        `json:"current_step"`           // 0-indexed step number
+	StartedAt   *time.Time `json:"started_at,omitempty"`   // when tour was accepted
+	DismissedAt *time.Time `json:"dismissed_at,omitempty"` // when tour was dismissed
+	CompletedAt *time.Time `json:"completed_at,omitempty"` // when tour was completed
 }
 
 const tourKey = "tour_state"

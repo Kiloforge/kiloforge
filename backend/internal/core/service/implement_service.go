@@ -136,8 +136,8 @@ type ImplementResult struct {
 
 // ImplementOpts configures the implement execution.
 type ImplementOpts struct {
-	TrackID  string
-	TrackTitle string
+	TrackID     string
+	TrackTitle  string
 	ProjectSlug string
 	ProjectDir  string
 }

@@ -20,7 +20,7 @@ func runEscalated(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	escalated := rt.Agents.GetEscalated()
 

@@ -333,12 +333,12 @@ type SpawnInteractiveOpts struct {
 
 // InteractiveAgent represents a running interactive Claude agent with IO handles.
 type InteractiveAgent struct {
-	Info         domain.AgentInfo
-	Stdin        ws.InputHandler // SDK-based input handler
-	Output       <-chan []byte   // structured messages for WS relay
-	Done         chan struct{}   // closed when agent exits
-	sdkSession   *SDKSession    // SDK session for turn-based input
-	cancelRelay  context.CancelFunc // cancels the current relay goroutine
+	Info        domain.AgentInfo
+	Stdin       ws.InputHandler    // SDK-based input handler
+	Output      <-chan []byte      // structured messages for WS relay
+	Done        chan struct{}      // closed when agent exits
+	sdkSession  *SDKSession        // SDK session for turn-based input
+	cancelRelay context.CancelFunc // cancels the current relay goroutine
 }
 
 // SetCancelRelay stores the cancel function for the current relay goroutine.

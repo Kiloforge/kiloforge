@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"kiloforge/internal/adapter/tracing"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"kiloforge/internal/adapter/tracing"
 )
 
 // TraceStore persists trace and span data to SQLite.
@@ -298,10 +299,10 @@ func scanSpans(rows *sql.Rows) []tracing.SpanSummary {
 		sp.StartTime, _ = time.Parse(time.RFC3339Nano, startStr)
 		sp.EndTime, _ = time.Parse(time.RFC3339Nano, endStr)
 		if attrsJSON != "" {
-			json.Unmarshal([]byte(attrsJSON), &sp.Attributes)
+			_ = json.Unmarshal([]byte(attrsJSON), &sp.Attributes)
 		}
 		if eventsJSON != "" {
-			json.Unmarshal([]byte(eventsJSON), &sp.Events)
+			_ = json.Unmarshal([]byte(eventsJSON), &sp.Events)
 		}
 		result = append(result, sp)
 	}

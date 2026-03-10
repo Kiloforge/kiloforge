@@ -43,11 +43,11 @@ type releaseRequest struct {
 }
 
 type lockResponse struct {
-	Scope              string    `json:"scope"`
-	Holder             string    `json:"holder"`
-	AcquiredAt         time.Time `json:"acquired_at"`
-	ExpiresAt          time.Time `json:"expires_at"`
-	TTLRemainingSeconds float64  `json:"ttl_remaining_seconds"`
+	Scope               string    `json:"scope"`
+	Holder              string    `json:"holder"`
+	AcquiredAt          time.Time `json:"acquired_at"`
+	ExpiresAt           time.Time `json:"expires_at"`
+	TTLRemainingSeconds float64   `json:"ttl_remaining_seconds"`
 }
 
 type errorResponse struct {

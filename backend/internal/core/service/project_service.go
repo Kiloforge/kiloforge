@@ -213,7 +213,6 @@ func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup
 	return nil
 }
 
-
 // isRemoteURL returns true if the argument looks like a git remote URL.
 func isRemoteURL(arg string) bool {
 	if strings.HasPrefix(arg, "https://") || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "ssh://") {

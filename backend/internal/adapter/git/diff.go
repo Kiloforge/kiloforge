@@ -2,6 +2,7 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -27,7 +28,8 @@ func (gs *GitSync) Diff(ctx context.Context, projectDir, branch string) (*domain
 	diffCmd := gs.gitCmd(ctx, projectDir, "", "diff", "main..."+branch, "-U3", "--no-color")
 	diffOut, err := diffCmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return nil, fmt.Errorf("git diff failed: %s", strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return nil, fmt.Errorf("git diff: %w", err)

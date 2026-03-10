@@ -19,7 +19,7 @@ func runStop(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	agent, err := rt.Agents.StopAgent(args[0])
 	if err != nil {

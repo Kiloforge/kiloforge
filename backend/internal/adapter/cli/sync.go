@@ -36,7 +36,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("not initialized — run 'kf init' first")
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	project, err := rt.Projects.GetProject(flagSyncProject)
 	if err != nil {

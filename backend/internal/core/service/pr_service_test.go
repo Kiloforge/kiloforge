@@ -75,11 +75,11 @@ func TestHandleChangesRequested_IncrementsCycle(t *testing.T) {
 	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, &testutil.MockLogger{})
 
 	tests := []struct {
-		name        string
-		cycleCount  int
-		maxCycles   int
-		wantResume  bool
-		wantStatus  string
+		name       string
+		cycleCount int
+		maxCycles  int
+		wantResume bool
+		wantStatus string
 	}{
 		{"first cycle", 0, 3, true, "changes-requested"},
 		{"second cycle", 1, 3, true, "changes-requested"},

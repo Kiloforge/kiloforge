@@ -14,10 +14,9 @@ import (
 	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/config"
-	"kiloforge/internal/adapter/prereq"
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
-	"kiloforge/pkg/kf"
+	"kiloforge/internal/adapter/prereq"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
@@ -25,6 +24,7 @@ import (
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
+	"kiloforge/pkg/kf"
 )
 
 // AgentLister provides read access to agent state.
@@ -86,51 +86,51 @@ type ConsentChecker interface {
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
-	agents     AgentLister
-	quota      QuotaReader
-	lockMgr    *lock.Manager
-	projects   ProjectLister
-	projectMgr ProjectManager
-	gitSync    *gitadapter.GitSync
-	diffProv   port.DiffProvider
-	traceStore tracing.TraceReader
+	agents       AgentLister
+	quota        QuotaReader
+	lockMgr      *lock.Manager
+	projects     ProjectLister
+	projectMgr   ProjectManager
+	gitSync      *gitadapter.GitSync
+	diffProv     port.DiffProvider
+	traceStore   tracing.TraceReader
 	boardSvc     port.BoardService
 	trackReader  port.TrackReader
 	eventBus     port.EventBus
-	giteaURL      string
-	sseClients    func() int
-	cfg           *config.Config
-	interSpawner  InteractiveSpawner
-	wsSessions    *wsAdapter.SessionManager
-	consent       ConsentChecker
-	agentRemover  AgentRemover
-	queueSvc      QueueServicer
+	giteaURL     string
+	sseClients   func() int
+	cfg          *config.Config
+	interSpawner InteractiveSpawner
+	wsSessions   *wsAdapter.SessionManager
+	consent      ConsentChecker
+	agentRemover AgentRemover
+	queueSvc     QueueServicer
 
-	adminMu          sync.Mutex
+	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
 }
 
 // APIHandlerOpts configures the API handler.
 type APIHandlerOpts struct {
-	Agents        AgentLister
-	Quota         QuotaReader
-	LockMgr       *lock.Manager
-	Projects      ProjectLister
-	ProjectMgr    ProjectManager
-	GitSync       *gitadapter.GitSync
-	DiffProvider  port.DiffProvider
-	TraceStore    tracing.TraceReader
-	BoardSvc      port.BoardService
-	TrackReader   port.TrackReader
-	EventBus      port.EventBus
-	GiteaURL      string
-	SSEClients    func() int
-	Cfg           *config.Config
-	InterSpawner  InteractiveSpawner
-	WSSessions    *wsAdapter.SessionManager
-	Consent       ConsentChecker
-	AgentRemover  AgentRemover
-	QueueSvc      QueueServicer
+	Agents       AgentLister
+	Quota        QuotaReader
+	LockMgr      *lock.Manager
+	Projects     ProjectLister
+	ProjectMgr   ProjectManager
+	GitSync      *gitadapter.GitSync
+	DiffProvider port.DiffProvider
+	TraceStore   tracing.TraceReader
+	BoardSvc     port.BoardService
+	TrackReader  port.TrackReader
+	EventBus     port.EventBus
+	GiteaURL     string
+	SSEClients   func() int
+	Cfg          *config.Config
+	InterSpawner InteractiveSpawner
+	WSSessions   *wsAdapter.SessionManager
+	Consent      ConsentChecker
+	AgentRemover AgentRemover
+	QueueSvc     QueueServicer
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -177,7 +177,7 @@ func (h *APIHandler) GetHealth(_ context.Context, _ gen.GetHealthRequestObject) 
 func (h *APIHandler) GetPreflight(ctx context.Context, _ gen.GetPreflightRequestObject) (gen.GetPreflightResponseObject, error) {
 	resp := gen.GetPreflight200JSONResponse{
 		ClaudeAuthenticated: true,
-		SkillsOk:           true,
+		SkillsOk:            true,
 		ConsentGiven:        true,
 		SetupRequired:       h.isSetupRequired(),
 	}
@@ -1445,7 +1445,8 @@ func (h *APIHandler) GetProjectDiff(ctx context.Context, req gen.GetProjectDiffR
 
 	result, err := h.diffProv.DiffWithMaxFiles(ctx, p.ProjectDir, req.Params.Branch, maxFiles)
 	if err != nil {
-		if _, ok := err.(*gitadapter.BranchNotFoundError); ok {
+		var branchErr *gitadapter.BranchNotFoundError
+		if errors.As(err, &branchErr) {
 			return gen.GetProjectDiff404JSONResponse{Error: err.Error()}, nil
 		}
 		return gen.GetProjectDiff500JSONResponse{Error: err.Error()}, nil
@@ -2277,4 +2278,3 @@ func (h *APIHandler) toGenQueueStatus(s *service.QueueStatus) gen.QueueStatus {
 
 func intPtr(v int) *int       { return &v }
 func strPtr(v string) *string { return &v }
-

@@ -147,15 +147,7 @@ func parseDiffHeader(line string, fd *domain.FileDiff) {
 	if idx < 0 {
 		return
 	}
-	aPath := rest[:idx]
-	bPath := rest[idx+1:]
-
-	if strings.HasPrefix(aPath, "a/") {
-		aPath = aPath[2:]
-	}
-	if strings.HasPrefix(bPath, "b/") {
-		bPath = bPath[2:]
-	}
+	bPath := strings.TrimPrefix(rest[idx+1:], "b/")
 	fd.Path = bPath
 }
 

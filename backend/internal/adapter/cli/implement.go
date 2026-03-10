@@ -104,7 +104,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	// Initialize tracing.
 	tracer, tracingShutdown := initTracing(ctx, cfg)
 	if tracingShutdown != nil {
-		defer tracingShutdown(context.Background())
+		defer func() { _ = tracingShutdown(context.Background()) }()
 	}
 
 	ctx, trackSpan := tracer.StartSpan(ctx, "track/"+trackID,

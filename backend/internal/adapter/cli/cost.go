@@ -29,7 +29,7 @@ func runCost(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	if flagCostJSON {
 		return printCostJSON(rt.Quota, rt.Agents)
@@ -39,11 +39,11 @@ func runCost(cmd *cobra.Command, args []string) error {
 }
 
 type costEntry struct {
-	AgentID  string  `json:"agent_id"`
-	Role     string  `json:"role"`
-	Ref      string  `json:"ref"`
-	Tokens   int     `json:"tokens"`
-	CostUSD  float64 `json:"cost_usd"`
+	AgentID string  `json:"agent_id"`
+	Role    string  `json:"role"`
+	Ref     string  `json:"ref"`
+	Tokens  int     `json:"tokens"`
+	CostUSD float64 `json:"cost_usd"`
 }
 
 func printCostJSON(tracker *agent.QuotaTracker, agentSvc *service.AgentService) error {

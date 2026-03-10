@@ -124,7 +124,7 @@ func TestNewGiteaProxy_AssetPaths(t *testing.T) {
 
 	// Gitea asset paths with /gitea/ prefix must reach the backend with prefix stripped.
 	tests := []struct {
-		reqPath    string
+		reqPath     string
 		wantBackend string
 	}{
 		{"/gitea/assets/css/theme-gitea-auto.css", "/assets/css/theme-gitea-auto.css"},

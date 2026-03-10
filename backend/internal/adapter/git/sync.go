@@ -11,20 +11,20 @@ import (
 
 // Sync status constants.
 const (
-	StatusSynced  = "synced"
-	StatusAhead   = "ahead"
-	StatusBehind  = "behind"
+	StatusSynced   = "synced"
+	StatusAhead    = "ahead"
+	StatusBehind   = "behind"
 	StatusDiverged = "diverged"
-	StatusUnknown = "unknown"
+	StatusUnknown  = "unknown"
 )
 
 // SyncStatusResult contains the result of a sync status check.
 type SyncStatusResult struct {
-	LocalBranch  string `json:"local_branch"`
-	RemoteURL    string `json:"remote_url"`
-	Ahead        int    `json:"ahead"`
-	Behind       int    `json:"behind"`
-	Status       string `json:"status"`
+	LocalBranch string `json:"local_branch"`
+	RemoteURL   string `json:"remote_url"`
+	Ahead       int    `json:"ahead"`
+	Behind      int    `json:"behind"`
+	Status      string `json:"status"`
 }
 
 // PushResult contains the result of a push operation.

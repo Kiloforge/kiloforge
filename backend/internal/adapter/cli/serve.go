@@ -57,7 +57,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	// Ensure PID file is removed on exit.
-	defer pidMgr.Remove()
+	defer func() { _ = pidMgr.Remove() }()
 
 	// Start Gitea if not running.
 	client := gitea.NewClientWithToken(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.APIToken)
@@ -88,7 +88,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if tracingErr != nil {
 		log.Printf("Warning: tracing init failed: %v", tracingErr)
 	} else {
-		defer result.Shutdown(context.Background())
+		defer func() { _ = result.Shutdown(context.Background()) }()
 		log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
 	}
 

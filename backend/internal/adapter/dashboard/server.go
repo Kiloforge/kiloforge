@@ -34,13 +34,13 @@ type ProjectLister interface {
 
 // Server serves the web dashboard on a dedicated HTTP port.
 type Server struct {
-	port       int
-	agents     AgentLister
-	quota      QuotaReader
-	giteaURL   string
-	projects   ProjectLister
-	hub        *SSEHub
-	eventBus   port.EventBus
+	port        int
+	agents      AgentLister
+	quota       QuotaReader
+	giteaURL    string
+	projects    ProjectLister
+	hub         *SSEHub
+	eventBus    port.EventBus
 	traceStore  tracing.TraceReader
 	trackReader port.TrackReader
 	mux         *http.ServeMux

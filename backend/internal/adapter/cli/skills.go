@@ -146,51 +146,6 @@ func readLineCtx(ctx context.Context) (string, bool) {
 	}
 }
 
-// offerSkillsInstall prompts the user to install skills if repo is configured
-// but no skills are installed yet. Falls back to embedded install when no repo.
-func offerSkillsInstall(ctx context.Context, cfg *config.Config) {
-	if cfg.SkillsRepo == "" {
-		installEmbeddedSkills(cfg)
-		return
-	}
-	skillsDir := cfg.GetSkillsDir()
-	manifest, _ := skills.LoadManifest()
-	installed := skills.ListInstalled(skillsDir, manifest)
-	if len(installed) > 0 {
-		return
-	}
-
-	fmt.Printf("\nSkills repo configured (%s) but no skills installed.\n", cfg.SkillsRepo)
-	fmt.Print("Install skills now? [y/N] ")
-	answer, ok := readLineCtx(ctx)
-	if !ok {
-		return
-	}
-	if answer != "y" && answer != "Y" {
-		fmt.Println("Skipped. Run 'kf skills update' to install later.")
-		return
-	}
-
-	svc := newSkillsService(cfg)
-	checkResult, err := svc.CheckForUpdates()
-	if err != nil {
-		fmt.Printf("Warning: could not check for skills: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Installing skills %s...\n", checkResult.NewVersion)
-	installResult, err := svc.InstallUpdate(checkResult.Release)
-	if err != nil {
-		fmt.Printf("Warning: skills installation failed: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Installed %d skills:\n", len(installResult.Installed))
-	for _, s := range installResult.Installed {
-		fmt.Printf("  • %s\n", s.Name)
-	}
-}
-
 // installEmbeddedSkills auto-installs all embedded skills without prompting.
 func installEmbeddedSkills(cfg *config.Config) {
 	skillsDir := cfg.GetSkillsDir()

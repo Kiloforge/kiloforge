@@ -9,20 +9,23 @@ import (
 
 // stubAgentStore implements port.AgentStore for testing.
 type stubAgentStore struct {
-	agents       []domain.AgentInfo
-	haltedID     string
-	updatedID    string
-	updatedStat  string
-	saved        bool
-	haltErr      error
+	agents      []domain.AgentInfo
+	haltedID    string
+	updatedID   string
+	updatedStat string
+	saved       bool
+	haltErr     error
 }
 
-func (s *stubAgentStore) Load() error                              { return nil }
-func (s *stubAgentStore) Save() error                              { s.saved = true; return nil }
-func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error     { s.agents = append(s.agents, info); return nil }
-func (s *stubAgentStore) Agents() []domain.AgentInfo               { return s.agents }
+func (s *stubAgentStore) Load() error { return nil }
+func (s *stubAgentStore) Save() error { s.saved = true; return nil }
+func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error {
+	s.agents = append(s.agents, info)
+	return nil
+}
+func (s *stubAgentStore) Agents() []domain.AgentInfo                    { return s.agents }
 func (s *stubAgentStore) AgentsByStatus(_ ...string) []domain.AgentInfo { return nil }
-func (s *stubAgentStore) FindByRef(_ string) *domain.AgentInfo     { return nil }
+func (s *stubAgentStore) FindByRef(_ string) *domain.AgentInfo          { return nil }
 
 func (s *stubAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	for i := range s.agents {
@@ -67,12 +70,16 @@ func (s *stubProjectStoreForAgent) Get(slug string) (domain.Project, error) {
 	}
 	return domain.Project{}, domain.ErrProjectNotFound
 }
-func (s *stubProjectStoreForAgent) List() []domain.Project                    { return s.projects }
-func (s *stubProjectStoreForAgent) Add(_ domain.Project) error               { return nil }
-func (s *stubProjectStoreForAgent) Remove(_ string) error                    { return nil }
-func (s *stubProjectStoreForAgent) FindByRepoName(_ string) (domain.Project, bool) { return domain.Project{}, false }
-func (s *stubProjectStoreForAgent) FindByDir(_ string) (domain.Project, bool) { return domain.Project{}, false }
-func (s *stubProjectStoreForAgent) Save() error                              { return nil }
+func (s *stubProjectStoreForAgent) List() []domain.Project     { return s.projects }
+func (s *stubProjectStoreForAgent) Add(_ domain.Project) error { return nil }
+func (s *stubProjectStoreForAgent) Remove(_ string) error      { return nil }
+func (s *stubProjectStoreForAgent) FindByRepoName(_ string) (domain.Project, bool) {
+	return domain.Project{}, false
+}
+func (s *stubProjectStoreForAgent) FindByDir(_ string) (domain.Project, bool) {
+	return domain.Project{}, false
+}
+func (s *stubProjectStoreForAgent) Save() error { return nil }
 
 // stubPRTrackingStore implements port.PRTrackingStore for testing.
 type stubPRTrackingStore struct {

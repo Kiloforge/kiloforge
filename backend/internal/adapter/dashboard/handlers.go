@@ -1,31 +1,16 @@
 package dashboard
 
-import (
-	"encoding/json"
-	"net/http"
-)
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
-}
-
-func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
-}
-
 // quotaResponse builds the quota summary map used by the SSE watcher.
 func (s *Server) quotaResponse() map[string]any {
 	if s.quota == nil {
 		return map[string]any{
-			"estimated_cost_usd":   0,
-			"input_tokens":         0,
-			"output_tokens":        0,
-			"cache_read_tokens":    0,
+			"estimated_cost_usd":    0,
+			"input_tokens":          0,
+			"output_tokens":         0,
+			"cache_read_tokens":     0,
 			"cache_creation_tokens": 0,
-			"agent_count":          0,
-			"rate_limited":         false,
+			"agent_count":           0,
+			"rate_limited":          false,
 		}
 	}
 	total := s.quota.GetTotalUsage()

@@ -43,7 +43,7 @@ func TestInstall_ExtractsSkills(t *testing.T) {
 	tarball := createTestTarball(t, map[string]string{
 		"kf-developer/SKILL.md": "# Developer Skill",
 		"kf-reviewer/SKILL.md":  "# Reviewer Skill",
-		"README.md":                    "# Not a skill",
+		"README.md":             "# Not a skill",
 	})
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

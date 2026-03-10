@@ -19,11 +19,11 @@ type DiffLine struct {
 
 // Hunk represents a contiguous block of changes within a file diff.
 type Hunk struct {
-	OldStart int      `json:"old_start"`
-	OldLines int      `json:"old_lines"`
-	NewStart int      `json:"new_start"`
-	NewLines int      `json:"new_lines"`
-	Header   string   `json:"header"`
+	OldStart int        `json:"old_start"`
+	OldLines int        `json:"old_lines"`
+	NewStart int        `json:"new_start"`
+	NewLines int        `json:"new_lines"`
+	Header   string     `json:"header"`
 	Lines    []DiffLine `json:"lines"`
 }
 

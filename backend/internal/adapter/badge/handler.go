@@ -22,8 +22,8 @@ type PRTrackingLoader func(slug string) (*domain.PRTracking, error)
 
 // Handler serves badge endpoints.
 type Handler struct {
-	agents    AgentFinder
-	prLoader  PRTrackingLoader
+	agents   AgentFinder
+	prLoader PRTrackingLoader
 }
 
 // NewHandler creates a badge handler.
@@ -42,7 +42,7 @@ func writeSVG(w http.ResponseWriter, svg []byte) {
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Expires", time.Now().UTC().Format(http.TimeFormat))
-	w.Write(svg)
+	_, _ = w.Write(svg)
 }
 
 func (h *Handler) handleTrackBadge(w http.ResponseWriter, r *http.Request) {

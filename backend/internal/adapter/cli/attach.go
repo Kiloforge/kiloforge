@@ -23,7 +23,7 @@ func runAttach(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	// Get the agent first to display info before halting.
 	agent, err := rt.Agents.GetAgent(args[0])

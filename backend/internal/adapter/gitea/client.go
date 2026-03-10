@@ -78,7 +78,7 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -115,9 +115,9 @@ func (c *Client) CreateToken(ctx context.Context, name string) (string, error) {
 // CreateRepo creates a new repository.
 func (c *Client) CreateRepo(ctx context.Context, name string) error {
 	payload := map[string]any{
-		"name":          name,
-		"auto_init":     false,
-		"private":       false,
+		"name":           name,
+		"auto_init":      false,
+		"private":        false,
 		"default_branch": "main",
 	}
 	_, err := c.do(ctx, "POST", "/api/v1/user/repos", payload)

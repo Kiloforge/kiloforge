@@ -507,10 +507,10 @@ func (m *e2eProjectManager) RemoveProject(_ context.Context, slug string, _ bool
 // e2eTrackReader is a no-op TrackReader for E2E tests.
 type e2eTrackReader struct{}
 
-func (e2eTrackReader) DiscoverTracks(_ string) ([]port.TrackEntry, error) { return nil, nil }
+func (e2eTrackReader) DiscoverTracks(_ string) ([]port.TrackEntry, error)    { return nil, nil }
 func (e2eTrackReader) GetTrackDetail(_, _ string) (*port.TrackDetail, error) { return nil, nil }
-func (e2eTrackReader) RemoveTrack(_, _ string) error                       { return nil }
-func (e2eTrackReader) IsInitialized(_ string) bool                         { return false }
+func (e2eTrackReader) RemoveTrack(_, _ string) error                         { return nil }
+func (e2eTrackReader) IsInitialized(_ string) bool                           { return false }
 
 // deriveSlug extracts a project name from a git remote URL.
 func deriveSlug(url string) string {

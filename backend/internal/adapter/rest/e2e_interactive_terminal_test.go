@@ -799,10 +799,10 @@ func TestE2E_InteractiveTerminal_UnicodeAndSpecialChars(t *testing.T) {
 
 	// Test Unicode input.
 	unicodeTexts := []string{
-		"Hello 🌍 World 🚀",          // Emoji
-		"你好世界",                        // CJK
-		"مرحبا بالعالم",               // RTL Arabic
-		"café résumé naïve",          // Accented Latin
+		"Hello 🌍 World 🚀",               // Emoji
+		"你好世界",                          // CJK
+		"مرحبا بالعالم",                 // RTL Arabic
+		"café résumé naïve",             // Accented Latin
 		"<script>alert('xss')</script>", // Special chars
 	}
 

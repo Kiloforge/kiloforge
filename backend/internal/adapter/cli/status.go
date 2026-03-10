@@ -75,7 +75,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	// Load quota and agent data via runtime.
 	if rt, err := NewCLIRuntimeFromConfig(cfg); err == nil {
-		defer rt.Close()
+		defer func() { _ = rt.Close() }()
 		printQuotaStatus(rt.Quota, cfg)
 		printAgentCosts(rt.Quota, rt.Agents)
 	}

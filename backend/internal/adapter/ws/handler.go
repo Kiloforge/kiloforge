@@ -76,7 +76,7 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 	select {
 	case <-bridge.Done:
 		_ = conn.Write(session.ctx, websocket.MessageText, StatusMsg("completed", intPtr(0)))
-		conn.Close(websocket.StatusNormalClosure, "agent exited")
+		_ = conn.Close(websocket.StatusNormalClosure, "agent exited")
 	case <-session.ctx.Done():
 		// Client disconnected or server shutting down — agent continues running.
 	}

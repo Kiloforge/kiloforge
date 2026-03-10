@@ -8,9 +8,9 @@ import (
 
 // UsageData holds token usage from a CC stream-json result event.
 type UsageData struct {
-	InputTokens       int `json:"input_tokens"`
-	OutputTokens      int `json:"output_tokens"`
-	CacheReadTokens   int `json:"cache_read_input_tokens"`
+	InputTokens         int `json:"input_tokens"`
+	OutputTokens        int `json:"output_tokens"`
+	CacheReadTokens     int `json:"cache_read_input_tokens"`
 	CacheCreationTokens int `json:"cache_creation_input_tokens"`
 }
 

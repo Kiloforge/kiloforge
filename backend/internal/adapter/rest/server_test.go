@@ -58,19 +58,6 @@ func newTestServerWithDir(dataDir string) *Server {
 	return NewServer(cfg, reg, store, prTracker, 3001)
 }
 
-// installTestSkills extracts all embedded kf-* skills into a temp directory
-// and returns the path, suitable for use as config.SkillsDir in tests.
-func installTestSkills(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	for _, name := range skills.ListEmbedded() {
-		if _, err := skills.InstallEmbedded(name, dir); err != nil {
-			t.Fatalf("install embedded skill %s: %v", name, err)
-		}
-	}
-	return dir
-}
-
 // newTestServerWithSpawner creates a server with a fake spawner for testing review cycle.
 func newTestServerWithSpawner(dataDir string, spawner port.AgentSpawner, giteaSrv *httptest.Server) *Server {
 	// Install embedded skills for validation to pass.
@@ -142,7 +129,7 @@ func TestHandleWebhook_IssueOpened(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "issues", map[string]any{
-		"action": "opened",
+		"action":     "opened",
 		"repository": map[string]any{"name": "myapp"},
 		"issue": map[string]any{
 			"number": float64(7),
@@ -160,7 +147,7 @@ func TestHandleWebhook_IssueClosed(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "issues", map[string]any{
-		"action": "closed",
+		"action":     "closed",
 		"repository": map[string]any{"name": "myapp"},
 		"issue": map[string]any{
 			"number": float64(7),
@@ -178,7 +165,7 @@ func TestHandleWebhook_IssueComment(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "issue_comment", map[string]any{
-		"action": "created",
+		"action":     "created",
 		"repository": map[string]any{"name": "myapp"},
 		"issue": map[string]any{
 			"number": float64(7),
@@ -198,7 +185,7 @@ func TestHandleWebhook_PullRequest(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "pull_request", map[string]any{
-		"action": "opened",
+		"action":     "opened",
 		"repository": map[string]any{"name": "myapp"},
 		"pull_request": map[string]any{
 			"number": float64(3),
@@ -216,7 +203,7 @@ func TestHandleWebhook_PullRequestReview(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "pull_request_review", map[string]any{
-		"action": "submitted",
+		"action":     "submitted",
 		"repository": map[string]any{"name": "myapp"},
 		"review": map[string]any{
 			"state": "approved",
@@ -655,7 +642,7 @@ func TestHandleWebhook_PRClosedMerged(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "pull_request", map[string]any{
-		"action": "closed",
+		"action":     "closed",
 		"repository": map[string]any{"name": "myapp"},
 		"pull_request": map[string]any{
 			"number": float64(3),
@@ -674,7 +661,7 @@ func TestHandleWebhook_PullRequestComment(t *testing.T) {
 	srv := newTestServer()
 
 	rec := postWebhook(t, srv, "pull_request_comment", map[string]any{
-		"action": "created",
+		"action":     "created",
 		"repository": map[string]any{"name": "myapp"},
 		"pull_request": map[string]any{
 			"number": float64(3),

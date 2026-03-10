@@ -24,8 +24,8 @@ type SpanEnder interface {
 
 // SpanAttr is a key-value attribute on a span.
 type SpanAttr struct {
-	Key    string
-	Value  any
+	Key   string
+	Value any
 }
 
 // StringAttr creates a string span attribute.
@@ -56,7 +56,7 @@ func (NoopTracer) StartSpanWithTraceID(ctx context.Context, _, _ string, _ ...Sp
 
 type noopSpan struct{}
 
-func (noopSpan) SetAttributes(_ ...SpanAttr) {}
+func (noopSpan) SetAttributes(_ ...SpanAttr)      {}
 func (noopSpan) AddEvent(_ string, _ ...SpanAttr) {}
-func (noopSpan) SetError(_ error) {}
-func (noopSpan) End() {}
+func (noopSpan) SetError(_ error)                 {}
+func (noopSpan) End()                             {}

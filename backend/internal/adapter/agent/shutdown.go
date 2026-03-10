@@ -59,7 +59,7 @@ func (sm *ShutdownManager) ShutdownAll(timeout time.Duration) ShutdownResult {
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
 
-	waitLoop:
+waitLoop:
 	for len(alive) > 0 {
 		select {
 		case <-deadline:

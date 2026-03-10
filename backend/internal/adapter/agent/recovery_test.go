@@ -12,8 +12,8 @@ import (
 
 // mockProcessStarter records start calls and returns configurable results.
 type mockProcessStarter struct {
-	calls  []mockStartCall
-	err    error
+	calls   []mockStartCall
+	err     error
 	nextPID int
 }
 

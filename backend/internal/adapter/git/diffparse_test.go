@@ -6,8 +6,6 @@ import (
 	"kiloforge/internal/core/domain"
 )
 
-func intPtr(v int) *int { return &v }
-
 func TestParseUnifiedDiff(t *testing.T) {
 	tests := []struct {
 		name      string

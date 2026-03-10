@@ -11,18 +11,18 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ port.AgentStore    = (*MockAgentStore)(nil)
-	_ port.AgentSpawner  = (*MockAgentSpawner)(nil)
-	_ port.GiteaClient   = (*MockGiteaClient)(nil)
-	_ port.Merger        = (*MockMerger)(nil)
-	_ port.PoolReturner  = (*MockPoolReturner)(nil)
-	_ port.Logger        = (*MockLogger)(nil)
-	_ port.GitRunner     = (*MockGitRunner)(nil)
+	_ port.AgentStore   = (*MockAgentStore)(nil)
+	_ port.AgentSpawner = (*MockAgentSpawner)(nil)
+	_ port.GiteaClient  = (*MockGiteaClient)(nil)
+	_ port.Merger       = (*MockMerger)(nil)
+	_ port.PoolReturner = (*MockPoolReturner)(nil)
+	_ port.Logger       = (*MockLogger)(nil)
+	_ port.GitRunner    = (*MockGitRunner)(nil)
 )
 
 // MockAgentStore is an in-memory AgentStore.
 type MockAgentStore struct {
-	mu     sync.Mutex
+	mu        sync.Mutex
 	AgentData []domain.AgentInfo
 
 	// Injectable errors.
@@ -179,11 +179,11 @@ type MockGiteaClient struct {
 	mu    sync.Mutex
 	Calls []GiteaCall
 
-	MergeErr    error
-	CommentErr  error
-	DeleteErr   error
-	LabelErr    error
-	GetPRErr    error
+	MergeErr      error
+	CommentErr    error
+	DeleteErr     error
+	LabelErr      error
+	GetPRErr      error
 	GetReviewsErr error
 
 	PRData      map[string]any

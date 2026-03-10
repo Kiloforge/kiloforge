@@ -54,7 +54,7 @@ func migrateAgents(db *sql.DB, dataDir string) {
 	}
 	as := NewAgentStore(db)
 	for _, a := range store.Agents {
-		as.AddAgent(a)
+		_ = as.AddAgent(a)
 	}
 	log.Printf("[sqlite-migrate] imported %d agents", len(store.Agents))
 }

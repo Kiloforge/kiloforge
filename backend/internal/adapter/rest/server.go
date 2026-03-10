@@ -20,8 +20,8 @@ import (
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/proxy"
-	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
 	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
@@ -124,27 +124,27 @@ func WithTracer(t port.Tracer) ServerOption {
 
 // Server handles incoming webhooks from registered projects.
 type Server struct {
-	cfg         *config.Config
-	registry    port.ProjectStore
-	store       port.AgentStore
-	prTracker   port.PRTrackingStore
-	client      *gitea.Client
-	spawner     port.AgentSpawner
-	prService   *service.PRService
-	logger      *log.Logger
-	port        int
-	dashboard   *dashboard.Server
-	giteaProxy  http.Handler
-	quotaReader QuotaReader
-	_projects   dashboard.ProjectLister
-	traceStore    tracing.TraceReader
-	boardSvc      port.BoardService
-	tracer        port.Tracer
-	interSpawner  InteractiveSpawner
-	wsSessions    *wsAdapter.SessionManager
-	consent       ConsentChecker
-	tourStore     *sqlite.TourStore
-	queueSvc      QueueServicer
+	cfg          *config.Config
+	registry     port.ProjectStore
+	store        port.AgentStore
+	prTracker    port.PRTrackingStore
+	client       *gitea.Client
+	spawner      port.AgentSpawner
+	prService    *service.PRService
+	logger       *log.Logger
+	port         int
+	dashboard    *dashboard.Server
+	giteaProxy   http.Handler
+	quotaReader  QuotaReader
+	_projects    dashboard.ProjectLister
+	traceStore   tracing.TraceReader
+	boardSvc     port.BoardService
+	tracer       port.Tracer
+	interSpawner InteractiveSpawner
+	wsSessions   *wsAdapter.SessionManager
+	consent      ConsentChecker
+	tourStore    *sqlite.TourStore
+	queueSvc     QueueServicer
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -344,7 +344,6 @@ func (s *Server) Run(ctx context.Context) error {
 	return nil
 }
 
-
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -410,7 +409,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		s.handlePullRequestReview(slug, payload)
 		if review, _ := payload["review"].(map[string]any); review != nil {
 			state, _ := review["state"].(string)
-			span.AddEvent("review."+state)
+			span.AddEvent("review." + state)
 		}
 	case "pull_request_comment":
 		s.handlePullRequestComment(slug, payload)

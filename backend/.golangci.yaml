@@ -1,0 +1,75 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - errorlint
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Fprint
+        - fmt.Scanln
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*database/sql.Rows).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Tx).Rollback
+        - (*database/sql.Row).Scan
+        - (*database/sql.DB).Exec
+        - (*encoding/json.Encoder).Encode
+        - (*encoding/json.Decoder).Decode
+        - json.Unmarshal
+        - os.RemoveAll
+        - os.Remove
+        - os.MkdirAll
+        - (net/http.ResponseWriter).Write
+        - (*net/http.Server).Shutdown
+        - (*html/template.Template).Execute
+        - (*text/tabwriter.Writer).Flush
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+  exclusions:
+    generated: strict
+    rules:
+      # Test files: relax errcheck, errorlint
+      - path: _test\.go
+        linters:
+          - errcheck
+          - errorlint
+      # Generated code should not be linted strictly
+      - path: gen/
+        linters:
+          - errorlint
+      # Deprecated websocket library — migration is a separate concern
+      - linters:
+          - staticcheck
+        text: "SA1019:.*websocket"
+      # QF suggestions are informational, not errors
+      - linters:
+          - staticcheck
+        text: "QF1002:"
+      # CLI error strings intentionally use caps/newlines for UX
+      - path: internal/adapter/cli/
+        linters:
+          - staticcheck
+        text: "ST1005:"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/benbaldivia/crelay

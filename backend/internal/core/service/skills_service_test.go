@@ -8,22 +8,22 @@ import (
 // --- Test doubles ---
 
 type stubSkillsConfig struct {
-	repo         string
-	version      string
-	autoUpdate   *bool
-	skillsDir    string
-	saved        bool
-	saveErr      error
+	repo       string
+	version    string
+	autoUpdate *bool
+	skillsDir  string
+	saved      bool
+	saveErr    error
 }
 
-func (s *stubSkillsConfig) GetSkillsRepo() string           { return s.repo }
-func (s *stubSkillsConfig) SetSkillsRepo(repo string)       { s.repo = repo }
-func (s *stubSkillsConfig) GetSkillsVersion() string        { return s.version }
-func (s *stubSkillsConfig) SetSkillsVersion(v string)       { s.version = v }
-func (s *stubSkillsConfig) GetAutoUpdateSkills() *bool       { return s.autoUpdate }
-func (s *stubSkillsConfig) SetAutoUpdateSkills(v *bool)      { s.autoUpdate = v }
-func (s *stubSkillsConfig) GetSkillsDir() string             { return s.skillsDir }
-func (s *stubSkillsConfig) Save() error                      { s.saved = true; return s.saveErr }
+func (s *stubSkillsConfig) GetSkillsRepo() string       { return s.repo }
+func (s *stubSkillsConfig) SetSkillsRepo(repo string)   { s.repo = repo }
+func (s *stubSkillsConfig) GetSkillsVersion() string    { return s.version }
+func (s *stubSkillsConfig) SetSkillsVersion(v string)   { s.version = v }
+func (s *stubSkillsConfig) GetAutoUpdateSkills() *bool  { return s.autoUpdate }
+func (s *stubSkillsConfig) SetAutoUpdateSkills(v *bool) { s.autoUpdate = v }
+func (s *stubSkillsConfig) GetSkillsDir() string        { return s.skillsDir }
+func (s *stubSkillsConfig) Save() error                 { s.saved = true; return s.saveErr }
 
 type stubReleaseChecker struct {
 	release *SkillRelease

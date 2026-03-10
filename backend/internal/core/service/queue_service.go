@@ -118,7 +118,7 @@ func (q *QueueService) Start(ctx context.Context, projectSlug string) error {
 	q.mu.Unlock()
 
 	q.publishEvent("queue_started", map[string]any{
-		"project": q.projectSlug,
+		"project":     q.projectSlug,
 		"max_workers": q.maxWorkers,
 	})
 

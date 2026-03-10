@@ -9,8 +9,8 @@ import (
 
 // Release represents a GitHub release.
 type Release struct {
-	TagName    string `json:"tag_name"`
-	TarballURL string `json:"tarball_url"`
+	TagName     string `json:"tag_name"`
+	TarballURL  string `json:"tarball_url"`
 	PublishedAt string `json:"published_at"`
 }
 
@@ -48,7 +48,7 @@ func fetchRelease(client *http.Client, url string) (*Release, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch release: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("no releases found")

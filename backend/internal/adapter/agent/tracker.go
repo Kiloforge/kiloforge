@@ -13,13 +13,13 @@ const quotaFile = "quota-usage.json"
 
 // AgentUsage holds cumulative usage for a single agent.
 type AgentUsage struct {
-	AgentID      string  `json:"agent_id"`
-	TotalCostUSD float64 `json:"total_cost_usd"`
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
-	CacheReadTokens    int `json:"cache_read_tokens"`
-	CacheCreationTokens int `json:"cache_creation_tokens"`
-	ResultCount  int     `json:"result_count"`
+	AgentID             string  `json:"agent_id"`
+	TotalCostUSD        float64 `json:"total_cost_usd"`
+	InputTokens         int     `json:"input_tokens"`
+	OutputTokens        int     `json:"output_tokens"`
+	CacheReadTokens     int     `json:"cache_read_tokens"`
+	CacheCreationTokens int     `json:"cache_creation_tokens"`
+	ResultCount         int     `json:"result_count"`
 }
 
 // TotalUsage holds aggregate usage across all agents.
@@ -41,10 +41,10 @@ type quotaSnapshot struct {
 // QuotaTracker aggregates token usage and cost across multiple CC agents.
 // It is thread-safe for concurrent use.
 type QuotaTracker struct {
-	mu              sync.RWMutex
-	agents          map[string]*AgentUsage
-	rateLimitUntil  time.Time
-	dataDir         string
+	mu             sync.RWMutex
+	agents         map[string]*AgentUsage
+	rateLimitUntil time.Time
+	dataDir        string
 }
 
 // NewQuotaTracker creates a new tracker. If dataDir is empty, persistence is disabled.

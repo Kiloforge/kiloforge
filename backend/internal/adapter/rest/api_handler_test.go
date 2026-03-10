@@ -43,8 +43,8 @@ type stubAgentLister struct {
 	agents []domain.AgentInfo
 }
 
-func (s *stubAgentLister) Agents() []domain.AgentInfo     { return s.agents }
-func (s *stubAgentLister) Load() error                    { return nil }
+func (s *stubAgentLister) Agents() []domain.AgentInfo { return s.agents }
+func (s *stubAgentLister) Load() error                { return nil }
 func (s *stubAgentLister) FindAgent(id string) (*domain.AgentInfo, error) {
 	for i := range s.agents {
 		if s.agents[i].ID == id || len(id) <= len(s.agents[i].ID) && s.agents[i].ID[:len(id)] == id {
@@ -561,9 +561,9 @@ func TestGetTrace_WithSpans(t *testing.T) {
 
 func TestListTraces_NilStore(t *testing.T) {
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:  &stubAgentLister{},
-		Quota:   &stubQuotaReader{},
-		LockMgr: lock.New(""),
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
 		GiteaURL: "http://localhost:3000",
 	})
 	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
@@ -578,10 +578,10 @@ func TestListTraces_NilStore(t *testing.T) {
 
 // stubProjectManager implements ProjectManager for testing.
 type stubProjectManager struct {
-	addResult *domain.AddProjectResult
-	addErr    error
-	removeErr error
-	removedSlug   string
+	addResult      *domain.AddProjectResult
+	addErr         error
+	removeErr      error
+	removedSlug    string
 	removedCleanup bool
 }
 
@@ -802,10 +802,10 @@ type spyEventBus struct {
 	events []domain.Event
 }
 
-func (s *spyEventBus) Publish(event domain.Event)              { s.events = append(s.events, event) }
-func (s *spyEventBus) Subscribe() <-chan domain.Event           { return make(chan domain.Event) }
-func (s *spyEventBus) Unsubscribe(_ <-chan domain.Event)        {}
-func (s *spyEventBus) ClientCount() int                         { return 0 }
+func (s *spyEventBus) Publish(event domain.Event)        { s.events = append(s.events, event) }
+func (s *spyEventBus) Subscribe() <-chan domain.Event    { return make(chan domain.Event) }
+func (s *spyEventBus) Unsubscribe(_ <-chan domain.Event) {}
+func (s *spyEventBus) ClientCount() int                  { return 0 }
 
 func TestGetBoard_AutoSyncOnEmpty(t *testing.T) {
 	t.Parallel()

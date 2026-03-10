@@ -2,8 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"text/tabwriter"
 	"os"
+	"text/tabwriter"
 
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/pool"

@@ -9,9 +9,9 @@ func TestGenerateComposeFile_DefaultConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := ComposeConfig{
-		GiteaPort: 3000,
+		GiteaPort:        3000,
 		OrchestratorPort: 3001,
-		DataDir:   "/home/user/.kiloforge",
+		DataDir:          "/home/user/.kiloforge",
 	}
 
 	data, err := GenerateComposeFile(cfg)
@@ -49,9 +49,9 @@ func TestGenerateComposeFile_CustomPort(t *testing.T) {
 	t.Parallel()
 
 	cfg := ComposeConfig{
-		GiteaPort: 4000,
+		GiteaPort:        4000,
 		OrchestratorPort: 5000,
-		DataDir:   "/tmp/kiloforge",
+		DataDir:          "/tmp/kiloforge",
 	}
 
 	data, err := GenerateComposeFile(cfg)

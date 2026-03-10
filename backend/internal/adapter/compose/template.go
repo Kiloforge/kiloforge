@@ -8,9 +8,9 @@ import (
 
 // ComposeConfig holds the values used to render the docker-compose.yml template.
 type ComposeConfig struct {
-	GiteaPort int
+	GiteaPort        int
 	OrchestratorPort int
-	DataDir   string
+	DataDir          string
 }
 
 const composeTemplate = `services:

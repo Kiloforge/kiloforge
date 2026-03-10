@@ -11,14 +11,14 @@ type configSkillsAdapter struct {
 	cfg *config.Config
 }
 
-func (a *configSkillsAdapter) GetSkillsRepo() string           { return a.cfg.SkillsRepo }
-func (a *configSkillsAdapter) SetSkillsRepo(repo string)       { a.cfg.SkillsRepo = repo }
-func (a *configSkillsAdapter) GetSkillsVersion() string        { return a.cfg.SkillsVersion }
-func (a *configSkillsAdapter) SetSkillsVersion(v string)       { a.cfg.SkillsVersion = v }
-func (a *configSkillsAdapter) GetAutoUpdateSkills() *bool       { return a.cfg.AutoUpdateSkills }
-func (a *configSkillsAdapter) SetAutoUpdateSkills(v *bool)      { a.cfg.AutoUpdateSkills = v }
-func (a *configSkillsAdapter) GetSkillsDir() string             { return a.cfg.GetSkillsDir() }
-func (a *configSkillsAdapter) Save() error                      { return a.cfg.Save() }
+func (a *configSkillsAdapter) GetSkillsRepo() string       { return a.cfg.SkillsRepo }
+func (a *configSkillsAdapter) SetSkillsRepo(repo string)   { a.cfg.SkillsRepo = repo }
+func (a *configSkillsAdapter) GetSkillsVersion() string    { return a.cfg.SkillsVersion }
+func (a *configSkillsAdapter) SetSkillsVersion(v string)   { a.cfg.SkillsVersion = v }
+func (a *configSkillsAdapter) GetAutoUpdateSkills() *bool  { return a.cfg.AutoUpdateSkills }
+func (a *configSkillsAdapter) SetAutoUpdateSkills(v *bool) { a.cfg.AutoUpdateSkills = v }
+func (a *configSkillsAdapter) GetSkillsDir() string        { return a.cfg.GetSkillsDir() }
+func (a *configSkillsAdapter) Save() error                 { return a.cfg.Save() }
 
 // releaseCheckerAdapter wraps skills.GitHubClient to implement service.SkillsReleaseChecker.
 type releaseCheckerAdapter struct {

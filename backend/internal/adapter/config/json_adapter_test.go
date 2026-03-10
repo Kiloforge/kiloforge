@@ -122,7 +122,6 @@ func TestJSONAdapter_OldConfigWithPassword_LoadsGracefully(t *testing.T) {
 	}
 }
 
-
 func TestJSONAdapter_Save_StripsPassword(t *testing.T) {
 	t.Parallel()
 

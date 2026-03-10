@@ -52,7 +52,7 @@ func (inst *Installer) Install(tarballURL, destDir string) ([]InstalledSkill, er
 		tmpFile.Close()
 		return nil, fmt.Errorf("download tarball: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		tmpFile.Close()
@@ -144,7 +144,7 @@ func extractTarGz(tarPath, destDir string) error {
 	if err != nil {
 		return err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 
 	tr := tar.NewReader(gz)
 	for {

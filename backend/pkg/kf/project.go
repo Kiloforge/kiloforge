@@ -27,8 +27,8 @@ type ProjectInfo struct {
 	ProductGuidelines string       `json:"product_guidelines,omitempty"` // product-guidelines.md content
 	TechStack         string       `json:"tech_stack"`                   // tech-stack.md content
 	Workflow          string       `json:"workflow,omitempty"`           // workflow.md content
-	QuickLinks        []QuickLink  `json:"quick_links"`                 // Parsed quick-links.md
-	StyleGuides       []StyleGuide `json:"style_guides,omitempty"`      // code_styleguides/*.md
+	QuickLinks        []QuickLink  `json:"quick_links"`                  // Parsed quick-links.md
+	StyleGuides       []StyleGuide `json:"style_guides,omitempty"`       // code_styleguides/*.md
 }
 
 // TrackSummary holds aggregate statistics about track state.
@@ -107,12 +107,12 @@ func ReadStyleGuides(dir string) ([]StyleGuide, error) {
 
 // --- Client methods ---
 
-func (c *Client) quickLinksFile() string  { return filepath.Join(c.KFDir, "quick-links.md") }
-func (c *Client) styleGuidesDir() string  { return filepath.Join(c.KFDir, "code_styleguides") }
-func (c *Client) productFile() string     { return filepath.Join(c.KFDir, "product.md") }
-func (c *Client) guidelinesFile() string  { return filepath.Join(c.KFDir, "product-guidelines.md") }
-func (c *Client) techStackFile() string   { return filepath.Join(c.KFDir, "tech-stack.md") }
-func (c *Client) workflowFile() string    { return filepath.Join(c.KFDir, "workflow.md") }
+func (c *Client) quickLinksFile() string { return filepath.Join(c.KFDir, "quick-links.md") }
+func (c *Client) styleGuidesDir() string { return filepath.Join(c.KFDir, "code_styleguides") }
+func (c *Client) productFile() string    { return filepath.Join(c.KFDir, "product.md") }
+func (c *Client) guidelinesFile() string { return filepath.Join(c.KFDir, "product-guidelines.md") }
+func (c *Client) techStackFile() string  { return filepath.Join(c.KFDir, "tech-stack.md") }
+func (c *Client) workflowFile() string   { return filepath.Join(c.KFDir, "workflow.md") }
 
 // GetProjectInfo reads all project metadata files and returns a unified view.
 func (c *Client) GetProjectInfo() (*ProjectInfo, error) {

@@ -166,8 +166,8 @@ func TestSSEHub_TypedEventConstructors(t *testing.T) {
 	defer hub.Unsubscribe(ch)
 
 	tests := []struct {
-		name string
-		event domain.Event
+		name     string
+		event    domain.Event
 		wantType string
 	}{
 		{"agent_update", domain.NewAgentUpdateEvent(map[string]string{"id": "a1"}), domain.EventAgentUpdate},

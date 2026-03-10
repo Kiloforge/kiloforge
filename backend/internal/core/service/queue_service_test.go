@@ -206,9 +206,9 @@ func (m *mockEventBus) Publish(e domain.Event) {
 	m.events = append(m.events, e)
 }
 
-func (m *mockEventBus) Subscribe() <-chan domain.Event        { return make(chan domain.Event) }
-func (m *mockEventBus) Unsubscribe(_ <-chan domain.Event)     {}
-func (m *mockEventBus) ClientCount() int                      { return 0 }
+func (m *mockEventBus) Subscribe() <-chan domain.Event    { return make(chan domain.Event) }
+func (m *mockEventBus) Unsubscribe(_ <-chan domain.Event) {}
+func (m *mockEventBus) ClientCount() int                  { return 0 }
 
 func (m *mockEventBus) getEvents() []domain.Event {
 	m.mu.Lock()
@@ -386,13 +386,13 @@ func TestQueueService_Status(t *testing.T) {
 
 	store := newMockQueueStore()
 	svc := NewQueueService(QueueServiceOpts{
-		MaxWorkers: 3,
-		ProjectDir: "/tmp/test",
-		DataDir:    "/tmp/data",
-		Store:      store,
+		MaxWorkers:  3,
+		ProjectDir:  "/tmp/test",
+		DataDir:     "/tmp/data",
+		Store:       store,
 		TrackReader: &mockTrackReader{},
-		Spawner:    newMockSpawner(),
-		Pool:       newMockPool(3),
+		Spawner:     newMockSpawner(),
+		Pool:        newMockPool(3),
 	})
 
 	status, err := svc.Status()
@@ -414,13 +414,13 @@ func TestQueueService_SetMaxWorkers(t *testing.T) {
 	t.Parallel()
 
 	svc := NewQueueService(QueueServiceOpts{
-		MaxWorkers: 3,
-		ProjectDir: "/tmp/test",
-		DataDir:    "/tmp/data",
-		Store:      newMockQueueStore(),
+		MaxWorkers:  3,
+		ProjectDir:  "/tmp/test",
+		DataDir:     "/tmp/data",
+		Store:       newMockQueueStore(),
 		TrackReader: &mockTrackReader{},
-		Spawner:    newMockSpawner(),
-		Pool:       newMockPool(3),
+		Spawner:     newMockSpawner(),
+		Pool:        newMockPool(3),
 	})
 
 	if svc.MaxWorkers() != 3 {

@@ -98,7 +98,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
-	defer rt.Close()
+	defer func() { _ = rt.Close() }()
 
 	// Build a project service with the real Gitea client for add operations.
 	projectSvc := service.NewProjectService(

@@ -26,5 +26,5 @@ func (p *StoreProcessor) OnEnd(span sdktrace.ReadOnlySpan) {
 	}
 }
 
-func (p *StoreProcessor) Shutdown(_ context.Context) error { return nil }
+func (p *StoreProcessor) Shutdown(_ context.Context) error   { return nil }
 func (p *StoreProcessor) ForceFlush(_ context.Context) error { return nil }

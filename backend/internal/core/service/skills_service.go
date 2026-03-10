@@ -73,11 +73,11 @@ type SkillsVersionChecker interface {
 // SkillsService orchestrates skills configuration, update checking,
 // and installation workflows.
 type SkillsService struct {
-	config   SkillsConfigStore
-	checker  SkillsReleaseChecker
+	config    SkillsConfigStore
+	checker   SkillsReleaseChecker
 	installer SkillsInstaller
-	manifest SkillsManifestManager
-	version  SkillsVersionChecker
+	manifest  SkillsManifestManager
+	version   SkillsVersionChecker
 }
 
 // NewSkillsService creates a new SkillsService.

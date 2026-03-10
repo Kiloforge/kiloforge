@@ -12,7 +12,7 @@ type stubConsentStore struct {
 	recorded   bool
 }
 
-func (s *stubConsentStore) HasAgentPermissionsConsent() bool  { return s.hasConsent }
+func (s *stubConsentStore) HasAgentPermissionsConsent() bool { return s.hasConsent }
 func (s *stubConsentStore) RecordAgentPermissionsConsent() error {
 	s.recorded = true
 	s.hasConsent = true
