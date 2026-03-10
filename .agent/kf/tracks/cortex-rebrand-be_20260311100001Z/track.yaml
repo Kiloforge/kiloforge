@@ -1,9 +1,9 @@
 id: cortex-rebrand-be_20260311100001Z
-title: "Rebrand orchestrator to Cortex — CLI, API docs, config, and backend strings"
+title: Rebrand orchestrator to Cortex — CLI, API docs, config, and backend strings
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Rename all user-facing references to "orchestrator" in the backend to "Cortex".
@@ -45,32 +45,32 @@ spec:
     Naming convention: "Cortex" (capitalized) or "the Cortex" in prose.
     Example: "Kiloforge Cortex — the local control plane for your AI agent swarm"
 plan:
-  - phase: "CLI Branding"
+  - phase: CLI Branding
     tasks:
-      - text: "Update root.go CLI description: replace 'orchestration forge' with Cortex branding, update Long description"
-        done: false
-      - text: "Update serve.go help text to reference 'Cortex' instead of 'orchestrator'"
-        done: false
-      - text: "Search all CLI command files for user-facing 'orchestrat' strings and update"
-        done: false
-  - phase: "API & Config"
+      - text: Update root.go CLI description: replace 'orchestration forge' with Cortex branding, update Long description
+        done: true
+      - text: Update serve.go help text to reference 'Cortex' instead of 'orchestrator'
+        done: true
+      - text: Search all CLI command files for user-facing 'orchestrat' strings and update
+        done: true
+  - phase: API & Config
     tasks:
-      - text: "Update openapi.yaml title and description to reference Cortex"
-        done: false
-      - text: "Update any config file descriptions or comments that reference orchestrator in user-facing context"
-        done: false
-  - phase: "Documentation"
+      - text: Update openapi.yaml title and description to reference Cortex
+        done: true
+      - text: Update any config file descriptions or comments that reference orchestrator in user-facing context
+        done: true
+  - phase: Documentation
     tasks:
-      - text: "Update .agent/kf/product.md with Cortex and Command Deck terminology"
-        done: false
-      - text: "Update .agent/kf/product-guidelines.md with Cortex references"
-        done: false
-      - text: "Update README.md with Cortex branding"
-        done: false
-  - phase: "Verification"
+      - text: Update .agent/kf/product.md with Cortex and Command Deck terminology
+        done: true
+      - text: Update .agent/kf/product-guidelines.md with Cortex references
+        done: true
+      - text: Update README.md with Cortex branding
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Grep backend/ for remaining user-facing 'orchestrat' references (exclude internal code)"
-        done: false
-      - text: "Run make test to verify no breakage"
-        done: false
+      - text: Grep backend/ for remaining user-facing 'orchestrat' references (exclude internal code)
+        done: true
+      - text: Run make test to verify no breakage
+        done: true
 extra: {}

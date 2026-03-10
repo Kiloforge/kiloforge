@@ -36,7 +36,7 @@ cli-error-ux-be_20260310073722Z: {"title":"CLI error UX — actionable messages 
 cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 command-deck-fe_20260311100002Z: {"title":"Rebrand dashboard to Command Deck — frontend titles, headers, and UI strings","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 consent-dialog-copy_20260310060000Z: {"title":"Update consent dialog to reference 'Dangerously bypass permissions'","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-cortex-rebrand-be_20260311100001Z: {"title":"Rebrand orchestrator to Cortex — CLI, API docs, config, and backend strings","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+cortex-rebrand-be_20260311100001Z: {"title":"Rebrand orchestrator to Cortex — CLI, API docs, config, and backend strings","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 create-project-be_20260310150000Z: {"title":"Support creating projects without a remote URL","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 create-project-fe_20260310150001Z: {"title":"Add create-from-scratch mode to Add Project UI","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
