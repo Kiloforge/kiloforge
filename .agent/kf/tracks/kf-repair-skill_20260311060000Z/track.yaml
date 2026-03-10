@@ -15,7 +15,7 @@ spec:
     per-track track.yaml files, config.yaml, and worktree/branch state. These files are
     modified by multiple concurrent agents (architects, developers) across worktrees, and
     can drift out of sync due to merge conflicts, interrupted operations, or bugs in CLI tools.
-
+    
     Currently kf-validate is outdated (references legacy conductor paths) and only checks
     basic file existence. kf-reliability audits codebase quality, not KF system health.
     There is no skill dedicated to diagnosing and repairing KF system integrity.
@@ -28,7 +28,7 @@ spec:
     - Skills live at ~/.claude/skills/{name}/SKILL.md with YAML frontmatter
     - Existing kf-validate skill is stale (references .agent/conductor/ paths, uses
       legacy spec.md/plan.md/tracks.md patterns)
-
+    
     Key invariants the repair skill must verify:
     1. tracks.yaml entries parse as valid JSON with required fields
     2. Every pending/in-progress track has a directory with track.yaml
@@ -63,32 +63,32 @@ spec:
     7. Interactive mode: prompt user before applying repairs (unless --fix passed)
     8. Output a summary report to terminal (no file output needed — repairs are immediate)
 plan:
-  - phase: "Phase 1: Skill scaffolding and introduction"
+  - phase: Phase 1: Skill scaffolding and introduction
     tasks:
-      - text: "Create ~/.claude/skills/kf-repair/SKILL.md with YAML frontmatter (name, description, allowed-tools, metadata with argument-hint and model)"
-        done: false
-      - text: "Write the introduction section: skill purpose, 'Use this skill when' / 'Do not use this skill when', compaction anchor line"
-        done: false
-      - text: "Write the interactive greeting that explains the agent's purpose and available commands when invoked without arguments"
-        done: false
-  - phase: "Phase 2: Audit dimensions"
+      - text: Create ~/.claude/skills/kf-repair/SKILL.md with YAML frontmatter (name, description, allowed-tools, metadata with argument-hint and model)
+        done: true
+      - text: Write the introduction section: skill purpose, 'Use this skill when' / 'Do not use this skill when', compaction anchor line
+        done: true
+      - text: Write the interactive greeting that explains the agent's purpose and available commands when invoked without arguments
+        done: true
+  - phase: Phase 2: Audit dimensions
     tasks:
-      - text: "Write Dimension 1: Track Registry Integrity — validate tracks.yaml entries (JSON parsing, required fields, valid status values, no duplicates, alphabetical sorting)"
-        done: false
-      - text: "Write Dimension 2: Track Directory Consistency — every active track has track.yaml, no orphaned directories, status matches registry"
-        done: false
-      - text: "Write Dimension 3: Dependency Graph Integrity — deps.yaml references valid active tracks, no cycles, no stale completed/archived entries, alphabetical sorting"
-        done: false
-      - text: "Write Dimension 4: Conflict Pairs Integrity — conflicts.yaml pairs strictly ordered, both tracks active, valid JSON values, no stale pairs"
-        done: false
-      - text: "Write Dimension 5: Worktree and Branch State — list worktrees, match implementation branches to track IDs, detect orphaned branches, merge lock status, config.yaml validation"
-        done: false
-  - phase: "Phase 3: Repair procedures and summary"
+      - text: Write Dimension 1: Track Registry Integrity — validate tracks.yaml entries (JSON parsing, required fields, valid status values, no duplicates, alphabetical sorting)
+        done: true
+      - text: Write Dimension 2: Track Directory Consistency — every active track has track.yaml, no orphaned directories, status matches registry
+        done: true
+      - text: Write Dimension 3: Dependency Graph Integrity — deps.yaml references valid active tracks, no cycles, no stale completed/archived entries, alphabetical sorting
+        done: true
+      - text: Write Dimension 4: Conflict Pairs Integrity — conflicts.yaml pairs strictly ordered, both tracks active, valid JSON values, no stale pairs
+        done: true
+      - text: Write Dimension 5: Worktree and Branch State — list worktrees, match implementation branches to track IDs, detect orphaned branches, merge lock status, config.yaml validation
+        done: true
+  - phase: Phase 3: Repair procedures and summary
     tasks:
-      - text: "Write repair procedures for each dimension: safe auto-fixes (prune stale deps/conflicts, re-sort files, release stale locks) and escalation rules (when to generate tracks via /kf-architect)"
-        done: false
-      - text: "Write the summary output format (dimension table with PASS/WARN/FAIL counts, critical findings, repairs applied) and flags reference (--full, --registry, --deps, --conflicts, --worktrees, --fix)"
-        done: false
-      - text: "Register the skill in Claude Code settings so it appears in the available skills list"
-        done: false
+      - text: Write repair procedures for each dimension: safe auto-fixes (prune stale deps/conflicts, re-sort files, release stale locks) and escalation rules (when to generate tracks via /kf-architect)
+        done: true
+      - text: Write the summary output format (dimension table with PASS/WARN/FAIL counts, critical findings, repairs applied) and flags reference (--full, --registry, --deps, --conflicts, --worktrees, --fix)
+        done: true
+      - text: Register the skill in Claude Code settings so it appears in the available skills list
+        done: true
 extra: {}
