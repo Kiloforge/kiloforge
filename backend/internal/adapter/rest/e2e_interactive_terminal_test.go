@@ -40,9 +40,7 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -76,7 +74,7 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 		LockMgr:    lockMgr,
 		Projects:   reg,
 		ProjectMgr: projectMgr,
-		GiteaURL:   cfg.GiteaURL(),
+		GiteaURL:   "",
 		WSSessions: wsSessions,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)

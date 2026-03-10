@@ -32,11 +32,9 @@ func (s *ConfigStore) Load() (*config.Config, error) {
 	return &cfg, nil
 }
 
-// Save writes config to SQLite. Sensitive fields are stripped.
+// Save writes config to SQLite.
 func (s *ConfigStore) Save(cfg *config.Config) error {
-	safe := *cfg
-	safe.GiteaAdminPass = ""
-	data, err := json.Marshal(&safe)
+	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}

@@ -50,7 +50,7 @@ func NewCLIRuntimeFromConfig(cfg *config.Config) (*CLIRuntime, error) {
 		Cfg:      cfg,
 		DB:       db,
 		Agents:   service.NewAgentService(agentStore, projectStore, prTrackingStore),
-		Projects: service.NewProjectService(projectStore, nil, service.ProjectServiceConfig{DataDir: cfg.DataDir}),
+		Projects: service.NewProjectService(projectStore, service.ProjectServiceConfig{DataDir: cfg.DataDir}),
 		Board:    service.NewNativeBoardService(boardStore),
 		Quota:    tracker,
 	}, nil

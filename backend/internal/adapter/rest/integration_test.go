@@ -31,9 +31,7 @@ func startTestServer(t *testing.T) *testServer {
 
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -63,7 +61,7 @@ func startTestServer(t *testing.T) *testServer {
 		Agents:   store,
 		LockMgr:  lockMgr,
 		Projects: reg,
-		GiteaURL: cfg.GiteaURL(),
+		GiteaURL: "",
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

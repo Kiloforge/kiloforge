@@ -17,7 +17,6 @@ import (
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/rest/gen"
-	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
 	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"

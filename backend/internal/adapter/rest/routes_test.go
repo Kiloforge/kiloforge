@@ -22,8 +22,6 @@ func buildMux(t *testing.T, srv *Server, dash *dashboard.Server) *http.ServeMux 
 	t.Helper()
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /webhook", srv.handleWebhook)
-
 	lockMgr := lock.New(t.TempDir())
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
@@ -57,9 +55,7 @@ func TestRouteRegistration(t *testing.T) {
 
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -104,9 +100,7 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -116,7 +110,7 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
 	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 0)
-	dash := dashboard.New(0, &stubAgentLister{}, nil, "http://localhost:3000", &stubProjectLister{}, nil)
+	dash := dashboard.New(0, &stubAgentLister{}, nil, "/", &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)
 
@@ -126,73 +120,6 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 	mux.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("GET /health: got %d, want 200", rec.Code)
-	}
-}
-
-// TestRouteRegistrationWithGiteaProxy verifies that all routes register
-// without conflict when the Gitea catch-all proxy is mounted at "/".
-// This is the production configuration that previously caused a panic.
-func TestRouteRegistrationWithGiteaProxy(t *testing.T) {
-	t.Parallel()
-
-	dir := t.TempDir()
-	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
-	}
-	db, err := sqlite.Open(dir)
-	if err != nil {
-		t.Fatalf("open test db: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-	reg := sqlite.NewProjectStore(db)
-	store := sqlite.NewAgentStore(db)
-	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 0)
-	dash := dashboard.New(0, &stubAgentLister{}, nil, "http://localhost:3000", &stubProjectLister{}, nil)
-
-	mux := buildMux(t, srv, dash)
-
-	// Mount Gitea proxy at /gitea/ — same as production Server.Run().
-	fakeGitea := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("gitea"))
-	}))
-	t.Cleanup(fakeGitea.Close)
-
-	mux.Handle("/gitea/", http.StripPrefix("/gitea", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("gitea-proxy"))
-	})))
-
-	// kf routes must still work — Gitea is at /gitea/ not catch-all.
-	kfRoutes := []struct {
-		path string
-		want int
-	}{
-		{"/health", http.StatusOK},
-		{"/api/agents", http.StatusOK},
-		{"/api/locks", http.StatusOK},
-		{"/api/badges/track/test", http.StatusOK},
-	}
-	for _, tt := range kfRoutes {
-		req := httptest.NewRequest("GET", tt.path, nil)
-		rec := httptest.NewRecorder()
-		mux.ServeHTTP(rec, req)
-		if rec.Code != tt.want {
-			t.Errorf("GET %s: got %d, want %d", tt.path, rec.Code, tt.want)
-		}
-	}
-
-	// Gitea paths under /gitea/ should route to the proxy.
-	giteaPaths := []string{"/gitea/assets/css/theme.css", "/gitea/user/login"}
-	for _, path := range giteaPaths {
-		req := httptest.NewRequest("GET", path, nil)
-		rec := httptest.NewRecorder()
-		mux.ServeHTTP(rec, req)
-		if rec.Body.String() != "gitea-proxy" {
-			t.Errorf("GET %s: expected gitea proxy, got %q", path, rec.Body.String())
-		}
 	}
 }
 

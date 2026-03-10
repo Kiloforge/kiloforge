@@ -49,9 +49,7 @@ func startE2EServer(t *testing.T) *e2eServer {
 
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -85,7 +83,7 @@ func startE2EServer(t *testing.T) *e2eServer {
 		LockMgr:    lockMgr,
 		Projects:   reg,
 		ProjectMgr: projectMgr,
-		GiteaURL:   cfg.GiteaURL(),
+		GiteaURL:   "",
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
@@ -148,9 +146,7 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 	mockBin := buildMockAgentBinary(t)
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -183,7 +179,7 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 		LockMgr:      lockMgr,
 		Projects:     reg,
 		ProjectMgr:   projectMgr,
-		GiteaURL:     cfg.GiteaURL(),
+		GiteaURL:     "",
 		AgentRemover: store, // Wire up remover for delete tests.
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
@@ -243,9 +239,7 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 	mockBin := buildMockAgentBinary(t)
 	dir := t.TempDir()
 	cfg := &config.Config{
-		GiteaPort:      3000,
-		DataDir:        dir,
-		GiteaAdminUser: "kiloforger",
+		DataDir: dir,
 	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
@@ -280,7 +274,7 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 		LockMgr:     lockMgr,
 		Projects:    reg,
 		ProjectMgr:  projectMgr,
-		GiteaURL:    cfg.GiteaURL(),
+		GiteaURL:    "",
 		BoardSvc:    boardSvc,
 		TrackReader: e2eTrackReader{},
 	})
