@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, QuotaResponse, Track, Project, SyncStatus } from "../types/api";
+import type { Agent, QuotaResponse, Track, Project, SyncStatus, QueueStatus, QueueSettings } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
@@ -11,6 +11,7 @@ import { TrackList } from "../components/TrackList";
 import { TraceList } from "../components/TraceList";
 import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
+import { QueuePanel } from "../components/QueuePanel";
 import { useTourContextSafe } from "../components/tour/TourProvider";
 import { TOUR_STEPS } from "../components/tour/tourSteps";
 import { useTraces } from "../hooks/useTraces";
@@ -26,6 +27,14 @@ interface OverviewPageProps {
   onAttach?: (agentId: string) => void;
   onSpawnInteractive?: () => void;
   spawningInteractive?: boolean;
+  queue?: QueueStatus | null;
+  queueLoading?: boolean;
+  queueStarting?: boolean;
+  queueStopping?: boolean;
+  queueUpdatingSettings?: boolean;
+  onQueueStart?: () => void;
+  onQueueStop?: () => void;
+  onQueueUpdateSettings?: (settings: QueueSettings) => void;
 }
 
 function trackCountsByStatus(tracks: Track[], slug: string) {
@@ -104,7 +113,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
   const tour = useTourContextSafe();
@@ -226,6 +235,20 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
             ))}
           </div>
         )}
+      </section>
+
+      <section className={appStyles.panel}>
+        <h2 className={appStyles.panelTitle}>Work Queue</h2>
+        <QueuePanel
+          queue={queue ?? null}
+          loading={queueLoading ?? false}
+          starting={queueStarting ?? false}
+          stopping={queueStopping ?? false}
+          updatingSettings={queueUpdatingSettings ?? false}
+          onStart={onQueueStart ?? (() => {})}
+          onStop={onQueueStop ?? (() => {})}
+          onUpdateSettings={onQueueUpdateSettings ?? (() => {})}
+        />
       </section>
 
       <section className={appStyles.panel}>
