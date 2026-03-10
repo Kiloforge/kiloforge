@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+remove-inreview-column-fe_20260310153824Z/responsive-kanban-fe_20260311220002Z: {"risk":"medium","note":"Both touch KanbanBoard.tsx — remove column should complete before responsive work","added":"2026-03-10"}

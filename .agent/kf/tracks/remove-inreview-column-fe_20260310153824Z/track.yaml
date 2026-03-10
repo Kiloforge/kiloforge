@@ -1,0 +1,64 @@
+id: remove-inreview-column-fe_20260310153824Z
+title: "Remove in_review kanban column from frontend"
+type: refactor
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: >
+    Remove the in_review column from the frontend kanban board UI, tour data,
+    and all frontend tests/E2E specs. Depends on BE track completing first.
+  context: |
+    The backend is removing the in_review column (4-column board: backlog,
+    approved, in_progress, done). The frontend must match — remove in_review
+    from KanbanBoard config, tour demo data, ProjectPage defaults, and all
+    test fixtures.
+  codebase_analysis: |
+    Files to modify:
+    - frontend/src/components/KanbanBoard.tsx — remove in_review from
+      COLUMN_LABELS and COLUMN_COLORS objects
+    - frontend/src/pages/ProjectPage.tsx — update default board columns
+    - frontend/src/components/tour/tourDemoData.ts — remove in_review from
+      DEMO_BOARD.columns
+    - frontend/src/components/tour/tourSteps.ts — update description text
+    - frontend/src/components/KanbanBoard.test.tsx — remove in_review from
+      test fixtures, remove "In Review" assertion, update column count 5→4
+    - frontend/src/pages/ProjectPage.test.tsx — update mock board columns
+    - frontend/e2e/kanban-board.spec.ts — update column count, labels, and
+      move test logic
+  acceptance_criteria:
+    - KanbanBoard renders 4 columns (no "In Review")
+    - Tour description updated to omit review step
+    - All frontend unit tests pass
+    - E2E kanban board test passes with 4 columns
+  out_of_scope: |
+    - Backend changes (separate BE track, must complete first)
+    - Any new column additions
+  technical_notes: |
+    Straightforward removal of string literals and config entries. No logic
+    changes needed — the board renders whatever columns the API returns, so
+    removing from defaults and test fixtures is sufficient.
+plan:
+  - phase: "Component Updates"
+    tasks:
+      - text: "Remove in_review from COLUMN_LABELS and COLUMN_COLORS in KanbanBoard.tsx"
+        done: false
+      - text: "Update default board columns in ProjectPage.tsx"
+        done: false
+      - text: "Remove in_review from tour demo data and update tour step text"
+        done: false
+  - phase: "Test Updates"
+    tasks:
+      - text: "Update KanbanBoard.test.tsx: remove in_review from fixtures, update assertions"
+        done: false
+      - text: "Update ProjectPage.test.tsx mock board columns"
+        done: false
+      - text: "Update e2e/kanban-board.spec.ts: column count, labels, move logic"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run npm test to verify all frontend unit tests pass"
+        done: false
+      - text: "Run make lint to verify no lint errors"
+        done: false
+extra: {}

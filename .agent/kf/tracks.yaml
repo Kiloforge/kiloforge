@@ -219,6 +219,8 @@ release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitH
 reliability-advisor-skill_20260310001315Z: {"title":"Reliability advisor skill — automated testing, linting, and static analysis guidance agent","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 reliability-metrics-be_20260310093038Z: {"title":"Agent reliability metrics — backend collection, storage, and API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 reliability-metrics-fe_20260310093039Z: {"title":"Agent reliability metrics — frontend dashboard and historical visualization","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+remove-inreview-column-be_20260310153823Z: {"title":"Remove in_review kanban column from backend","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+remove-inreview-column-fe_20260310153824Z: {"title":"Remove in_review kanban column from frontend","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 replace-tracing-be_20260310144200Z: {"title":"Add reliability events and trace spans for agent replacement lifecycle","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
