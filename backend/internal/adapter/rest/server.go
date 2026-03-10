@@ -236,6 +236,22 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 	timeoutReaper.Start(ctx)
 
+	// Wire idle-disconnect auto-suspension for interactive agents.
+	if s.wsSessions != nil && s.cfg != nil {
+		graceSec := s.cfg.GetIdleSuspendSeconds()
+		if graceSec > 0 {
+			if suspender, ok := s.interSpawner.(agent.AgentSuspender); ok {
+				cs := agent.NewConnectionSuspender(suspender, s.store, time.Duration(graceSec)*time.Second)
+				if s.dashboard != nil {
+					cs.SetEventBus(s.dashboard.EventBus())
+				}
+				s.wsSessions.SetOnDisconnect(cs.OnAgentDisconnected)
+				s.wsSessions.SetOnReconnect(cs.OnAgentReconnected)
+				defer cs.Stop()
+			}
+		}
+	}
+
 	// Wire generated OpenAPI routes (health, agents, quota, tracks, status, locks).
 	var sseClients func() int
 	if s.dashboard != nil {

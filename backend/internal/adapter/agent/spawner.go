@@ -634,6 +634,44 @@ func (s *Spawner) StopAgent(id string) error {
 	return nil
 }
 
+// SuspendAgent suspends a running interactive agent due to idle disconnect.
+// Similar to StopAgent but marks status as "suspended" with reason "idle_disconnect".
+func (s *Spawner) SuspendAgent(id string) error {
+	s.activeMu.Lock()
+	ia, ok := s.activeAgents[id]
+	if ok {
+		delete(s.activeAgents, id)
+	}
+	s.activeMu.Unlock()
+
+	if !ok {
+		return fmt.Errorf("agent not running: %s", id)
+	}
+
+	s.publishCapacityChanged()
+
+	// Cancel relay goroutine and close SDK session.
+	ia.CancelRelay()
+	ia.sdkSession.Close()
+
+	// Update store.
+	now := time.Now()
+	if uerr := s.store.UpdateStatus(id, string(domain.AgentStatusSuspended)); uerr != nil {
+		fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)
+	}
+	agent, err := s.store.FindAgent(id)
+	if err == nil {
+		agent.ShutdownReason = "idle_disconnect"
+		agent.SuspendedAt = &now
+		if uerr := s.store.AddAgent(*agent); uerr != nil { // upsert
+			fmt.Fprintf(os.Stderr, "warning: add agent: %v\n", uerr)
+		}
+	}
+	_ = s.store.Save()
+
+	return nil
+}
+
 // ResumeDeveloper resumes a suspended developer/reviewer agent as a one-shot
 // process (no WS bridge). Returns the updated AgentInfo.
 func (s *Spawner) ResumeDeveloper(ctx context.Context, id string) (*domain.AgentInfo, error) {
