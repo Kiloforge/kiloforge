@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 
 	"kiloforge/internal/adapter/config"
+	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -21,9 +23,16 @@ The name is used as the project slug and repo name.
 
 Examples:
   kf create my-project
-  kf create my-api`,
+  kf create my-api
+  kf create my-api --output ~/projects/my-api`,
 	Args: cobra.ExactArgs(1),
 	RunE: runCreate,
+}
+
+var flagCreateOutput string
+
+func init() {
+	createCmd.Flags().StringVar(&flagCreateOutput, "output", "", "Directory for the browseable mirror clone (defaults to ~/.kiloforge/output/{name}/)")
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
@@ -59,8 +68,36 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Resolve --output path.
+	var outputDir string
+	if flagCreateOutput != "" {
+		outputDir, err = expandPath(flagCreateOutput)
+		if err != nil {
+			return fmt.Errorf("resolve output path: %w", err)
+		}
+		outputDir, err = filepath.Abs(outputDir)
+		if err != nil {
+			return fmt.Errorf("resolve output path: %w", err)
+		}
+		if info, statErr := os.Stat(outputDir); statErr == nil {
+			if !info.IsDir() {
+				return fmt.Errorf("--output path exists but is not a directory: %s", outputDir)
+			}
+			entries, _ := os.ReadDir(outputDir)
+			if len(entries) > 0 {
+				if _, gitErr := os.Stat(filepath.Join(outputDir, ".git")); gitErr != nil {
+					return fmt.Errorf("--output path exists and is not a git repo: %s", outputDir)
+				}
+			}
+		}
+	}
+
 	fmt.Printf("==> Creating project %q...\n", name)
-	result, err := projectSvc.CreateProject(context.Background(), name)
+	var opts []domain.AddProjectOpts
+	if outputDir != "" {
+		opts = append(opts, domain.AddProjectOpts{OutputDir: outputDir})
+	}
+	result, err := projectSvc.CreateProject(context.Background(), name, opts...)
 	if err != nil {
 		return fmt.Errorf("create project: %w", err)
 	}
@@ -68,7 +105,8 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	p := result.Project
 	fmt.Println()
 	fmt.Printf("Project '%s' created!\n", p.Slug)
-	fmt.Printf("  Path:  %s\n", p.ProjectDir)
+	fmt.Printf("  Path:   %s\n", p.ProjectDir)
+	fmt.Printf("  Mirror: %s\n", p.MirrorDir)
 	fmt.Println()
 
 	// Install embedded skills locally into the project.

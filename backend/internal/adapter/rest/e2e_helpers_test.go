@@ -481,7 +481,7 @@ func (m *e2eProjectManager) AddProject(_ context.Context, remoteURL, name string
 	return &domain.AddProjectResult{Project: p}, nil
 }
 
-func (m *e2eProjectManager) CreateProject(_ context.Context, name string) (*domain.AddProjectResult, error) {
+func (m *e2eProjectManager) CreateProject(_ context.Context, name string, _ ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

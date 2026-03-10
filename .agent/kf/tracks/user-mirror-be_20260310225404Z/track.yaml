@@ -115,11 +115,11 @@ plan:
   - phase: CLI flags
     tasks:
       - text: Add --output flag to addCmd, pass to AddProjectOpts.OutputDir
-        done: false
+        done: true
       - text: Add --output flag to createCmd, pass to AddProjectOpts.OutputDir
-        done: false
+        done: true
       - text: Add mirror path to "kf projects" CLI output
-        done: false
+        done: true
   - phase: API and schema
     tasks:
       - text: Add mirror_dir to OpenAPI Project schema and output_dir to AddProjectRequest

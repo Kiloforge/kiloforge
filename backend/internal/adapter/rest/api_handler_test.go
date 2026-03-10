@@ -707,7 +707,7 @@ func (m *stubProjectManager) AddProject(_ context.Context, remoteURL, name strin
 	return m.addResult, nil
 }
 
-func (m *stubProjectManager) CreateProject(_ context.Context, name string) (*domain.AddProjectResult, error) {
+func (m *stubProjectManager) CreateProject(_ context.Context, name string, _ ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
 	if m.createErr != nil {
 		return nil, m.createErr
 	}

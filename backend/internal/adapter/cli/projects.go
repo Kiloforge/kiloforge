@@ -30,7 +30,7 @@ func runProjects(cmd *cobra.Command, args []string) error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "SLUG\tPATH\tORIGIN\tSSH KEY\tREGISTERED\tACTIVE")
+	fmt.Fprintln(w, "SLUG\tPATH\tMIRROR\tORIGIN\tSSH KEY\tREGISTERED\tACTIVE")
 	for _, p := range projects {
 		active := "yes"
 		if !p.Active {
@@ -44,8 +44,12 @@ func runProjects(cmd *cobra.Command, args []string) error {
 		if p.SSHKeyPath != "" {
 			sshKey = p.SSHKeyPath
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
-			p.Slug, p.ProjectDir, origin, sshKey,
+		mirror := p.MirrorDir
+		if mirror == "" {
+			mirror = "(none)"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			p.Slug, p.ProjectDir, mirror, origin, sshKey,
 			p.RegisteredAt.Format("2006-01-02"), active)
 	}
 	w.Flush()

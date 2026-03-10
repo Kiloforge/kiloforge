@@ -54,7 +54,7 @@ type ProjectLister interface {
 // ProjectManager handles project add/remove operations.
 type ProjectManager interface {
 	AddProject(ctx context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
-	CreateProject(ctx context.Context, name string) (*domain.AddProjectResult, error)
+	CreateProject(ctx context.Context, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
 	SyncMirror(ctx context.Context, slug string) error
 }

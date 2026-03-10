@@ -36,11 +36,13 @@ Examples:
 var (
 	flagAddName   string
 	flagAddSSHKey string
+	flagAddOutput string
 )
 
 func init() {
 	addCmd.Flags().StringVar(&flagAddName, "name", "", "Project slug (defaults to repo name from URL)")
 	addCmd.Flags().StringVar(&flagAddSSHKey, "ssh-key", "", "Path to SSH private key for this project's git operations")
+	addCmd.Flags().StringVar(&flagAddOutput, "output", "", "Directory for the browseable mirror clone (defaults to ~/.kiloforge/output/{slug}/)")
 }
 
 func runAdd(cmd *cobra.Command, args []string) error {
@@ -107,9 +109,36 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Resolve --output path.
+	var outputDir string
+	if flagAddOutput != "" {
+		outputDir, err = expandPath(flagAddOutput)
+		if err != nil {
+			return fmt.Errorf("resolve output path: %w", err)
+		}
+		outputDir, err = filepath.Abs(outputDir)
+		if err != nil {
+			return fmt.Errorf("resolve output path: %w", err)
+		}
+		// If path exists, it must be either a git repo or an empty directory.
+		if info, statErr := os.Stat(outputDir); statErr == nil {
+			if !info.IsDir() {
+				return fmt.Errorf("--output path exists but is not a directory: %s", outputDir)
+			}
+			entries, _ := os.ReadDir(outputDir)
+			if len(entries) > 0 {
+				// Non-empty — must be a git repo.
+				if _, gitErr := os.Stat(filepath.Join(outputDir, ".git")); gitErr != nil {
+					return fmt.Errorf("--output path exists and is not a git repo: %s", outputDir)
+				}
+			}
+		}
+	}
+
 	fmt.Printf("==> Adding project %q from %s...\n", slug, remoteURL)
 	result, err := projectSvc.AddProject(ctx, remoteURL, flagAddName, domain.AddProjectOpts{
 		SSHKeyPath: sshKeyPath,
+		OutputDir:  outputDir,
 	})
 	if err != nil {
 		return fmt.Errorf("add project: %w", err)
@@ -123,6 +152,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Printf("Project '%s' registered!\n", p.Slug)
 	fmt.Printf("  Path:   %s\n", p.ProjectDir)
+	fmt.Printf("  Mirror: %s\n", p.MirrorDir)
 	fmt.Printf("  Origin: %s\n", p.OriginRemote)
 	fmt.Println()
 
