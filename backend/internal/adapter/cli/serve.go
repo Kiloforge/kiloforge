@@ -128,6 +128,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	reliabilitySvc := service.NewReliabilityService(reliabilityStore, nil)
 	opts = append(opts, rest.WithReliability(reliabilitySvc))
 
+	// Wire database health pinger for /health endpoint.
+	opts = append(opts, rest.WithHealthPinger(db))
+
 	// Wire analytics tracker into server for API-level events.
 	opts = append(opts, rest.WithAnalytics(tracker))
 

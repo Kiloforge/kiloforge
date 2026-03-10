@@ -104,6 +104,32 @@ func TestGetHealth(t *testing.T) {
 	}
 }
 
+type failingPinger struct{}
+
+func (failingPinger) Ping() error { return fmt.Errorf("connection refused") }
+
+func TestGetHealth_DatabaseDown(t *testing.T) {
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		Projects:     &stubProjectLister{projects: []domain.Project{{Slug: "p1"}}},
+		SSEClients:   func() int { return 0 },
+		HealthPinger: failingPinger{},
+	})
+	resp, err := h.GetHealth(context.Background(), gen.GetHealthRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetHealth200JSONResponse)
+	if !ok {
+		t.Fatalf("unexpected response type: %T", resp)
+	}
+	if r.Status != "degraded" {
+		t.Errorf("expected status degraded when DB is down, got %s", r.Status)
+	}
+}
+
 func TestListAgents(t *testing.T) {
 	agents := []domain.AgentInfo{
 		{ID: "agent-1", Role: "developer", Status: "running", StartedAt: time.Now()},

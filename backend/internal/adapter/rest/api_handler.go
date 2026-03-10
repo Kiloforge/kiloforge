@@ -90,6 +90,11 @@ type ConsentChecker interface {
 	RecordAgentPermissionsConsent() error
 }
 
+// HealthPinger checks subsystem health. *sql.DB satisfies this interface.
+type HealthPinger interface {
+	Ping() error
+}
+
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
@@ -113,6 +118,7 @@ type APIHandler struct {
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
+	healthPinger   HealthPinger
 
 	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -140,6 +146,7 @@ type APIHandlerOpts struct {
 	QueueSvc       QueueServicer
 	Analytics      port.AnalyticsTracker
 	ReliabilitySvc *service.ReliabilityService
+	HealthPinger   HealthPinger
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -165,6 +172,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		queueSvc:       opts.QueueSvc,
 		analytics:      opts.Analytics,
 		reliabilitySvc: opts.ReliabilitySvc,
+		healthPinger:   opts.HealthPinger,
 	}
 }
 
@@ -177,8 +185,15 @@ func (h *APIHandler) GetHealth(_ context.Context, _ gen.GetHealthRequestObject) 
 	if h.projects != nil {
 		projectCount = len(h.projects.List())
 	}
+	status := "ok"
+	if h.healthPinger != nil {
+		if err := h.healthPinger.Ping(); err != nil {
+			slog.Error("health check: database ping failed", "error", err)
+			status = "degraded"
+		}
+	}
 	return gen.GetHealth200JSONResponse{
-		Status:   "ok",
+		Status:   status,
 		Projects: projectCount,
 	}, nil
 }

@@ -113,6 +113,13 @@ func WithReliability(svc *service.ReliabilityService) ServerOption {
 	}
 }
 
+// WithHealthPinger enables database health checking in the /health endpoint.
+func WithHealthPinger(p HealthPinger) ServerOption {
+	return func(s *Server) {
+		s.healthPinger = p
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -143,6 +150,7 @@ type Server struct {
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
+	healthPinger   HealthPinger
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -264,6 +272,7 @@ func (s *Server) Run(ctx context.Context) error {
 		QueueSvc:       s.queueSvc,
 		Analytics:      s.analytics,
 		ReliabilitySvc: s.reliabilitySvc,
+		HealthPinger:   s.healthPinger,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
