@@ -8,7 +8,9 @@ type EventHandlers = Record<string, (data: unknown) => void>;
 export function useSSE(url: string, handlers: EventHandlers): ConnectionState {
   const [state, setState] = useState<ConnectionState>("disconnected");
   const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
+  useEffect(() => {
+    handlersRef.current = handlers;
+  }, [handlers]);
   const esRef = useRef<EventSource | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasConnectedRef = useRef(false);
@@ -48,8 +50,8 @@ export function useSSE(url: string, handlers: EventHandlers): ConnectionState {
           try {
             const parsed: unknown = JSON.parse(e.data as string);
             handlersRef.current[eventType]?.(parsed);
-          } catch {
-            // ignore malformed events
+          } catch (err) {
+            console.warn("[SSE] Failed to parse event:", eventType, err);
           }
         });
       }

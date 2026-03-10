@@ -56,11 +56,16 @@ export function AgentDetailPage() {
 
   // Fetch log data (keep as raw fetch — streaming log is not cache-friendly)
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLogLoading(false);
+      return;
+    }
+    let cancelled = false;
     setLogLoading(true);
     fetch(`/api/agents/${encodeURIComponent(id)}/log?lines=200`)
       .then((r) => r.json())
       .then((data: LogResponse) => {
+        if (cancelled) return;
         setLogLines(data.lines || []);
         setLogLoading(false);
         requestAnimationFrame(() => {
@@ -68,9 +73,11 @@ export function AgentDetailPage() {
         });
       })
       .catch(() => {
+        if (cancelled) return;
         setLogLines(["Failed to load log."]);
         setLogLoading(false);
       });
+    return () => { cancelled = true; };
   }, [id]);
 
   // Follow mode

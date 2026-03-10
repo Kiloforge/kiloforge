@@ -54,15 +54,15 @@ plan:
   - phase: Hook fixes
     tasks:
       - text: Fix useSSE.ts — move ref mutation into useEffect
-        done: false
+        done: true
       - text: Fix App.tsx — resolve setState-in-effect for setWaitingForCapacity
-        done: false
+        done: true
       - text: Fix AgentDetailPage.tsx — resolve setState-in-effect for setLogLoading
-        done: false
+        done: true
       - text: Fix useAgentWebSocket.ts — resolve forward reference to connect
-        done: false
+        done: true
       - text: Replace silent catch blocks with console.warn in SSE/WebSocket hooks
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run npm test — all existing + new tests pass

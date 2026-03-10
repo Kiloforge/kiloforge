@@ -54,7 +54,6 @@ export default function App() {
   const wm = useWindowManager();
   const [showLauncher, setShowLauncher] = useState(false);
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
-  const [waitingCapacity, setWaitingCapacity] = useState<SwarmCapacity | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -141,9 +140,7 @@ export default function App() {
       } else if (err instanceof FetchError && err.status === 412) {
         skillsPrompt.requestInstall(() => spawnMutation.mutate(lastSpawnReq));
       } else if (err instanceof FetchError && err.status === 429) {
-        const cap = err.body as SwarmCapacity | undefined;
         setWaitingForCapacity(true);
-        setWaitingCapacity(cap ?? null);
       }
     },
   });
@@ -174,16 +171,11 @@ export default function App() {
     }
   }, [waitingForCapacity, capacity, lastSpawnReq, spawnMutation]);
 
-  // Update displayed capacity while waiting
-  useEffect(() => {
-    if (waitingForCapacity && capacity) {
-      setWaitingCapacity(capacity);
-    }
-  }, [waitingForCapacity, capacity]);
+  // Derive displayed capacity from live data when waiting
+  const waitingCapacity = waitingForCapacity ? (capacity ?? null) : null;
 
   const handleCancelWaiting = useCallback(() => {
     setWaitingForCapacity(false);
-    setWaitingCapacity(null);
     setShowLauncher(false);
   }, []);
 

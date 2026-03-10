@@ -49,9 +49,14 @@ export function useAgentWebSocket(agentId: string | null) {
   const [messages, setMessages] = useState<WSMessage[]>([]);
   const [status, setStatus] = useState<WSConnectionState>("disconnected");
   const [agentStatus, setAgentStatus] = useState<string | null>(null);
+  const agentStatusRef = useRef(agentStatus);
   const wsRef = useRef<WebSocket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryDelayRef = useRef(1000);
+
+  useEffect(() => {
+    agentStatusRef.current = agentStatus;
+  }, [agentStatus]);
 
   const connect = useCallback(() => {
     if (!agentId) return;
@@ -150,14 +155,14 @@ export function useAgentWebSocket(agentId: string | null) {
             setMessages((prev) => [...prev, { type: "error", text: msg.message ?? "Unknown error", timestamp: now }]);
             break;
         }
-      } catch {
-        // ignore malformed messages
+      } catch (err) {
+        console.warn("[WebSocket] Failed to parse message:", err);
       }
     };
 
     ws.onclose = () => {
       wsRef.current = null;
-      if (agentStatus === "completed" || agentStatus === "failed") {
+      if (agentStatusRef.current === "completed" || agentStatusRef.current === "failed") {
         setStatus("disconnected");
         return;
       }
@@ -170,7 +175,7 @@ export function useAgentWebSocket(agentId: string | null) {
     ws.onerror = () => {
       // onclose will fire after onerror
     };
-  }, [agentId, agentStatus]);
+  }, [agentId]);
 
   useEffect(() => {
     if (!agentId) return;
@@ -185,7 +190,7 @@ export function useAgentWebSocket(agentId: string | null) {
       wsRef.current = null;
       setStatus("disconnected");
     };
-  }, [agentId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [agentId, connect]);
 
   const sendMessage = useCallback(
     (text: string) => {
