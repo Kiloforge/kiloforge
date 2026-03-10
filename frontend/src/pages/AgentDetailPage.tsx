@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useQuery } from "@tanstack/react-query";
 import type { Agent, LogResponse } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
@@ -33,6 +34,7 @@ export function AgentDetailPage() {
 
   const { tracks } = useTracks();
   const { stop, resume, del } = useAgentActions();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: agent, error: agentError } = useQuery({
     queryKey: queryKeys.agent(id ?? ""),
@@ -159,19 +161,24 @@ export function AgentDetailPage() {
         {canDelete(agent) && (
           <button
             className={`${styles.actionBtn} ${styles.actionDanger}`}
-            onClick={() => {
-              if (window.confirm(`Delete agent "${agent.name || agent.id}"?`)) {
-                del.mutate(agent.id, {
-                  onSuccess: () => navigate("/"),
-                });
-              }
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={del.isPending}
           >
             {del.isPending ? "Deleting..." : "Delete"}
           </button>
         )}
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Agent"
+          message={`Are you sure you want to delete "${agent.name || agent.id}"?`}
+          confirmLabel="Delete"
+          confirming={del.isPending}
+          onConfirm={() => del.mutate(agent.id, { onSuccess: () => navigate("/") })}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
 
       <div className={styles.metaGrid}>
         <div className={styles.metaItem}>

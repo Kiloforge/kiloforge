@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
 import { useTracks } from "../hooks/useTracks";
 import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "./StatusBadge";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import styles from "./AgentCard.module.css";
 
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export function AgentCard({ agent, onViewLog, onAttach }: Props) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const refLink = agent.ref || null;
   const { tracks } = useTracks();
   const { stop, resume, del } = useAgentActions();
@@ -101,17 +104,23 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
         {canDelete(agent) && (
           <button
             className={`${styles.btn} ${styles.btnDanger}`}
-            onClick={() => {
-              if (window.confirm(`Delete agent "${agent.name || agent.id}"?`)) {
-                del.mutate(agent.id);
-              }
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={del.isPending}
           >
             {del.isPending ? "Deleting..." : "Delete"}
           </button>
         )}
       </div>
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Agent"
+          message={`Are you sure you want to delete "${agent.name || agent.id}"?`}
+          confirmLabel="Delete"
+          confirming={del.isPending}
+          onConfirm={() => del.mutate(agent.id)}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import type { Agent } from "../types/api";
 import { useAgents } from "../hooks/useAgents";
 import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
@@ -100,6 +101,7 @@ function formatRelativeTime(iso: string): string {
 
 function AgentRow({ agent }: { agent: Agent }) {
   const { stop, resume, del } = useAgentActions();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
     <tr className={styles.row}>
@@ -140,15 +142,21 @@ function AgentRow({ agent }: { agent: Agent }) {
         {canDelete(agent) && (
           <button
             className={`${styles.rowBtn} ${styles.rowBtnDanger}`}
-            onClick={() => {
-              if (window.confirm(`Delete agent "${agent.name || agent.id}"?`)) {
-                del.mutate(agent.id);
-              }
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={del.isPending}
           >
             Delete
           </button>
+        )}
+        {showDeleteConfirm && (
+          <ConfirmDialog
+            title="Delete Agent"
+            message={`Are you sure you want to delete "${agent.name || agent.id}"?`}
+            confirmLabel="Delete"
+            confirming={del.isPending}
+            onConfirm={() => del.mutate(agent.id)}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
         )}
       </td>
     </tr>
