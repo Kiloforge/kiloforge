@@ -61,6 +61,7 @@ function setup(overrides: Partial<ReturnType<typeof useAgentWebSocket>> = {}, pr
   const defaultWs = {
     messages: [],
     sendMessage: vi.fn(),
+    sendInterrupt: vi.fn(),
     clearMessages: vi.fn(),
     status: "connected" as const,
     agentStatus: "running",
