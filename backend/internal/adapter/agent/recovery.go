@@ -7,7 +7,6 @@ import (
 
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
-	"kiloforge/internal/core/service"
 )
 
 // ProcessStarter abstracts launching a claude --resume process.
@@ -38,9 +37,9 @@ type RecoveryFailure struct {
 
 // RecoveryManager handles auto-recovery of suspended agents on startup.
 type RecoveryManager struct {
-	store          port.AgentStore
-	starter        ProcessStarter
-	reliabilitySvc *service.ReliabilityService
+	store       port.AgentStore
+	starter     ProcessStarter
+	reliability port.ReliabilityRecorder
 }
 
 // NewRecoveryManager creates a RecoveryManager.
@@ -48,9 +47,9 @@ func NewRecoveryManager(store port.AgentStore, starter ProcessStarter) *Recovery
 	return &RecoveryManager{store: store, starter: starter}
 }
 
-// SetReliabilityService sets the reliability service for recording resume failure events.
-func (rm *RecoveryManager) SetReliabilityService(svc *service.ReliabilityService) {
-	rm.reliabilitySvc = svc
+// SetReliabilityRecorder sets the reliability event recorder.
+func (rm *RecoveryManager) SetReliabilityRecorder(r port.ReliabilityRecorder) {
+	rm.reliability = r
 }
 
 // RecoverAll attempts to resume all suspended agents. Also detects stale
@@ -89,7 +88,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 				ag.ResumeError = "no session ID"
 			}
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "no session ID"})
-			rm.recordResumeFailure(a.ID, a.Ref, "no session ID")
+			rm.recordResumeFail(a.ID, a.Role, "no session ID")
 			continue
 		}
 
@@ -101,7 +100,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 					ag.ResumeError = "worktree missing"
 				}
 				result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "worktree missing"})
-				rm.recordResumeFailure(a.ID, a.Ref, "worktree missing")
+				rm.recordResumeFail(a.ID, a.Role, "worktree missing")
 				continue
 			}
 		}
@@ -114,7 +113,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 				ag.ResumeError = errMsg
 			}
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: errMsg})
-			rm.recordResumeFailure(a.ID, a.Ref, errMsg)
+			rm.recordResumeFail(a.ID, a.Role, errMsg)
 			continue
 		}
 
@@ -132,11 +131,13 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 	return result
 }
 
-func (rm *RecoveryManager) recordResumeFailure(agentID, ref, reason string) {
-	if rm.reliabilitySvc != nil {
-		_ = rm.reliabilitySvc.RecordEvent(domain.RelEvtAgentResumeFail, domain.SeverityError, agentID, ref, map[string]any{
-			"reason": reason,
-		})
+func (rm *RecoveryManager) recordResumeFail(agentID, role, reason string) {
+	if rm.reliability != nil {
+		_ = rm.reliability.RecordEvent(
+			domain.RelEventAgentResumeFail, domain.SeverityError,
+			agentID, role,
+			map[string]any{"reason": reason},
+		)
 	}
 }
 

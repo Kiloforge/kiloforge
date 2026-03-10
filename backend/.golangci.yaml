@@ -5,10 +5,13 @@ run:
 
 linters:
   enable:
+    - bodyclose
     - errcheck
     - errorlint
+    - gosec
     - govet
     - ineffassign
+    - misspell
     - staticcheck
     - unused
   settings:
@@ -42,11 +45,12 @@ linters:
   exclusions:
     generated: strict
     rules:
-      # Test files: relax errcheck, errorlint
+      # Test files: relax errcheck, errorlint, gosec
       - path: _test\.go
         linters:
           - errcheck
           - errorlint
+          - gosec
       # Generated code should not be linted strictly
       - path: gen/
         linters:

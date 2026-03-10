@@ -32,6 +32,22 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
+backend-resilience-be_20260311120003Z: []
+
+command-deck-fe_20260311100002Z: []
+
+cortex-rebrand-be_20260311100001Z:
+  - gitea-dead-code-be_20260311120001Z
+  - gitea-dead-code-be_20260311120001Z
+  - gitea-removal-be_20260311070000Z
+
+frontend-bundle-opt-fe_20260311120006Z:
+  - frontend-stability-fe_20260311120002Z
+
+frontend-stability-fe_20260311120002Z: []
+
+gitea-dead-code-be_20260311120001Z: []
+
 gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
@@ -39,7 +55,11 @@ github-repo-migration_20260311080001Z:
 
 onboarding-ux-fe_20260310073721Z: []
 
-quota-gauges-be_20260310092417Z: []
+test-coverage-be_20260311120004Z:
+  - backend-resilience-be_20260311120003Z
 
 quota-gauges-fe_20260310092418Z:
   - quota-gauges-be_20260310092417Z
+
+test-coverage-fe_20260311120005Z:
+  - frontend-stability-fe_20260311120002Z

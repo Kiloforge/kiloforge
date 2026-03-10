@@ -2,74 +2,79 @@ package domain
 
 import "time"
 
-// ReliabilityEventType categorizes reliability events.
-type ReliabilityEventType string
-
+// Reliability event type constants.
 const (
-	RelEvtLockContention    ReliabilityEventType = "lock_contention"
-	RelEvtLockTimeout       ReliabilityEventType = "lock_timeout"
-	RelEvtAgentTimeout      ReliabilityEventType = "agent_timeout"
-	RelEvtAgentSpawnFailure ReliabilityEventType = "agent_spawn_failure"
-	RelEvtAgentResumeFail   ReliabilityEventType = "agent_resume_failure"
-	RelEvtMergeConflict     ReliabilityEventType = "merge_conflict"
-	RelEvtQuotaExceeded     ReliabilityEventType = "quota_exceeded"
+	RelEventLockContention    = "lock_contention"
+	RelEventLockTimeout       = "lock_timeout"
+	RelEventAgentTimeout      = "agent_timeout"
+	RelEventAgentSpawnFailure = "agent_spawn_failure"
+	RelEventAgentResumeFail   = "agent_resume_failure"
+	RelEventMergeConflict     = "merge_conflict"
+	RelEventQuotaExceeded     = "quota_exceeded"
 )
 
-// ValidReliabilityEventTypes lists all recognised event types.
-var ValidReliabilityEventTypes = map[ReliabilityEventType]bool{
-	RelEvtLockContention:    true,
-	RelEvtLockTimeout:       true,
-	RelEvtAgentTimeout:      true,
-	RelEvtAgentSpawnFailure: true,
-	RelEvtAgentResumeFail:   true,
-	RelEvtMergeConflict:     true,
-	RelEvtQuotaExceeded:     true,
-}
-
-// Severity levels for reliability events.
-type Severity string
-
+// Reliability severity constants.
 const (
-	SeverityWarn     Severity = "warn"
-	SeverityError    Severity = "error"
-	SeverityCritical Severity = "critical"
+	SeverityWarn     = "warn"
+	SeverityError    = "error"
+	SeverityCritical = "critical"
 )
 
-// ValidSeverities lists all recognised severity levels.
-var ValidSeverities = map[Severity]bool{
-	SeverityWarn:     true,
-	SeverityError:    true,
-	SeverityCritical: true,
-}
-
-// ReliabilityEvent records a single reliability incident.
+// ReliabilityEvent represents a recorded reliability incident.
 type ReliabilityEvent struct {
-	ID        string               `json:"id"`
-	EventType ReliabilityEventType `json:"event_type"`
-	Severity  Severity             `json:"severity"`
-	AgentID   string               `json:"agent_id,omitempty"`
-	Scope     string               `json:"scope,omitempty"`
-	Detail    map[string]any       `json:"detail,omitempty"`
-	CreatedAt time.Time            `json:"created_at"`
+	ID        string         `json:"id"`
+	EventType string         `json:"event_type"`
+	Severity  string         `json:"severity"`
+	AgentID   string         `json:"agent_id,omitempty"`
+	Scope     string         `json:"scope,omitempty"`
+	Detail    map[string]any `json:"detail,omitempty"`
+	CreatedAt time.Time      `json:"created_at"`
 }
 
-// ReliabilityFilter defines query filters for listing reliability events.
+// ReliabilityFilter holds filter parameters for querying reliability events.
 type ReliabilityFilter struct {
-	EventTypes []ReliabilityEventType
-	Severities []Severity
-	AgentID    string
+	EventTypes []string
+	Severities []string
 	Since      *time.Time
 	Until      *time.Time
 }
 
-// ReliabilityBucket holds aggregated counts for a single time bucket.
-type ReliabilityBucket struct {
-	Timestamp time.Time      `json:"timestamp"`
-	Counts    map[string]int `json:"counts"`
+// ReliabilitySummary holds aggregated counts for a time window.
+type ReliabilitySummary struct {
+	Window         string              `json:"window"`
+	BucketDuration string              `json:"bucket_duration"`
+	Buckets        []ReliabilityBucket `json:"buckets"`
+	Totals         ReliabilityTotals   `json:"totals"`
 }
 
-// ReliabilitySummary contains bucketed and total aggregations.
-type ReliabilitySummary struct {
-	Buckets []ReliabilityBucket `json:"buckets"`
-	Totals  map[string]int      `json:"totals"`
+// ReliabilityBucket holds event counts for a single time bucket.
+type ReliabilityBucket struct {
+	Start  time.Time      `json:"start"`
+	End    time.Time      `json:"end"`
+	Counts map[string]int `json:"counts"`
+}
+
+// ReliabilityTotals holds total event counts across the entire window.
+type ReliabilityTotals struct {
+	Total      int            `json:"total"`
+	ByType     map[string]int `json:"by_type"`
+	BySeverity map[string]int `json:"by_severity"`
+}
+
+// ValidReliabilityEventTypes returns all valid event type values.
+func ValidReliabilityEventTypes() []string {
+	return []string{
+		RelEventLockContention,
+		RelEventLockTimeout,
+		RelEventAgentTimeout,
+		RelEventAgentSpawnFailure,
+		RelEventAgentResumeFail,
+		RelEventMergeConflict,
+		RelEventQuotaExceeded,
+	}
+}
+
+// ValidSeverities returns all valid severity values.
+func ValidSeverities() []string {
+	return []string{SeverityWarn, SeverityError, SeverityCritical}
 }

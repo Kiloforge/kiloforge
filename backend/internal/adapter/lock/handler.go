@@ -5,16 +5,25 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/port"
 )
 
 // Handler provides HTTP endpoints for the lock service.
 type Handler struct {
-	mgr *Manager
+	mgr         *Manager
+	reliability port.ReliabilityRecorder
 }
 
 // NewHandler creates a lock HTTP handler.
 func NewHandler(mgr *Manager) *Handler {
 	return &Handler{mgr: mgr}
+}
+
+// SetReliabilityRecorder sets the reliability event recorder.
+func (h *Handler) SetReliabilityRecorder(r port.ReliabilityRecorder) {
+	h.reliability = r
 }
 
 // RegisterRoutes adds lock endpoints to the given mux.
@@ -123,6 +132,19 @@ func (h *Handler) handleAcquire(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+
+		// Record lock contention reliability event.
+		if h.reliability != nil {
+			_ = h.reliability.RecordEvent(
+				domain.RelEventLockContention, domain.SeverityWarn,
+				"", scope,
+				map[string]any{
+					"requester":      req.Holder,
+					"current_holder": currentHolder,
+				},
+			)
+		}
+
 		writeJSON(w, http.StatusConflict, errorResponse{
 			Error:         "timeout waiting for lock",
 			CurrentHolder: currentHolder,

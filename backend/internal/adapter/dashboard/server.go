@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/agent"
-	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
@@ -46,7 +45,7 @@ type Server struct {
 	eventBus    port.EventBus
 	traceStore  tracing.TraceReader
 	trackReader port.TrackReader
-	cfg         *config.Config
+	budgetUSD   float64
 	mux         *http.ServeMux
 }
 
@@ -141,9 +140,9 @@ func (s *Server) SetTrackReader(reader port.TrackReader) {
 	s.trackReader = reader
 }
 
-// SetConfig sets the config reference for budget/rate SSE fields.
-func (s *Server) SetConfig(cfg *config.Config) {
-	s.cfg = cfg
+// SetBudgetUSD sets the budget limit for quota gauge display.
+func (s *Server) SetBudgetUSD(budget float64) {
+	s.budgetUSD = budget
 }
 
 func (s *Server) routes() {

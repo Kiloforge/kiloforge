@@ -33,7 +33,7 @@ var defaultTracer port.Tracer = port.NoopTracer{}
 type ServerOption func(*Server)
 
 // WithDashboard enables dashboard routes on the unified server.
-func WithDashboard(agents dashboard.AgentLister, quota dashboard.QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
+func WithDashboard(agents dashboard.AgentLister, quota QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
 	return func(s *Server) {
 		hub := dashboard.NewSSEHub()
 		d := dashboard.New(0, agents, quota, giteaURL, projects, hub)
@@ -105,10 +105,10 @@ func WithAnalytics(t port.AnalyticsTracker) ServerOption {
 	}
 }
 
-// WithReliabilityStore enables reliability event tracking.
-func WithReliabilityStore(store port.ReliabilityStore) ServerOption {
+// WithReliability enables the reliability metrics service.
+func WithReliability(svc *service.ReliabilityService) ServerOption {
 	return func(s *Server) {
-		s.reliabilityStore = store
+		s.reliabilitySvc = svc
 	}
 }
 
@@ -121,27 +121,27 @@ func WithTracer(t port.Tracer) ServerOption {
 
 // Server handles the orchestrator REST API.
 type Server struct {
-	cfg              *config.Config
-	registry         port.ProjectStore
-	store            port.AgentStore
-	prTracker        port.PRTrackingStore
-	spawner          port.AgentSpawner
-	prService        *service.PRService
-	logger           *log.Logger
-	port             int
-	dashboard        *dashboard.Server
-	quotaReader      QuotaReader
-	_projects        dashboard.ProjectLister
-	traceStore       tracing.TraceReader
-	boardSvc         port.BoardService
-	tracer           port.Tracer
-	interSpawner     InteractiveSpawner
-	wsSessions       *wsAdapter.SessionManager
-	consent          ConsentChecker
-	tourStore        *sqlite.TourStore
-	queueSvc         QueueServicer
-	analytics        port.AnalyticsTracker
-	reliabilityStore port.ReliabilityStore
+	cfg          *config.Config
+	registry     port.ProjectStore
+	store        port.AgentStore
+	prTracker    port.PRTrackingStore
+	spawner      port.AgentSpawner
+	prService    *service.PRService
+	logger       *log.Logger
+	port         int
+	dashboard    *dashboard.Server
+	quotaReader  QuotaReader
+	_projects    dashboard.ProjectLister
+	traceStore   tracing.TraceReader
+	boardSvc     port.BoardService
+	tracer       port.Tracer
+	interSpawner InteractiveSpawner
+	wsSessions   *wsAdapter.SessionManager
+	consent      ConsentChecker
+	tourStore    *sqlite.TourStore
+	queueSvc       QueueServicer
+	analytics      port.AnalyticsTracker
+	reliabilitySvc *service.ReliabilityService
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -160,6 +160,9 @@ func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentS
 	}
 	for _, opt := range opts {
 		opt(s)
+	}
+	if s.dashboard != nil && cfg != nil {
+		s.dashboard.SetBudgetUSD(cfg.BudgetUSD)
 	}
 	return s
 }
@@ -219,10 +222,8 @@ func (s *Server) Run(ctx context.Context) error {
 		eventBusForReaper = s.dashboard.EventBus()
 	}
 	timeoutReaper := agent.NewTimeoutReaper(s.store, s.cfg, eventBusForReaper)
-	if s.reliabilityStore != nil {
-		// Create a reliability service for the reaper (uses same store, event bus may be nil at this point).
-		reaperRelSvc := service.NewReliabilityService(s.reliabilityStore, eventBusForReaper)
-		timeoutReaper.SetReliabilityService(reaperRelSvc)
+	if s.reliabilitySvc != nil {
+		timeoutReaper.SetReliabilityRecorder(s.reliabilitySvc)
 	}
 	timeoutReaper.Start(ctx)
 
@@ -240,34 +241,28 @@ func (s *Server) Run(ctx context.Context) error {
 		OrchestratorPort: s.cfg.OrchestratorPort,
 	})
 
-	// Reliability service — optional, depends on store being configured.
-	var reliabilitySvc *service.ReliabilityService
-	if s.reliabilityStore != nil {
-		reliabilitySvc = service.NewReliabilityService(s.reliabilityStore, eventBus)
-	}
-
 	gitSync := gitadapter.New()
 	apiHandler := NewAPIHandler(APIHandlerOpts{
-		Agents:         s.store,
-		Quota:          s.quotaReader,
-		LockMgr:        lockMgr,
-		Projects:       s._projects,
-		ProjectMgr:     projectSvc,
-		GitSync:        gitSync,
-		DiffProvider:   gitSync,
-		TraceStore:     s.traceStore,
-		BoardSvc:       s.boardSvc,
-		TrackReader:    service.NewTrackReader(),
-		EventBus:       eventBus,
-		SSEClients:     sseClients,
-		Cfg:            s.cfg,
-		InterSpawner:   s.interSpawner,
-		WSSessions:     s.wsSessions,
-		Consent:        s.consent,
-		AgentRemover:   s.store,
+		Agents:       s.store,
+		Quota:        s.quotaReader,
+		LockMgr:      lockMgr,
+		Projects:     s._projects,
+		ProjectMgr:   projectSvc,
+		GitSync:      gitSync,
+		DiffProvider: gitSync,
+		TraceStore:   s.traceStore,
+		BoardSvc:     s.boardSvc,
+		TrackReader:  service.NewTrackReader(),
+		EventBus:     eventBus,
+		SSEClients:   sseClients,
+		Cfg:          s.cfg,
+		InterSpawner: s.interSpawner,
+		WSSessions:   s.wsSessions,
+		Consent:      s.consent,
+		AgentRemover: s.store,
 		QueueSvc:       s.queueSvc,
 		Analytics:      s.analytics,
-		ReliabilitySvc: reliabilitySvc,
+		ReliabilitySvc: s.reliabilitySvc,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
@@ -295,9 +290,6 @@ func (s *Server) Run(ctx context.Context) error {
 	if s.dashboard != nil {
 		if s.traceStore != nil {
 			s.dashboard.SetTraceStore(s.traceStore)
-		}
-		if s.cfg != nil {
-			s.dashboard.SetConfig(s.cfg)
 		}
 		s.dashboard.RegisterNonAPIRoutes(mux)
 		s.dashboard.StartWatcher(ctx)

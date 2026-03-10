@@ -1,17 +1,20 @@
 id: quota-gauges-be_20260310092417Z
-title: Quota gauges backend — budget config, rate tracking, and time-windowed metrics
+title: "Quota gauges backend — budget config, rate tracking, and time-windowed metrics"
 type: feature
-status: pending
-created: 2026-03-10
-updated: 2026-03-10
+status: completed
+created: "2026-03-10"
+updated: "2026-03-10"
 spec:
-  summary: ">"
+  summary: >
+    Add configurable spend budget, compute token/cost consumption rate over
+    sliding time windows, and expose new fields via the existing /api/quota
+    endpoint and SSE events.
   context: |
     The current quota system tracks cumulative tokens and cost but lacks:
     - A configurable budget/spend limit to compare against
     - Rate-of-consumption metrics (tokens/min, cost/hour)
     - Projected time-to-budget-exhaustion
-    
+
     The user wants gauge-style visualizations on the frontend, which require
     the backend to provide budget limits and rate data. This track adds the
     backend plumbing; the frontend track (quota-gauges-fe) consumes it.
@@ -63,28 +66,28 @@ spec:
     5. Update watcher.go to detect rate/budget changes and broadcast.
     6. time_to_budget = (budget - spent) / rate_cost_per_hour * 60 minutes.
 plan:
-  - phase: Rate Tracking Core
+  - phase: "Rate Tracking Core"
     tasks:
-      - text: Add RateSnapshot type and ring buffer to QuotaTracker with append-on-RecordEvent
+      - text: "Add RateSnapshot type and ring buffer to QuotaTracker with append-on-RecordEvent"
         done: true
-      - text: Implement rate computation methods: TokensPerMin(window) and CostPerHour(window)
+      - text: "Implement rate computation methods: TokensPerMin(window) and CostPerHour(window)"
         done: true
-      - text: Write unit tests for ring buffer append, window filtering, and rate math
+      - text: "Write unit tests for ring buffer append, window filtering, and rate math"
         done: true
-  - phase: Budget Config & API
+  - phase: "Budget Config & API"
     tasks:
-      - text: Add budget_usd field to config.Config with default 0, wire through Resolve()
+      - text: "Add budget_usd field to config.Config with default 0, wire through Resolve()"
         done: true
-      - text: Extend OpenAPI QuotaInfo schema with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins and regenerate
+      - text: "Extend OpenAPI QuotaInfo schema with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins and regenerate"
         done: true
-      - text: Update GetQuota handler to populate new fields from QuotaTracker and config
+      - text: "Update GetQuota handler to populate new fields from QuotaTracker and config"
         done: true
-      - text: Write integration tests for /api/quota with and without budget set
+      - text: "Write integration tests for /api/quota with and without budget set"
         done: true
-  - phase: SSE & Verification
+  - phase: "SSE & Verification"
     tasks:
-      - text: Update watcher.go quotaResponse() and change detection to include rate and budget fields
+      - text: "Update watcher.go quotaResponse() and change detection to include rate and budget fields"
         done: true
-      - text: Run make test and make build to verify all tests pass and no regressions
+      - text: "Run make test and make build to verify all tests pass and no regressions"
         done: true
 extra: {}

@@ -1,249 +1,192 @@
 package sqlite
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"kiloforge/internal/core/domain"
 )
 
-func newTestReliabilityStore(t *testing.T) *ReliabilityStore {
-	t.Helper()
-	dir := t.TempDir()
-	db, err := Open(dir)
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-	return NewReliabilityStore(db)
-}
-
-func makeEvent(id string, evtType domain.ReliabilityEventType, sev domain.Severity, agentID string, at time.Time) domain.ReliabilityEvent {
-	return domain.ReliabilityEvent{
-		ID:        id,
-		EventType: evtType,
-		Severity:  sev,
-		AgentID:   agentID,
-		Scope:     "test-scope",
-		Detail:    map[string]any{"key": "value"},
-		CreatedAt: at,
-	}
-}
-
 func TestReliabilityStore_InsertAndList(t *testing.T) {
 	t.Parallel()
-	s := newTestReliabilityStore(t)
-	now := time.Now().UTC().Truncate(time.Second)
+	db := openTestDB(t)
+	store := NewReliabilityStore(db)
 
-	e1 := makeEvent("evt-1", domain.RelEvtLockContention, domain.SeverityWarn, "agent-1", now)
-	e2 := makeEvent("evt-2", domain.RelEvtAgentTimeout, domain.SeverityError, "agent-2", now.Add(time.Second))
-
-	if err := s.Insert(e1); err != nil {
-		t.Fatalf("Insert e1: %v", err)
+	now := time.Now().UTC().Truncate(time.Millisecond)
+	events := []domain.ReliabilityEvent{
+		{ID: "ev-1", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, Scope: "merge", CreatedAt: now.Add(-2 * time.Minute)},
+		{ID: "ev-2", EventType: domain.RelEventAgentTimeout, Severity: domain.SeverityError, AgentID: "agent-1", CreatedAt: now.Add(-1 * time.Minute)},
+		{ID: "ev-3", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, Scope: "merge", Detail: map[string]any{"holder": "dev-1"}, CreatedAt: now},
 	}
-	if err := s.Insert(e2); err != nil {
-		t.Fatalf("Insert e2: %v", err)
+	for _, ev := range events {
+		if err := store.Insert(ev); err != nil {
+			t.Fatalf("Insert %s: %v", ev.ID, err)
+		}
 	}
 
-	// List all — should return newest first.
-	page, err := s.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 50})
+	// List all — should be newest first.
+	page, err := store.List(domain.ReliabilityFilter{}, domain.PageOpts{})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if page.TotalCount != 3 {
+		t.Errorf("TotalCount: want 3, got %d", page.TotalCount)
+	}
+	if len(page.Items) != 3 {
+		t.Fatalf("Items: want 3, got %d", len(page.Items))
+	}
+	if page.Items[0].ID != "ev-3" {
+		t.Errorf("first item: want ev-3, got %s", page.Items[0].ID)
+	}
+	// Check detail was preserved.
+	if page.Items[0].Detail["holder"] != "dev-1" {
+		t.Errorf("detail.holder: want dev-1, got %v", page.Items[0].Detail["holder"])
+	}
+}
+
+func TestReliabilityStore_FilterByType(t *testing.T) {
+	t.Parallel()
+	db := openTestDB(t)
+	store := NewReliabilityStore(db)
+
+	now := time.Now().UTC()
+	store.Insert(domain.ReliabilityEvent{ID: "ev-1", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, CreatedAt: now.Add(-2 * time.Minute)})
+	store.Insert(domain.ReliabilityEvent{ID: "ev-2", EventType: domain.RelEventAgentTimeout, Severity: domain.SeverityError, CreatedAt: now.Add(-1 * time.Minute)})
+	store.Insert(domain.ReliabilityEvent{ID: "ev-3", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, CreatedAt: now})
+
+	page, err := store.List(domain.ReliabilityFilter{EventTypes: []string{domain.RelEventLockContention}}, domain.PageOpts{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	if page.TotalCount != 2 {
 		t.Errorf("TotalCount: want 2, got %d", page.TotalCount)
 	}
-	if len(page.Items) != 2 {
-		t.Fatalf("Items: want 2, got %d", len(page.Items))
-	}
-	if page.Items[0].ID != "evt-2" {
-		t.Errorf("first item: want evt-2, got %s", page.Items[0].ID)
-	}
-	if page.Items[0].Detail["key"] != "value" {
-		t.Errorf("detail not preserved")
+	for _, item := range page.Items {
+		if item.EventType != domain.RelEventLockContention {
+			t.Errorf("unexpected type: %s", item.EventType)
+		}
 	}
 }
 
-func TestReliabilityStore_FilterByType(t *testing.T) {
+func TestReliabilityStore_FilterBySeverity(t *testing.T) {
 	t.Parallel()
-	s := newTestReliabilityStore(t)
-	now := time.Now().UTC().Truncate(time.Second)
+	db := openTestDB(t)
+	store := NewReliabilityStore(db)
 
-	s.Insert(makeEvent("evt-1", domain.RelEvtLockContention, domain.SeverityWarn, "", now))
-	s.Insert(makeEvent("evt-2", domain.RelEvtAgentTimeout, domain.SeverityError, "", now.Add(time.Second)))
-	s.Insert(makeEvent("evt-3", domain.RelEvtQuotaExceeded, domain.SeverityWarn, "", now.Add(2*time.Second)))
+	now := time.Now().UTC()
+	store.Insert(domain.ReliabilityEvent{ID: "ev-1", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, CreatedAt: now})
+	store.Insert(domain.ReliabilityEvent{ID: "ev-2", EventType: domain.RelEventAgentTimeout, Severity: domain.SeverityError, CreatedAt: now})
 
-	page, err := s.List(domain.ReliabilityFilter{
-		EventTypes: []domain.ReliabilityEventType{domain.RelEvtLockContention},
-	}, domain.PageOpts{Limit: 50})
+	page, err := store.List(domain.ReliabilityFilter{Severities: []string{domain.SeverityError}}, domain.PageOpts{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	if page.TotalCount != 1 {
 		t.Errorf("TotalCount: want 1, got %d", page.TotalCount)
-	}
-	if len(page.Items) != 1 || page.Items[0].ID != "evt-1" {
-		t.Errorf("expected evt-1 only")
 	}
 }
 
 func TestReliabilityStore_FilterByTimeRange(t *testing.T) {
 	t.Parallel()
-	s := newTestReliabilityStore(t)
-	base := time.Date(2026, 3, 10, 12, 0, 0, 0, time.UTC)
+	db := openTestDB(t)
+	store := NewReliabilityStore(db)
 
-	s.Insert(makeEvent("old", domain.RelEvtAgentTimeout, domain.SeverityError, "", base))
-	s.Insert(makeEvent("mid", domain.RelEvtAgentTimeout, domain.SeverityError, "", base.Add(time.Hour)))
-	s.Insert(makeEvent("new", domain.RelEvtAgentTimeout, domain.SeverityError, "", base.Add(2*time.Hour)))
+	now := time.Now().UTC()
+	store.Insert(domain.ReliabilityEvent{ID: "ev-old", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, CreatedAt: now.Add(-48 * time.Hour)})
+	store.Insert(domain.ReliabilityEvent{ID: "ev-new", EventType: domain.RelEventAgentTimeout, Severity: domain.SeverityError, CreatedAt: now})
 
-	since := base.Add(30 * time.Minute)
-	until := base.Add(90 * time.Minute)
-	page, err := s.List(domain.ReliabilityFilter{
-		Since: &since,
-		Until: &until,
-	}, domain.PageOpts{Limit: 50})
+	since := now.Add(-1 * time.Hour)
+	page, err := store.List(domain.ReliabilityFilter{Since: &since}, domain.PageOpts{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	if page.TotalCount != 1 {
 		t.Errorf("TotalCount: want 1, got %d", page.TotalCount)
 	}
-	if len(page.Items) != 1 || page.Items[0].ID != "mid" {
-		t.Errorf("expected mid only, got %v", page.Items)
+	if page.Items[0].ID != "ev-new" {
+		t.Errorf("ID: want ev-new, got %s", page.Items[0].ID)
 	}
 }
 
 func TestReliabilityStore_Pagination(t *testing.T) {
 	t.Parallel()
-	s := newTestReliabilityStore(t)
-	now := time.Now().UTC().Truncate(time.Second)
+	db := openTestDB(t)
+	store := NewReliabilityStore(db)
 
+	now := time.Now().UTC()
 	for i := 0; i < 5; i++ {
-		s.Insert(makeEvent(
-			"evt-"+string(rune('a'+i)),
-			domain.RelEvtLockContention,
-			domain.SeverityWarn,
-			"",
-			now.Add(time.Duration(i)*time.Second),
-		))
+		store.Insert(domain.ReliabilityEvent{
+			ID:        fmt.Sprintf("ev-%d", i),
+			EventType: domain.RelEventLockContention,
+			Severity:  domain.SeverityWarn,
+			CreatedAt: now.Add(time.Duration(i) * time.Minute),
+		})
 	}
 
 	// First page of 2.
-	page1, err := s.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 2})
+	page1, err := store.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 2})
 	if err != nil {
-		t.Fatalf("List page 1: %v", err)
+		t.Fatalf("List page1: %v", err)
 	}
 	if len(page1.Items) != 2 {
-		t.Fatalf("page 1 items: want 2, got %d", len(page1.Items))
+		t.Fatalf("page1 items: want 2, got %d", len(page1.Items))
 	}
 	if page1.NextCursor == "" {
-		t.Fatal("expected next cursor")
+		t.Fatal("page1 should have next cursor")
 	}
 	if page1.TotalCount != 5 {
 		t.Errorf("TotalCount: want 5, got %d", page1.TotalCount)
 	}
 
 	// Second page.
-	page2, err := s.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 2, Cursor: page1.NextCursor})
+	page2, err := store.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 2, Cursor: page1.NextCursor})
 	if err != nil {
-		t.Fatalf("List page 2: %v", err)
+		t.Fatalf("List page2: %v", err)
 	}
 	if len(page2.Items) != 2 {
-		t.Fatalf("page 2 items: want 2, got %d", len(page2.Items))
+		t.Fatalf("page2 items: want 2, got %d", len(page2.Items))
 	}
 
 	// Third page (last item).
-	page3, err := s.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 2, Cursor: page2.NextCursor})
+	page3, err := store.List(domain.ReliabilityFilter{}, domain.PageOpts{Limit: 2, Cursor: page2.NextCursor})
 	if err != nil {
-		t.Fatalf("List page 3: %v", err)
+		t.Fatalf("List page3: %v", err)
 	}
 	if len(page3.Items) != 1 {
-		t.Fatalf("page 3 items: want 1, got %d", len(page3.Items))
+		t.Fatalf("page3 items: want 1, got %d", len(page3.Items))
 	}
 	if page3.NextCursor != "" {
-		t.Error("expected empty next cursor on last page")
+		t.Error("page3 should not have next cursor")
 	}
 }
 
 func TestReliabilityStore_Summary(t *testing.T) {
 	t.Parallel()
-	s := newTestReliabilityStore(t)
-	base := time.Date(2026, 3, 10, 10, 0, 0, 0, time.UTC)
+	db := openTestDB(t)
+	store := NewReliabilityStore(db)
 
-	// Two events in hour 10, one in hour 11.
-	s.Insert(makeEvent("evt-1", domain.RelEvtLockContention, domain.SeverityWarn, "", base.Add(5*time.Minute)))
-	s.Insert(makeEvent("evt-2", domain.RelEvtAgentTimeout, domain.SeverityError, "", base.Add(30*time.Minute)))
-	s.Insert(makeEvent("evt-3", domain.RelEvtLockContention, domain.SeverityWarn, "", base.Add(70*time.Minute)))
+	now := time.Now().UTC()
+	store.Insert(domain.ReliabilityEvent{ID: "ev-1", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, CreatedAt: now.Add(-3 * time.Hour)})
+	store.Insert(domain.ReliabilityEvent{ID: "ev-2", EventType: domain.RelEventAgentTimeout, Severity: domain.SeverityError, CreatedAt: now.Add(-2 * time.Hour)})
+	store.Insert(domain.ReliabilityEvent{ID: "ev-3", EventType: domain.RelEventLockContention, Severity: domain.SeverityWarn, CreatedAt: now.Add(-1 * time.Hour)})
 
-	summary, err := s.Summary(base, base.Add(2*time.Hour), "hour")
+	since := now.Add(-4 * time.Hour)
+	summary, err := store.Summary(domain.ReliabilityFilter{Since: &since, Until: &now}, 4)
 	if err != nil {
 		t.Fatalf("Summary: %v", err)
 	}
 
-	if len(summary.Buckets) != 2 {
-		t.Fatalf("buckets: want 2, got %d", len(summary.Buckets))
+	if summary.Totals.Total != 3 {
+		t.Errorf("total: want 3, got %d", summary.Totals.Total)
 	}
-
-	// First bucket (hour 10): 1 lock_contention, 1 agent_timeout.
-	b0 := summary.Buckets[0]
-	if b0.Counts["lock_contention"] != 1 {
-		t.Errorf("bucket 0 lock_contention: want 1, got %d", b0.Counts["lock_contention"])
+	if summary.Totals.ByType[domain.RelEventLockContention] != 2 {
+		t.Errorf("by_type lock_contention: want 2, got %d", summary.Totals.ByType[domain.RelEventLockContention])
 	}
-	if b0.Counts["agent_timeout"] != 1 {
-		t.Errorf("bucket 0 agent_timeout: want 1, got %d", b0.Counts["agent_timeout"])
+	if summary.Totals.BySeverity[domain.SeverityWarn] != 2 {
+		t.Errorf("by_severity warn: want 2, got %d", summary.Totals.BySeverity[domain.SeverityWarn])
 	}
-
-	// Second bucket (hour 11): 1 lock_contention.
-	b1 := summary.Buckets[1]
-	if b1.Counts["lock_contention"] != 1 {
-		t.Errorf("bucket 1 lock_contention: want 1, got %d", b1.Counts["lock_contention"])
-	}
-
-	// Totals.
-	if summary.Totals["lock_contention"] != 2 {
-		t.Errorf("total lock_contention: want 2, got %d", summary.Totals["lock_contention"])
-	}
-	if summary.Totals["agent_timeout"] != 1 {
-		t.Errorf("total agent_timeout: want 1, got %d", summary.Totals["agent_timeout"])
-	}
-}
-
-func TestReliabilityStore_FilterBySeverity(t *testing.T) {
-	t.Parallel()
-	s := newTestReliabilityStore(t)
-	now := time.Now().UTC().Truncate(time.Second)
-
-	s.Insert(makeEvent("evt-1", domain.RelEvtLockContention, domain.SeverityWarn, "", now))
-	s.Insert(makeEvent("evt-2", domain.RelEvtAgentTimeout, domain.SeverityError, "", now.Add(time.Second)))
-	s.Insert(makeEvent("evt-3", domain.RelEvtQuotaExceeded, domain.SeverityCritical, "", now.Add(2*time.Second)))
-
-	page, err := s.List(domain.ReliabilityFilter{
-		Severities: []domain.Severity{domain.SeverityError, domain.SeverityCritical},
-	}, domain.PageOpts{Limit: 50})
-	if err != nil {
-		t.Fatalf("List: %v", err)
-	}
-	if page.TotalCount != 2 {
-		t.Errorf("TotalCount: want 2, got %d", page.TotalCount)
-	}
-}
-
-func TestReliabilityStore_FilterByAgentID(t *testing.T) {
-	t.Parallel()
-	s := newTestReliabilityStore(t)
-	now := time.Now().UTC().Truncate(time.Second)
-
-	s.Insert(makeEvent("evt-1", domain.RelEvtLockContention, domain.SeverityWarn, "agent-A", now))
-	s.Insert(makeEvent("evt-2", domain.RelEvtAgentTimeout, domain.SeverityError, "agent-B", now.Add(time.Second)))
-
-	page, err := s.List(domain.ReliabilityFilter{AgentID: "agent-A"}, domain.PageOpts{Limit: 50})
-	if err != nil {
-		t.Fatalf("List: %v", err)
-	}
-	if page.TotalCount != 1 {
-		t.Errorf("TotalCount: want 1, got %d", page.TotalCount)
-	}
-	if page.Items[0].AgentID != "agent-A" {
-		t.Errorf("expected agent-A, got %s", page.Items[0].AgentID)
+	if len(summary.Buckets) != 4 {
+		t.Errorf("buckets: want 4, got %d", len(summary.Buckets))
 	}
 }

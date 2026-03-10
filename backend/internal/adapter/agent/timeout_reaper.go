@@ -9,7 +9,6 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
-	"kiloforge/internal/core/service"
 )
 
 const reaperInterval = 60 * time.Second
@@ -17,11 +16,11 @@ const reaperInterval = 60 * time.Second
 // TimeoutReaper periodically checks agent durations and force-stops agents
 // exceeding the configured max duration.
 type TimeoutReaper struct {
-	store          port.AgentStore
-	cfg            *config.Config
-	eventBus       port.EventBus
-	logger         *log.Logger
-	reliabilitySvc *service.ReliabilityService
+	store       port.AgentStore
+	cfg         *config.Config
+	eventBus    port.EventBus
+	reliability port.ReliabilityRecorder
+	logger      *log.Logger
 }
 
 // NewTimeoutReaper creates a new agent timeout reaper.
@@ -34,9 +33,9 @@ func NewTimeoutReaper(store port.AgentStore, cfg *config.Config, eventBus port.E
 	}
 }
 
-// SetReliabilityService sets the reliability service for recording timeout events.
-func (r *TimeoutReaper) SetReliabilityService(svc *service.ReliabilityService) {
-	r.reliabilitySvc = svc
+// SetReliabilityRecorder sets the reliability event recorder.
+func (r *TimeoutReaper) SetReliabilityRecorder(rec port.ReliabilityRecorder) {
+	r.reliability = rec
 }
 
 // Start runs the reaper in a background goroutine. It stops when ctx is cancelled.
@@ -95,12 +94,17 @@ func (r *TimeoutReaper) reap() {
 			}))
 		}
 
-		if r.reliabilitySvc != nil {
-			_ = r.reliabilitySvc.RecordEvent(domain.RelEvtAgentTimeout, domain.SeverityError, a.ID, a.Ref, map[string]any{
-				"reason":       reason,
-				"max_duration": maxDuration.String(),
-				"elapsed":      elapsed.Truncate(time.Second).String(),
-			})
+		// Record reliability event for agent timeout.
+		if r.reliability != nil {
+			_ = r.reliability.RecordEvent(
+				domain.RelEventAgentTimeout, domain.SeverityError,
+				a.ID, a.Role,
+				map[string]any{
+					"reason":       reason,
+					"max_duration": maxDuration.String(),
+					"elapsed":      elapsed.Truncate(time.Second).String(),
+				},
+			)
 		}
 	}
 }

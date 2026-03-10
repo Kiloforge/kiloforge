@@ -17,7 +17,6 @@ import (
 	"kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
-	"kiloforge/internal/core/service"
 
 	"github.com/google/uuid"
 )
@@ -80,7 +79,8 @@ type Spawner struct {
 	eventBus           port.EventBus
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
-	reliabilitySvc     *service.ReliabilityService
+
+	reliability port.ReliabilityRecorder
 
 	activeMu     sync.RWMutex
 	activeAgents map[string]*InteractiveAgent
@@ -143,15 +143,15 @@ func (s *Spawner) SetEventBus(eb port.EventBus) {
 	s.eventBus = eb
 }
 
+// SetReliabilityRecorder sets the reliability event recorder.
+func (s *Spawner) SetReliabilityRecorder(r port.ReliabilityRecorder) {
+	s.reliability = r
+}
+
 // SetSessionEndCallback sets the function called when an interactive session ends.
 // Typically used to call SessionManager.UnregisterBridge.
 func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
 	s.sessionEndCallback = fn
-}
-
-// SetReliabilityService sets the reliability service for recording failure events.
-func (s *Spawner) SetReliabilityService(svc *service.ReliabilityService) {
-	s.reliabilitySvc = svc
 }
 
 // ActiveCount returns the number of currently active agents.
@@ -219,6 +219,13 @@ func (s *Spawner) checkQuota() error {
 	}
 	if s.tracker.IsRateLimited() {
 		ra := s.tracker.RetryAfter()
+		if s.reliability != nil {
+			_ = s.reliability.RecordEvent(
+				domain.RelEventQuotaExceeded, domain.SeverityWarn,
+				"", "",
+				map[string]any{"retry_after": ra.Round(time.Second).String()},
+			)
+		}
 		return fmt.Errorf("rate limited — retry after %s", ra.Round(time.Second))
 	}
 	return nil
@@ -376,10 +383,18 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 		}
 		span.AddEvent("agent.failed")
 		span.SetError(err)
-		if s.reliabilitySvc != nil {
-			_ = s.reliabilitySvc.RecordEvent(domain.RelEvtAgentSpawnFailure, domain.SeverityError, agentID, ref, map[string]any{
-				"error": err.Error(),
-			})
+
+		// Record agent spawn/execution failure reliability event.
+		if s.reliability != nil {
+			_ = s.reliability.RecordEvent(
+				domain.RelEventAgentSpawnFailure, domain.SeverityError,
+				agentID, ref,
+				map[string]any{
+					"error":    err.Error(),
+					"model":    model,
+					"work_dir": workDir,
+				},
+			)
 		}
 	} else {
 		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {

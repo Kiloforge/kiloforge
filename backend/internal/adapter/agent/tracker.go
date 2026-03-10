@@ -7,17 +7,15 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
-	"kiloforge/internal/core/domain"
-	"kiloforge/internal/core/service"
 )
 
 const (
-	quotaFile    = "quota-usage.json"
-	maxSnapshots = 60 // ~1 per minute, keep last hour of data
+	quotaFile = "quota-usage.json"
+	// maxRateSnapshots is the maximum number of rate snapshots retained (1 per event, ~1 hour of data).
+	maxRateSnapshots = 60
 )
 
-// RateSnapshot records a point-in-time usage sample for rate computation.
+// RateSnapshot captures a point-in-time measurement for rate computation.
 type RateSnapshot struct {
 	Timestamp    time.Time `json:"timestamp"`
 	CostUSD      float64   `json:"cost_usd"`
@@ -57,10 +55,9 @@ type quotaSnapshot struct {
 type QuotaTracker struct {
 	mu             sync.RWMutex
 	agents         map[string]*AgentUsage
-	snapshots      []RateSnapshot
+	rateSnapshots  []RateSnapshot
 	rateLimitUntil time.Time
 	dataDir        string
-	reliabilitySvc *service.ReliabilityService
 }
 
 // NewQuotaTracker creates a new tracker. If dataDir is empty, persistence is disabled.
@@ -69,11 +66,6 @@ func NewQuotaTracker(dataDir string) *QuotaTracker {
 		agents:  make(map[string]*AgentUsage),
 		dataDir: dataDir,
 	}
-}
-
-// SetReliabilityService sets the reliability service for recording quota events.
-func (t *QuotaTracker) SetReliabilityService(svc *service.ReliabilityService) {
-	t.reliabilitySvc = svc
 }
 
 // RecordEvent processes a stream-json event and updates usage counters.
@@ -89,14 +81,6 @@ func (t *QuotaTracker) RecordEvent(agentID string, event StreamEvent) {
 	// Check for rate-limiting signals.
 	if event.Subtype == "error_max_budget_usd" {
 		t.rateLimitUntil = time.Now().Add(5 * time.Minute)
-		if t.reliabilitySvc != nil {
-			go func() {
-				_ = t.reliabilitySvc.RecordEvent(domain.RelEvtQuotaExceeded, domain.SeverityWarn, agentID, "", map[string]any{
-					"subtype":     event.Subtype,
-					"retry_after": "5m",
-				})
-			}()
-		}
 	}
 
 	if event.Usage == nil && event.CostUSD == 0 {
@@ -119,7 +103,7 @@ func (t *QuotaTracker) RecordEvent(agentID string, event StreamEvent) {
 		usage.CacheCreationTokens += event.Usage.CacheCreationTokens
 	}
 
-	// Append rate snapshot for time-windowed metrics.
+	// Append rate snapshot for rate-of-consumption tracking.
 	snap := RateSnapshot{
 		Timestamp: time.Now(),
 		CostUSD:   event.CostUSD,
@@ -128,9 +112,9 @@ func (t *QuotaTracker) RecordEvent(agentID string, event StreamEvent) {
 		snap.InputTokens = event.Usage.InputTokens
 		snap.OutputTokens = event.Usage.OutputTokens
 	}
-	t.snapshots = append(t.snapshots, snap)
-	if len(t.snapshots) > maxSnapshots {
-		t.snapshots = t.snapshots[len(t.snapshots)-maxSnapshots:]
+	t.rateSnapshots = append(t.rateSnapshots, snap)
+	if len(t.rateSnapshots) > maxRateSnapshots {
+		t.rateSnapshots = t.rateSnapshots[len(t.rateSnapshots)-maxRateSnapshots:]
 	}
 }
 
@@ -174,65 +158,6 @@ func (t *QuotaTracker) IsRateLimited() bool {
 	return time.Now().Before(t.rateLimitUntil)
 }
 
-// TokensPerMin returns the rate of total tokens (input+output) per minute
-// over the given time window, computed from recent snapshots.
-func (t *QuotaTracker) TokensPerMin(window time.Duration) float64 {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	cutoff := time.Now().Add(-window)
-	var totalTokens int
-	var oldest time.Time
-	var count int
-	for _, s := range t.snapshots {
-		if s.Timestamp.Before(cutoff) {
-			continue
-		}
-		totalTokens += s.InputTokens + s.OutputTokens
-		if count == 0 || s.Timestamp.Before(oldest) {
-			oldest = s.Timestamp
-		}
-		count++
-	}
-	if count == 0 {
-		return 0
-	}
-	elapsed := time.Since(oldest).Minutes()
-	if elapsed < 0.01 {
-		return 0
-	}
-	return float64(totalTokens) / elapsed
-}
-
-// CostPerHour returns the cost rate in USD/hour over the given time window.
-func (t *QuotaTracker) CostPerHour(window time.Duration) float64 {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	cutoff := time.Now().Add(-window)
-	var totalCost float64
-	var oldest time.Time
-	var count int
-	for _, s := range t.snapshots {
-		if s.Timestamp.Before(cutoff) {
-			continue
-		}
-		totalCost += s.CostUSD
-		if count == 0 || s.Timestamp.Before(oldest) {
-			oldest = s.Timestamp
-		}
-		count++
-	}
-	if count == 0 {
-		return 0
-	}
-	elapsed := time.Since(oldest).Minutes()
-	if elapsed < 0.01 {
-		return 0
-	}
-	return totalCost / elapsed * 60.0
-}
-
 // RetryAfter returns the duration until the rate limit expires.
 // Returns 0 if not rate limited.
 func (t *QuotaTracker) RetryAfter() time.Duration {
@@ -243,6 +168,59 @@ func (t *QuotaTracker) RetryAfter() time.Duration {
 		return 0
 	}
 	return remaining
+}
+
+// TokensPerMin returns the average tokens (input+output) per minute over the given window.
+// Returns 0 if there are fewer than 2 snapshots in the window.
+func (t *QuotaTracker) TokensPerMin(window time.Duration) float64 {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.rateOverWindow(window, func(s RateSnapshot) float64 {
+		return float64(s.InputTokens + s.OutputTokens)
+	})
+}
+
+// CostPerHour returns the average cost per hour over the given window.
+// Returns 0 if there are fewer than 2 snapshots in the window.
+func (t *QuotaTracker) CostPerHour(window time.Duration) float64 {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.rateOverWindow(window, func(s RateSnapshot) float64 {
+		return s.CostUSD
+	}) * 60 // rateOverWindow returns per-minute; multiply for per-hour
+}
+
+// rateOverWindow computes the per-minute rate of a metric over a sliding window.
+// Must be called with t.mu held (at least RLock).
+func (t *QuotaTracker) rateOverWindow(window time.Duration, metric func(RateSnapshot) float64) float64 {
+	if len(t.rateSnapshots) < 2 {
+		return 0
+	}
+	cutoff := time.Now().Add(-window)
+	var total float64
+	var earliest, latest time.Time
+	count := 0
+	for _, s := range t.rateSnapshots {
+		if s.Timestamp.Before(cutoff) {
+			continue
+		}
+		total += metric(s)
+		if count == 0 || s.Timestamp.Before(earliest) {
+			earliest = s.Timestamp
+		}
+		if s.Timestamp.After(latest) {
+			latest = s.Timestamp
+		}
+		count++
+	}
+	if count < 2 {
+		return 0
+	}
+	elapsed := latest.Sub(earliest).Minutes()
+	if elapsed <= 0 {
+		return 0
+	}
+	return total / elapsed
 }
 
 // Save writes the current usage state to disk. No-op if dataDir is empty.

@@ -1,0 +1,78 @@
+id: swarm-dispatch-skill_20260311110000Z
+title: Add kf-dispatch skill — AI swarm dispatcher for worker assignment
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    New embedded skill that reviews project state (worktrees, active tracks,
+    dependencies, conflict risks) and produces prescriptive worker assignments
+    or recommends consulting an architect when no actionable work exists.
+  context: |
+    Kiloforge has /kf-status for informational project overview, but no skill
+    that makes prescriptive dispatch decisions — which idle workers should claim
+    which tracks, in what priority order. The Kiloforger currently has to
+    manually interpret status output and assign workers. This skill automates
+    that judgment call, acting as a "swarm dispatcher" or "AI developer herder".
+  codebase_analysis: |
+    Skills are embedded SKILL.md files at backend/internal/adapter/skills/embedded/{name}/SKILL.md.
+    Auto-discovered via //go:embed embedded/* glob in checker.go — no manifest or Go code changes needed.
+    Existing tooling available for the skill to reference:
+    - .agent/kf/bin/kf-track status — factual project status
+    - .agent/kf/bin/kf-track list --active — active track listing
+    - .agent/kf/bin/kf-track deps check — dependency satisfaction
+    - .agent/kf/bin/kf-track conflicts list — conflict risk pairs
+    - git worktree list — worktree/worker state
+    - kf-status SKILL.md — reference for status-reading patterns
+    - kf-developer SKILL.md — reference for worktree detection patterns
+  acceptance_criteria:
+    - Skill file exists at backend/internal/adapter/skills/embedded/kf-dispatch/SKILL.md
+    - Scans worktrees to identify idle vs active developer workers
+    - Reads track registry for available, blocked, and in-progress tracks
+    - Analyzes dependency graph to prioritize unblocking tracks
+    - Considers conflict risk pairs when assigning parallel workers
+    - Produces ranked dispatch plan with actionable /kf-developer commands
+    - When no tracks are available, recommends /kf-architect with suggested areas
+    - Uses Kiloforge branded terminology (Kiloforger, Cortex, Swarm)
+    - Follows existing SKILL.md conventions (YAML front matter, phases, error states)
+  out_of_scope: |
+    - Go code changes or new CLI commands
+    - Frontend UI for dispatch
+    - Automatic agent spawning (this skill advises, the Kiloforger acts)
+    - Modifications to existing skills
+  technical_notes: |
+    Implementation is a single SKILL.md file. The skill should:
+    1. Detect worktree state via git worktree list + branch inspection
+    2. Classify workers: idle (on home branch), active (on feature/chore/etc branch), stale
+    3. Run kf-track status and parse available/blocked/in-progress tracks
+    4. Apply dispatch heuristics:
+       - Prioritize tracks that unblock other tracks (dependency graph analysis)
+       - Avoid assigning conflicting tracks to parallel workers
+       - Match track count to available worker count
+       - Consider track type diversity (don't assign all chore tracks at once if features exist)
+    5. Output a dispatch table and ready-to-run commands
+    6. If no available tracks: suggest /kf-architect with context about what's missing
+    Follow SKILL.md conventions from kf-status (simple read-only skill pattern).
+plan:
+  - phase: Research & Design
+    tasks:
+      - text: Read kf-status and kf-developer SKILL.md files to extract worktree detection and status-reading patterns to reuse
+        done: true
+      - text: Design the dispatch heuristic algorithm (priority scoring for tracks, worker matching logic)
+        done: true
+  - phase: Implementation
+    tasks:
+      - text: Write YAML front matter (name, description, argument-hint, metadata)
+        done: true
+      - text: Write the main skill instructions — worktree scanning, track analysis, dispatch logic, and output formatting
+        done: true
+      - text: Write error states section (no tracks, no idle workers, kiloforge not initialized)
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Verify the skill file is discovered by the embed glob (check backend builds with make build)
+        done: true
+      - text: Install skill to ~/.claude/skills/ and test invocation with /kf-dispatch
+        done: true
+extra: {}

@@ -1,0 +1,76 @@
+id: test-coverage-fe_20260311120005Z
+title: "Increase frontend test coverage — untested components and e2e gaps"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Add tests for 29 untested React components (priority: AgentTerminal, ConsentDialog, LogViewer, diff/* components). Fix e2e lint warnings. Target 70%+ component coverage."
+  context: |
+    Production audit found 29 of 53 components (46%) have no tests. Critical interactive
+    components like AgentTerminal, ConsentDialog, and LogViewer are completely untested.
+    E2E test files have unused variable lint warnings that should be cleaned up.
+  codebase_analysis: |
+    Well-tested (14 components): AgentCard, AgentLauncher, SwarmPanel, KanbanBoard,
+    VirtualList, GettingStartedChecklist, HelpTooltip, AddProjectForm, SettingsMenu,
+    ProjectMetadataView, DiffView, RelationshipOverlay, plus pages.
+
+    Untested (29 components — priority order):
+    HIGH: AgentTerminal, ConsentDialog, LogViewer, AdminPanel, ConnectionStatus
+    MEDIUM: SkillsInstallDialog, SetupRequiredDialog, RemoveProjectDialog, StatusBadge,
+            SyncPanel, TerminalDock, ModelWarningBanner, SkillsBanner
+    LOW: AgentStatusPopover, TraceList, TraceTimeline, TrackList, tour/* components,
+         toast/* components, terminal/* subcomponents
+
+    E2E lint issues:
+    - e2e/interactive-terminal.spec.ts:41 — unused 'e'
+    - e2e/quota-usage.spec.ts:118 — unused 'quota'
+    - e2e/sse-reconnect.spec.ts:134 — unused 'serverURL'
+    - e2e/sse-track-events.spec.ts:58 — unused 'serverURL'
+  acceptance_criteria:
+    - All HIGH priority components have at least one test file
+    - All MEDIUM priority components have at least one test file
+    - E2E lint warnings for unused variables fixed
+    - Component test coverage reaches 70%+ (from 46%)
+    - All tests pass (npm test, make test-e2e if applicable)
+  out_of_scope: |
+    - LOW priority component tests (post-launch)
+    - Integration tests for real API flows (covered by e2e)
+    - Visual regression testing
+  technical_notes: |
+    Use existing test patterns: @testing-library/react, vitest, msw for API mocking.
+    Follow established patterns in AgentCard.test.tsx and SwarmPanel.test.tsx.
+    For AgentTerminal: mock WebSocket, test message rendering and input submission.
+    For dialogs: test open/close, confirm/cancel actions, form validation.
+plan:
+  - phase: "High priority component tests"
+    tasks:
+      - text: "Add tests for AgentTerminal — WebSocket mock, message rendering, input"
+        done: false
+      - text: "Add tests for ConsentDialog — open/close, accept/deny actions"
+        done: false
+      - text: "Add tests for LogViewer — log line rendering, auto-scroll, filtering"
+        done: false
+      - text: "Add tests for AdminPanel — panel rendering, action buttons"
+        done: false
+      - text: "Add tests for ConnectionStatus — connected/disconnected states"
+        done: false
+  - phase: "Medium priority component tests"
+    tasks:
+      - text: "Add tests for dialog components (SkillsInstallDialog, SetupRequiredDialog, RemoveProjectDialog)"
+        done: false
+      - text: "Add tests for StatusBadge, SyncPanel, TerminalDock"
+        done: false
+      - text: "Add tests for banner components (ModelWarningBanner, SkillsBanner)"
+        done: false
+  - phase: "E2E cleanup and verification"
+    tasks:
+      - text: "Fix unused variable lint warnings in e2e test files"
+        done: false
+      - text: "Run npm test — all component tests pass"
+        done: false
+      - text: "Run npm run lint — no frontend lint errors"
+        done: false
+      - text: "Run make build — full stack build passes"
+        done: false
+extra: {}

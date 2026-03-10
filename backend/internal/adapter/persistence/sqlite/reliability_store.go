@@ -8,85 +8,61 @@ import (
 	"time"
 
 	"kiloforge/internal/core/domain"
-	"kiloforge/internal/core/port"
 )
 
-var _ port.ReliabilityStore = (*ReliabilityStore)(nil)
-
-// ReliabilityStore persists reliability events to SQLite.
+// ReliabilityStore implements port.ReliabilityStore using SQLite.
 type ReliabilityStore struct {
 	db *sql.DB
 }
 
-// NewReliabilityStore creates a ReliabilityStore backed by the given database.
+// NewReliabilityStore creates a new SQLite-backed reliability store.
 func NewReliabilityStore(db *sql.DB) *ReliabilityStore {
 	return &ReliabilityStore{db: db}
 }
 
-// Insert persists a single reliability event.
 func (s *ReliabilityStore) Insert(event domain.ReliabilityEvent) error {
-	var detailJSON *string
-	if event.Detail != nil {
+	var detailJSON sql.NullString
+	if len(event.Detail) > 0 {
 		b, err := json.Marshal(event.Detail)
 		if err != nil {
 			return fmt.Errorf("marshal detail: %w", err)
 		}
-		v := string(b)
-		detailJSON = &v
+		detailJSON = sql.NullString{String: string(b), Valid: true}
 	}
+
 	_, err := s.db.Exec(
 		`INSERT INTO reliability_events (id, event_type, severity, agent_id, scope, detail, created_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		event.ID, string(event.EventType), string(event.Severity),
-		nilIfEmpty(event.AgentID), nilIfEmpty(event.Scope),
-		detailJSON, event.CreatedAt.Format(time.RFC3339),
+		event.ID, event.EventType, event.Severity,
+		nullStr(event.AgentID), nullStr(event.Scope),
+		detailJSON,
+		event.CreatedAt.UTC().Format(time.RFC3339Nano),
 	)
-	if err != nil {
-		return fmt.Errorf("insert reliability event: %w", err)
-	}
-	return nil
+	return err
 }
 
-// List returns a paginated, filtered list of reliability events.
 func (s *ReliabilityStore) List(filter domain.ReliabilityFilter, opts domain.PageOpts) (domain.Page[domain.ReliabilityEvent], error) {
 	opts.Normalize()
 
+	filterWhere, filterArgs := buildFilterWhere(filter)
+
+	// Count total (without cursor).
+	var total int
+	countQuery := "SELECT COUNT(*) FROM reliability_events"
+	if filterWhere != "" {
+		countQuery += " WHERE " + filterWhere
+	}
+	if err := s.db.QueryRow(countQuery, filterArgs...).Scan(&total); err != nil {
+		return domain.Page[domain.ReliabilityEvent]{}, fmt.Errorf("count reliability: %w", err)
+	}
+
+	// Build query with cursor.
 	var whereParts []string
 	var args []any
-
-	if len(filter.EventTypes) > 0 {
-		ph := placeholders(len(filter.EventTypes))
-		for _, t := range filter.EventTypes {
-			args = append(args, string(t))
-		}
-		whereParts = append(whereParts, "event_type IN ("+ph+")")
+	if filterWhere != "" {
+		whereParts = append(whereParts, filterWhere)
+		args = append(args, filterArgs...)
 	}
-	if len(filter.Severities) > 0 {
-		ph := placeholders(len(filter.Severities))
-		for _, sv := range filter.Severities {
-			args = append(args, string(sv))
-		}
-		whereParts = append(whereParts, "severity IN ("+ph+")")
-	}
-	if filter.AgentID != "" {
-		whereParts = append(whereParts, "agent_id = ?")
-		args = append(args, filter.AgentID)
-	}
-	if filter.Since != nil {
-		whereParts = append(whereParts, "created_at >= ?")
-		args = append(args, filter.Since.UTC().Format(time.RFC3339))
-	}
-	if filter.Until != nil {
-		whereParts = append(whereParts, "created_at < ?")
-		args = append(args, filter.Until.UTC().Format(time.RFC3339))
-	}
-
-	// Save filter parts for count query (no cursor).
-	countParts := make([]string, len(whereParts))
-	copy(countParts, whereParts)
-	countArgs := make([]any, len(args))
-	copy(countArgs, args)
-
 	if opts.Cursor != "" {
 		cur := domain.DecodeCursor(opts.Cursor)
 		if cur.SortVal != "" {
@@ -99,15 +75,6 @@ func (s *ReliabilityStore) List(filter domain.ReliabilityFilter, opts domain.Pag
 	if len(whereParts) > 0 {
 		where = " WHERE " + strings.Join(whereParts, " AND ")
 	}
-	countWhere := ""
-	if len(countParts) > 0 {
-		countWhere = " WHERE " + strings.Join(countParts, " AND ")
-	}
-
-	var total int
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM reliability_events"+countWhere, countArgs...).Scan(&total); err != nil {
-		return domain.Page[domain.ReliabilityEvent]{}, fmt.Errorf("count reliability events: %w", err)
-	}
 
 	query := `SELECT id, event_type, severity, agent_id, scope, detail, created_at
 	          FROM reliability_events` + where + ` ORDER BY created_at DESC, id DESC LIMIT ?`
@@ -115,129 +82,213 @@ func (s *ReliabilityStore) List(filter domain.ReliabilityFilter, opts domain.Pag
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return domain.Page[domain.ReliabilityEvent]{}, fmt.Errorf("list reliability events: %w", err)
+		return domain.Page[domain.ReliabilityEvent]{}, fmt.Errorf("list reliability: %w", err)
 	}
 	defer rows.Close()
 
-	events := scanReliabilityEvents(rows)
+	var items []domain.ReliabilityEvent
+	for rows.Next() {
+		ev, err := scanEvent(rows)
+		if err != nil {
+			return domain.Page[domain.ReliabilityEvent]{}, err
+		}
+		items = append(items, ev)
+	}
+	if err := rows.Err(); err != nil {
+		return domain.Page[domain.ReliabilityEvent]{}, err
+	}
+
 	var nextCursor string
-	if len(events) > opts.Limit {
-		last := events[opts.Limit-1]
-		nextCursor = domain.EncodeCursor(last.CreatedAt.Format(time.RFC3339), last.ID)
-		events = events[:opts.Limit]
+	if len(items) > opts.Limit {
+		last := items[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.CreatedAt.UTC().Format(time.RFC3339Nano), last.ID)
+		items = items[:opts.Limit]
 	}
 
 	return domain.Page[domain.ReliabilityEvent]{
-		Items:      events,
+		Items:      items,
 		NextCursor: nextCursor,
 		TotalCount: total,
 	}, nil
 }
 
-// Summary returns aggregated event counts bucketed by time.
-func (s *ReliabilityStore) Summary(since, until time.Time, bucket string) (domain.ReliabilitySummary, error) {
-	truncExpr := "%Y-%m-%dT%H:00:00Z" // hour bucket
-	if bucket == "day" {
-		truncExpr = "%Y-%m-%dT00:00:00Z"
+func (s *ReliabilityStore) Summary(filter domain.ReliabilityFilter, buckets int) (domain.ReliabilitySummary, error) {
+	if buckets <= 0 {
+		buckets = 24
 	}
 
-	query := `SELECT strftime(?, created_at) AS bucket, event_type, COUNT(*) AS cnt
-	          FROM reliability_events
-	          WHERE created_at >= ? AND created_at < ?
-	          GROUP BY bucket, event_type
-	          ORDER BY bucket ASC, event_type ASC`
+	var since, until time.Time
+	if filter.Since != nil {
+		since = *filter.Since
+	}
+	if filter.Until != nil {
+		until = *filter.Until
+	} else {
+		until = time.Now().UTC()
+	}
+	if since.IsZero() {
+		since = until.Add(-24 * time.Hour)
+	}
 
-	rows, err := s.db.Query(query, truncExpr, since.UTC().Format(time.RFC3339), until.UTC().Format(time.RFC3339))
+	duration := until.Sub(since)
+	bucketDuration := duration / time.Duration(buckets)
+
+	// Query all events in the time range with optional type/severity filters.
+	filterWhere, filterArgs := buildFilterWhere(domain.ReliabilityFilter{
+		EventTypes: filter.EventTypes,
+		Severities: filter.Severities,
+		Since:      &since,
+		Until:      &until,
+	})
+
+	query := "SELECT event_type, severity, created_at FROM reliability_events"
+	if filterWhere != "" {
+		query += " WHERE " + filterWhere
+	}
+	query += " ORDER BY created_at ASC"
+
+	rows, err := s.db.Query(query, filterArgs...)
 	if err != nil {
 		return domain.ReliabilitySummary{}, fmt.Errorf("summary query: %w", err)
 	}
 	defer rows.Close()
 
-	bucketMap := make(map[string]map[string]int) // timestamp -> eventType -> count
-	totals := make(map[string]int)
+	// Initialize buckets.
+	summaryBuckets := make([]domain.ReliabilityBucket, buckets)
+	for i := range summaryBuckets {
+		summaryBuckets[i] = domain.ReliabilityBucket{
+			Start:  since.Add(bucketDuration * time.Duration(i)),
+			End:    since.Add(bucketDuration * time.Duration(i+1)),
+			Counts: make(map[string]int),
+		}
+	}
+
+	totals := domain.ReliabilityTotals{
+		ByType:     make(map[string]int),
+		BySeverity: make(map[string]int),
+	}
 
 	for rows.Next() {
-		var bucketTS, eventType string
-		var cnt int
-		if err := rows.Scan(&bucketTS, &eventType, &cnt); err != nil {
-			continue
+		var eventType, severity, createdAtStr string
+		if err := rows.Scan(&eventType, &severity, &createdAtStr); err != nil {
+			return domain.ReliabilitySummary{}, err
 		}
-		if bucketMap[bucketTS] == nil {
-			bucketMap[bucketTS] = make(map[string]int)
+		createdAt, err := time.Parse(time.RFC3339Nano, createdAtStr)
+		if err != nil {
+			createdAt, err = time.Parse(time.RFC3339, createdAtStr)
+			if err != nil {
+				continue
+			}
 		}
-		bucketMap[bucketTS][eventType] += cnt
-		totals[eventType] += cnt
+
+		totals.Total++
+		totals.ByType[eventType]++
+		totals.BySeverity[severity]++
+
+		// Place into correct bucket.
+		idx := int(createdAt.Sub(since) / bucketDuration)
+		if idx >= buckets {
+			idx = buckets - 1
+		}
+		if idx < 0 {
+			idx = 0
+		}
+		summaryBuckets[idx].Counts[eventType]++
+	}
+	if err := rows.Err(); err != nil {
+		return domain.ReliabilitySummary{}, err
 	}
 
-	// Build ordered bucket list.
-	var buckets []domain.ReliabilityBucket
-	// Iterate sorted keys by querying again or sorting map keys.
-	keys := sortedKeys(bucketMap)
-	for _, k := range keys {
-		t, _ := time.Parse(time.RFC3339, k)
-		buckets = append(buckets, domain.ReliabilityBucket{
-			Timestamp: t,
-			Counts:    bucketMap[k],
-		})
-	}
+	windowStr := formatDuration(duration)
+	bucketStr := formatDuration(bucketDuration)
 
 	return domain.ReliabilitySummary{
-		Buckets: buckets,
-		Totals:  totals,
+		Window:         windowStr,
+		BucketDuration: bucketStr,
+		Buckets:        summaryBuckets,
+		Totals:         totals,
 	}, nil
 }
 
-func scanReliabilityEvents(rows *sql.Rows) []domain.ReliabilityEvent {
-	var events []domain.ReliabilityEvent
-	for rows.Next() {
-		var e domain.ReliabilityEvent
-		var agentID, scope, detailStr *string
-		var createdAt string
-		var evtType, sev string
-		if err := rows.Scan(&e.ID, &evtType, &sev, &agentID, &scope, &detailStr, &createdAt); err != nil {
-			continue
+// buildFilterWhere builds WHERE clause parts from a ReliabilityFilter.
+func buildFilterWhere(filter domain.ReliabilityFilter) (string, []any) {
+	var parts []string
+	var args []any
+
+	if len(filter.EventTypes) > 0 {
+		ph := make([]string, len(filter.EventTypes))
+		for i, t := range filter.EventTypes {
+			ph[i] = "?"
+			args = append(args, t)
 		}
-		e.EventType = domain.ReliabilityEventType(evtType)
-		e.Severity = domain.Severity(sev)
-		if agentID != nil {
-			e.AgentID = *agentID
-		}
-		if scope != nil {
-			e.Scope = *scope
-		}
-		if detailStr != nil {
-			_ = json.Unmarshal([]byte(*detailStr), &e.Detail)
-		}
-		e.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
-		events = append(events, e)
+		parts = append(parts, "event_type IN ("+strings.Join(ph, ",")+")")
 	}
-	return events
+	if len(filter.Severities) > 0 {
+		ph := make([]string, len(filter.Severities))
+		for i, s := range filter.Severities {
+			ph[i] = "?"
+			args = append(args, s)
+		}
+		parts = append(parts, "severity IN ("+strings.Join(ph, ",")+")")
+	}
+	if filter.Since != nil {
+		parts = append(parts, "created_at >= ?")
+		args = append(args, filter.Since.UTC().Format(time.RFC3339Nano))
+	}
+	if filter.Until != nil {
+		parts = append(parts, "created_at <= ?")
+		args = append(args, filter.Until.UTC().Format(time.RFC3339Nano))
+	}
+
+	return strings.Join(parts, " AND "), args
 }
 
-func nilIfEmpty(s string) *string {
+func scanEvent(rows *sql.Rows) (domain.ReliabilityEvent, error) {
+	var ev domain.ReliabilityEvent
+	var agentID, scope, detailStr, createdAtStr sql.NullString
+
+	if err := rows.Scan(&ev.ID, &ev.EventType, &ev.Severity,
+		&agentID, &scope, &detailStr, &createdAtStr); err != nil {
+		return ev, err
+	}
+
+	ev.AgentID = agentID.String
+	ev.Scope = scope.String
+
+	if detailStr.Valid && detailStr.String != "" {
+		var detail map[string]any
+		if err := json.Unmarshal([]byte(detailStr.String), &detail); err == nil {
+			ev.Detail = detail
+		}
+	}
+
+	if createdAtStr.Valid {
+		if t, err := time.Parse(time.RFC3339Nano, createdAtStr.String); err == nil {
+			ev.CreatedAt = t
+		} else if t, err := time.Parse(time.RFC3339, createdAtStr.String); err == nil {
+			ev.CreatedAt = t
+		}
+	}
+
+	return ev, nil
+}
+
+func nullStr(s string) sql.NullString {
 	if s == "" {
-		return nil
+		return sql.NullString{}
 	}
-	return &s
+	return sql.NullString{String: s, Valid: true}
 }
 
-func placeholders(n int) string {
-	if n == 0 {
-		return ""
+func formatDuration(d time.Duration) string {
+	if d >= 24*time.Hour {
+		days := int(d / (24 * time.Hour))
+		return fmt.Sprintf("%dd", days)
 	}
-	return strings.Repeat("?,", n)[:2*n-1]
-}
-
-func sortedKeys(m map[string]map[string]int) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
+	if d >= time.Hour {
+		hours := int(d / time.Hour)
+		return fmt.Sprintf("%dh", hours)
 	}
-	// Simple insertion sort — bucket count is typically small.
-	for i := 1; i < len(keys); i++ {
-		for j := i; j > 0 && keys[j] < keys[j-1]; j-- {
-			keys[j], keys[j-1] = keys[j-1], keys[j]
-		}
-	}
-	return keys
+	minutes := int(d / time.Minute)
+	return fmt.Sprintf("%dm", minutes)
 }

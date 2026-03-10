@@ -13,14 +13,9 @@ func (s *Server) quotaResponse() map[string]any {
 			"cache_creation_tokens": 0,
 			"agent_count":           0,
 			"rate_limited":          false,
-			"rate_tokens_per_min":   0.0,
-			"rate_cost_per_hour":    0.0,
 		}
 	}
 	total := s.quota.GetTotalUsage()
-	tokensPerMin := s.quota.TokensPerMin(5 * time.Minute)
-	costPerHour := s.quota.CostPerHour(30 * time.Minute)
-
 	resp := map[string]any{
 		"estimated_cost_usd":    total.TotalCostUSD,
 		"input_tokens":          total.InputTokens,
@@ -29,21 +24,28 @@ func (s *Server) quotaResponse() map[string]any {
 		"cache_creation_tokens": total.CacheCreationTokens,
 		"agent_count":           total.AgentCount,
 		"rate_limited":          s.quota.IsRateLimited(),
-		"rate_tokens_per_min":   tokensPerMin,
-		"rate_cost_per_hour":    costPerHour,
 	}
 	if s.quota.IsRateLimited() {
 		resp["retry_after_seconds"] = int(s.quota.RetryAfter().Seconds())
 	}
 
-	// Budget metrics.
-	if s.cfg != nil && s.cfg.BudgetUSD > 0 {
-		resp["budget_usd"] = s.cfg.BudgetUSD
-		resp["budget_used_pct"] = total.TotalCostUSD / s.cfg.BudgetUSD * 100.0
+	// Rate metrics.
+	if tokPerMin := s.quota.TokensPerMin(5 * time.Minute); tokPerMin > 0 {
+		resp["rate_tokens_per_min"] = tokPerMin
+	}
+	costPerHour := s.quota.CostPerHour(30 * time.Minute)
+	if costPerHour > 0 {
+		resp["rate_cost_per_hour"] = costPerHour
+	}
+
+	// Budget fields.
+	if s.budgetUSD > 0 {
+		resp["budget_usd"] = s.budgetUSD
+		resp["budget_used_pct"] = (total.TotalCostUSD / s.budgetUSD) * 100
 		if costPerHour > 0 {
-			remaining := s.cfg.BudgetUSD - total.TotalCostUSD
+			remaining := s.budgetUSD - total.TotalCostUSD
 			if remaining > 0 {
-				resp["time_to_budget_mins"] = remaining / costPerHour * 60.0
+				resp["time_to_budget_mins"] = (remaining / costPerHour) * 60
 			}
 		}
 	}

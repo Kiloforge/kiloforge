@@ -23,8 +23,8 @@ import (
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start the web dashboard (standalone)",
-	Long: `Starts the web dashboard server without starting the Cortex.
-Useful when the Cortex is already running via 'kf up' and you want
+	Long: `Starts the web dashboard server without starting the orchestrator.
+Useful when the orchestrator is already running via 'kf up' and you want
 to view the dashboard separately.`,
 	RunE: runDashboard,
 }
@@ -59,7 +59,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, "/", reg, nil)
 	srv.SetTraceStore(traceStore)
 	srv.SetTrackReader(service.NewTrackReader())
-	srv.SetConfig(cfg)
+	srv.SetBudgetUSD(cfg.BudgetUSD)
 
 	// Create interactive agent spawner and WebSocket session manager.
 	spawner := agent.NewSpawner(cfg, store, tracker)

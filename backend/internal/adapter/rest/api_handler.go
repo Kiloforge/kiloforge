@@ -92,24 +92,24 @@ type ConsentChecker interface {
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
-	agents         AgentLister
-	quota          QuotaReader
-	lockMgr        *lock.Manager
-	projects       ProjectLister
-	projectMgr     ProjectManager
-	gitSync        *gitadapter.GitSync
-	diffProv       port.DiffProvider
-	traceStore     tracing.TraceReader
-	boardSvc       port.BoardService
-	trackReader    port.TrackReader
-	eventBus       port.EventBus
-	giteaURL       string
-	sseClients     func() int
-	cfg            *config.Config
-	interSpawner   InteractiveSpawner
-	wsSessions     *wsAdapter.SessionManager
-	consent        ConsentChecker
-	agentRemover   AgentRemover
+	agents       AgentLister
+	quota        QuotaReader
+	lockMgr      *lock.Manager
+	projects     ProjectLister
+	projectMgr   ProjectManager
+	gitSync      *gitadapter.GitSync
+	diffProv     port.DiffProvider
+	traceStore   tracing.TraceReader
+	boardSvc     port.BoardService
+	trackReader  port.TrackReader
+	eventBus     port.EventBus
+	giteaURL     string
+	sseClients   func() int
+	cfg          *config.Config
+	interSpawner InteractiveSpawner
+	wsSessions   *wsAdapter.SessionManager
+	consent      ConsentChecker
+	agentRemover AgentRemover
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
@@ -120,24 +120,24 @@ type APIHandler struct {
 
 // APIHandlerOpts configures the API handler.
 type APIHandlerOpts struct {
-	Agents         AgentLister
-	Quota          QuotaReader
-	LockMgr        *lock.Manager
-	Projects       ProjectLister
-	ProjectMgr     ProjectManager
-	GitSync        *gitadapter.GitSync
-	DiffProvider   port.DiffProvider
-	TraceStore     tracing.TraceReader
-	BoardSvc       port.BoardService
-	TrackReader    port.TrackReader
-	EventBus       port.EventBus
-	GiteaURL       string
-	SSEClients     func() int
-	Cfg            *config.Config
-	InterSpawner   InteractiveSpawner
-	WSSessions     *wsAdapter.SessionManager
-	Consent        ConsentChecker
-	AgentRemover   AgentRemover
+	Agents       AgentLister
+	Quota        QuotaReader
+	LockMgr      *lock.Manager
+	Projects     ProjectLister
+	ProjectMgr   ProjectManager
+	GitSync      *gitadapter.GitSync
+	DiffProvider port.DiffProvider
+	TraceStore   tracing.TraceReader
+	BoardSvc     port.BoardService
+	TrackReader  port.TrackReader
+	EventBus     port.EventBus
+	GiteaURL     string
+	SSEClients   func() int
+	Cfg          *config.Config
+	InterSpawner InteractiveSpawner
+	WSSessions   *wsAdapter.SessionManager
+	Consent      ConsentChecker
+	AgentRemover AgentRemover
 	QueueSvc       QueueServicer
 	Analytics      port.AnalyticsTracker
 	ReliabilitySvc *service.ReliabilityService
@@ -146,24 +146,24 @@ type APIHandlerOpts struct {
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
 func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 	return &APIHandler{
-		agents:         opts.Agents,
-		quota:          opts.Quota,
-		lockMgr:        opts.LockMgr,
-		projects:       opts.Projects,
-		projectMgr:     opts.ProjectMgr,
-		gitSync:        opts.GitSync,
-		diffProv:       opts.DiffProvider,
-		traceStore:     opts.TraceStore,
-		boardSvc:       opts.BoardSvc,
-		trackReader:    opts.TrackReader,
-		eventBus:       opts.EventBus,
-		giteaURL:       opts.GiteaURL,
-		sseClients:     opts.SSEClients,
-		cfg:            opts.Cfg,
-		interSpawner:   opts.InterSpawner,
-		wsSessions:     opts.WSSessions,
-		consent:        opts.Consent,
-		agentRemover:   opts.AgentRemover,
+		agents:       opts.Agents,
+		quota:        opts.Quota,
+		lockMgr:      opts.LockMgr,
+		projects:     opts.Projects,
+		projectMgr:   opts.ProjectMgr,
+		gitSync:      opts.GitSync,
+		diffProv:     opts.DiffProvider,
+		traceStore:   opts.TraceStore,
+		boardSvc:     opts.BoardSvc,
+		trackReader:  opts.TrackReader,
+		eventBus:     opts.EventBus,
+		giteaURL:     opts.GiteaURL,
+		sseClients:   opts.SSEClients,
+		cfg:          opts.Cfg,
+		interSpawner: opts.InterSpawner,
+		wsSessions:   opts.WSSessions,
+		consent:      opts.Consent,
+		agentRemover: opts.AgentRemover,
 		queueSvc:       opts.QueueSvc,
 		analytics:      opts.Analytics,
 		reliabilitySvc: opts.ReliabilitySvc,
@@ -243,8 +243,7 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 		AnalyticsEnabled: &analyticsEnabled,
 	}
 	if h.cfg.BudgetUSD > 0 {
-		b := h.cfg.BudgetUSD
-		resp.BudgetUsd = &b
+		resp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
 	}
 	return resp, nil
 }
@@ -283,16 +282,15 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
-	resp := gen.UpdateConfig200JSONResponse{
+	updateResp := gen.UpdateConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
 		AnalyticsEnabled: &analyticsEnabled,
 	}
 	if h.cfg.BudgetUSD > 0 {
-		b := h.cfg.BudgetUSD
-		resp.BudgetUsd = &b
+		updateResp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
 	}
-	return resp, nil
+	return updateResp, nil
 }
 
 // GetAgentPermissionsConsent implements gen.StrictServerInterface.
@@ -694,22 +692,25 @@ func (h *APIHandler) GetQuota(_ context.Context, _ gen.GetQuotaRequestObject) (g
 	}
 
 	// Rate metrics.
-	tokensPerMin := h.quota.TokensPerMin(5 * time.Minute)
+	tokPerMin := h.quota.TokensPerMin(5 * time.Minute)
 	costPerHour := h.quota.CostPerHour(30 * time.Minute)
-	resp.RateTokensPerMin = &tokensPerMin
-	resp.RateCostPerHour = &costPerHour
+	if tokPerMin > 0 {
+		resp.RateTokensPerMin = float64Ptr(tokPerMin)
+	}
+	if costPerHour > 0 {
+		resp.RateCostPerHour = float64Ptr(costPerHour)
+	}
 
-	// Budget metrics.
+	// Budget fields.
 	if h.cfg != nil && h.cfg.BudgetUSD > 0 {
-		budget := h.cfg.BudgetUSD
-		resp.BudgetUsd = &budget
-		pct := total.TotalCostUSD / budget * 100.0
-		resp.BudgetUsedPct = &pct
+		resp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
+		pct := (total.TotalCostUSD / h.cfg.BudgetUSD) * 100
+		resp.BudgetUsedPct = float64Ptr(pct)
 		if costPerHour > 0 {
-			remaining := budget - total.TotalCostUSD
+			remaining := h.cfg.BudgetUSD - total.TotalCostUSD
 			if remaining > 0 {
-				ttb := remaining / costPerHour * 60.0
-				resp.TimeToBudgetMins = &ttb
+				timeToBudget := (remaining / costPerHour) * 60
+				resp.TimeToBudgetMins = float64Ptr(timeToBudget)
 			}
 		}
 	}
@@ -898,16 +899,6 @@ func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObje
 		allTracks = []gen.Track{}
 	}
 
-	// Enrich tracks with claim status from active track-scoped locks.
-	claims := h.activeTrackClaims()
-	for i, track := range allTracks {
-		if cl, ok := claims[track.Id]; ok {
-			allTracks[i].ClaimedBy = &cl.Holder
-			allTracks[i].ClaimedAt = &cl.AcquiredAt
-			allTracks[i].ClaimExpiresAt = &cl.ExpiresAt
-		}
-	}
-
 	return gen.ListTracks200JSONResponse{
 		Items:      allTracks,
 		TotalCount: len(allTracks),
@@ -1029,10 +1020,13 @@ func (h *APIHandler) AcquireLock(ctx context.Context, req gen.AcquireLockRequest
 			}
 		}
 		if h.reliabilitySvc != nil {
-			_ = h.reliabilitySvc.RecordEvent(domain.RelEvtLockContention, domain.SeverityWarn, "", req.Scope, map[string]any{
-				"requester":      req.Body.Holder,
-				"current_holder": currentHolder,
-			})
+			_ = h.reliabilitySvc.RecordEvent(
+				domain.RelEventLockContention,
+				domain.SeverityWarn,
+				req.Body.Holder,
+				req.Scope,
+				map[string]any{"current_holder": currentHolder},
+			)
 		}
 		return gen.AcquireLock409JSONResponse{
 			Error:         "timeout waiting for lock",
@@ -2533,8 +2527,9 @@ func (h *APIHandler) toGenQueueStatus(s *service.QueueStatus) gen.QueueStatus {
 	}
 }
 
-func intPtr(v int) *int       { return &v }
-func strPtr(v string) *string { return &v }
+func intPtr(v int) *int             { return &v }
+func strPtr(v string) *string       { return &v }
+func float64Ptr(v float64) *float64 { return &v }
 
 // extractPageOpts builds domain.PageOpts from optional query params.
 func extractPageOpts(limit *int, cursor *string) domain.PageOpts {
@@ -2548,6 +2543,125 @@ func extractPageOpts(limit *int, cursor *string) domain.PageOpts {
 	return opts
 }
 
+// GetReliabilityEvents implements gen.StrictServerInterface.
+func (h *APIHandler) GetReliabilityEvents(_ context.Context, req gen.GetReliabilityEventsRequestObject) (gen.GetReliabilityEventsResponseObject, error) {
+	if h.reliabilitySvc == nil {
+		return gen.GetReliabilityEvents500JSONResponse{Error: "reliability service not configured"}, nil
+	}
+
+	filter := domain.ReliabilityFilter{}
+	if req.Params.EventType != nil {
+		filter.EventTypes = splitCSV(*req.Params.EventType)
+	}
+	if req.Params.Severity != nil {
+		filter.Severities = splitCSV(*req.Params.Severity)
+	}
+	filter.Since = req.Params.Since
+	filter.Until = req.Params.Until
+
+	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
+
+	page, err := h.reliabilitySvc.ListEvents(filter, opts)
+	if err != nil {
+		return gen.GetReliabilityEvents500JSONResponse{Error: err.Error()}, nil
+	}
+
+	items := make([]gen.ReliabilityEvent, 0, len(page.Items))
+	for _, ev := range page.Items {
+		items = append(items, domainReliabilityEventToGen(ev))
+	}
+
+	resp := gen.GetReliabilityEvents200JSONResponse{
+		Items:      items,
+		TotalCount: page.TotalCount,
+	}
+	if page.NextCursor != "" {
+		resp.NextCursor = strPtr(page.NextCursor)
+	}
+	return resp, nil
+}
+
+// GetReliabilitySummary implements gen.StrictServerInterface.
+func (h *APIHandler) GetReliabilitySummary(_ context.Context, req gen.GetReliabilitySummaryRequestObject) (gen.GetReliabilitySummaryResponseObject, error) {
+	if h.reliabilitySvc == nil {
+		return gen.GetReliabilitySummary500JSONResponse{Error: "reliability service not configured"}, nil
+	}
+
+	windowStr := "24h"
+	if req.Params.Window != nil {
+		windowStr = string(*req.Params.Window)
+	}
+	window, err := time.ParseDuration(windowStr)
+	if err != nil {
+		switch windowStr {
+		case "7d":
+			window = 7 * 24 * time.Hour
+		case "30d":
+			window = 30 * 24 * time.Hour
+		default:
+			return gen.GetReliabilitySummary500JSONResponse{Error: fmt.Sprintf("invalid window: %s", windowStr)}, nil
+		}
+	}
+
+	buckets := 12
+	if req.Params.Buckets != nil && *req.Params.Buckets > 0 {
+		buckets = *req.Params.Buckets
+	}
+
+	now := time.Now().UTC()
+	filter := domain.ReliabilityFilter{
+		Since: ptrTime(now.Add(-window)),
+		Until: ptrTime(now),
+	}
+
+	summary, err := h.reliabilitySvc.GetSummary(filter, buckets)
+	if err != nil {
+		return gen.GetReliabilitySummary500JSONResponse{Error: err.Error()}, nil
+	}
+
+	genBuckets := make([]gen.ReliabilityBucket, 0, len(summary.Buckets))
+	for _, b := range summary.Buckets {
+		genBuckets = append(genBuckets, gen.ReliabilityBucket{
+			Start:  b.Start,
+			End:    b.End,
+			Counts: b.Counts,
+		})
+	}
+
+	resp := gen.GetReliabilitySummary200JSONResponse{
+		Window:         windowStr,
+		BucketDuration: strPtr(summary.BucketDuration),
+		Buckets:        genBuckets,
+		Totals: gen.ReliabilityTotals{
+			Total:      summary.Totals.Total,
+			ByType:     summary.Totals.ByType,
+			BySeverity: summary.Totals.BySeverity,
+		},
+	}
+	return resp, nil
+}
+
+func domainReliabilityEventToGen(ev domain.ReliabilityEvent) gen.ReliabilityEvent {
+	g := gen.ReliabilityEvent{
+		Id:        ev.ID,
+		EventType: gen.ReliabilityEventEventType(ev.EventType),
+		Severity:  gen.ReliabilityEventSeverity(ev.Severity),
+		CreatedAt: ev.CreatedAt,
+	}
+	if ev.AgentID != "" {
+		g.AgentId = strPtr(ev.AgentID)
+	}
+	if ev.Scope != "" {
+		g.Scope = strPtr(ev.Scope)
+	}
+	if len(ev.Detail) > 0 {
+		g.Detail = &ev.Detail
+	}
+	return g
+}
+
+func ptrTime(t time.Time) *time.Time { return &t }
+
 // splitCSV splits a comma-separated string into trimmed tokens.
 func splitCSV(s string) []string {
 	parts := strings.Split(s, ",")
@@ -2559,115 +2673,4 @@ func splitCSV(s string) []string {
 		}
 	}
 	return result
-}
-
-// ListReliabilityEvents implements gen.StrictServerInterface.
-func (h *APIHandler) ListReliabilityEvents(_ context.Context, req gen.ListReliabilityEventsRequestObject) (gen.ListReliabilityEventsResponseObject, error) {
-	if h.reliabilitySvc == nil {
-		return gen.ListReliabilityEvents500JSONResponse{Error: "reliability service not configured"}, nil
-	}
-
-	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
-
-	var filter domain.ReliabilityFilter
-	if req.Params.EventType != nil && *req.Params.EventType != "" {
-		for _, t := range splitCSV(*req.Params.EventType) {
-			filter.EventTypes = append(filter.EventTypes, domain.ReliabilityEventType(t))
-		}
-	}
-	if req.Params.Severity != nil && *req.Params.Severity != "" {
-		for _, s := range splitCSV(*req.Params.Severity) {
-			filter.Severities = append(filter.Severities, domain.Severity(s))
-		}
-	}
-	if req.Params.AgentId != nil && *req.Params.AgentId != "" {
-		filter.AgentID = *req.Params.AgentId
-	}
-	if req.Params.Since != nil {
-		filter.Since = req.Params.Since
-	}
-	if req.Params.Until != nil {
-		filter.Until = req.Params.Until
-	}
-
-	page, err := h.reliabilitySvc.ListEvents(filter, opts)
-	if err != nil {
-		return gen.ListReliabilityEvents500JSONResponse{Error: "failed to list reliability events"}, nil
-	}
-
-	items := make([]gen.ReliabilityEvent, 0, len(page.Items))
-	for _, e := range page.Items {
-		items = append(items, domainReliabilityToGen(e))
-	}
-
-	var nextCursor *string
-	if page.NextCursor != "" {
-		nextCursor = &page.NextCursor
-	}
-
-	return gen.ListReliabilityEvents200JSONResponse{
-		Items:      items,
-		NextCursor: nextCursor,
-		TotalCount: page.TotalCount,
-	}, nil
-}
-
-// GetReliabilitySummary implements gen.StrictServerInterface.
-func (h *APIHandler) GetReliabilitySummary(_ context.Context, req gen.GetReliabilitySummaryRequestObject) (gen.GetReliabilitySummaryResponseObject, error) {
-	if h.reliabilitySvc == nil {
-		return gen.GetReliabilitySummary500JSONResponse{Error: "reliability service not configured"}, nil
-	}
-
-	now := time.Now().UTC()
-	since := now.Add(-24 * time.Hour)
-	until := now
-	if req.Params.Since != nil {
-		since = *req.Params.Since
-	}
-	if req.Params.Until != nil {
-		until = *req.Params.Until
-	}
-
-	bucket := "hour"
-	if req.Params.Bucket != nil {
-		bucket = string(*req.Params.Bucket)
-	}
-
-	summary, err := h.reliabilitySvc.GetSummary(since, until, bucket)
-	if err != nil {
-		return gen.GetReliabilitySummary500JSONResponse{Error: "failed to get reliability summary"}, nil
-	}
-
-	genBuckets := make([]gen.ReliabilityBucket, 0, len(summary.Buckets))
-	for _, b := range summary.Buckets {
-		genBuckets = append(genBuckets, gen.ReliabilityBucket{
-			Timestamp: b.Timestamp,
-			Counts:    b.Counts,
-		})
-	}
-
-	return gen.GetReliabilitySummary200JSONResponse{
-		Buckets: genBuckets,
-		Totals:  summary.Totals,
-	}, nil
-}
-
-func domainReliabilityToGen(e domain.ReliabilityEvent) gen.ReliabilityEvent {
-	ge := gen.ReliabilityEvent{
-		Id:        e.ID,
-		EventType: gen.ReliabilityEventEventType(e.EventType),
-		Severity:  gen.ReliabilityEventSeverity(e.Severity),
-		CreatedAt: e.CreatedAt,
-	}
-	if e.AgentID != "" {
-		ge.AgentId = &e.AgentID
-	}
-	if e.Scope != "" {
-		ge.Scope = &e.Scope
-	}
-	if e.Detail != nil {
-		detail := map[string]interface{}(e.Detail)
-		ge.Detail = &detail
-	}
-	return ge
 }

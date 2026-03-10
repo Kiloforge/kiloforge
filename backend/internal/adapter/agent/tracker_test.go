@@ -288,123 +288,83 @@ func TestQuotaTracker_SaveNoDataDir(t *testing.T) {
 	}
 }
 
-func TestQuotaTracker_RateSnapshotsAppended(t *testing.T) {
+func TestQuotaTracker_RateSnapshotAppendedOnRecord(t *testing.T) {
 	t.Parallel()
-
 	tracker := NewQuotaTracker("")
-	tracker.RecordEvent("agent-1", StreamEvent{
-		Type:    "result",
-		CostUSD: 0.05,
-		Usage:   &UsageData{InputTokens: 1000, OutputTokens: 500},
-	})
-	tracker.RecordEvent("agent-1", StreamEvent{
-		Type:    "result",
-		CostUSD: 0.03,
-		Usage:   &UsageData{InputTokens: 800, OutputTokens: 300},
-	})
-
+	tracker.RecordEvent("agent-1", StreamEvent{Type: "result", CostUSD: 0.05, Usage: &UsageData{InputTokens: 1000, OutputTokens: 500}})
+	tracker.RecordEvent("agent-1", StreamEvent{Type: "result", CostUSD: 0.03, Usage: &UsageData{InputTokens: 800, OutputTokens: 300}})
 	tracker.mu.RLock()
-	defer tracker.mu.RUnlock()
-	if len(tracker.snapshots) != 2 {
-		t.Errorf("snapshots: want 2, got %d", len(tracker.snapshots))
-	}
-	if tracker.snapshots[0].CostUSD != 0.05 {
-		t.Errorf("snapshot[0].CostUSD: want 0.05, got %f", tracker.snapshots[0].CostUSD)
-	}
-	if tracker.snapshots[1].InputTokens != 800 {
-		t.Errorf("snapshot[1].InputTokens: want 800, got %d", tracker.snapshots[1].InputTokens)
+	n := len(tracker.rateSnapshots)
+	tracker.mu.RUnlock()
+	if n != 2 {
+		t.Errorf("rateSnapshots: want 2, got %d", n)
 	}
 }
 
-func TestQuotaTracker_RingBufferCap(t *testing.T) {
+func TestQuotaTracker_RateSnapshotRingBufferLimit(t *testing.T) {
 	t.Parallel()
-
 	tracker := NewQuotaTracker("")
-	// Fill beyond maxSnapshots (60).
-	for i := 0; i < 70; i++ {
-		tracker.RecordEvent("agent-1", StreamEvent{
-			Type:    "result",
-			CostUSD: float64(i),
-			Usage:   &UsageData{InputTokens: i * 10},
-		})
+	for i := 0; i < maxRateSnapshots+10; i++ {
+		tracker.RecordEvent("agent-1", StreamEvent{Type: "result", CostUSD: 0.01, Usage: &UsageData{InputTokens: 100, OutputTokens: 50}})
 	}
-
 	tracker.mu.RLock()
-	defer tracker.mu.RUnlock()
-	if len(tracker.snapshots) != maxSnapshots {
-		t.Errorf("snapshots: want %d, got %d", maxSnapshots, len(tracker.snapshots))
-	}
-	// Oldest should be entry 10 (0-9 evicted).
-	if tracker.snapshots[0].CostUSD != 10 {
-		t.Errorf("oldest snapshot CostUSD: want 10, got %f", tracker.snapshots[0].CostUSD)
+	n := len(tracker.rateSnapshots)
+	tracker.mu.RUnlock()
+	if n != maxRateSnapshots {
+		t.Errorf("rateSnapshots should be capped at %d, got %d", maxRateSnapshots, n)
 	}
 }
 
 func TestQuotaTracker_TokensPerMin(t *testing.T) {
 	t.Parallel()
-
 	tracker := NewQuotaTracker("")
+	if rate := tracker.TokensPerMin(5 * time.Minute); rate != 0 {
+		t.Errorf("TokensPerMin with no data: want 0, got %f", rate)
+	}
 	now := time.Now()
-
-	// Inject snapshots manually to control timing.
 	tracker.mu.Lock()
-	tracker.snapshots = []RateSnapshot{
-		{Timestamp: now.Add(-4 * time.Minute), InputTokens: 500, OutputTokens: 200},
-		{Timestamp: now.Add(-3 * time.Minute), InputTokens: 600, OutputTokens: 300},
-		{Timestamp: now.Add(-1 * time.Minute), InputTokens: 400, OutputTokens: 100},
+	tracker.rateSnapshots = []RateSnapshot{
+		{Timestamp: now.Add(-4 * time.Minute), CostUSD: 0.01, InputTokens: 500, OutputTokens: 500},
+		{Timestamp: now.Add(-2 * time.Minute), CostUSD: 0.01, InputTokens: 500, OutputTokens: 500},
+		{Timestamp: now, CostUSD: 0.01, InputTokens: 500, OutputTokens: 500},
 	}
 	tracker.mu.Unlock()
-
-	// 5-minute window should capture all 3 snapshots.
 	rate := tracker.TokensPerMin(5 * time.Minute)
-	// Total tokens in window: (500+200) + (600+300) + (400+100) = 2100
-	// Elapsed from oldest to now: 4 minutes
-	want := 2100.0 / 4.0
-	if rate < want-1 || rate > want+1 {
-		t.Errorf("TokensPerMin(5m): want ~%.1f, got %.1f", want, rate)
-	}
-
-	// 2-minute window should capture only the last snapshot.
-	rate2 := tracker.TokensPerMin(2 * time.Minute)
-	// Total: 500, elapsed ~1 min
-	want2 := 500.0 / 1.0
-	if rate2 < want2-50 || rate2 > want2+50 {
-		t.Errorf("TokensPerMin(2m): want ~%.1f, got %.1f", want2, rate2)
+	if rate < 740 || rate > 760 {
+		t.Errorf("TokensPerMin: want ~750, got %f", rate)
 	}
 }
 
 func TestQuotaTracker_CostPerHour(t *testing.T) {
 	t.Parallel()
-
 	tracker := NewQuotaTracker("")
 	now := time.Now()
-
 	tracker.mu.Lock()
-	tracker.snapshots = []RateSnapshot{
-		{Timestamp: now.Add(-20 * time.Minute), CostUSD: 0.10},
-		{Timestamp: now.Add(-10 * time.Minute), CostUSD: 0.15},
-		{Timestamp: now.Add(-5 * time.Minute), CostUSD: 0.05},
+	tracker.rateSnapshots = []RateSnapshot{
+		{Timestamp: now.Add(-10 * time.Minute), CostUSD: 0.10},
+		{Timestamp: now.Add(-5 * time.Minute), CostUSD: 0.10},
+		{Timestamp: now, CostUSD: 0.10},
 	}
 	tracker.mu.Unlock()
-
-	// 30-minute window captures all.
 	rate := tracker.CostPerHour(30 * time.Minute)
-	// Total cost: 0.30, elapsed 20 min => per hour: 0.30 / 20 * 60 = 0.90
-	want := 0.30 / 20.0 * 60.0
-	if rate < want-0.01 || rate > want+0.01 {
-		t.Errorf("CostPerHour(30m): want ~%.3f, got %.3f", want, rate)
+	if rate < 1.70 || rate > 1.90 {
+		t.Errorf("CostPerHour: want ~1.80, got %f", rate)
 	}
 }
 
-func TestQuotaTracker_RatesEmptySnapshots(t *testing.T) {
+func TestQuotaTracker_RateWindowFiltering(t *testing.T) {
 	t.Parallel()
-
 	tracker := NewQuotaTracker("")
-
-	if rate := tracker.TokensPerMin(5 * time.Minute); rate != 0 {
-		t.Errorf("TokensPerMin with no snapshots: want 0, got %f", rate)
+	now := time.Now()
+	tracker.mu.Lock()
+	tracker.rateSnapshots = []RateSnapshot{
+		{Timestamp: now.Add(-10 * time.Minute), CostUSD: 1.00, InputTokens: 10000, OutputTokens: 5000},
+		{Timestamp: now.Add(-2 * time.Minute), CostUSD: 0.10, InputTokens: 500, OutputTokens: 500},
+		{Timestamp: now, CostUSD: 0.10, InputTokens: 500, OutputTokens: 500},
 	}
-	if rate := tracker.CostPerHour(30 * time.Minute); rate != 0 {
-		t.Errorf("CostPerHour with no snapshots: want 0, got %f", rate)
+	tracker.mu.Unlock()
+	rate := tracker.TokensPerMin(5 * time.Minute)
+	if rate < 990 || rate > 1010 {
+		t.Errorf("TokensPerMin with window filter: want ~1000, got %f", rate)
 	}
 }

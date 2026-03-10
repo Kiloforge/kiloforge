@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 info:
   title: Kiloforge API
-  description: Kiloforge Cortex API for agent management, quota tracking, lock coordination, and system status.
+  description: Kiloforge orchestrator API for agent management, quota tracking, lock coordination, and system status.
   version: 0.1.0
 
 servers:
@@ -949,119 +949,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/tracks/{trackId}/claim:
-    post:
-      operationId: claimTrack
-      summary: Claim a track for implementation
-      description: Acquires a track-scoped lock so other workers know this track is being worked on.
-      tags: [Tracks]
-      parameters:
-        - name: trackId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Track ID to claim
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ClaimTrackRequest"
-      responses:
-        "200":
-          description: Track claimed successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TrackClaimInfo"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Track already claimed by another holder
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TrackClaimConflict"
-    delete:
-      operationId: releaseTrackClaim
-      summary: Release a track claim
-      tags: [Tracks]
-      parameters:
-        - name: trackId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Track ID to release
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ReleaseTrackClaimRequest"
-      responses:
-        "200":
-          description: Claim released
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TrackClaimReleased"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: No claim found or not owned by holder
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /api/tracks/{trackId}/claim/heartbeat:
-    post:
-      operationId: heartbeatTrackClaim
-      summary: Extend track claim TTL
-      tags: [Tracks]
-      parameters:
-        - name: trackId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Track ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TrackClaimHeartbeatRequest"
-      responses:
-        "200":
-          description: Claim TTL extended
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TrackClaimInfo"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: No claim found or not owned by holder
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   /api/consent/agent-permissions:
     get:
       operationId: getAgentPermissionsConsent
@@ -1707,6 +1594,104 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/reliability/events:
+    get:
+      operationId: getReliabilityEvents
+      summary: List reliability events with pagination and filtering
+      tags: [Reliability]
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by event type. Comma-separated for multiple (e.g. "lock_contention,agent_timeout").
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by severity. Comma-separated for multiple (e.g. "error,critical").
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Only return events created after this timestamp (RFC3339).
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Only return events created before this timestamp (RFC3339).
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Maximum number of items to return per page.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor for pagination. Omit for first page.
+      responses:
+        "200":
+          description: Paginated list of reliability events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedReliabilityEvents"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/reliability/summary:
+    get:
+      operationId: getReliabilitySummary
+      summary: Aggregated reliability event counts by type and time bucket
+      tags: [Reliability]
+      parameters:
+        - name: window
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["1h", "24h", "7d", "30d"]
+            default: "24h"
+          description: Time window for aggregation.
+        - name: buckets
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 24
+          description: Number of time buckets to divide the window into.
+      responses:
+        "200":
+          description: Aggregated reliability summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReliabilitySummaryResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/queue/settings:
     patch:
       operationId: updateQueueSettings
@@ -1732,127 +1717,6 @@ paths:
                 $ref: "#/components/schemas/QueueStatus"
         "400":
           description: Invalid settings
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /api/reliability/events:
-    get:
-      operationId: listReliabilityEvents
-      summary: List reliability events with optional filters
-      tags: [Reliability]
-      parameters:
-        - name: event_type
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Filter by event type (comma-separated). Values lock_contention, lock_timeout, agent_timeout, agent_spawn_failure, agent_resume_failure, merge_conflict, quota_exceeded.
-        - name: severity
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Filter by severity (comma-separated). Values warn, error, critical.
-        - name: agent_id
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Filter by agent ID.
-        - name: since
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-          description: Filter events created at or after this timestamp (RFC 3339).
-        - name: until
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-          description: Filter events created before this timestamp (RFC 3339).
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 200
-            default: 50
-          description: Maximum number of items to return per page.
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Opaque cursor for pagination. Omit for first page.
-      responses:
-        "200":
-          description: Paginated list of reliability events
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaginatedReliabilityEvents"
-        "400":
-          description: Invalid filter parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /api/reliability/summary:
-    get:
-      operationId: getReliabilitySummary
-      summary: Get aggregated reliability event counts by type and time bucket
-      tags: [Reliability]
-      parameters:
-        - name: since
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-          description: Start of time range (RFC 3339). Defaults to 24 hours ago.
-        - name: until
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-          description: End of time range (RFC 3339). Defaults to now.
-        - name: bucket
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [hour, day]
-            default: hour
-          description: Time bucket granularity for aggregation.
-      responses:
-        "200":
-          description: Aggregated reliability summary
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ReliabilitySummary"
-        "400":
-          description: Invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Internal server error
           content:
             application/json:
               schema:
@@ -1940,7 +1804,7 @@ components:
         budget_usd:
           type: number
           format: double
-          description: "Global spend budget in USD. 0 means unlimited (default)."
+          description: "Global budget limit in USD. 0 means unlimited (default)."
 
     UpdateConfigRequest:
       type: object
@@ -1955,7 +1819,7 @@ components:
         budget_usd:
           type: number
           format: double
-          description: "Global spend budget in USD. 0 means unlimited."
+          description: "Global budget limit in USD. 0 means unlimited."
 
     PreflightResponse:
       type: object
@@ -2192,30 +2056,30 @@ components:
           description: Informational — API-equivalent cost estimate
         agent_count:
           type: integer
+        budget_usd:
+          type: number
+          format: double
+          description: Configured budget limit in USD. 0 means unlimited.
+        budget_used_pct:
+          type: number
+          format: double
+          description: Percentage of budget consumed (0-100). Omitted when budget is 0.
+        rate_tokens_per_min:
+          type: number
+          format: double
+          description: Average tokens (input+output) per minute over a 5-minute sliding window.
+        rate_cost_per_hour:
+          type: number
+          format: double
+          description: Average cost per hour over a 30-minute sliding window.
+        time_to_budget_mins:
+          type: number
+          format: double
+          description: Estimated minutes until budget is exhausted at current rate. Omitted when budget is 0 or rate is 0.
         agents:
           type: array
           items:
             $ref: "#/components/schemas/QuotaAgentUsage"
-        budget_usd:
-          type: number
-          format: double
-          description: "Configured budget in USD. 0 or omitted means unlimited."
-        budget_used_pct:
-          type: number
-          format: double
-          description: "Percentage of budget consumed (0-100+). Omitted when budget is 0."
-        rate_tokens_per_min:
-          type: number
-          format: double
-          description: "Token consumption rate (input+output) per minute over a 5-minute window."
-        rate_cost_per_hour:
-          type: number
-          format: double
-          description: "Cost rate in USD/hour over a 30-minute window."
-        time_to_budget_mins:
-          type: number
-          format: double
-          description: "Estimated minutes until budget exhaustion at current rate. Omitted when budget is 0 or rate is 0."
 
     QuotaAgentUsage:
       type: object
@@ -2301,17 +2165,6 @@ components:
         conflict_count:
           type: integer
           description: Number of active conflict risk pairs
-        claimed_by:
-          type: string
-          description: Holder ID that has claimed this track (empty if unclaimed)
-        claimed_at:
-          type: string
-          format: date-time
-          description: When the track was claimed
-        claim_expires_at:
-          type: string
-          format: date-time
-          description: When the claim expires if not heartbeated
 
     TrackDetail:
       type: object
@@ -2620,69 +2473,6 @@ components:
       properties:
         released:
           type: boolean
-
-    ClaimTrackRequest:
-      type: object
-      required: [holder]
-      properties:
-        holder:
-          type: string
-          description: Identifier of the worker claiming the track (e.g. worker-1, agent-abc)
-        ttl_seconds:
-          type: integer
-          default: 120
-          description: Claim TTL in seconds. Must be renewed via heartbeat.
-
-    TrackClaimInfo:
-      type: object
-      required: [track_id, holder, acquired_at, expires_at, ttl_remaining_seconds]
-      properties:
-        track_id:
-          type: string
-        holder:
-          type: string
-        acquired_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        ttl_remaining_seconds:
-          type: number
-          format: double
-
-    TrackClaimConflict:
-      type: object
-      required: [error]
-      properties:
-        error:
-          type: string
-        current_holder:
-          type: string
-
-    ReleaseTrackClaimRequest:
-      type: object
-      required: [holder]
-      properties:
-        holder:
-          type: string
-
-    TrackClaimReleased:
-      type: object
-      required: [released]
-      properties:
-        released:
-          type: boolean
-
-    TrackClaimHeartbeatRequest:
-      type: object
-      required: [holder]
-      properties:
-        holder:
-          type: string
-        ttl_seconds:
-          type: integer
-          default: 120
 
     SkillsStatus:
       type: object
@@ -3041,29 +2831,26 @@ components:
       properties:
         id:
           type: string
-          description: Unique event identifier (UUID).
+          description: Unique event identifier (UUID)
         event_type:
           type: string
           enum: [lock_contention, lock_timeout, agent_timeout, agent_spawn_failure, agent_resume_failure, merge_conflict, quota_exceeded]
-          description: Category of reliability event.
         severity:
           type: string
           enum: [warn, error, critical]
-          description: Severity level.
         agent_id:
           type: string
-          description: Associated agent ID, if applicable.
+          description: Associated agent ID (nullable)
         scope:
           type: string
-          description: Event scope (e.g. merge for lock events, track ID for agent events).
+          description: Event scope (e.g. "merge" for lock events, track ID for agent events)
         detail:
           type: object
           additionalProperties: true
-          description: Event-specific detail as a JSON object.
+          description: Event-specific detail data (JSON)
         created_at:
           type: string
           format: date-time
-          description: When the event occurred (RFC 3339).
 
     PaginatedReliabilityEvents:
       type: object
@@ -3080,31 +2867,52 @@ components:
           type: integer
           description: Total number of items matching the current filters.
 
-    ReliabilitySummary:
+    ReliabilitySummaryResponse:
       type: object
-      required: [buckets, totals]
+      required: [window, buckets, totals]
       properties:
+        window:
+          type: string
+          description: Time window used for aggregation (e.g. "24h")
+        bucket_duration:
+          type: string
+          description: Duration of each bucket (e.g. "1h")
         buckets:
           type: array
           items:
             $ref: "#/components/schemas/ReliabilityBucket"
-          description: Time-bucketed event counts.
         totals:
-          type: object
-          additionalProperties:
-            type: integer
-          description: Total counts keyed by event_type over the entire range.
+          $ref: "#/components/schemas/ReliabilityTotals"
 
     ReliabilityBucket:
       type: object
-      required: [timestamp, counts]
+      required: [start, end, counts]
       properties:
-        timestamp:
+        start:
           type: string
           format: date-time
-          description: Start of the time bucket (RFC 3339).
+        end:
+          type: string
+          format: date-time
         counts:
           type: object
           additionalProperties:
             type: integer
-          description: Event counts keyed by event_type within this bucket.
+          description: Event counts by type within this time bucket
+
+    ReliabilityTotals:
+      type: object
+      required: [total, by_type, by_severity]
+      properties:
+        total:
+          type: integer
+        by_type:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total counts by event type
+        by_severity:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total counts by severity

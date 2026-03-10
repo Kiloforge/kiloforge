@@ -26,7 +26,7 @@ import (
 
 var serveCmd = &cobra.Command{
 	Use:    "serve",
-	Short:  "Run the Cortex in the foreground (internal)",
+	Short:  "Run the orchestrator in the foreground (internal)",
 	Hidden: true,
 	RunE:   runServe,
 }
@@ -73,6 +73,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	prTracker := sqlite.NewPRTrackingStore(db)
 	traceStore := sqlite.NewTraceStore(db)
 	boardStore := sqlite.NewBoardStore(db)
+	reliabilityStore := sqlite.NewReliabilityStore(db)
 
 	// Initialize tracing (always on).
 	result, tracingErr := tracing.Init(ctx, "", tracing.WithSpanRecorder(traceStore))
@@ -123,9 +124,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	tourStore := sqlite.NewTourStore(db)
 	opts = append(opts, rest.WithTourStore(tourStore))
 
-	// Wire reliability event store for agent reliability metrics.
-	reliabilityStore := sqlite.NewReliabilityStore(db)
-	opts = append(opts, rest.WithReliabilityStore(reliabilityStore))
+	// Wire reliability metrics service.
+	reliabilitySvc := service.NewReliabilityService(reliabilityStore, nil)
+	opts = append(opts, rest.WithReliability(reliabilitySvc))
 
 	// Wire analytics tracker into server for API-level events.
 	opts = append(opts, rest.WithAnalytics(tracker))
@@ -133,10 +134,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Wire interactive agent spawner for WebSocket-based agent sessions.
 	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
 	spawner.SetAnalyticsTracker(tracker)
-	// Wire reliability service into spawner and quota tracker.
-	relSvc := service.NewReliabilityService(reliabilityStore, nil)
-	spawner.SetReliabilityService(relSvc)
-	quotaTracker.SetReliabilityService(relSvc)
+	spawner.SetReliabilityRecorder(reliabilitySvc)
 	opts = append(opts, rest.WithInteractiveSpawner(spawner))
 
 	// Start auto-update checker if enabled.
@@ -154,7 +152,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		"arch":       runtime.GOARCH,
 	})
 
-	log.Printf("Cortex starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
+	log.Printf("Orchestrator starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
 
 	srv := rest.NewServer(cfg, reg, agentStore, prTracker, cfg.OrchestratorPort, opts...)
 	if err := srv.Run(ctx); err != nil {
@@ -162,6 +160,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log.Printf("Cortex stopped")
+	log.Printf("Orchestrator stopped")
 	return nil
 }
