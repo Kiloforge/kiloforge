@@ -40,6 +40,8 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 		fmt.Println("    - All agent state and logs")
 		fmt.Printf("    - Data directory: %s\n", cfg.DataDir)
 		fmt.Println()
+		fmt.Println("  External mirror copies (created with --output) are preserved.")
+		fmt.Println()
 		fmt.Println("  This action cannot be undone.")
 		fmt.Println()
 		fmt.Print("  Type \"yes\" to confirm: ")

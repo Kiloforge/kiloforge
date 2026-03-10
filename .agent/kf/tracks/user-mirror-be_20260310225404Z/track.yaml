@@ -133,9 +133,9 @@ plan:
   - phase: Destroy safety
     tasks:
       - text: Write test verifying destroy does not delete external mirror paths
-        done: false
+        done: true
       - text: Update destroy confirmation prompt to note external copies preserved
-        done: false
+        done: true
   - phase: Persistence
     tasks:
       - text: Verify MirrorDir round-trips through SQLite store, add migration if needed
