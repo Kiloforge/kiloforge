@@ -16,10 +16,11 @@ const reaperInterval = 60 * time.Second
 // TimeoutReaper periodically checks agent durations and force-stops agents
 // exceeding the configured max duration.
 type TimeoutReaper struct {
-	store    port.AgentStore
-	cfg      *config.Config
-	eventBus port.EventBus
-	logger   *log.Logger
+	store       port.AgentStore
+	cfg         *config.Config
+	eventBus    port.EventBus
+	reliability port.ReliabilityRecorder
+	logger      *log.Logger
 }
 
 // NewTimeoutReaper creates a new agent timeout reaper.
@@ -30,6 +31,11 @@ func NewTimeoutReaper(store port.AgentStore, cfg *config.Config, eventBus port.E
 		eventBus: eventBus,
 		logger:   log.New(log.Writer(), "[timeout-reaper] ", log.LstdFlags),
 	}
+}
+
+// SetReliabilityRecorder sets the reliability event recorder.
+func (r *TimeoutReaper) SetReliabilityRecorder(rec port.ReliabilityRecorder) {
+	r.reliability = rec
 }
 
 // Start runs the reaper in a background goroutine. It stops when ctx is cancelled.
@@ -86,6 +92,19 @@ func (r *TimeoutReaper) reap() {
 				"status":          string(domain.AgentStatusForceKilled),
 				"shutdown_reason": reason,
 			}))
+		}
+
+		// Record reliability event for agent timeout.
+		if r.reliability != nil {
+			_ = r.reliability.RecordEvent(
+				domain.RelEventAgentTimeout, domain.SeverityError,
+				a.ID, a.Role,
+				map[string]any{
+					"reason":       reason,
+					"max_duration": maxDuration.String(),
+					"elapsed":      elapsed.Truncate(time.Second).String(),
+				},
+			)
 		}
 	}
 }

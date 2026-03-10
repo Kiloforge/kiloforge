@@ -80,6 +80,8 @@ type Spawner struct {
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
 
+	reliability port.ReliabilityRecorder
+
 	activeMu     sync.RWMutex
 	activeAgents map[string]*InteractiveAgent
 }
@@ -139,6 +141,11 @@ func (s *Spawner) SetCompletionCallback(fn CompletionCallback) {
 // SetEventBus sets the event bus for publishing capacity change events.
 func (s *Spawner) SetEventBus(eb port.EventBus) {
 	s.eventBus = eb
+}
+
+// SetReliabilityRecorder sets the reliability event recorder.
+func (s *Spawner) SetReliabilityRecorder(r port.ReliabilityRecorder) {
+	s.reliability = r
 }
 
 // SetSessionEndCallback sets the function called when an interactive session ends.
@@ -212,6 +219,13 @@ func (s *Spawner) checkQuota() error {
 	}
 	if s.tracker.IsRateLimited() {
 		ra := s.tracker.RetryAfter()
+		if s.reliability != nil {
+			_ = s.reliability.RecordEvent(
+				domain.RelEventQuotaExceeded, domain.SeverityWarn,
+				"", "",
+				map[string]any{"retry_after": ra.Round(time.Second).String()},
+			)
+		}
 		return fmt.Errorf("rate limited — retry after %s", ra.Round(time.Second))
 	}
 	return nil
@@ -369,6 +383,19 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 		}
 		span.AddEvent("agent.failed")
 		span.SetError(err)
+
+		// Record agent spawn/execution failure reliability event.
+		if s.reliability != nil {
+			_ = s.reliability.RecordEvent(
+				domain.RelEventAgentSpawnFailure, domain.SeverityError,
+				agentID, ref,
+				map[string]any{
+					"error":    err.Error(),
+					"model":    model,
+					"work_dir": workDir,
+				},
+			)
+		}
 	} else {
 		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {
 			fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)

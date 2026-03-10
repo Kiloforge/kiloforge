@@ -16,6 +16,7 @@ const (
 	EventQueueUpdate           = "queue_update"
 	EventCapacityChanged       = "capacity_changed"
 	EventProjectSettingsUpdate = "project_settings_update"
+	EventReliabilityEvent      = "reliability_event"
 )
 
 // NewAgentUpdateEvent creates an agent_update event.
@@ -86,4 +87,9 @@ func NewCapacityChangedEvent(capacity SwarmCapacity) Event {
 // NewProjectSettingsUpdateEvent creates a project_settings_update event.
 func NewProjectSettingsUpdateEvent(slug string, data any) Event {
 	return Event{Type: EventProjectSettingsUpdate, Data: map[string]any{"slug": slug, "settings": data}}
+}
+
+// NewReliabilityEventEvent creates a reliability_event event for SSE streaming.
+func NewReliabilityEventEvent(data any) Event {
+	return Event{Type: EventReliabilityEvent, Data: data}
 }

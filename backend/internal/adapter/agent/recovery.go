@@ -37,13 +37,19 @@ type RecoveryFailure struct {
 
 // RecoveryManager handles auto-recovery of suspended agents on startup.
 type RecoveryManager struct {
-	store   port.AgentStore
-	starter ProcessStarter
+	store       port.AgentStore
+	starter     ProcessStarter
+	reliability port.ReliabilityRecorder
 }
 
 // NewRecoveryManager creates a RecoveryManager.
 func NewRecoveryManager(store port.AgentStore, starter ProcessStarter) *RecoveryManager {
 	return &RecoveryManager{store: store, starter: starter}
+}
+
+// SetReliabilityRecorder sets the reliability event recorder.
+func (rm *RecoveryManager) SetReliabilityRecorder(r port.ReliabilityRecorder) {
+	rm.reliability = r
 }
 
 // RecoverAll attempts to resume all suspended agents. Also detects stale
@@ -82,6 +88,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 				ag.ResumeError = "no session ID"
 			}
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "no session ID"})
+			rm.recordResumeFail(a.ID, a.Role, "no session ID")
 			continue
 		}
 
@@ -93,6 +100,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 					ag.ResumeError = "worktree missing"
 				}
 				result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "worktree missing"})
+				rm.recordResumeFail(a.ID, a.Role, "worktree missing")
 				continue
 			}
 		}
@@ -105,6 +113,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 				ag.ResumeError = errMsg
 			}
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: errMsg})
+			rm.recordResumeFail(a.ID, a.Role, errMsg)
 			continue
 		}
 
@@ -120,6 +129,16 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 
 	_ = rm.store.Save()
 	return result
+}
+
+func (rm *RecoveryManager) recordResumeFail(agentID, role, reason string) {
+	if rm.reliability != nil {
+		_ = rm.reliability.RecordEvent(
+			domain.RelEventAgentResumeFail, domain.SeverityError,
+			agentID, role,
+			map[string]any{"reason": reason},
+		)
+	}
 }
 
 // execClaudeResume runs `claude --resume <sessionID>` in the given directory.
