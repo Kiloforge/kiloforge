@@ -1,5 +1,5 @@
 id: agent-recovery-be_20260310142300Z
-title: "Agent startup recovery and replace-agent flow"
+title: Agent startup recovery and replace-agent flow
 type: feature
 status: pending
 created: 2026-03-10
@@ -16,11 +16,11 @@ spec:
     suspends running agents (SIGINT → wait → SIGKILL). Their status becomes
     "suspended" or "force-killed" in SQLite. However, on restart nothing happens —
     RecoveryManager.RecoverAll() exists but is never called from serve.go.
-
+    
     The resume REST endpoint (POST /api/agents/{id}/resume) currently only works
     for interactive agents — it creates an SDK session with WS bridge. Developer
     and reviewer agents that were suspended have no way to resume from the UI.
-
+    
     When resume fails (session expired, worktree missing), the agent enters
     "resume-failed" status with no recovery path — the user must manually delete
     it and spawn a replacement. There should be a "replace" action that automates
@@ -46,7 +46,7 @@ spec:
       suspended.
     - backend/api/openapi.yaml — resume endpoint exists but response assumes
       interactive agent. No replace endpoint.
-
+    
     recovery.go bug: Lines 87-89 and 99-101 modify in-memory AgentInfo fields
     (ResumeError) via FindAgent pointer but never call store.Save() per-agent —
     only one Save() at line 130. The SQLite store's FindAgent returns a pointer
@@ -68,7 +68,7 @@ spec:
     - Config option for recovery mode (keep it simple: always paused)
   technical_notes: |
     Implementation approach:
-
+    
     1. Wire recovery into serve.go — after creating agentStore and before srv.Run():
        ```go
        rm := agent.NewRecoveryManager(agentStore, nil)
@@ -77,72 +77,72 @@ spec:
        ```
        Use a new DetectStale() method instead of RecoverAll() — we want paused-on-start
        behavior, not auto-resume.
-
+    
     2. Extend resume endpoint — split ResumeAgent handler into two paths:
        - Interactive: existing flow (SDK session + WS bridge)
        - One-shot (developer/reviewer): call ResumeDeveloper() which uses
          execClaudeResume() to launch claude --resume in background, update PID
          and status. No WS bridge needed.
-
+    
     3. Add replace endpoint — POST /api/agents/{id}/replace:
        - Validate old agent is in terminal/resume-failed state
        - Extract ref (track ID), role, worktree_dir, model from old agent
        - Mark old agent status to "replaced" (new terminal status)
        - Spawn new agent with same parameters
        - Return new agent in response
-
+    
     4. Fix ResumeError persistence — add explicit field update in SQLite store
        rather than relying on in-memory pointer mutation.
-
+    
     5. OpenAPI schema changes:
        - Add POST /api/agents/{id}/replace endpoint
        - Add "replaced" to status enum
        - Update resume endpoint description to clarify all-role support
 plan:
-  - phase: "Startup recovery wiring"
+  - phase: Startup recovery wiring
     tasks:
-      - text: "Add DetectStale() method to RecoveryManager that marks stale agents without resuming"
-        done: false
-      - text: "Write test for DetectStale — running agent with dead PID gets marked suspended"
-        done: false
-      - text: "Wire DetectStale into serve.go after agentStore init, before srv.Run()"
-        done: false
-      - text: "Add startup recovery log line with count of stale agents"
-        done: false
-  - phase: "Resume API extension"
+      - text: Add DetectStale() method to RecoveryManager that marks stale agents without resuming
+        done: true
+      - text: Write test for DetectStale — running agent with dead PID gets marked suspended
+        done: true
+      - text: Wire DetectStale into serve.go after agentStore init, before srv.Run()
+        done: true
+      - text: Add startup recovery log line with count of stale agents
+        done: true
+  - phase: Resume API extension
     tasks:
-      - text: "Add ResumeDeveloper() to Spawner — launches claude --resume, returns AgentInfo (no WS bridge)"
-        done: false
-      - text: "Write test for ResumeDeveloper — suspended developer agent resumes with new PID"
-        done: false
-      - text: "Update ResumeAgent API handler to branch on agent.Role: interactive→existing, developer/reviewer→ResumeDeveloper"
-        done: false
-      - text: "Write handler test: resume suspended developer returns 200 with updated agent"
-        done: false
-      - text: "Write handler test: resume suspended interactive returns 200 with WS bridge"
-        done: false
-      - text: "Fix ResumeError persistence — add UpdateResumeError method to AgentStore, use in recovery.go"
-        done: false
-  - phase: "Replace agent endpoint"
+      - text: Add ResumeDeveloper() to Spawner — launches claude --resume, returns AgentInfo (no WS bridge)
+        done: true
+      - text: Write test for ResumeDeveloper — suspended developer agent resumes with new PID
+        done: true
+      - text: Update ResumeAgent API handler to branch on agent.Role: interactive→existing, developer/reviewer→ResumeDeveloper
+        done: true
+      - text: Write handler test: resume suspended developer returns 200 with updated agent
+        done: true
+      - text: Write handler test: resume suspended interactive returns 200 with WS bridge
+        done: true
+      - text: Fix ResumeError persistence — add UpdateResumeError method to AgentStore, use in recovery.go
+        done: true
+  - phase: Replace agent endpoint
     tasks:
-      - text: "Add 'replaced' to AgentStatus constants and IsTerminal()"
-        done: false
-      - text: "Add POST /api/agents/{id}/replace to OpenAPI schema with request/response types"
-        done: false
-      - text: "Run make gen-api to regenerate server interfaces"
-        done: false
-      - text: "Implement ReplaceAgent handler — validate terminal state, extract params, mark replaced, spawn new"
-        done: false
-      - text: "Write handler test: replace resume-failed agent spawns new agent with same ref/role"
-        done: false
-      - text: "Write handler test: replace running agent returns 409"
-        done: false
-  - phase: "Verification"
+      - text: Add 'replaced' to AgentStatus constants and IsTerminal()
+        done: true
+      - text: Add POST /api/agents/{id}/replace to OpenAPI schema with request/response types
+        done: true
+      - text: Run make gen-api to regenerate server interfaces
+        done: true
+      - text: Implement ReplaceAgent handler — validate terminal state, extract params, mark replaced, spawn new
+        done: true
+      - text: Write handler test: replace resume-failed agent spawns new agent with same ref/role
+        done: true
+      - text: Write handler test: replace running agent returns 409
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test — all existing + new tests pass"
-        done: false
-      - text: "Run make lint — no new lint issues"
-        done: false
-      - text: "Manual verification: start server, check logs for recovery line"
-        done: false
+      - text: Run make test — all existing + new tests pass
+        done: true
+      - text: Run make lint — no new lint issues
+        done: true
+      - text: Manual verification: start server, check logs for recovery line
+        done: true
 extra: {}
