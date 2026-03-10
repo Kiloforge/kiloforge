@@ -35,9 +35,6 @@
 
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-fix-agent-spawn-context_20260310100000Z: []
-
 header-title-link_20260310070000Z: []
 
 immersive-views_20260310110000Z: []

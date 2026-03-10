@@ -80,11 +80,11 @@ plan:
   - phase: Verification
     tasks:
       - text: Build backend and spawn an interactive agent via curl — verify it stays running after HTTP response
-        done: false
+        done: true
       - text: Verify agent log file contains actual output after spawning
-        done: false
+        done: true
       - text: Verify stop/resume still works (StopAgent calls session.Close which has its own cancel)
-        done: false
+        done: true
       - text: Run existing tests: make test
-        done: false
+        done: true
 extra: {}
