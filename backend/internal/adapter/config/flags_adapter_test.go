@@ -29,10 +29,6 @@ func TestFlagsAdapter_OnlySetFields(t *testing.T) {
 		t.Errorf("DataDir: want %q, got %q", "/custom/dir", cfg.DataDir)
 	}
 
-	// Unset fields should be zero.
-	if cfg.ContainerName != "" {
-		t.Errorf("ContainerName: want empty, got %q", cfg.ContainerName)
-	}
 }
 
 func TestFlagsAdapter_NoOptions_ZeroConfig(t *testing.T) {
@@ -55,8 +51,6 @@ func TestFlagsAdapter_AllOptions(t *testing.T) {
 	adapter := NewFlagsAdapter(
 		WithOrchestratorPort(9000),
 		WithDataDir("/flags"),
-		WithComposeFile("/flags/compose.yml"),
-		WithContainerName("flag-gitea"),
 	)
 
 	cfg, err := adapter.Load()
@@ -67,7 +61,7 @@ func TestFlagsAdapter_AllOptions(t *testing.T) {
 	if cfg.OrchestratorPort != 9000 {
 		t.Errorf("OrchestratorPort: want 9000, got %d", cfg.OrchestratorPort)
 	}
-	if cfg.ContainerName != "flag-gitea" {
-		t.Errorf("ContainerName: want %q, got %q", "flag-gitea", cfg.ContainerName)
+	if cfg.DataDir != "/flags" {
+		t.Errorf("DataDir: want %q, got %q", "/flags", cfg.DataDir)
 	}
 }
