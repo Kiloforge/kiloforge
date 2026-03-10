@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -362,6 +363,7 @@ func (h *APIHandler) checkClaudeAuth(ctx context.Context) string {
 // ListAgents implements gen.StrictServerInterface.
 func (h *APIHandler) ListAgents(_ context.Context, req gen.ListAgentsRequestObject) (gen.ListAgentsResponseObject, error) {
 	if err := h.agents.Load(); err != nil {
+		slog.Error("failed to load agent state", "error", err)
 		return gen.ListAgents500JSONResponse{Error: "failed to load agent state"}, nil
 	}
 
@@ -375,6 +377,7 @@ func (h *APIHandler) ListAgents(_ context.Context, req gen.ListAgentsRequestObje
 
 	page, err := h.agents.ListAgents(opts, statuses...)
 	if err != nil {
+		slog.Error("failed to list agents", "error", err)
 		return gen.ListAgents500JSONResponse{Error: "failed to list agents"}, nil
 	}
 
@@ -650,7 +653,9 @@ func (h *APIHandler) DeleteAgent(_ context.Context, req gen.DeleteAgentRequestOb
 
 	// Delete log file if exists.
 	if a.LogFile != "" {
-		_ = os.Remove(a.LogFile)
+		if err := os.Remove(a.LogFile); err != nil && !os.IsNotExist(err) {
+			slog.Warn("failed to remove agent log file", "agent", a.ID, "file", a.LogFile, "error", err)
+		}
 	}
 
 	// Remove from store.
@@ -1434,6 +1439,7 @@ func (h *APIHandler) MoveCard(_ context.Context, req gen.MoveCardRequestObject) 
 	result, err := h.boardSvc.MoveCard(req.Project, req.Body.TrackId, string(req.Body.ToColumn))
 	if err != nil {
 		code, msg := mapServiceError(err)
+		slog.Warn("MoveCard failed", "project", req.Project, "track", req.Body.TrackId, "error", err)
 		switch {
 		case code >= 500:
 			return gen.MoveCard500JSONResponse{Error: msg}, nil
@@ -1478,12 +1484,14 @@ func (h *APIHandler) SyncBoard(_ context.Context, req gen.SyncBoardRequestObject
 
 	tracks, err := h.trackReader.DiscoverTracks(projectDir)
 	if err != nil {
-		return gen.SyncBoard500JSONResponse{Error: fmt.Sprintf("discover tracks: %v", err)}, nil
+		slog.Error("SyncBoard: failed to discover tracks", "project", req.Project, "error", err)
+		return gen.SyncBoard500JSONResponse{Error: "failed to discover tracks"}, nil
 	}
 
 	result, err := h.boardSvc.SyncFromTracks(req.Project, tracks, nil)
 	if err != nil {
-		return gen.SyncBoard500JSONResponse{Error: err.Error()}, nil
+		slog.Error("SyncBoard: failed to sync from tracks", "project", req.Project, "error", err)
+		return gen.SyncBoard500JSONResponse{Error: "internal error"}, nil
 	}
 	if h.eventBus != nil && (result.Created > 0 || result.Updated > 0) {
 		board, boardErr := h.boardSvc.GetBoard(req.Project)
