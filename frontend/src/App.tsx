@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { capturePageview } from "./analytics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Agent, SpawnInteractiveRequest, StatusResponse } from "./types/api";
 import type { AgentRole } from "./components/AgentLauncher";
@@ -84,6 +85,12 @@ export default function App() {
   );
 
   useKeyboardShortcuts(shortcutActions);
+
+  // Track page views on route changes.
+  const location = useLocation();
+  useEffect(() => {
+    capturePageview(location.pathname);
+  }, [location.pathname]);
 
   const handleBoardUpdate = useCallback(
     () => {

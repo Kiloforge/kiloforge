@@ -119,13 +119,13 @@ plan:
   - phase: Frontend — PostHog SDK
     tasks:
       - text: Install posthog-js in frontend (npm install posthog-js)
-        done: false
+        done: true
       - text: Create frontend/src/analytics.ts — PostHog init helper with project API key, autocapture: false
-        done: false
+        done: true
       - text: Initialize PostHog in frontend/src/main.tsx on app mount
-        done: false
+        done: true
       - text: Add page view tracking on React Router route changes (posthog.capture('$pageview'))
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run kf up locally, spawn an agent, verify agent_session_started appears in PostHog dashboard

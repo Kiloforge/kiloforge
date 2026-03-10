@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider, MutationCache } from '@tanstack/react
 import { ToastProvider, useToast } from './components/toast/ToastProvider'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { formatMutationError, setToastRef } from './api/errorToast'
+import { initAnalytics } from './analytics'
 import './index.css'
 import App from './App'
+
+initAnalytics()
 
 const mutationCache = new MutationCache({
   onError: (error) => {
