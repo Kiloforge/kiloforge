@@ -1,5 +1,5 @@
 id: fix-developer-availability_20260310120001Z
-title: "Fix track availability detection — CLI branch awareness + skill updates"
+title: Fix track availability detection — CLI branch awareness + skill updates
 type: chore
 status: pending
 created: 2026-03-10
@@ -14,15 +14,15 @@ spec:
     When developers check track availability (via kf-track list, kf-status,
     or kf-dispatch), tracks appear as "AVAILABLE" even when another worker
     has already created an implementation branch (e.g., feature/{trackId}).
-
+    
     Root cause: kf-track list reads only tracks.yaml status field. The
     developer skill never updates status to "in-progress" when claiming.
     The claim check (branch scanning) only runs when a specific track ID
     is provided for claiming — not during listing.
-
+    
     Additionally, the kf-developer skill references "developer-*" worktree
     naming but actual worktrees use "worker-*" naming convention.
-
+    
     Live example: worker-2 is on feature/quota-gauges-be_20260310092417Z
     and worker-4 is on feature/reliability-metrics-be_20260310093038Z,
     but both tracks show as "pending" in tracks.yaml and "AVAILABLE" in
@@ -36,10 +36,10 @@ spec:
     - backend/internal/adapter/skills/embedded/kf-developer/SKILL.md — embedded copy
     - ~/.claude/skills/kf-developer/SKILL.md — global copy
     - Both copies are currently identical (658 lines)
-
+    
     The kf-track script is a bash script that parses tracks.yaml (YAML)
     and deps.yaml. It has no git branch awareness currently.
-
+    
     The developer skill Step 3.2 already does branch scanning for claim
     validation of a specific track — this logic needs to be extracted
     and made available to the list/status commands.
@@ -60,45 +60,45 @@ spec:
     Run `git branch --list 'feature/*' 'bug/*' 'chore/*' 'refactor/*'`
     and extract track IDs from branch names. Cross-reference against
     active tracks to mark as "claimed".
-
+    
     Server mode (when orchestrator running):
     Query GET /api/tracks with claim status enrichment. The server
     returns claimed_by info from the lock manager.
-
+    
     Detection: Try server first (curl with 1s timeout to KF_ORCH_URL),
     fall back to branch scanning if unreachable.
-
+    
     Skill naming fix: Replace all instances of "developer-*",
     "developer-1", "developer-2", "developer-3" with "worker-*",
     "worker-1", "worker-2", "worker-3" respectively. Both in the
     worktree convention section and throughout the document.
 plan:
-  - phase: "CLI Enhancement"
+  - phase: CLI Enhancement
     tasks:
-      - text: "Add branch_scan_claimed() helper function to kf-track that lists implementation branches and extracts track IDs"
-        done: false
-      - text: "Add server_query_claims() helper that queries orchestrator claim API with fallback"
-        done: false
-      - text: "Add get_claimed_tracks() wrapper that tries server first, falls back to branch scan"
-        done: false
-      - text: "Update cmd_list to cross-reference claimed tracks — show 'claimed' status, add --unclaimed filter"
-        done: false
-      - text: "Update cmd_status to show 'CLAIMED (by worker-N)' for claimed tracks instead of 'AVAILABLE'"
-        done: false
-  - phase: "Skill Updates"
+      - text: Add branch_scan_claimed() helper function to kf-track that lists implementation branches and extracts track IDs
+        done: true
+      - text: Add server_query_claims() helper that queries orchestrator claim API with fallback
+        done: true
+      - text: Add get_claimed_tracks() wrapper that tries server first, falls back to branch scan
+        done: true
+      - text: Update cmd_list to cross-reference claimed tracks — show 'claimed' status, add --unclaimed filter
+        done: true
+      - text: Update cmd_status to show 'CLAIMED (by worker-N)' for claimed tracks instead of 'AVAILABLE'
+        done: true
+  - phase: Skill Updates
     tasks:
-      - text: "Update kf-developer SKILL.md — replace developer-* naming with worker-* throughout"
-        done: false
-      - text: "Update kf-developer SKILL.md — add claim step after validation (call kf-track claim or server API)"
-        done: false
-      - text: "Copy updated SKILL.md to embedded location (backend/internal/adapter/skills/embedded/kf-developer/SKILL.md)"
-        done: false
-      - text: "Copy updated SKILL.md to global location (~/.claude/skills/kf-developer/SKILL.md)"
-        done: false
-  - phase: "Verification"
+      - text: Update kf-developer SKILL.md — replace developer-* naming with worker-* throughout
+        done: true
+      - text: Update kf-developer SKILL.md — add claim step after validation (call kf-track claim or server API)
+        done: true
+      - text: Copy updated SKILL.md to embedded location (backend/internal/adapter/skills/embedded/kf-developer/SKILL.md)
+        done: true
+      - text: Copy updated SKILL.md to global location (~/.claude/skills/kf-developer/SKILL.md)
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Verify kf-track list correctly shows claimed status for tracks with existing branches (worker-2 and worker-4)"
-        done: false
-      - text: "Verify both embedded and global SKILL.md copies are identical (diff check)"
-        done: false
+      - text: Verify kf-track list correctly shows claimed status for tracks with existing branches (worker-2 and worker-4)
+        done: true
+      - text: Verify both embedded and global SKILL.md copies are identical (diff check)
+        done: true
 extra: {}
