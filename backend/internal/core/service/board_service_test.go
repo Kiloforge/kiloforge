@@ -246,6 +246,45 @@ func TestDomainBoard_IsValidColumn(t *testing.T) {
 	}
 }
 
+func TestDomainBoard_ClampForwardMove(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		from    string
+		to      string
+		want    string
+	}{
+		// Forward moves that should be clamped
+		{"backlog→approved (1 step, allowed)", domain.ColumnBacklog, domain.ColumnApproved, domain.ColumnApproved},
+		{"backlog→in_progress (2 steps, clamp to approved)", domain.ColumnBacklog, domain.ColumnInProgress, domain.ColumnApproved},
+		{"backlog→done (3 steps, clamp to approved)", domain.ColumnBacklog, domain.ColumnDone, domain.ColumnApproved},
+		{"approved→in_progress (clamp: beyond approved)", domain.ColumnApproved, domain.ColumnInProgress, domain.ColumnApproved},
+		{"approved→done (clamp: beyond approved)", domain.ColumnApproved, domain.ColumnDone, domain.ColumnApproved},
+		{"in_progress→done (clamp: beyond approved)", domain.ColumnInProgress, domain.ColumnDone, domain.ColumnInProgress},
+
+		// Backward moves — unrestricted (pass-through)
+		{"approved→backlog (backward)", domain.ColumnApproved, domain.ColumnBacklog, domain.ColumnBacklog},
+		{"in_progress→backlog (backward)", domain.ColumnInProgress, domain.ColumnBacklog, domain.ColumnBacklog},
+		{"in_progress→approved (backward)", domain.ColumnInProgress, domain.ColumnApproved, domain.ColumnApproved},
+		{"done→backlog (backward)", domain.ColumnDone, domain.ColumnBacklog, domain.ColumnBacklog},
+		{"done→approved (backward)", domain.ColumnDone, domain.ColumnApproved, domain.ColumnApproved},
+
+		// Same column — pass-through
+		{"backlog→backlog (same)", domain.ColumnBacklog, domain.ColumnBacklog, domain.ColumnBacklog},
+		{"done→done (same)", domain.ColumnDone, domain.ColumnDone, domain.ColumnDone},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := domain.ClampForwardMove(tt.from, tt.to)
+			if got != tt.want {
+				t.Errorf("ClampForwardMove(%q, %q) = %q, want %q", tt.from, tt.to, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDomainBoard_IsBackwardForwardMove(t *testing.T) {
 	t.Parallel()
 	if !domain.IsBackwardMove("in_progress", "backlog") {

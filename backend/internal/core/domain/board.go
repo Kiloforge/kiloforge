@@ -76,6 +76,35 @@ func NewBoardState() *BoardState {
 	}
 }
 
+// ClampForwardMove restricts manual forward moves to at most one step, and
+// never beyond "approved". If the move is not forward, it returns toCol
+// unchanged. This is a pure function with no side effects.
+func ClampForwardMove(fromCol, toCol string) string {
+	from, ok1 := ColumnOrder[fromCol]
+	to, ok2 := ColumnOrder[toCol]
+	if !ok1 || !ok2 || to <= from {
+		return toCol // not forward or invalid — pass through
+	}
+	// Forward move: max manual target is "approved".
+	maxTarget := ColumnOrder[ColumnApproved]
+	if from >= maxTarget {
+		// Already at or beyond approved — no manual forward move allowed.
+		return fromCol
+	}
+	// Clamp to at most one step ahead, capped at approved.
+	clamped := from + 1
+	if clamped > maxTarget {
+		clamped = maxTarget
+	}
+	// Map ordinal back to column name.
+	for col, ord := range ColumnOrder {
+		if ord == clamped {
+			return col
+		}
+	}
+	return fromCol // fallback (shouldn't happen)
+}
+
 // CardsByColumn returns cards in the given column, sorted by position.
 func (b *BoardState) CardsByColumn(col string) []BoardCard {
 	var cards []BoardCard
