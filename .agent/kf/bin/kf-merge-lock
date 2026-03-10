@@ -5,7 +5,7 @@
 # Used by kf-developer and kf-architect skills to coordinate merges.
 #
 # USAGE:
-#   kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS]
+#   kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS] [--pid PID]
 #   kf-merge-lock release [--holder NAME]
 #   kf-merge-lock heartbeat [--holder NAME] [--ttl SECONDS]
 #   kf-merge-lock status
@@ -14,6 +14,27 @@
 # ENVIRONMENT:
 #   KF_ORCH_URL     Orchestrator URL (default: http://localhost:4001)
 #   KF_LOCK_HOLDER  Default holder name (default: basename of $PWD)
+#
+# MERGE PROTOCOL — REBASE CONFLICT RESOLUTION
+#
+#   During `git rebase`, --ours and --theirs have REVERSED semantics:
+#     --ours  = the branch being rebased ONTO (e.g., main — the latest state)
+#     --theirs = the commit being REPLAYED (the worker's old commit — stale)
+#
+#   To accept main's version of track state files during rebase conflicts:
+#     git checkout --ours .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml
+#     git checkout --ours .agent/kf/tracks/conflicts.yaml
+#
+#   WRONG: git checkout --theirs (accepts the stale worker commit, reverts
+#   other workers' completions — this caused track state regressions).
+#
+# MAIN WORKTREE CLEANUP
+#
+#   Before running `git -C <main-worktree> merge --ff-only`, ensure the main
+#   worktree is clean. Previous failed merges or stash pops can leave dirty
+#   state that blocks ff-merge. Use:
+#     git -C <main-worktree> reset --hard HEAD
+#   before the merge attempt if the worktree might be dirty.
 
 set -euo pipefail
 
@@ -360,7 +381,7 @@ cmd_help() {
 kf-merge-lock — Cross-worktree merge lock helper
 
 USAGE:
-  kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS]
+  kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS] [--pid PID]
   kf-merge-lock release [--holder NAME]
   kf-merge-lock heartbeat [--holder NAME] [--ttl SECONDS]
   kf-merge-lock status
@@ -370,6 +391,7 @@ OPTIONS:
   --holder NAME     Lock holder identity (default: basename of $PWD)
   --timeout SECONDS Acquire timeout: 0=non-blocking, >0=poll/wait (default: 0)
   --ttl SECONDS     Lock TTL in seconds (default: 120)
+  --pid PID         PID to record for stale detection (default: $PPID)
 
 MODES:
   HTTP   — Preferred when orchestrator is running ($KF_ORCH_URL/health responds)
