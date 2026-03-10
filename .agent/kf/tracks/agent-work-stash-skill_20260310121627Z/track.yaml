@@ -93,11 +93,11 @@ plan:
   - phase: Skill Updates
     tasks:
       - text: Update kf-developer SKILL.md Phase 2 Step 5 — check for stash branches after creating impl branch and merge if found
-        done: false
+        done: true
       - text: Update kf-developer SKILL.md Phase 5 Step 11e — clean up stash branches during post-merge cleanup
-        done: false
+        done: true
       - text: Sync changes to both embedded (backend/internal/adapter/skills/embedded/kf-developer/SKILL.md) and local (~/.claude/skills/kf-developer/SKILL.md) copies
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Test kf-track stash subcommands manually with a dummy stash branch

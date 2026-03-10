@@ -227,6 +227,21 @@ Branch naming: `{type}/{trackId}` where type comes from metadata (e.g., `feature
 
 > **Note:** The implementation branch is created from `${PRIMARY_BRANCH}`, not from the home branch. The `git reset --hard` just before serves as a timestamp marker — it records when this worker last synced, which can be useful for diagnosing staleness.
 
+#### Step 5b — Check for stash branches
+
+After creating the implementation branch, check if a previous worker stashed work for this track:
+
+```bash
+STASH=$(git branch --list "stash/{trackId}/*" | head -1 | sed 's/^[* ]*//')
+if [ -n "$STASH" ]; then
+  git merge "$STASH" --no-edit
+  git branch -D "$STASH"
+  echo "Restored from stash: $STASH"
+fi
+```
+
+If a stash branch exists, merge it into the fresh implementation branch. This recovers any work saved by a previous agent that was interrupted before completing the track. Delete the stash branch after merging — it's no longer needed.
+
 ### Step 6 — Load workflow configuration
 
 Read `.agent/kf/workflow.md` and parse:
@@ -572,6 +587,11 @@ git checkout {worker-home-branch}
 
 # Delete implementation branch (safe — it's been merged and we've switched away)
 git branch -d {type}/{trackId}
+
+# Clean up any stash branches for this track
+for b in $(git branch --list "stash/{trackId}/*" | sed 's/^[* ]*//'); do
+  git branch -D "$b"
+done
 
 # If --with-review was used: clean up remote branch and close PR
 # GitHub: gh pr close {pr-number} (if not auto-closed) && git push ${REMOTE_NAME} --delete {type}/{trackId}
