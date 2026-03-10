@@ -13,8 +13,6 @@ func TestEnvAdapter_ImplementsConfigProvider(t *testing.T) {
 func TestEnvAdapter_Load(t *testing.T) {
 	// Not parallel — modifies env vars.
 	t.Setenv("KF_DATA_DIR", "/opt/kf")
-	t.Setenv("KF_COMPOSE_FILE", "/opt/compose.yml")
-	t.Setenv("KF_CONTAINER_NAME", "env-gitea")
 
 	adapter := &EnvAdapter{}
 	cfg, err := adapter.Load()
@@ -24,12 +22,6 @@ func TestEnvAdapter_Load(t *testing.T) {
 
 	if cfg.DataDir != "/opt/kf" {
 		t.Errorf("DataDir: want %q, got %q", "/opt/kf", cfg.DataDir)
-	}
-	if cfg.ComposeFile != "/opt/compose.yml" {
-		t.Errorf("ComposeFile: want %q, got %q", "/opt/compose.yml", cfg.ComposeFile)
-	}
-	if cfg.ContainerName != "env-gitea" {
-		t.Errorf("ContainerName: want %q, got %q", "env-gitea", cfg.ContainerName)
 	}
 }
 

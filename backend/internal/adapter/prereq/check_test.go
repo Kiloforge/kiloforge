@@ -69,20 +69,6 @@ func TestGitHint_Linux(t *testing.T) {
 	}
 }
 
-func TestDockerHint_Darwin(t *testing.T) {
-	hint := dockerHint("darwin")
-	if !strings.Contains(hint, "Docker Desktop") {
-		t.Errorf("expected Docker Desktop for darwin, got: %s", hint)
-	}
-}
-
-func TestDockerHint_Linux(t *testing.T) {
-	hint := dockerHint("linux")
-	if !strings.Contains(hint, "docs.docker.com") {
-		t.Errorf("expected docker docs URL for linux, got: %s", hint)
-	}
-}
-
 func TestClaudeHint(t *testing.T) {
 	hint := claudeHint()
 	if !strings.Contains(hint, "npm install") {

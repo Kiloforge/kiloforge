@@ -14,7 +14,6 @@ func TestConfig_SaveAndLoad(t *testing.T) {
 	cfg := &Config{
 		OrchestratorPort: 4001,
 		DataDir:          dir,
-		ComposeFile:      filepath.Join(dir, "docker-compose.yml"),
 	}
 
 	if err := cfg.Save(); err != nil {
@@ -31,9 +30,6 @@ func TestConfig_SaveAndLoad(t *testing.T) {
 	}
 	if loaded.DataDir != cfg.DataDir {
 		t.Errorf("DataDir: want %q, got %q", cfg.DataDir, loaded.DataDir)
-	}
-	if loaded.ComposeFile != cfg.ComposeFile {
-		t.Errorf("ComposeFile: want %q, got %q", cfg.ComposeFile, loaded.ComposeFile)
 	}
 }
 
