@@ -241,7 +241,7 @@ tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetchi
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 test-coverage-be_20260311120004Z: {"title":"Increase backend test coverage — CLI, REST, persistence layers","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 tooltip-z-index-fix-fe_20260310210000Z: {"title":"Fix HelpTooltip popover clipped by panel stacking context","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 tour-inmemory-state_20260310120000Z: {"title":"Tour In-Memory State — Controlled Demo Data for Guided Tour","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
