@@ -13,6 +13,7 @@ import (
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
+	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
@@ -1813,5 +1814,227 @@ func TestRunAdminOperation_NilHandler(t *testing.T) {
 	}
 	if resp == nil {
 		t.Fatal("expected non-nil response")
+	}
+}
+
+// --- stubTraceReader for GetTrackDetail trace tests ---
+
+type stubTraceReader struct {
+	traces map[string][]tracing.TraceSummary
+}
+
+func (s *stubTraceReader) ListTraces() []tracing.TraceSummary { return nil }
+func (s *stubTraceReader) ListTracesPaginated(_ domain.PageOpts, _, _ string) (domain.Page[tracing.TraceSummary], error) {
+	return domain.Page[tracing.TraceSummary]{}, nil
+}
+func (s *stubTraceReader) GetTrace(_ string) []tracing.SpanSummary { return nil }
+func (s *stubTraceReader) FindByTrackID(trackID string) []tracing.TraceSummary {
+	return s.traces[trackID]
+}
+func (s *stubTraceReader) FindBySessionID(_ string) []tracing.TraceSummary { return nil }
+
+func TestGetTrackDetail_WithAgentRegister(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	detail := &port.TrackDetail{
+		ID:     "track-reg",
+		Title:  "Register Track",
+		Status: "in-progress",
+		AgentRegister: &port.AgentRegister{
+			CreatedBy: &port.AgentIdentity{
+				AgentID:   "arch-1",
+				Role:      "architect",
+				SessionID: "sess-abc",
+				Timestamp: "2026-03-12T14:00:00Z",
+			},
+			ClaimedBy: &port.AgentIdentity{
+				AgentID:   "dev-1",
+				Role:      "developer",
+				SessionID: "sess-xyz",
+				Worktree:  "worker-3",
+				Branch:    "feature/track-reg",
+				Model:     "claude-opus-4-6",
+				Timestamp: "2026-03-12T15:00:00Z",
+			},
+		},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		TrackReader: &stubTrackReaderWithDetail{detail: detail},
+	})
+	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
+		TrackId: "track-reg",
+		Params:  gen.GetTrackDetailParams{Project: "myapp"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetTrackDetail200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.AgentRegister == nil {
+		t.Fatal("expected agent_register")
+	}
+	if r.AgentRegister.CreatedBy == nil {
+		t.Fatal("expected created_by")
+	}
+	if *r.AgentRegister.CreatedBy.AgentId != "arch-1" {
+		t.Errorf("created_by.agent_id = %q, want arch-1", *r.AgentRegister.CreatedBy.AgentId)
+	}
+	if *r.AgentRegister.CreatedBy.Role != "architect" {
+		t.Errorf("created_by.role = %q, want architect", *r.AgentRegister.CreatedBy.Role)
+	}
+	if r.AgentRegister.ClaimedBy == nil {
+		t.Fatal("expected claimed_by")
+	}
+	if *r.AgentRegister.ClaimedBy.Worktree != "worker-3" {
+		t.Errorf("claimed_by.worktree = %q, want worker-3", *r.AgentRegister.ClaimedBy.Worktree)
+	}
+	if *r.AgentRegister.ClaimedBy.Model != "claude-opus-4-6" {
+		t.Errorf("claimed_by.model = %q, want claude-opus-4-6", *r.AgentRegister.ClaimedBy.Model)
+	}
+	if r.AgentRegister.ClaimedBy.Timestamp == nil {
+		t.Fatal("expected claimed_by.timestamp")
+	}
+}
+
+func TestGetTrackDetail_WithTraces(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	detail := &port.TrackDetail{
+		ID:     "track-traced",
+		Title:  "Traced Track",
+		Status: "in-progress",
+	}
+	now := time.Now()
+	ts := &stubTraceReader{
+		traces: map[string][]tracing.TraceSummary{
+			"track-traced": {
+				{TraceID: "t1", RootName: "build", SpanCount: 5, StartTime: now.Add(-time.Hour), EndTime: now},
+				{TraceID: "t2", RootName: "test", SpanCount: 3, StartTime: now.Add(-30 * time.Minute), EndTime: now},
+			},
+		},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		TrackReader: &stubTrackReaderWithDetail{detail: detail},
+		TraceStore:  ts,
+	})
+	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
+		TrackId: "track-traced",
+		Params:  gen.GetTrackDetailParams{Project: "myapp"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetTrackDetail200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.Traces == nil {
+		t.Fatal("expected traces")
+	}
+	if len(*r.Traces) != 2 {
+		t.Fatalf("expected 2 traces, got %d", len(*r.Traces))
+	}
+	if (*r.Traces)[0].TraceId != "t1" {
+		t.Errorf("trace[0].trace_id = %q, want t1", (*r.Traces)[0].TraceId)
+	}
+	if (*r.Traces)[0].SpanCount != 5 {
+		t.Errorf("trace[0].span_count = %d, want 5", (*r.Traces)[0].SpanCount)
+	}
+}
+
+func TestGetTrackDetail_EmptyRegisterAndTraces(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	detail := &port.TrackDetail{
+		ID:     "track-empty",
+		Title:  "Empty Track",
+		Status: "pending",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		TrackReader: &stubTrackReaderWithDetail{detail: detail},
+	})
+	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
+		TrackId: "track-empty",
+		Params:  gen.GetTrackDetailParams{Project: "myapp"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetTrackDetail200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.AgentRegister != nil {
+		t.Error("expected nil agent_register for track with no register data")
+	}
+	if r.Traces != nil {
+		t.Error("expected nil traces when trace store is nil")
+	}
+}
+
+func TestGetTrackDetail_TracesCappedAt20(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	detail := &port.TrackDetail{
+		ID:     "track-many",
+		Title:  "Many Traces",
+		Status: "in-progress",
+	}
+	now := time.Now()
+	traces := make([]tracing.TraceSummary, 30)
+	for i := range traces {
+		traces[i] = tracing.TraceSummary{
+			TraceID:   fmt.Sprintf("t-%d", i),
+			RootName:  "op",
+			SpanCount: i,
+			StartTime: now,
+			EndTime:   now,
+		}
+	}
+	ts := &stubTraceReader{
+		traces: map[string][]tracing.TraceSummary{"track-many": traces},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		TrackReader: &stubTrackReaderWithDetail{detail: detail},
+		TraceStore:  ts,
+	})
+	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
+		TrackId: "track-many",
+		Params:  gen.GetTrackDetailParams{Project: "myapp"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetTrackDetail200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.Traces == nil {
+		t.Fatal("expected traces")
+	}
+	if len(*r.Traces) != 20 {
+		t.Fatalf("expected 20 traces (capped), got %d", len(*r.Traces))
 	}
 }

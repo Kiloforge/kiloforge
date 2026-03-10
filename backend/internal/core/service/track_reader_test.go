@@ -228,3 +228,109 @@ plan: []
 		t.Errorf("expected 0 conflicts, got %d", len(detail.Conflicts))
 	}
 }
+
+func TestTrackReaderImpl_GetTrackDetail_WithAgentRegister(t *testing.T) {
+	t.Parallel()
+	entries := []kf.TrackEntry{
+		{ID: "track-reg", Title: "Register Track", Status: kf.StatusInProgress, Type: "feature", Created: "2026-03-12", Updated: "2026-03-12"},
+	}
+	projectDir := setupKFProject(t, entries, nil, nil)
+
+	trackDir := filepath.Join(projectDir, ".agent", "kf", "tracks", "track-reg")
+	os.MkdirAll(trackDir, 0o755)
+	trackYAML := `id: track-reg
+title: Register Track
+type: feature
+status: in-progress
+created: "2026-03-12"
+updated: "2026-03-12"
+spec:
+  summary: "Test register"
+plan: []
+extra:
+  created_by:
+    agent_id: "arch-1"
+    role: "architect"
+    session_id: "sess-abc"
+    created_at: "2026-03-12T14:00:00Z"
+  claim:
+    agent_id: "dev-1"
+    role: "developer"
+    session_id: "sess-xyz"
+    worktree: "worker-3"
+    branch: "feature/track-reg"
+    model: "claude-opus-4-6"
+    claimed_at: "2026-03-12T15:00:00Z"
+`
+	os.WriteFile(filepath.Join(trackDir, "track.yaml"), []byte(trackYAML), 0o644)
+
+	reader := service.NewTrackReader()
+	detail, err := reader.GetTrackDetail(projectDir, "track-reg")
+	if err != nil {
+		t.Fatalf("GetTrackDetail: %v", err)
+	}
+
+	if detail.AgentRegister == nil {
+		t.Fatal("expected agent register")
+	}
+	if detail.AgentRegister.CreatedBy == nil {
+		t.Fatal("expected created_by")
+	}
+	if detail.AgentRegister.CreatedBy.AgentID != "arch-1" {
+		t.Errorf("created_by.agent_id = %q, want arch-1", detail.AgentRegister.CreatedBy.AgentID)
+	}
+	if detail.AgentRegister.CreatedBy.Role != "architect" {
+		t.Errorf("created_by.role = %q, want architect", detail.AgentRegister.CreatedBy.Role)
+	}
+	if detail.AgentRegister.CreatedBy.Timestamp != "2026-03-12T14:00:00Z" {
+		t.Errorf("created_by.timestamp = %q", detail.AgentRegister.CreatedBy.Timestamp)
+	}
+	if detail.AgentRegister.ClaimedBy == nil {
+		t.Fatal("expected claimed_by")
+	}
+	if detail.AgentRegister.ClaimedBy.AgentID != "dev-1" {
+		t.Errorf("claimed_by.agent_id = %q, want dev-1", detail.AgentRegister.ClaimedBy.AgentID)
+	}
+	if detail.AgentRegister.ClaimedBy.Worktree != "worker-3" {
+		t.Errorf("claimed_by.worktree = %q, want worker-3", detail.AgentRegister.ClaimedBy.Worktree)
+	}
+	if detail.AgentRegister.ClaimedBy.Branch != "feature/track-reg" {
+		t.Errorf("claimed_by.branch = %q", detail.AgentRegister.ClaimedBy.Branch)
+	}
+	if detail.AgentRegister.ClaimedBy.Model != "claude-opus-4-6" {
+		t.Errorf("claimed_by.model = %q", detail.AgentRegister.ClaimedBy.Model)
+	}
+}
+
+func TestTrackReaderImpl_GetTrackDetail_EmptyExtra(t *testing.T) {
+	t.Parallel()
+	entries := []kf.TrackEntry{
+		{ID: "track-no-extra", Title: "No Extra", Status: kf.StatusPending, Type: "chore", Created: "2026-03-12", Updated: "2026-03-12"},
+	}
+	projectDir := setupKFProject(t, entries, nil, nil)
+
+	trackDir := filepath.Join(projectDir, ".agent", "kf", "tracks", "track-no-extra")
+	os.MkdirAll(trackDir, 0o755)
+	trackYAML := `id: track-no-extra
+title: No Extra
+type: chore
+status: pending
+created: "2026-03-12"
+updated: "2026-03-12"
+spec:
+  summary: "Empty extra"
+plan: []
+extra: {}
+`
+	os.WriteFile(filepath.Join(trackDir, "track.yaml"), []byte(trackYAML), 0o644)
+
+	reader := service.NewTrackReader()
+	detail, err := reader.GetTrackDetail(projectDir, "track-no-extra")
+	if err != nil {
+		t.Fatalf("GetTrackDetail: %v", err)
+	}
+
+	if detail.AgentRegister != nil {
+		t.Error("expected nil agent register for empty extra")
+	}
+}
