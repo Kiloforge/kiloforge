@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import type { SwarmCapacity } from "../types/api";
 import styles from "./AgentLauncher.module.css";
 
-export type AgentRole = "interactive" | "architect" | "product-advisor";
+export type AgentRole = "interactive" | "architect" | "advisor-product" | "advisor-reliability";
 
 interface RoleOption {
   value: AgentRole;
@@ -19,10 +19,16 @@ const ROLES: RoleOption[] = [
     placeholder: "Describe the features or changes you want to plan...",
   },
   {
-    value: "product-advisor",
+    value: "advisor-product",
     label: "Product Advisor",
     description: "Product design, branding, and competitive analysis",
     placeholder: "Describe what you need product guidance on...",
+  },
+  {
+    value: "advisor-reliability",
+    label: "Reliability Advisor",
+    description: "Testing coverage, linting, type safety, and CI gate audits",
+    placeholder: "Describe what you want audited (e.g., testing gaps, CI coverage)...",
   },
 ];
 

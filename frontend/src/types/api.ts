@@ -270,7 +270,7 @@ export interface SpawnInteractiveRequest {
   work_dir?: string;
   model?: string;
   project?: string;
-  role?: "interactive" | "architect" | "product-advisor";
+  role?: "interactive" | "architect" | "advisor-product" | "advisor-reliability";
   prompt?: string;
 }
 
