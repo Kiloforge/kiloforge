@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Agent, StatusResponse } from "./types/api";
+import type { Agent, SpawnInteractiveRequest, StatusResponse } from "./types/api";
+import type { AgentRole } from "./components/AgentLauncher";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
 import { useQuota } from "./hooks/useQuota";
@@ -19,6 +20,7 @@ import { AgentTerminal } from "./components/AgentTerminal";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
 import { SkillsInstallDialog } from "./components/SkillsInstallDialog";
+import { AgentLauncher } from "./components/AgentLauncher";
 import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay } from "./components/tour/TourOverlay";
@@ -43,6 +45,7 @@ export default function App() {
   });
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
+  const [showLauncher, setShowLauncher] = useState(false);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const queryClient = useQueryClient();
@@ -96,26 +99,40 @@ export default function App() {
   }, []);
 
   const spawnMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (req: SpawnInteractiveRequest) =>
       fetcher<Agent>("/api/agents/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: "{}",
+        body: JSON.stringify(req),
       }),
     onSuccess: (agent) => {
       setTerminalAgentId(agent.id);
+      setShowLauncher(false);
     },
     onError: (err) => {
       if (err instanceof FetchError && err.status === 403) {
-        consent.requestConsent(() => spawnMutation.mutate());
+        consent.requestConsent(() => spawnMutation.mutate(lastSpawnReq));
       } else if (err instanceof FetchError && err.status === 412) {
-        skillsPrompt.requestInstall(() => spawnMutation.mutate());
+        skillsPrompt.requestInstall(() => spawnMutation.mutate(lastSpawnReq));
       }
     },
   });
 
-  const handleSpawnInteractive = useCallback(() => {
-    spawnMutation.mutate();
+  const [lastSpawnReq, setLastSpawnReq] = useState<SpawnInteractiveRequest>({});
+
+  const handleOpenLauncher = useCallback(() => {
+    setShowLauncher(true);
+  }, []);
+
+  const handleCloseLauncher = useCallback(() => {
+    setShowLauncher(false);
+  }, []);
+
+  const handleLaunch = useCallback((role: AgentRole, prompt: string) => {
+    const req: SpawnInteractiveRequest = { role };
+    if (prompt) req.prompt = prompt;
+    setLastSpawnReq(req);
+    spawnMutation.mutate(req);
   }, [spawnMutation]);
 
   return (
@@ -157,7 +174,7 @@ export default function App() {
                 tracks={tracks}
                 onViewLog={handleViewLog}
                 onAttach={handleAttach}
-                onSpawnInteractive={handleSpawnInteractive}
+                onSpawnInteractive={handleOpenLauncher}
                 spawningInteractive={spawnMutation.isPending}
                 queue={queue}
                 queueLoading={queueLoading}
@@ -180,6 +197,13 @@ export default function App() {
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
       {terminalAgentId && <AgentTerminal agentId={terminalAgentId} onClose={handleCloseTerminal} />}
+      {showLauncher && (
+        <AgentLauncher
+          onLaunch={handleLaunch}
+          onClose={handleCloseLauncher}
+          launching={spawnMutation.isPending}
+        />
+      )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
       {skillsPrompt.showDialog && (
         <SkillsInstallDialog

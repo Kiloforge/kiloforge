@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Agent, SpawnInteractiveRequest } from "../types/api";
+import type { AgentRole } from "../components/AgentLauncher";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
 import { useBoard } from "../hooks/useBoard";
@@ -17,6 +19,7 @@ import { ProjectMetadataView } from "../components/ProjectMetadataView";
 import { ConsentDialog } from "../components/ConsentDialog";
 import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
+import { AgentLauncher } from "../components/AgentLauncher";
 import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
@@ -37,8 +40,7 @@ export function ProjectPage() {
   const project = projects.find((p) => p.slug === slug);
 
   const queryClient = useQueryClient();
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [prompt, setPrompt] = useState("");
+  const [showLauncher, setShowLauncher] = useState(false);
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [adminAgentId, setAdminAgentId] = useState<string | null>(null);
   const { data: setupStatus } = useQuery({
@@ -91,33 +93,36 @@ export function ProjectPage() {
     pull(remoteBranch);
   }, [pull]);
 
-  const generateMutation = useMutation({
-    mutationFn: (p: string) =>
-      fetcher<{ agent_id: string; ws_url: string }>("/api/tracks/generate", {
+  const [lastSpawnReq, setLastSpawnReq] = useState<SpawnInteractiveRequest>({});
+
+  const spawnMutation = useMutation({
+    mutationFn: (req: SpawnInteractiveRequest) =>
+      fetcher<Agent>("/api/agents/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: p, project: slug }),
+        body: JSON.stringify(req),
       }),
-    onSuccess: (data) => {
-      setTerminalAgentId(data.agent_id);
-      setShowPrompt(false);
-      setPrompt("");
+    onSuccess: (agent) => {
+      setTerminalAgentId(agent.id);
+      setShowLauncher(false);
     },
     onError: (err) => {
       if (err instanceof FetchError && err.status === 403) {
-        consent.requestConsent(() => handleGenerateTracks());
+        consent.requestConsent(() => spawnMutation.mutate(lastSpawnReq));
       } else if (err instanceof FetchError && err.status === 412) {
-        skillsPrompt.requestInstall(() => handleGenerateTracks());
+        skillsPrompt.requestInstall(() => spawnMutation.mutate(lastSpawnReq));
       } else if (err instanceof FetchError && err.status === 428 && slug) {
-        setupPrompt.requestSetup(slug, () => handleGenerateTracks());
+        setupPrompt.requestSetup(slug, () => spawnMutation.mutate(lastSpawnReq));
       }
     },
   });
 
-  const handleGenerateTracks = useCallback(() => {
-    if (!prompt.trim() || !slug) return;
-    generateMutation.mutate(prompt.trim());
-  }, [prompt, slug, generateMutation, consent]);
+  const handleLaunch = useCallback((role: AgentRole, prompt: string) => {
+    const req: SpawnInteractiveRequest = { role, project: slug };
+    if (prompt) req.prompt = prompt;
+    setLastSpawnReq(req);
+    spawnMutation.mutate(req);
+  }, [slug, spawnMutation]);
 
   const deleteMutation = useMutation({
     mutationFn: (trackId: string) =>
@@ -297,43 +302,15 @@ export function ProjectPage() {
             </button>
             <button
               className={styles.generateBtn}
-              onClick={() => { if (!actionsDisabled) setShowPrompt((v) => !v); }}
+              onClick={() => { if (!actionsDisabled) setShowLauncher(true); }}
               disabled={actionsDisabled}
               title={disabledReason}
               data-tour="generate-tracks"
             >
-              Generate Tracks
+              New Agent
             </button>
           </div>
         </div>
-        {showPrompt && (
-          <div className={styles.promptForm}>
-            <textarea
-              className={styles.promptInput}
-              placeholder="Describe the features or changes you want to generate tracks for..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  handleGenerateTracks();
-                }
-              }}
-            />
-            <div className={styles.promptActions}>
-              <button
-                className={styles.promptSubmit}
-                disabled={!prompt.trim() || generateMutation.isPending}
-                onClick={handleGenerateTracks}
-              >
-                {generateMutation.isPending ? "Starting..." : "Generate"}
-              </button>
-              <button className={styles.promptCancel} onClick={() => { setShowPrompt(false); setPrompt(""); }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
         {boardLoading ? (
           <p className={appStyles.empty}>Loading board...</p>
         ) : (
@@ -377,6 +354,14 @@ export function ProjectPage() {
         <AgentTerminal agentId={adminAgentId} onClose={handleAdminTerminalClose} />
       )}
 
+      {showLauncher && (
+        <AgentLauncher
+          onLaunch={handleLaunch}
+          onClose={() => setShowLauncher(false)}
+          launching={spawnMutation.isPending}
+          projectSlug={slug}
+        />
+      )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
       {skillsPrompt.showDialog && (
         <SkillsInstallDialog

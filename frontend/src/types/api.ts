@@ -250,6 +250,9 @@ export interface UpdateConfigRequest {
 export interface SpawnInteractiveRequest {
   work_dir?: string;
   model?: string;
+  project?: string;
+  role?: "interactive" | "architect" | "product-advisor";
+  prompt?: string;
 }
 
 export interface DiffLine {

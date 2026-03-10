@@ -156,7 +156,7 @@ export function OverviewPage({ agents, agentsLoading, quota, tracks, onViewLog, 
                 onClick={onSpawnInteractive}
                 disabled={spawningInteractive}
               >
-                {spawningInteractive ? "Starting..." : "Start Interactive Agent"}
+                {spawningInteractive ? "Starting..." : "New Agent"}
               </button>
             )}
           </div>
