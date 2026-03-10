@@ -1,0 +1,34 @@
+id: tooltip-z-index-fix-fe_20260310210000Z
+title: Fix HelpTooltip popover clipped by panel stacking context
+type: bug
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: HelpTooltip popovers are rendered behind sibling panels because backdrop-filter on .panel creates a stacking context, scoping z-index:100 to the parent panel.
+  context: "Users report that hovering the '?' help icon on section headers (Agents, Swarm, etc.) shows the tooltip popover behind/under the next section panel. This is a CSS stacking context issue."
+  codebase_analysis: Root cause: App.module.css .panel uses backdrop-filter: blur(var(--blur)), which creates a new stacking context per CSS spec. The HelpTooltip.module.css .card has z-index: 100 and position: absolute, but that z-index is scoped to the panel's stacking context and cannot exceed it. Fix: render the tooltip via a React portal to document.body so it escapes the stacking context entirely, and position it using getBoundingClientRect relative to the viewport.
+  acceptance_criteria:
+    - HelpTooltip popover renders above all panels regardless of DOM nesting
+    - Popover is positioned correctly relative to the trigger button
+    - Hover, click-to-pin, and mouse-leave behaviors unchanged
+    - Existing HelpTooltip tests updated and passing
+    - TypeScript type-check and frontend build pass
+  out_of_scope: Changing the panel's backdrop-filter (would affect visual design). Adding tooltip arrow/caret. Tooltip repositioning for viewport edges (keep simple for now).
+  technical_notes: Use ReactDOM.createPortal to render .card into document.body. Use a ref on the trigger button + getBoundingClientRect to compute absolute top/left. The card already has box-shadow and background, so it will look correct when portalled. Keep the existing hover/click/pin behavior. Update tests to account for portal rendering (tooltip appears in document.body, not as sibling).
+plan:
+  - phase: "Portal Implementation"
+    tasks:
+      - text: "Refactor HelpTooltip to use ReactDOM.createPortal — render .card into document.body instead of inline"
+        done: false
+      - text: "Add useRef on trigger button, compute popover position via getBoundingClientRect on show"
+        done: false
+      - text: "Update HelpTooltip.module.css — change .card from position:absolute to position:fixed with computed top/left"
+        done: false
+  - phase: "Test & Verify"
+    tasks:
+      - text: "Update HelpTooltip.test.tsx — portal renders into body, use screen queries (not container-scoped)"
+        done: false
+      - text: "Run tsc --noEmit, vitest run, and frontend build to verify no regressions"
+        done: false
+extra: {}
