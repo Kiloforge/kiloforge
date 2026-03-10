@@ -30,15 +30,29 @@ interface RelationshipOverlayProps {
   onToggle: () => void;
 }
 
-/** Compute a cubic bezier path between two card centers. */
-export function computeBezierPath(from: CardPosition, to: CardPosition): string {
+/** Compute a cubic bezier path between two card edges. */
+export function computeBezierPath(
+  from: CardPosition,
+  to: CardPosition,
+  lineIndex = 0,
+): string {
   const x1 = from.x + from.width / 2;
   const y1 = from.y + from.height / 2;
   const x2 = to.x + to.width / 2;
   const y2 = to.y + to.height / 2;
   const dx = x2 - x1;
+
+  // Spread overlapping lines vertically
+  const spread = lineIndex * 6;
+
+  if (Math.abs(dx) < 20) {
+    // Same column: curve out to the right to avoid straight vertical line
+    const offset = 60 + spread;
+    return `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 + offset} ${y2}, ${x2} ${y2}`;
+  }
+
   const cpOffset = Math.min(Math.abs(dx) * 0.4, 120);
-  return `M ${x1} ${y1} C ${x1 + cpOffset} ${y1}, ${x2 - cpOffset} ${y2}, ${x2} ${y2}`;
+  return `M ${x1} ${y1 + spread} C ${x1 + cpOffset} ${y1 + spread}, ${x2 - cpOffset} ${y2 + spread}, ${x2} ${y2 + spread}`;
 }
 
 export function RelationshipOverlay({
@@ -141,20 +155,20 @@ export function RelationshipOverlay({
       </div>
       {visible && hasLines && (
         <svg className={styles.overlay}>
-          {depLines.map((line) => {
+          {depLines.map((line, i) => {
             const from = positions.get(line.fromId)!;
             const to = positions.get(line.toId)!;
             return (
               <path
                 key={`dep-${line.fromId}-${line.toId}`}
-                d={computeBezierPath(from, to)}
+                d={computeBezierPath(from, to, i)}
                 className={`${styles.depLine} ${
                   line.satisfied ? styles.depLineSatisfied : styles.depLinePending
                 }`}
               />
             );
           })}
-          {conflictLines.map((line) => {
+          {conflictLines.map((line, i) => {
             const from = positions.get(line.idA)!;
             const to = positions.get(line.idB)!;
             const riskClass =
@@ -166,7 +180,7 @@ export function RelationshipOverlay({
             return (
               <path
                 key={`conflict-${line.idA}-${line.idB}`}
-                d={computeBezierPath(from, to)}
+                d={computeBezierPath(from, to, depLines.length + i)}
                 className={`${styles.conflictLine} ${riskClass}`}
               />
             );
