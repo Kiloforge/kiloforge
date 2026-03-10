@@ -27,6 +27,9 @@ node_modules/
 *.swp
 *.swo
 
+# Python
+__pycache__/
+
 # OS
 .DS_Store
 Thumbs.db
