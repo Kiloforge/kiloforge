@@ -1,9 +1,9 @@
 id: fix-agent-name-in-api-be_20260312200000Z
-title: "Fix agent name missing from REST API response"
+title: Fix agent name missing from REST API response
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Add the missing Name field copy in domainAgentToGen() so agent names
@@ -17,7 +17,7 @@ spec:
   codebase_analysis: |
     Root cause: backend/internal/adapter/rest/api_handler.go — domainAgentToGen()
     copies ID, Role, Ref, Status, PID, timestamps, etc. but skips Name.
-
+    
     The full chain:
     - namegen.go GenerateName() → creates "adverb adjective name" strings ✓
     - Spawner (all 3: developer, reviewer, interactive) sets Name ✓
@@ -28,9 +28,9 @@ spec:
     - Frontend Agent type has name?: string ✓
     - App.tsx passes agent.name to window manager ✓
     - AgentTerminal displays name || agentId.slice(0,8) ✓
-
+    
     Fix: add `if a.Name != "" { g.Name = &a.Name }` in domainAgentToGen().
-
+    
     Also check SSE agent_update events — agentInfoToSSE or similar may have
     the same gap, causing names to disappear on live updates.
   acceptance_criteria:
@@ -46,16 +46,16 @@ spec:
     1-line fix in domainAgentToGen(). Check if SSE serialization has the
     same gap. Add a test asserting the name field is present in API response.
 plan:
-  - phase: "Core Fix"
+  - phase: Core Fix
     tasks:
-      - text: "Add Name field copy in domainAgentToGen() in api_handler.go"
-        done: false
-      - text: "Verify SSE agent_update events also include the name field (fix if missing)"
-        done: false
-  - phase: "Verification"
+      - text: Add Name field copy in domainAgentToGen() in api_handler.go
+        done: true
+      - text: Verify SSE agent_update events also include the name field (fix if missing)
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Add test asserting GET /api/agents response includes agent name"
-        done: false
-      - text: "Run make test — all pass"
-        done: false
+      - text: Add test asserting GET /api/agents response includes agent name
+        done: true
+      - text: Run make test — all pass
+        done: true
 extra: {}
