@@ -1,0 +1,66 @@
+id: fix-setup-git-init-be_20260311230001Z
+title: "Fix setup 500 on repos without git — auto-run git init"
+type: bug
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Before spawning an interactive agent in SpawnInteractive(), check if .git
+    exists in workDir. If missing, run git init. Return a clear error if git
+    init fails rather than a generic 500.
+  context: |
+    When a user creates a new project and tries to run setup, the backend returns
+    500 because the Claude SDK session fails to connect in a non-git directory.
+    The setup endpoint (POST /api/projects/{slug}/setup) calls SpawnInteractive
+    without validating that a git repo exists.
+  codebase_analysis: |
+    Key files:
+    - backend/internal/adapter/rest/api_handler.go (lines 2449-2500) — setup endpoint
+      calls h.interSpawner.SpawnInteractive(). Returns 500 on any error.
+    - backend/internal/adapter/agent/spawner.go (lines 469-592) — SpawnInteractive
+      creates SDK session with WithCWD(workDir). No git validation.
+    - backend/internal/core/service/project_service.go (lines 117-171) — CreateProject
+      DOES run git init, but AddProject (clone) relies on clone creating .git.
+
+    The Claude SDK (claude-agent-sdk-go) may fail to initialize when CWD is not
+    a git repo. The error bubbles up as a generic 500.
+
+    project_service.go CreateProject already has git init logic at line 141:
+      initCmd := exec.CommandContext(ctx, "git", "init", repoDir)
+    This pattern can be reused.
+  acceptance_criteria:
+    - SpawnInteractive auto-initializes git if .git is missing in workDir
+    - Setup endpoint succeeds on a directory without git repo
+    - If git init fails, error message is descriptive (not generic 500)
+    - Existing behavior unchanged for directories that already have .git
+  out_of_scope: |
+    - Changing the project creation flow
+    - Adding git init to other agent spawn paths (only interactive setup)
+    - Git configuration beyond bare init
+  technical_notes: |
+    In spawner.go SpawnInteractive(), before creating the SDK session:
+    1. Check if filepath.Join(workDir, ".git") exists (os.Stat)
+    2. If not, run exec.CommandContext(ctx, "git", "init", workDir)
+    3. If git init fails, return a wrapped error with clear message
+    4. Proceed with SDK session as normal
+plan:
+  - phase: "Implementation"
+    tasks:
+      - text: "In spawner.go SpawnInteractive(), add git repo check before SDK session creation — os.Stat(filepath.Join(workDir, '.git'))"
+        done: false
+      - text: "If .git missing, run exec.CommandContext(ctx, 'git', 'init', workDir) with combined output capture"
+        done: false
+      - text: "If git init fails, return fmt.Errorf('initializing git repository: %w', err) instead of proceeding"
+        done: false
+  - phase: "Testing"
+    tasks:
+      - text: "Add test: SpawnInteractive on non-git directory auto-initializes git (verify .git created)"
+        done: false
+      - text: "Add test: SpawnInteractive on existing git directory skips init (no error)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test and make build to verify no regressions"
+        done: false
+extra: {}
