@@ -19,7 +19,7 @@ agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track L
 agent-name-display_20260310120000Z: {"title":"Show agent name instead of ID in AgentTerminal header","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-analytics-be_20260310060644Z: {"title":"PostHog product analytics — backend integration","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+analytics-be_20260310060644Z: {"title":"PostHog product analytics — backend integration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 analytics-fe_20260310060645Z: {"title":"Analytics opt-out toggle in dashboard settings","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"archived","type":"research","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

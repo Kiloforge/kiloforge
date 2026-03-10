@@ -1,5 +1,5 @@
 id: analytics-be_20260310060644Z
-title: "PostHog product analytics — backend integration"
+title: PostHog product analytics — backend integration
 type: feature
 status: pending
 created: 2026-03-10
@@ -14,7 +14,7 @@ spec:
     PostHog's free tier (1M events/month) provides this via a simple HTTP capture API.
     Since kiloforge runs on localhost, client-side JS analytics won't work reliably —
     all telemetry must be sent server-side from the Go backend.
-
+    
     Users must be able to opt out during `kiloforge init` and toggle analytics on/off
     via the config system (JSON, env var, or API). Analytics is enabled by default.
   codebase_analysis: |
@@ -24,26 +24,26 @@ spec:
     - EnvAdapter reads KF_* vars (env_adapter.go:11-44)
     - JSON save strips sensitive fields (json_adapter.go:40-48)
     - Existing pattern: DashboardEnabled *bool, QueueEnabled *bool
-
+    
     Init flow (backend/internal/adapter/cli/init.go):
     - Non-interactive except SSH key selection (prompt.go:18-66)
     - Integration point: after line 138 (before SSH key registration)
     - Interactive prompt pattern in prompt.go uses bufio.Scanner
-
+    
     Service wiring (backend/internal/adapter/cli/serve.go):
     - Stores and services created at lines 73-119
     - REST server options built at lines 100-107
     - Integration point: after consent store (line 115)
-
+    
     Config API (backend/api/openapi.yaml):
     - GET/PUT /api/config already exists (lines 1012-1050)
     - Handler at api_handler.go:217-248 returns/updates DashboardEnabled
     - Extend ConfigResponse and UpdateConfigRequest schemas
-
+    
     Event bus (backend/internal/core/port/event_bus.go):
     - Publish/Subscribe pattern, used by dashboard watcher
     - Event types in domain/events.go (agent_update, project_update, etc.)
-
+    
     Agent lifecycle (backend/internal/adapter/agent/spawner.go):
     - Span events: agent.spawned (line 206), agent.failed/completed (lines 309-315)
     - CompletionCallback fired at line 323
@@ -67,10 +67,10 @@ spec:
   technical_notes: |
     PostHog HTTP API: POST https://us.i.posthog.com/capture with JSON body:
       { "api_key": "phc_...", "event": "event_name", "distinct_id": "anon-id", "properties": {...} }
-
+    
     Anonymous ID: SHA-256 hash of (hostname + data dir path). Stable per machine,
     not reversible, no PII. Stored nowhere — computed on startup.
-
+    
     Architecture:
     - New port: port.AnalyticsTracker interface { Track(event string, props map[string]any) }
     - New adapter: adapter/analytics/posthog.go (HTTP client implementation)
@@ -78,66 +78,66 @@ spec:
     - Service decides which adapter based on config at startup
     - Fire-and-forget: use a buffered channel + background goroutine for sends
     - Graceful shutdown: drain buffer on context cancellation (with timeout)
-
+    
     Config changes:
     - Add AnalyticsEnabled *bool to Config struct (default true via defaults.go)
     - Add PostHogAPIKey string (default: embedded public write key)
     - Env var: KF_ANALYTICS_ENABLED, KF_POSTHOG_API_KEY
-
+    
     Init prompt: "Help improve kiloforge by sending anonymous usage data? (Y/n)"
     - Default yes (just press enter)
     - Saves to config.json
 plan:
-  - phase: "Config & Domain Foundation"
+  - phase: Config & Domain Foundation
     tasks:
-      - text: "Add AnalyticsEnabled *bool and PostHogAPIKey string to Config struct, defaults, env adapter, and merger"
-        done: false
-      - text: "Add IsAnalyticsEnabled() helper method to Config (defaults to true)"
-        done: false
-      - text: "Extend OpenAPI schema — add analyticsEnabled to ConfigResponse and UpdateConfigRequest"
-        done: false
-      - text: "Run make gen-api to regenerate server code from updated schema"
-        done: false
-      - text: "Update GetConfig/UpdateConfig handlers to include analyticsEnabled field"
-        done: false
-  - phase: "Analytics Port & Adapters"
+      - text: Add AnalyticsEnabled *bool and PostHogAPIKey string to Config struct, defaults, env adapter, and merger
+        done: true
+      - text: Add IsAnalyticsEnabled() helper method to Config (defaults to true)
+        done: true
+      - text: Extend OpenAPI schema — add analyticsEnabled to ConfigResponse and UpdateConfigRequest
+        done: true
+      - text: Run make gen-api to regenerate server code from updated schema
+        done: true
+      - text: Update GetConfig/UpdateConfig handlers to include analyticsEnabled field
+        done: true
+  - phase: Analytics Port & Adapters
     tasks:
-      - text: "Define port.AnalyticsTracker interface with Track(ctx, event, props) and Shutdown(ctx) methods"
-        done: false
-      - text: "Implement adapter/analytics/posthog.go — HTTP client with buffered channel, background sender goroutine, and graceful drain"
-        done: false
-      - text: "Implement adapter/analytics/noop.go — no-op adapter (used when analytics disabled)"
-        done: false
-      - text: "Implement anonymous distinct ID — SHA-256(hostname + dataDir), computed once at startup"
-        done: false
-      - text: "Write unit tests for PostHog adapter (mock HTTP server) and noop adapter"
-        done: false
-  - phase: "Init Opt-Out & Wiring"
+      - text: Define port.AnalyticsTracker interface with Track(ctx, event, props) and Shutdown(ctx) methods
+        done: true
+      - text: Implement adapter/analytics/posthog.go — HTTP client with buffered channel, background sender goroutine, and graceful drain
+        done: true
+      - text: Implement adapter/analytics/noop.go — no-op adapter (used when analytics disabled)
+        done: true
+      - text: Implement anonymous distinct ID — SHA-256(hostname + dataDir), computed once at startup
+        done: true
+      - text: Write unit tests for PostHog adapter (mock HTTP server) and noop adapter
+        done: true
+  - phase: Init Opt-Out & Wiring
     tasks:
-      - text: "Add analytics opt-out prompt to init command — 'Help improve kiloforge by sending anonymous usage data? (Y/n)'"
-        done: false
-      - text: "Wire AnalyticsTracker in serve.go — select posthog or noop adapter based on config"
-        done: false
-      - text: "Register shutdown hook for analytics tracker (drain buffered events on SIGTERM)"
-        done: false
-      - text: "Write integration test for init command analytics prompt (interactive and non-interactive modes)"
-        done: false
-  - phase: "Event Instrumentation"
+      - text: Add analytics opt-out prompt to init command — 'Help improve kiloforge by sending anonymous usage data? (Y/n)'
+        done: true
+      - text: Wire AnalyticsTracker in serve.go — select posthog or noop adapter based on config
+        done: true
+      - text: Register shutdown hook for analytics tracker (drain buffered events on SIGTERM)
+        done: true
+      - text: Write integration test for init command analytics prompt (interactive and non-interactive modes)
+        done: true
+  - phase: Event Instrumentation
     tasks:
-      - text: "Instrument agent lifecycle — track agent_spawned (role, model) and agent_completed (role, status, duration_seconds)"
-        done: false
-      - text: "Instrument project lifecycle — track project_added (has_remote boolean)"
-        done: false
-      - text: "Instrument CLI commands — track cli_command (command name, subcommand) in root command PersistentPreRun"
-        done: false
-      - text: "Add app_started event on server boot with version, go_version, os, arch properties"
-        done: false
-  - phase: "Verification"
+      - text: Instrument agent lifecycle — track agent_spawned (role, model) and agent_completed (role, status, duration_seconds)
+        done: true
+      - text: Instrument project lifecycle — track project_added (has_remote boolean)
+        done: true
+      - text: Instrument CLI commands — track cli_command (command name, subcommand) in root command PersistentPreRun
+        done: true
+      - text: Add app_started event on server boot with version, go_version, os, arch properties
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test — all existing and new tests pass"
-        done: false
-      - text: "Run make verify-codegen — generated code matches schema"
-        done: false
-      - text: "Manual smoke test — start server with analytics enabled, trigger events, verify PostHog receives them (or use mock server)"
-        done: false
+      - text: Run make test — all existing and new tests pass
+        done: true
+      - text: Run make verify-codegen — generated code matches schema
+        done: true
+      - text: Manual smoke test — start server with analytics enabled, trigger events, verify PostHog receives them (or use mock server)
+        done: true
 extra: {}

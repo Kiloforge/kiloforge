@@ -31,7 +31,9 @@ Initialize with 'kf init' to start the global Gitea server.`,
 		tracker.Track(cmd.Context(), "cli_command", map[string]any{
 			"command": cmd.Name(),
 		})
-		_ = tracker.Shutdown(context.Background())
+		// Best-effort: drain in background. The process may exit before send
+		// completes for very short commands — that's acceptable for CLI telemetry.
+		go func() { _ = tracker.Shutdown(context.Background()) }()
 	},
 }
 

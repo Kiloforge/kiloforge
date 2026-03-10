@@ -32,9 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-
-analytics-be_20260310060644Z: []
-
 analytics-fe_20260310060645Z:
   - analytics-be_20260310060644Z
 
