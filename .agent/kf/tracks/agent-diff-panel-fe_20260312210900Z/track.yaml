@@ -1,11 +1,11 @@
 id: agent-diff-panel-fe_20260312210900Z
-title: "Per-file diff panel in agent terminal windows"
+title: Per-file diff panel in agent terminal windows
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
-  summary: "Add a chat/diff toggle to AgentTerminal floating windows. Diff mode shows a file tree of changed files with single-file-at-a-time diff display, reusing the existing project diff API and diff components."
+  summary: Add a chat/diff toggle to AgentTerminal floating windows. Diff mode shows a file tree of changed files with single-file-at-a-time diff display, reusing the existing project diff API and diff components.
   context: |
     The Command Deck's AgentTerminal floating windows currently only show the chat/message view.
     Users want to see what files an agent has changed while it works, without navigating away to
@@ -42,45 +42,45 @@ spec:
     2. Create AgentDiffPanel component adapting existing diff components for single-file display
     3. Add viewMode state to AgentTerminal with toggle in header bar
     4. Reuse useProjectDiff hook and FileDiff component — no new API calls needed
-
+    
     The existing FileList component can be reused directly. FileDiff renders a single file's
     hunks and is already designed for individual use. The main new component (AgentDiffPanel)
     wires these together with single-file selection logic.
 plan:
-  - phase: "Foundation"
+  - phase: Foundation
     tasks:
-      - text: "Extend WindowEntry in useWindowManager.ts to include slug?: string and branch?: string; update wm.open() signature to accept these fields"
-        done: false
-      - text: "Update all wm.open() call sites in App.tsx to pass agent's project slug and branch from agent data"
-        done: false
-      - text: "Add slug and branch props to AgentTerminal Props interface; thread from App.tsx render map"
-        done: false
-  - phase: "Single-File Diff Component"
+      - text: Extend WindowEntry in useWindowManager.ts to include slug?: string and branch?: string; update wm.open() signature to accept these fields
+        done: true
+      - text: Update all wm.open() call sites in App.tsx to pass agent's project slug and branch from agent data
+        done: true
+      - text: Add slug and branch props to AgentTerminal Props interface; thread from App.tsx render map
+        done: true
+  - phase: Single-File Diff Component
     tasks:
-      - text: "Write tests for AgentDiffPanel: renders file tree, shows single file diff on selection, handles loading/error/empty states"
+      - text: Write tests for AgentDiffPanel: renders file tree, shows single file diff on selection, handles loading/error/empty states
         done: false
-      - text: "Create AgentDiffPanel.tsx — file tree sidebar using FileList + single-file content area rendering only selected file's FileDiff via useProjectDiff hook"
+      - text: Create AgentDiffPanel.tsx — file tree sidebar using FileList + single-file content area rendering only selected file's FileDiff via useProjectDiff hook
         done: false
-      - text: "Create AgentDiffPanel.module.css — dark theme matching terminal aesthetic, sticky sidebar, scrollable single-file content area"
+      - text: Create AgentDiffPanel.module.css — dark theme matching terminal aesthetic, sticky sidebar, scrollable single-file content area
         done: false
-      - text: "Verify AgentDiffPanel tests pass in isolation"
+      - text: Verify AgentDiffPanel tests pass in isolation
         done: false
-  - phase: "Terminal Integration"
+  - phase: Terminal Integration
     tasks:
-      - text: "Write tests for chat/diff toggle in AgentTerminal: toggle renders when slug/branch present, hidden when missing, switches view mode"
+      - text: Write tests for chat/diff toggle in AgentTerminal: toggle renders when slug/branch present, hidden when missing, switches view mode
         done: false
-      - text: "Add viewMode state ('chat' | 'diff') to AgentTerminal with toggle buttons in header bar next to role badge"
+      - text: Add viewMode state ('chat' | 'diff') to AgentTerminal with toggle buttons in header bar next to role badge
         done: false
-      - text: "Conditionally render AgentDiffPanel when viewMode is 'diff', passing slug and branch props"
+      - text: Conditionally render AgentDiffPanel when viewMode is 'diff', passing slug and branch props
         done: false
-      - text: "Style the toggle to match terminal header aesthetic, ensure keyboard-accessible (aria attributes, focus styles)"
+      - text: Style the toggle to match terminal header aesthetic, ensure keyboard-accessible (aria attributes, focus styles)
         done: false
-  - phase: "Polish & Verification"
+  - phase: Polish & Verification
     tasks:
-      - text: "Handle edge cases: hide diff toggle when slug/branch unavailable, show helpful empty state when diff has no changes"
+      - text: Handle edge cases: hide diff toggle when slug/branch unavailable, show helpful empty state when diff has no changes
         done: false
-      - text: "Ensure diff panel respects window resize/maximize/snap behaviors from useFloatingWindow"
+      - text: Ensure diff panel respects window resize/maximize/snap behaviors from useFloatingWindow
         done: false
-      - text: "Run full frontend test suite (make test-frontend), verify no regressions"
+      - text: Run full frontend test suite (make test-frontend), verify no regressions
         done: false
 extra: {}

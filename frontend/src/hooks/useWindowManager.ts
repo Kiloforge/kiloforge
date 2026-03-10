@@ -4,6 +4,8 @@ export interface WindowEntry {
   agentId: string;
   name?: string;
   role?: string;
+  slug?: string;
+  branch?: string;
   initialX: number;
   initialY: number;
   minimized: boolean;
@@ -40,14 +42,14 @@ export function useWindowManager() {
   const preMaximizeRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(new Map());
   const maximizedRef = useRef<Set<string>>(new Set());
 
-  const open = useCallback((agentId: string, name?: string, role?: string) => {
+  const open = useCallback((agentId: string, name?: string, role?: string, slug?: string, branch?: string) => {
     setWindows((prev) => {
       if (prev.has(agentId)) return prev;
       const pos = cascadePosition(openCountRef.current);
       openCountRef.current++;
       const next = new Map(prev);
       next.set(agentId, {
-        agentId, name, role,
+        agentId, name, role, slug, branch,
         initialX: pos.x, initialY: pos.y,
         minimized: false, unreadCount: 0,
       });

@@ -9,6 +9,8 @@ interface Props {
   agentId: string;
   name?: string;
   role?: string;
+  slug?: string;
+  branch?: string;
   initialX?: number;
   initialY?: number;
   minimized?: boolean;
@@ -43,7 +45,7 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, name, role, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, registerControls, unregisterControls }: Props) {
+export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, registerControls, unregisterControls }: Props) {
   const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);

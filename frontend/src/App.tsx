@@ -137,8 +137,9 @@ export default function App() {
   const handleAttach = useCallback((agentId: string) => {
     if (wm.has(agentId)) return; // already open — z-index handled by panel click
     const agent = agents.find((a) => a.id === agentId);
-    wm.open(agentId, agent?.name, agent?.role);
-  }, [wm, agents]);
+    const matchedTrack = agent?.ref ? tracks.find((t) => t.id === agent.ref) : undefined;
+    wm.open(agentId, agent?.name, agent?.role, matchedTrack?.project, agent?.ref);
+  }, [wm, agents, tracks]);
 
   const spawnMutation = useMutation({
     mutationFn: (req: SpawnInteractiveRequest) =>
@@ -298,6 +299,8 @@ export default function App() {
           agentId={entry.agentId}
           name={entry.name}
           role={entry.role}
+          slug={entry.slug}
+          branch={entry.branch}
           initialX={entry.initialX}
           initialY={entry.initialY}
           minimized={entry.minimized}
