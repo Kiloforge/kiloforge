@@ -132,7 +132,7 @@ impl-webui-server_20260308140000Z: {"title":"Web UI Server with Real-Time Agent 
 implement-command_20260307125001Z: {"title":"'kf implement' Command — Spawn Developer Agent","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 init-docker-compose_20260307120100Z: {"title":"Implement Init Command with Docker Compose and Global Gitea","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 init-ssh-and-auth_20260307125500Z: {"title":"SSH Key Auto-Registration and Randomized Admin Password","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-install-script_20260311130000Z: {"title":"Add curl-pipe install script for one-line kf installation","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+install-script_20260311130000Z: {"title":"Add curl-pipe install script for one-line kf installation","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via WebSocket (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}

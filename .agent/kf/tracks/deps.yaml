@@ -42,9 +42,6 @@ gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
-
-install-script_20260311130000Z: []
-
 onboarding-ux-fe_20260310073721Z: []
 
 quota-gauges-be_20260310092417Z: []
