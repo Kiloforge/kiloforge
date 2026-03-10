@@ -1,9 +1,9 @@
 id: board-link-polish-fe_20260311210000Z
-title: "Polish board relationship link visuals"
+title: Polish board relationship link visuals
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Restyle the kanban board dependency/conflict SVG overlay — thicker strokes
@@ -50,30 +50,30 @@ spec:
     4. Adjust animations: slower dash flow for deps, pulsing glow intensity for conflicts.
     5. Update test expectations for the new straight-line path format.
 plan:
-  - phase: "Path Geometry"
+  - phase: Path Geometry
     tasks:
-      - text: "Replace computeBezierPath() with computeEdgePath() — M x1 y1 L x2 y2 straight lines instead of cubic Bezier curves"
-        done: false
-      - text: "Anchor from card edges: for cross-column lines use right edge of left card → left edge of right card; for same-column lines use bottom/top edges"
-        done: false
-      - text: "Keep vertical spread offset for overlapping lines (lineIndex * spread)"
-        done: false
-      - text: "Update RelationshipOverlay.test.tsx path expectations for straight-line format"
-        done: false
-  - phase: "Visual Styling"
+      - text: Replace computeBezierPath() with computeEdgePath() — M x1 y1 L x2 y2 straight lines instead of cubic Bezier curves
+        done: true
+      - text: Anchor from card edges: for cross-column lines use right edge of left card → left edge of right card; for same-column lines use bottom/top edges
+        done: true
+      - text: Keep vertical spread offset for overlapping lines (lineIndex * spread)
+        done: true
+      - text: Update RelationshipOverlay.test.tsx path expectations for straight-line format
+        done: true
+  - phase: Visual Styling
     tasks:
-      - text: "Increase stroke-width from 1.5 to 2.5-3px for both depLine and conflictLine classes"
-        done: false
-      - text: "Add SVG <defs> with <filter> glow effects — feGaussianBlur + feComposite for neon glow on stroke color; apply via filter attribute"
-        done: false
-      - text: "Set unified semi-transparent opacity (0.5-0.6) across all line types; remove per-class opacity fragmentation"
-        done: false
-      - text: "Update conflict risk colors to use same glow filter with risk-colored glow"
-        done: false
-  - phase: "Animation & Verification"
+      - text: Increase stroke-width from 1.5 to 2.5-3px for both depLine and conflictLine classes
+        done: true
+      - text: Add SVG <defs> with <filter> glow effects — feGaussianBlur + feComposite for neon glow on stroke color; apply via filter attribute
+        done: true
+      - text: Set unified semi-transparent opacity (0.5-0.6) across all line types; remove per-class opacity fragmentation
+        done: true
+      - text: Update conflict risk colors to use same glow filter with risk-colored glow
+        done: true
+  - phase: Animation & Verification
     tasks:
-      - text: "Replace flowDash with smoother flowing animation (slower dash-offset or gradient); add subtle glow pulse that modulates filter intensity"
-        done: false
-      - text: "Verify overlay renders correctly with 0, 1, and many relationships; run full test suite"
-        done: false
+      - text: Replace flowDash with smoother flowing animation (slower dash-offset or gradient); add subtle glow pulse that modulates filter intensity
+        done: true
+      - text: Verify overlay renders correctly with 0, 1, and many relationships; run full test suite
+        done: true
 extra: {}
