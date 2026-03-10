@@ -112,12 +112,12 @@ http_status() {
 # --- mkdir mode helpers ---
 
 mkdir_acquire() {
-  local holder="$1" timeout="$2"
+  local holder="$1" timeout="$2" pid="${3:-${PPID:-$$}}"
   local lock_dir
   lock_dir=$(get_lock_dir)
 
   if mkdir "$lock_dir" 2>/dev/null; then
-    echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+    echo "$pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
     echo "Merge lock acquired (mkdir mode)"
     return 0
   fi
@@ -126,7 +126,7 @@ mkdir_acquire() {
   if _mkdir_check_stale "$lock_dir"; then
     # Stale lock was cleaned — retry
     if mkdir "$lock_dir" 2>/dev/null; then
-      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      echo "$pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
       echo "Merge lock acquired (mkdir mode, stale lock cleaned)"
       return 0
     fi
@@ -152,7 +152,7 @@ mkdir_acquire() {
     _mkdir_check_stale "$lock_dir"
 
     if mkdir "$lock_dir" 2>/dev/null; then
-      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      echo "$pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
       echo "Merge lock acquired (mkdir mode) after ${elapsed}s"
       return 0
     fi
@@ -215,8 +215,25 @@ _mkdir_check_stale() {
 }
 
 mkdir_release() {
+  local holder="$1"
   local lock_dir
   lock_dir=$(get_lock_dir)
+
+  if [ ! -d "$lock_dir" ]; then
+    echo "Lock released (mkdir mode, already unlocked)"
+    return 0
+  fi
+
+  # Validate holder before releasing
+  if [ -f "$lock_dir/info" ]; then
+    local lock_holder
+    lock_holder=$(awk '{print $3}' "$lock_dir/info" 2>/dev/null)
+    if [ -n "$lock_holder" ] && [ "$lock_holder" != "$holder" ]; then
+      echo "ERROR: Cannot release lock — held by '$lock_holder', not '$holder'" >&2
+      return 1
+    fi
+  fi
+
   rm -rf "$lock_dir"
   echo "Lock released (mkdir mode)"
 }
@@ -262,12 +279,13 @@ mkdir_status() {
 # --- Main command dispatch ---
 
 cmd_acquire() {
-  local holder="$DEFAULT_HOLDER" ttl="$DEFAULT_TTL" timeout="$DEFAULT_TIMEOUT"
+  local holder="$DEFAULT_HOLDER" ttl="$DEFAULT_TTL" timeout="$DEFAULT_TIMEOUT" pid="${PPID:-$$}"
   while [ $# -gt 0 ]; do
     case "$1" in
       --holder)  holder="$2"; shift 2 ;;
       --ttl)     ttl="$2"; shift 2 ;;
       --timeout) timeout="$2"; shift 2 ;;
+      --pid)     pid="$2"; shift 2 ;;
       *) echo "Unknown option: $1" >&2; return 1 ;;
     esac
   done
@@ -275,7 +293,7 @@ cmd_acquire() {
   if is_orch_running; then
     http_acquire "$holder" "$ttl" "$timeout"
   else
-    mkdir_acquire "$holder" "$timeout"
+    mkdir_acquire "$holder" "$timeout" "$pid"
   fi
 }
 
@@ -291,7 +309,7 @@ cmd_release() {
   if is_orch_running; then
     http_release "$holder"
   else
-    mkdir_release
+    mkdir_release "$holder"
   fi
 }
 
@@ -308,11 +326,15 @@ cmd_heartbeat() {
   if is_orch_running; then
     http_heartbeat "$holder" "$ttl"
   else
-    # mkdir has no heartbeat — just update the info file timestamp
+    # mkdir heartbeat — update timestamp but preserve original PID from info file
     local lock_dir
     lock_dir=$(get_lock_dir)
-    if [ -d "$lock_dir" ]; then
-      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+    if [ -d "$lock_dir" ] && [ -f "$lock_dir/info" ]; then
+      local original_pid
+      original_pid=$(awk '{print $1}' "$lock_dir/info" 2>/dev/null)
+      if [ -n "$original_pid" ]; then
+        echo "$original_pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      fi
     fi
   fi
 }
