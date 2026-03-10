@@ -1,0 +1,74 @@
+id: board-clamp-forward-moves-fe_20260312220001Z
+title: Clamp forward column moves in board UI
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Apply column clamping client-side for instant UX. Filter unavailable
+    forward columns from mobile dropdown. Show toast when a move is clamped.
+  context: |
+    The backend now clamps forward moves (only backlog→approved is allowed
+    manually). The frontend should mirror this logic client-side so the card
+    visually lands in the correct column without waiting for the server
+    round-trip, and users get clear feedback when their drop is clamped.
+  codebase_analysis: |
+    - KanbanBoard.tsx handleDrop (line 77-91) calls onMoveCard with the raw
+      drop target column — needs to clamp before calling
+    - handleMobileMove (line 95-97) passes through directly — needs clamping
+    - Mobile dropdown (lines 268-281) shows all columns except current —
+      should filter out columns that would be clamped to a no-op
+    - useBoard.ts moveMutation (line 55-87) does optimistic update with the
+      raw toColumn — needs to clamp for correct optimistic state
+    - The backend returns the actual (clamped) ToColumn in the response, so
+      onSettled invalidation will correct any mismatch, but optimistic update
+      should match for smooth UX
+    - No toast/notification system exists yet — use a simple CSS animation
+      on the card (brief highlight/shake) rather than adding a toast library
+  acceptance_criteria:
+    - Dragging backlog card to in_progress or done visually lands it in approved
+    - Dragging approved card anywhere forward keeps it in approved
+    - Dragging in_progress card to done keeps it in in_progress
+    - Mobile dropdown only shows valid move targets (backward + one step forward max)
+    - Card briefly highlights when clamped to signal the move was adjusted
+    - Backward moves work normally with no visual feedback
+  out_of_scope: |
+    - Backend clamping logic (separate BE track)
+    - Toast/notification library — use CSS animation only
+    - Disabling drag on the done column (cards there aren't draggable since
+      they have no forward target, but backward drag should still work)
+  technical_notes: |
+    Add a clampForwardMove(fromCol, toCol, columns) utility matching the
+    backend logic. Apply in handleDrop, handleMobileMove, and the optimistic
+    update in useBoard. For the mobile dropdown, filter columns where
+    clampForwardMove(current, candidate) === current (would be a no-op).
+    For the clamp animation, add a brief CSS class (e.g., cardClamped with
+    a subtle scale pulse) applied when the effective column differs from the
+    drop target.
+plan:
+  - phase: Clamp Utility
+    tasks:
+      - text: "Add clampForwardMove(fromCol, toCol, columns) utility function to a shared utils file"
+        done: false
+      - text: "Write unit tests for the clamp utility covering all column combinations"
+        done: false
+  - phase: Board Integration
+    tasks:
+      - text: "Apply clamping in KanbanBoard handleDrop and handleMobileMove before calling onMoveCard"
+        done: false
+      - text: "Filter mobile dropdown options to exclude columns that would clamp to a no-op"
+        done: false
+      - text: "Apply clamping in useBoard optimistic update to match backend behavior"
+        done: false
+  - phase: Visual Feedback
+    tasks:
+      - text: "Add cardClamped CSS class with brief scale pulse animation"
+        done: false
+      - text: "Apply cardClamped class to cards when drop target differs from clamped column"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Run make test and make lint — verify no regressions"
+        done: false
+extra: {}
