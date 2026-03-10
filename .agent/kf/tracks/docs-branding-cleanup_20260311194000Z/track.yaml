@@ -3,7 +3,7 @@ title: Docs overhaul — remove Docker/Gitea references, apply Cortex/Command De
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Overhaul docs/ to reflect the current architecture (no Docker, no Gitea),
@@ -24,7 +24,7 @@ spec:
     - No Docker, no Gitea, no containers
     - Prerequisites: git + claude CLI only
     - Projects registered via `kf add <local-path>`
-
+    
     Files needing updates:
     - docs/architecture.md — SEVERELY outdated. References "Gitea (Docker)" in
       diagram, "A self-hosted git forge running in Docker" section, Docker volumes,
@@ -34,12 +34,12 @@ spec:
       has Colima section, references Gitea instance. Uses generic terms.
     - docs/README.md — Uses generic component names in descriptions.
     - SECURITY.md (root) — Delete entirely (email not configured).
-
+    
     Files that are fine:
     - docs/why-i-built-this.md — Personal story, no component references
     - docs/kiloforge-data-formats.md — Technical spec, no component references
     - README.md (root) — Already uses Cortex/Command Deck, no Gitea references
-
+    
     Related dead code (OUT OF SCOPE for this track — docs only):
     - backend/internal/adapter/compose/ — orphaned package
     - backend/internal/adapter/prereq/check.go — still checks for docker
@@ -69,47 +69,47 @@ spec:
     - Communication protocols table: remove Gitea rows
     - Data storage: remove Docker volumes, add SQLite as primary
     - Codebase structure: remove gitea/ adapter reference
-
+    
     docs/getting-started.md needs moderate rewrite:
     - Prerequisites: just git + claude
     - Remove Colima section entirely
     - Initialize section: describe kf init/up flow without Docker
     - Remove Gitea references (port 4000, admin user, etc.)
-
+    
     Use root README.md as the source of truth for current terminology.
 plan:
   - phase: Cleanup
     tasks:
       - text: Delete SECURITY.md from the repository root
-        done: false
+        done: true
   - phase: Architecture Doc
     tasks:
       - text: Rewrite docs/architecture.md system diagram — remove Gitea box, rename Orchestrator → Cortex, Dashboard → Command Deck
-        done: false
+        done: true
       - text: Rewrite Components section — remove Gitea, update CLI/Cortex/Command Deck descriptions to match current architecture
-        done: false
+        done: true
       - text: Update Communication Protocols table — remove Gitea rows, update terminology
-        done: false
+        done: true
       - text: Update Codebase Structure tree — remove gitea/ adapter, update component labels
-        done: false
+        done: true
       - text: Update Data Storage section — remove Docker volumes, describe SQLite + JSON + embedded assets
-        done: false
+        done: true
   - phase: Getting Started Doc
     tasks:
       - text: Update Prerequisites — git + claude only, remove Docker/Compose/Colima sections
-        done: false
+        done: true
       - text: Rewrite Initialize and Start sections — describe current kf init/up flow (data dir, analytics, Cortex daemon, Command Deck)
-        done: false
+        done: true
       - text: Update Register a Project section — kf add with local paths, remove Gitea mirror references
-        done: false
+        done: true
       - text: Update Monitor section — use Cortex/Command Deck branding
-        done: false
+        done: true
   - phase: Index and Verification
     tasks:
       - text: Update docs/README.md — use Cortex/Command Deck in component descriptions
-        done: false
+        done: true
       - text: Review all docs/ files for any remaining Docker, Gitea, or generic terminology
-        done: false
+        done: true
       - text: Verify SECURITY.md is gone and no broken links reference it
-        done: false
+        done: true
 extra: {}
