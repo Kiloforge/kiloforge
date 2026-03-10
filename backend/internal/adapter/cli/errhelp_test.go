@@ -79,6 +79,14 @@ func TestEmptyStateMessage(t *testing.T) {
 	}
 }
 
+func TestPrereqErrorContext_NoPanic(t *testing.T) {
+	t.Parallel()
+	// prereqErrorContext should return a string without panicking,
+	// regardless of which tools are installed on the test machine.
+	result := prereqErrorContext()
+	_ = result
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {

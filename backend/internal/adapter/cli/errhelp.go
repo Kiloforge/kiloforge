@@ -1,6 +1,10 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+
+	"kiloforge/internal/adapter/prereq"
+)
 
 // notInitializedError returns an error message for when Kiloforge has never
 // been initialized (no config/data directory exists).
@@ -41,4 +45,14 @@ func emptyState(resource, hint string) string {
 		msg += "\n\n  " + hint
 	}
 	return msg
+}
+
+// prereqErrorContext runs prerequisite checks and returns a formatted message
+// if any tools are missing. Returns empty string if all prerequisites pass.
+func prereqErrorContext() string {
+	errs := prereq.Check()
+	if len(errs) == 0 {
+		return ""
+	}
+	return "\n\n" + prereq.FormatErrors(errs)
 }
