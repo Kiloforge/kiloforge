@@ -2,6 +2,7 @@ package git
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -339,6 +340,164 @@ func TestPullFromRemote_Diverged(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "diverged") {
 		t.Errorf("expected diverged error, got: %v", err)
+	}
+}
+
+func TestPushToRemote_Conflict(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	bareDir := filepath.Join(dir, "origin.git")
+	cloneDir := filepath.Join(dir, "clone")
+
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%v failed: %s: %v", args, out, err)
+		}
+	}
+
+	run("git", "init", "--bare", bareDir)
+	tmpWork := filepath.Join(dir, "tmp-work")
+	run("git", "clone", bareDir, tmpWork)
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
+	f.WriteString("# test")
+	f.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
+
+	run("git", "clone", bareDir, cloneDir)
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+
+	// Push a commit from clone to create the remote branch kf/main.
+	f2, _ := os.Create(filepath.Join(cloneDir, "first.txt"))
+	f2.WriteString("first push")
+	f2.Close()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "first push").Run()
+
+	gs := New()
+	_, err := gs.PushToRemote(context.Background(), cloneDir, "main", "kf/main", "")
+	if err != nil {
+		t.Fatalf("initial push failed: %v", err)
+	}
+
+	// Create divergence on the kf/main remote branch:
+	// Make a separate commit in tmpWork and force push to kf/main.
+	f3, _ := os.Create(filepath.Join(tmpWork, "diverge.txt"))
+	f3.WriteString("diverging commit")
+	f3.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "diverge kf/main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main:refs/heads/kf/main", "--force").Run()
+
+	// Make another local commit in clone so local main diverges from origin/kf/main.
+	f4, _ := os.Create(filepath.Join(cloneDir, "second.txt"))
+	f4.WriteString("second push")
+	f4.Close()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "second push").Run()
+
+	// This push should fail with ErrSyncConflict.
+	_, err = gs.PushToRemote(context.Background(), cloneDir, "main", "kf/main", "")
+	if err == nil {
+		t.Fatal("expected error for conflicting push")
+	}
+
+	conflict := IsErrSyncConflict(err)
+	if conflict == nil {
+		t.Fatalf("expected ErrSyncConflict, got: %T: %v", err, err)
+	}
+	if conflict.Direction != "push" {
+		t.Errorf("direction = %q, want %q", conflict.Direction, "push")
+	}
+	if !strings.Contains(conflict.Error(), "diverged") {
+		t.Errorf("error message should contain 'diverged', got: %s", conflict.Error())
+	}
+}
+
+func TestPullFromRemote_Diverged_ErrSyncConflict(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	bareDir := filepath.Join(dir, "origin.git")
+	cloneDir := filepath.Join(dir, "clone")
+
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%v failed: %s: %v", args, out, err)
+		}
+	}
+
+	run("git", "init", "--bare", bareDir)
+	tmpWork := filepath.Join(dir, "tmp-work")
+	run("git", "clone", bareDir, tmpWork)
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
+	f.WriteString("# test")
+	f.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
+
+	run("git", "clone", bareDir, cloneDir)
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", cloneDir, "config", "user.name", "Test").Run()
+
+	// Create divergence.
+	f2, _ := os.Create(filepath.Join(cloneDir, "local.txt"))
+	f2.WriteString("local")
+	f2.Close()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "local").Run()
+
+	f3, _ := os.Create(filepath.Join(tmpWork, "upstream.txt"))
+	f3.WriteString("upstream")
+	f3.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
+
+	gs := New()
+	_, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "")
+	if err == nil {
+		t.Fatal("expected error for diverged branches")
+	}
+
+	conflict := IsErrSyncConflict(err)
+	if conflict == nil {
+		t.Fatalf("expected ErrSyncConflict, got: %T: %v", err, err)
+	}
+	if conflict.Direction != "pull" {
+		t.Errorf("direction = %q, want %q", conflict.Direction, "pull")
+	}
+	if conflict.Ahead != 1 {
+		t.Errorf("ahead = %d, want 1", conflict.Ahead)
+	}
+	if conflict.Behind != 1 {
+		t.Errorf("behind = %d, want 1", conflict.Behind)
+	}
+}
+
+func TestIsErrSyncConflict_Nil(t *testing.T) {
+	t.Parallel()
+	if IsErrSyncConflict(nil) != nil {
+		t.Error("expected nil for nil error")
+	}
+	if IsErrSyncConflict(fmt.Errorf("some other error")) != nil {
+		t.Error("expected nil for non-ErrSyncConflict error")
 	}
 }
 

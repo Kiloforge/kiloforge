@@ -272,3 +272,135 @@ func TestPullProject_NotFound(t *testing.T) {
 		t.Errorf("status = %d, want 404", rec.Code)
 	}
 }
+
+func TestPushProject_Conflict409(t *testing.T) {
+	t.Parallel()
+	p, _ := initTestRepo(t, "myapp")
+
+	// Push a local commit to create kf/main.
+	f, _ := os.Create(filepath.Join(p.ProjectDir, "first.txt"))
+	f.WriteString("first push")
+	f.Close()
+	cleanGitCmd("git", "-C", p.ProjectDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", p.ProjectDir, "commit", "-m", "first push").Run()
+	cleanGitCmd("git", "-C", p.ProjectDir, "push", "origin", "main:refs/heads/kf/main").Run()
+
+	// Create divergence: force push a different commit to kf/main from a second clone.
+	dir := filepath.Dir(p.ProjectDir)
+	tmpWork := filepath.Join(dir, "tmp-diverge")
+	cleanGitCmd("git", "clone", filepath.Join(dir, "origin.git"), tmpWork).Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	f2, _ := os.Create(filepath.Join(tmpWork, "diverge.txt"))
+	f2.WriteString("diverge")
+	f2.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "diverge kf/main").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main:refs/heads/kf/main", "--force").Run()
+
+	// Make another local commit so clone's main diverges from origin/kf/main.
+	f3, _ := os.Create(filepath.Join(p.ProjectDir, "second.txt"))
+	f3.WriteString("second push")
+	f3.Close()
+	cleanGitCmd("git", "-C", p.ProjectDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", p.ProjectDir, "commit", "-m", "second push").Run()
+
+	mux := setupSyncTestMux(t, []domain.Project{p})
+
+	body, _ := json.Marshal(gen.PushProjectRequest{RemoteBranch: "kf/main"})
+	req := httptest.NewRequest("POST", "/api/projects/myapp/push", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body = %s", rec.Code, rec.Body.String())
+	}
+
+	var resp gen.SyncConflictResponse
+	json.NewDecoder(rec.Body).Decode(&resp)
+	if resp.Direction != gen.SyncConflictResponseDirectionPush {
+		t.Errorf("direction = %q, want %q", resp.Direction, gen.SyncConflictResponseDirectionPush)
+	}
+	if resp.Error == "" {
+		t.Error("expected non-empty error message")
+	}
+}
+
+func TestPullProject_Conflict409(t *testing.T) {
+	t.Parallel()
+	p, _ := initTestRepo(t, "myapp")
+
+	// Create divergence: local commit.
+	f, _ := os.Create(filepath.Join(p.ProjectDir, "local.txt"))
+	f.WriteString("local")
+	f.Close()
+	cleanGitCmd("git", "-C", p.ProjectDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", p.ProjectDir, "commit", "-m", "local commit").Run()
+
+	// Create divergence: upstream commit.
+	dir := filepath.Dir(p.ProjectDir)
+	tmpWork := filepath.Join(dir, "tmp-upstream")
+	cleanGitCmd("git", "clone", filepath.Join(dir, "origin.git"), tmpWork).Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	f2, _ := os.Create(filepath.Join(tmpWork, "upstream.txt"))
+	f2.WriteString("upstream")
+	f2.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "upstream").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
+
+	mux := setupSyncTestMux(t, []domain.Project{p})
+
+	body, _ := json.Marshal(gen.PullProjectRequest{})
+	req := httptest.NewRequest("POST", "/api/projects/myapp/pull", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestResolveConflict_NotFound(t *testing.T) {
+	t.Parallel()
+	// Without a spawner configured, the handler returns 500 before checking the project.
+	// This validates that when spawner is missing, we get the appropriate error.
+	mux := setupSyncTestMux(t, nil)
+
+	body, _ := json.Marshal(gen.ResolveConflictRequest{
+		Direction:    gen.ResolveConflictRequestDirectionPush,
+		RemoteBranch: "kf/main",
+	})
+	req := httptest.NewRequest("POST", "/api/projects/nonexistent/resolve-conflict", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	// Without spawner, we get 500 before the project lookup.
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestResolveConflict_NoSpawner(t *testing.T) {
+	t.Parallel()
+	p, _ := initTestRepo(t, "myapp")
+	// Setup without spawner — handler should return 500.
+	mux := setupSyncTestMux(t, []domain.Project{p})
+
+	body, _ := json.Marshal(gen.ResolveConflictRequest{
+		Direction:    gen.ResolveConflictRequestDirectionPush,
+		RemoteBranch: "kf/main",
+	})
+	req := httptest.NewRequest("POST", "/api/projects/myapp/resolve-conflict", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", rec.Code, rec.Body.String())
+	}
+}
