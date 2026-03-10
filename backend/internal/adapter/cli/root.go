@@ -10,10 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	flagNoBrowser bool
-	flagDataDir   string
-)
+var flagNoBrowser bool
 
 var rootCmd = &cobra.Command{
 	Use:   "kf",
@@ -23,7 +20,7 @@ var rootCmd = &cobra.Command{
 Runs the Cortex control plane, Command Deck, and Claude Code swarms
 directly on your machine. Transforming pure intent into meaningful action.
 
-Run 'kf up' to start the Cortex.`,
+Initialize with 'kf init' to start the Cortex.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Fire-and-forget CLI command tracking.
 		// Only tracks if kf is initialized and analytics is enabled.
@@ -51,7 +48,6 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&flagNoBrowser, "no-browser", os.Getenv("KF_NO_BROWSER") == "1", "Do not open the dashboard in a browser")
-	rootCmd.PersistentFlags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.kiloforge)")
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(upCmd)

@@ -27,7 +27,8 @@ func TestConfig_ExpandedFields_JSONRoundTrip(t *testing.T) {
 	cfg := &Config{
 		OrchestratorPort: 4001,
 		DataDir:          "/tmp/test",
-		Model:            "sonnet",
+		ComposeFile:      "/tmp/compose.yml",
+		ContainerName:    "my-gitea",
 	}
 
 	data, err := json.Marshal(cfg)
@@ -40,8 +41,8 @@ func TestConfig_ExpandedFields_JSONRoundTrip(t *testing.T) {
 		t.Fatalf("unmarshal: %v", err)
 	}
 
-	if loaded.Model != "sonnet" {
-		t.Errorf("Model: want %q, got %q", "sonnet", loaded.Model)
+	if loaded.ContainerName != "my-gitea" {
+		t.Errorf("ContainerName: want %q, got %q", "my-gitea", loaded.ContainerName)
 	}
 	if loaded.OrchestratorPort != 4001 {
 		t.Errorf("OrchestratorPort: want 4001, got %d", loaded.OrchestratorPort)

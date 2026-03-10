@@ -1,11 +1,22 @@
 # Getting Started
 
-This guide walks you through installing Kiloforge, starting the Cortex, registering your first project, and spawning your first agent.
+This guide walks you through installing Kiloforge, setting up the infrastructure, registering your first project, and spawning your first agent.
 
 ## Prerequisites
 
 - **Git** — `git` command available in PATH
+- **Docker** with Docker Compose — Docker Desktop (includes compose v2) or Docker Engine + `docker-compose` (v1 for Colima users)
 - **Claude Code CLI** — `claude` command available in PATH, authenticated with an Anthropic API key or Claude Pro/Max subscription
+
+### Colima Users (macOS)
+
+If using Colima instead of Docker Desktop:
+
+```bash
+brew install docker-compose
+```
+
+Both `docker compose` (v2) and `docker-compose` (v1) are auto-detected.
 
 ## Install
 
@@ -27,41 +38,50 @@ make build
 # Binary at .build/kf — add to your PATH
 ```
 
-## Start the Cortex
+## Initialize
 
-Run `kf up` to start the Cortex control plane:
+Run `kf init` to start the local infrastructure:
+
+```bash
+kf init
+```
+
+This will:
+1. Generate a `docker-compose.yml` in `~/.kiloforge/`
+2. Start a Gitea instance at `http://localhost:4000`
+3. Create an admin user with a random password
+4. Register your SSH key for git operations
+5. Save configuration to `~/.kiloforge/config.json`
+
+The admin password is displayed once and saved to config. Subsequent runs are idempotent.
+
+## Start the Orchestrator
+
+For daily use, start Gitea and the orchestrator together:
 
 ```bash
 kf up
 ```
 
-On first run, this will:
-1. Create the data directory (`~/.kiloforge/`)
-2. Ask about anonymous usage analytics
-3. Save configuration to `~/.kiloforge/config.json`
-4. Start the Cortex daemon
-5. Open the Command Deck in your browser
-
-On subsequent runs, `kf up` simply starts the Cortex if it isn't already running.
-
 This starts:
-- **Cortex** at `http://localhost:4001` — the control plane (API, agent management, quota tracking)
-- **Command Deck** at `http://localhost:4001/-/` — real-time monitoring dashboard
+- **Gitea** at `http://localhost:4000` — the local git forge
+- **Orchestrator** at `http://localhost:4001` — API, dashboard, and agent management
+- **Dashboard** at `http://localhost:4001/-/` — real-time monitoring UI
 
 Stop everything with `kf down`.
 
 ## Register a Project
 
-Add a project by providing its local path:
+Add a project by providing its remote URL:
 
 ```bash
-kf add /path/to/my-project
+kf add git@github.com:user/my-project.git
 ```
 
-You can override the project slug:
+This clones the repo locally, creates a mirror on Gitea, pushes all branches, and registers a webhook for event routing. You can also use HTTPS URLs:
 
 ```bash
-kf add /path/to/my-project --name myapp
+kf add https://github.com/user/my-project.git
 ```
 
 List registered projects:
@@ -80,7 +100,7 @@ If your project uses the Conductor track system, spawn a developer agent for a t
 kf implement <track-id>
 ```
 
-### From the Command Deck
+### From the Dashboard
 
 1. Open `http://localhost:4001/-/` in your browser
 2. Navigate to your project
@@ -89,13 +109,13 @@ kf implement <track-id>
 
 ### Interactive Sessions
 
-The Command Deck supports interactive agent sessions — open a terminal in the browser, send prompts, and see structured output (text, tool use, thinking blocks) in real time.
+The dashboard supports interactive agent sessions — open a terminal in the browser, send prompts, and see structured output (text, tool use, thinking blocks) in real time.
 
 ## Monitor
 
-### Command Deck
+### Dashboard
 
-The Command Deck at `http://localhost:4001/-/` shows:
+The dashboard at `http://localhost:4001/-/` shows:
 - **Agent cards** — status, role, tokens, cost, uptime for each agent
 - **Quota** — total token usage and estimated cost across all agents
 - **Logs** — live log streaming for any agent

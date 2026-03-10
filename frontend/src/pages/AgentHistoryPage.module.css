@@ -165,13 +165,3 @@
   background: rgba(108, 200, 108, 0.15);
   color: var(--green);
 }
-
-.rowBtnWarning {
-  border-color: var(--orange);
-  color: var(--orange);
-}
-
-.rowBtnWarning:hover:not(:disabled) {
-  background: rgba(232, 148, 74, 0.15);
-  color: var(--orange);
-}

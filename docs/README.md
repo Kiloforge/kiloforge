@@ -10,11 +10,11 @@ The story behind Kiloforge — from first encountering agentic coding tools to b
 
 ### [Getting Started](getting-started.md)
 
-Install Kiloforge, start the Cortex, register your first project, and spawn your first agent. Everything you need to go from zero to running agent swarms.
+Install Kiloforge, initialize the local infrastructure, register your first project, and spawn your first agent. Everything you need to go from zero to running agent swarms.
 
 ### [Architecture Overview](architecture.md)
 
-How the pieces fit together — CLI, Cortex control plane, and Command Deck. Covers the system diagram, communication protocols, codebase structure, key abstractions (tracks, agents, projects), and data storage.
+How the pieces fit together — CLI, orchestrator server, web dashboard, and Gitea. Covers the system diagram, communication protocols, codebase structure, key abstractions (tracks, agents, projects), and data storage.
 
 ## Additional Resources
 

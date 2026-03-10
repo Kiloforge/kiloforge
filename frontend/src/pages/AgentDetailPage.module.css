@@ -88,30 +88,6 @@
   color: var(--green);
 }
 
-.actionWarning {
-  border-color: var(--orange);
-  color: var(--orange);
-}
-
-.actionWarning:hover:not(:disabled) {
-  background: rgba(232, 148, 74, 0.15);
-  color: var(--orange);
-}
-
-.replacedBanner {
-  background: rgba(139, 143, 163, 0.1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--text-dim);
-  font-style: italic;
-}
-
-.errorText {
-  color: var(--red);
-}
-
 /* Metadata grid */
 .metaGrid {
   background: var(--surface);

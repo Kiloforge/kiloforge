@@ -25,6 +25,9 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 		t.Errorf("DataDir: want %q, got %q", wantDataDir, cfg.DataDir)
 	}
 
+	if cfg.ContainerName != "kf-gitea" {
+		t.Errorf("ContainerName: want %q, got %q", "kf-gitea", cfg.ContainerName)
+	}
 	// DashboardEnabled defaults to nil (meaning enabled via IsDashboardEnabled()).
 	if cfg.DashboardEnabled != nil {
 		t.Errorf("DashboardEnabled: want nil, got %v", *cfg.DashboardEnabled)

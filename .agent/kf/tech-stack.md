@@ -46,9 +46,7 @@
 ## Build & Tooling
 
 - **Makefile** — build, test, and lint targets
-- **go vet + staticcheck** — Primary Go linters (CI and `make lint`)
-- **gofmt + goimports** — Format checking (CI and `make lint`)
-- **golangci-lint** — Thorough Go linting (`make lint-full`, local use)
+- **golangci-lint** — Go linter
 - **Code generation workflow**:
   - `make gen-api` — regenerate Go code from OpenAPI schema
   - `make verify-codegen` — verify generated code matches schema (CI gate)

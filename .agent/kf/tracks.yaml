@@ -21,8 +21,6 @@ agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track L
 agent-name-display_20260310120000Z: {"title":"Show agent name instead of ID in AgentTerminal header","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-agent-recovery-be_20260310142300Z: {"title":"Agent startup recovery and replace-agent flow","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-agent-recovery-fe_20260310142301Z: {"title":"Agent recovery UI — resume, replace, and suspended state display","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-timeout_20260310160002Z: {"title":"Agent timeout enforcement with configurable max duration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-be_20260310121626Z: {"title":"Agent work stash — backend pool/git stash branch operations","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-skill_20260310121627Z: {"title":"Agent work stash — kf-developer skill and CLI tooling","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
@@ -35,12 +33,10 @@ aws-static-deploy_20260310200000Z: {"title":"Migrate kiloforge.dev from Vercel t
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-board-link-polish-fe_20260311210000Z: {"title":"Polish board relationship link visuals","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-11"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 ci-covdata-fix_20260311142900Z: {"title":"Fix CI test failure — missing covdata tool in coverage step","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-ci-fast-lint_20260311180000Z: {"title":"Replace golangci-lint with fast direct linters in CI","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 ci-lint-enforcement_20260310092158Z: {"title":"Fix CI lint failures — gofmt violations, local lint enforcement, VCS fix","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -57,8 +53,6 @@ dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Fro
 dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kiloforge.dev design guide","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-docker-gitea-dead-code-be_20260311195000Z: {"title":"Remove Docker/Gitea dead code from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-docs-branding-cleanup_20260311194000Z: {"title":"Docs branding cleanup — Cortex/Command Deck terminology and remove SECURITY.md","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 draggable-resizable-windows_20260310062703Z: {"title":"Draggable and resizable agent terminal windows","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -75,7 +69,6 @@ e2e-sse-realtime_20260309194837Z: {"title":"E2E Tests: Real-Time SSE Updates —
 e2e-track-management_20260309194833Z: {"title":"E2E Tests: Track Management — List, Detail, Generate, and Delete","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 embedded-skills-default_20260309234000Z: {"title":"Embedded Skills as Default — Remove Repo Dependency","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 error-toast-notifications_20260309223001Z: {"title":"Error Toast Notifications in Dashboard","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-expand-agent-namegen-be_20260310150455Z: {"title":"Expand agent name generator with large word lists and hyphen separator","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 fix-agent-spawn-context_20260310100000Z: {"title":"Fix agent spawn context cancellation — detach SDK lifecycle from HTTP request","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -160,10 +153,9 @@ licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribu
 list-pagination-be_20260310200000Z: {"title":"Cursor pagination and filtering for all list API endpoints","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 list-pagination-fe_20260310200001Z: {"title":"Paginated lists with +N overflow in dashboard","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 live-status-badges_20260308190000Z: {"title":"Universal Live Agent Status Badges","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-local-skills-install-be_20260311160000Z: {"title":"Install skills into project repo during kf add — local-first skill distribution","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+local-skills-install-be_20260311160000Z: {"title":"Install skills into project repo during kf add — local-first skill distribution","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 merge-cleanup_20260307125003Z: {"title":"PR Merge, Worktree Cleanup, and Agent Teardown","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 merge-conflict-guidance_20260311020000Z: {"title":"Simplify merge conflict resolution in kf-architect and kf-developer skills","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-merge-init-into-up_20260311193000Z: {"title":"Merge kf init into kf up — single entry point with auto-setup","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 merge-lock-hardening-be_20260310220000Z: {"title":"Harden merge lock manager — persist heartbeat, stale detection, lock status CLI","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 merge-lock-skill-consolidation_20260310220001Z: {"title":"Consolidate merge lock protocol into shared kf-merge-lock helper","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 minimizable-terminals_20260310070000Z: {"title":"Minimizable agent terminals with activity notifications","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
@@ -219,8 +211,6 @@ reliability-metrics-be_20260310093038Z: {"title":"Agent reliability metrics — 
 reliability-metrics-fe_20260310093039Z: {"title":"Agent reliability metrics — frontend dashboard and historical visualization","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-replace-tracing-be_20260310144200Z: {"title":"Add reliability events and trace spans for agent replacement lifecycle","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-11"}
-report-merge-protocol_20260311190000Z: {"title":"Add serial merge protocol to kf-report skill","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 research-cc-quota-monitoring_20260307150000Z: {"title":"Research: Claude Code Quota Monitoring and Graceful Degradation","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-docker-compose-init_20260307120000Z: {"title":"Research: Docker Compose for Init with v1/v2 CLI Compatibility","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-global-gitea-multiproject_20260307120001Z: {"title":"Research: Global Gitea Server for Multi-Project Coordination","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
@@ -235,7 +225,7 @@ setup-gate-be_20260310234710Z: {"title":"Gate All Agent Endpoints Behind Setup C
 setup-gate-fe_20260310234711Z: {"title":"Disable Agent Actions Until Setup Complete (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 setup-prereq-be_20260310004000Z: {"title":"Setup Prerequisite Check Before Agent Spawning (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 setup-prereq-fe_20260310004001Z: {"title":"Setup Prerequisite Check — Dashboard UI (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-site-launch-install-guide_20260311170000Z: {"title":"Launch site — replace Coming Soon with platform-aware install guide","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+site-launch-install-guide_20260311170000Z: {"title":"Launch site — replace Coming Soon with platform-aware install guide","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 site-rebrand_20260311100000Z: {"title":"Kiloforge site overhaul — rebrand to Cortex/Command Deck, strip Gitea, update messaging","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 skill-install-update_20260308231000Z: {"title":"Conductor Skill Installation and Auto-Update","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 skill-preflight-check_20260309170000Z: {"title":"Pre-flight Skill Validation Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

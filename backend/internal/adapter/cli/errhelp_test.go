@@ -12,8 +12,26 @@ func TestNotInitializedError(t *testing.T) {
 	if !strings.Contains(msg, "not initialized") {
 		t.Errorf("expected 'not initialized' in message, got: %q", msg)
 	}
+	if !strings.Contains(msg, "kf init") {
+		t.Errorf("expected 'kf init' guidance in message, got: %q", msg)
+	}
+}
+
+func TestGiteaNotRunningError(t *testing.T) {
+	t.Parallel()
+	msg := giteaNotRunningError()
+	if !strings.Contains(msg, "not running") {
+		t.Errorf("expected 'not running' in message, got: %q", msg)
+	}
 	if !strings.Contains(msg, "kf up") {
 		t.Errorf("expected 'kf up' guidance in message, got: %q", msg)
+	}
+}
+
+func TestNotInitializedDistinctFromGiteaDown(t *testing.T) {
+	t.Parallel()
+	if notInitializedError() == giteaNotRunningError() {
+		t.Error("not-initialized and gitea-not-running errors should be distinct")
 	}
 }
 
@@ -23,8 +41,8 @@ func TestConfigLoadError(t *testing.T) {
 	if !strings.Contains(msg, "file not found") {
 		t.Errorf("expected wrapped error in message, got: %q", msg)
 	}
-	if !strings.Contains(msg, "kf up") {
-		t.Errorf("expected 'kf up' guidance in message, got: %q", msg)
+	if !strings.Contains(msg, "kf init") {
+		t.Errorf("expected 'kf init' guidance in message, got: %q", msg)
 	}
 }
 

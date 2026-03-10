@@ -129,24 +129,24 @@ func WithTracer(t port.Tracer) ServerOption {
 
 // Server handles the orchestrator REST API.
 type Server struct {
-	cfg            *config.Config
-	registry       port.ProjectStore
-	store          port.AgentStore
-	prTracker      port.PRTrackingStore
-	spawner        port.AgentSpawner
-	prService      *service.PRService
-	logger         *log.Logger
-	port           int
-	dashboard      *dashboard.Server
-	quotaReader    QuotaReader
-	_projects      dashboard.ProjectLister
-	traceStore     tracing.TraceReader
-	boardSvc       port.BoardService
-	tracer         port.Tracer
-	interSpawner   InteractiveSpawner
-	wsSessions     *wsAdapter.SessionManager
-	consent        ConsentChecker
-	tourStore      *sqlite.TourStore
+	cfg          *config.Config
+	registry     port.ProjectStore
+	store        port.AgentStore
+	prTracker    port.PRTrackingStore
+	spawner      port.AgentSpawner
+	prService    *service.PRService
+	logger       *log.Logger
+	port         int
+	dashboard    *dashboard.Server
+	quotaReader  QuotaReader
+	_projects    dashboard.ProjectLister
+	traceStore   tracing.TraceReader
+	boardSvc     port.BoardService
+	tracer       port.Tracer
+	interSpawner InteractiveSpawner
+	wsSessions   *wsAdapter.SessionManager
+	consent      ConsentChecker
+	tourStore    *sqlite.TourStore
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
@@ -252,23 +252,23 @@ func (s *Server) Run(ctx context.Context) error {
 
 	gitSync := gitadapter.New()
 	apiHandler := NewAPIHandler(APIHandlerOpts{
-		Agents:         s.store,
-		Quota:          s.quotaReader,
-		LockMgr:        lockMgr,
-		Projects:       s._projects,
-		ProjectMgr:     projectSvc,
-		GitSync:        gitSync,
-		DiffProvider:   gitSync,
-		TraceStore:     s.traceStore,
-		BoardSvc:       s.boardSvc,
-		TrackReader:    service.NewTrackReader(),
-		EventBus:       eventBus,
-		SSEClients:     sseClients,
-		Cfg:            s.cfg,
-		InterSpawner:   s.interSpawner,
-		WSSessions:     s.wsSessions,
-		Consent:        s.consent,
-		AgentRemover:   s.store,
+		Agents:       s.store,
+		Quota:        s.quotaReader,
+		LockMgr:      lockMgr,
+		Projects:     s._projects,
+		ProjectMgr:   projectSvc,
+		GitSync:      gitSync,
+		DiffProvider: gitSync,
+		TraceStore:   s.traceStore,
+		BoardSvc:     s.boardSvc,
+		TrackReader:  service.NewTrackReader(),
+		EventBus:     eventBus,
+		SSEClients:   sseClients,
+		Cfg:          s.cfg,
+		InterSpawner: s.interSpawner,
+		WSSessions:   s.wsSessions,
+		Consent:      s.consent,
+		AgentRemover: s.store,
 		QueueSvc:       s.queueSvc,
 		Analytics:      s.analytics,
 		ReliabilitySvc: s.reliabilitySvc,

@@ -36,19 +36,3 @@
   background: rgba(139, 143, 163, 0.15);
   color: var(--text-dim);
 }
-
-.resume-failed {
-  background: rgba(232, 148, 74, 0.15);
-  color: var(--orange);
-}
-
-.force-killed {
-  background: rgba(240, 108, 108, 0.15);
-  color: var(--red);
-}
-
-.replaced {
-  background: rgba(139, 143, 163, 0.1);
-  color: var(--text-dim);
-  text-decoration: line-through;
-}

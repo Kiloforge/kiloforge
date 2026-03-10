@@ -1899,11 +1899,10 @@ cmd_status() {
   echo "                              OVERALL PROGRESS"
   echo "--------------------------------------------------------------------------------"
   echo ""
-  local done_count=$((completed + archived))
-  printf "Tracks:     %d/%d done (%d%%)\n" "$done_count" "$total" "$((total > 0 ? done_count * 100 / total : 0))"
+  printf "Tracks:     %d/%d completed (%d%%)\n" "$completed" "$total" "$((total > 0 ? completed * 100 / total : 0))"
   printf "Tasks:      %d/%d completed (active tracks)\n" "$total_tasks_done" "$total_tasks_all"
   echo ""
-  printf "Progress:   "; _progress_bar "$done_count" "$total"; echo ""
+  printf "Progress:   "; _progress_bar "$completed" "$total"; echo ""
   echo ""
   printf "  completed:   %4d\n" "$completed"
   printf "  in-progress: %4d\n" "$in_progress"

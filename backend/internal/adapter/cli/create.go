@@ -70,19 +70,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Project '%s' created!\n", p.Slug)
 	fmt.Printf("  Path:  %s\n", p.ProjectDir)
 	fmt.Println()
-
-	// Install embedded skills locally into the project.
-	fmt.Println("==> Transforming your agent into a high-productivity track-slinging machine...")
-	installed, installErr := installLocalSkills(p.ProjectDir)
-	if installErr != nil {
-		fmt.Printf("    Warning: local skills installation failed: %v\n", installErr)
-	} else if len(installed) == 0 {
-		fmt.Println("    Skills already up to date")
-	} else {
-		fmt.Printf("    Installed %d skill(s) to %s/.claude/skills/\n", len(installed), p.ProjectDir)
-	}
-
-	fmt.Println()
 	fmt.Println("The repository is empty — add files and commit to get started.")
 	fmt.Println("View registered projects with 'kf projects'.")
 

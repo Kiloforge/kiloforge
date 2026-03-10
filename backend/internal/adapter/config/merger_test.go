@@ -10,7 +10,7 @@ func TestMerge_PriorityOrdering(t *testing.T) {
 	low := &testProvider{cfg: &Config{
 		OrchestratorPort: 3000,
 		DataDir:          "/low",
-		Model:            "opus",
+		ContainerName:    "low-gitea",
 	}}
 
 	high := &testProvider{cfg: &Config{
@@ -32,8 +32,8 @@ func TestMerge_PriorityOrdering(t *testing.T) {
 	}
 
 	// Low priority fields preserved when high doesn't set them.
-	if cfg.Model != "opus" {
-		t.Errorf("Model: want %q, got %q", "opus", cfg.Model)
+	if cfg.ContainerName != "low-gitea" {
+		t.Errorf("ContainerName: want %q, got %q", "low-gitea", cfg.ContainerName)
 	}
 }
 
@@ -43,7 +43,7 @@ func TestMerge_PartialOverlays(t *testing.T) {
 	defaults := &testProvider{cfg: &Config{
 		OrchestratorPort: 4001,
 		DataDir:          "/default",
-		Model:            "opus",
+		ContainerName:    "kf-gitea",
 	}}
 
 	jsonCfg := &testProvider{cfg: &Config{
@@ -66,8 +66,8 @@ func TestMerge_PartialOverlays(t *testing.T) {
 	if cfg.DataDir != "/custom" {
 		t.Errorf("DataDir: want %q (json), got %q", "/custom", cfg.DataDir)
 	}
-	if cfg.Model != "opus" {
-		t.Errorf("Model: want %q (defaults), got %q", "opus", cfg.Model)
+	if cfg.ContainerName != "kf-gitea" {
+		t.Errorf("ContainerName: want %q (defaults), got %q", "kf-gitea", cfg.ContainerName)
 	}
 }
 

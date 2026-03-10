@@ -18,15 +18,10 @@ vi.mock("../hooks/useAgentActions", () => ({
   useAgentActions: () => ({
     stop: { mutate: vi.fn(), isPending: false },
     resume: { mutate: vi.fn(), isPending: false },
-    replace: { mutate: vi.fn(), isPending: false },
     del: { mutate: vi.fn(), isPending: false },
   }),
   canStop: (a: Agent) => a.status === "running" || a.status === "waiting",
-  canResume: (a: Agent) => {
-    if (a.status === "suspended" || a.status === "force-killed") return true;
-    return (a.status === "stopped" || a.status === "completed" || a.status === "failed") && a.role === "interactive";
-  },
-  canReplace: (a: Agent) => a.status === "resume-failed" || a.status === "force-killed",
+  canResume: (a: Agent) => (a.status === "stopped" || a.status === "completed" || a.status === "failed") && a.role === "interactive",
   canDelete: (a: Agent) => a.status !== "running" && a.status !== "waiting",
 }));
 
@@ -159,25 +154,5 @@ describe("AgentCard", () => {
     expect(screen.getByText("Sleepy Owl")).toBeInTheDocument();
     // No ref link
     expect(screen.queryByText(/ref:/)).not.toBeInTheDocument();
-  });
-
-  it("shows resume button for suspended developer agent", () => {
-    renderCard({ status: "suspended", role: "developer" });
-    expect(screen.getByText("Resume")).toBeInTheDocument();
-  });
-
-  it("shows replace button for resume-failed agent", () => {
-    renderCard({ status: "resume-failed", role: "developer" });
-    expect(screen.getByText("Replace")).toBeInTheDocument();
-  });
-
-  it("does not show resume for resume-failed agent", () => {
-    renderCard({ status: "resume-failed", role: "developer" });
-    expect(screen.queryByText("Resume")).not.toBeInTheDocument();
-  });
-
-  it("shows shutdown reason for suspended agent", () => {
-    renderCard({ status: "suspended", shutdown_reason: "orchestrator shutdown" });
-    expect(screen.getByText(/orchestrator shutdown/)).toBeInTheDocument();
   });
 });

@@ -741,10 +741,11 @@ func (h *APIHandler) ReplaceAgent(ctx context.Context, req gen.ReplaceAgentReque
 			flags = *req.Body.Flags
 		}
 		newAgent, err = h.interSpawner.SpawnDeveloper(ctx, agent.SpawnDeveloperOpts{
-			TrackID:     old.Ref,
-			Flags:       flags,
-			WorktreeDir: old.WorktreeDir,
-			Model:       model,
+			TrackID:         old.Ref,
+			Flags:           flags,
+			WorktreeDir:     old.WorktreeDir,
+			Model:           model,
+			ReplacesAgentID: old.ID,
 		})
 	case "reviewer":
 		// Extract PR number from ref (format: "PR #123").
@@ -759,6 +760,23 @@ func (h *APIHandler) ReplaceAgent(ctx context.Context, req gen.ReplaceAgentReque
 
 	if err != nil {
 		return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("spawn replacement: %v", err)}, nil
+	}
+
+	// Record reliability event for the replacement lifecycle.
+	if h.reliabilitySvc != nil {
+		_ = h.reliabilitySvc.RecordEvent(
+			domain.RelEventAgentReplaced,
+			domain.SeverityWarn,
+			old.ID,
+			old.Role,
+			map[string]any{
+				"new_agent_id": newAgent.ID,
+				"role":         old.Role,
+				"ref":          old.Ref,
+				"old_status":   old.Status,
+				"model":        newAgent.Model,
+			},
+		)
 	}
 
 	return gen.ReplaceAgent201JSONResponse(domainAgentToGen(*newAgent, h.quota)), nil

@@ -23,6 +23,12 @@ func overlay(dst, src *Config) {
 	if src.DataDir != "" {
 		dst.DataDir = src.DataDir
 	}
+	if src.ComposeFile != "" {
+		dst.ComposeFile = src.ComposeFile
+	}
+	if src.ContainerName != "" {
+		dst.ContainerName = src.ContainerName
+	}
 	if src.MaxSessionCostUSD != 0 {
 		dst.MaxSessionCostUSD = src.MaxSessionCostUSD
 	}

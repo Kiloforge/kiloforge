@@ -30,53 +30,29 @@ interface RelationshipOverlayProps {
   onToggle: () => void;
 }
 
-/** Compute a straight-line path between the nearest edges of two cards. */
-export function computeEdgePath(
+/** Compute a cubic bezier path between two card edges. */
+export function computeBezierPath(
   from: CardPosition,
   to: CardPosition,
   lineIndex = 0,
 ): string {
+  const x1 = from.x + from.width / 2;
+  const y1 = from.y + from.height / 2;
+  const x2 = to.x + to.width / 2;
+  const y2 = to.y + to.height / 2;
+  const dx = x2 - x1;
+
   // Spread overlapping lines vertically
   const spread = lineIndex * 6;
 
-  const fromCx = from.x + from.width / 2;
-  const toCx = to.x + to.width / 2;
-  const dx = toCx - fromCx;
-
-  let x1: number, y1: number, x2: number, y2: number;
-
   if (Math.abs(dx) < 20) {
-    // Same column: connect via top/bottom edges
-    const fromCy = from.y + from.height / 2;
-    const toCy = to.y + to.height / 2;
-    if (fromCy < toCy) {
-      // from is above to
-      x1 = fromCx + spread;
-      y1 = from.y + from.height;
-      x2 = toCx + spread;
-      y2 = to.y;
-    } else {
-      // from is below to
-      x1 = fromCx + spread;
-      y1 = from.y;
-      x2 = toCx + spread;
-      y2 = to.y + to.height;
-    }
-  } else if (dx > 0) {
-    // to is to the right: from right edge → to left edge
-    x1 = from.x + from.width;
-    y1 = from.y + from.height / 2 + spread;
-    x2 = to.x;
-    y2 = to.y + to.height / 2 + spread;
-  } else {
-    // to is to the left: from left edge → to right edge
-    x1 = from.x;
-    y1 = from.y + from.height / 2 + spread;
-    x2 = to.x + to.width;
-    y2 = to.y + to.height / 2 + spread;
+    // Same column: curve out to the right to avoid straight vertical line
+    const offset = 60 + spread;
+    return `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 + offset} ${y2}, ${x2} ${y2}`;
   }
 
-  return `M ${x1} ${y1} L ${x2} ${y2}`;
+  const cpOffset = Math.min(Math.abs(dx) * 0.4, 120);
+  return `M ${x1} ${y1 + spread} C ${x1 + cpOffset} ${y1 + spread}, ${x2 - cpOffset} ${y2 + spread}, ${x2} ${y2 + spread}`;
 }
 
 export function RelationshipOverlay({
@@ -179,35 +155,13 @@ export function RelationshipOverlay({
       </div>
       {visible && hasLines && (
         <svg className={styles.overlay}>
-          <defs>
-            <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-            <filter id="glow-gray" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-            <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-            <filter id="glow-orange" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-            <filter id="glow-yellow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
           {depLines.map((line, i) => {
             const from = positions.get(line.fromId)!;
             const to = positions.get(line.toId)!;
             return (
               <path
                 key={`dep-${line.fromId}-${line.toId}`}
-                d={computeEdgePath(from, to, i)}
+                d={computeBezierPath(from, to, i)}
                 className={`${styles.depLine} ${
                   line.satisfied ? styles.depLineSatisfied : styles.depLinePending
                 }`}
@@ -226,7 +180,7 @@ export function RelationshipOverlay({
             return (
               <path
                 key={`conflict-${line.idA}-${line.idB}`}
-                d={computeEdgePath(from, to, depLines.length + i)}
+                d={computeBezierPath(from, to, depLines.length + i)}
                 className={`${styles.conflictLine} ${riskClass}`}
               />
             );

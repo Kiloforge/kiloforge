@@ -13,7 +13,7 @@ import type { WSConnectionState } from "../hooks/useAgentWebSocket";
 import { MessageDispatch } from "../components/terminal";
 import { DiffView } from "../components/diff/DiffView";
 import { useTracks } from "../hooks/useTracks";
-import { useAgentActions, canStop, canResume, canReplace, canDelete } from "../hooks/useAgentActions";
+import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import styles from "./AgentDetailPage.module.css";
 
 function ConnectionDot({ status }: { status: WSConnectionState }) {
@@ -33,9 +33,8 @@ export function AgentDetailPage() {
   const diffRef = useRef<HTMLDivElement>(null);
 
   const { tracks } = useTracks();
-  const { stop, resume, replace, del } = useAgentActions();
+  const { stop, resume, del } = useAgentActions();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
 
   const { data: agent, error: agentError } = useQuery({
     queryKey: queryKeys.agent(id ?? ""),
@@ -159,15 +158,6 @@ export function AgentDetailPage() {
             {resume.isPending ? "Resuming..." : "Resume"}
           </button>
         )}
-        {canReplace(agent) && (
-          <button
-            className={`${styles.actionBtn} ${styles.actionWarning}`}
-            onClick={() => setShowReplaceConfirm(true)}
-            disabled={replace.isPending}
-          >
-            {replace.isPending ? "Replacing..." : "Replace"}
-          </button>
-        )}
         {canDelete(agent) && (
           <button
             className={`${styles.actionBtn} ${styles.actionDanger}`}
@@ -179,18 +169,6 @@ export function AgentDetailPage() {
         )}
       </div>
 
-      {showReplaceConfirm && (
-        <ConfirmDialog
-          title="Replace Agent"
-          message="This agent's session could not be recovered. Replace with a new agent for the same work?"
-          confirmLabel="Replace"
-          confirming={replace.isPending}
-          onConfirm={() => replace.mutate(agent.id, {
-            onSuccess: (newAgent) => navigate(`/agents/${newAgent.id}`),
-          })}
-          onCancel={() => setShowReplaceConfirm(false)}
-        />
-      )}
       {showDeleteConfirm && (
         <ConfirmDialog
           title="Delete Agent"
@@ -200,12 +178,6 @@ export function AgentDetailPage() {
           onConfirm={() => del.mutate(agent.id, { onSuccess: () => navigate("/") })}
           onCancel={() => setShowDeleteConfirm(false)}
         />
-      )}
-
-      {agent.status === "replaced" && (
-        <div className={styles.replacedBanner}>
-          This agent has been replaced by a new agent for the same work.
-        </div>
       )}
 
       <div className={styles.metaGrid}>
@@ -273,24 +245,6 @@ export function AgentDetailPage() {
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>Cost</span>
             <span>{formatUSD(agent.estimated_cost_usd)}</span>
-          </div>
-        )}
-        {agent.suspended_at && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Suspended At</span>
-            <span>{new Date(agent.suspended_at).toLocaleString()}</span>
-          </div>
-        )}
-        {agent.shutdown_reason && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Shutdown Reason</span>
-            <span>{agent.shutdown_reason}</span>
-          </div>
-        )}
-        {agent.resume_error && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Resume Error</span>
-            <span className={styles.errorText}>{agent.resume_error}</span>
           </div>
         )}
       </div>

@@ -20,6 +20,8 @@ func TestJSONAdapter_SaveAndLoad(t *testing.T) {
 	cfg := &Config{
 		OrchestratorPort: 4001,
 		DataDir:          dir,
+		ComposeFile:      filepath.Join(dir, "docker-compose.yml"),
+		ContainerName:    "custom-gitea",
 	}
 
 	if err := adapter.Save(cfg); err != nil {
@@ -34,8 +36,8 @@ func TestJSONAdapter_SaveAndLoad(t *testing.T) {
 	if loaded.OrchestratorPort != 4001 {
 		t.Errorf("OrchestratorPort: want 4001, got %d", loaded.OrchestratorPort)
 	}
-	if loaded.DataDir != dir {
-		t.Errorf("DataDir: want %q, got %q", dir, loaded.DataDir)
+	if loaded.ContainerName != "custom-gitea" {
+		t.Errorf("ContainerName: want %q, got %q", "custom-gitea", loaded.ContainerName)
 	}
 }
 

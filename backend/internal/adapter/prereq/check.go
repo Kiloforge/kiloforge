@@ -29,6 +29,24 @@ func Check() []PrereqError {
 		})
 	}
 
+	// docker
+	if _, err := exec.LookPath("docker"); err != nil {
+		errs = append(errs, PrereqError{
+			Tool:        "docker",
+			Reason:      "required for running Gitea container",
+			InstallHint: dockerHint(platform),
+		})
+	}
+
+	// docker compose (v2 or v1)
+	if !hasDockerCompose() {
+		errs = append(errs, PrereqError{
+			Tool:        "docker compose",
+			Reason:      "required for container lifecycle management",
+			InstallHint: composeHint(platform),
+		})
+	}
+
 	// claude
 	if _, err := exec.LookPath("claude"); err != nil {
 		errs = append(errs, PrereqError{
@@ -39,6 +57,16 @@ func Check() []PrereqError {
 	}
 
 	return errs
+}
+
+func hasDockerCompose() bool {
+	if exec.Command("docker", "compose", "version").Run() == nil {
+		return true
+	}
+	if exec.Command("docker-compose", "version").Run() == nil {
+		return true
+	}
+	return false
 }
 
 // FormatErrors formats prerequisite errors into a user-friendly message.
@@ -53,7 +81,7 @@ func FormatErrors(errs []PrereqError) string {
 		fmt.Fprintf(&b, "\n  %s — %s\n", e.Tool, e.Reason)
 		fmt.Fprintf(&b, "    Install: %s\n", e.InstallHint)
 	}
-	b.WriteString("\nInstall the missing tools and run 'kf up' again.")
+	b.WriteString("\nInstall the missing tools and run 'kf init' again.")
 	return b.String()
 }
 
@@ -63,6 +91,24 @@ func gitHint(platform string) string {
 		return "xcode-select --install  (or: brew install git)"
 	default:
 		return "sudo apt install git  (or: sudo dnf install git)"
+	}
+}
+
+func dockerHint(platform string) string {
+	switch platform {
+	case "darwin":
+		return "Install Docker Desktop: https://docker.com/products/docker-desktop  (or: brew install --cask docker)"
+	default:
+		return "Install Docker Engine: https://docs.docker.com/engine/install/"
+	}
+}
+
+func composeHint(platform string) string {
+	switch platform {
+	case "darwin":
+		return "brew install docker-compose  (included with Docker Desktop)"
+	default:
+		return "sudo apt install docker-compose-plugin  (or install Docker Desktop)"
 	}
 }
 

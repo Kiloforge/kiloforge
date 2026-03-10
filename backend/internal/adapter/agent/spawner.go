@@ -299,11 +299,12 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 
 // SpawnDeveloperOpts configures a developer agent spawn.
 type SpawnDeveloperOpts struct {
-	TrackID     string // conductor track ID
-	Flags       string // additional kf-developer flags
-	WorktreeDir string // working directory (worktree path); defaults to cwd
-	LogDir      string // log directory; defaults to DataDir/logs
-	Model       string // claude model alias (e.g., "opus", "sonnet")
+	TrackID         string // conductor track ID
+	Flags           string // additional kf-developer flags
+	WorktreeDir     string // working directory (worktree path); defaults to cwd
+	LogDir          string // log directory; defaults to DataDir/logs
+	Model           string // claude model alias (e.g., "opus", "sonnet")
+	ReplacesAgentID string // if set, this agent replaces a previous agent (for tracing linkage)
 }
 
 // SpawnDeveloper launches a Claude agent to implement a track using the SDK Query function.
@@ -361,14 +362,18 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
 	}
 
-	_, span := s.tracer.StartSpan(ctx, "agent/developer",
+	spanAttrs := []port.SpanAttr{
 		port.StringAttr("agent.id", agentID),
 		port.StringAttr("agent.name", info.Name),
 		port.StringAttr("agent.role", "developer"),
 		port.StringAttr("agent.ref", opts.TrackID),
 		port.StringAttr("agent.worktree", workDir),
 		port.StringAttr("session.id", sessionID),
-	)
+	}
+	if opts.ReplacesAgentID != "" {
+		spanAttrs = append(spanAttrs, port.StringAttr("agent.replaces", opts.ReplacesAgentID))
+	}
+	_, span := s.tracer.StartSpan(ctx, "agent/developer", spanAttrs...)
 	span.AddEvent("agent.spawned")
 	s.trackEvent("agent_spawned", map[string]any{"role": "developer", "model": model})
 

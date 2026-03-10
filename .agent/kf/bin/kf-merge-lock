@@ -5,7 +5,7 @@
 # Used by kf-developer and kf-architect skills to coordinate merges.
 #
 # USAGE:
-#   kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS] [--pid PID]
+#   kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS]
 #   kf-merge-lock release [--holder NAME]
 #   kf-merge-lock heartbeat [--holder NAME] [--ttl SECONDS]
 #   kf-merge-lock status
@@ -14,27 +14,6 @@
 # ENVIRONMENT:
 #   KF_ORCH_URL     Orchestrator URL (default: http://localhost:4001)
 #   KF_LOCK_HOLDER  Default holder name (default: basename of $PWD)
-#
-# MERGE PROTOCOL — REBASE CONFLICT RESOLUTION
-#
-#   During `git rebase`, --ours and --theirs have REVERSED semantics:
-#     --ours  = the branch being rebased ONTO (e.g., main — the latest state)
-#     --theirs = the commit being REPLAYED (the worker's old commit — stale)
-#
-#   To accept main's version of track state files during rebase conflicts:
-#     git checkout --ours .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml
-#     git checkout --ours .agent/kf/tracks/conflicts.yaml
-#
-#   WRONG: git checkout --theirs (accepts the stale worker commit, reverts
-#   other workers' completions — this caused track state regressions).
-#
-# MAIN WORKTREE CLEANUP
-#
-#   Before running `git -C <main-worktree> merge --ff-only`, ensure the main
-#   worktree is clean. Previous failed merges or stash pops can leave dirty
-#   state that blocks ff-merge. Use:
-#     git -C <main-worktree> reset --hard HEAD
-#   before the merge attempt if the worktree might be dirty.
 
 set -euo pipefail
 
@@ -133,12 +112,12 @@ http_status() {
 # --- mkdir mode helpers ---
 
 mkdir_acquire() {
-  local holder="$1" timeout="$2" pid="${3:-${PPID:-$$}}"
+  local holder="$1" timeout="$2"
   local lock_dir
   lock_dir=$(get_lock_dir)
 
   if mkdir "$lock_dir" 2>/dev/null; then
-    echo "$pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+    echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
     echo "Merge lock acquired (mkdir mode)"
     return 0
   fi
@@ -147,7 +126,7 @@ mkdir_acquire() {
   if _mkdir_check_stale "$lock_dir"; then
     # Stale lock was cleaned — retry
     if mkdir "$lock_dir" 2>/dev/null; then
-      echo "$pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
       echo "Merge lock acquired (mkdir mode, stale lock cleaned)"
       return 0
     fi
@@ -173,7 +152,7 @@ mkdir_acquire() {
     _mkdir_check_stale "$lock_dir"
 
     if mkdir "$lock_dir" 2>/dev/null; then
-      echo "$pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
       echo "Merge lock acquired (mkdir mode) after ${elapsed}s"
       return 0
     fi
@@ -236,25 +215,8 @@ _mkdir_check_stale() {
 }
 
 mkdir_release() {
-  local holder="$1"
   local lock_dir
   lock_dir=$(get_lock_dir)
-
-  if [ ! -d "$lock_dir" ]; then
-    echo "Lock released (mkdir mode, already unlocked)"
-    return 0
-  fi
-
-  # Validate holder before releasing
-  if [ -f "$lock_dir/info" ]; then
-    local lock_holder
-    lock_holder=$(awk '{print $3}' "$lock_dir/info" 2>/dev/null)
-    if [ -n "$lock_holder" ] && [ "$lock_holder" != "$holder" ]; then
-      echo "ERROR: Cannot release lock — held by '$lock_holder', not '$holder'" >&2
-      return 1
-    fi
-  fi
-
   rm -rf "$lock_dir"
   echo "Lock released (mkdir mode)"
 }
@@ -300,13 +262,12 @@ mkdir_status() {
 # --- Main command dispatch ---
 
 cmd_acquire() {
-  local holder="$DEFAULT_HOLDER" ttl="$DEFAULT_TTL" timeout="$DEFAULT_TIMEOUT" pid="${PPID:-$$}"
+  local holder="$DEFAULT_HOLDER" ttl="$DEFAULT_TTL" timeout="$DEFAULT_TIMEOUT"
   while [ $# -gt 0 ]; do
     case "$1" in
       --holder)  holder="$2"; shift 2 ;;
       --ttl)     ttl="$2"; shift 2 ;;
       --timeout) timeout="$2"; shift 2 ;;
-      --pid)     pid="$2"; shift 2 ;;
       *) echo "Unknown option: $1" >&2; return 1 ;;
     esac
   done
@@ -314,7 +275,7 @@ cmd_acquire() {
   if is_orch_running; then
     http_acquire "$holder" "$ttl" "$timeout"
   else
-    mkdir_acquire "$holder" "$timeout" "$pid"
+    mkdir_acquire "$holder" "$timeout"
   fi
 }
 
@@ -330,7 +291,7 @@ cmd_release() {
   if is_orch_running; then
     http_release "$holder"
   else
-    mkdir_release "$holder"
+    mkdir_release
   fi
 }
 
@@ -347,15 +308,11 @@ cmd_heartbeat() {
   if is_orch_running; then
     http_heartbeat "$holder" "$ttl"
   else
-    # mkdir heartbeat — update timestamp but preserve original PID from info file
+    # mkdir has no heartbeat — just update the info file timestamp
     local lock_dir
     lock_dir=$(get_lock_dir)
-    if [ -d "$lock_dir" ] && [ -f "$lock_dir/info" ]; then
-      local original_pid
-      original_pid=$(awk '{print $1}' "$lock_dir/info" 2>/dev/null)
-      if [ -n "$original_pid" ]; then
-        echo "$original_pid $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
-      fi
+    if [ -d "$lock_dir" ]; then
+      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
     fi
   fi
 }
@@ -381,7 +338,7 @@ cmd_help() {
 kf-merge-lock — Cross-worktree merge lock helper
 
 USAGE:
-  kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS] [--pid PID]
+  kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS]
   kf-merge-lock release [--holder NAME]
   kf-merge-lock heartbeat [--holder NAME] [--ttl SECONDS]
   kf-merge-lock status
@@ -391,7 +348,6 @@ OPTIONS:
   --holder NAME     Lock holder identity (default: basename of $PWD)
   --timeout SECONDS Acquire timeout: 0=non-blocking, >0=poll/wait (default: 0)
   --ttl SECONDS     Lock TTL in seconds (default: 120)
-  --pid PID         PID to record for stale detection (default: $PPID)
 
 MODES:
   HTTP   — Preferred when orchestrator is running ($KF_ORCH_URL/health responds)

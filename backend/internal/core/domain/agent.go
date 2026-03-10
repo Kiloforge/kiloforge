@@ -27,7 +27,6 @@ const (
 	AgentStatusSuspending   AgentStatus = "suspending"
 	AgentStatusForceKilled  AgentStatus = "force-killed"
 	AgentStatusResumeFailed AgentStatus = "resume-failed"
-	AgentStatusReplaced     AgentStatus = "replaced"
 )
 
 // AgentInfo tracks a spawned Claude agent.
@@ -59,7 +58,7 @@ func (a AgentInfo) IsActive() bool {
 func (a AgentInfo) IsTerminal() bool {
 	switch AgentStatus(a.Status) {
 	case AgentStatusStopped, AgentStatusCompleted, AgentStatusFailed,
-		AgentStatusForceKilled, AgentStatusResumeFailed, AgentStatusReplaced:
+		AgentStatusForceKilled, AgentStatusResumeFailed:
 		return true
 	}
 	return false

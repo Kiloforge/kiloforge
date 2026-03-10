@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import type { Agent } from "../types/api";
 import { useAgents } from "../hooks/useAgents";
-import { useAgentActions, canStop, canResume, canReplace, canDelete } from "../hooks/useAgentActions";
+import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "../components/StatusBadge";
 import { PaginatedList } from "../components/PaginatedList";
 import { InlineSpinner } from "../components/InlineSpinner";
@@ -11,7 +11,7 @@ import { formatUSD, formatUptime } from "../utils/format";
 import styles from "./AgentHistoryPage.module.css";
 import appStyles from "../App.module.css";
 
-const STATUS_OPTIONS = ["all", "running", "waiting", "completed", "failed", "stopped", "suspended", "resume-failed", "force-killed", "replaced"] as const;
+const STATUS_OPTIONS = ["all", "running", "waiting", "completed", "failed", "stopped", "suspended"] as const;
 
 export function AgentHistoryPage() {
   const { agents, loading, remainingCount, hasNextPage, isFetchingNextPage, fetchNextPage } = useAgents(false);
@@ -100,7 +100,7 @@ function formatRelativeTime(iso: string): string {
 }
 
 function AgentRow({ agent }: { agent: Agent }) {
-  const { stop, resume, replace, del } = useAgentActions();
+  const { stop, resume, del } = useAgentActions();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
@@ -137,15 +137,6 @@ function AgentRow({ agent }: { agent: Agent }) {
             disabled={resume.isPending}
           >
             Resume
-          </button>
-        )}
-        {canReplace(agent) && (
-          <button
-            className={`${styles.rowBtn} ${styles.rowBtnWarning}`}
-            onClick={() => replace.mutate(agent.id)}
-            disabled={replace.isPending}
-          >
-            {replace.isPending ? "..." : "Replace"}
           </button>
         )}
         {canDelete(agent) && (

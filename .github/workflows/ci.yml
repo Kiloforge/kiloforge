@@ -31,7 +31,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.24"
           cache-dependency-path: backend/go.sum
 
       - uses: actions/setup-node@v4
@@ -41,34 +41,11 @@ jobs:
       - name: Build frontend (required for Go embed)
         run: cd frontend && npm ci && npm run build
 
-      - name: Install Go linters
-        run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install golang.org/x/tools/cmd/goimports@latest
-
-      - name: Go vet
-        run: cd backend && go vet ./...
-
-      - name: Staticcheck
-        run: cd backend && staticcheck ./...
-
-      - name: gofmt check
-        run: |
-          FMTFILES=$(cd backend && gofmt -l .)
-          if [ -n "$FMTFILES" ]; then
-            echo "Files not formatted by gofmt:"
-            echo "$FMTFILES"
-            exit 1
-          fi
-
-      - name: goimports check
-        run: |
-          IMPFILES=$(cd backend && goimports -l -local github.com/benbaldivia/crelay .)
-          if [ -n "$IMPFILES" ]; then
-            echo "Files not formatted by goimports:"
-            echo "$IMPFILES"
-            exit 1
-          fi
+      - name: Go lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.11
+          working-directory: backend
 
       - name: Frontend lint
         run: cd frontend && npm run lint
@@ -80,7 +57,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.24"
           cache-dependency-path: backend/go.sum
 
       - uses: actions/setup-node@v4
@@ -114,7 +91,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.24"
           cache-dependency-path: backend/go.sum
 
       - uses: actions/setup-node@v4
