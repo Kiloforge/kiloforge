@@ -128,7 +128,7 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
             <label className={styles.label} htmlFor="remote-url">Remote URL</label>
             <input
               id="remote-url"
-              className={styles.input}
+              className={`${styles.input}${urlError ? ` ${styles.inputError}` : ""}`}
               type="text"
               placeholder="git@github.com:user/repo.git"
               value={remoteUrl}
@@ -145,7 +145,7 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
           </label>
           <input
             id="project-name"
-            className={styles.input}
+            className={`${styles.input}${nameError ? ` ${styles.inputError}` : ""}`}
             type="text"
             placeholder={mode === "clone" ? "auto-derived from URL" : "my-project"}
             value={name}

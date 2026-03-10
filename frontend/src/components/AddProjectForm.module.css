@@ -113,6 +113,14 @@
   border-color: var(--accent);
 }
 
+.inputError {
+  border-color: var(--red);
+}
+
+.inputError:focus {
+  border-color: var(--red);
+}
+
 .input:disabled {
   opacity: 0.5;
 }

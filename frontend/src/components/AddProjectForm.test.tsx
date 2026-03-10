@@ -63,6 +63,26 @@ describe("AddProjectForm", () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
+  it("applies error styling to URL input on validation failure", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.click(screen.getByText("+ Add Project"));
+    await user.click(screen.getByText("Clone Project"));
+    const urlInput = screen.getByLabelText("Remote URL");
+    expect(urlInput.className).toMatch(/inputError/);
+  });
+
+  it("removes error styling when user types in URL input", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.click(screen.getByText("+ Add Project"));
+    await user.click(screen.getByText("Clone Project"));
+    const urlInput = screen.getByLabelText("Remote URL");
+    expect(urlInput.className).toMatch(/inputError/);
+    await user.type(urlInput, "a");
+    expect(urlInput.className).not.toMatch(/inputError/);
+  });
+
   it("shows validation error for invalid URL", async () => {
     const user = userEvent.setup();
     const onAdd = vi.fn().mockResolvedValue(true);
@@ -140,6 +160,16 @@ describe("AddProjectForm", () => {
       await user.click(screen.getByText("Create Project"));
       expect(screen.getByText("Project name is required")).toBeInTheDocument();
       expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it("applies error styling to name input on validation failure", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Create new"));
+      await user.click(screen.getByText("Create Project"));
+      const nameInput = screen.getByLabelText("Name");
+      expect(nameInput.className).toMatch(/inputError/);
     });
 
     it("submits with name only in create mode", async () => {

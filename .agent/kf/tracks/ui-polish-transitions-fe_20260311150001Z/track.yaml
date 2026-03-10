@@ -69,7 +69,7 @@ plan:
   - phase: Form Error Styling
     tasks:
       - text: Add .inputError class to AddProjectForm — red border on invalid URL and slug inputs, wire to validation state
-        done: false
+        done: true
       - text: Add error border styling to SwarmPanel size input when value is invalid
         done: false
   - phase: Verification
