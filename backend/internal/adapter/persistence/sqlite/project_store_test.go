@@ -89,6 +89,56 @@ func TestProjectStore_FindByRepoName(t *testing.T) {
 	}
 }
 
+func TestProjectStore_MirrorDir_RoundTrip(t *testing.T) {
+	t.Parallel()
+	db := openTestDB(t)
+	store := NewProjectStore(db)
+
+	p := domain.Project{
+		Slug:       "mirror-rt",
+		RepoName:   "mirror-rt",
+		ProjectDir: "/tmp/mirror-rt",
+		MirrorDir:  "/home/user/projects/mirror-rt",
+		RegisteredAt: time.Now().Truncate(time.Second),
+		Active:     true,
+	}
+	if err := store.Add(p); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	got, err := store.Get("mirror-rt")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.MirrorDir != p.MirrorDir {
+		t.Errorf("MirrorDir: want %q, got %q", p.MirrorDir, got.MirrorDir)
+	}
+
+	// Also verify through List.
+	list := store.List()
+	if len(list) != 1 || list[0].MirrorDir != p.MirrorDir {
+		t.Errorf("List MirrorDir: want %q, got %q", p.MirrorDir, list[0].MirrorDir)
+	}
+
+	// FindByRepoName.
+	found, ok := store.FindByRepoName("mirror-rt")
+	if !ok {
+		t.Fatal("FindByRepoName: not found")
+	}
+	if found.MirrorDir != p.MirrorDir {
+		t.Errorf("FindByRepoName MirrorDir: want %q, got %q", p.MirrorDir, found.MirrorDir)
+	}
+
+	// FindByDir.
+	found2, ok := store.FindByDir("/tmp/mirror-rt")
+	if !ok {
+		t.Fatal("FindByDir: not found")
+	}
+	if found2.MirrorDir != p.MirrorDir {
+		t.Errorf("FindByDir MirrorDir: want %q, got %q", p.MirrorDir, found2.MirrorDir)
+	}
+}
+
 func TestProjectStore_SaveIsNoop(t *testing.T) {
 	t.Parallel()
 	db := openTestDB(t)

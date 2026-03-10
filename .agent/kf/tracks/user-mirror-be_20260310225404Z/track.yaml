@@ -139,7 +139,7 @@ plan:
   - phase: Persistence
     tasks:
       - text: Verify MirrorDir round-trips through SQLite store, add migration if needed
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make test, make build, make lint — all pass
