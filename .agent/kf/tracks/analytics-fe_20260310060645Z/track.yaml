@@ -42,6 +42,7 @@ spec:
     - Client-side PostHog JS integration
     - Privacy policy page
     - First-run consent banner (init handles this)
+    - Backend PostHog wiring (handled by BE track)
   technical_notes: |
     Implementation approach:
     - Add useConfig() hook — fetches GET /api/config, exposes mutation for PUT
@@ -67,6 +68,12 @@ plan:
       - text: "Wire toggle to useConfig mutation — flip analyticsEnabled on change"
         done: false
       - text: "Write unit test for SettingsMenu analytics toggle (render, click, verify API call)"
+        done: false
+  - phase: "Documentation"
+    tasks:
+      - text: "Update README.md — add Analytics / Telemetry section documenting what data is collected, how to opt out (init prompt, settings toggle, KF_ANALYTICS_ENABLED=false env var), and that it uses PostHog"
+        done: false
+      - text: "Update product-guidelines.md — add telemetry principle: anonymous, opt-out, server-side only, no PII"
         done: false
   - phase: "E2E Verification"
     tasks:
