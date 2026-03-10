@@ -216,8 +216,6 @@ func statusToColumn(status string) string {
 		return domain.ColumnApproved
 	case StatusInProgress:
 		return domain.ColumnInProgress
-	case StatusInReview:
-		return domain.ColumnInReview
 	case StatusComplete:
 		return domain.ColumnDone
 	default:

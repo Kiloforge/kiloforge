@@ -2525,7 +2525,7 @@ components:
           type: string
         column:
           type: string
-          enum: [backlog, approved, in_progress, in_review, done]
+          enum: [backlog, approved, in_progress, done]
         position:
           type: integer
         agent_id:
@@ -2551,7 +2551,7 @@ components:
           type: string
         to_column:
           type: string
-          enum: [backlog, approved, in_progress, in_review, done]
+          enum: [backlog, approved, in_progress, done]
 
     MoveCardResult:
       type: object

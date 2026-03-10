@@ -47,14 +47,6 @@ func (s *LifecycleService) HandleBackwardMove(ctx context.Context, trackID, from
 		s.haltIfActive(agent, "board-demotion")
 	}
 
-	// If moving back from in_review, also halt reviewer.
-	if fromCol == "in_review" && prTracking != nil && prTracking.ReviewerAgentID != "" {
-		reviewer, _ := s.agents.FindAgent(prTracking.ReviewerAgentID)
-		if reviewer != nil {
-			s.haltIfActive(reviewer, "board-demotion")
-		}
-	}
-
 	_ = s.agents.Save()
 }
 
@@ -62,13 +54,6 @@ func (s *LifecycleService) HandleBackwardMove(ctx context.Context, trackID, from
 func (s *LifecycleService) HandleRepromotion(ctx context.Context, trackID, toCol string, prTracking *domain.PRTracking) (resumed bool, reason string) {
 	if toCol == "in_progress" {
 		return s.resumeDeveloper(ctx, trackID)
-	}
-	if toCol == "in_review" && prTracking != nil && prTracking.ReviewerAgentID != "" {
-		reviewer, _ := s.agents.FindAgent(prTracking.ReviewerAgentID)
-		if reviewer != nil && reviewer.Status == string(domain.AgentStatusHalted) {
-			s.logger.Printf("re-promotion to in_review: no reviewer resume support, skipping")
-		}
-		return false, "reviewer resume not supported"
 	}
 	return false, "no action for column " + toCol
 }

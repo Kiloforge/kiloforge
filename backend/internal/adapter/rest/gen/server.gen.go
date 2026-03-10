@@ -51,7 +51,6 @@ const (
 	BoardCardColumnBacklog    BoardCardColumn = "backlog"
 	BoardCardColumnDone       BoardCardColumn = "done"
 	BoardCardColumnInProgress BoardCardColumn = "in_progress"
-	BoardCardColumnInReview   BoardCardColumn = "in_review"
 )
 
 // Defines values for DiffLineType.
@@ -75,7 +74,6 @@ const (
 	MoveCardRequestToColumnBacklog    MoveCardRequestToColumn = "backlog"
 	MoveCardRequestToColumnDone       MoveCardRequestToColumn = "done"
 	MoveCardRequestToColumnInProgress MoveCardRequestToColumn = "in_progress"
-	MoveCardRequestToColumnInReview   MoveCardRequestToColumn = "in_review"
 )
 
 // Defines values for QueueItemStatus.

@@ -17,7 +17,6 @@ const (
 	StatusPending    = "pending"
 	StatusInProgress = "in-progress"
 	StatusApproved   = "approved"
-	StatusInReview   = "in-review"
 )
 
 // ParseTracks parses track entries from a tracks.md reader.
@@ -138,8 +137,6 @@ func parseTrackLine(line string) (port.TrackEntry, bool) {
 		status = StatusInProgress
 	case "[!]":
 		status = StatusApproved
-	case "[r]":
-		status = StatusInReview
 	default:
 		return port.TrackEntry{}, false
 	}

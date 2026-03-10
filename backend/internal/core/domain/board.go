@@ -7,7 +7,6 @@ const (
 	ColumnBacklog    = "backlog"
 	ColumnApproved   = "approved"
 	ColumnInProgress = "in_progress"
-	ColumnInReview   = "in_review"
 	ColumnDone       = "done"
 )
 
@@ -16,7 +15,6 @@ var BoardColumns = []string{
 	ColumnBacklog,
 	ColumnApproved,
 	ColumnInProgress,
-	ColumnInReview,
 	ColumnDone,
 }
 
@@ -25,8 +23,7 @@ var ColumnOrder = map[string]int{
 	ColumnBacklog:    0,
 	ColumnApproved:   1,
 	ColumnInProgress: 2,
-	ColumnInReview:   3,
-	ColumnDone:       4,
+	ColumnDone:       3,
 }
 
 // IsValidColumn returns true if the column name is valid.
