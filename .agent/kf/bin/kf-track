@@ -2338,6 +2338,77 @@ HEADER
   echo "Set ${key} = ${value}"
 }
 
+# --- Stash branch management ---
+
+cmd_stash() {
+  local subcmd="${1:-}"; shift || true
+  case "$subcmd" in
+    list)
+      local track_id="${1:-}"
+      local pattern
+      if [[ -n "$track_id" ]]; then
+        pattern="stash/${track_id}/*"
+      else
+        pattern="stash/*"
+      fi
+      local branches
+      branches=$(git branch --list "$pattern" 2>/dev/null | sed 's/^[* ]*//' || true)
+      if [[ -z "$branches" ]]; then
+        echo "(no stash branches found)"
+        return 0
+      fi
+      printf "%-60s %-30s %-15s %s\n" "BRANCH" "TRACK" "WORKER" "DATE"
+      while IFS= read -r branch; do
+        local track worker date_str
+        track=$(echo "$branch" | cut -d'/' -f2)
+        worker=$(echo "$branch" | cut -d'/' -f3-)
+        date_str=$(git log -1 --format='%ci' "$branch" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+        printf "%-60s %-30s %-15s %s\n" "$branch" "$track" "$worker" "$date_str"
+      done <<< "$branches"
+      ;;
+    save)
+      local track_id="${1:-}"
+      if [[ -z "$track_id" ]]; then
+        echo "Usage: kf-track stash save <track-id>" >&2; return 1
+      fi
+      # Determine worker name from worktree folder name or current branch
+      local worker_name
+      worker_name=$(basename "$(pwd)")
+      if [[ ! "$worker_name" =~ ^worker- ]]; then
+        worker_name=$(git branch --show-current 2>/dev/null || echo "unknown")
+      fi
+      local stash_branch="stash/${track_id}/${worker_name}"
+      # Auto-commit any uncommitted changes
+      if ! git diff --quiet HEAD 2>/dev/null || ! git diff --cached --quiet HEAD 2>/dev/null; then
+        git add -A
+        git commit -m "wip: auto-stash for ${track_id}" --no-verify 2>/dev/null || true
+      fi
+      git branch -f "$stash_branch" HEAD
+      echo "Stash branch created: ${stash_branch}"
+      ;;
+    clean)
+      local track_id="${1:-}"
+      if [[ -z "$track_id" ]]; then
+        echo "Usage: kf-track stash clean <track-id>" >&2; return 1
+      fi
+      local branches count=0
+      branches=$(git branch --list "stash/${track_id}/*" 2>/dev/null | sed 's/^[* ]*//' || true)
+      if [[ -z "$branches" ]]; then
+        echo "(no stash branches for ${track_id})"
+        return 0
+      fi
+      while IFS= read -r branch; do
+        git branch -D "$branch" 2>/dev/null && ((count++)) || true
+      done <<< "$branches"
+      echo "Deleted ${count} stash branch(es) for ${track_id}"
+      ;;
+    *)
+      echo "Usage: kf-track stash <list|save|clean> [track-id]" >&2
+      return 1
+      ;;
+  esac
+}
+
 cmd_help() {
   cat <<'HELP'
 kf-track — Track registry management for Kiloforge agents
@@ -2386,6 +2457,10 @@ COMMANDS:
   conflicts list [track-id]                             List pairs (filtered)
   conflicts clean                                       Remove pairs for completed tracks
 
+  stash list [track-id]                                 List stash branches
+  stash save <track-id>                                 Save current work to stash branch
+  stash clean <track-id>                                Delete stash branches for a track
+
   status [--ref <branch|commit>]                          Full project status report
   index [--ref <branch|commit>]                          Generate project index from tracks.yaml
   config list                                            List all project settings
@@ -2424,6 +2499,7 @@ case "$cmd" in
   compact) cmd_compact "$@" ;;
   deps)        cmd_deps "$@" ;;
   conflicts)   cmd_conflicts "$@" ;;
+  stash)       cmd_stash "$@" ;;
   index)       cmd_index "$@" ;;
   quick-links) cmd_quick_links "$@" ;;
   status)      cmd_status "$@" ;;
