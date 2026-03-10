@@ -116,15 +116,15 @@ plan:
   - phase: Embed Guard in Remaining Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-setup SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-getting-started SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-parallel SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-advisor-product and kf-product-advisor SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-advisor-reliability and kf-reliability SKILL.md
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Verify all kf-* skills (except kf-repair) have the Data Integrity Guard section
