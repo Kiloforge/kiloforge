@@ -3,6 +3,7 @@ package ws
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -533,6 +534,83 @@ func TestSessionManager_SessionCount(t *testing.T) {
 	sm.RemoveSession("agent-cnt", s1)
 	if sm.SessionCount("agent-cnt") != 1 {
 		t.Errorf("expected 1 after remove, got %d", sm.SessionCount("agent-cnt"))
+	}
+}
+
+func TestBridge_InputQueueing(t *testing.T) {
+	t.Parallel()
+
+	var turnActive bool
+	var received []string
+	handler := func(text string) error {
+		if turnActive {
+			return fmt.Errorf("turn already in progress")
+		}
+		received = append(received, text)
+		return nil
+	}
+
+	done := make(chan struct{})
+	bridge := NewSDKBridge("queue-test", handler, done)
+
+	// First input succeeds.
+	if err := bridge.WriteInput("msg1"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(received) != 1 || received[0] != "msg1" {
+		t.Fatalf("expected [msg1], got %v", received)
+	}
+
+	// Simulate turn in progress.
+	turnActive = true
+
+	// Input during turn should be queued (no error returned).
+	if err := bridge.WriteInput("msg2"); err != nil {
+		t.Fatalf("expected nil error for queued input, got: %v", err)
+	}
+	if err := bridge.WriteInput("msg3"); err != nil {
+		t.Fatalf("expected nil error for queued input, got: %v", err)
+	}
+
+	// Queue depth should be 2.
+	if depth := bridge.QueueDepth(); depth != 2 {
+		t.Errorf("queue depth = %d, want 2", depth)
+	}
+
+	// Turn completes.
+	turnActive = false
+
+	// DrainQueue should send the first queued message.
+	if !bridge.DrainQueue() {
+		t.Error("DrainQueue should return true when queue is non-empty")
+	}
+	if len(received) != 2 || received[1] != "msg2" {
+		t.Errorf("expected msg2 drained, got %v", received)
+	}
+
+	// Drain again for msg3.
+	if !bridge.DrainQueue() {
+		t.Error("DrainQueue should return true for second queued message")
+	}
+	if len(received) != 3 || received[2] != "msg3" {
+		t.Errorf("expected msg3 drained, got %v", received)
+	}
+
+	// Queue is empty.
+	if bridge.DrainQueue() {
+		t.Error("DrainQueue should return false when queue is empty")
+	}
+	if depth := bridge.QueueDepth(); depth != 0 {
+		t.Errorf("queue depth = %d, want 0", depth)
+	}
+}
+
+func TestBridge_QueueDepth_Empty(t *testing.T) {
+	t.Parallel()
+	done := make(chan struct{})
+	bridge := NewSDKBridge("depth-test", nil, done)
+	if depth := bridge.QueueDepth(); depth != 0 {
+		t.Errorf("empty bridge queue depth = %d, want 0", depth)
 	}
 }
 

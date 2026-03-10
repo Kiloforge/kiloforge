@@ -3,6 +3,7 @@ package ws
 import (
 	"context"
 	"io"
+	"strings"
 	"sync"
 
 	"nhooyr.io/websocket"
@@ -183,6 +184,7 @@ type Bridge struct {
 	Buffer           *RingBuffer     // output ring buffer for reconnection
 	Done             <-chan struct{} // closed when agent exits
 	mu               sync.Mutex
+	inputQueue       []string // queued input messages sent during an active turn
 }
 
 // NewBridge creates a new bridge for an interactive agent.
@@ -215,17 +217,48 @@ func (b *Bridge) Interrupt() {
 
 // WriteInput sends user input to the agent.
 // Uses InputHandler if set (SDK mode), otherwise writes to Stdin (legacy mode).
+// If the InputHandler returns "turn already in progress", the input is queued
+// and will be sent when DrainQueue is called after the turn completes.
 func (b *Bridge) WriteInput(text string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.InputHandler != nil {
-		return b.InputHandler(text)
+		err := b.InputHandler(text)
+		if err != nil && strings.Contains(err.Error(), "turn already in progress") {
+			b.inputQueue = append(b.inputQueue, text)
+			return nil
+		}
+		return err
 	}
 	if b.Stdin != nil {
 		_, err := io.WriteString(b.Stdin, text+"\n")
 		return err
 	}
 	return nil
+}
+
+// DrainQueue sends the first queued input message (if any) via the InputHandler.
+// It should be called after a turn completes to deliver input that arrived
+// during the previous turn. Returns true if a queued message was sent.
+func (b *Bridge) DrainQueue() bool {
+	b.mu.Lock()
+	if len(b.inputQueue) == 0 || b.InputHandler == nil {
+		b.mu.Unlock()
+		return false
+	}
+	text := b.inputQueue[0]
+	b.inputQueue = b.inputQueue[1:]
+	b.mu.Unlock()
+	// Send outside lock — InputHandler may block.
+	_ = b.InputHandler(text)
+	return true
+}
+
+// QueueDepth returns the number of queued input messages.
+func (b *Bridge) QueueDepth() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return len(b.inputQueue)
 }
 
 // StartOutputRelay reads from an output channel (from InteractiveAgent) and
