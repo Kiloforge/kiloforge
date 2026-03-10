@@ -227,7 +227,7 @@ quota-reframe-be_20260309103000Z: {"title":"Reframe Quota System — Tokens and 
 quota-reframe-fe_20260309103001Z: {"title":"Reframe Quota System — Tokens and Rate Limits (Frontend)","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 react-dashboard_20260308180002Z: {"title":"React Dashboard for Real-Time Agent Monitoring","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 readme-prerequisites_20260308210002Z: {"title":"Update README Prerequisites to Docker + Claude Code","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-ready-indicator-fe_20260313070000Z: {"title":"Show ready to work indicator on backlog cards and track list","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+ready-indicator-fe_20260313070000Z: {"title":"Show ready to work indicator on backlog cards and track list","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 rebrand-historical-records_20260309063900Z: {"title":"Rebrand Historical Conductor Records","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 rebrand-kiloforge_20260309055250Z: {"title":"Rebrand crelay to Kiloforge (CLI: kf)","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 refactor-clean-arch_20260307140000Z: {"title":"Restructure Packages into Clean Architecture Layout","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}

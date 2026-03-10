@@ -139,7 +139,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make build-frontend — no TypeScript errors
-        done: false
+        done: true
       - text: Run frontend tests — all pass
-        done: false
+        done: true
 extra: {}
