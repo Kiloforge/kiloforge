@@ -215,6 +215,29 @@ kf down
 
 This gracefully suspends all running agents and stops the Cortex. On the next `kf up`, suspended agents can be resumed with full session continuity.
 
+## Managing Analytics
+
+Kiloforge collects anonymous usage data via PostHog to help improve the product. On first run, `kf up` asks whether to enable analytics. After that, use the `kf analytics` command to manage the setting:
+
+```bash
+kf analytics              # Show current state (enabled/disabled) and source
+kf analytics status       # Same as above
+kf analytics enable       # Enable analytics
+kf analytics disable      # Disable analytics
+```
+
+The status output shows where the setting comes from:
+- **default** — no explicit setting; analytics is enabled by default
+- **config** — set explicitly via `kf analytics enable` or `kf analytics disable`
+- **env override** — the `KF_ANALYTICS_ENABLED` environment variable overrides the config file
+
+To override via environment variable:
+
+```bash
+export KF_ANALYTICS_ENABLED=false   # Disable regardless of config
+export KF_ANALYTICS_ENABLED=true    # Enable regardless of config
+```
+
 ## What's Next
 
 - Read the [Architecture Overview](architecture.md) to understand how the pieces fit together
