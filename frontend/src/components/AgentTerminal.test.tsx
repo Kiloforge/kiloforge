@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentTerminal } from "./AgentTerminal";
+import type { WSMessage } from "../hooks/useAgentWebSocket";
 
 // jsdom doesn't implement scrollIntoView
 Element.prototype.scrollIntoView = vi.fn();
@@ -51,6 +52,7 @@ function setup(overrides: Partial<ReturnType<typeof useAgentWebSocket>> = {}, pr
   const defaultWs = {
     messages: [],
     sendMessage: vi.fn(),
+    clearMessages: vi.fn(),
     status: "connected" as const,
     agentStatus: "running",
     ...overrides,
@@ -120,7 +122,7 @@ describe("AgentTerminal", () => {
     setup({
       messages: [
         { type: "output", text: "Hello world", timestamp: new Date() },
-      ] as any,
+      ] as WSMessage[],
     });
     expect(screen.getByText("Hello world")).toBeInTheDocument();
   });

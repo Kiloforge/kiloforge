@@ -55,7 +55,6 @@ test.describe("SSE Track Events — board_update", () => {
 
   test("board card move via API triggers event", async ({
     apiClient,
-    serverURL,
   }) => {
     // First seed a project for context.
     const slug = uid("board-proj");

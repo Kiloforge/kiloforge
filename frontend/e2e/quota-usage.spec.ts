@@ -114,8 +114,7 @@ test.describe("Quota — SSE Updates", () => {
     apiClient,
   }) => {
     // Get initial quota via API.
-    const resp = await apiClient.get("/api/quota");
-    const quota = await resp.json();
+    await apiClient.get("/api/quota");
 
     // Navigate to overview.
     await page.goto(serverURL);

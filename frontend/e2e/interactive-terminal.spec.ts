@@ -38,7 +38,7 @@ test.describe("Interactive Terminal — API", () => {
         ws.onclose = () => resolve();
         setTimeout(() => resolve(), 3000);
       });
-    } catch (e) {
+    } catch {
       // Expected — connection should fail.
     }
   });
@@ -74,7 +74,6 @@ test.describe("Interactive Terminal — Terminal UI Structure", () => {
   test("terminal section renders for interactive role agent", async ({
     page,
     serverURL,
-    apiClient,
   }) => {
     // Seed an interactive agent via the API by directly adding to the store
     // is not possible from Playwright, so we navigate to a known agent page.

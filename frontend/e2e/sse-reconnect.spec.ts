@@ -131,7 +131,6 @@ test.describe("SSE Reconnection — Event Burst", () => {
 
   test("concurrent API actions produce SSE events without drops", async ({
     apiClient,
-    serverURL,
   }) => {
     const slugs: string[] = [];
 
