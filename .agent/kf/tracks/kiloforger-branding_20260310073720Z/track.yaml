@@ -1,0 +1,87 @@
+id: kiloforger-branding_20260310073720Z
+title: "Kiloforger branding — name the human user across CLI and dashboard"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Introduce "Kiloforger" as the branded term for the human user throughout
+    CLI output, dashboard UI copy, and the onboarding tour. Standardize
+    capitalization of "Kiloforge" (product) vs "Kiloforger" (person).
+  context: |
+    The user wants the human operator to be referred to as the "Kiloforger" —
+    the person who wields Kiloforge. This creates identity and ownership:
+    the Kiloforger commands the forge, the agents are their tools. Currently
+    there is no consistent term for the human; messages say "you" or use
+    passive voice. Adding "Kiloforger" creates personality and brand cohesion.
+
+    Capitalization convention to establish:
+    - "Kiloforge" — the product (capitalize in headings/formal, lowercase in
+      running text where it reads as a tool name like "docker")
+    - "Kiloforger" — the human user (always capitalize, it's a proper noun/title)
+  codebase_analysis: |
+    Current branding touchpoints identified:
+    - CLI root.go Long description: "kiloforge manages a local Gitea instance..."
+    - CLI init.go: "Kiloforge is ready!", "Kiloforge is already initialized."
+    - CLI up.go, down.go, status.go: various status messages
+    - Dashboard App.tsx header: <h1>kiloforge</h1>
+    - Dashboard index.html: <title>kiloforge dashboard</title>
+    - Tour steps: "Welcome to Kiloforge!", step descriptions
+    - Settings menu: "Help improve kiloforge"
+    - README.md: tagline and descriptions
+    - No existing "Kiloforger" references anywhere in codebase
+
+    Scope is limited to user-facing strings — no API changes, no schema
+    changes, no logic changes. Pure copy/text updates.
+  acceptance_criteria:
+    - "Kiloforger" term introduced in tour welcome ("Welcome, Kiloforger!")
+    - Tour step descriptions use "Kiloforger" where addressing the user
+    - CLI init success message references the Kiloforger ("You're ready, Kiloforger!")
+    - Dashboard page title updated to "Kiloforge Dashboard"
+    - Consistent capitalization across all modified strings
+    - README tagline incorporates "Kiloforger" identity
+    - No functional behavior changes — purely cosmetic/copy
+  out_of_scope: |
+    - Changing the logo or visual branding
+    - Adding user profiles or account systems
+    - Renaming the CLI binary or package names
+    - Modifying API responses or data models
+    - i18n / localization
+  technical_notes: |
+    Implementation approach:
+    1. Audit all user-facing strings in CLI (backend/internal/adapter/cli/*.go)
+    2. Audit all user-facing strings in dashboard (frontend/src/)
+    3. Update tour step content in TourOverlay.tsx to use "Kiloforger"
+    4. Update CLI init/up/status output to reference "Kiloforger" naturally
+    5. Update HTML title and header text for consistent capitalization
+    6. Update README.md tagline and key sections
+    7. Keep changes natural — don't force "Kiloforger" where it reads awkwardly
+plan:
+  - phase: "CLI Branding"
+    tasks:
+      - text: "Update init.go success/status messages to reference Kiloforger identity"
+        done: false
+      - text: "Update root.go Long description with Kiloforger language"
+        done: false
+      - text: "Update up.go, down.go, status.go output messages where addressing the user"
+        done: false
+  - phase: "Dashboard Branding"
+    tasks:
+      - text: "Update index.html page title to 'Kiloforge Dashboard'"
+        done: false
+      - text: "Update TourOverlay.tsx tour steps to use Kiloforger terminology"
+        done: false
+      - text: "Update empty state messages that address the user to use Kiloforger"
+        done: false
+  - phase: "Documentation"
+    tasks:
+      - text: "Update README.md tagline and key descriptions with Kiloforger branding"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test to verify no regressions from string changes"
+        done: false
+      - text: "Run frontend build to verify no broken imports or syntax"
+        done: false
+extra: {}
