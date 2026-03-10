@@ -470,120 +470,37 @@ When the user says "merge" (or immediately if auto-merge is enabled (default) / 
 
 #### 11a. Acquire merge lock
 
-The merge lock supports two modes: **HTTP** (via kiloforge lock API) with automatic fallback to **mkdir** (local filesystem). The HTTP mode provides TTL-based crash recovery and server-side long-poll for `--auto-merge`.
-
-**Setup — determine lock mode and define helpers:**
-
-```bash
-ORCH_URL="${KF_ORCH_URL:-http://localhost:4001}"
-HOLDER="$(basename $(pwd))"  # e.g., "developer-1"
-LOCK_MODE=""
-HEARTBEAT_PID=""
-
-# Check if orchestrator lock API is available
-is_orch_running() {
-  curl -sf "$ORCH_URL/health" -o /dev/null 2>/dev/null
-}
-
-# Release lock (call on ANY failure after acquire)
-release_lock() {
-  if [ -n "$HEARTBEAT_PID" ]; then
-    kill $HEARTBEAT_PID 2>/dev/null; wait $HEARTBEAT_PID 2>/dev/null
-    HEARTBEAT_PID=""
-  fi
-  if [ "$LOCK_MODE" = "http" ]; then
-    curl -sf -X DELETE "$ORCH_URL/-/api/locks/merge" \
-      -H "Content-Type: application/json" \
-      -d "{\"holder\": \"$HOLDER\"}" 2>/dev/null || true
-  elif [ "$LOCK_MODE" = "mkdir" ]; then
-    rm -rf "$(git rev-parse --git-common-dir)/merge.lock"
-  fi
-  echo "Lock released (mode: ${LOCK_MODE:-none})"
-}
-
-# Start heartbeat in background (HTTP mode only)
-start_heartbeat() {
-  if [ "$LOCK_MODE" = "http" ]; then
-    while true; do
-      sleep 30
-      curl -sf -X POST "$ORCH_URL/-/api/locks/merge/heartbeat" \
-        -H "Content-Type: application/json" \
-        -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120}" 2>/dev/null || true
-    done &
-    HEARTBEAT_PID=$!
-  fi
-}
-```
+The merge lock uses the shared `kf-merge-lock` helper script, which handles dual-mode (HTTP/mkdir) acquisition, heartbeat, and release automatically. See `.agent/kf/bin/kf-merge-lock help` for full details.
 
 **CRITICAL: NEVER force-remove another worker's lock.** Do not `rm -rf` the lock directory or force-release an HTTP lock held by another worker. The lock exists to coordinate merges — removing it risks corrupting the merge of the worker that holds it. If the lock appears stale, report it and wait for user instructions. Only the lock holder or the user may release it.
 
-**Default (auto-merge enabled):** Use blocking acquire. HTTP mode uses server-side long-poll (timeout_seconds: 300). mkdir mode uses a polling loop:
+**Default (auto-merge enabled):** Use blocking acquire with timeout:
 
 ```bash
-if is_orch_running; then
-  # HTTP mode — blocking with server-side long-poll
-  if curl -sf -X POST "$ORCH_URL/-/api/locks/merge/acquire" \
-    -H "Content-Type: application/json" \
-    -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120, \"timeout_seconds\": 300}" \
-    --max-time 310 -o /dev/null 2>/dev/null; then
-    LOCK_MODE="http"
-    echo "Merge lock acquired (HTTP)"
-  else
-    echo "MERGE LOCK TIMEOUT — could not acquire after 300s"
-    exit 1
-  fi
-else
-  # mkdir fallback — polling loop
-  LOCK_DIR="$(git rev-parse --git-common-dir)/merge.lock"
-  ATTEMPT=0
-  while ! mkdir "$LOCK_DIR" 2>/dev/null; do
-    ATTEMPT=$((ATTEMPT + 1))
-    echo "MERGE LOCK HELD — waiting for lock... (attempt $ATTEMPT)"
-    echo "Lock info: $(cat "$LOCK_DIR/info" 2>/dev/null || echo 'unknown')"
-    sleep 10
-  done
-  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $HOLDER" > "$LOCK_DIR/info" 2>/dev/null
-  LOCK_MODE="mkdir"
-  echo "Merge lock acquired (mkdir fallback) after $ATTEMPT retries"
-fi
-start_heartbeat
+.agent/kf/bin/kf-merge-lock acquire --timeout 300
 ```
 
-Run this as a single bash command with an appropriate timeout (e.g., 300 seconds). The HTTP long-poll replaces the sleep loop for faster acquisition.
-
-**With `--disable-auto-merge`:** Try once. If the lock is held, report and **HALT** — wait for the user to say "merge" to retry.
+**With `--disable-auto-merge`:** Try once (non-blocking). If held, report and **HALT**:
 
 ```bash
-if is_orch_running; then
-  # HTTP mode — non-blocking (timeout_seconds: 0)
-  if curl -sf -X POST "$ORCH_URL/-/api/locks/merge/acquire" \
-    -H "Content-Type: application/json" \
-    -d "{\"holder\": \"$HOLDER\", \"ttl_seconds\": 120, \"timeout_seconds\": 0}" \
-    -o /dev/null 2>/dev/null; then
-    LOCK_MODE="http"
-    echo "Merge lock acquired (HTTP)"
-  else
-    echo "MERGE LOCK HELD — Another worker is currently merging."
-    echo "Say 'merge' to retry."
-    exit 1
-  fi
-else
-  # mkdir fallback
-  LOCK_DIR="$(git rev-parse --git-common-dir)/merge.lock"
-  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    echo "MERGE LOCK HELD — Another worker is currently merging."
-    echo "Lock info: $(cat "$LOCK_DIR/info" 2>/dev/null || echo 'unknown')"
-    echo "Say 'merge' to retry."
-    exit 1
-  fi
-  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $HOLDER" > "$LOCK_DIR/info" 2>/dev/null
-  LOCK_MODE="mkdir"
-  echo "Merge lock acquired (mkdir fallback — orchestrator unavailable)"
-fi
-start_heartbeat
+.agent/kf/bin/kf-merge-lock acquire --timeout 0
 ```
 
-**From this point: call `release_lock` on ANY failure.**
+If acquire fails, report lock status and wait for user to say "merge" to retry.
+
+**After acquire, start heartbeat in background:**
+
+```bash
+while true; do .agent/kf/bin/kf-merge-lock heartbeat; sleep 30; done &
+HEARTBEAT_PID=$!
+```
+
+**From this point: release the lock on ANY failure:**
+
+```bash
+kill $HEARTBEAT_PID 2>/dev/null; wait $HEARTBEAT_PID 2>/dev/null
+.agent/kf/bin/kf-merge-lock release
+```
 
 #### 11b. Rebase onto latest primary branch
 
@@ -617,24 +534,26 @@ git add .agent/kf/tracks.yaml .agent/kf/tracks/deps.yaml .agent/kf/tracks/confli
 git commit --amend --no-edit
 ```
 
-If a **non-state file** conflicts (e.g., source code files), that is a genuine conflict — release lock, report, and **HALT**.
+If a **non-state file** conflicts (e.g., source code files), that is a genuine conflict — release lock (`kf-merge-lock release`), report, and **HALT**.
 
-If rebase still fails after resolution: call `release_lock`, report, **HALT**.
+If rebase still fails after resolution: release lock (`kf-merge-lock release`), report, **HALT**.
 
 #### 11c. Post-rebase verification
 
 Run the full verification suite from `workflow.md` (e.g., `make test`, `make e2e`).
 
-On failure: call `release_lock`, report, **HALT**.
+On failure: release lock (`kf-merge-lock release`), report, **HALT**.
 
 #### 11d. Fast-forward merge into primary branch
 
 ```bash
 if git -C {primary-branch-worktree-path} merge {type}/{trackId} --ff-only; then
-  release_lock
+  kill $HEARTBEAT_PID 2>/dev/null; wait $HEARTBEAT_PID 2>/dev/null
+  .agent/kf/bin/kf-merge-lock release
   echo "MERGE SUCCEEDED — lock released"
 else
-  release_lock
+  kill $HEARTBEAT_PID 2>/dev/null; wait $HEARTBEAT_PID 2>/dev/null
+  .agent/kf/bin/kf-merge-lock release
   echo "MERGE FAILED — lock released"
   exit 1
 fi
@@ -690,7 +609,7 @@ Developer is ready for next track.
 | Track missing spec/plan    | Suggest regeneration, **HALT**                           |
 | Kiloforge not initialized  | Suggest `/kf-setup`, **HALT**                     |
 | Verification failure       | Report details, offer fix/retry/wait                     |
-| Merge lock held            | Report, wait for other worker                            |
+| Merge lock held            | Report (`kf-merge-lock status`), wait for other worker |
 | Rebase conflict (state files) | Accept theirs, continue rebase, re-apply via CLI     |
 | Rebase conflict (source code) | Release lock, report, **HALT**                       |
 | Post-rebase verify failure | Release lock, report, offer fix/retry/abort              |
@@ -715,12 +634,12 @@ Developer is ready for next track.
 
 ## Merge Lock Modes
 
-The merge lock uses dual-mode acquisition:
+The merge lock is managed by the shared `.agent/kf/bin/kf-merge-lock` helper, which supports dual-mode acquisition:
 
 1. **HTTP mode** — Preferred when kiloforge orchestrator is running. Uses TTL (120s), heartbeat (every 30s), and server-side long-poll for `--auto-merge`. Crash recovery via automatic TTL expiry.
-2. **mkdir mode** — Fallback when orchestrator is unreachable. Uses `$(git rev-parse --git-common-dir)/merge.lock` directory. No TTL — requires manual cleanup on crashes.
+2. **mkdir mode** — Fallback when orchestrator is unreachable. Uses `$(git rev-parse --git-common-dir)/merge.lock` directory. PID-based stale detection with auto-cleanup.
 
-Detection is automatic: if `curl -sf $ORCH_URL/health` succeeds, HTTP mode is used.
+Detection is automatic. Run `kf-merge-lock status` to inspect current lock state.
 
 ## Critical Rules
 
