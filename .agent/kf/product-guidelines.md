@@ -14,6 +14,8 @@ Professional and technical. Documentation and CLI output should be precise, deta
 6. **Makefile as build entry point** — All builds, tests, and code generation go through the Makefile. See `code_styleguides/build.md` for conventions on frontend embedding, output directories, and VCS stamping.
 7. **Thin adapters, shared domain logic** — CLI commands and REST handlers are thin adapters that convert input into domain commands/queries and dispatch to the service layer. Business logic lives exclusively in `core/service/`. Adapters never access stores directly — they receive services via constructor injection. This ensures consistent behavior regardless of entry point (CLI, API, webhook). When adding a new operation, implement it as a service method first, then wire it from both CLI and API adapters.
 
+8. **Anonymous, opt-out telemetry** — Usage analytics must be anonymous (no PII), server-side only (no client-side tracking scripts), and opt-out by default. Users can disable via init prompt, dashboard toggle, or environment variable. Only aggregate product improvement data is collected — never code content, file paths, or user identifiers.
+
 ## Build Artifacts — Never Commit
 
 **`backend/internal/adapter/dashboard/dist/`** contains frontend build output (compiled JS/CSS/HTML/assets). These files are:

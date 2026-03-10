@@ -241,10 +241,12 @@ export interface QueueSettings {
 
 export interface ConfigResponse {
   dashboard_enabled: boolean;
+  analytics_enabled?: boolean;
 }
 
 export interface UpdateConfigRequest {
   dashboard_enabled?: boolean;
+  analytics_enabled?: boolean;
 }
 
 export interface SpawnInteractiveRequest {

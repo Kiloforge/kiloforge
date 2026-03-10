@@ -25,8 +25,21 @@ export function useConfig(): UseConfigResult {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req),
       }),
-    onSuccess: (data) => {
-      queryClient.setQueryData<ConfigResponse>(queryKeys.config, data);
+    onMutate: async (req) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.config });
+      const previous = queryClient.getQueryData<ConfigResponse>(queryKeys.config);
+      if (previous) {
+        queryClient.setQueryData<ConfigResponse>(queryKeys.config, { ...previous, ...req });
+      }
+      return { previous };
+    },
+    onError: (_err, _req, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<ConfigResponse>(queryKeys.config, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.config });
     },
   });
 

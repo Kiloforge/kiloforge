@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useTourContextSafe } from "./tour/TourProvider";
+import { useConfig } from "../hooks/useConfig";
 import styles from "./SettingsMenu.module.css";
 
 export function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const tourCtx = useTourContextSafe();
+  const { config, updateConfig } = useConfig();
 
   useEffect(() => {
     if (!open) return;
@@ -22,6 +24,13 @@ export function SettingsMenu() {
     tourCtx?.restartTour();
     setOpen(false);
   };
+
+  const handleToggleAnalytics = () => {
+    const next = !(config?.analytics_enabled ?? true);
+    updateConfig({ analytics_enabled: next });
+  };
+
+  const analyticsEnabled = config?.analytics_enabled ?? true;
 
   return (
     <div className={styles.wrapper} ref={ref}>
@@ -46,6 +55,21 @@ export function SettingsMenu() {
       </button>
       {open && (
         <div className={styles.dropdown}>
+          <label className={styles.toggleItem}>
+            <span className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Anonymous usage data</span>
+              <span className={styles.toggleDesc}>Help improve kiloforge</span>
+            </span>
+            <button
+              role="switch"
+              aria-checked={analyticsEnabled}
+              className={`${styles.toggle} ${analyticsEnabled ? styles.toggleOn : ""}`}
+              onClick={handleToggleAnalytics}
+            >
+              <span className={styles.toggleThumb} />
+            </button>
+          </label>
+          <div className={styles.separator} />
           <button className={styles.item} onClick={handleTakeTour}>
             Take Tour
           </button>

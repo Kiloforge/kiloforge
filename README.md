@@ -334,6 +334,37 @@ The trace API is available at:
 - `GET /-/api/traces` — list trace summaries (filter with `?track_id=X` or `?session_id=Y`)
 - `GET /-/api/traces/{traceId}` — get full trace with span tree
 
+## Analytics / Telemetry
+
+Kiloforge collects anonymous usage data via [PostHog](https://posthog.com) to help improve the product. Telemetry is **opt-out** — enabled by default, but easy to disable.
+
+### What is collected
+
+- CLI command invocations (command name only)
+- Server startup events (version, OS, architecture)
+- Agent lifecycle events (spawned/completed, role, duration)
+- Project registration events (clone vs create — no URLs or names)
+
+**No PII is ever collected.** The device identifier is a one-way SHA-256 hash of hostname + data directory — not reversible.
+
+### How to opt out
+
+There are three ways to disable analytics:
+
+1. **During init** — Answer "n" to the analytics prompt:
+   ```
+   Help improve kiloforge by sending anonymous usage data? (Y/n) n
+   ```
+
+2. **Dashboard toggle** — Open the settings menu (gear icon) and toggle "Anonymous usage data" off.
+
+3. **Environment variable** — Set before running any command:
+   ```bash
+   export KF_ANALYTICS_ENABLED=false
+   ```
+
+When disabled, a no-op tracker is used — no network requests are made.
+
 ## Origin Bridging
 
 When you register a project with `kf add <remote-url>`, the remote URL is stored as the origin. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.

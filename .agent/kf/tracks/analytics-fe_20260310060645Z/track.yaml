@@ -1,5 +1,5 @@
 id: analytics-fe_20260310060645Z
-title: "Analytics opt-out toggle in dashboard settings"
+title: Analytics opt-out toggle in dashboard settings
 type: feature
 status: pending
 created: 2026-03-10
@@ -17,16 +17,16 @@ spec:
     - Simple dropdown with gear icon trigger (lines 28-46)
     - Currently only has "Take Tour" option (line 49-51)
     - Uses Radix UI DropdownMenu primitives
-
+    
     Config API (already extended by BE track):
     - GET /api/config returns { dashboardEnabled, analyticsEnabled }
     - PUT /api/config accepts { analyticsEnabled: boolean }
-
+    
     Existing patterns:
     - useQuery/useMutation hooks with TanStack Query (App.tsx:42-45)
     - fetcher utility at frontend/src/api/fetcher.ts
     - Query keys at frontend/src/api/queryKeys.ts
-
+    
     App routes (frontend/src/App.tsx:166-195):
     - No dedicated settings page — settings are in dropdown menu
     - Could add inline toggle to existing dropdown or expand to a settings panel
@@ -49,36 +49,36 @@ spec:
     - Extend SettingsMenu.tsx with a toggle item using Radix Switch or checkbox
     - Use useMutation with optimistic update pattern (similar to existing consent hooks)
     - The toggle should show current state immediately and update server on change
-
+    
     Design: Keep it simple — a labeled switch in the existing dropdown menu.
     No separate settings page needed for a single toggle.
 plan:
-  - phase: "Config Hook"
+  - phase: Config Hook
     tasks:
-      - text: "Create useConfig() hook — useQuery for GET /api/config, useMutation for PUT /api/config with optimistic update"
-        done: false
-      - text: "Add 'config' to queryKeys registry"
-        done: false
-      - text: "Write unit test for useConfig hook (mock fetch, verify optimistic update and rollback)"
-        done: false
-  - phase: "Settings Toggle"
+      - text: Create useConfig() hook — useQuery for GET /api/config, useMutation for PUT /api/config with optimistic update
+        done: true
+      - text: Add 'config' to queryKeys registry
+        done: true
+      - text: Write unit test for useConfig hook (mock fetch, verify optimistic update and rollback)
+        done: true
+  - phase: Settings Toggle
     tasks:
-      - text: "Add analytics toggle to SettingsMenu — labeled switch with 'Anonymous usage data' text"
-        done: false
-      - text: "Wire toggle to useConfig mutation — flip analyticsEnabled on change"
-        done: false
-      - text: "Write unit test for SettingsMenu analytics toggle (render, click, verify API call)"
-        done: false
-  - phase: "Documentation"
+      - text: Add analytics toggle to SettingsMenu — labeled switch with 'Anonymous usage data' text
+        done: true
+      - text: Wire toggle to useConfig mutation — flip analyticsEnabled on change
+        done: true
+      - text: Write unit test for SettingsMenu analytics toggle (render, click, verify API call)
+        done: true
+  - phase: Documentation
     tasks:
-      - text: "Update README.md — add Analytics / Telemetry section documenting what data is collected, how to opt out (init prompt, settings toggle, KF_ANALYTICS_ENABLED=false env var), and that it uses PostHog"
-        done: false
-      - text: "Update product-guidelines.md — add telemetry principle: anonymous, opt-out, server-side only, no PII"
-        done: false
-  - phase: "E2E Verification"
+      - text: Update README.md — add Analytics / Telemetry section documenting what data is collected, how to opt out (init prompt, settings toggle, KF_ANALYTICS_ENABLED=false env var), and that it uses PostHog
+        done: true
+      - text: Update product-guidelines.md — add telemetry principle: anonymous, opt-out, server-side only, no PII
+        done: true
+  - phase: E2E Verification
     tasks:
-      - text: "Write E2E test — open settings menu, verify analytics toggle visible, toggle off/on, verify API calls"
-        done: false
-      - text: "Run make test-e2e — all E2E tests pass including new analytics toggle test"
-        done: false
+      - text: Write E2E test — open settings menu, verify analytics toggle visible, toggle off/on, verify API calls
+        done: true
+      - text: Run make test-e2e — all E2E tests pass including new analytics toggle test
+        done: true
 extra: {}
