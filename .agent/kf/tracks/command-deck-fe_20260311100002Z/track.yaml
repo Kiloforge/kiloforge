@@ -1,9 +1,9 @@
 id: command-deck-fe_20260311100002Z
-title: "Rebrand dashboard to Command Deck — frontend titles, headers, and UI strings"
+title: Rebrand dashboard to Command Deck — frontend titles, headers, and UI strings
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Rename all user-facing references to "Dashboard" in the frontend to
@@ -41,28 +41,28 @@ spec:
     The header could show: "kiloforge" logo + "Command Deck" subtitle.
     Consider updating any empty state messages that reference "dashboard".
 plan:
-  - phase: "Core Branding"
+  - phase: Core Branding
     tasks:
-      - text: "Update frontend/index.html page title to 'Kiloforge Command Deck'"
-        done: false
-      - text: "Update App.tsx header/sidebar branding text to reference Command Deck"
-        done: false
-      - text: "Update any navigation labels that say 'Dashboard' to 'Command Deck'"
-        done: false
-  - phase: "UI Strings"
+      - text: Update frontend/index.html page title to 'Kiloforge Command Deck'
+        done: true
+      - text: Update App.tsx header/sidebar branding text to reference Command Deck
+        done: true
+      - text: Update any navigation labels that say 'Dashboard' to 'Command Deck'
+        done: true
+  - phase: UI Strings
     tasks:
-      - text: "Search all frontend/src/ files for user-facing 'dashboard' or 'Dashboard' strings and update to 'Command Deck'"
-        done: false
-      - text: "Update dialog/modal titles that reference dashboard"
-        done: false
-      - text: "Update empty state messages and tooltips that reference dashboard"
-        done: false
-  - phase: "Verification"
+      - text: Search all frontend/src/ files for user-facing 'dashboard' or 'Dashboard' strings and update to 'Command Deck'
+        done: true
+      - text: Update dialog/modal titles that reference dashboard
+        done: true
+      - text: Update empty state messages and tooltips that reference dashboard
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Grep frontend/src/ for remaining user-facing 'dashboard' references (exclude internal code, CSS, file paths)"
+      - text: Grep frontend/src/ for remaining user-facing 'dashboard' references (exclude internal code, CSS, file paths)
         done: false
-      - text: "Run frontend build to verify no errors"
+      - text: Run frontend build to verify no errors
         done: false
-      - text: "Run frontend tests to verify no breakage"
+      - text: Run frontend tests to verify no breakage
         done: false
 extra: {}
