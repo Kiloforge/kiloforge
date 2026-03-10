@@ -33,6 +33,7 @@ agent-timeout_20260310160002Z: {"title":"Agent timeout enforcement with configur
 agent-work-stash-be_20260310121626Z: {"title":"Agent work stash — backend pool/git stash branch operations","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-skill_20260310121627Z: {"title":"Agent work stash — kf-developer skill and CLI tooling","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 analytics-be_20260310060644Z: {"title":"PostHog product analytics — backend integration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+analytics-cli-toggle-be_20260310221320Z: {"title":"Add `kf analytics` CLI command to enable, disable, and show state","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 analytics-fe_20260310060645Z: {"title":"Analytics opt-out toggle in dashboard settings","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 api-polish-errors-be_20260311150003Z: {"title":"API polish — structured error responses, status code consistency, and request logging","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"archived","type":"research","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
