@@ -10,6 +10,7 @@ interface ShortcutActions {
   snapLeft: () => void;
   snapRight: () => void;
   showHelp: () => void;
+  toggleFullScreen?: () => void;
 }
 
 function isInputTarget(target: EventTarget | null): boolean {
@@ -51,6 +52,13 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
       // Skip remaining shortcuts when an input/textarea is focused
       if (isInputTarget(e.target)) return;
 
+      // Full-screen command mode takes priority over maximize
+      if (key === "f" && actions.toggleFullScreen) {
+        e.preventDefault();
+        actions.toggleFullScreen();
+        return;
+      }
+
       const shortcuts: Record<string, () => void> = {
         t: actions.tileAll,
         m: actions.toggleMinimize,
@@ -83,7 +91,7 @@ export const SHORTCUT_LIST: ShortcutEntry[] = [
   { keys: "⌘⇧]", description: "Focus next window" },
   { keys: "⌘⇧[", description: "Focus previous window" },
   { keys: "⌘⇧M", description: "Minimize / restore window" },
-  { keys: "⌘⇧F", description: "Maximize / restore window" },
+  { keys: "⌘⇧F", description: "Toggle full-screen command mode" },
   { keys: "⌘⇧W", description: "Close focused window" },
   { keys: "⌘⇧←", description: "Snap window to left half" },
   { keys: "⌘⇧→", description: "Snap window to right half" },

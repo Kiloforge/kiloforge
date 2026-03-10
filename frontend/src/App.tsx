@@ -31,6 +31,7 @@ import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay } from "./components/tour/TourOverlay";
 import { SettingsMenu } from "./components/SettingsMenu";
+import { FullScreenCommand } from "./components/fullscreen/FullScreenCommand";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AgentDetailPage } from "./pages/AgentDetailPage";
 import { AgentHistoryPage } from "./pages/AgentHistoryPage";
@@ -56,6 +57,7 @@ export default function App() {
   const [showLauncher, setShowLauncher] = useState(false);
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const queryClient = useQueryClient();
@@ -71,6 +73,7 @@ export default function App() {
       snapLeft: () => wm.snapFocused("left"),
       snapRight: () => wm.snapFocused("right"),
       showHelp: () => setShowShortcuts((v) => !v),
+      toggleFullScreen: () => setShowFullScreen((v) => !v),
     }),
     [wm],
   );
@@ -212,6 +215,15 @@ export default function App() {
           )}
         </div>
         <nav className={styles.nav}>
+          <button
+            className={styles.link}
+            onClick={() => setShowFullScreen(true)}
+            title="Full-screen command mode (⌘⇧F)"
+            data-tour="fullscreen-toggle"
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+          >
+            &#9638; Command
+          </button>
           <Link to="/agents" className={styles.link}>Agents</Link>
           <Link to="/reliability" className={styles.link}>Reliability</Link>
           {status?.gitea_url && (
@@ -296,6 +308,12 @@ export default function App() {
           waitingForCapacity={waitingForCapacity}
           waitingCapacity={waitingCapacity}
           onCancelWaiting={handleCancelWaiting}
+        />
+      )}
+      {showFullScreen && (
+        <FullScreenCommand
+          agents={agents}
+          onExit={() => setShowFullScreen(false)}
         />
       )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
