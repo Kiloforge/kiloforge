@@ -380,6 +380,39 @@ type MoveCardResult struct {
 	TrackId    string `json:"track_id"`
 }
 
+// PaginatedAgents defines model for PaginatedAgents.
+type PaginatedAgents struct {
+	Items []Agent `json:"items"`
+
+	// NextCursor Opaque cursor for the next page. Empty string means no more pages.
+	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// TotalCount Total number of items matching the current filters.
+	TotalCount int `json:"total_count"`
+}
+
+// PaginatedTraces defines model for PaginatedTraces.
+type PaginatedTraces struct {
+	Items []TraceSummary `json:"items"`
+
+	// NextCursor Opaque cursor for the next page. Empty string means no more pages.
+	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// TotalCount Total number of items matching the current filters.
+	TotalCount int `json:"total_count"`
+}
+
+// PaginatedTracks defines model for PaginatedTracks.
+type PaginatedTracks struct {
+	Items []Track `json:"items"`
+
+	// NextCursor Opaque cursor for the next page. Empty string means no more pages.
+	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// TotalCount Total number of items matching the current filters.
+	TotalCount int `json:"total_count"`
+}
+
 // PreflightResponse defines model for PreflightResponse.
 type PreflightResponse struct {
 	// ClaudeAuthError Auth error message if not authenticated
@@ -485,7 +518,13 @@ type QueueStatus struct {
 	ActiveWorkers int         `json:"active_workers"`
 	Items         []QueueItem `json:"items"`
 	MaxWorkers    int         `json:"max_workers"`
-	Running       bool        `json:"running"`
+
+	// NextCursor Opaque cursor for the next page of items. Empty string means no more pages.
+	NextCursor *string `json:"next_cursor,omitempty"`
+	Running    bool    `json:"running"`
+
+	// TotalItems Total number of queue items matching current filters.
+	TotalItems int `json:"total_items"`
 }
 
 // QuickLink defines model for QuickLink.
@@ -794,6 +833,15 @@ type UpdateProjectSettingsRequest struct {
 type ListAgentsParams struct {
 	// Active If true (default), return only active agents + recently finished (30 min). If false, return all agents.
 	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// Status Filter agents by status (e.g. running, completed, failed). Comma-separated for multiple.
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Limit Maximum number of items to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for pagination. Omit for first page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
 // GetAgentLogParams defines parameters for GetAgentLog.
@@ -817,6 +865,21 @@ type GetProjectDiffParams struct {
 	MaxFiles *int `form:"max_files,omitempty" json:"max_files,omitempty"`
 }
 
+// GetQueueParams defines parameters for GetQueue.
+type GetQueueParams struct {
+	// Project Filter queue items by project slug.
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
+
+	// Status Filter queue items by status (queued, assigned, completed, failed). Comma-separated for multiple.
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Limit Maximum number of items to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for pagination. Omit for first page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // UpdateQueueSettingsJSONBody defines parameters for UpdateQueueSettings.
 type UpdateQueueSettingsJSONBody struct {
 	MaxWorkers *int `json:"max_workers,omitempty"`
@@ -835,12 +898,27 @@ type ListTracesParams struct {
 
 	// SessionId Filter traces by session ID attribute
 	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
+
+	// Limit Maximum number of items to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for pagination. Omit for first page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
 // ListTracksParams defines parameters for ListTracks.
 type ListTracksParams struct {
 	// Project Filter tracks by project slug
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
+
+	// Status Filter tracks by status (pending, in-progress, complete). Comma-separated for multiple.
+	Status *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Limit Maximum number of items to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for pagination. Omit for first page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
 // DeleteTrackParams defines parameters for DeleteTrack.
@@ -1003,7 +1081,7 @@ type ServerInterface interface {
 	GetSyncStatus(w http.ResponseWriter, r *http.Request, slug string)
 	// Get work queue status
 	// (GET /api/queue)
-	GetQueue(w http.ResponseWriter, r *http.Request)
+	GetQueue(w http.ResponseWriter, r *http.Request, params GetQueueParams)
 	// Update queue settings
 	// (PATCH /api/queue/settings)
 	UpdateQueueSettings(w http.ResponseWriter, r *http.Request)
@@ -1087,6 +1165,30 @@ func (siw *ServerInterfaceWrapper) ListAgents(w http.ResponseWriter, r *http.Req
 	err = runtime.BindQueryParameter("form", true, false, "active", r.URL.Query(), &params.Active)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "cursor", r.URL.Query(), &params.Cursor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
 		return
 	}
 
@@ -1828,8 +1930,45 @@ func (siw *ServerInterfaceWrapper) GetSyncStatus(w http.ResponseWriter, r *http.
 // GetQueue operation middleware
 func (siw *ServerInterfaceWrapper) GetQueue(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetQueueParams
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "project", r.URL.Query(), &params.Project)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "cursor", r.URL.Query(), &params.Cursor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetQueue(w, r)
+		siw.Handler.GetQueue(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1975,6 +2114,22 @@ func (siw *ServerInterfaceWrapper) ListTraces(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "cursor", r.URL.Query(), &params.Cursor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListTraces(w, r, params)
 	}))
@@ -2024,6 +2179,30 @@ func (siw *ServerInterfaceWrapper) ListTracks(w http.ResponseWriter, r *http.Req
 	err = runtime.BindQueryParameter("form", true, false, "project", r.URL.Query(), &params.Project)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "cursor", r.URL.Query(), &params.Cursor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
 		return
 	}
 
@@ -2397,7 +2576,7 @@ type ListAgentsResponseObject interface {
 	VisitListAgentsResponse(w http.ResponseWriter) error
 }
 
-type ListAgents200JSONResponse []Agent
+type ListAgents200JSONResponse PaginatedAgents
 
 func (response ListAgents200JSONResponse) VisitListAgentsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -3476,6 +3655,7 @@ func (response GetSyncStatus500JSONResponse) VisitGetSyncStatusResponse(w http.R
 }
 
 type GetQueueRequestObject struct {
+	Params GetQueueParams
 }
 
 type GetQueueResponseObject interface {
@@ -3713,7 +3893,7 @@ type ListTracesResponseObject interface {
 	VisitListTracesResponse(w http.ResponseWriter) error
 }
 
-type ListTraces200JSONResponse []TraceSummary
+type ListTraces200JSONResponse PaginatedTraces
 
 func (response ListTraces200JSONResponse) VisitListTracesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -3756,7 +3936,7 @@ type ListTracksResponseObject interface {
 	VisitListTracksResponse(w http.ResponseWriter) error
 }
 
-type ListTracks200JSONResponse []Track
+type ListTracks200JSONResponse PaginatedTracks
 
 func (response ListTracks200JSONResponse) VisitListTracksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -5031,8 +5211,10 @@ func (sh *strictHandler) GetSyncStatus(w http.ResponseWriter, r *http.Request, s
 }
 
 // GetQueue operation middleware
-func (sh *strictHandler) GetQueue(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) GetQueue(w http.ResponseWriter, r *http.Request, params GetQueueParams) {
 	var request GetQueueRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetQueue(ctx, request.(GetQueueRequestObject))

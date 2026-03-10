@@ -211,7 +211,7 @@ type ClientInterface interface {
 	GetSyncStatus(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetQueue request
-	GetQueue(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetQueue(ctx context.Context, params *GetQueueParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateQueueSettingsWithBody request with any body
 	UpdateQueueSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -795,8 +795,8 @@ func (c *Client) GetSyncStatus(ctx context.Context, slug string, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetQueue(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetQueueRequest(c.Server)
+func (c *Client) GetQueue(ctx context.Context, params *GetQueueParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetQueueRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1100,6 +1100,54 @@ func NewListAgentsRequest(server string, params *ListAgentsParams) (*http.Reques
 		if params.Active != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "active", runtime.ParamLocationQuery, *params.Active); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -2324,7 +2372,7 @@ func NewGetSyncStatusRequest(server string, slug string) (*http.Request, error) 
 }
 
 // NewGetQueueRequest generates requests for GetQueue
-func NewGetQueueRequest(server string) (*http.Request, error) {
+func NewGetQueueRequest(server string, params *GetQueueParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -2340,6 +2388,76 @@ func NewGetQueueRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Project != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "project", runtime.ParamLocationQuery, *params.Project); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -2659,6 +2777,38 @@ func NewListTracesRequest(server string, params *ListTracesParams) (*http.Reques
 
 		}
 
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -2729,6 +2879,54 @@ func NewListTracksRequest(server string, params *ListTracksParams) (*http.Reques
 		if params.Project != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "project", runtime.ParamLocationQuery, *params.Project); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -3093,7 +3291,7 @@ type ClientWithResponsesInterface interface {
 	GetSyncStatusWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetSyncStatusResponse, error)
 
 	// GetQueueWithResponse request
-	GetQueueWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQueueResponse, error)
+	GetQueueWithResponse(ctx context.Context, params *GetQueueParams, reqEditors ...RequestEditorFn) (*GetQueueResponse, error)
 
 	// UpdateQueueSettingsWithBodyWithResponse request with any body
 	UpdateQueueSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateQueueSettingsResponse, error)
@@ -3180,7 +3378,7 @@ func (r RunAdminOperationResponse) StatusCode() int {
 type ListAgentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]Agent
+	JSON200      *PaginatedAgents
 	JSON500      *ErrorResponse
 }
 
@@ -4151,7 +4349,7 @@ func (r GetStatusResponse) StatusCode() int {
 type ListTracesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]TraceSummary
+	JSON200      *PaginatedTraces
 }
 
 // Status returns HTTPResponse.Status
@@ -4196,7 +4394,7 @@ func (r GetTraceResponse) StatusCode() int {
 type ListTracksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]Track
+	JSON200      *PaginatedTracks
 	JSON500      *ErrorResponse
 }
 
@@ -4699,8 +4897,8 @@ func (c *ClientWithResponses) GetSyncStatusWithResponse(ctx context.Context, slu
 }
 
 // GetQueueWithResponse request returning *GetQueueResponse
-func (c *ClientWithResponses) GetQueueWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQueueResponse, error) {
-	rsp, err := c.GetQueue(ctx, reqEditors...)
+func (c *ClientWithResponses) GetQueueWithResponse(ctx context.Context, params *GetQueueParams, reqEditors ...RequestEditorFn) (*GetQueueResponse, error) {
+	rsp, err := c.GetQueue(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -4957,7 +5155,7 @@ func ParseListAgentsResponse(rsp *http.Response) (*ListAgentsResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Agent
+		var dest PaginatedAgents
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -6494,7 +6692,7 @@ func ParseListTracesResponse(rsp *http.Response) (*ListTracesResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []TraceSummary
+		var dest PaginatedTraces
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -6553,7 +6751,7 @@ func ParseListTracksResponse(rsp *http.Response) (*ListTracksResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Track
+		var dest PaginatedTracks
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
