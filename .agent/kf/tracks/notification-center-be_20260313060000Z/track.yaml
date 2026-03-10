@@ -1,0 +1,137 @@
+id: notification-center-be_20260313060000Z
+title: Notification center backend — agent attention detection and broadcast
+type: feature
+status: pending
+created: 2026-03-13
+updated: 2026-03-13
+spec:
+  summary: Add a server-side notification system that detects when agents need user input (turn_end with no new turn_start) and broadcasts persistent notifications via SSE to all connected dashboards.
+  context: |
+    Worker agents (developer, reviewer) run autonomously in the background. When they
+    encounter a situation requiring user input (review feedback, merge conflict, ambiguous
+    requirement), they finish their current turn and wait for stdin. Currently there is no
+    mechanism to alert the user that a background agent needs attention. Interactive agents
+    have a similar gap when their terminal window is minimized or the user is on another page.
+
+    The user wants notifications that:
+    - Persist as long as the agent is waiting for input
+    - Work across multiple browser tabs/instances
+    - Show messages like "{agent name} needs your attention"
+    - Cover both background (worker) and interactive agent types
+  codebase_analysis: |
+    Key files and patterns:
+    - backend/internal/adapter/ws/session.go — SessionManager, Bridge, StartStructuredRelay
+      relays pre-serialized JSON messages (turn_start, turn_end, etc.) to WS clients and
+      ring buffer. turn_end indicates agent finished a turn and is waiting for input.
+    - backend/internal/adapter/ws/message.go — MsgTurnEnd="turn_end", MsgTurnStart="turn_start"
+      constants and message constructors. TurnEndMessage has TurnID, CostUSD, Usage fields.
+    - backend/internal/adapter/ws/ringbuf.go — 500-line ring buffer per agent, persists even
+      with no WS clients connected.
+    - backend/internal/adapter/dashboard/watcher.go — Background poller (2s interval), detects
+      agent status changes and publishes SSE events. Has access to agents store.
+    - backend/internal/adapter/dashboard/sse.go — SSEHub pub-sub, broadcasts to all connected
+      browser tabs. Non-blocking sends with buffer size 16 per client.
+    - backend/internal/core/domain/events.go — Event types and factory functions.
+    - backend/internal/core/domain/agent.go — AgentStatusRunning, AgentInfo.Name, IsActive(),
+      IsTerminal(). AgentInfo has Name and ID fields.
+    - backend/internal/adapter/persistence/sqlite/ — Existing migration pattern (numbered SQL
+      files). reliability_events table is a good model for the notifications table.
+    - backend/api/openapi.yaml — Schema-first API design. All new endpoints require schema first.
+    - backend/api/asyncapi.yaml — SSE event documentation.
+    - backend/internal/adapter/agent/spawner.go — All agents (worker and interactive) have
+      LogFile field. Worker agents don't have WS bridges; interactive agents do.
+    - backend/internal/core/domain/agent.go — IsWorkerRole() returns true for developer/reviewer.
+  acceptance_criteria:
+    - Notification domain model with id, agent_id, title, body, created_at, acknowledged_at
+    - SQLite migration creates notifications table with appropriate indexes
+    - NotificationStore implements Insert, List (active only), Acknowledge, CleanTerminal
+    - NotificationService creates notifications on turn_end detection, dismisses on turn_start
+    - Notifications auto-cleaned when agent enters terminal status
+    - Duplicate notifications prevented (one active notification per agent at a time)
+    - OpenAPI schema defines GET /api/notifications and POST /api/notifications/{id}/acknowledge
+    - AsyncAPI schema documents notification_created and notification_dismissed SSE events
+    - REST handlers implement list and acknowledge endpoints
+    - SSE events broadcast notification_created (with agent_id, title, body) and notification_dismissed
+    - Detection works for agents with bridges (relay hook) and agents without (watcher log scan)
+    - Notification title follows format "{agent name} needs your attention" (using agent Name or ID prefix)
+  out_of_scope: |
+    - Frontend UI (separate track)
+    - Email or push notification channels
+    - Custom notification types beyond "agent needs attention"
+    - Notification preferences or per-agent muting
+    - Historical notification archive or analytics
+  technical_notes: |
+    Approach:
+    1. Domain model + store: Follow the reliability_events pattern. Notifications table
+       with id (UUID), agent_id, title, body, created_at, acknowledged_at (nullable).
+       Active notifications = acknowledged_at IS NULL.
+
+    2. Detection via relay hook: Modify StartStructuredRelay to parse each message's
+       "type" field. On turn_end for an active agent → call NotificationService.Create().
+       On turn_start → call NotificationService.DismissForAgent(). This catches interactive
+       agents with bridges.
+
+    3. Detection via watcher: For running agents without bridges (workers), the watcher
+       can check if a bridge exists via SessionManager.GetBridge(). If no bridge, read the
+       last few lines of agent.LogFile and check for turn_end JSON. If turn_end is the
+       last structured message and no notification exists → create one.
+
+    4. Auto-cleanup: The watcher already detects agent status transitions. When an agent
+       enters terminal status, call NotificationService.CleanForAgent() to dismiss any
+       active notification.
+
+    5. SSE integration: NotificationService publishes events via the existing EventBus.
+       Add new event types: EventNotificationCreated and EventNotificationDismissed.
+
+    6. API: Schema-first. Update openapi.yaml with Notification schema, list endpoint
+       (GET /api/notifications with optional agent_id filter), and acknowledge endpoint
+       (POST /api/notifications/{id}/acknowledge). Generate server stubs via oapi-codegen.
+
+    The relay hook approach is efficient — no polling needed for bridge-based agents.
+    The watcher fallback handles worker agents at the existing 2s poll interval.
+plan:
+  - phase: Schema & Domain
+    tasks:
+      - text: Add Notification schema to openapi.yaml (id, agent_id, title, body, created_at, acknowledged_at) and endpoints (GET /api/notifications, POST /api/notifications/{id}/acknowledge)
+        done: false
+      - text: Add notification_created and notification_dismissed event schemas to asyncapi.yaml
+        done: false
+      - text: Run make gen-api to regenerate server stubs and verify with make verify-codegen
+        done: false
+      - text: Add Notification domain type in core/domain/notification.go with ID, AgentID, Title, Body, CreatedAt, AcknowledgedAt fields
+        done: false
+      - text: Add EventNotificationCreated and EventNotificationDismissed event types and factory functions in core/domain/events.go
+        done: false
+  - phase: Persistence
+    tasks:
+      - text: Write tests for NotificationStore — Insert, ListActive, Acknowledge, DeleteForAgent, FindActiveByAgent
+        done: false
+      - text: Create SQLite migration (next number) with notifications table (id, agent_id, title, body, created_at, acknowledged_at) and indexes on agent_id and created_at
+        done: false
+      - text: Implement NotificationStore in sqlite adapter following existing patterns (reliability_store.go as reference)
+        done: false
+      - text: Add NotificationStore port interface in core/port/
+        done: false
+  - phase: Service & Detection
+    tasks:
+      - text: Write tests for NotificationService — Create (deduplicates per agent), DismissForAgent, Acknowledge, CleanTerminalAgents
+        done: false
+      - text: Implement NotificationService in core/service/ — creates notifications with title "{agent name} needs your attention", publishes SSE events via EventBus
+        done: false
+      - text: Hook into StartStructuredRelay in ws/session.go — parse message type, call NotificationService on turn_end (create) and turn_start (dismiss)
+        done: false
+      - text: Extend watcher to detect worker agents needing attention — check running agents without bridges, scan last log lines for turn_end, create notification if none active
+        done: false
+      - text: Extend watcher to auto-clean notifications when agents enter terminal status
+        done: false
+  - phase: REST & Integration
+    tasks:
+      - text: Implement ListNotifications handler — returns active notifications sorted by created_at DESC
+        done: false
+      - text: Implement AcknowledgeNotification handler — sets acknowledged_at, publishes notification_dismissed SSE event
+        done: false
+      - text: Wire NotificationStore and NotificationService into server startup (dashboard server and REST server)
+        done: false
+      - text: Run make test, make build, make lint — verify no regressions
+        done: false
+extra: {}

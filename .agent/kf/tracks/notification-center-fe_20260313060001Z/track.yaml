@@ -1,0 +1,129 @@
+id: notification-center-fe_20260313060001Z
+title: Notification center frontend — bell icon, panel, and click-to-attach
+type: feature
+status: pending
+created: 2026-03-13
+updated: 2026-03-13
+spec:
+  summary: Add a notification bell icon in the Command Deck header that shows a badge count of agents needing attention, with a dropdown panel listing active notifications. Clicking a notification opens the agent's terminal window.
+  context: |
+    The backend (notification-center-be track) provides a notification API and SSE events
+    for when agents need user input. This track builds the frontend notification center UI
+    that surfaces these notifications to the user. The user wants a central place to see
+    which agents need attention, with the ability to click through to the agent's terminal.
+
+    Key user requirements:
+    - Notification bell in the header with unread count badge
+    - Dropdown panel listing active notifications ("{agent name} needs your attention")
+    - Clicking a notification brings up the agent terminal window
+    - Works across multiple browser tabs (SSE-driven, server state)
+    - Covers both background (worker) and interactive agents
+    - Notifications disappear when the agent resumes work
+  codebase_analysis: |
+    Key files and patterns:
+    - frontend/src/App.tsx (lines 205-240) — Header bar with logo, ConnectionStatus,
+      AgentHistogram, terminal count. The notification bell should sit between AgentHistogram
+      and the terminal count / settings area.
+    - frontend/src/hooks/useSSE.ts — Global SSE connection at /events. Handlers registered
+      as Record<string, (data: unknown) => void>. App.tsx line 109-124 defines all handlers.
+    - frontend/src/hooks/useAgents.ts — Pattern for SSE-driven state: handleAgentUpdate
+      uses queryClient.setQueryData() to update React Query cache on SSE events.
+    - frontend/src/components/toast/ — Existing toast system (ToastProvider, ToastContainer).
+      Notification center is separate from toasts (persistent, not auto-dismiss).
+    - frontend/src/hooks/useWindowManager.ts — WindowEntry with agentId, name, role, slug,
+      branch. wm.open(agentId, name, role, slug, branch) opens a floating terminal.
+    - frontend/src/types/api.ts — Agent type has id, name, role, ref, status fields.
+      Track type has id, project field. Need to add Notification type here.
+    - frontend/src/api/queryKeys.ts — Query key factory for React Query caching.
+    - frontend/src/api/fetcher.ts — HTTP fetch wrapper with error handling.
+    - frontend/src/components/AgentHistogram.tsx — Header component showing agent count
+      chips. Good reference for header component placement and styling.
+    - frontend/src/App.module.css — Header layout styles.
+  acceptance_criteria:
+    - Notification type added to frontend/src/types/api.ts
+    - useNotifications hook fetches active notifications and updates via SSE events
+    - NotificationBell component renders in header with badge showing active notification count
+    - Badge hidden when count is zero
+    - Clicking bell opens/closes a dropdown panel listing active notifications
+    - Each notification shows agent name and "needs your attention" message
+    - Clicking a notification opens the agent's terminal window via wm.open()
+    - Clicking a notification also acknowledges it via POST /api/notifications/{id}/acknowledge
+    - Panel closes when clicking outside (click-away behavior)
+    - SSE events (notification_created, notification_dismissed) update the notification list in real time
+    - Notifications that are dismissed server-side (agent resumed) disappear automatically
+    - Accessible: bell button has aria-label, panel uses role="menu", focus management
+    - Tests cover: bell renders with count, panel opens/closes, click-to-attach calls wm.open
+  out_of_scope: |
+    - Backend notification logic (separate BE track)
+    - Sound or browser push notifications
+    - Notification preferences or settings UI
+    - Notification history or archive view
+    - Mobile-specific notification layout (standard responsive is fine)
+  technical_notes: |
+    Approach:
+    1. Add Notification type to types/api.ts: { id, agent_id, title, body, created_at }
+    2. Add query key and fetcher for GET /api/notifications
+    3. Create useNotifications hook:
+       - Fetches active notifications via React Query
+       - SSE handlers: notification_created → add to cache, notification_dismissed → remove
+       - Returns { notifications, count, acknowledge(id) }
+    4. Create NotificationBell component:
+       - Bell icon (SVG or Unicode 🔔) with badge count overlay
+       - Toggle dropdown panel on click
+       - Close on click-outside (useEffect with document click listener)
+    5. Create NotificationPanel component:
+       - Renders inside NotificationBell dropdown
+       - Lists notifications sorted by created_at DESC
+       - Each item shows: agent name, "needs your attention", relative time
+       - Click handler: calls wm.open(agentId, name, role, slug, branch) + acknowledge
+       - Need agent metadata — fetch from useAgents or include in notification payload
+    6. Wire into App.tsx:
+       - Add SSE handlers for notification_created/notification_dismissed
+       - Place NotificationBell in header between AgentHistogram and settings area
+       - Pass wm.open, agents, and tracks to NotificationBell for click-to-attach
+    7. Styling: Dark theme matching header aesthetic. Bell icon subtle when 0 notifications,
+       highlighted with badge when > 0. Panel styled like AgentHistogram popover.
+plan:
+  - phase: Types & Data Layer
+    tasks:
+      - text: Add Notification type to types/api.ts with id, agent_id, title, body, created_at fields
+        done: false
+      - text: Add notification query key to api/queryKeys.ts and fetcher for GET /api/notifications
+        done: false
+      - text: Write tests for useNotifications hook — fetches notifications, handles SSE create/dismiss events, provides acknowledge function
+        done: false
+      - text: Implement useNotifications hook using React Query with SSE-driven cache updates (follow useAgents pattern)
+        done: false
+  - phase: Bell & Panel Components
+    tasks:
+      - text: Write tests for NotificationBell — renders with badge count, hides badge at zero, toggles panel on click, closes on click-away
+        done: false
+      - text: Create NotificationBell.tsx — bell icon button in header with badge count overlay and dropdown toggle
+        done: false
+      - text: Create NotificationBell.module.css — dark theme, badge styling (red/accent dot with count), positioned dropdown
+        done: false
+      - text: Write tests for NotificationPanel — lists notifications, click calls onSelect with agent data, shows empty state
+        done: false
+      - text: Create NotificationPanel.tsx — dropdown listing active notifications with agent name, message, relative time, and click handler
+        done: false
+      - text: Create NotificationPanel.module.css — dropdown panel styling matching header aesthetic, notification item hover states
+        done: false
+  - phase: App Integration
+    tasks:
+      - text: Add notification_created and notification_dismissed SSE handlers in App.tsx sseHandlers
+        done: false
+      - text: Place NotificationBell in App.tsx header between AgentHistogram and settings area
+        done: false
+      - text: Wire click-to-attach — clicking notification calls wm.open() with agent data from agents array, then acknowledges via API
+        done: false
+      - text: Verify notification dismissed by server (agent resumed) removes from panel across all tabs
+        done: false
+  - phase: Polish & Verification
+    tasks:
+      - text: Ensure keyboard accessibility — bell has aria-label, panel uses proper ARIA roles, Escape closes panel
+        done: false
+      - text: Handle edge cases — notification for deleted/unknown agent, empty state panel, rapid create/dismiss
+        done: false
+      - text: Run make test, make build, make lint — verify no regressions
+        done: false
+extra: {}
