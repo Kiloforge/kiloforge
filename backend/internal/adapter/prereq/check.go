@@ -81,7 +81,7 @@ func FormatErrors(errs []PrereqError) string {
 		fmt.Fprintf(&b, "\n  %s — %s\n", e.Tool, e.Reason)
 		fmt.Fprintf(&b, "    Install: %s\n", e.InstallHint)
 	}
-	b.WriteString("\nInstall the missing tools and run 'kf init' again.")
+	b.WriteString("\nInstall the missing tools and run 'kf up' again.")
 	return b.String()
 }
 

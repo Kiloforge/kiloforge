@@ -50,7 +50,7 @@ func TestFormatErrors_Multiple(t *testing.T) {
 	if strings.Count(result, "Install:") != 3 {
 		t.Errorf("expected 3 install hints, got output:\n%s", result)
 	}
-	if !strings.Contains(result, "run 'kf init' again") {
+	if !strings.Contains(result, "run 'kf up' again") {
 		t.Error("expected retry instruction")
 	}
 }

@@ -19,7 +19,10 @@ var downCmd = &cobra.Command{
 func runDown(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("%s", notInitializedError())
+		fmt.Println("Cortex is not running (not initialized).")
+		fmt.Println()
+		fmt.Println("Start with: kf up")
+		return nil
 	}
 
 	// Stop Cortex daemon.

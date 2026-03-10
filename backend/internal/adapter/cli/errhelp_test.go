@@ -12,8 +12,8 @@ func TestNotInitializedError(t *testing.T) {
 	if !strings.Contains(msg, "not initialized") {
 		t.Errorf("expected 'not initialized' in message, got: %q", msg)
 	}
-	if !strings.Contains(msg, "kf init") {
-		t.Errorf("expected 'kf init' guidance in message, got: %q", msg)
+	if !strings.Contains(msg, "kf up") {
+		t.Errorf("expected 'kf up' guidance in message, got: %q", msg)
 	}
 }
 
@@ -41,8 +41,8 @@ func TestConfigLoadError(t *testing.T) {
 	if !strings.Contains(msg, "file not found") {
 		t.Errorf("expected wrapped error in message, got: %q", msg)
 	}
-	if !strings.Contains(msg, "kf init") {
-		t.Errorf("expected 'kf init' guidance in message, got: %q", msg)
+	if !strings.Contains(msg, "kf up") {
+		t.Errorf("expected 'kf up' guidance in message, got: %q", msg)
 	}
 }
 
