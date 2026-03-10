@@ -193,6 +193,11 @@ type ClientInterface interface {
 
 	PushProject(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ResolveConflictWithBody request with any body
+	ResolveConflictWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ResolveConflict(ctx context.Context, slug string, body ResolveConflictJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetProjectSettings request
 	GetProjectSettings(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -727,6 +732,30 @@ func (c *Client) PushProjectWithBody(ctx context.Context, slug string, contentTy
 
 func (c *Client) PushProject(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPushProjectRequest(c.Server, slug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResolveConflictWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveConflictRequestWithBody(c.Server, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResolveConflict(ctx context.Context, slug string, body ResolveConflictJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveConflictRequest(c.Server, slug, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2262,6 +2291,53 @@ func NewPushProjectRequestWithBody(server string, slug string, contentType strin
 	return req, nil
 }
 
+// NewResolveConflictRequest calls the generic ResolveConflict builder with application/json body
+func NewResolveConflictRequest(server string, slug string, body ResolveConflictJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewResolveConflictRequestWithBody(server, slug, "application/json", bodyReader)
+}
+
+// NewResolveConflictRequestWithBody generates requests for ResolveConflict with any type of body
+func NewResolveConflictRequestWithBody(server string, slug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/resolve-conflict", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetProjectSettingsRequest generates requests for GetProjectSettings
 func NewGetProjectSettingsRequest(server string, slug string) (*http.Request, error) {
 	var err error
@@ -3608,6 +3684,11 @@ type ClientWithResponsesInterface interface {
 
 	PushProjectWithResponse(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*PushProjectResponse, error)
 
+	// ResolveConflictWithBodyWithResponse request with any body
+	ResolveConflictWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResolveConflictResponse, error)
+
+	ResolveConflictWithResponse(ctx context.Context, slug string, body ResolveConflictJSONRequestBody, reqEditors ...RequestEditorFn) (*ResolveConflictResponse, error)
+
 	// GetProjectSettingsWithResponse request
 	GetProjectSettingsWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetProjectSettingsResponse, error)
 
@@ -4347,6 +4428,7 @@ type PushProjectResponse struct {
 	JSON200      *PushResult
 	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
+	JSON409      *SyncConflictResponse
 	JSON500      *ErrorResponse
 }
 
@@ -4360,6 +4442,33 @@ func (r PushProjectResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PushProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ResolveConflictResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Agent
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON412      *SkillsMissingResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ResolveConflictResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResolveConflictResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5281,6 +5390,23 @@ func (c *ClientWithResponses) PushProjectWithResponse(ctx context.Context, slug 
 		return nil, err
 	}
 	return ParsePushProjectResponse(rsp)
+}
+
+// ResolveConflictWithBodyWithResponse request with arbitrary body returning *ResolveConflictResponse
+func (c *ClientWithResponses) ResolveConflictWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResolveConflictResponse, error) {
+	rsp, err := c.ResolveConflictWithBody(ctx, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveConflictResponse(rsp)
+}
+
+func (c *ClientWithResponses) ResolveConflictWithResponse(ctx context.Context, slug string, body ResolveConflictJSONRequestBody, reqEditors ...RequestEditorFn) (*ResolveConflictResponse, error) {
+	rsp, err := c.ResolveConflict(ctx, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveConflictResponse(rsp)
 }
 
 // GetProjectSettingsWithResponse request returning *GetProjectSettingsResponse
@@ -6649,6 +6775,74 @@ func ParsePushProjectResponse(rsp *http.Response) (*PushProjectResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest SyncConflictResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResolveConflictResponse parses an HTTP response from a ResolveConflictWithResponse call
+func ParseResolveConflictResponse(rsp *http.Response) (*ResolveConflictResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResolveConflictResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest SkillsMissingResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

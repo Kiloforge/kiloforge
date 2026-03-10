@@ -741,6 +741,9 @@ type SkillUpdateConflict struct {
 // SkillUpdateRequest defines model for SkillUpdateRequest.
 type SkillUpdateRequest struct {
 	Force *bool `json:"force,omitempty"`
+
+	// ProjectSlug When provided, install skills locally into the project's .claude/skills/ directory instead of the global directory.
+	ProjectSlug *string `json:"project_slug,omitempty"`
 }
 
 // SkillUpdateResponse defines model for SkillUpdateResponse.

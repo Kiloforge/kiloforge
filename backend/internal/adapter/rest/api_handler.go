@@ -1232,7 +1232,15 @@ func (h *APIHandler) UpdateSkills(_ context.Context, req gen.UpdateSkillsRequest
 		return gen.UpdateSkills400JSONResponse{Error: "not initialized"}, nil
 	}
 
+	// Determine install directory: local (per-project) or global.
 	skillsDir := h.cfg.GetSkillsDir()
+	if req.Body != nil && req.Body.ProjectSlug != nil && *req.Body.ProjectSlug != "" {
+		proj, ok := h.findProject(*req.Body.ProjectSlug)
+		if !ok {
+			return gen.UpdateSkills400JSONResponse{Error: fmt.Sprintf("project not found: %s", *req.Body.ProjectSlug)}, nil
+		}
+		skillsDir = filepath.Join(proj.ProjectDir, ".claude", "skills")
+	}
 
 	// When no repo is configured, re-extract from embedded assets.
 	if h.cfg.SkillsRepo == "" {

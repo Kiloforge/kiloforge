@@ -2570,6 +2570,9 @@ components:
         force:
           type: boolean
           default: false
+        project_slug:
+          type: string
+          description: When provided, install skills locally into the project's .claude/skills/ directory instead of the global directory.
 
     SkillUpdateResponse:
       type: object

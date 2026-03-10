@@ -1348,6 +1348,65 @@ func TestUpdateSkills_NilCfg(t *testing.T) {
 	}
 }
 
+func TestUpdateSkills_LocalInstall(t *testing.T) {
+	t.Parallel()
+	projectDir := t.TempDir()
+	slug := "test-proj"
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		Projects: &stubProjectLister{projects: []domain.Project{{Slug: slug, ProjectDir: projectDir}}},
+		Cfg:      &config.Config{}, // no SkillsRepo → embedded install path
+		SSEClients: func() int { return 0 },
+	})
+
+	body := gen.SkillUpdateRequest{ProjectSlug: &slug}
+	resp, err := h.UpdateSkills(context.Background(), gen.UpdateSkillsRequestObject{Body: &body})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.UpdateSkills200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.InstalledCount == 0 {
+		t.Error("expected at least 1 skill installed")
+	}
+
+	// Verify skills were installed to the project's local dir, not global.
+	localSkillsDir := filepath.Join(projectDir, ".claude", "skills")
+	entries, err := os.ReadDir(localSkillsDir)
+	if err != nil {
+		t.Fatalf("failed to read local skills dir: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Error("expected skills in local dir")
+	}
+}
+
+func TestUpdateSkills_LocalInstall_ProjectNotFound(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		Projects: &stubProjectLister{},
+		Cfg:      &config.Config{},
+		SSEClients: func() int { return 0 },
+	})
+
+	slug := "nonexistent"
+	body := gen.SkillUpdateRequest{ProjectSlug: &slug}
+	resp, err := h.UpdateSkills(context.Background(), gen.UpdateSkillsRequestObject{Body: &body})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.UpdateSkills400JSONResponse); !ok {
+		t.Fatalf("expected 400 for unknown project, got %T", resp)
+	}
+}
+
 // --- DeleteTrack without project (cross-project scan) ---
 
 func TestDeleteTrack_NilProject_ScanAllProjects(t *testing.T) {
