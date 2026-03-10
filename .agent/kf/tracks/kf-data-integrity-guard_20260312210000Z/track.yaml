@@ -1,23 +1,23 @@
 id: kf-data-integrity-guard_20260312210000Z
-title: "Add data integrity guard skill for all Kiloforge agents"
+title: Add data integrity guard skill for all Kiloforge agents
 type: chore
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
-  summary: "Create a shared kf-data-guardian skill that all Kiloforge agents (except kf-repair) embed to detect data corruption and alert users to consult /kf-repair."
+  summary: Create a shared kf-data-guardian skill that all Kiloforge agents (except kf-repair) embed to detect data corruption and alert users to consult /kf-repair.
   context: |
     Kiloforge uses structured YAML files (tracks.yaml, deps.yaml, conflicts.yaml, config.yaml,
     compactions.yaml) and per-track directories as its data system. Currently, corruption can occur
     from interrupted merges, killed agents, concurrent writes, or manual edits — but only kf-repair
     has comprehensive detection. Other agents (kf-architect, kf-developer, kf-status, etc.) may
     silently proceed on corrupt data, producing cascading errors.
-
+    
     The user wants a defensive layer: every kf-* agent (except kf-repair itself) should detect
     corruption heuristics during normal operation and immediately alert the user to run /kf-repair.
   codebase_analysis: |
     Key findings from research:
-
+    
     1. **31 skills exist** in ~/.claude/skills/, 22 are kf-* prefixed
     2. **kf-repair** has an 8-dimension integrity audit (registry, directories, deps, conflicts,
        worktrees, config, merge lock, cross-references) — this is the comprehensive fix tool
@@ -29,31 +29,31 @@ spec:
        status contradictions, dependency cycles, stale references to non-existent tracks
     7. **kf-track CLI** is the primary interface — CLI errors often indicate underlying corruption
     8. **Skills are markdown files** at ~/.claude/skills/{name}/SKILL.md with YAML frontmatter
-
+    
     Implementation approach: Create a new skill that is NOT invoked directly but is referenced by
     other skills as a behavioral directive. Each kf-* skill's instructions would include a
     "Data Integrity Guard" section (or reference to the guardian skill) that tells agents what
     corruption signals to watch for and how to respond.
-
+    
     Two implementation paths:
     A) Create a standalone SKILL.md that other skills reference — agents would need to read it
     B) Create a reusable text snippet that gets embedded into each kf-* skill's instructions
-
+    
     Path A is cleaner (single source of truth, one file to update) but requires agents to read
     an extra file. Path B duplicates content but is self-contained per skill.
-
+    
     **Recommendation: Path A** — create ~/.claude/skills/kf-data-guardian/SKILL.md as a reference
     document, then add a short "Data Integrity" section to each kf-* skill that says:
     "Before proceeding, check for corruption signals. If detected, HALT and direct user to /kf-repair.
     See ~/.claude/skills/kf-data-guardian/SKILL.md for the full list of heuristics."
   acceptance_criteria:
-    - "New skill file exists at ~/.claude/skills/kf-data-guardian/SKILL.md"
-    - "Skill defines corruption detection heuristics covering: YAML parse failures, missing track directories, orphan registry entries, status contradictions, dependency cycles, stale references"
-    - "Skill instructs agents to HALT immediately on suspected corruption and alert the user"
-    - "Skill directs users to run /kf-repair for diagnosis and remediation"
-    - "Skill explicitly excludes kf-repair from its scope (kf-repair is the fixer, not the guard)"
-    - "All kf-* skills (except kf-repair) are updated with a short Data Integrity section referencing the guardian"
-    - "The guardian skill is NOT user-invocable — it is a reference document for other agents"
+    - New skill file exists at ~/.claude/skills/kf-data-guardian/SKILL.md
+    - Skill defines corruption detection heuristics covering: YAML parse failures, missing track directories, orphan registry entries, status contradictions, dependency cycles, stale references
+    - Skill instructs agents to HALT immediately on suspected corruption and alert the user
+    - Skill directs users to run /kf-repair for diagnosis and remediation
+    - Skill explicitly excludes kf-repair from its scope (kf-repair is the fixer, not the guard)
+    - All kf-* skills (except kf-repair) are updated with a short Data Integrity section referencing the guardian
+    - The guardian skill is NOT user-invocable — it is a reference document for other agents
   out_of_scope: |
     - Modifying kf-repair itself
     - Automated repair (that's kf-repair's job)
@@ -73,62 +73,62 @@ spec:
        - Instruction to halt and alert user on detection
     3. The guardian skill frontmatter should NOT list it as user-invocable
 plan:
-  - phase: "Create Guardian Skill"
+  - phase: Create Guardian Skill
     tasks:
-      - text: "Create ~/.claude/skills/kf-data-guardian/SKILL.md with frontmatter, corruption heuristics, and response protocol"
-        done: false
-      - text: "Verify skill file is well-formed and covers all 6 data files (tracks.yaml, deps.yaml, conflicts.yaml, config.yaml, compactions.yaml, track directories)"
-        done: false
-  - phase: "Embed Guard in Core Workflow Skills"
+      - text: Create ~/.claude/skills/kf-data-guardian/SKILL.md with frontmatter, corruption heuristics, and response protocol
+        done: true
+      - text: Verify skill file is well-formed and covers all 6 data files (tracks.yaml, deps.yaml, conflicts.yaml, config.yaml, compactions.yaml, track directories)
+        done: true
+  - phase: Embed Guard in Core Workflow Skills
     tasks:
-      - text: "Add Data Integrity Guard section to kf-architect SKILL.md"
+      - text: Add Data Integrity Guard section to kf-architect SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-developer SKILL.md"
+      - text: Add Data Integrity Guard section to kf-developer SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-implement SKILL.md"
+      - text: Add Data Integrity Guard section to kf-implement SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-status SKILL.md"
+      - text: Add Data Integrity Guard section to kf-status SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-dispatch SKILL.md"
+      - text: Add Data Integrity Guard section to kf-dispatch SKILL.md
         done: false
-  - phase: "Embed Guard in Management Skills"
+  - phase: Embed Guard in Management Skills
     tasks:
-      - text: "Add Data Integrity Guard section to kf-manage SKILL.md"
+      - text: Add Data Integrity Guard section to kf-manage SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-bulk-archive SKILL.md"
+      - text: Add Data Integrity Guard section to kf-bulk-archive SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-compact-archive SKILL.md"
+      - text: Add Data Integrity Guard section to kf-compact-archive SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-revert SKILL.md"
+      - text: Add Data Integrity Guard section to kf-revert SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-validate SKILL.md"
+      - text: Add Data Integrity Guard section to kf-validate SKILL.md
         done: false
-  - phase: "Embed Guard in Review & Advisory Skills"
+  - phase: Embed Guard in Review & Advisory Skills
     tasks:
-      - text: "Add Data Integrity Guard section to kf-reviewer SKILL.md"
+      - text: Add Data Integrity Guard section to kf-reviewer SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-conflict-resolver SKILL.md"
+      - text: Add Data Integrity Guard section to kf-conflict-resolver SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-report SKILL.md"
+      - text: Add Data Integrity Guard section to kf-report SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-new-track SKILL.md"
+      - text: Add Data Integrity Guard section to kf-new-track SKILL.md
         done: false
-  - phase: "Embed Guard in Remaining Skills"
+  - phase: Embed Guard in Remaining Skills
     tasks:
-      - text: "Add Data Integrity Guard section to kf-setup SKILL.md"
+      - text: Add Data Integrity Guard section to kf-setup SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-getting-started SKILL.md"
+      - text: Add Data Integrity Guard section to kf-getting-started SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-parallel SKILL.md"
+      - text: Add Data Integrity Guard section to kf-parallel SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-advisor-product and kf-product-advisor SKILL.md"
+      - text: Add Data Integrity Guard section to kf-advisor-product and kf-product-advisor SKILL.md
         done: false
-      - text: "Add Data Integrity Guard section to kf-advisor-reliability and kf-reliability SKILL.md"
+      - text: Add Data Integrity Guard section to kf-advisor-reliability and kf-reliability SKILL.md
         done: false
-  - phase: "Verification"
+  - phase: Verification
     tasks:
-      - text: "Verify all kf-* skills (except kf-repair) have the Data Integrity Guard section"
+      - text: Verify all kf-* skills (except kf-repair) have the Data Integrity Guard section
         done: false
-      - text: "Verify kf-repair does NOT have the guard section"
+      - text: Verify kf-repair does NOT have the guard section
         done: false
 extra: {}
