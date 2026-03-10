@@ -31,6 +31,7 @@ branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discu
 build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+cli-error-ux-be_20260310073722Z: {"title":"CLI error UX — actionable messages and prerequisite guidance","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 consent-dialog-copy_20260310060000Z: {"title":"Update consent dialog to reference 'Dangerously bypass permissions'","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 create-project-be_20260310150000Z: {"title":"Support creating projects without a remote URL","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
@@ -122,7 +123,9 @@ interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Da
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+kf-repair-skill_20260311060000Z: {"title":"System repair agent skill — KF health auditing, diagnostics, and auto-repair","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+kiloforger-branding_20260310073720Z: {"title":"Kiloforger branding — name the human user across CLI and dashboard","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 list-pagination-be_20260310200000Z: {"title":"Cursor pagination and filtering for all list API endpoints","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 list-pagination-fe_20260310200001Z: {"title":"Paginated lists with +N overflow in dashboard","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
@@ -133,10 +136,11 @@ merge-lock-hardening-be_20260310220000Z: {"title":"Harden merge lock manager —
 merge-lock-skill-consolidation_20260310220001Z: {"title":"Consolidate merge lock protocol into shared kf-merge-lock helper","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 minimizable-terminals_20260310070000Z: {"title":"Minimizable agent terminals with activity notifications","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-model-warning-banner_20260310072515Z: {"title":"One-time model compatibility warning banner on first dashboard load","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+model-warning-banner_20260310072515Z: {"title":"One-time model compatibility warning banner on first dashboard load","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+onboarding-ux-fe_20260310073721Z: {"title":"Progressive onboarding UX — ease beginners in, empower power users","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
