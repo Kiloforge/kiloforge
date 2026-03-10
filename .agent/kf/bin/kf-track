@@ -1870,6 +1870,10 @@ cmd_status() {
     total_tasks_all=$((total_tasks_all + active_task_total[i]))
   done
 
+  # --- Claim detection for status display ---
+  local claimed_cache=""
+  claimed_cache=$(get_claimed_tracks 2>/dev/null || true)
+
   # --- Progress bar helper ---
   _progress_bar() {
     local done=$1 total=$2 width=20
@@ -1931,6 +1935,19 @@ cmd_status() {
       if [[ "${active_statuses[$idx]}" == "in-progress" ]]; then
         echo "CLAIMED"
       elif [[ "${active_statuses[$idx]}" == "pending" ]]; then
+        # Check if claimed via branch detection
+        local tid="${active_ids[$idx]}"
+        if [[ -n "$claimed_cache" ]]; then
+          local claimer=""
+          claimer=$(echo "$claimed_cache" | awk -F'\t' -v id="$tid" '$1 == id {print $2; exit}')
+          if [[ -n "$claimer" ]]; then
+            echo "CLAIMED"
+            return
+          elif echo "$claimed_cache" | awk -F'\t' -v id="$tid" '$1 == id {found=1; exit} END{exit !found}' 2>/dev/null; then
+            echo "CLAIMED"
+            return
+          fi
+        fi
         # Check if in ready list
         local is_ready=false
         for rid in "${ready_ids[@]}"; do
@@ -1974,10 +1991,11 @@ cmd_status() {
   echo "--------------------------------------------------------------------------------"
   echo ""
 
-  local has_in_progress=false
+  local has_claimed=false
+  # Show in-progress tracks
   for i in "${!active_ids[@]}"; do
     [[ "${active_statuses[$i]}" != "in-progress" ]] && continue
-    has_in_progress=true
+    has_claimed=true
     printf "Claimed: %s\n" "${active_ids[$i]}"
     printf "  Title: %s\n" "${active_titles[$i]}"
     printf "  Progress: %d/%d tasks, %d/%d phases\n" \
@@ -1988,8 +2006,30 @@ cmd_status() {
     fi
     echo ""
   done
+  # Show branch-claimed pending tracks
+  for i in "${!active_ids[@]}"; do
+    [[ "${active_statuses[$i]}" != "pending" ]] && continue
+    local tid="${active_ids[$i]}"
+    [[ -z "$claimed_cache" ]] && continue
+    local claimer=""
+    claimer=$(echo "$claimed_cache" | awk -F'\t' -v id="$tid" '$1 == id {print $2; exit}')
+    if [[ -n "$claimer" ]] || echo "$claimed_cache" | awk -F'\t' -v id="$tid" '$1 == id {found=1; exit} END{exit !found}' 2>/dev/null; then
+      has_claimed=true
+      local worker_info=""
+      [[ -n "$claimer" ]] && worker_info=" (by ${claimer})"
+      printf "Claimed%s: %s\n" "$worker_info" "${active_ids[$i]}"
+      printf "  Title: %s\n" "${active_titles[$i]}"
+      printf "  Progress: %d/%d tasks, %d/%d phases\n" \
+        "${active_task_done[$i]}" "${active_task_total[$i]}" \
+        "${active_phase_done[$i]}" "${active_phase_total[$i]}"
+      if [[ -n "${active_next_task[$i]}" ]]; then
+        printf "  Next: %s\n" "${active_next_task[$i]}"
+      fi
+      echo ""
+    fi
+  done
 
-  if [[ "$has_in_progress" == false ]]; then
+  if [[ "$has_claimed" == false ]]; then
     echo "No tracks currently in-progress."
     echo ""
   fi
@@ -1999,17 +2039,26 @@ cmd_status() {
   echo "                            READY TO START"
   echo "--------------------------------------------------------------------------------"
   echo ""
+  local has_ready=false
   if [[ "${#ready_ids[@]}" -gt 0 ]]; then
     for rid in "${ready_ids[@]}"; do
+      # Skip claimed tracks
+      if [[ -n "$claimed_cache" ]]; then
+        if echo "$claimed_cache" | awk -F'\t' -v id="$rid" '$1 == id {found=1; exit} END{exit !found}' 2>/dev/null; then
+          continue
+        fi
+      fi
       for i in "${!active_ids[@]}"; do
         if [[ "${active_ids[$i]}" == "$rid" ]]; then
           printf "  %s — %s\n" "$rid" "${active_titles[$i]}"
+          has_ready=true
           break
         fi
       done
     done
-  else
-    echo "  (none — all pending tracks have unmet dependencies)"
+  fi
+  if [[ "$has_ready" == false ]]; then
+    echo "  (none — all ready tracks are claimed or have unmet dependencies)"
   fi
   echo ""
 
