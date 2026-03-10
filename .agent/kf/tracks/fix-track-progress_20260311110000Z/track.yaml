@@ -1,9 +1,9 @@
 id: fix-track-progress_20260311110000Z
-title: "Fix track progress — count archived as finalized"
+title: Fix track progress — count archived as finalized
 type: bug
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Add track progress to CLI status command and fix dashboard to show
@@ -24,20 +24,20 @@ spec:
       which provides quota and agent services.
     - `internal/adapter/rest/api_handler.go`: `GetProjectMetadata()` calls
       `kfClient.GetTrackSummary()` and passes all fields through.
-
+    
     **Frontend:**
     - `types/api.ts`: `TrackSummary` interface matches backend struct.
     - `components/ProjectMetadataView.tsx`: Displays Total, Completed,
       In Progress, Pending as separate items. Archived shown conditionally
       when > 0. No combined "done" count.
-
+    
     **No API change needed** — TrackSummary already returns both completed
     and archived; frontend/CLI just need to sum them.
   acceptance_criteria:
-    - "CLI `kf status` shows track progress line: Tracks X/Y done (Z pending, W in-progress) where done = completed + archived"
-    - "Dashboard ProjectMetadataView shows Done count (completed + archived) as the primary completion metric"
-    - "Dashboard still shows breakdown (pending, in-progress) as secondary stats"
-    - "Archived tracks no longer shown as a separate confusing counter"
+    - CLI `kf status` shows track progress line: Tracks X/Y done (Z pending, W in-progress) where done = completed + archived
+    - Dashboard ProjectMetadataView shows Done count (completed + archived) as the primary completion metric
+    - Dashboard still shows breakdown (pending, in-progress) as secondary stats
+    - Archived tracks no longer shown as a separate confusing counter
   out_of_scope: |
     - Backend API changes (TrackSummary struct is fine as-is)
     - Progress bars or percentage calculations
@@ -48,7 +48,7 @@ spec:
       current project directory and call GetTrackSummary()
     - Print: "Tracks:      X/Y done (Z pending, W in-progress)"
     - If no tracks found or error, skip the section gracefully
-
+    
     Frontend approach:
     - In ProjectMetadataView, compute done = summary.completed + summary.archived
     - Show "Done" with the combined count, "In Progress", "Pending"
@@ -56,26 +56,26 @@ spec:
 plan:
   - phase: CLI track progress
     tasks:
-      - text: "Add kf.Client creation in runStatus() to fetch track summary; print Tracks X/Y done (Z pending, W in-progress) where done = completed + archived"
-        done: false
-      - text: "Handle gracefully when project dir not found or no tracks exist (skip section)"
-        done: false
+      - text: Add kf.Client creation in runStatus() to fetch track summary; print Tracks X/Y done (Z pending, W in-progress) where done = completed + archived
+        done: true
+      - text: Handle gracefully when project dir not found or no tracks exist (skip section)
+        done: true
   - phase: Frontend progress fix
     tasks:
-      - text: "In ProjectMetadataView, replace separate Completed/Archived counters with single Done stat (completed + archived); keep Pending and In Progress as secondary"
-        done: false
-      - text: "Remove conditional archived display; ensure Done is visually prominent as primary progress metric"
-        done: false
+      - text: In ProjectMetadataView, replace separate Completed/Archived counters with single Done stat (completed + archived); keep Pending and In Progress as secondary
+        done: true
+      - text: Remove conditional archived display; ensure Done is visually prominent as primary progress metric
+        done: true
   - phase: Tests
     tasks:
-      - text: "Add Go test for track summary display logic with mixed completed/archived/pending tracks"
-        done: false
-      - text: "Add frontend test for ProjectMetadataView rendering combined done count"
-        done: false
+      - text: Add Go test for track summary display logic with mixed completed/archived/pending tracks
+        done: true
+      - text: Add frontend test for ProjectMetadataView rendering combined done count
+        done: true
   - phase: Verification
     tasks:
-      - text: "Verify make test passes"
-        done: false
-      - text: "Verify make build passes"
-        done: false
+      - text: Verify make test passes
+        done: true
+      - text: Verify make build passes
+        done: true
 extra: {}
