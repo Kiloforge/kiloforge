@@ -40,4 +40,15 @@ analytics-fe_20260310060645Z:
 
 create-project-fe_20260310150001Z:
   - create-project-be_20260310150000Z
-queue-project-scope-fe_20260310050001Z:
+
+draggable-resizable-windows_20260310062703Z: []
+
+getting-started-skill_20260310055656Z: []
+
+keyboard-tiling_20260310062705Z:
+  - multi-window-agents_20260310062704Z
+
+multi-window-agents_20260310062704Z:
+  - draggable-resizable-windows_20260310062703Z
+
+queue-project-scope-fe_20260310050001Z: []

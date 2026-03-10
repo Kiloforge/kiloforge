@@ -1,0 +1,105 @@
+id: draggable-resizable-windows_20260310062703Z
+title: "Draggable and resizable agent terminal windows"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Convert the AgentTerminal modal from a fixed centered overlay into a
+    draggable, resizable floating window with title bar drag handle, edge
+    resize handles, and proper boundary constraints.
+  context: |
+    Agent interaction modals (AgentTerminal, LogViewer) are currently fixed
+    centered overlays at z-index 100 with a backdrop. Users cannot reposition
+    or resize them, which limits productivity when working with agent output
+    alongside the dashboard. This track converts AgentTerminal into a floating
+    window that can be dragged by its title bar and resized from edges/corners.
+  codebase_analysis: |
+    **Current modal architecture:**
+    - AgentTerminal.tsx: fixed overlay, max-width 720px, width 90%, height 80vh
+    - AgentTerminal.module.css: overlay with rgba backdrop, z-index 100
+    - Backdrop click closes the modal (e.stopPropagation pattern)
+    - No external UI libraries — all custom React + CSS Modules
+
+    **Key files to modify:**
+    - frontend/src/components/AgentTerminal.tsx — main terminal component
+    - frontend/src/components/AgentTerminal.module.css — overlay/panel styles
+    - frontend/src/pages/App.tsx — modal state management
+
+    **Design system:**
+    - CSS variables: --bg-surface-elevated, --border, --accent, --radius-lg
+    - Transitions: --transition-default
+    - Font: --font-mono for terminal content
+    - No Tailwind — pure CSS Modules
+
+    **No drag/resize libraries exist in the project.** Implement with native
+    pointer events (pointerdown/pointermove/pointerup) for zero-dependency
+    drag and resize. This avoids adding external deps to a custom-built UI.
+  acceptance_criteria:
+    - AgentTerminal can be dragged by its header/title bar area
+    - AgentTerminal can be resized from all 4 edges and 4 corners
+    - Minimum size enforced (400px width, 300px height)
+    - Window stays within viewport bounds during drag
+    - Resize cursors shown on hover (n-resize, e-resize, nw-resize, etc.)
+    - Default position is centered (matching current behavior)
+    - Window position and size reset on close/reopen
+    - Backdrop is removed (floating window, not modal overlay)
+    - Click anywhere on the window brings it to front (z-index management)
+    - Terminal content area remains scrollable during drag/resize
+    - Header shows agent name, role badge, status indicator (unchanged)
+    - Close button still works, ESC key still closes
+  out_of_scope: |
+    - Multiple simultaneous windows (Track 2)
+    - Keyboard shortcuts for tiling (Track 3)
+    - LogViewer conversion (can be done later, same pattern)
+    - Persisting window position across sessions
+    - Snapping to edges or other windows
+  technical_notes: |
+    Implementation approach: custom useFloatingWindow hook with pointer events.
+
+    The hook manages: { x, y, width, height, isDragging, isResizing, resizeEdge }
+    - Drag: pointerdown on header → track delta, update x/y on pointermove
+    - Resize: pointerdown on edge zones (8px border) → track delta, update width/height
+    - Boundary clamping: Math.max/min to keep within window.innerWidth/innerHeight
+    - Z-index: managed via a simple counter (each focus increments)
+
+    Remove the overlay/backdrop div. The AgentTerminal becomes a position:fixed
+    div with explicit top/left/width/height from the hook state. The header div
+    gets cursor:grab (cursor:grabbing while dragging).
+
+    Resize edge detection: invisible 8px border zones around the panel. On
+    pointerdown, determine which edge(s) based on pointer position relative
+    to panel bounds. Set appropriate cursor and resize direction.
+plan:
+  - phase: "Foundation — useFloatingWindow hook"
+    tasks:
+      - text: "Create useFloatingWindow hook with position/size state, drag handlers (pointerdown/move/up on header), and viewport boundary clamping"
+        done: false
+      - text: "Add resize handlers — detect edge zones (8px border), track resize direction, update width/height with min-size constraints (400x300)"
+        done: false
+      - text: "Add z-index focus management — incrementing counter, bringToFront() callback on pointerdown anywhere on window"
+        done: false
+  - phase: "AgentTerminal conversion"
+    tasks:
+      - text: "Refactor AgentTerminal.tsx — remove overlay/backdrop wrapper, use position:fixed with top/left/width/height from hook, wire drag handlers to header"
+        done: false
+      - text: "Update AgentTerminal.module.css — remove overlay styles, add floating window styles (box-shadow, border), resize cursor zones, grab cursor on header"
+        done: false
+      - text: "Update App.tsx — remove backdrop click-to-close logic, ensure terminal renders without overlay container"
+        done: false
+  - phase: "Polish and edge cases"
+    tasks:
+      - text: "Handle viewport resize — clamp window position if viewport shrinks below window bounds"
+        done: false
+      - text: "Ensure text selection works inside terminal content area without triggering drag, and scrolling works during resize"
+        done: false
+      - text: "Verify ESC-to-close, close button, and connection status indicator still work correctly"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify `make build-frontend` succeeds with no TypeScript errors"
+        done: false
+      - text: "Manual test: drag from header, resize from all edges/corners, min-size enforcement, viewport boundary clamping"
+        done: false
+extra: {}

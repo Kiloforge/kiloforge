@@ -1,0 +1,108 @@
+id: multi-window-agents_20260310062704Z
+title: "Multi-window agent terminals — simultaneous agent interactions"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Allow multiple AgentTerminal windows to be open simultaneously, each with
+    independent WebSocket connections, z-index stacking, and focus management.
+  context: |
+    Currently App.tsx manages a single terminalAgentId and adminAgentId, allowing
+    only one agent terminal at a time. With agents running concurrently (the
+    backend already supports this), users need to monitor and interact with
+    multiple agents simultaneously. This track converts the single-modal state
+    to a multi-window manager.
+  codebase_analysis: |
+    **Current state management (App.tsx):**
+    - `terminalAgentId: string | null` — single terminal
+    - `adminAgentId: string | null` — single admin terminal
+    - `logAgentId: string | null` — single log viewer
+    - AgentCard "Attach" button sets terminalAgentId, replacing any open terminal
+
+    **WebSocket architecture:**
+    - useAgentWebSocket hook: one WebSocket per agent, auto-reconnect
+    - Each AgentTerminal instance creates its own WebSocket connection
+    - No shared message bus — each terminal manages its own messages state
+
+    **Key files to modify:**
+    - frontend/src/pages/App.tsx — convert single ID state to Set/Map
+    - frontend/src/components/AgentCard.tsx — "Attach" opens new window vs replaces
+    - frontend/src/components/AgentTerminal.tsx — ensure independent instances work
+    - frontend/src/hooks/useAgentWebSocket.ts — verify multiple instances OK
+
+    **After Track 1:** AgentTerminal will be a floating window with drag/resize.
+    This track adds the ability to have N of them open at once.
+  acceptance_criteria:
+    - Multiple AgentTerminal windows can be open simultaneously
+    - Each window has independent WebSocket connection and message state
+    - "Attach" button on AgentCard opens a new window (or focuses existing one for same agent)
+    - Clicking a window brings it to front (z-index stacking order)
+    - Each window can be independently dragged, resized, and closed
+    - New windows open with slight offset from previous (cascade positioning)
+    - Active window count shown somewhere in the UI (e.g., header or status bar)
+    - Performance remains acceptable with 4+ open terminals
+    - Closing a window disconnects only that agent's WebSocket
+    - Windows do not interfere with each other's scroll position or input focus
+  out_of_scope: |
+    - Keyboard shortcuts for tiling/arrangement (Track 3)
+    - Tab-based interface as alternative to floating windows
+    - Persisting open windows across page refreshes
+    - Window minimize/maximize (Track 3)
+    - LogViewer multi-window support (future)
+  technical_notes: |
+    State change in App.tsx:
+    ```
+    // Before (single)
+    terminalAgentId: string | null
+
+    // After (multi)
+    openTerminals: Map<string, { agentId: string, zIndex: number }>
+    ```
+
+    Window manager responsibilities:
+    - Track open windows by ID (use agentId as key — one window per agent)
+    - Assign z-index on open, update on focus
+    - Cascade positioning: each new window offset +30px right, +30px down from last
+    - Wrap cascade after 5 windows (reset to origin + small offset)
+
+    AgentCard "Attach" logic:
+    - If window for this agent already open → bring to front
+    - If not → open new window at cascade position
+
+    useAgentWebSocket is already per-instance (hook with agentId param), so
+    multiple AgentTerminal instances will each create their own connection.
+    Verify no shared state leaks between instances.
+plan:
+  - phase: "Window manager state"
+    tasks:
+      - text: "Create useWindowManager hook — manages Map of open windows (agentId → {zIndex, position}), provides open/close/focus/getWindows methods"
+        done: false
+      - text: "Implement cascade positioning — each new window offset +30px from last, wrap after 5 windows"
+        done: false
+      - text: "Integrate useWindowManager into App.tsx — replace single terminalAgentId/adminAgentId with window manager"
+        done: false
+  - phase: "Multi-terminal rendering"
+    tasks:
+      - text: "Render multiple AgentTerminal instances from window manager state — each with independent props (agentId, position, zIndex)"
+        done: false
+      - text: "Update AgentCard 'Attach' button — open new window or focus existing, remove replace-current behavior"
+        done: false
+      - text: "Verify useAgentWebSocket works correctly with multiple simultaneous instances — no shared state leaks, independent reconnection"
+        done: false
+  - phase: "UX polish"
+    tasks:
+      - text: "Add open window count indicator to the UI (header bar or floating badge)"
+        done: false
+      - text: "Handle agent completion/failure — auto-update window header status, optionally auto-close after delay"
+        done: false
+      - text: "Ensure independent scroll positions and input focus per window — clicking input in one window doesn't affect others"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify `make build-frontend` succeeds with no TypeScript errors"
+        done: false
+      - text: "Manual test: open 4+ terminals, verify independent drag/resize/scroll/input, z-index stacking, cascade positioning"
+        done: false
+extra: {}
