@@ -1,5 +1,5 @@
 id: track-claim-api_20260310120000Z
-title: "Track claim API — server-side claim detection via scoped locks"
+title: Track claim API — server-side claim detection via scoped locks
 type: feature
 status: pending
 created: 2026-03-10
@@ -14,7 +14,7 @@ spec:
     they've already been claimed by other workers. The root cause is that
     track status in tracks.yaml stays "pending" until completion — there's no
     intermediate "claimed" state visible to other workers.
-
+    
     The orchestrator server already has:
     - General-purpose lock manager (adapter/lock/manager.go) with TTL, heartbeat,
       blocking acquire — currently used for merge locks via track:merge scope
@@ -22,7 +22,7 @@ spec:
       (never populated)
     - Agent Ref field tracking which git branch each agent is on
     - GET /api/projects/{slug}/branches endpoint listing worktree branches
-
+    
     This track adds a proper claim API so the server becomes the source of truth
     for track ownership.
   codebase_analysis: |
@@ -33,13 +33,13 @@ spec:
     - backend/internal/adapter/persistence/sqlite/board_store.go — Persistence layer
     - backend/internal/core/service/board_service.go — Service layer for board ops
     - backend/internal/adapter/rest/api_handler.go — REST handlers
-
+    
     Lock manager API:
     - Acquire(ctx, scope, holder, ttl) — scope will be "track:{trackId}"
     - Release(scope, holder)
     - Heartbeat(scope, holder, ttl)
     - List() — already returns all active locks
-
+    
     The lock manager persists to locks.json and is thread-safe with mutex.
     It supports waiter notification for blocking acquire.
   acceptance_criteria:
@@ -57,51 +57,51 @@ spec:
   technical_notes: |
     Approach: Reuse existing lock manager with scope pattern "track:{trackId}".
     The lock holder string is the agent/worker identifier.
-
+    
     Claim flow:
     1. POST /api/tracks/{trackId}/claim with holder ID and TTL
     2. Lock manager acquires "track:{trackId}" scope
     3. On success: update BoardCard.AssignedWorker via BoardService
     4. Return claim info (holder, expires_at)
-
+    
     Release flow:
     1. DELETE /api/tracks/{trackId}/claim with holder ID
     2. Lock manager releases "track:{trackId}" scope
     3. Clear BoardCard.AssignedWorker
-
+    
     TTL default: 120s with 30s heartbeat (same as merge lock).
     Crash recovery: lock auto-expires, assigned_worker cleared on next query.
 plan:
-  - phase: "Schema & Code Generation"
+  - phase: Schema & Code Generation
     tasks:
-      - text: "Add claim/release/heartbeat endpoint schemas to openapi.yaml with request/response models"
-        done: false
-      - text: "Run make gen-api to regenerate server interfaces and models"
-        done: false
-  - phase: "Service Layer"
+      - text: Add claim/release/heartbeat endpoint schemas to openapi.yaml with request/response models
+        done: true
+      - text: Run make gen-api to regenerate server interfaces and models
+        done: true
+  - phase: Service Layer
     tasks:
-      - text: "Write tests for ClaimTrack, ReleaseTrack, HeartbeatTrack service methods"
-        done: false
-      - text: "Implement ClaimTrack in BoardService using lock manager with track:{trackId} scope"
-        done: false
-      - text: "Implement ReleaseTrack — release lock and clear assigned_worker"
-        done: false
-      - text: "Implement HeartbeatTrack — extend claim TTL via lock heartbeat"
-        done: false
-      - text: "Add claim status enrichment to track listing (query active track:* locks)"
-        done: false
-  - phase: "REST Handlers"
+      - text: Write tests for ClaimTrack, ReleaseTrack, HeartbeatTrack service methods
+        done: true
+      - text: Implement ClaimTrack in BoardService using lock manager with track:{trackId} scope
+        done: true
+      - text: Implement ReleaseTrack — release lock and clear assigned_worker
+        done: true
+      - text: Implement HeartbeatTrack — extend claim TTL via lock heartbeat
+        done: true
+      - text: Add claim status enrichment to track listing (query active track:* locks)
+        done: true
+  - phase: REST Handlers
     tasks:
-      - text: "Write handler tests for claim/release/heartbeat endpoints"
-        done: false
-      - text: "Implement POST /api/tracks/{trackId}/claim handler"
-        done: false
-      - text: "Implement DELETE /api/tracks/{trackId}/claim handler"
-        done: false
-      - text: "Implement POST /api/tracks/{trackId}/claim/heartbeat handler"
-        done: false
-  - phase: "Verification"
+      - text: Write handler tests for claim/release/heartbeat endpoints
+        done: true
+      - text: Implement POST /api/tracks/{trackId}/claim handler
+        done: true
+      - text: Implement DELETE /api/tracks/{trackId}/claim handler
+        done: true
+      - text: Implement POST /api/tracks/{trackId}/claim/heartbeat handler
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run full test suite (make test) and verify all claim scenarios pass"
-        done: false
+      - text: Run full test suite (make test) and verify all claim scenarios pass
+        done: true
 extra: {}
