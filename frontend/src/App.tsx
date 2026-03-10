@@ -196,7 +196,10 @@ export default function App() {
       </main>
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
-      {terminalAgentId && <AgentTerminal agentId={terminalAgentId} onClose={handleCloseTerminal} />}
+      {terminalAgentId && (() => {
+        const agent = agents.find((a) => a.id === terminalAgentId);
+        return <AgentTerminal agentId={terminalAgentId} name={agent?.name} role={agent?.role} onClose={handleCloseTerminal} />;
+      })()}
       {showLauncher && (
         <AgentLauncher
           onLaunch={handleLaunch}

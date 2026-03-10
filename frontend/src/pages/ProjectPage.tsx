@@ -5,6 +5,7 @@ import type { Agent, SpawnInteractiveRequest } from "../types/api";
 import type { AgentRole } from "../components/AgentLauncher";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
+import { useAgents } from "../hooks/useAgents";
 import { useBoard } from "../hooks/useBoard";
 import { useTrackRelations } from "../hooks/useTrackRelations";
 import { useOriginSync } from "../hooks/useOriginSync";
@@ -38,6 +39,7 @@ export function ProjectPage() {
   const { dependencies, conflicts } = useTrackRelations(boardTrackIds, slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
+  const { agents } = useAgents();
 
   const queryClient = useQueryClient();
   const [showLauncher, setShowLauncher] = useState(false);
@@ -325,9 +327,10 @@ export function ProjectPage() {
         )}
       </section>
 
-      {terminalAgentId && (
-        <AgentTerminal agentId={terminalAgentId} onClose={handleTerminalClose} />
-      )}
+      {terminalAgentId && (() => {
+        const agent = agents.find((a) => a.id === terminalAgentId);
+        return <AgentTerminal agentId={terminalAgentId} name={agent?.name} role={agent?.role} onClose={handleTerminalClose} />;
+      })()}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Admin Operations</h2>
@@ -350,9 +353,10 @@ export function ProjectPage() {
         />
       </section>
 
-      {adminAgentId && (
-        <AgentTerminal agentId={adminAgentId} onClose={handleAdminTerminalClose} />
-      )}
+      {adminAgentId && (() => {
+        const agent = agents.find((a) => a.id === adminAgentId);
+        return <AgentTerminal agentId={adminAgentId} name={agent?.name} role={agent?.role} onClose={handleAdminTerminalClose} />;
+      })()}
 
       {showLauncher && (
         <AgentLauncher

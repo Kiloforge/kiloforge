@@ -45,10 +45,11 @@
   color: var(--text);
 }
 
-.agentId {
+.agentIdSecondary {
   font-family: inherit;
-  font-size: 12px;
-  color: var(--accent);
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.7;
 }
 
 .roleBadge {
