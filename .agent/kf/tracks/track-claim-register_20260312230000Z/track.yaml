@@ -135,11 +135,11 @@ plan:
   - phase: Skill Integration
     tasks:
       - text: Update kf-developer SKILL.md Step 5 to call kf-track-content claim after branch creation
-        done: false
+        done: true
       - text: Update kf-architect SKILL.md Step 10 to call kf-track-content register after track creation
-        done: false
+        done: true
       - text: Document the claim/register records in both skills (what they store, how to use for restoration)
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Test kf-track-content claim writes correct YAML structure to extra.claim
