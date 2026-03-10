@@ -58,6 +58,11 @@ github-repo-migration_20260311080001Z:
 
 hide-advisor-hub-fe_20260312000100Z: []
 
+interactive-only-launcher-fe_20260313000001Z:
+  - kf-interactive-skill-be_20260313000000Z
+
+kf-interactive-skill-be_20260313000000Z: []
+
 onboarding-ux-fe_20260310073721Z: []
 
 quota-gauges-be_20260310092417Z: []
