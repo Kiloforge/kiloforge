@@ -366,8 +366,14 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 		return gen.SpawnInteractiveAgent403JSONResponse{Error: msg}, nil
 	}
 
-	// Validate required skills for interactive agents.
-	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
+	// Determine role — default to "interactive" for backwards compatibility.
+	role := "interactive"
+	if req.Body != nil && req.Body.Role != nil {
+		role = string(*req.Body.Role)
+	}
+
+	// Validate required skills for the role.
+	if resp := h.checkSkillsForRole(role, ""); resp != nil {
 		return gen.SpawnInteractiveAgent412JSONResponse(*resp), nil
 	}
 
@@ -381,7 +387,21 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 		}
 	}
 
-	opts := agent.SpawnInteractiveOpts{}
+	// Build prompt with skill command prefix if the role has one.
+	var fullPrompt string
+	if req.Body != nil && req.Body.Prompt != nil && *req.Body.Prompt != "" {
+		if cmd := skills.SkillCommandForRole(role); cmd != "" {
+			fullPrompt = cmd + " " + *req.Body.Prompt
+		} else {
+			fullPrompt = *req.Body.Prompt
+		}
+	} else if cmd := skills.SkillCommandForRole(role); cmd != "" {
+		fullPrompt = cmd
+	}
+
+	opts := agent.SpawnInteractiveOpts{
+		Ref: role,
+	}
 	if req.Body != nil {
 		if req.Body.WorkDir != nil {
 			opts.WorkDir = *req.Body.WorkDir
@@ -389,6 +409,9 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 		if req.Body.Model != nil {
 			opts.Model = *req.Body.Model
 		}
+	}
+	if fullPrompt != "" {
+		opts.Prompt = fullPrompt
 	}
 
 	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
@@ -1564,8 +1587,8 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		return gen.GenerateTracks403JSONResponse{Error: msg}, nil
 	}
 
-	// Validate required skills for track generation.
-	if resp := h.checkSkillsForRole("interactive", ""); resp != nil {
+	// Validate required skills for architect role.
+	if resp := h.checkSkillsForRole("architect", ""); resp != nil {
 		return gen.GenerateTracks412JSONResponse(*resp), nil
 	}
 
@@ -1595,7 +1618,9 @@ func (h *APIHandler) GenerateTracks(ctx context.Context, req gen.GenerateTracksR
 		}, nil
 	}
 
-	fullPrompt := fmt.Sprintf("/kf-architect I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
+	// Use architect role dispatch for prompt construction.
+	trackPrompt := fmt.Sprintf("I would like to generate one or more tracks and the specifications are the following: %s", req.Body.Prompt)
+	fullPrompt := skills.SkillCommandForRole("architect") + " " + trackPrompt
 
 	opts := agent.SpawnInteractiveOpts{
 		WorkDir: workDir,
