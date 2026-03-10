@@ -175,3 +175,30 @@
   background: rgba(232, 148, 74, 0.15);
   color: var(--orange);
 }
+
+@media (max-width: 639px) {
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+  }
+
+  .table tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table td {
+    padding: 2px 0;
+    border: none;
+  }
+
+  .rowActions {
+    margin-top: 6px;
+  }
+}
