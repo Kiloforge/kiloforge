@@ -24,6 +24,7 @@ board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Co
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
+ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
@@ -142,6 +143,7 @@ refactor-port-interfaces_20260310041002Z: {"title":"Move Service-Local Interface
 relay-daemon_20260308200000Z: {"title":"Relay Server Daemon Mode","status":"completed","type":"feature","created":"2026-03-08","updated":"2026-03-08"}
 relay-event-handling_20260307124000Z: {"title":"Relay Event Handling for Issues and PRs with Multi-Project Routing","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitHub Actions, and Homebrew","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
+reliability-advisor-skill_20260310001315Z: {"title":"Reliability advisor skill — automated testing, linting, and static analysis guidance agent","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"completed","type":"refactor","created":"2026-03-09","updated":"2026-03-09"}
 research-cc-quota-monitoring_20260307150000Z: {"title":"Research: Claude Code Quota Monitoring and Graceful Degradation","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
