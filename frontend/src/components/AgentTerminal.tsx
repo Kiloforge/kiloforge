@@ -146,7 +146,7 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
     if (fw.isDragging) fw.onDragEnd();
   }, [fw]);
 
-  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced"]);
+  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
   const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
   const canSend = status === "connected" && !isTerminal;
 
@@ -209,7 +209,7 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
           <p className={styles.emptyState}>Waiting for agent output...</p>
         )}
         {messages.length === 0 && status === "disconnected" && isTerminal && (
-          <p className={styles.emptyState}>Agent {agentStatus}</p>
+          <p className={styles.emptyState}>{agentStatus === "suspended" ? "Agent suspended — no active connections" : `Agent ${agentStatus}`}</p>
         )}
         {messages.length === 0 && status === "reconnecting" && (
           <p className={styles.emptyState}>Reconnecting...</p>
@@ -228,7 +228,7 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={canSend ? "Type a message... (Enter to send)" : isTerminal ? "Agent has exited" : "Connecting..."}
+          placeholder={canSend ? "Type a message... (Enter to send)" : isTerminal ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited") : "Connecting..."}
           disabled={!canSend}
           rows={1}
         />

@@ -79,7 +79,7 @@ export function CommandPane({
     [handleSend],
   );
 
-  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced"]);
+  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
   const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
   const canSend = agentId !== null && status === "connected" && !isTerminal;
 
@@ -145,7 +145,7 @@ export function CommandPane({
           <p className={styles.emptyState}>Waiting for agent output...</p>
         )}
         {agentId && messages.length === 0 && status === "disconnected" && isTerminal && (
-          <p className={styles.emptyState}>Agent {agentStatus}</p>
+          <p className={styles.emptyState}>{agentStatus === "suspended" ? "Agent suspended — no active connections" : `Agent ${agentStatus}`}</p>
         )}
         {agentId && messages.length === 0 && status === "reconnecting" && (
           <p className={styles.emptyState}>Reconnecting...</p>
@@ -170,7 +170,7 @@ export function CommandPane({
               : canSend
                 ? "Type a message... (Enter to send)"
                 : isTerminal
-                  ? "Agent has exited"
+                  ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited")
                   : "Connecting..."
           }
           disabled={!canSend}

@@ -27,6 +27,7 @@ export interface Agent {
   cache_read_tokens?: number;
   cache_creation_tokens?: number;
   model?: string;
+  connected_clients?: number;
 }
 
 export interface QuotaAgent {

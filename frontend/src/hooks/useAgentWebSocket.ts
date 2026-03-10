@@ -53,7 +53,7 @@ interface ServerMessage {
 
 /** Terminal agent statuses that should stop reconnection attempts. */
 const TERMINAL_STATUSES = new Set([
-  "completed", "failed", "stopped", "force-killed", "resume-failed", "replaced",
+  "completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended",
 ]);
 
 /** Maximum number of consecutive reconnect attempts before giving up. */
