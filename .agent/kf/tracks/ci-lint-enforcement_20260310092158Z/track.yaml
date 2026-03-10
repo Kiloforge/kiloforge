@@ -1,5 +1,5 @@
 id: ci-lint-enforcement_20260310092158Z
-title: "Fix CI lint failures — gofmt violations, local lint enforcement, VCS fix"
+title: Fix CI lint failures — gofmt violations, local lint enforcement, VCS fix
 type: bug
 status: pending
 created: 2026-03-10
@@ -25,18 +25,18 @@ spec:
       GIT_WORK_TREE but no -buildvcs=false; fails on GitHub Actions shallow clones
     - .agent/kf/workflow.md — verification commands section only lists `make test`
       and `make build`; missing `make lint`
-
+    
     CI config (.github/workflows/ci.yml):
     - Lint job uses golangci/golangci-lint-action@v7 with v2.11
     - backend/.golangci.yaml enables gofmt and goimports in formatters section
     - `make lint` target exists in Makefile (runs golangci-lint + npm lint)
-
+    
     No pre-commit hooks or local formatting enforcement exists.
   acceptance_criteria:
-    - "`make lint` passes locally with zero gofmt violations"
-    - "TestBinaryBuilds passes on GitHub Actions shallow clones"
-    - "workflow.md includes `make lint` as a required verification command"
-    - "CI lint job passes green"
+    - `make lint` passes locally with zero gofmt violations
+    - TestBinaryBuilds passes on GitHub Actions shallow clones
+    - workflow.md includes `make lint` as a required verification command
+    - CI lint job passes green
   out_of_scope: |
     - Adding pre-commit hooks (separate improvement)
     - Changing golangci-lint configuration
@@ -52,22 +52,22 @@ spec:
        VCS detection separately.
     4. workflow.md: Add `make lint` to the verification commands section
 plan:
-  - phase: "Phase 1: Fix violations"
+  - phase: Phase 1: Fix violations
     tasks:
-      - text: "Fix gofmt: remove extra blank line between functions in mocks.go (line 117)"
-        done: false
-      - text: "Fix gofmt: remove alignment padding on fakeEventBus methods in timeout_reaper_test.go (lines 61-64)"
-        done: false
-      - text: "Fix TestBinaryBuilds: add -buildvcs=false to go build command in main_test.go"
-        done: false
-  - phase: "Phase 2: Enforce locally"
+      - text: Fix gofmt: remove extra blank line between functions in mocks.go (line 117)
+        done: true
+      - text: Fix gofmt: remove alignment padding on fakeEventBus methods in timeout_reaper_test.go (lines 61-64)
+        done: true
+      - text: Fix TestBinaryBuilds: add -buildvcs=false to go build command in main_test.go
+        done: true
+  - phase: Phase 2: Enforce locally
     tasks:
-      - text: "Add `make lint` to workflow.md verification commands section"
-        done: false
-      - text: "Verify `make lint` passes locally with all fixes applied"
-        done: false
-  - phase: "Phase 3: Verification"
+      - text: Add `make lint` to workflow.md verification commands section
+        done: true
+      - text: Verify `make lint` passes locally with all fixes applied
+        done: true
+  - phase: Phase 3: Verification
     tasks:
-      - text: "Run full verification: make test && make build && make lint"
-        done: false
+      - text: Run full verification: make test && make build && make lint
+        done: true
 extra: {}
