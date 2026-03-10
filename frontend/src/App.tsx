@@ -61,7 +61,6 @@ export default function App() {
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const { mod, shift } = usePlatform();
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -238,63 +237,7 @@ export default function App() {
           )}
           <SettingsMenu />
         </nav>
-        <button
-          className={styles.hamburger}
-          onClick={() => setMobileDrawerOpen(true)}
-          aria-label="Open navigation menu"
-        >
-          &#9776;
-        </button>
       </header>
-
-      {/* Mobile navigation drawer */}
-      {mobileDrawerOpen && (
-        <>
-          <div className={styles.drawerBackdrop} onClick={() => setMobileDrawerOpen(false)} />
-          <div className={styles.drawer}>
-            <div className={styles.drawerHeader}>
-              <span className={styles.headerLabel}>Menu</span>
-              <button
-                className={styles.drawerClose}
-                onClick={() => setMobileDrawerOpen(false)}
-                aria-label="Close navigation menu"
-              >
-                &#10005;
-              </button>
-            </div>
-            <div className={styles.drawerSection}>
-              <div className={styles.drawerSectionLabel}>Navigation</div>
-              <button
-                className={styles.drawerLink}
-                onClick={() => { setShowFullScreen(true); setMobileDrawerOpen(false); }}
-                style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
-              >
-                &#9638; Command
-              </button>
-              <Link to="/agents" className={styles.drawerLink} onClick={() => setMobileDrawerOpen(false)}>Agents</Link>
-              <Link to="/reliability" className={styles.drawerLink} onClick={() => setMobileDrawerOpen(false)}>Reliability</Link>
-              {status?.gitea_url && (
-                <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.drawerLink} onClick={() => setMobileDrawerOpen(false)}>
-                  Gitea
-                </a>
-              )}
-            </div>
-            <div className={styles.drawerSection}>
-              <div className={styles.drawerSectionLabel}>Agents</div>
-              <AgentHistogram agents={agents} />
-            </div>
-            {wm.count > 0 && (
-              <div className={styles.drawerSection}>
-                <div className={styles.drawerSectionLabel}>Terminals</div>
-                <span className={styles.drawerLink}>{wm.count} terminal{wm.count !== 1 ? "s" : ""}</span>
-              </div>
-            )}
-            <div className={styles.drawerSection}>
-              <SettingsMenu />
-            </div>
-          </div>
-        </>
-      )}
 
       <main className={styles.main}>
         <Suspense fallback={<LoadingFallback />}>
