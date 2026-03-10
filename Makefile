@@ -79,6 +79,18 @@ lint:
 	cd backend && golangci-lint run ./...
 	cd frontend && npm run lint
 
+verify-deps:
+	@echo "=== Go module verification ==="
+	cd backend && go mod verify
+	@echo "=== Go mod tidy check ==="
+	@cp backend/go.mod /tmp/go.mod.bak && cp backend/go.sum /tmp/go.sum.bak
+	cd backend && go mod tidy
+	@diff backend/go.mod /tmp/go.mod.bak > /dev/null 2>&1 && diff backend/go.sum /tmp/go.sum.bak > /dev/null 2>&1 || \
+		(echo "FAIL: go.mod or go.sum is not tidy — run 'cd backend && go mod tidy'" && \
+		cp /tmp/go.mod.bak backend/go.mod && cp /tmp/go.sum.bak backend/go.sum && exit 1)
+	@echo "=== npm audit ==="
+	cd frontend && npm audit --audit-level=moderate || echo "WARNING: npm audit found vulnerabilities (non-blocking)"
+
 gen-api:
 	cd backend && oapi-codegen -config api/cfg.yaml api/openapi.yaml
 	cd backend && oapi-codegen -config api/cfg-client.yaml api/openapi.yaml
