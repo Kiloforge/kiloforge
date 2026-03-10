@@ -128,7 +128,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify all kf-* skills (except kf-repair) have the Data Integrity Guard section
-        done: false
+        done: true
       - text: Verify kf-repair does NOT have the guard section
-        done: false
+        done: true
 extra: {}
