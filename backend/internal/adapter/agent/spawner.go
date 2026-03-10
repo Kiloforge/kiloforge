@@ -296,7 +296,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned")
-	s.trackEvent("agent_spawned", map[string]any{"role": "reviewer", "model": model})
+	s.trackEvent("agent_session_started", map[string]any{"role": "reviewer", "model": model})
 
 	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span, s.agentEnv(agentID, sessionID, "reviewer"))
 
@@ -381,7 +381,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 	}
 	_, span := s.tracer.StartSpan(ctx, "agent/developer", spanAttrs...)
 	span.AddEvent("agent.spawned")
-	s.trackEvent("agent_spawned", map[string]any{"role": "developer", "model": model})
+	s.trackEvent("agent_session_started", map[string]any{"role": "developer", "model": model})
 
 	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span, s.agentEnv(agentID, sessionID, "developer"))
 
@@ -577,7 +577,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned")
-	s.trackEvent("agent_spawned", map[string]any{"role": "interactive", "model": model})
+	s.trackEvent("agent_session_started", map[string]any{"role": "interactive", "model": model})
 
 	// If initial prompt is set, send the first query.
 	// Use the session's own context (not the HTTP request context).
@@ -732,6 +732,12 @@ func (s *Spawner) ResumeDeveloper(ctx context.Context, id string) (*domain.Agent
 	_ = s.store.AddAgent(*agent) // upsert
 	_ = s.store.Save()
 
+	s.trackEvent("agent_session_resumed", map[string]any{
+		"role":     agent.Role,
+		"agent_id": id,
+		"model":    model,
+	})
+
 	return agent, nil
 }
 
@@ -809,6 +815,11 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 		port.StringAttr("session.id", agent.SessionID),
 	)
 	span.AddEvent("agent.resumed")
+	s.trackEvent("agent_session_resumed", map[string]any{
+		"role":     agent.Role,
+		"agent_id": id,
+		"model":    model,
+	})
 
 	inputHandler := func(text string) error {
 		session.logLine(fmt.Sprintf("[resume] query sent — len=%d", len(text)))

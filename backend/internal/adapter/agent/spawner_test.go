@@ -609,6 +609,68 @@ func TestEnsureGitRepo_SkipsExistingRepo(t *testing.T) {
 	}
 }
 
+// spyAnalytics records analytics events for testing.
+type spyAnalytics struct {
+	events []spyEvent
+}
+
+type spyEvent struct {
+	Name  string
+	Props map[string]any
+}
+
+func (s *spyAnalytics) Track(_ context.Context, event string, props map[string]any) {
+	s.events = append(s.events, spyEvent{Name: event, Props: props})
+}
+
+func (s *spyAnalytics) Shutdown(_ context.Context) error { return nil }
+
+func TestTrackEvent_AgentSessionStarted(t *testing.T) {
+	t.Parallel()
+
+	spy := &spyAnalytics{}
+	s := NewSpawner(&config.Config{}, nil, nil)
+	s.SetAnalyticsTracker(spy)
+
+	// trackEvent is the shared helper — verify it records events.
+	s.trackEvent("agent_session_started", map[string]any{"role": "developer", "model": "sonnet"})
+
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	if spy.events[0].Name != "agent_session_started" {
+		t.Errorf("event name = %q, want %q", spy.events[0].Name, "agent_session_started")
+	}
+	if spy.events[0].Props["role"] != "developer" {
+		t.Errorf("role = %v, want %q", spy.events[0].Props["role"], "developer")
+	}
+}
+
+func TestTrackEvent_AgentSessionResumed(t *testing.T) {
+	t.Parallel()
+
+	spy := &spyAnalytics{}
+	s := NewSpawner(&config.Config{}, nil, nil)
+	s.SetAnalyticsTracker(spy)
+
+	s.trackEvent("agent_session_resumed", map[string]any{"role": "developer", "agent_id": "dev-1"})
+
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	if spy.events[0].Name != "agent_session_resumed" {
+		t.Errorf("event name = %q, want %q", spy.events[0].Name, "agent_session_resumed")
+	}
+}
+
+func TestTrackEvent_NilAnalytics(t *testing.T) {
+	t.Parallel()
+
+	s := NewSpawner(&config.Config{}, nil, nil)
+	// Should not panic with nil analytics.
+	s.trackEvent("agent_session_started", map[string]any{"role": "developer"})
+}
+
 func TestIntFromMap(t *testing.T) {
 	t.Parallel()
 
