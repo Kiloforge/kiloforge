@@ -29,9 +29,9 @@ spec:
     - PR template exists with summary, related issues, changes list, and test plan checklist
     - Auto-close workflow triggers on pull_request_target opened events
     - Auto-close workflow allows MEMBER, OWNER, and COLLABORATOR associations
-    - Auto-close workflow posts a polite comment directing to issues before closing
+    - Auto-close workflow posts a polite comment directing contributors to file an issue or bug report instead
     - All templates use standard GitHub frontmatter (name, about, title prefix, labels)
-    - README includes a clear statement that the project is not accepting external contributions (PRs will be auto-closed)
+    - README includes a clear statement that the project is not accepting external PRs (auto-closed) and that all contributions should flow through issues/bug reports, which will be assessed by the maintainer who manages implementation
   out_of_scope: |
     - GitHub Discussions setup
     - CODE_OF_CONDUCT.md
@@ -58,7 +58,7 @@ plan:
         done: false
   - phase: "README Update"
     tasks:
-      - text: "Add a 'Contributing' section to README stating the project is not accepting external contributions and PRs will be auto-closed"
+      - text: "Add a 'Contributing' section to README stating: no external PRs accepted (auto-closed), all contributions flow through issues/bug reports, maintainer assesses and manages implementation"
         done: false
   - phase: "Verification"
     tasks:
