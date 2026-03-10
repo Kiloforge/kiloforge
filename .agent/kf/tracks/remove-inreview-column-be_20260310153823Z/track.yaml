@@ -1,0 +1,89 @@
+id: remove-inreview-column-be_20260310153823Z
+title: Remove in_review kanban column from backend
+type: refactor
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: ">"
+  context: |
+    The kanban board currently has 5 columns: backlog, approved, in_progress,
+    in_review, done. The in_review column is no longer part of the workflow —
+    tracks go from in-progress straight to done. This column and all related
+    backend code (domain constants, service logic, lifecycle handling, OpenAPI
+    enum values) must be removed.
+  codebase_analysis: |
+    Files to modify:
+    - backend/api/openapi.yaml — remove in_review from BoardCard.column and
+      MoveCardRequest.to_column enums (lines ~2528, ~2554)
+    - backend/internal/core/domain/board.go — remove ColumnInReview constant,
+      update BoardColumns slice and ColumnOrder map
+    - backend/internal/core/service/board_service.go — remove in_review from
+      statusToColumn() switch
+    - backend/internal/core/service/lifecycle_service.go — remove in_review
+      handling from HandleBackwardMove() and HandleRepromotion()
+    - backend/internal/core/service/track_service.go — remove StatusInReview constant
+    - backend/internal/adapter/rest/gen/ — regenerate from updated OpenAPI
+    - backend/internal/adapter/rest/e2e_kanban_board_test.go — remove in_review
+      test data and assertions
+    - backend/internal/core/service/board_service_test.go — update column count
+    - backend/internal/core/service/lifecycle_service_test.go — remove in_review cases
+    - backend/internal/core/service/track_service_test.go — remove StatusInReview test
+    - backend/internal/adapter/persistence/sqlite/pr_tracking_store_test.go —
+      update test PR status
+    - backend/internal/adapter/persistence/sqlite/supporting_stores_test.go —
+      update test PR status
+    - backend/docs/design-agent-orchestration.md — update state machine docs
+  acceptance_criteria:
+    - ColumnInReview constant removed from domain/board.go
+    - BoardColumns is ["backlog","approved","in_progress","done"] (4 columns)
+    - OpenAPI schema has no in_review enum value
+    - Generated server code regenerated without in_review types
+    - lifecycle_service no longer references in_review column
+    - All backend tests pass with 4-column board
+  out_of_scope: |
+    - Frontend changes (separate FE track)
+    - Migrating existing in_review cards (no production data exists)
+  technical_notes: |
+    1. Update OpenAPI schema first (source of truth)
+    2. Run make generate to regenerate server code
+    3. Update domain constants
+    4. Update services (board, lifecycle, track)
+    5. Update all tests
+    6. Run make test to verify
+plan:
+  - phase: Schema & Domain
+    tasks:
+      - text: Remove in_review from OpenAPI enums in backend/api/openapi.yaml
+        done: true
+      - text: Run make generate to regenerate server code
+        done: true
+      - text: Remove ColumnInReview from domain/board.go, update BoardColumns and ColumnOrder
+        done: true
+      - text: Remove StatusInReview from track_service.go
+        done: true
+  - phase: Service Logic
+    tasks:
+      - text: Remove in_review handling from board_service.go statusToColumn()
+        done: true
+      - text: Remove in_review handling from lifecycle_service.go HandleBackwardMove/HandleRepromotion
+        done: true
+  - phase: Tests
+    tasks:
+      - text: Update e2e_kanban_board_test.go: remove in_review card and assertions
+        done: true
+      - text: Update board_service_test.go: column count 5→4
+        done: true
+      - text: Update lifecycle_service_test.go: remove in_review test cases
+        done: true
+      - text: Update track_service_test.go: remove StatusInReview test
+        done: true
+      - text: Update pr_tracking_store_test.go and supporting_stores_test.go
+        done: true
+  - phase: Docs & Verification
+    tasks:
+      - text: Update design-agent-orchestration.md to remove in-review references
+        done: true
+      - text: Run make test && make lint to verify all passes
+        done: true
+extra: {}
