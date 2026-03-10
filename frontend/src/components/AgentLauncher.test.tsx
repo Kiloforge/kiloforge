@@ -30,7 +30,7 @@ describe("AgentLauncher", () => {
     await user.type(screen.getByRole("textbox"), "Help me design a logo");
     await user.click(screen.getByText("Start"));
 
-    expect(props.onLaunch).toHaveBeenCalledWith("product-advisor", "Help me design a logo");
+    expect(props.onLaunch).toHaveBeenCalledWith("advisor-product", "Help me design a logo");
   });
 
   it("defaults to architect role", async () => {
