@@ -106,6 +106,7 @@ type APIHandler struct {
 	consent      ConsentChecker
 	agentRemover AgentRemover
 	queueSvc     QueueServicer
+	analytics    port.AnalyticsTracker
 
 	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -132,6 +133,7 @@ type APIHandlerOpts struct {
 	Consent      ConsentChecker
 	AgentRemover AgentRemover
 	QueueSvc     QueueServicer
+	Analytics    port.AnalyticsTracker
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -156,6 +158,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		consent:      opts.Consent,
 		agentRemover: opts.AgentRemover,
 		queueSvc:     opts.QueueSvc,
+		analytics:    opts.Analytics,
 	}
 }
 
@@ -225,9 +228,11 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 		s := h.cfg.AgentMaxDuration
 		agentMaxDur = &s
 	}
+	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
 	return gen.GetConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
+		AnalyticsEnabled: &analyticsEnabled,
 	}, nil
 }
 
@@ -247,6 +252,10 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 	if req.Body.AgentMaxDuration != nil {
 		h.cfg.AgentMaxDuration = *req.Body.AgentMaxDuration
 	}
+	if req.Body.AnalyticsEnabled != nil {
+		v := *req.Body.AnalyticsEnabled
+		h.cfg.AnalyticsEnabled = &v
+	}
 
 	if err := h.cfg.Save(); err != nil {
 		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
@@ -257,9 +266,11 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		s := h.cfg.AgentMaxDuration
 		agentMaxDur = &s
 	}
+	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
 	return gen.UpdateConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
+		AnalyticsEnabled: &analyticsEnabled,
 	}, nil
 }
 
@@ -714,6 +725,13 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 			"repo_name": p.RepoName,
 			"active":    p.Active,
 		}))
+	}
+	if h.analytics != nil {
+		source := "clone"
+		if remoteURL == "" {
+			source = "create"
+		}
+		h.analytics.Track(ctx, "project_added", map[string]any{"source": source})
 	}
 	resp := gen.AddProject201JSONResponse{
 		Slug:     p.Slug,
