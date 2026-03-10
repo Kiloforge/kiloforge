@@ -1969,6 +1969,64 @@ func (h *APIHandler) checkSkillsForRole(role, workDir string) *gen.SkillsMissing
 	}
 }
 
+// GetProjectSettings implements gen.StrictServerInterface.
+func (h *APIHandler) GetProjectSettings(_ context.Context, req gen.GetProjectSettingsRequestObject) (gen.GetProjectSettingsResponseObject, error) {
+	proj, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.GetProjectSettings404JSONResponse{Error: "project not found"}, nil
+	}
+	kfClient := kf.NewClientFromProject(proj.ProjectDir)
+	cfg, err := kfClient.GetConfig()
+	if err != nil {
+		return gen.GetProjectSettings404JSONResponse{Error: "settings not available"}, nil
+	}
+	return gen.GetProjectSettings200JSONResponse{
+		PrimaryBranch:      cfg.PrimaryBranch,
+		EnforceDepOrdering: cfg.EnforceDepOrdering,
+	}, nil
+}
+
+// UpdateProjectSettings implements gen.StrictServerInterface.
+func (h *APIHandler) UpdateProjectSettings(_ context.Context, req gen.UpdateProjectSettingsRequestObject) (gen.UpdateProjectSettingsResponseObject, error) {
+	proj, ok := h.findProject(req.Slug)
+	if !ok {
+		return gen.UpdateProjectSettings404JSONResponse{Error: "project not found"}, nil
+	}
+	if req.Body == nil {
+		return gen.UpdateProjectSettings404JSONResponse{Error: "request body required"}, nil
+	}
+
+	kfClient := kf.NewClientFromProject(proj.ProjectDir)
+	cfg, err := kfClient.GetConfig()
+	if err != nil {
+		return gen.UpdateProjectSettings404JSONResponse{Error: "settings not available"}, nil
+	}
+
+	// Merge partial update into current config.
+	if req.Body.PrimaryBranch != nil {
+		cfg.PrimaryBranch = *req.Body.PrimaryBranch
+	}
+	if req.Body.EnforceDepOrdering != nil {
+		cfg.EnforceDepOrdering = *req.Body.EnforceDepOrdering
+	}
+
+	if err := kfClient.SaveConfig(cfg); err != nil {
+		return gen.UpdateProjectSettings404JSONResponse{Error: fmt.Sprintf("save settings: %v", err)}, nil
+	}
+
+	if h.eventBus != nil {
+		h.eventBus.Publish(domain.NewProjectSettingsUpdateEvent(req.Slug, map[string]any{
+			"primary_branch":       cfg.PrimaryBranch,
+			"enforce_dep_ordering": cfg.EnforceDepOrdering,
+		}))
+	}
+
+	return gen.UpdateProjectSettings200JSONResponse{
+		PrimaryBranch:      cfg.PrimaryBranch,
+		EnforceDepOrdering: cfg.EnforceDepOrdering,
+	}, nil
+}
+
 // GetProjectMetadata implements gen.StrictServerInterface.
 func (h *APIHandler) GetProjectMetadata(_ context.Context, req gen.GetProjectMetadataRequestObject) (gen.GetProjectMetadataResponseObject, error) {
 	proj, ok := h.findProject(req.Slug)

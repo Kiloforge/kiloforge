@@ -83,6 +83,85 @@ func TestGetConfig_MissingFile(t *testing.T) {
 	}
 }
 
+func TestSaveConfig_RoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(kfDir, 0o755)
+
+	client := kf.NewClient(kfDir)
+
+	// Write a config.
+	cfg := &kf.ProjectConfig{
+		PrimaryBranch:      "develop",
+		EnforceDepOrdering: false,
+	}
+	if err := client.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// Read it back.
+	got, err := client.GetConfig()
+	if err != nil {
+		t.Fatalf("GetConfig after save: %v", err)
+	}
+	if got.PrimaryBranch != "develop" {
+		t.Errorf("PrimaryBranch = %q, want %q", got.PrimaryBranch, "develop")
+	}
+	if got.EnforceDepOrdering {
+		t.Error("EnforceDepOrdering should be false")
+	}
+}
+
+func TestSaveConfig_DefaultsRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(kfDir, 0o755)
+
+	client := kf.NewClient(kfDir)
+
+	// Save defaults.
+	cfg := kf.DefaultConfig()
+	if err := client.SaveConfig(&cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// Read it back — should match defaults.
+	got, err := client.GetConfig()
+	if err != nil {
+		t.Fatalf("GetConfig: %v", err)
+	}
+	if got.PrimaryBranch != "main" {
+		t.Errorf("PrimaryBranch = %q, want %q", got.PrimaryBranch, "main")
+	}
+	if !got.EnforceDepOrdering {
+		t.Error("EnforceDepOrdering should be true")
+	}
+}
+
+func TestSaveConfig_HasHeader(t *testing.T) {
+	dir := t.TempDir()
+	kfDir := filepath.Join(dir, ".agent", "kf")
+	os.MkdirAll(kfDir, 0o755)
+
+	client := kf.NewClient(kfDir)
+	cfg := kf.DefaultConfig()
+	if err := client.SaveConfig(&cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(kfDir, "config.yaml"))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("config.yaml is empty")
+	}
+	// Should start with a comment header.
+	if data[0] != '#' {
+		t.Error("expected config.yaml to start with comment header")
+	}
+}
+
 func TestGetConfig_InvalidYAML(t *testing.T) {
 	dir := t.TempDir()
 	kfDir := filepath.Join(dir, ".agent", "kf")

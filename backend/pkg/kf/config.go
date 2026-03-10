@@ -59,3 +59,13 @@ func (c *Client) GetConfig() (*ProjectConfig, error) {
 
 	return &cfg, nil
 }
+
+// SaveConfig writes the given ProjectConfig to .agent/kf/config.yaml.
+func (c *Client) SaveConfig(cfg *ProjectConfig) error {
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	header := "# Kiloforge Project Configuration\n#\n# primary_branch: the branch used for merges and track state\n# enforce_dep_ordering: require dependency satisfaction before claiming tracks\n\n"
+	return os.WriteFile(c.configFile(), append([]byte(header), data...), 0o644)
+}

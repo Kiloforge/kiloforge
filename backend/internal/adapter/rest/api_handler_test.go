@@ -1356,3 +1356,157 @@ func TestGetProjectMetadata_KFNotInitialized(t *testing.T) {
 		t.Error("expected error message for uninitialized kf")
 	}
 }
+
+func TestGetProjectSettings_Defaults(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	projDir := filepath.Join(dir, "proj")
+	kfDir := filepath.Join(projDir, ".agent", "kf")
+	os.MkdirAll(kfDir, 0o755)
+	// No config.yaml — should return defaults.
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{
+			{Slug: "proj", ProjectDir: projDir},
+		}},
+	})
+
+	resp, err := h.GetProjectSettings(context.Background(), gen.GetProjectSettingsRequestObject{Slug: "proj"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetProjectSettings200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.PrimaryBranch != "main" {
+		t.Errorf("primary_branch = %q, want %q", r.PrimaryBranch, "main")
+	}
+	if !r.EnforceDepOrdering {
+		t.Error("enforce_dep_ordering should default to true")
+	}
+}
+
+func TestGetProjectSettings_WithConfig(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	projDir := filepath.Join(dir, "proj")
+	kfDir := filepath.Join(projDir, ".agent", "kf")
+	os.MkdirAll(kfDir, 0o755)
+	os.WriteFile(filepath.Join(kfDir, "config.yaml"), []byte("primary_branch: develop\nenforce_dep_ordering: false\n"), 0o644)
+
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{
+			{Slug: "proj", ProjectDir: projDir},
+		}},
+	})
+
+	resp, err := h.GetProjectSettings(context.Background(), gen.GetProjectSettingsRequestObject{Slug: "proj"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.GetProjectSettings200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.PrimaryBranch != "develop" {
+		t.Errorf("primary_branch = %q, want %q", r.PrimaryBranch, "develop")
+	}
+	if r.EnforceDepOrdering {
+		t.Error("enforce_dep_ordering should be false")
+	}
+}
+
+func TestGetProjectSettings_ProjectNotFound(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{{Slug: "other"}}},
+	})
+
+	resp, err := h.GetProjectSettings(context.Background(), gen.GetProjectSettingsRequestObject{Slug: "nonexistent"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.GetProjectSettings404JSONResponse); !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+}
+
+func TestUpdateProjectSettings_PartialUpdate(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	projDir := filepath.Join(dir, "proj")
+	kfDir := filepath.Join(projDir, ".agent", "kf")
+	os.MkdirAll(kfDir, 0o755)
+	// Start with defaults (no config.yaml).
+
+	spy := &spyEventBus{}
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{
+			{Slug: "proj", ProjectDir: projDir},
+		}},
+		EventBus: spy,
+	})
+
+	// Update only primary_branch.
+	branch := "develop"
+	resp, err := h.UpdateProjectSettings(context.Background(), gen.UpdateProjectSettingsRequestObject{
+		Slug: "proj",
+		Body: &gen.UpdateProjectSettingsJSONRequestBody{
+			PrimaryBranch: &branch,
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.UpdateProjectSettings200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.PrimaryBranch != "develop" {
+		t.Errorf("primary_branch = %q, want %q", r.PrimaryBranch, "develop")
+	}
+	// enforce_dep_ordering should remain default (true).
+	if !r.EnforceDepOrdering {
+		t.Error("enforce_dep_ordering should remain true")
+	}
+
+	// Verify SSE event emitted.
+	if len(spy.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(spy.events))
+	}
+	if spy.events[0].Type != domain.EventProjectSettingsUpdate {
+		t.Errorf("expected project_settings_update, got %s", spy.events[0].Type)
+	}
+
+	// Verify persisted — read back.
+	resp2, _ := h.GetProjectSettings(context.Background(), gen.GetProjectSettingsRequestObject{Slug: "proj"})
+	r2, ok := resp2.(gen.GetProjectSettings200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200 on re-read, got %T", resp2)
+	}
+	if r2.PrimaryBranch != "develop" {
+		t.Errorf("re-read primary_branch = %q, want %q", r2.PrimaryBranch, "develop")
+	}
+}
+
+func TestUpdateProjectSettings_ProjectNotFound(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Projects: &stubProjectLister{projects: []domain.Project{{Slug: "other"}}},
+	})
+
+	branch := "develop"
+	resp, err := h.UpdateProjectSettings(context.Background(), gen.UpdateProjectSettingsRequestObject{
+		Slug: "nonexistent",
+		Body: &gen.UpdateProjectSettingsJSONRequestBody{
+			PrimaryBranch: &branch,
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.UpdateProjectSettings404JSONResponse); !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+}

@@ -13,7 +13,8 @@ const (
 	EventProjectRemoved = "project_removed"
 	EventLockUpdate     = "lock_update"
 	EventLockReleased   = "lock_released"
-	EventQueueUpdate    = "queue_update"
+	EventQueueUpdate           = "queue_update"
+	EventProjectSettingsUpdate = "project_settings_update"
 )
 
 // NewAgentUpdateEvent creates an agent_update event.
@@ -74,4 +75,9 @@ func NewLockReleasedEvent(scope string) Event {
 // NewQueueUpdateEvent creates a queue_update event.
 func NewQueueUpdateEvent(action string, data any) Event {
 	return Event{Type: EventQueueUpdate, Data: map[string]any{"action": action, "data": data}}
+}
+
+// NewProjectSettingsUpdateEvent creates a project_settings_update event.
+func NewProjectSettingsUpdateEvent(slug string, data any) Event {
+	return Event{Type: EventProjectSettingsUpdate, Data: map[string]any{"slug": slug, "settings": data}}
 }

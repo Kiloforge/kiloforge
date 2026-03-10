@@ -683,6 +683,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/projects/{slug}/settings:
+    get:
+      operationId: getProjectSettings
+      summary: Get project settings from kf config.yaml
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      responses:
+        "200":
+          description: Current project settings with defaults applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSettingsResponse"
+        "404":
+          description: Project not found or kiloforge not initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateProjectSettings
+      summary: Update project settings in kf config.yaml
+      tags: [Projects]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectSettingsRequest"
+      responses:
+        "200":
+          description: Updated project settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSettingsResponse"
+        "404":
+          description: Project not found or kiloforge not initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/ssh-keys:
     get:
       operationId: listSSHKeys
@@ -2416,3 +2472,20 @@ components:
           type: string
         status:
           type: string
+
+    ProjectSettingsResponse:
+      type: object
+      required: [primary_branch, enforce_dep_ordering]
+      properties:
+        primary_branch:
+          type: string
+        enforce_dep_ordering:
+          type: boolean
+
+    UpdateProjectSettingsRequest:
+      type: object
+      properties:
+        primary_branch:
+          type: string
+        enforce_dep_ordering:
+          type: boolean

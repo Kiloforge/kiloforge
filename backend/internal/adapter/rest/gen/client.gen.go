@@ -193,6 +193,14 @@ type ClientInterface interface {
 
 	PushProject(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetProjectSettings request
+	GetProjectSettings(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateProjectSettingsWithBody request with any body
+	UpdateProjectSettingsWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateProjectSettings(ctx context.Context, slug string, body UpdateProjectSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// StartProjectSetup request
 	StartProjectSetup(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -705,6 +713,42 @@ func (c *Client) PushProjectWithBody(ctx context.Context, slug string, contentTy
 
 func (c *Client) PushProject(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPushProjectRequest(c.Server, slug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetProjectSettings(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectSettingsRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateProjectSettingsWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateProjectSettingsRequestWithBody(c.Server, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateProjectSettings(ctx context.Context, slug string, body UpdateProjectSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateProjectSettingsRequest(c.Server, slug, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2096,6 +2140,87 @@ func NewPushProjectRequestWithBody(server string, slug string, contentType strin
 	return req, nil
 }
 
+// NewGetProjectSettingsRequest generates requests for GetProjectSettings
+func NewGetProjectSettingsRequest(server string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateProjectSettingsRequest calls the generic UpdateProjectSettings builder with application/json body
+func NewUpdateProjectSettingsRequest(server string, slug string, body UpdateProjectSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateProjectSettingsRequestWithBody(server, slug, "application/json", bodyReader)
+}
+
+// NewUpdateProjectSettingsRequestWithBody generates requests for UpdateProjectSettings with any type of body
+func NewUpdateProjectSettingsRequestWithBody(server string, slug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewStartProjectSetupRequest generates requests for StartProjectSetup
 func NewStartProjectSetupRequest(server string, slug string) (*http.Request, error) {
 	var err error
@@ -2950,6 +3075,14 @@ type ClientWithResponsesInterface interface {
 
 	PushProjectWithResponse(ctx context.Context, slug string, body PushProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*PushProjectResponse, error)
 
+	// GetProjectSettingsWithResponse request
+	GetProjectSettingsWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetProjectSettingsResponse, error)
+
+	// UpdateProjectSettingsWithBodyWithResponse request with any body
+	UpdateProjectSettingsWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProjectSettingsResponse, error)
+
+	UpdateProjectSettingsWithResponse(ctx context.Context, slug string, body UpdateProjectSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectSettingsResponse, error)
+
 	// StartProjectSetupWithResponse request
 	StartProjectSetupWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*StartProjectSetupResponse, error)
 
@@ -3680,6 +3813,52 @@ func (r PushProjectResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PushProjectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetProjectSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectSettingsResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateProjectSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectSettingsResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateProjectSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateProjectSettingsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4464,6 +4643,32 @@ func (c *ClientWithResponses) PushProjectWithResponse(ctx context.Context, slug 
 		return nil, err
 	}
 	return ParsePushProjectResponse(rsp)
+}
+
+// GetProjectSettingsWithResponse request returning *GetProjectSettingsResponse
+func (c *ClientWithResponses) GetProjectSettingsWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetProjectSettingsResponse, error) {
+	rsp, err := c.GetProjectSettings(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectSettingsResponse(rsp)
+}
+
+// UpdateProjectSettingsWithBodyWithResponse request with arbitrary body returning *UpdateProjectSettingsResponse
+func (c *ClientWithResponses) UpdateProjectSettingsWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProjectSettingsResponse, error) {
+	rsp, err := c.UpdateProjectSettingsWithBody(ctx, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateProjectSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateProjectSettingsWithResponse(ctx context.Context, slug string, body UpdateProjectSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectSettingsResponse, error) {
+	rsp, err := c.UpdateProjectSettings(ctx, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateProjectSettingsResponse(rsp)
 }
 
 // StartProjectSetupWithResponse request returning *StartProjectSetupResponse
@@ -5769,6 +5974,72 @@ func ParsePushProjectResponse(rsp *http.Response) (*PushProjectResponse, error) 
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectSettingsResponse parses an HTTP response from a GetProjectSettingsWithResponse call
+func ParseGetProjectSettingsResponse(rsp *http.Response) (*GetProjectSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectSettingsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateProjectSettingsResponse parses an HTTP response from a UpdateProjectSettingsWithResponse call
+func ParseUpdateProjectSettingsResponse(rsp *http.Response) (*UpdateProjectSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateProjectSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectSettingsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

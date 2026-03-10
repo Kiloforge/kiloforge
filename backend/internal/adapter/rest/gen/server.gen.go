@@ -421,6 +421,12 @@ type ProjectMetadataResponse struct {
 	Workflow *string `json:"workflow,omitempty"`
 }
 
+// ProjectSettingsResponse defines model for ProjectSettingsResponse.
+type ProjectSettingsResponse struct {
+	EnforceDepOrdering bool   `json:"enforce_dep_ordering"`
+	PrimaryBranch      string `json:"primary_branch"`
+}
+
 // PullProjectRequest defines model for PullProjectRequest.
 type PullProjectRequest struct {
 	// RemoteBranch Remote branch to pull from (defaults to "main")
@@ -756,6 +762,12 @@ type UpdateConfigRequest struct {
 	DashboardEnabled *bool `json:"dashboard_enabled,omitempty"`
 }
 
+// UpdateProjectSettingsRequest defines model for UpdateProjectSettingsRequest.
+type UpdateProjectSettingsRequest struct {
+	EnforceDepOrdering *bool   `json:"enforce_dep_ordering,omitempty"`
+	PrimaryBranch      *string `json:"primary_branch,omitempty"`
+}
+
 // ListAgentsParams defines parameters for ListAgents.
 type ListAgentsParams struct {
 	// Active If true (default), return only active agents + recently finished (30 min). If false, return all agents.
@@ -850,6 +862,9 @@ type PullProjectJSONRequestBody = PullProjectRequest
 
 // PushProjectJSONRequestBody defines body for PushProject for application/json ContentType.
 type PushProjectJSONRequestBody = PushProjectRequest
+
+// UpdateProjectSettingsJSONRequestBody defines body for UpdateProjectSettings for application/json ContentType.
+type UpdateProjectSettingsJSONRequestBody = UpdateProjectSettingsRequest
 
 // UpdateQueueSettingsJSONRequestBody defines body for UpdateQueueSettings for application/json ContentType.
 type UpdateQueueSettingsJSONRequestBody UpdateQueueSettingsJSONBody
@@ -949,6 +964,12 @@ type ServerInterface interface {
 	// Push local main to a remote branch
 	// (POST /api/projects/{slug}/push)
 	PushProject(w http.ResponseWriter, r *http.Request, slug string)
+	// Get project settings from kf config.yaml
+	// (GET /api/projects/{slug}/settings)
+	GetProjectSettings(w http.ResponseWriter, r *http.Request, slug string)
+	// Update project settings in kf config.yaml
+	// (PUT /api/projects/{slug}/settings)
+	UpdateProjectSettings(w http.ResponseWriter, r *http.Request, slug string)
 	// Spawn an interactive setup agent for a project
 	// (POST /api/projects/{slug}/setup)
 	StartProjectSetup(w http.ResponseWriter, r *http.Request, slug string)
@@ -1657,6 +1678,56 @@ func (siw *ServerInterfaceWrapper) PushProject(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetProjectSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectSettings(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectSettings(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // StartProjectSetup operation middleware
 func (siw *ServerInterfaceWrapper) StartProjectSetup(w http.ResponseWriter, r *http.Request) {
 
@@ -2200,6 +2271,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/metadata", wrapper.GetProjectMetadata)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/pull", wrapper.PullProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/push", wrapper.PushProject)
+	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/settings", wrapper.GetProjectSettings)
+	m.HandleFunc("PUT "+options.BaseURL+"/api/projects/{slug}/settings", wrapper.UpdateProjectSettings)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/setup", wrapper.StartProjectSetup)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/setup-status", wrapper.GetProjectSetupStatus)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/sync-status", wrapper.GetSyncStatus)
@@ -3204,6 +3277,59 @@ func (response PushProject500JSONResponse) VisitPushProjectResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetProjectSettingsRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetProjectSettingsResponseObject interface {
+	VisitGetProjectSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetProjectSettings200JSONResponse ProjectSettingsResponse
+
+func (response GetProjectSettings200JSONResponse) VisitGetProjectSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectSettings404JSONResponse ErrorResponse
+
+func (response GetProjectSettings404JSONResponse) VisitGetProjectSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProjectSettingsRequestObject struct {
+	Slug string `json:"slug"`
+	Body *UpdateProjectSettingsJSONRequestBody
+}
+
+type UpdateProjectSettingsResponseObject interface {
+	VisitUpdateProjectSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateProjectSettings200JSONResponse ProjectSettingsResponse
+
+func (response UpdateProjectSettings200JSONResponse) VisitUpdateProjectSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProjectSettings404JSONResponse ErrorResponse
+
+func (response UpdateProjectSettings404JSONResponse) VisitUpdateProjectSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type StartProjectSetupRequestObject struct {
 	Slug string `json:"slug"`
 }
@@ -3870,6 +3996,12 @@ type StrictServerInterface interface {
 	// Push local main to a remote branch
 	// (POST /api/projects/{slug}/push)
 	PushProject(ctx context.Context, request PushProjectRequestObject) (PushProjectResponseObject, error)
+	// Get project settings from kf config.yaml
+	// (GET /api/projects/{slug}/settings)
+	GetProjectSettings(ctx context.Context, request GetProjectSettingsRequestObject) (GetProjectSettingsResponseObject, error)
+	// Update project settings in kf config.yaml
+	// (PUT /api/projects/{slug}/settings)
+	UpdateProjectSettings(ctx context.Context, request UpdateProjectSettingsRequestObject) (UpdateProjectSettingsResponseObject, error)
 	// Spawn an interactive setup agent for a project
 	// (POST /api/projects/{slug}/setup)
 	StartProjectSetup(ctx context.Context, request StartProjectSetupRequestObject) (StartProjectSetupResponseObject, error)
@@ -4732,6 +4864,65 @@ func (sh *strictHandler) PushProject(w http.ResponseWriter, r *http.Request, slu
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PushProjectResponseObject); ok {
 		if err := validResponse.VisitPushProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectSettings operation middleware
+func (sh *strictHandler) GetProjectSettings(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetProjectSettingsRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectSettings(ctx, request.(GetProjectSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectSettingsResponseObject); ok {
+		if err := validResponse.VisitGetProjectSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProjectSettings operation middleware
+func (sh *strictHandler) UpdateProjectSettings(w http.ResponseWriter, r *http.Request, slug string) {
+	var request UpdateProjectSettingsRequestObject
+
+	request.Slug = slug
+
+	var body UpdateProjectSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProjectSettings(ctx, request.(UpdateProjectSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProjectSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
