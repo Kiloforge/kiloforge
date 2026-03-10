@@ -11,11 +11,11 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ port.AgentStore      = (*MockAgentStore)(nil)
-	_ port.AgentSpawner    = (*MockAgentSpawner)(nil)
-	_ port.PoolReturner    = (*MockPoolReturner)(nil)
-	_ port.Logger          = (*MockLogger)(nil)
-	_ port.GitRunner       = (*MockGitRunner)(nil)
+	_ port.AgentStore       = (*MockAgentStore)(nil)
+	_ port.AgentSpawner     = (*MockAgentSpawner)(nil)
+	_ port.PoolReturner     = (*MockPoolReturner)(nil)
+	_ port.Logger           = (*MockLogger)(nil)
+	_ port.GitRunner        = (*MockGitRunner)(nil)
 	_ port.AnalyticsTracker = (*SpyAnalytics)(nil)
 )
 
