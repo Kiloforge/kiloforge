@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -98,6 +99,17 @@ func (c *Config) GetSkillsDir() string {
 	return filepath.Join(home, ".claude", "skills")
 }
 
+// Validate checks that critical configuration values are within acceptable bounds.
+func (c *Config) Validate() error {
+	if c.DataDir == "" {
+		return fmt.Errorf("config: data_dir must not be empty")
+	}
+	if c.OrchestratorPort < 1 || c.OrchestratorPort > 65535 {
+		return fmt.Errorf("config: orchestrator_port %d out of range (1-65535)", c.OrchestratorPort)
+	}
+	return nil
+}
+
 func (c *Config) Save() error {
 	return NewJSONAdapter(c.DataDir).Save(c)
 }
@@ -124,7 +136,14 @@ func Resolve(extra ...ConfigProvider) (*Config, error) {
 	}
 	providers = append(providers, extra...)
 
-	return Merge(providers...)
+	cfg, err := Merge(providers...)
+	if err != nil {
+		return nil, err
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // Load resolves config using the default chain (defaults → JSON → env).
