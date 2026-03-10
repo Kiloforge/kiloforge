@@ -1173,7 +1173,6 @@ func TestUpdateConfig_NilBody(t *testing.T) {
 	}
 }
 
-
 func TestConfigAPI_AgentMaxDuration_Roundtrip(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

@@ -42,30 +42,30 @@ type QueueService struct {
 	projectDir  string
 	dataDir     string
 
-	store            port.QueueStore
-	trackReader      port.TrackReader
-	eventBus         port.EventBus
-	spawner          QueueSpawner
-	pool             QueueWorktreePool
-	implSvc          *ImplementService
-	capacityChecker  SwarmCapacityChecker
-	logger           *log.Logger
+	store           port.QueueStore
+	trackReader     port.TrackReader
+	eventBus        port.EventBus
+	spawner         QueueSpawner
+	pool            QueueWorktreePool
+	implSvc         *ImplementService
+	capacityChecker SwarmCapacityChecker
+	logger          *log.Logger
 }
 
 // QueueServiceOpts configures the QueueService.
 type QueueServiceOpts struct {
-	MaxWorkers       int
-	ProjectSlug      string
-	ProjectDir       string
-	DataDir          string
-	Store            port.QueueStore
-	TrackReader      port.TrackReader
-	EventBus         port.EventBus
-	Spawner          QueueSpawner
-	Pool             QueueWorktreePool
-	ImplSvc          *ImplementService
-	CapacityChecker  SwarmCapacityChecker
-	Logger           *log.Logger
+	MaxWorkers      int
+	ProjectSlug     string
+	ProjectDir      string
+	DataDir         string
+	Store           port.QueueStore
+	TrackReader     port.TrackReader
+	EventBus        port.EventBus
+	Spawner         QueueSpawner
+	Pool            QueueWorktreePool
+	ImplSvc         *ImplementService
+	CapacityChecker SwarmCapacityChecker
+	Logger          *log.Logger
 }
 
 // NewQueueService creates a new QueueService.

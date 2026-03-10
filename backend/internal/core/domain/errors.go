@@ -7,6 +7,6 @@ var (
 	ErrProjectExists      = errors.New("project already registered")
 	ErrAgentNotFound      = errors.New("agent not found")
 	ErrPRTrackingNotFound = errors.New("pr tracking not found")
-	ErrPoolExhausted = errors.New("pool exhausted")
-	ErrForbidden     = errors.New("forbidden")
+	ErrPoolExhausted      = errors.New("pool exhausted")
+	ErrForbidden          = errors.New("forbidden")
 )

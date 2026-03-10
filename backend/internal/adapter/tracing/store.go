@@ -218,7 +218,6 @@ func (s *Store) traceSummariesForIDs(traceIDs map[string]struct{}) []TraceSummar
 	return result
 }
 
-
 // ListTracesPaginated returns a paginated list of trace summaries from in-memory store.
 func (s *Store) ListTracesPaginated(opts domain.PageOpts, trackID, sessionID string) (domain.Page[TraceSummary], error) {
 	opts.Normalize()

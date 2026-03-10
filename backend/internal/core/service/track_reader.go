@@ -61,7 +61,6 @@ func (r *TrackReaderImpl) DiscoverTracks(projectDir string) ([]port.TrackEntry, 
 	return result, nil
 }
 
-
 // DiscoverTracksPaginated returns a paginated, optionally status-filtered list of tracks.
 func (r *TrackReaderImpl) DiscoverTracksPaginated(projectDir string, opts domain.PageOpts, statuses ...string) (domain.Page[port.TrackEntry], error) {
 	opts.Normalize()
