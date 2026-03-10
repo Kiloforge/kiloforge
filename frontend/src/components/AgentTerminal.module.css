@@ -111,6 +111,52 @@
   color: var(--text-dim);
 }
 
+.viewToggle {
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: 4px;
+}
+
+.toggleBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 2px 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.toggleBtn:hover {
+  color: var(--text);
+}
+
+.toggleBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.toggleActive {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.toggleActive:hover {
+  color: var(--bg);
+  opacity: 0.9;
+}
+
+.diffArea {
+  flex: 1;
+  overflow: hidden;
+}
+
 .headerActions {
   display: flex;
   align-items: center;

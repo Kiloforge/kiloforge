@@ -68,13 +68,13 @@ plan:
   - phase: Terminal Integration
     tasks:
       - text: Write tests for chat/diff toggle in AgentTerminal: toggle renders when slug/branch present, hidden when missing, switches view mode
-        done: false
+        done: true
       - text: Add viewMode state ('chat' | 'diff') to AgentTerminal with toggle buttons in header bar next to role badge
-        done: false
+        done: true
       - text: Conditionally render AgentDiffPanel when viewMode is 'diff', passing slug and branch props
-        done: false
+        done: true
       - text: Style the toggle to match terminal header aesthetic, ensure keyboard-accessible (aria attributes, focus styles)
-        done: false
+        done: true
   - phase: Polish & Verification
     tasks:
       - text: Handle edge cases: hide diff toggle when slug/branch unavailable, show helpful empty state when diff has no changes

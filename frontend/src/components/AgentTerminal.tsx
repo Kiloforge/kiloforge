@@ -3,6 +3,7 @@ import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../hooks/useAgentWebSocket";
 import { useFloatingWindow, detectEdge, cursorForEdge } from "../hooks/useFloatingWindow";
 import { MessageDispatch, MessageErrorBoundary } from "./terminal";
+import { AgentDiffPanel } from "./diff/AgentDiffPanel";
 import styles from "./AgentTerminal.module.css";
 
 interface Props {
@@ -48,6 +49,8 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
 export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, registerControls, unregisterControls }: Props) {
   const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
+  const [viewMode, setViewMode] = useState<"chat" | "diff">("chat");
+  const hasDiff = !!(slug && branch);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -189,6 +192,24 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
           </h3>
           <span className={styles.agentIdSecondary}>{agentId.slice(0, 8)}</span>
           <ConnectionDot status={status} />
+          {hasDiff && (
+            <div className={styles.viewToggle} role="group" aria-label="View mode">
+              <button
+                className={`${styles.toggleBtn} ${viewMode === "chat" ? styles.toggleActive : ""}`}
+                onClick={() => setViewMode("chat")}
+                aria-pressed={viewMode === "chat"}
+              >
+                Chat
+              </button>
+              <button
+                className={`${styles.toggleBtn} ${viewMode === "diff" ? styles.toggleActive : ""}`}
+                onClick={() => setViewMode("diff")}
+                aria-pressed={viewMode === "diff"}
+              >
+                Diff
+              </button>
+            </div>
+          )}
         </div>
         <div className={styles.headerActions}>
           <span className={styles.shortcutHint} title="Keyboard shortcuts: ⌘?">?</span>
@@ -203,41 +224,49 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
         </div>
       </div>
 
-      <div className={styles.messages}>
-        {messages.length === 0 && status === "connecting" && (
-          <p className={styles.emptyState}>Connecting to agent...</p>
-        )}
-        {messages.length === 0 && status === "connected" && (
-          <p className={styles.emptyState}>Waiting for agent output...</p>
-        )}
-        {messages.length === 0 && status === "disconnected" && isTerminal && (
-          <p className={styles.emptyState}>{agentStatus === "suspended" ? "Agent suspended — no active connections" : `Agent ${agentStatus}`}</p>
-        )}
-        {messages.length === 0 && status === "reconnecting" && (
-          <p className={styles.emptyState}>Reconnecting...</p>
-        )}
-        {messages.map((msg, i) => {
-          if (msg.type === "turn_start") turnCounter++;
-          return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+      {viewMode === "diff" && hasDiff ? (
+        <div className={styles.diffArea}>
+          <AgentDiffPanel slug={slug} branch={branch} />
+        </div>
+      ) : (
+        <>
+          <div className={styles.messages}>
+            {messages.length === 0 && status === "connecting" && (
+              <p className={styles.emptyState}>Connecting to agent...</p>
+            )}
+            {messages.length === 0 && status === "connected" && (
+              <p className={styles.emptyState}>Waiting for agent output...</p>
+            )}
+            {messages.length === 0 && status === "disconnected" && isTerminal && (
+              <p className={styles.emptyState}>{agentStatus === "suspended" ? "Agent suspended — no active connections" : `Agent ${agentStatus}`}</p>
+            )}
+            {messages.length === 0 && status === "reconnecting" && (
+              <p className={styles.emptyState}>Reconnecting...</p>
+            )}
+            {messages.map((msg, i) => {
+              if (msg.type === "turn_start") turnCounter++;
+              return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
+            })}
+            <div ref={messagesEndRef} />
+          </div>
 
-      <div className={styles.inputArea}>
-        <textarea
-          ref={inputRef}
-          className={styles.inputField}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={canSend ? "Type a message... (Enter to send)" : isTerminal ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited") : "Connecting..."}
-          disabled={!canSend}
-          rows={1}
-        />
-        <button className={styles.sendBtn} onClick={handleSend} disabled={!canSend || !input.trim()}>
-          Send
-        </button>
-      </div>
+          <div className={styles.inputArea}>
+            <textarea
+              ref={inputRef}
+              className={styles.inputField}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={canSend ? "Type a message... (Enter to send)" : isTerminal ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited") : "Connecting..."}
+              disabled={!canSend}
+              rows={1}
+            />
+            <button className={styles.sendBtn} onClick={handleSend} disabled={!canSend || !input.trim()}>
+              Send
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -40,6 +40,12 @@ vi.mock("../hooks/useFloatingWindow", () => ({
   cursorForEdge: vi.fn(),
 }));
 
+vi.mock("./diff/AgentDiffPanel", () => ({
+  AgentDiffPanel: ({ slug, branch }: { slug: string; branch: string }) => (
+    <div data-testid="agent-diff-panel">Diff: {slug}/{branch}</div>
+  ),
+}));
+
 vi.mock("./terminal", () => ({
   MessageDispatch: ({ msg }: { msg: { type: string; text: string } }) => (
     <div data-testid="message">{msg.text}</div>
@@ -187,6 +193,38 @@ describe("AgentTerminal", () => {
   it("does not show minimize button when onMinimize not provided", () => {
     setup();
     expect(screen.queryByTitle("Minimize (⌘⇧M)")).not.toBeInTheDocument();
+  });
+
+  it("shows chat/diff toggle when slug and branch are provided", () => {
+    setup({}, { slug: "my-proj", branch: "feature/test" });
+    expect(screen.getByRole("button", { name: "Chat" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Diff" })).toBeInTheDocument();
+  });
+
+  it("hides chat/diff toggle when slug is missing", () => {
+    setup({}, { branch: "feature/test" });
+    expect(screen.queryByRole("button", { name: "Diff" })).not.toBeInTheDocument();
+  });
+
+  it("hides chat/diff toggle when branch is missing", () => {
+    setup({}, { slug: "my-proj" });
+    expect(screen.queryByRole("button", { name: "Diff" })).not.toBeInTheDocument();
+  });
+
+  it("switches to diff view when Diff button clicked", async () => {
+    const user = userEvent.setup();
+    setup({}, { slug: "my-proj", branch: "feature/test" });
+    await user.click(screen.getByRole("button", { name: "Diff" }));
+    // In diff mode the messages area is replaced by the diff panel
+    expect(screen.queryByText("Waiting for agent output...")).not.toBeInTheDocument();
+  });
+
+  it("switches back to chat view when Chat button clicked", async () => {
+    const user = userEvent.setup();
+    setup({ status: "connected", messages: [] }, { slug: "my-proj", branch: "feature/test" });
+    await user.click(screen.getByRole("button", { name: "Diff" }));
+    await user.click(screen.getByRole("button", { name: "Chat" }));
+    expect(screen.getByText("Waiting for agent output...")).toBeInTheDocument();
   });
 
   it("hides panel when minimized", () => {
