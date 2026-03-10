@@ -1,0 +1,95 @@
+id: fix-agent-spawn-context_20260310100000Z
+title: "Fix agent spawn context cancellation — detach SDK lifecycle from HTTP request"
+type: bug
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    All agent spawning (interactive, developer, architect, admin) passes the HTTP
+    request context to the Claude Agent SDK. The SDK ties the subprocess lifecycle
+    to this context via exec.CommandContext. When the HTTP handler returns the 201
+    response, Go's net/http cancels the request context, immediately killing the
+    Claude subprocess. Agents appear to "complete" in ~2 seconds with empty logs.
+  context: |
+    The SDK migration (commit 772b346) introduced this bug by passing the HTTP
+    request context through to claude.NewClient() and session.Connect(). The SDK's
+    SubprocessCLITransport creates its process context as a child of the passed
+    context:
+
+      t.ctx, t.cancel = context.WithCancel(ctx)  // ctx = HTTP request context
+      t.cmd = exec.CommandContext(t.ctx, t.cliPath, args...)
+
+    When the HTTP request completes, the context chain cancels, killing the subprocess.
+
+    Affected spawn paths:
+    - POST /api/agents/interactive (SpawnInteractiveAgent handler)
+    - POST /api/tracks/generate (GenerateTracks handler)
+    - POST /api/admin/run (RunAdminOperation handler)
+    - POST /api/projects/{slug}/setup (StartProjectSetup handler)
+    - Queue-based developer spawning (QueueService.SpawnUpToLimit -> spawnForTrack)
+  codebase_analysis: |
+    Files requiring changes:
+
+    1. backend/internal/adapter/agent/spawner.go
+       - SpawnInteractive (line 357): passes ctx to NewSDKSession and session.Connect
+       - SpawnDeveloper (line 230): passes ctx to runSDKAgent goroutine
+       - runSDKAgent (line 300): passes ctx to QueryOneShot
+
+    2. backend/internal/adapter/agent/sdk_client.go
+       - NewSDKSession (line 34): passes ctx to claude.NewClient
+       - NewSDKSessionWithResume (line 67): same issue
+       - QueryOneShot (line 292): passes ctx to claude.Query
+
+    The ctx parameter is correctly used for pre-flight checks (checkAuth, checkQuota)
+    but must NOT be used for the agent's process lifetime. The fix is to use
+    context.Background() for SDK session creation and subprocess lifecycle.
+
+    The relay context was already fixed (commit 87a3c44) to use context.Background() —
+    only the SDK session/subprocess context remains broken.
+  acceptance_criteria:
+    - Interactive agents spawned via REST API remain running after HTTP response is sent
+    - Developer agents spawned via queue remain running after the queue start API returns
+    - Agent log files contain actual output (non-empty) after spawning
+    - Existing agent stop/resume functionality continues to work (session.Close cancels via its own cancel func)
+    - Pre-flight checks (auth, consent, skills, setup) still use the HTTP request context for proper timeout
+    - All existing agent tests pass
+  out_of_scope: |
+    - Frontend error display improvements (separate concern)
+    - SDK library updates or changes
+    - WS proxy configuration for Vite dev server
+  technical_notes: |
+    The fix pattern is straightforward:
+
+    1. In SpawnInteractive: use context.Background() for NewSDKSession and Connect
+    2. In SpawnDeveloper/runSDKAgent: use context.Background() for QueryOneShot
+    3. In NewSDKSession/NewSDKSessionWithResume: document that ctx controls session lifetime
+    4. Keep using the HTTP ctx for checkAuth(ctx) and checkQuota() calls
+
+    The SDK session already has its own cancel function (sessionCtx, cancel) which is
+    used by StopAgent and Close. Detaching from the HTTP context does not lose control —
+    we just stop the HTTP request from being the kill trigger.
+
+    For QueryOneShot (one-shot agents), consider passing a context.WithCancel(context.Background())
+    so the spawner can cancel the agent if needed (e.g., on server shutdown). Store the cancel
+    func in the agent info for graceful shutdown.
+plan:
+  - phase: "Fix context propagation"
+    tasks:
+      - text: "In SpawnInteractive, replace ctx with context.Background() for NewSDKSession and session.Connect calls"
+        done: false
+      - text: "In SpawnDeveloper/runSDKAgent, replace ctx with context.Background() for QueryOneShot call"
+        done: false
+      - text: "In NewSDKSession and NewSDKSessionWithResume, add doc comment clarifying ctx controls session lifetime"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Build backend and spawn an interactive agent via curl — verify it stays running after HTTP response"
+        done: false
+      - text: "Verify agent log file contains actual output after spawning"
+        done: false
+      - text: "Verify stop/resume still works (StopAgent calls session.Close which has its own cancel)"
+        done: false
+      - text: "Run existing tests: make test"
+        done: false
+extra: {}
