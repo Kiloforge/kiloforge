@@ -61,8 +61,14 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) error {
 	attrsJSON, _ := json.Marshal(attrs)
 	eventsJSON, _ := json.Marshal(events)
 
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("trace store: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
 	// Upsert trace.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		`INSERT INTO traces (trace_id, started_at, span_count)
 		 VALUES (?, ?, 0)
 		 ON CONFLICT(trace_id) DO NOTHING`,
@@ -73,14 +79,14 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) error {
 
 	// Update trace metadata.
 	if parentID == "" {
-		if _, err := s.db.Exec(
+		if _, err := tx.Exec(
 			"UPDATE traces SET root_span_name = ? WHERE trace_id = ?",
 			span.Name(), traceID,
 		); err != nil {
 			return fmt.Errorf("trace store: update root span name: %w", err)
 		}
 	}
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		"UPDATE traces SET span_count = span_count + 1 WHERE trace_id = ?",
 		traceID,
 	); err != nil {
@@ -88,7 +94,7 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) error {
 	}
 
 	// Update trace start/end.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		`UPDATE traces SET started_at = MIN(started_at, ?), ended_at = MAX(COALESCE(ended_at, ?), ?)
 		 WHERE trace_id = ?`,
 		span.StartTime().Format(time.RFC3339Nano),
@@ -101,18 +107,18 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) error {
 
 	// Index by track.id and session.id.
 	if trackID, ok := attrs["track.id"]; ok && trackID != "" {
-		if _, err := s.db.Exec("UPDATE traces SET track_id = ? WHERE trace_id = ?", trackID, traceID); err != nil {
+		if _, err := tx.Exec("UPDATE traces SET track_id = ? WHERE trace_id = ?", trackID, traceID); err != nil {
 			return fmt.Errorf("trace store: update track_id: %w", err)
 		}
 	}
 	if sessionID, ok := attrs["session.id"]; ok && sessionID != "" {
-		if _, err := s.db.Exec("UPDATE traces SET session_id = ? WHERE trace_id = ?", sessionID, traceID); err != nil {
+		if _, err := tx.Exec("UPDATE traces SET session_id = ? WHERE trace_id = ?", sessionID, traceID); err != nil {
 			return fmt.Errorf("trace store: update session_id: %w", err)
 		}
 	}
 
 	// Insert span.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		`INSERT OR REPLACE INTO spans
 		 (span_id, trace_id, parent_id, name, start_time, end_time, duration_ms, status, attributes, events)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -124,7 +130,7 @@ func (s *TraceStore) Record(span sdktrace.ReadOnlySpan) error {
 		return fmt.Errorf("trace store: insert span %s: %w", spanID, err)
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // SeedSpan inserts a pre-built SpanSummary directly (bypassing OTel).
@@ -133,8 +139,14 @@ func (s *TraceStore) SeedSpan(span tracing.SpanSummary) error {
 	attrsJSON, _ := json.Marshal(span.Attributes)
 	eventsJSON, _ := json.Marshal(span.Events)
 
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("trace store: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
 	// Upsert trace.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		`INSERT INTO traces (trace_id, started_at, span_count)
 		 VALUES (?, ?, 0)
 		 ON CONFLICT(trace_id) DO NOTHING`,
@@ -145,7 +157,7 @@ func (s *TraceStore) SeedSpan(span tracing.SpanSummary) error {
 
 	// Update root span name.
 	if span.ParentID == "" {
-		if _, err := s.db.Exec(
+		if _, err := tx.Exec(
 			"UPDATE traces SET root_span_name = ? WHERE trace_id = ?",
 			span.Name, span.TraceID,
 		); err != nil {
@@ -154,7 +166,7 @@ func (s *TraceStore) SeedSpan(span tracing.SpanSummary) error {
 	}
 
 	// Update span count.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		"UPDATE traces SET span_count = span_count + 1 WHERE trace_id = ?",
 		span.TraceID,
 	); err != nil {
@@ -162,7 +174,7 @@ func (s *TraceStore) SeedSpan(span tracing.SpanSummary) error {
 	}
 
 	// Update trace start/end.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		`UPDATE traces SET started_at = MIN(started_at, ?), ended_at = MAX(COALESCE(ended_at, ?), ?)
 		 WHERE trace_id = ?`,
 		span.StartTime.Format(time.RFC3339Nano),
@@ -175,18 +187,18 @@ func (s *TraceStore) SeedSpan(span tracing.SpanSummary) error {
 
 	// Index by track.id and session.id.
 	if trackID, ok := span.Attributes["track.id"]; ok && trackID != "" {
-		if _, err := s.db.Exec("UPDATE traces SET track_id = ? WHERE trace_id = ?", trackID, span.TraceID); err != nil {
+		if _, err := tx.Exec("UPDATE traces SET track_id = ? WHERE trace_id = ?", trackID, span.TraceID); err != nil {
 			return fmt.Errorf("trace store: update track_id: %w", err)
 		}
 	}
 	if sessionID, ok := span.Attributes["session.id"]; ok && sessionID != "" {
-		if _, err := s.db.Exec("UPDATE traces SET session_id = ? WHERE trace_id = ?", sessionID, span.TraceID); err != nil {
+		if _, err := tx.Exec("UPDATE traces SET session_id = ? WHERE trace_id = ?", sessionID, span.TraceID); err != nil {
 			return fmt.Errorf("trace store: update session_id: %w", err)
 		}
 	}
 
 	// Insert span.
-	if _, err := s.db.Exec(
+	if _, err := tx.Exec(
 		`INSERT OR REPLACE INTO spans
 		 (span_id, trace_id, parent_id, name, start_time, end_time, duration_ms, status, attributes, events)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -198,7 +210,7 @@ func (s *TraceStore) SeedSpan(span tracing.SpanSummary) error {
 		return fmt.Errorf("trace store: insert span %s: %w", span.SpanID, err)
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // ListTraces returns all trace summaries.
