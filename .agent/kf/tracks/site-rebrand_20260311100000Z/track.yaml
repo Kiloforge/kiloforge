@@ -96,11 +96,11 @@ plan:
   - phase: Architecture & Polish
     tasks:
       - text: Rewrite architecture section: rename components (Cortex, Command Deck), remove Gitea Backend entirely, update descriptions for each component
-        done: false
+        done: true
       - text: Update CTA section copy to align with new messaging
-        done: false
+        done: true
       - text: Update license page if any references to Gitea or outdated terminology exist
-        done: false
+        done: true
       - text: Final review: grep entire site for any remaining references to gitea, git forge, review, PR, orchestrator, dashboard (case-insensitive)
-        done: false
+        done: true
 extra: {}
