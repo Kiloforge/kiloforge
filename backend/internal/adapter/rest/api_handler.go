@@ -61,6 +61,8 @@ type InteractiveSpawner interface {
 	StopAgent(id string) error
 	ResumeAgent(ctx context.Context, id string) (*agent.InteractiveAgent, error)
 	GetActiveAgent(id string) (*agent.InteractiveAgent, bool)
+	Capacity() domain.SwarmCapacity
+	CanSpawn() bool
 }
 
 // AgentRemover can remove agent records from persistence.
@@ -469,8 +471,26 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 
 	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
 	if err != nil {
+		if errors.Is(err, agent.ErrAtCapacity) {
+			cap := h.interSpawner.Capacity()
+			return gen.SpawnInteractiveAgent429JSONResponse{
+				Error: "Kiloforge at max capacity",
+				Capacity: gen.SwarmCapacity{
+					Max:       cap.Max,
+					Active:    cap.Active,
+					Available: cap.Available,
+				},
+			}, nil
+		}
 		if strings.Contains(err.Error(), "rate limited") {
-			return gen.SpawnInteractiveAgent429JSONResponse{Error: err.Error()}, nil
+			return gen.SpawnInteractiveAgent429JSONResponse{
+				Error: err.Error(),
+				Capacity: gen.SwarmCapacity{
+					Max:       h.cfg.GetMaxSwarmSize(),
+					Active:    h.interSpawner.Capacity().Active,
+					Available: 0,
+				},
+			}, nil
 		}
 		return gen.SpawnInteractiveAgent500JSONResponse{Error: err.Error()}, nil
 	}
@@ -2342,6 +2362,56 @@ func (h *APIHandler) UpdateQueueSettings(_ context.Context, req gen.UpdateQueueS
 		}, nil
 	}
 	return gen.UpdateQueueSettings200JSONResponse(h.toGenQueueStatus(status)), nil
+}
+
+// GetSwarmCapacity implements gen.StrictServerInterface.
+func (h *APIHandler) GetSwarmCapacity(_ context.Context, _ gen.GetSwarmCapacityRequestObject) (gen.GetSwarmCapacityResponseObject, error) {
+	if h.interSpawner == nil {
+		max := h.cfg.GetMaxSwarmSize()
+		return gen.GetSwarmCapacity200JSONResponse{
+			Max:       max,
+			Active:    0,
+			Available: max,
+		}, nil
+	}
+	cap := h.interSpawner.Capacity()
+	return gen.GetSwarmCapacity200JSONResponse{
+		Max:       cap.Max,
+		Active:    cap.Active,
+		Available: cap.Available,
+	}, nil
+}
+
+// UpdateSwarmSettings implements gen.StrictServerInterface.
+func (h *APIHandler) UpdateSwarmSettings(_ context.Context, req gen.UpdateSwarmSettingsRequestObject) (gen.UpdateSwarmSettingsResponseObject, error) {
+	if req.Body != nil && req.Body.MaxSwarmSize != nil {
+		val := *req.Body.MaxSwarmSize
+		if val < 1 {
+			return gen.UpdateSwarmSettings400JSONResponse{Error: "max_swarm_size must be >= 1"}, nil
+		}
+		h.cfg.MaxSwarmSize = val
+		if err := h.cfg.Save(); err != nil {
+			return gen.UpdateSwarmSettings400JSONResponse{Error: "failed to save config"}, nil
+		}
+		if h.queueSvc != nil {
+			h.queueSvc.SetMaxWorkers(val)
+		}
+	}
+
+	if h.interSpawner == nil {
+		max := h.cfg.GetMaxSwarmSize()
+		return gen.UpdateSwarmSettings200JSONResponse{
+			Max:       max,
+			Active:    0,
+			Available: max,
+		}, nil
+	}
+	cap := h.interSpawner.Capacity()
+	return gen.UpdateSwarmSettings200JSONResponse{
+		Max:       cap.Max,
+		Active:    cap.Active,
+		Available: cap.Available,
+	}, nil
 }
 
 // StartQueue implements gen.StrictServerInterface.

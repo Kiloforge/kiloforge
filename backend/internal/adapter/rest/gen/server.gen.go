@@ -704,6 +704,19 @@ type StyleGuideEntry struct {
 	Name string `json:"name"`
 }
 
+// SwarmCapacity defines model for SwarmCapacity.
+type SwarmCapacity struct {
+	Active    int `json:"active"`
+	Available int `json:"available"`
+	Max       int `json:"max"`
+}
+
+// SwarmCapacityResponse defines model for SwarmCapacityResponse.
+type SwarmCapacityResponse struct {
+	Capacity SwarmCapacity `json:"capacity"`
+	Error    string        `json:"error"`
+}
+
 // SyncBoardResult defines model for SyncBoardResult.
 type SyncBoardResult struct {
 	Created   int `json:"created"`
@@ -891,6 +904,11 @@ type StartQueueJSONBody struct {
 	Project *string `json:"project,omitempty"`
 }
 
+// UpdateSwarmSettingsJSONBody defines parameters for UpdateSwarmSettings.
+type UpdateSwarmSettingsJSONBody struct {
+	MaxSwarmSize *int `json:"max_swarm_size,omitempty"`
+}
+
 // ListTracesParams defines parameters for ListTraces.
 type ListTracesParams struct {
 	// TrackId Filter traces by track ID attribute
@@ -974,6 +992,9 @@ type StartQueueJSONRequestBody StartQueueJSONBody
 
 // UpdateSkillsJSONRequestBody defines body for UpdateSkills for application/json ContentType.
 type UpdateSkillsJSONRequestBody = SkillUpdateRequest
+
+// UpdateSwarmSettingsJSONRequestBody defines body for UpdateSwarmSettings for application/json ContentType.
+type UpdateSwarmSettingsJSONRequestBody UpdateSwarmSettingsJSONBody
 
 // GenerateTracksJSONRequestBody defines body for GenerateTracks for application/json ContentType.
 type GenerateTracksJSONRequestBody = GenerateTracksRequest
@@ -1106,6 +1127,12 @@ type ServerInterface interface {
 	// Get system status overview
 	// (GET /api/status)
 	GetStatus(w http.ResponseWriter, r *http.Request)
+	// Get current agent swarm capacity
+	// (GET /api/swarm/capacity)
+	GetSwarmCapacity(w http.ResponseWriter, r *http.Request)
+	// Update swarm settings (max swarm size)
+	// (PATCH /api/swarm/settings)
+	UpdateSwarmSettings(w http.ResponseWriter, r *http.Request)
 	// List trace summaries
 	// (GET /api/traces)
 	ListTraces(w http.ResponseWriter, r *http.Request, params ListTracesParams)
@@ -2090,6 +2117,34 @@ func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// GetSwarmCapacity operation middleware
+func (siw *ServerInterfaceWrapper) GetSwarmCapacity(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSwarmCapacity(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSwarmSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSwarmSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSwarmSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListTraces operation middleware
 func (siw *ServerInterfaceWrapper) ListTraces(w http.ResponseWriter, r *http.Request) {
 
@@ -2486,6 +2541,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/api/skills/update", wrapper.UpdateSkills)
 	m.HandleFunc("GET "+options.BaseURL+"/api/ssh-keys", wrapper.ListSSHKeys)
 	m.HandleFunc("GET "+options.BaseURL+"/api/status", wrapper.GetStatus)
+	m.HandleFunc("GET "+options.BaseURL+"/api/swarm/capacity", wrapper.GetSwarmCapacity)
+	m.HandleFunc("PATCH "+options.BaseURL+"/api/swarm/settings", wrapper.UpdateSwarmSettings)
 	m.HandleFunc("GET "+options.BaseURL+"/api/traces", wrapper.ListTraces)
 	m.HandleFunc("GET "+options.BaseURL+"/api/traces/{traceId}", wrapper.GetTrace)
 	m.HandleFunc("GET "+options.BaseURL+"/api/tracks", wrapper.ListTracks)
@@ -2647,7 +2704,7 @@ func (response SpawnInteractiveAgent428JSONResponse) VisitSpawnInteractiveAgentR
 	return json.NewEncoder(w).Encode(response)
 }
 
-type SpawnInteractiveAgent429JSONResponse ErrorResponse
+type SpawnInteractiveAgent429JSONResponse SwarmCapacityResponse
 
 func (response SpawnInteractiveAgent429JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -3885,6 +3942,48 @@ func (response GetStatus500JSONResponse) VisitGetStatusResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetSwarmCapacityRequestObject struct {
+}
+
+type GetSwarmCapacityResponseObject interface {
+	VisitGetSwarmCapacityResponse(w http.ResponseWriter) error
+}
+
+type GetSwarmCapacity200JSONResponse SwarmCapacity
+
+func (response GetSwarmCapacity200JSONResponse) VisitGetSwarmCapacityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSwarmSettingsRequestObject struct {
+	Body *UpdateSwarmSettingsJSONRequestBody
+}
+
+type UpdateSwarmSettingsResponseObject interface {
+	VisitUpdateSwarmSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateSwarmSettings200JSONResponse SwarmCapacity
+
+func (response UpdateSwarmSettings200JSONResponse) VisitUpdateSwarmSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSwarmSettings400JSONResponse ErrorResponse
+
+func (response UpdateSwarmSettings400JSONResponse) VisitUpdateSwarmSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListTracesRequestObject struct {
 	Params ListTracesParams
 }
@@ -4240,6 +4339,12 @@ type StrictServerInterface interface {
 	// Get system status overview
 	// (GET /api/status)
 	GetStatus(ctx context.Context, request GetStatusRequestObject) (GetStatusResponseObject, error)
+	// Get current agent swarm capacity
+	// (GET /api/swarm/capacity)
+	GetSwarmCapacity(ctx context.Context, request GetSwarmCapacityRequestObject) (GetSwarmCapacityResponseObject, error)
+	// Update swarm settings (max swarm size)
+	// (PATCH /api/swarm/settings)
+	UpdateSwarmSettings(ctx context.Context, request UpdateSwarmSettingsRequestObject) (UpdateSwarmSettingsResponseObject, error)
 	// List trace summaries
 	// (GET /api/traces)
 	ListTraces(ctx context.Context, request ListTracesRequestObject) (ListTracesResponseObject, error)
@@ -5442,6 +5547,61 @@ func (sh *strictHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetStatusResponseObject); ok {
 		if err := validResponse.VisitGetStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSwarmCapacity operation middleware
+func (sh *strictHandler) GetSwarmCapacity(w http.ResponseWriter, r *http.Request) {
+	var request GetSwarmCapacityRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSwarmCapacity(ctx, request.(GetSwarmCapacityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSwarmCapacity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSwarmCapacityResponseObject); ok {
+		if err := validResponse.VisitGetSwarmCapacityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSwarmSettings operation middleware
+func (sh *strictHandler) UpdateSwarmSettings(w http.ResponseWriter, r *http.Request) {
+	var request UpdateSwarmSettingsRequestObject
+
+	var body UpdateSwarmSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSwarmSettings(ctx, request.(UpdateSwarmSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSwarmSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSwarmSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateSwarmSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

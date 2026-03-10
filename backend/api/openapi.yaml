@@ -112,11 +112,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/SetupRequiredResponse"
         "429":
-          description: Rate limited
+          description: At capacity or rate limited
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/SwarmCapacityResponse"
         "500":
           description: Internal server error
           content:
@@ -1456,6 +1456,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/swarm/capacity:
+    get:
+      operationId: getSwarmCapacity
+      summary: Get current agent swarm capacity
+      tags: [Swarm]
+      responses:
+        "200":
+          description: Current swarm capacity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SwarmCapacity"
+
+  /api/swarm/settings:
+    patch:
+      operationId: updateSwarmSettings
+      summary: Update swarm settings (max swarm size)
+      tags: [Swarm]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_swarm_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SwarmCapacity"
+        "400":
+          description: Invalid settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/queue:
     get:
       operationId: getQueue
@@ -1583,6 +1626,26 @@ paths:
 
 components:
   schemas:
+    SwarmCapacity:
+      type: object
+      required: [max, active, available]
+      properties:
+        max:
+          type: integer
+        active:
+          type: integer
+        available:
+          type: integer
+
+    SwarmCapacityResponse:
+      type: object
+      required: [error, capacity]
+      properties:
+        error:
+          type: string
+        capacity:
+          $ref: "#/components/schemas/SwarmCapacity"
+
     QueueStatus:
       type: object
       required: [running, max_workers, active_workers, items, total_items]

@@ -243,6 +243,14 @@ type ClientInterface interface {
 	// GetStatus request
 	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetSwarmCapacity request
+	GetSwarmCapacity(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSwarmSettingsWithBody request with any body
+	UpdateSwarmSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSwarmSettings(ctx context.Context, body UpdateSwarmSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListTraces request
 	ListTraces(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -929,6 +937,42 @@ func (c *Client) ListSSHKeys(ctx context.Context, reqEditors ...RequestEditorFn)
 
 func (c *Client) GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSwarmCapacity(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSwarmCapacityRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSwarmSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSwarmSettingsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSwarmSettings(ctx context.Context, body UpdateSwarmSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSwarmSettingsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2723,6 +2767,73 @@ func NewGetStatusRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetSwarmCapacityRequest generates requests for GetSwarmCapacity
+func NewGetSwarmCapacityRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/swarm/capacity")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSwarmSettingsRequest calls the generic UpdateSwarmSettings builder with application/json body
+func NewUpdateSwarmSettingsRequest(server string, body UpdateSwarmSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSwarmSettingsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateSwarmSettingsRequestWithBody generates requests for UpdateSwarmSettings with any type of body
+func NewUpdateSwarmSettingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/swarm/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListTracesRequest generates requests for ListTraces
 func NewListTracesRequest(server string, params *ListTracesParams) (*http.Request, error) {
 	var err error
@@ -3323,6 +3434,14 @@ type ClientWithResponsesInterface interface {
 	// GetStatusWithResponse request
 	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
 
+	// GetSwarmCapacityWithResponse request
+	GetSwarmCapacityWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSwarmCapacityResponse, error)
+
+	// UpdateSwarmSettingsWithBodyWithResponse request with any body
+	UpdateSwarmSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSwarmSettingsResponse, error)
+
+	UpdateSwarmSettingsWithResponse(ctx context.Context, body UpdateSwarmSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSwarmSettingsResponse, error)
+
 	// ListTracesWithResponse request
 	ListTracesWithResponse(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*ListTracesResponse, error)
 
@@ -3406,7 +3525,7 @@ type SpawnInteractiveAgentResponse struct {
 	JSON403      *ErrorResponse
 	JSON412      *SkillsMissingResponse
 	JSON428      *SetupRequiredResponse
-	JSON429      *ErrorResponse
+	JSON429      *SwarmCapacityResponse
 	JSON500      *ErrorResponse
 }
 
@@ -4346,6 +4465,51 @@ func (r GetStatusResponse) StatusCode() int {
 	return 0
 }
 
+type GetSwarmCapacityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SwarmCapacity
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSwarmCapacityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSwarmCapacityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateSwarmSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SwarmCapacity
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSwarmSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSwarmSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListTracesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5001,6 +5165,32 @@ func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, reqEdit
 	return ParseGetStatusResponse(rsp)
 }
 
+// GetSwarmCapacityWithResponse request returning *GetSwarmCapacityResponse
+func (c *ClientWithResponses) GetSwarmCapacityWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSwarmCapacityResponse, error) {
+	rsp, err := c.GetSwarmCapacity(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSwarmCapacityResponse(rsp)
+}
+
+// UpdateSwarmSettingsWithBodyWithResponse request with arbitrary body returning *UpdateSwarmSettingsResponse
+func (c *ClientWithResponses) UpdateSwarmSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSwarmSettingsResponse, error) {
+	rsp, err := c.UpdateSwarmSettingsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSwarmSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSwarmSettingsWithResponse(ctx context.Context, body UpdateSwarmSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSwarmSettingsResponse, error) {
+	rsp, err := c.UpdateSwarmSettings(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSwarmSettingsResponse(rsp)
+}
+
 // ListTracesWithResponse request returning *ListTracesResponse
 func (c *ClientWithResponses) ListTracesWithResponse(ctx context.Context, params *ListTracesParams, reqEditors ...RequestEditorFn) (*ListTracesResponse, error) {
 	rsp, err := c.ListTraces(ctx, params, reqEditors...)
@@ -5223,7 +5413,7 @@ func ParseSpawnInteractiveAgentResponse(rsp *http.Response) (*SpawnInteractiveAg
 		response.JSON428 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
+		var dest SwarmCapacityResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -6671,6 +6861,65 @@ func ParseGetStatusResponse(rsp *http.Response) (*GetStatusResponse, error) {
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSwarmCapacityResponse parses an HTTP response from a GetSwarmCapacityWithResponse call
+func ParseGetSwarmCapacityResponse(rsp *http.Response) (*GetSwarmCapacityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSwarmCapacityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SwarmCapacity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSwarmSettingsResponse parses an HTTP response from a UpdateSwarmSettingsWithResponse call
+func ParseUpdateSwarmSettingsResponse(rsp *http.Response) (*UpdateSwarmSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSwarmSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SwarmCapacity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	}
 
