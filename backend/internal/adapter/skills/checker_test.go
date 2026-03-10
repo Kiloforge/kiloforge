@@ -245,6 +245,8 @@ func TestRequiredSkillsForRole(t *testing.T) {
 		{"developer", "kf-developer"},
 		{"reviewer", "kf-reviewer"},
 		{"interactive", "kf-architect"},
+		{"architect", "kf-architect"},
+		{"product-advisor", "kf-product-advisor"},
 		{"setup", "kf-setup"},
 	}
 	for _, tt := range tests {
@@ -262,5 +264,27 @@ func TestRequiredSkillsForRole(t *testing.T) {
 	// Unknown role returns nil.
 	if skills := RequiredSkillsForRole("unknown"); skills != nil {
 		t.Errorf("unknown role should return nil, got %v", skills)
+	}
+}
+
+func TestSkillCommandForRole(t *testing.T) {
+	tests := []struct {
+		role string
+		want string
+	}{
+		{"architect", "/kf-architect"},
+		{"product-advisor", "/kf-product-advisor"},
+		{"interactive", ""},
+		{"developer", ""},
+		{"reviewer", ""},
+		{"unknown", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.role, func(t *testing.T) {
+			got := SkillCommandForRole(tt.role)
+			if got != tt.want {
+				t.Errorf("SkillCommandForRole(%q) = %q, want %q", tt.role, got, tt.want)
+			}
+		})
 	}
 }
