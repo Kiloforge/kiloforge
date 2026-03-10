@@ -66,7 +66,7 @@ func startTestServer(t *testing.T) *testServer {
 	gen.HandlerFromMux(strictHandler, mux)
 
 	// Webhook route.
-	srv := NewServer(cfg, reg, store, prTracker, port)
+	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
 	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	// Badge routes.

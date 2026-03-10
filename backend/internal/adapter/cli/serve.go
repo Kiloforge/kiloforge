@@ -161,9 +161,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		"arch":       runtime.GOARCH,
 	})
 
-	log.Printf("Orchestrator starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
+	log.Printf("Orchestrator starting on %s:%d (PID %d)", cfg.OrchestratorHost, cfg.OrchestratorPort, os.Getpid())
 
-	srv := rest.NewServer(cfg, reg, agentStore, prTracker, cfg.OrchestratorPort, opts...)
+	srv := rest.NewServer(cfg, reg, agentStore, prTracker, cfg.OrchestratorHost, cfg.OrchestratorPort, opts...)
 	if err := srv.Run(ctx); err != nil {
 		log.Printf("Server error: %v", err)
 		return err

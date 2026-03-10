@@ -49,7 +49,7 @@ func newTestServerWithDir(dataDir string) *Server {
 	}
 	store := sqlite.NewAgentStore(db)
 	prTracker := sqlite.NewPRTrackingStore(db)
-	return NewServer(cfg, reg, store, prTracker, 3001)
+	return NewServer(cfg, reg, store, prTracker, "127.0.0.1", 3001)
 }
 
 func TestHealth_ReportsProjectCount(t *testing.T) {
@@ -78,6 +78,14 @@ func TestHealth_ReportsProjectCount(t *testing.T) {
 	}
 }
 
+func TestNewServer_HostField(t *testing.T) {
+	t.Parallel()
+	srv := newTestServer()
+	if srv.host != "127.0.0.1" {
+		t.Errorf("host: want %q, got %q", "127.0.0.1", srv.host)
+	}
+}
+
 func TestNewServer_WithDashboard(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -91,7 +99,7 @@ func TestNewServer_WithDashboard(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 3001, WithDashboard(nil, nil, &stubProjectLister{}))
+	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), "127.0.0.1", 3001, WithDashboard(nil, nil, &stubProjectLister{}))
 
 	if srv.dashboard == nil {
 		t.Fatal("expected dashboard to be set")

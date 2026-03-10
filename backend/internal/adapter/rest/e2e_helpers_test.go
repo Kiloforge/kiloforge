@@ -88,7 +88,7 @@ func startE2EServer(t *testing.T) *e2eServer {
 	gen.HandlerFromMux(strictHandler, mux)
 
 	// Webhook route.
-	srv := NewServer(cfg, reg, store, prTracker, port)
+	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
 	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	// Badge routes.
@@ -183,7 +183,7 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
 
-	srv := NewServer(cfg, reg, store, prTracker, port)
+	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
 	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }
@@ -278,7 +278,7 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
 
-	srv := NewServer(cfg, reg, store, prTracker, port)
+	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
 	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }

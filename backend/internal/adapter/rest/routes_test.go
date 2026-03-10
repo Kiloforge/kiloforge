@@ -64,7 +64,7 @@ func TestRouteRegistration(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 0)
+	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), "127.0.0.1", 0)
 
 	mux := buildMux(t, srv, nil)
 
@@ -109,7 +109,7 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 0)
+	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), "127.0.0.1", 0)
 	dash := dashboard.New(0, &stubAgentLister{}, nil, &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)

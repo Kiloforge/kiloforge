@@ -136,6 +136,7 @@ type Server struct {
 	spawner        port.AgentSpawner
 	prService      *service.PRService
 	logger         *log.Logger
+	host           string
 	port           int
 	dashboard      *dashboard.Server
 	quotaReader    QuotaReader
@@ -154,7 +155,7 @@ type Server struct {
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
-func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentStore, prTracker port.PRTrackingStore, port int, opts ...ServerOption) *Server {
+func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentStore, prTracker port.PRTrackingStore, host string, port int, opts ...ServerOption) *Server {
 	logger := log.New(log.Writer(), "[orchestrator] ", log.LstdFlags)
 	s := &Server{
 		cfg:       cfg,
@@ -164,6 +165,7 @@ func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentS
 		spawner:   &defaultSpawner{},
 		prService: service.NewPRService(&defaultSpawner{}, logger),
 		logger:    logger,
+		host:      host,
 		port:      port,
 		tracer:    defaultTracer,
 	}
@@ -325,7 +327,7 @@ func (s *Server) Run(ctx context.Context) error {
 	handler := RequestLogger(slog.Default())(mux)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.port),
+		Addr:    fmt.Sprintf("%s:%d", s.host, s.port),
 		Handler: handler,
 	}
 
