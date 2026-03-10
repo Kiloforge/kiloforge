@@ -157,5 +157,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make test, make lint, make build — verify no regressions; grep -ri orchestrator to confirm no user-facing strings remain
-        done: false
+        done: true
 extra: {}
