@@ -1,0 +1,124 @@
+id: agent-work-stash-be_20260310121626Z
+title: "Agent work stash — backend pool/git stash branch operations"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Add stash branch creation, restoration, and cleanup to the backend git/pool
+    layer and integrate with lifecycle and queue services. When an agent is
+    interrupted (backward board move, stop, timeout), its work-in-progress is
+    preserved in a stash/{trackId}/{workerName} branch. When the track is
+    re-claimed, the stash is automatically restored. When a track completes,
+    stash branches are cleaned up.
+  context: |
+    Currently when an agent is halted (board demotion via LifecycleService) or
+    stopped, the pool.Return() method checks out the home branch, resets to main,
+    and deletes the implementation branch — losing all uncommitted and committed
+    WIP. If the track is later re-assigned, the new agent starts from scratch.
+
+    The user wants a "stash branch" mechanism: before destroying the impl branch,
+    save it under stash/{trackId}/{workerName}. On re-claim, detect and restore
+    from the stash. On track completion, clean up stash branches automatically.
+  codebase_analysis: |
+    Key files and integration points:
+
+    Git layer:
+    - backend/internal/core/port/git_runner.go — GitRunner interface (6 methods)
+    - backend/internal/adapter/pool/git.go — execGitRunner implementation
+
+    Pool layer:
+    - backend/internal/adapter/pool/pool.go — Pool with Acquire/Prepare/Return
+    - Pool.Return() at line 133 — deletes impl branch without saving
+    - Pool.Prepare() at line 110 — creates fresh impl branch, no stash check
+
+    Service layer:
+    - backend/internal/core/service/lifecycle_service.go — HandleBackwardMove()
+      halts agent but does NOT call pool.Return (worktree stays allocated)
+    - backend/internal/core/service/queue_service.go — OnAgentComplete() calls
+      pool.ReturnByTrackID then Save; spawnForTrack() calls pool.Prepare()
+
+    Port interfaces:
+    - backend/internal/core/port/pool_returner.go — PoolReturner interface
+    - backend/internal/core/port/git_runner.go — GitRunner interface
+
+    Test infrastructure:
+    - backend/internal/adapter/pool/pool_test.go — existing pool tests
+    - backend/internal/core/testutil/mocks.go — MockPoolReturner
+    - backend/internal/core/service/queue_service_test.go — mockPool
+
+    Stash branch naming convention: stash/{trackId}/{workerName}
+    Example: stash/quota-gauges-be_20260310092417Z/worker-2
+  acceptance_criteria:
+    - GitRunner interface extended with StashBranch, RestoreFromStash, DeleteStashBranches, ListStashBranches
+    - pool.Return() auto-commits uncommitted changes and creates stash branch before cleanup when impl branch has work ahead of main
+    - pool.Prepare() detects existing stash branches and merges them into the new impl branch
+    - pool.CleanupStash(trackId) deletes all stash/{trackId}/* branches
+    - LifecycleService.HandleBackwardMove triggers stash save via pool before halting
+    - QueueService.OnAgentComplete cleans stash branches on successful completion
+    - HandleRejection does NOT stash (work is intentionally discarded)
+    - All new code has unit tests
+  out_of_scope: |
+    - Remote stash branch pushing (all local only)
+    - UI for viewing stash branches (future track)
+    - REST API endpoints for manual stash operations (CLI tooling in separate track)
+    - Modifying the kf-developer skill file (separate track)
+  technical_notes: |
+    Stash branch flow:
+
+    SAVE (in pool.Stash or pool.Return):
+    1. Check if current branch is an impl branch (not the pool home branch)
+    2. Auto-commit any uncommitted changes: git add -A && git commit -m "wip: auto-stash"
+    3. Check if impl branch has commits ahead of main (git log main..HEAD --oneline)
+    4. If ahead: git branch stash/{trackId}/{workerName} HEAD
+    5. Proceed with normal cleanup (checkout home, reset main, delete impl)
+
+    RESTORE (in pool.Prepare):
+    1. After creating impl branch from main
+    2. List stash branches: git branch --list 'stash/{trackId}/*'
+    3. If found: git merge stash/{trackId}/* --no-edit (merge stash onto impl)
+    4. Delete the stash branch after successful merge
+
+    CLEANUP (in pool.CleanupStash):
+    1. git branch --list 'stash/{trackId}/*'
+    2. For each: git branch -D <branch>
+
+    The GitRunner methods should be stateless git commands. The Pool methods
+    orchestrate the higher-level stash/restore/cleanup flows.
+plan:
+  - phase: "Git Layer"
+    tasks:
+      - text: "Add StashBranch, RestoreFromStash, DeleteStashBranches, ListStashBranches to port.GitRunner interface"
+        done: false
+      - text: "Implement new methods in pool/git.go (execGitRunner) using git branch/merge commands"
+        done: false
+      - text: "Write unit tests for git stash operations in pool/git_test.go"
+        done: false
+  - phase: "Pool Integration"
+    tasks:
+      - text: "Add Pool.Stash(w *Worktree) method — auto-commit WIP, create stash branch, return stash branch name"
+        done: false
+      - text: "Modify Pool.Return() to call Stash() before cleanup when impl branch has commits ahead of main"
+        done: false
+      - text: "Modify Pool.Prepare() to check for stash branches and merge if found after creating impl branch"
+        done: false
+      - text: "Add Pool.CleanupStash(trackId string) — delete all stash/{trackId}/* branches"
+        done: false
+      - text: "Write pool tests for stash, restore, and cleanup flows"
+        done: false
+  - phase: "Service Integration"
+    tasks:
+      - text: "Update LifecycleService.HandleBackwardMove to call pool.Stash before halting the agent"
+        done: false
+      - text: "Update QueueService.OnAgentComplete to call pool.CleanupStash on successful completion"
+        done: false
+      - text: "Update mock implementations (testutil/mocks.go, queue_service_test.go) for new pool interface methods"
+        done: false
+      - text: "Write service-level tests for stash-on-backward-move and cleanup-on-complete"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build && make test to verify all tests pass and no regressions"
+        done: false
+extra: {}

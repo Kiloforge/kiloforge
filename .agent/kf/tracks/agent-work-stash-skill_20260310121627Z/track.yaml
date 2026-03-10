@@ -1,0 +1,107 @@
+id: agent-work-stash-skill_20260310121627Z
+title: "Agent work stash — kf-developer skill and CLI tooling"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Update the kf-developer skill to be stash-branch-aware: check for existing
+    stash branches when starting a track, clean up stash branches after merge,
+    and add kf-track stash subcommands for manual stash management.
+  context: |
+    The backend track (agent-work-stash-be) adds automatic stash branch
+    creation when the orchestrator interrupts an agent. This track adds the
+    complementary skill-level awareness so Claude developer agents can:
+    1. Detect and restore from stash branches when claiming a track
+    2. Clean up stash branches during the post-merge cleanup phase
+    3. Manually manage stash branches via kf-track CLI
+  codebase_analysis: |
+    Key files to modify:
+
+    Skill files (two copies to keep in sync):
+    - backend/internal/adapter/skills/embedded/kf-developer/SKILL.md — embedded
+      copy distributed with the binary (canonical source in repo)
+    - ~/.claude/skills/kf-developer/SKILL.md — user's local active copy
+
+    CLI script:
+    - .agent/kf/bin/kf-track — bash script with subcommand dispatch; needs new
+      "stash" subcommand group (list, save, clean)
+
+    Integration points in SKILL.md:
+    - Phase 2, Step 5 (Setup) — after "git checkout -b {type}/{trackId}" from
+      PRIMARY_BRANCH, add stash branch detection and restore
+    - Phase 5, Step 11e (Cleanup) — after "git branch -d {type}/{trackId}",
+      add stash branch cleanup for the completed track
+
+    Branch naming convention (from BE track):
+    - stash/{trackId}/{workerName}
+    - Example: stash/quota-gauges-be_20260310092417Z/worker-2
+  acceptance_criteria:
+    - kf-track stash list [trackId] shows stash branches (all or filtered by track)
+    - kf-track stash save <trackId> manually creates a stash branch from current impl branch
+    - kf-track stash clean <trackId> deletes all stash branches for a track
+    - kf-developer SKILL.md Phase 2 checks for stash branches after creating impl branch and merges if found
+    - kf-developer SKILL.md Phase 5 cleanup deletes stash branches for the completed track
+    - Both embedded and local skill copies are updated identically
+  out_of_scope: |
+    - Backend code changes (handled by agent-work-stash-be track)
+    - UI for viewing stash branches
+    - Automatic stash on agent interruption (that's the BE track's job)
+  technical_notes: |
+    kf-track stash subcommands (bash):
+
+    stash list [trackId]:
+      git branch --list 'stash/*' or 'stash/{trackId}/*'
+      Format output: STASH_BRANCH  TRACK_ID  WORKER  LAST_COMMIT_DATE
+
+    stash save <trackId>:
+      1. Determine worker name from current branch or worktree name
+      2. Auto-commit uncommitted changes (git add -A && git commit -m "wip: auto-stash")
+      3. Create stash branch: git branch stash/{trackId}/{workerName} HEAD
+      4. Report success
+
+    stash clean <trackId>:
+      1. List stash branches: git branch --list 'stash/{trackId}/*'
+      2. Delete each: git branch -D <branch>
+      3. Report count deleted
+
+    SKILL.md additions:
+
+    Phase 2 Step 5 (after creating impl branch):
+      STASH=$(git branch --list "stash/{trackId}/*" | head -1 | xargs)
+      if [ -n "$STASH" ]; then
+        git merge "$STASH" --no-edit
+        git branch -D "$STASH"
+        echo "Restored from stash: $STASH"
+      fi
+
+    Phase 5 Step 11e (after deleting impl branch):
+      # Clean up any stash branches for this track
+      for b in $(git branch --list "stash/{trackId}/*"); do
+        git branch -D "$b"
+      done
+plan:
+  - phase: "CLI Tooling"
+    tasks:
+      - text: "Add 'stash list [trackId]' subcommand to .agent/kf/bin/kf-track"
+        done: false
+      - text: "Add 'stash save <trackId>' subcommand to .agent/kf/bin/kf-track"
+        done: false
+      - text: "Add 'stash clean <trackId>' subcommand to .agent/kf/bin/kf-track"
+        done: false
+  - phase: "Skill Updates"
+    tasks:
+      - text: "Update kf-developer SKILL.md Phase 2 Step 5 — check for stash branches after creating impl branch and merge if found"
+        done: false
+      - text: "Update kf-developer SKILL.md Phase 5 Step 11e — clean up stash branches during post-merge cleanup"
+        done: false
+      - text: "Sync changes to both embedded (backend/internal/adapter/skills/embedded/kf-developer/SKILL.md) and local (~/.claude/skills/kf-developer/SKILL.md) copies"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Test kf-track stash subcommands manually with a dummy stash branch"
+        done: false
+      - text: "Run make build to verify no syntax errors in modified files"
+        done: false
+extra: {}
