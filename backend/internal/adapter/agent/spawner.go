@@ -557,6 +557,15 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		return nil, fmt.Errorf("create SDK session: %w", err)
 	}
 
+	// Wire session ID callback to persist the real Claude SDK session ID.
+	session.SetSessionIDCallback(func(realID string) {
+		if agent, ferr := s.store.FindAgent(agentID); ferr == nil {
+			agent.SessionID = realID
+			_ = s.store.AddAgent(*agent) // upsert
+			_ = s.store.Save()
+		}
+	})
+
 	// Open log file for structured output.
 	lf, err := os.Create(logFile)
 	if err != nil {
@@ -793,6 +802,15 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	if err != nil {
 		return nil, fmt.Errorf("create resumed SDK session: %w", err)
 	}
+
+	// Wire session ID callback to update the store if the session ID changes on resume.
+	session.SetSessionIDCallback(func(realID string) {
+		if a, ferr := s.store.FindAgent(id); ferr == nil {
+			a.SessionID = realID
+			_ = s.store.AddAgent(*a) // upsert
+			_ = s.store.Save()
+		}
+	})
 
 	// Open log file for append.
 	lf, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
