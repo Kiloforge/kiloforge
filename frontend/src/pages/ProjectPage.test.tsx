@@ -137,6 +137,14 @@ vi.mock("../hooks/useProjectMetadata", () => ({
   }),
 }));
 
+vi.mock("../hooks/useTrackRelations", () => ({
+  useTrackRelations: () => ({
+    dependencies: new Map(),
+    conflicts: new Map(),
+    loading: false,
+  }),
+}));
+
 vi.mock("../api/fetcher", () => ({
   fetcher: vi.fn().mockImplementation((url: string) => {
     if (url.includes("setup-status")) return Promise.resolve({ setup_complete: true, project_slug: "test-proj" });

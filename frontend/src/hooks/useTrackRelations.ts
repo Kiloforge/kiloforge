@@ -41,7 +41,7 @@ export function useTrackRelations(
   const dependencies = useMemo(() => {
     const map = new Map<string, TrackDependency[]>();
     for (const detail of details) {
-      if (detail.dependencies && detail.dependencies.length > 0) {
+      if (detail?.dependencies && detail.dependencies.length > 0) {
         map.set(detail.id, detail.dependencies);
       }
     }
@@ -51,7 +51,7 @@ export function useTrackRelations(
   const conflicts = useMemo(() => {
     const map = new Map<string, TrackConflict[]>();
     for (const detail of details) {
-      if (detail.conflicts && detail.conflicts.length > 0) {
+      if (detail?.conflicts && detail.conflicts.length > 0) {
         map.set(detail.id, detail.conflicts);
       }
     }
