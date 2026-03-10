@@ -1,5 +1,5 @@
 ---
-name: kf-product-advisor
+name: kf-advisor-product
 description: "Product strategy advisor: research the codebase and competitive landscape to provide product design, branding, feature prioritization, and competitive analysis advice. Produces actionable reports to .agent/kf/_reports/product-advisor/ designed for handoff to /kf-architect."
 metadata:
   argument-hint: "[prompt describing what you want advice on — e.g., 'competitive analysis', 'branding strategy', 'feature prioritization']"
