@@ -1,0 +1,97 @@
+id: tour-settings-menu_20260310041000Z
+title: "Tour UX — Settings Menu with Take Tour Option and Auto-Dismiss Banner"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Replace the persistent tour completion banner with an auto-dismissing toast, and add a
+    cog/settings dropdown in the header nav with a "Take Tour" option for restarting the tour.
+  context: |
+    After completing the guided tour, a green banner persists at the bottom of the page saying
+    "You're all set!" with a "Restart tour" link. This banner never goes away, cluttering the
+    UI permanently. There is no discoverable way for users to restart the tour later — the
+    only option is the banner link that most users will have scrolled past or ignored.
+
+    The user wants:
+    1. The completion banner to auto-dismiss (or be a brief notification)
+    2. A cog/settings icon in the top-right header nav with a dropdown menu
+    3. The dropdown includes a "Take Tour" option to restart the tour at any time
+    4. The completion notification tells users they can find "Take Tour" in the settings menu
+  codebase_analysis: |
+    Current TourComplete component (TourOverlay.tsx lines 170-183):
+    - Renders a fixed green banner when tourState.status === "completed"
+    - Contains "Restart tour" button that calls restartTour()
+    - Banner uses completeBanner/restartLink CSS classes
+    - Rendered in App.tsx at the bottom, after all routes
+
+    Header structure (App.tsx lines 125-142):
+    - <header> with headerLeft (logo, title, connection status, agent histogram)
+    - <nav> with "Agents" link and optional "Gitea" link
+    - No existing dropdown, settings icon, or menu pattern in the codebase
+
+    Existing component patterns:
+    - ToastContainer/useToast exists for transient notifications
+    - No existing dropdown component — will need a simple one
+    - CSS uses var(--accent), var(--surface), var(--border), var(--text-dim) design tokens
+    - Icons: no icon library currently used — inline SVG is the pattern (see ConnectionStatus)
+
+    Tour restart mechanism: useTour().restartTour() calls mutation with {action: "accept"}
+  acceptance_criteria:
+    - The persistent green TourComplete banner is removed
+    - A cog/gear icon appears in the header nav (top-right area)
+    - Clicking the cog opens a dropdown menu
+    - The dropdown contains a "Take Tour" option that restarts the tour
+    - Clicking outside the dropdown closes it
+    - After tour completion, a brief auto-dismissing notification appears telling the user they can restart the tour from the settings menu
+    - The notification auto-dismisses after ~5 seconds
+    - The dropdown closes after clicking "Take Tour"
+    - E2E test covers settings menu and tour restart flow
+  out_of_scope: |
+    - Adding other settings to the dropdown (future concern)
+    - Backend changes
+    - Changing the tour steps or content
+  technical_notes: |
+    Approach:
+
+    1. Create a SettingsMenu component with a gear SVG icon button and a positioned
+       dropdown. Use a simple useState toggle + useEffect click-outside-to-close pattern.
+       No need for a generic Dropdown component — this is the only dropdown in the app.
+
+    2. Move the "Take Tour" / restartTour logic into the SettingsMenu dropdown item.
+       Remove the TourComplete component entirely.
+
+    3. For the auto-dismiss notification after tour completion, use the existing
+       useToast() system (ToastProvider/ToastContainer are already wired up in App.tsx).
+       When the tour completes, show a toast: "Tour complete! You can always restart
+       it from the settings menu." The toast auto-dismisses per existing toast behavior.
+
+    4. Wire the completion toast in TourProvider or TourOverlay — when tourState
+       transitions to "completed", fire the toast.
+
+    5. Add the SettingsMenu to the <nav> in App.tsx, after the existing links.
+plan:
+  - phase: "Core — Settings Menu"
+    tasks:
+      - text: "Create SettingsMenu component with gear SVG icon, dropdown toggle, click-outside-to-close, and CSS module"
+        done: false
+      - text: "Add 'Take Tour' dropdown item that calls restartTour() from useTourContextSafe() and closes the dropdown"
+        done: false
+      - text: "Add SettingsMenu to the header <nav> in App.tsx"
+        done: false
+  - phase: "Core — Banner Replacement"
+    tasks:
+      - text: "Remove TourComplete component from TourOverlay.tsx and its render in App.tsx"
+        done: false
+      - text: "Add auto-dismiss toast on tour completion: fire useToast() when tourState transitions to 'completed', message references the settings menu"
+        done: false
+      - text: "Clean up completeBanner/restartLink CSS classes from TourOverlay.module.css"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "E2E test: settings menu opens/closes, 'Take Tour' restarts tour, completion toast appears and auto-dismisses"
+        done: false
+      - text: "Visual verification: gear icon fits header style, dropdown positioned correctly, toast is readable"
+        done: false
+extra: {}

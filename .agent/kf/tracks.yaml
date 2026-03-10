@@ -177,6 +177,7 @@ terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rende
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
 tour-inmemory-state_20260310120000Z: {"title":"Tour In-Memory State — Controlled Demo Data for Guided Tour","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+tour-settings-menu_20260310041000Z: {"title":"Tour UX — Settings Menu with Take Tour Option and Auto-Dismiss Banner","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tour-ux-improvements_20260309235000Z: {"title":"Tour UX Improvements — State Transitions, Demo Data, and Example URL","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 tracing-always-on-be_20260309231000Z: {"title":"Remove Optional Tracing — Always-On (Backend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 tracing-always-on-fe_20260309231001Z: {"title":"Remove Tracing Toggle UI (Frontend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
