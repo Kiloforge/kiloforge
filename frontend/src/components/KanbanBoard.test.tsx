@@ -60,32 +60,39 @@ function renderBoard(props?: Partial<Parameters<typeof KanbanBoard>[0]>) {
 }
 
 describe("KanbanBoard", () => {
-  it("renders all columns with labels", () => {
+  it("renders 3 visible columns (backlog, approved, in_progress)", () => {
     renderBoard();
     expect(screen.getByText("Backlog")).toBeInTheDocument();
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
-    expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(screen.queryByText("Done")).not.toBeInTheDocument();
+  });
+
+  it("hides cards in the done column from the board", () => {
+    renderBoard();
+    expect(screen.getByText("Feature Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Bug Fix Beta")).toBeInTheDocument();
+    // Chore Gamma is in "done" — should not be visible
+    expect(screen.queryByText("Chore Gamma")).not.toBeInTheDocument();
   });
 
   it("renders cards in correct columns", () => {
     renderBoard();
     expect(screen.getByText("Feature Alpha")).toBeInTheDocument();
     expect(screen.getByText("Bug Fix Beta")).toBeInTheDocument();
-    expect(screen.getByText("Chore Gamma")).toBeInTheDocument();
   });
 
   it("shows column counts", () => {
     renderBoard();
-    // Backlog has 1 card, in_progress has 1, done has 1
-    const counts = screen.getAllByText("1");
-    expect(counts.length).toBeGreaterThanOrEqual(3);
+    // Backlog has 1 card, approved has 0, in_progress has 1
+    const ones = screen.getAllByText("1");
+    expect(ones.length).toBeGreaterThanOrEqual(2);
+    const zeros = screen.getAllByText("0");
+    expect(zeros.length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows approve/reject buttons for backlog cards", () => {
     renderBoard();
-    // Backlog cards get approve (checkmark) and reject (x) buttons
-    // Use title attributes
     expect(screen.getByTitle("Approve")).toBeInTheDocument();
     expect(screen.getByTitle("Reject")).toBeInTheDocument();
   });
@@ -113,7 +120,6 @@ describe("KanbanBoard", () => {
     renderBoard();
     await user.click(screen.getByTitle("Reject"));
     await user.click(screen.getByText("No"));
-    // Confirmation disappears, approve/reject buttons return
     expect(screen.queryByText("Delete track?")).not.toBeInTheDocument();
     expect(screen.getByTitle("Approve")).toBeInTheDocument();
   });
@@ -133,16 +139,17 @@ describe("KanbanBoard", () => {
     };
     renderBoard({ board: emptyBoard });
     expect(screen.getByText("Backlog")).toBeInTheDocument();
-    // All counts should be 0
+    // 3 visible columns, all with 0 count
     const zeros = screen.getAllByText("0");
-    expect(zeros.length).toBe(4);
+    expect(zeros.length).toBe(3);
   });
 
   it("renders card type badges", () => {
     renderBoard();
     expect(screen.getByText("feature")).toBeInTheDocument();
     expect(screen.getByText("fix")).toBeInTheDocument();
-    expect(screen.getByText("chore")).toBeInTheDocument();
+    // "chore" is in done column — not visible
+    expect(screen.queryByText("chore")).not.toBeInTheDocument();
   });
 
   it("renders track links when projectSlug is provided", () => {
@@ -226,5 +233,62 @@ describe("KanbanBoard", () => {
     // Existing cards should NOT have the entering animation class
     const existingCard = screen.getByText("Feature Alpha").closest("[data-track-id]");
     expect(existingCard?.className).not.toMatch(/cardEntering/);
+  });
+
+  it("shows completion animation when card moves to done", () => {
+    const initialBoard: BoardState = {
+      columns: ["backlog", "approved", "in_progress", "done"],
+      cards: {
+        "track-completing": {
+          track_id: "track-completing",
+          title: "Completing Card",
+          type: "feature",
+          column: "in_progress",
+          position: 0,
+          moved_at: "2026-03-10T00:00:00Z",
+          created_at: "2026-03-10T00:00:00Z",
+        },
+      },
+    };
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <KanbanBoard
+          board={initialBoard}
+          projectSlug="test-proj"
+          onMoveCard={vi.fn()}
+          onDeleteTrack={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    // Card should be visible initially
+    expect(screen.getByText("Completing Card")).toBeInTheDocument();
+
+    // Move card to done
+    const doneBoard: BoardState = {
+      ...initialBoard,
+      cards: {
+        "track-completing": {
+          ...initialBoard.cards["track-completing"],
+          column: "done",
+        },
+      },
+    };
+
+    rerender(
+      <MemoryRouter>
+        <KanbanBoard
+          board={doneBoard}
+          projectSlug="test-proj"
+          onMoveCard={vi.fn()}
+          onDeleteTrack={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    // Card should still be visible temporarily with completion animation
+    const completingCard = screen.getByText("Completing Card").closest("[data-track-id]");
+    expect(completingCard?.className).toMatch(/cardCompleting/);
   });
 });

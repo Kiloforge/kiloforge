@@ -69,7 +69,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="kanban-board"]',
     title: "The Kanban Board",
     content:
-      "Tracks flow through columns: Backlog (new) \u2192 Approved (ready for dev) \u2192 In Progress \u2192 Done. Approving a track in the CLI triggers an AI agent to implement it.",
+      "Tracks flow through columns: Backlog (new) \u2192 Approved (ready for dev) \u2192 In Progress. Completed tracks leave the board automatically. Approving a track in the CLI triggers an AI agent to implement it.",
     placement: "top",
     demoState: DEMO_STATES["board-explanation"],
   },

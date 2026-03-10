@@ -8,18 +8,26 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { clampForwardMove } from "../utils/board";
 import styles from "./KanbanBoard.module.css";
 
+/** Columns visible on the board — "done" is filtered out (cards go to track list). */
+const BOARD_COLUMNS = ["backlog", "approved", "in_progress"] as const;
+
 const COLUMN_LABELS: Record<string, string> = {
   backlog: "Backlog",
   approved: "Approved",
   in_progress: "In Progress",
-  done: "Done",
 };
 
 const COLUMN_COLORS: Record<string, string> = {
   backlog: "var(--text-dim)",
   approved: "var(--accent)",
   in_progress: "var(--yellow)",
-  done: "var(--green)",
+};
+
+/** Flex weight per column — backlog/approved share equal space, in_progress is narrower. */
+const COLUMN_FLEX: Record<string, number> = {
+  backlog: 3,
+  approved: 3,
+  in_progress: 1.5,
 };
 
 interface KanbanBoardProps {
@@ -37,9 +45,11 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [confirmReject, setConfirmReject] = useState<string | null>(null);
   const [showRelations, setShowRelations] = useState(true);
-  const [activeColumn, setActiveColumn] = useState(board.columns[0] ?? "backlog");
+  const [activeColumn, setActiveColumn] = useState<string>(BOARD_COLUMNS[0]);
   const [clampedCardId, setClampedCardId] = useState<string | null>(null);
   const [enteringCards, setEnteringCards] = useState<Set<string>>(new Set());
+  const [completingCards, setCompletingCards] = useState<Set<string>>(new Set());
+  const prevCardColumns = useRef<Map<string, string>>(new Map());
   const knownCardIds = useRef<Set<string>>(new Set());
   const isMobile = useMediaQuery("(max-width: 767px)");
 
@@ -67,6 +77,29 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
     }
   }, [board.cards]);
 
+  // Detect cards transitioning to "done" and trigger completion animation
+  useEffect(() => {
+    const newCompleting = new Set<string>();
+    for (const [trackId, card] of Object.entries(board.cards)) {
+      const prevCol = prevCardColumns.current.get(trackId);
+      if (prevCol && prevCol !== "done" && card.column === "done") {
+        newCompleting.add(trackId);
+      }
+    }
+    // Update previous column snapshot
+    const nextMap = new Map<string, string>();
+    for (const [trackId, card] of Object.entries(board.cards)) {
+      nextMap.set(trackId, card.column);
+    }
+    prevCardColumns.current = nextMap;
+
+    if (newCompleting.size > 0) {
+      setCompletingCards(newCompleting);
+      const timer = setTimeout(() => setCompletingCards(new Set()), 900);
+      return () => clearTimeout(timer);
+    }
+  }, [board.cards]);
+
   const boardRef = useRef<HTMLDivElement>(null);
   const cardRefsMap = useRef(new Map<string, HTMLElement>());
 
@@ -80,7 +113,12 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
 
   const cardsByColumn = (col: string): BoardCard[] => {
     return Object.values(board.cards)
-      .filter((c) => c.column === col)
+      .filter((c) => {
+        if (c.column === col) return true;
+        // Show completing cards in in_progress column during animation
+        if (col === "in_progress" && completingCards.has(c.track_id)) return true;
+        return false;
+      })
       .sort((a, b) => a.position - b.position);
   };
 
@@ -155,7 +193,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
       )}
       {isMobile && (
         <div className={styles.tabBar}>
-          {board.columns.map((col) => (
+          {BOARD_COLUMNS.map((col) => (
             <button
               key={col}
               className={`${styles.tab} ${activeColumn === col ? styles.tabActive : ""}`}
@@ -169,7 +207,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
         </div>
       )}
       <div className={styles.board} data-tour="kanban-board" ref={boardRef}>
-        {board.columns.map((col) => {
+        {BOARD_COLUMNS.map((col) => {
           const cards = cardsByColumn(col);
           const isOver = dropTarget === col;
           const isActive = !isMobile || activeColumn === col;
@@ -177,7 +215,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
             <div
               key={col}
               className={`${styles.column} ${isOver ? styles.columnOver : ""} ${isMobile && isActive ? styles.columnActive : ""}`}
-              style={isMobile && !isActive ? { display: "none" } : undefined}
+              style={isMobile && !isActive ? { display: "none" } : { flex: COLUMN_FLEX[col] ?? 1 }}
               onDragOver={isMobile ? undefined : (e) => handleDragOver(e, col)}
               onDragLeave={isMobile ? undefined : handleDragLeave}
               onDrop={isMobile ? undefined : (e) => handleDrop(e, col)}
@@ -201,6 +239,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     isDragging={dragTrackId === card.track_id}
                     isClamped={clampedCardId === card.track_id}
                     isEntering={enteringCards.has(card.track_id)}
+                    isCompleting={completingCards.has(card.track_id)}
                     isBacklog={col === "backlog"}
                     isReady={col === "backlog" && (
                       !dependencies?.get(card.track_id)?.length ||
@@ -220,7 +259,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     cardRef={(el) => registerCardRef(card.track_id, el)}
                     isMobile={isMobile}
                     currentColumn={col}
-                    columns={board.columns}
+                    columns={[...BOARD_COLUMNS]}
                     onMobileMove={handleMobileMove}
                   />
                 ))}
@@ -242,6 +281,7 @@ interface CardItemProps {
   isDragging: boolean;
   isClamped?: boolean;
   isEntering?: boolean;
+  isCompleting?: boolean;
   isBacklog: boolean;
   isReady?: boolean;
   confirmingReject: boolean;
@@ -259,10 +299,10 @@ interface CardItemProps {
   onMobileMove?: (trackId: string, toColumn: string) => void;
 }
 
-function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isBacklog, isReady, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isCompleting, isBacklog, isReady, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
   return (
     <div
-      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isEntering ? styles.cardEntering : ""} ${isReady ? styles.cardReady : isBacklog ? styles.cardBacklog : ""}`}
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isEntering ? styles.cardEntering : ""} ${isCompleting ? styles.cardCompleting : ""} ${isReady ? styles.cardReady : isBacklog ? styles.cardBacklog : ""}`}
       draggable={!isMobile}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}

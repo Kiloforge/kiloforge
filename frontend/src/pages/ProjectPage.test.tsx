@@ -190,13 +190,14 @@ describe("ProjectPage", () => {
     expect(screen.getByText("Remote")).toBeInTheDocument();
   });
 
-  it("renders board section with columns", () => {
+  it("renders board section with 3 visible columns", () => {
     renderPage();
     expect(screen.getAllByText("Board").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Backlog")).toBeInTheDocument();
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
-    expect(screen.getByText("Done")).toBeInTheDocument();
+    // Done column is not rendered on the board
+    expect(screen.queryByText("Done")).not.toBeInTheDocument();
   });
 
   it("renders board cards", () => {

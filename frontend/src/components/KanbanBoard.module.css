@@ -11,7 +11,6 @@
 }
 
 .column {
-  flex: 1;
   min-width: 180px;
   background: var(--bg-surface);
   backdrop-filter: blur(var(--blur));
@@ -98,10 +97,22 @@
   animation: cardSlideIn 0.4s ease-out;
 }
 
+.cardCompleting {
+  animation: completionCelebrate 0.85s ease-out forwards;
+  pointer-events: none;
+}
+
 @keyframes cardSlideIn {
   0% { opacity: 0; transform: translateY(12px); max-height: 0; }
   50% { opacity: 0.5; max-height: 200px; }
   100% { opacity: 1; transform: translateY(0); max-height: 200px; }
+}
+
+@keyframes completionCelebrate {
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 40%, transparent); }
+  30% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 0 6px color-mix(in srgb, var(--green) 40%, transparent); border-color: var(--green); }
+  70% { transform: scale(1.05); opacity: 0.6; box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 20%, transparent); }
+  100% { transform: scale(0.95) translateY(-8px); opacity: 0; }
 }
 
 @keyframes clampPulse {

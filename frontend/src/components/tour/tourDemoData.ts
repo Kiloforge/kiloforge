@@ -61,15 +61,6 @@ export const DEMO_BOARD: BoardState = {
       moved_at: now,
       created_at: now,
     },
-    "db-schema_demo": {
-      track_id: "db-schema_demo",
-      title: "Database schema for user accounts",
-      type: "chore",
-      column: "done",
-      position: 0,
-      moved_at: now,
-      created_at: now,
-    },
   },
 };
 
@@ -78,7 +69,6 @@ export const DEMO_TRACKS: Track[] = [
   { id: "auth-register_demo", title: "User registration and onboarding", status: "pending", project: DEMO_PROJECT_SLUG },
   { id: "auth-reset_demo", title: "Password reset via email", status: "approved", project: DEMO_PROJECT_SLUG },
   { id: "api-middleware_demo", title: "API auth middleware and JWT validation", status: "in-progress", project: DEMO_PROJECT_SLUG },
-  { id: "db-schema_demo", title: "Database schema for user accounts", status: "complete", project: DEMO_PROJECT_SLUG },
 ];
 
 // ---------------------------------------------------------------------------
