@@ -32,15 +32,22 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
+
 command-deck-fe_20260311100002Z: []
 
 cortex-rebrand-be_20260311100001Z:
   - gitea-removal-be_20260311070000Z
+
 gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
 onboarding-ux-fe_20260310073721Z: []
+
+reliability-metrics-be_20260310093038Z: []
+
+reliability-metrics-fe_20260310093039Z:
+  - reliability-metrics-be_20260310093038Z
 
 site-rebrand_20260311100000Z: []

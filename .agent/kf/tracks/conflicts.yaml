@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+cortex-rebrand-be_20260311100001Z/reliability-metrics-be_20260310093038Z: {"risk":"medium","note":"Both modify openapi.yaml — cortex rebrands descriptions, metrics adds new endpoints","added":"2026-03-10"}
