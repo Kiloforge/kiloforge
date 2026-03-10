@@ -123,7 +123,7 @@ interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via W
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling and arrangement","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling and arrangement","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 kf-repair-skill_20260311060000Z: {"title":"System repair agent skill — KF health auditing, diagnostics, and auto-repair","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -142,7 +142,7 @@ model-warning-banner_20260310072515Z: {"title":"One-time model compatibility war
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-onboarding-ux-fe_20260310073721Z: {"title":"Progressive onboarding UX — ease beginners in, empower power users","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+onboarding-ux-fe_20260310073721Z: {"title":"Progressive onboarding UX — ease beginners in, empower power users","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
