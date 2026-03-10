@@ -97,6 +97,33 @@ export function FullScreenCommand({ agents, onExit }: Props) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Browser Fullscreen API: enter on mount, exit on unmount
+  useEffect(() => {
+    try {
+      document.documentElement.requestFullscreen?.();
+    } catch {
+      // Fullscreen not supported or denied — continue as overlay
+    }
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        onExit();
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      try {
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.();
+        }
+      } catch {
+        // Ignore errors when exiting fullscreen
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className={styles.overlay} data-tour="fullscreen-command">
       <div className={styles.header}>
