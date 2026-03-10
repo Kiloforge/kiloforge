@@ -132,7 +132,7 @@ merge-lock-skill-consolidation_20260310220001Z: {"title":"Consolidate merge lock
 minimizable-terminals_20260310070000Z: {"title":"Minimizable agent terminals with activity notifications","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
