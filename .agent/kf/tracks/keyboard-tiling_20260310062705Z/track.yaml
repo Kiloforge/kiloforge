@@ -1,5 +1,5 @@
 id: keyboard-tiling_20260310062705Z
-title: "Keyboard shortcuts for window tiling and arrangement"
+title: Keyboard shortcuts for window tiling and arrangement
 type: feature
 status: pending
 created: 2026-03-10
@@ -20,26 +20,26 @@ spec:
     - AgentLauncher: Cmd/Ctrl+Enter to submit
     - No global keyboard shortcut system exists
     - No useHotkeys or similar hook
-
+    
     **After Tracks 1 & 2:**
     - useFloatingWindow hook manages position/size per window
     - useWindowManager tracks all open windows with z-index
     - Each window has agentId as unique key
-
+    
     **Key files to create/modify:**
     - New: frontend/src/hooks/useKeyboardShortcuts.ts — global shortcut handler
     - Modify: frontend/src/pages/App.tsx — register shortcuts
     - Modify: useWindowManager — add tile/minimize/maximize methods
     - New: frontend/src/components/ShortcutHelp.tsx — help overlay (Cmd+?)
   acceptance_criteria:
-    - "Cmd/Ctrl+Shift+T: Tile all open windows evenly (auto-detect best layout: 2=side-by-side, 3=one-left-two-right, 4=quad)"
-    - "Cmd/Ctrl+Shift+]: Cycle focus to next window"
-    - "Cmd/Ctrl+Shift+[: Cycle focus to previous window"
-    - "Cmd/Ctrl+Shift+M: Minimize/restore focused window"
-    - "Cmd/Ctrl+Shift+F: Maximize/restore focused window (fill viewport)"
-    - "Cmd/Ctrl+Shift+W: Close focused window"
-    - "Cmd/Ctrl+Shift+Left/Right: Snap focused window to left/right half"
-    - "Cmd/Ctrl+?: Show keyboard shortcuts help overlay"
+    - Cmd/Ctrl+Shift+T: Tile all open windows evenly (auto-detect best layout: 2=side-by-side, 3=one-left-two-right, 4=quad)
+    - Cmd/Ctrl+Shift+]: Cycle focus to next window
+    - Cmd/Ctrl+Shift+[: Cycle focus to previous window
+    - Cmd/Ctrl+Shift+M: Minimize/restore focused window
+    - Cmd/Ctrl+Shift+F: Maximize/restore focused window (fill viewport)
+    - Cmd/Ctrl+Shift+W: Close focused window
+    - Cmd/Ctrl+Shift+Left/Right: Snap focused window to left/right half
+    - Cmd/Ctrl+?: Show keyboard shortcuts help overlay
     - Shortcuts do not fire when a textarea/input has focus (except window-level ones)
     - Shortcuts are discoverable via a help overlay
     - Tiling preserves open windows — only repositions/resizes
@@ -54,7 +54,7 @@ spec:
     - Check for modifier keys (metaKey || ctrlKey) + shiftKey + key
     - Skip when event.target is INPUT/TEXTAREA (except for window-level shortcuts)
     - Call window manager methods for tile/minimize/maximize/cycle
-
+    
     Tiling algorithm:
     - Get viewport dimensions and number of open windows
     - 1 window: center at 80% viewport
@@ -64,46 +64,46 @@ spec:
     - 5+ windows: auto-grid (Math.ceil(sqrt(n)) columns)
     - Apply 8px gap between tiles
     - Account for header height (60px) in viewport calc
-
+    
     Minimize: store previous position/size, collapse to title bar only
     (40px height, fixed at bottom of screen, stacked horizontally).
     Restore: return to stored position/size.
-
+    
     Maximize: store previous position/size, fill viewport (minus header).
     Restore: return to stored position/size.
 plan:
-  - phase: "Global shortcut infrastructure"
+  - phase: Global shortcut infrastructure
     tasks:
-      - text: "Create useKeyboardShortcuts hook — keydown listener on document, modifier key detection (Cmd/Ctrl+Shift), input/textarea exclusion"
-        done: false
-      - text: "Register shortcut handler in App.tsx, wire to useWindowManager methods"
-        done: false
-  - phase: "Tiling and snapping"
+      - text: Create useKeyboardShortcuts hook — keydown listener on document, modifier key detection (Cmd/Ctrl+Shift), input/textarea exclusion
+        done: true
+      - text: Register shortcut handler in App.tsx, wire to useWindowManager methods
+        done: true
+  - phase: Tiling and snapping
     tasks:
-      - text: "Add tileAll() method to useWindowManager — auto-detect layout (1/2/3/4/5+ windows), calculate positions with 8px gaps, apply to all windows"
-        done: false
-      - text: "Add snapLeft()/snapRight() methods — snap focused window to left/right half of viewport"
-        done: false
-  - phase: "Window state shortcuts"
+      - text: Add tileAll() method to useWindowManager — auto-detect layout (1/2/3/4/5+ windows), calculate positions with 8px gaps, apply to all windows
+        done: true
+      - text: Add snapLeft()/snapRight() methods — snap focused window to left/right half of viewport
+        done: true
+  - phase: Window state shortcuts
     tasks:
-      - text: "Add minimize/restore — collapse to title bar at bottom of screen, store/restore previous position and size"
-        done: false
-      - text: "Add maximize/restore — fill viewport minus header, store/restore previous position and size"
-        done: false
-      - text: "Add cycleFocus(direction) — cycle z-index focus through open windows in order"
-        done: false
-      - text: "Add close focused window shortcut (Cmd/Ctrl+Shift+W)"
-        done: false
-  - phase: "Help overlay and discoverability"
+      - text: Add minimize/restore — collapse to title bar at bottom of screen, store/restore previous position and size
+        done: true
+      - text: Add maximize/restore — fill viewport minus header, store/restore previous position and size
+        done: true
+      - text: Add cycleFocus(direction) — cycle z-index focus through open windows in order
+        done: true
+      - text: Add close focused window shortcut (Cmd/Ctrl+Shift+W)
+        done: true
+  - phase: Help overlay and discoverability
     tasks:
-      - text: "Create ShortcutHelp component — modal overlay showing all shortcuts in a clean grid, triggered by Cmd/Ctrl+?"
-        done: false
-      - text: "Add subtle shortcut hint to window title bar (e.g., small '?' icon that shows tooltip)"
-        done: false
-  - phase: "Verification"
+      - text: Create ShortcutHelp component — modal overlay showing all shortcuts in a clean grid, triggered by Cmd/Ctrl+?
+        done: true
+      - text: Add subtle shortcut hint to window title bar (e.g., small '?' icon that shows tooltip)
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Verify `make build-frontend` succeeds with no TypeScript errors"
-        done: false
-      - text: "Manual test: all shortcuts with 1/2/3/4 windows open, tile layouts, minimize/maximize/restore, cycle focus, help overlay"
-        done: false
+      - text: Verify `make build-frontend` succeeds with no TypeScript errors
+        done: true
+      - text: Manual test: all shortcuts with 1/2/3/4 windows open, tile layouts, minimize/maximize/restore, cycle focus, help overlay
+        done: true
 extra: {}
