@@ -7,6 +7,7 @@ import (
 
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 )
 
 // ProcessStarter abstracts launching a claude --resume process.
@@ -37,13 +38,19 @@ type RecoveryFailure struct {
 
 // RecoveryManager handles auto-recovery of suspended agents on startup.
 type RecoveryManager struct {
-	store   port.AgentStore
-	starter ProcessStarter
+	store          port.AgentStore
+	starter        ProcessStarter
+	reliabilitySvc *service.ReliabilityService
 }
 
 // NewRecoveryManager creates a RecoveryManager.
 func NewRecoveryManager(store port.AgentStore, starter ProcessStarter) *RecoveryManager {
 	return &RecoveryManager{store: store, starter: starter}
+}
+
+// SetReliabilityService sets the reliability service for recording resume failure events.
+func (rm *RecoveryManager) SetReliabilityService(svc *service.ReliabilityService) {
+	rm.reliabilitySvc = svc
 }
 
 // RecoverAll attempts to resume all suspended agents. Also detects stale
@@ -82,6 +89,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 				ag.ResumeError = "no session ID"
 			}
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "no session ID"})
+			rm.recordResumeFailure(a.ID, a.Ref, "no session ID")
 			continue
 		}
 
@@ -93,6 +101,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 					ag.ResumeError = "worktree missing"
 				}
 				result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: "worktree missing"})
+				rm.recordResumeFailure(a.ID, a.Ref, "worktree missing")
 				continue
 			}
 		}
@@ -105,6 +114,7 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 				ag.ResumeError = errMsg
 			}
 			result.Failed = append(result.Failed, RecoveryFailure{AgentID: a.ID, Reason: errMsg})
+			rm.recordResumeFailure(a.ID, a.Ref, errMsg)
 			continue
 		}
 
@@ -120,6 +130,14 @@ func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 
 	_ = rm.store.Save()
 	return result
+}
+
+func (rm *RecoveryManager) recordResumeFailure(agentID, ref, reason string) {
+	if rm.reliabilitySvc != nil {
+		_ = rm.reliabilitySvc.RecordEvent(domain.RelEvtAgentResumeFail, domain.SeverityError, agentID, ref, map[string]any{
+			"reason": reason,
+		})
+	}
 }
 
 // execClaudeResume runs `claude --resume <sessionID>` in the given directory.

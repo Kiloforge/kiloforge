@@ -110,8 +110,9 @@ type APIHandler struct {
 	wsSessions   *wsAdapter.SessionManager
 	consent      ConsentChecker
 	agentRemover AgentRemover
-	queueSvc     QueueServicer
-	analytics    port.AnalyticsTracker
+	queueSvc       QueueServicer
+	analytics      port.AnalyticsTracker
+	reliabilitySvc *service.ReliabilityService
 
 	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -137,8 +138,9 @@ type APIHandlerOpts struct {
 	WSSessions   *wsAdapter.SessionManager
 	Consent      ConsentChecker
 	AgentRemover AgentRemover
-	QueueSvc     QueueServicer
-	Analytics    port.AnalyticsTracker
+	QueueSvc       QueueServicer
+	Analytics      port.AnalyticsTracker
+	ReliabilitySvc *service.ReliabilityService
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -162,8 +164,9 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		wsSessions:   opts.WSSessions,
 		consent:      opts.Consent,
 		agentRemover: opts.AgentRemover,
-		queueSvc:     opts.QueueSvc,
-		analytics:    opts.Analytics,
+		queueSvc:       opts.QueueSvc,
+		analytics:      opts.Analytics,
+		reliabilitySvc: opts.ReliabilitySvc,
 	}
 }
 
@@ -1014,6 +1017,12 @@ func (h *APIHandler) AcquireLock(ctx context.Context, req gen.AcquireLockRequest
 				currentHolder = existing.Holder
 				break
 			}
+		}
+		if h.reliabilitySvc != nil {
+			_ = h.reliabilitySvc.RecordEvent(domain.RelEvtLockContention, domain.SeverityWarn, "", req.Scope, map[string]any{
+				"requester":      req.Body.Holder,
+				"current_holder": currentHolder,
+			})
 		}
 		return gen.AcquireLock409JSONResponse{
 			Error:         "timeout waiting for lock",

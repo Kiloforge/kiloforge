@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"kiloforge/internal/core/domain"
+	"kiloforge/internal/core/service"
 )
 
 const (
@@ -57,6 +60,7 @@ type QuotaTracker struct {
 	snapshots      []RateSnapshot
 	rateLimitUntil time.Time
 	dataDir        string
+	reliabilitySvc *service.ReliabilityService
 }
 
 // NewQuotaTracker creates a new tracker. If dataDir is empty, persistence is disabled.
@@ -65,6 +69,11 @@ func NewQuotaTracker(dataDir string) *QuotaTracker {
 		agents:  make(map[string]*AgentUsage),
 		dataDir: dataDir,
 	}
+}
+
+// SetReliabilityService sets the reliability service for recording quota events.
+func (t *QuotaTracker) SetReliabilityService(svc *service.ReliabilityService) {
+	t.reliabilitySvc = svc
 }
 
 // RecordEvent processes a stream-json event and updates usage counters.
@@ -80,6 +89,14 @@ func (t *QuotaTracker) RecordEvent(agentID string, event StreamEvent) {
 	// Check for rate-limiting signals.
 	if event.Subtype == "error_max_budget_usd" {
 		t.rateLimitUntil = time.Now().Add(5 * time.Minute)
+		if t.reliabilitySvc != nil {
+			go func() {
+				_ = t.reliabilitySvc.RecordEvent(domain.RelEvtQuotaExceeded, domain.SeverityWarn, agentID, "", map[string]any{
+					"subtype":     event.Subtype,
+					"retry_after": "5m",
+				})
+			}()
+		}
 	}
 
 	if event.Usage == nil && event.CostUSD == 0 {

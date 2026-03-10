@@ -17,6 +17,7 @@ import (
 	"kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 
 	"github.com/google/uuid"
 )
@@ -79,6 +80,7 @@ type Spawner struct {
 	eventBus           port.EventBus
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
+	reliabilitySvc     *service.ReliabilityService
 
 	activeMu     sync.RWMutex
 	activeAgents map[string]*InteractiveAgent
@@ -145,6 +147,11 @@ func (s *Spawner) SetEventBus(eb port.EventBus) {
 // Typically used to call SessionManager.UnregisterBridge.
 func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
 	s.sessionEndCallback = fn
+}
+
+// SetReliabilityService sets the reliability service for recording failure events.
+func (s *Spawner) SetReliabilityService(svc *service.ReliabilityService) {
+	s.reliabilitySvc = svc
 }
 
 // ActiveCount returns the number of currently active agents.
@@ -369,6 +376,11 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 		}
 		span.AddEvent("agent.failed")
 		span.SetError(err)
+		if s.reliabilitySvc != nil {
+			_ = s.reliabilitySvc.RecordEvent(domain.RelEvtAgentSpawnFailure, domain.SeverityError, agentID, ref, map[string]any{
+				"error": err.Error(),
+			})
+		}
 	} else {
 		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {
 			fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)

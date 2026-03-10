@@ -9,6 +9,7 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 )
 
 const reaperInterval = 60 * time.Second
@@ -16,10 +17,11 @@ const reaperInterval = 60 * time.Second
 // TimeoutReaper periodically checks agent durations and force-stops agents
 // exceeding the configured max duration.
 type TimeoutReaper struct {
-	store    port.AgentStore
-	cfg      *config.Config
-	eventBus port.EventBus
-	logger   *log.Logger
+	store          port.AgentStore
+	cfg            *config.Config
+	eventBus       port.EventBus
+	logger         *log.Logger
+	reliabilitySvc *service.ReliabilityService
 }
 
 // NewTimeoutReaper creates a new agent timeout reaper.
@@ -30,6 +32,11 @@ func NewTimeoutReaper(store port.AgentStore, cfg *config.Config, eventBus port.E
 		eventBus: eventBus,
 		logger:   log.New(log.Writer(), "[timeout-reaper] ", log.LstdFlags),
 	}
+}
+
+// SetReliabilityService sets the reliability service for recording timeout events.
+func (r *TimeoutReaper) SetReliabilityService(svc *service.ReliabilityService) {
+	r.reliabilitySvc = svc
 }
 
 // Start runs the reaper in a background goroutine. It stops when ctx is cancelled.
@@ -86,6 +93,14 @@ func (r *TimeoutReaper) reap() {
 				"status":          string(domain.AgentStatusForceKilled),
 				"shutdown_reason": reason,
 			}))
+		}
+
+		if r.reliabilitySvc != nil {
+			_ = r.reliabilitySvc.RecordEvent(domain.RelEvtAgentTimeout, domain.SeverityError, a.ID, a.Ref, map[string]any{
+				"reason":       reason,
+				"max_duration": maxDuration.String(),
+				"elapsed":      elapsed.Truncate(time.Second).String(),
+			})
 		}
 	}
 }
