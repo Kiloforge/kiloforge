@@ -199,14 +199,14 @@ func (m *MockAgentSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir
 
 // MockPoolReturner records pool return calls.
 type MockPoolReturner struct {
-	mu          sync.Mutex
-	Calls       []string
-	StashCalls  []string
-	CleanCalls  []string
+	mu         sync.Mutex
+	Calls      []string
+	StashCalls []string
+	CleanCalls []string
 
-	ReturnErr  error
-	StashErr   error
-	CleanErr   error
+	ReturnErr error
+	StashErr  error
+	CleanErr  error
 }
 
 func (m *MockPoolReturner) ReturnByTrackID(trackID string) error {
