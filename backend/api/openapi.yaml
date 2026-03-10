@@ -949,6 +949,119 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tracks/{trackId}/claim:
+    post:
+      operationId: claimTrack
+      summary: Claim a track for implementation
+      description: Acquires a track-scoped lock so other workers know this track is being worked on.
+      tags: [Tracks]
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Track ID to claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimTrackRequest"
+      responses:
+        "200":
+          description: Track claimed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackClaimInfo"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Track already claimed by another holder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackClaimConflict"
+    delete:
+      operationId: releaseTrackClaim
+      summary: Release a track claim
+      tags: [Tracks]
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Track ID to release
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseTrackClaimRequest"
+      responses:
+        "200":
+          description: Claim released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackClaimReleased"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No claim found or not owned by holder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/tracks/{trackId}/claim/heartbeat:
+    post:
+      operationId: heartbeatTrackClaim
+      summary: Extend track claim TTL
+      tags: [Tracks]
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Track ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackClaimHeartbeatRequest"
+      responses:
+        "200":
+          description: Claim TTL extended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackClaimInfo"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No claim found or not owned by holder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/consent/agent-permissions:
     get:
       operationId: getAgentPermissionsConsent
@@ -2188,6 +2301,17 @@ components:
         conflict_count:
           type: integer
           description: Number of active conflict risk pairs
+        claimed_by:
+          type: string
+          description: Holder ID that has claimed this track (empty if unclaimed)
+        claimed_at:
+          type: string
+          format: date-time
+          description: When the track was claimed
+        claim_expires_at:
+          type: string
+          format: date-time
+          description: When the claim expires if not heartbeated
 
     TrackDetail:
       type: object
@@ -2496,6 +2620,69 @@ components:
       properties:
         released:
           type: boolean
+
+    ClaimTrackRequest:
+      type: object
+      required: [holder]
+      properties:
+        holder:
+          type: string
+          description: Identifier of the worker claiming the track (e.g. worker-1, agent-abc)
+        ttl_seconds:
+          type: integer
+          default: 120
+          description: Claim TTL in seconds. Must be renewed via heartbeat.
+
+    TrackClaimInfo:
+      type: object
+      required: [track_id, holder, acquired_at, expires_at, ttl_remaining_seconds]
+      properties:
+        track_id:
+          type: string
+        holder:
+          type: string
+        acquired_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        ttl_remaining_seconds:
+          type: number
+          format: double
+
+    TrackClaimConflict:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        current_holder:
+          type: string
+
+    ReleaseTrackClaimRequest:
+      type: object
+      required: [holder]
+      properties:
+        holder:
+          type: string
+
+    TrackClaimReleased:
+      type: object
+      required: [released]
+      properties:
+        released:
+          type: boolean
+
+    TrackClaimHeartbeatRequest:
+      type: object
+      required: [holder]
+      properties:
+        holder:
+          type: string
+        ttl_seconds:
+          type: integer
+          default: 120
 
     SkillsStatus:
       type: object
