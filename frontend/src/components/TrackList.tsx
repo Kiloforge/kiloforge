@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Track } from "../types/api";
+import { isTrackReady } from "../utils/track";
 import styles from "./TrackList.module.css";
 
 function statusIcon(status: string): string {
@@ -32,8 +33,10 @@ export function TrackList({ tracks, projectSlug }: TrackListProps) {
     <div className={styles.list}>
       {tracks.map((track) => {
         const slug = projectSlug || track.project;
+        const ready = isTrackReady(track);
         const content = (
           <>
+            {ready && <span className={styles.readyDot} data-testid="ready-dot" />}
             <span className={`${styles.status} ${styles[track.status] ?? ""}`}>
               {statusIcon(track.status)}
             </span>

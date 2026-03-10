@@ -121,11 +121,11 @@ plan:
   - phase: Track list indicator
     tasks:
       - text: Add green pulsing dot to TrackList items where isTrackReady returns true
-        done: false
+        done: true
       - text: Add CSS animation for readyPulse (2s ease-in-out infinite, subtle opacity+scale)
-        done: false
+        done: true
       - text: Write tests for TrackList rendering ready dot only for eligible tracks
-        done: false
+        done: true
   - phase: Kanban board indicator
     tasks:
       - text: Add isReady prop to CardItem derived from dependencies map in KanbanBoard
