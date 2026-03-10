@@ -80,6 +80,27 @@ func TestAgentRole_Constants(t *testing.T) {
 	}
 }
 
+func TestIsAdvisorRole(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		role string
+		want bool
+	}{
+		{"advisor-product", true},
+		{"advisor-reliability", true},
+		{"advisor-unknown", true},
+		{"developer", false},
+		{"interactive", false},
+		{"architect", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := domain.IsAdvisorRole(tt.role); got != tt.want {
+			t.Errorf("IsAdvisorRole(%q) = %v, want %v", tt.role, got, tt.want)
+		}
+	}
+}
+
 func TestAgentStatus_Constants(t *testing.T) {
 	t.Parallel()
 

@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // AgentRole defines the role of a spawned agent.
 type AgentRole string
@@ -29,6 +32,11 @@ const (
 	AgentStatusResumeFailed AgentStatus = "resume-failed"
 	AgentStatusReplaced     AgentStatus = "replaced"
 )
+
+// IsAdvisorRole returns true if the role string is an advisor role.
+func IsAdvisorRole(role string) bool {
+	return strings.HasPrefix(role, "advisor-")
+}
 
 // AgentInfo tracks a spawned Claude agent.
 type AgentInfo struct {
