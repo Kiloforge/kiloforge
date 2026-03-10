@@ -41,7 +41,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "open-project",
     target: '[data-tour="project-card"]',
     title: "Open Your Project",
-    content: "Click the project to open its dashboard and see the kanban board.",
+    content: "Click the project to open the Command Deck and see the kanban board.",
     placement: "bottom",
     demoState: DEMO_STATES["open-project"],
   },
@@ -50,7 +50,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="board-section"]',
     title: "Project Setup",
     content:
-      "When you run 'kf add' from the CLI, Kiloforge sets up a local Gitea repo, SSH keys, and webhooks automatically. In the dashboard you can manage tracks and board cards.",
+      "When you run 'kf add' from the CLI, Kiloforge sets up a local Gitea repo, SSH keys, and webhooks automatically. In the Command Deck you can manage tracks and board cards.",
     placement: "top",
     demoState: DEMO_STATES["setup-notice"],
   },
