@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Agent, SpawnInteractiveRequest } from "../types/api";
+import type { Agent, ResolveConflictRequest, SpawnInteractiveRequest } from "../types/api";
 import type { AgentRole } from "../components/AgentLauncher";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
@@ -41,7 +41,7 @@ export function ProjectPage() {
   const { board, loading: boardLoading, moveCard, syncBoard, syncing } = useBoard(slug);
   const boardTrackIds = useMemo(() => board ? Object.keys(board.cards) : [], [board]);
   const { dependencies, conflicts } = useTrackRelations(boardTrackIds, slug);
-  const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
+  const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, conflict: syncConflict, push, pull, refresh: refreshSync, clearError: clearSyncError, clearConflict: clearSyncConflict } = useOriginSync(slug);
   const { swarm, loading: swarmLoading, starting: swarmStarting, stopping: swarmStopping, updatingSettings: swarmUpdatingSettings, start: swarmStart, stop: swarmStop, updateSettings: swarmUpdateSettings } = useSwarm(slug);
   const project = projects.find((p) => p.slug === slug);
   const { agents } = useAgents();
@@ -101,6 +101,46 @@ export function ProjectPage() {
   const handlePull = useCallback((remoteBranch?: string) => {
     pull(remoteBranch);
   }, [pull]);
+
+  const [resolverAgentId, setResolverAgentId] = useState<string | null>(null);
+  const [lastResolveReq, setLastResolveReq] = useState<ResolveConflictRequest | null>(null);
+
+  const resolveConflictMutation = useMutation({
+    mutationFn: (req: ResolveConflictRequest) =>
+      fetcher<Agent>(`/api/projects/${encodeURIComponent(slug!)}/resolve-conflict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      }),
+    onSuccess: (agent) => {
+      setResolverAgentId(agent.id);
+    },
+    onError: (err) => {
+      if (err instanceof FetchError && err.status === 412) {
+        skillsPrompt.requestInstall(() => {
+          if (lastResolveReq) resolveConflictMutation.mutate(lastResolveReq);
+        });
+      }
+    },
+  });
+
+  const handleResolveConflict = useCallback(() => {
+    if (!syncConflict || !slug) return;
+    const req: ResolveConflictRequest = {
+      direction: syncConflict.direction,
+      remote_branch: "kf/main",
+    };
+    setLastResolveReq(req);
+    resolveConflictMutation.mutate(req);
+  }, [syncConflict, slug, resolveConflictMutation]);
+
+  const handleResolverTerminalClose = useCallback(() => {
+    setResolverAgentId(null);
+    clearSyncConflict();
+    if (slug) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.syncStatus(slug) });
+    }
+  }, [clearSyncConflict, queryClient, slug]);
 
   const [lastSpawnReq, setLastSpawnReq] = useState<SpawnInteractiveRequest>({});
 
@@ -289,10 +329,12 @@ export function ProjectPage() {
             pushing={pushing}
             pulling={pulling}
             error={syncError}
+            conflict={syncConflict}
             onPush={handlePush}
             onPull={handlePull}
             onRefresh={refreshSync}
             onClearError={clearSyncError}
+            onResolveConflict={handleResolveConflict}
           />
         </section>
       )}
@@ -347,6 +389,11 @@ export function ProjectPage() {
           />
         )}
       </section>
+
+      {resolverAgentId && (() => {
+        const agent = agents.find((a) => a.id === resolverAgentId);
+        return <AgentTerminal agentId={resolverAgentId} name={agent?.name ?? "Conflict Resolver"} role={agent?.role ?? "resolver"} onClose={handleResolverTerminalClose} />;
+      })()}
 
       {terminalAgentId && (() => {
         const agent = agents.find((a) => a.id === terminalAgentId);

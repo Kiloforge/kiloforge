@@ -224,6 +224,11 @@ export interface PullRequest {
   remote_branch?: string;
 }
 
+export interface ResolveConflictRequest {
+  direction: "push" | "pull";
+  remote_branch: string;
+}
+
 export interface PullResult {
   success: boolean;
   new_head: string;
