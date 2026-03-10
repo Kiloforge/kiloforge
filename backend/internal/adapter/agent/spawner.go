@@ -212,7 +212,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 	)
 	span.AddEvent("agent.spawned")
 
-	go s.runSDKAgent(ctx, agentID, info.Ref, prompt, projectDir, model, logFile, span)
+	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span)
 
 	return &info, nil
 }
@@ -291,7 +291,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 	)
 	span.AddEvent("agent.spawned")
 
-	go s.runSDKAgent(ctx, agentID, opts.TrackID, prompt, workDir, model, logFile, span)
+	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span)
 
 	return &info, nil
 }
@@ -400,8 +400,10 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		Model:       model,
 	}
 
-	// Create SDK session.
-	session, err := NewSDKSession(ctx, workDir, model, logFile)
+	// Create SDK session with a detached context so the agent process
+	// outlives the HTTP request that spawned it. The session manages its
+	// own lifecycle via session.Close() / session.cancel.
+	session, err := NewSDKSession(context.Background(), workDir, model, logFile)
 	if err != nil {
 		return nil, fmt.Errorf("create SDK session: %w", err)
 	}
@@ -415,7 +417,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	session.SetLogFile(lf)
 
 	// Connect to Claude CLI.
-	if err := session.Connect(ctx); err != nil {
+	if err := session.Connect(context.Background()); err != nil {
 		lf.Close()
 		session.Close()
 		return nil, fmt.Errorf("SDK connect: %w", err)
@@ -437,8 +439,9 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	span.AddEvent("agent.spawned")
 
 	// If initial prompt is set, send the first query.
+	// Use the session's own context (not the HTTP request context).
 	if opts.Prompt != "" {
-		if err := session.Query(ctx, opts.Prompt, s.tracker, agentID, span); err != nil {
+		if err := session.Query(session.ctx, opts.Prompt, s.tracker, agentID, span); err != nil {
 			span.End()
 			session.Close()
 			return nil, fmt.Errorf("initial query: %w", err)
@@ -446,8 +449,9 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	}
 
 	// Create input handler that sends subsequent queries via SDK.
+	// Uses the session's own context so queries outlive the original HTTP request.
 	inputHandler := func(text string) error {
-		return session.Query(ctx, text, s.tracker, agentID, span)
+		return session.Query(session.ctx, text, s.tracker, agentID, span)
 	}
 
 	ia := &InteractiveAgent{
@@ -542,8 +546,8 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 
 	logFile := agent.LogFile
 
-	// Create SDK session with resume.
-	session, err := NewSDKSessionWithResume(ctx, workDir, model, logFile, agent.SessionID)
+	// Create SDK session with resume — detached from HTTP request context.
+	session, err := NewSDKSessionWithResume(context.Background(), workDir, model, logFile, agent.SessionID)
 	if err != nil {
 		return nil, fmt.Errorf("create resumed SDK session: %w", err)
 	}
@@ -556,8 +560,8 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	}
 	session.SetLogFile(lf)
 
-	// Connect to Claude CLI.
-	if err := session.Connect(ctx); err != nil {
+	// Connect to Claude CLI — detached from HTTP request context.
+	if err := session.Connect(context.Background()); err != nil {
 		lf.Close()
 		session.Close()
 		return nil, fmt.Errorf("SDK connect: %w", err)
@@ -577,7 +581,7 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	span.AddEvent("agent.resumed")
 
 	inputHandler := func(text string) error {
-		return session.Query(ctx, text, s.tracker, id, span)
+		return session.Query(session.ctx, text, s.tracker, id, span)
 	}
 
 	ia := &InteractiveAgent{

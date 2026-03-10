@@ -31,6 +31,9 @@ type SDKSession struct {
 }
 
 // NewSDKSession creates an SDK client configured for an interactive agent.
+// The ctx parameter controls the session's process lifetime — pass context.Background()
+// to decouple from any HTTP request context. The session has its own cancel func
+// (called by Close) for explicit shutdown.
 func NewSDKSession(ctx context.Context, workDir, model, logFilePath string) (*SDKSession, error) {
 	opts := types.NewClaudeAgentOptions().
 		WithCWD(workDir).
@@ -64,6 +67,8 @@ func NewSDKSession(ctx context.Context, workDir, model, logFilePath string) (*SD
 }
 
 // NewSDKSessionWithResume creates an SDK session that resumes a previous session.
+// The ctx parameter controls the session's process lifetime — pass context.Background()
+// to decouple from any HTTP request context.
 func NewSDKSessionWithResume(ctx context.Context, workDir, model, logFilePath, sessionID string) (*SDKSession, error) {
 	opts := types.NewClaudeAgentOptions().
 		WithCWD(workDir).
