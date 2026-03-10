@@ -315,7 +315,9 @@ func (s *Server) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		srv.Shutdown(context.Background())
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+		defer cancel()
+		srv.Shutdown(shutdownCtx)
 	}()
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
