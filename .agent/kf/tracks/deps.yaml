@@ -42,8 +42,5 @@ github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
 onboarding-ux-fe_20260310073721Z: []
-
-quota-gauges-be_20260310092417Z: []
-
 quota-gauges-fe_20260310092418Z:
   - quota-gauges-be_20260310092417Z
