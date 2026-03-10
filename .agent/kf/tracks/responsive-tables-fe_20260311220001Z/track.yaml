@@ -53,9 +53,9 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify tables at 375px, 640px, 1200px
-        done: false
+        done: true
       - text: Verify DiffView sidebar toggle works
-        done: false
+        done: true
       - text: Run frontend test suite
-        done: false
+        done: true
 extra: {}
