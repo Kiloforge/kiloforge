@@ -114,10 +114,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("config: data_dir must not be empty")
 	}
 	if c.OrchestratorPort < 1 || c.OrchestratorPort > 65535 {
-		return fmt.Errorf("config: orchestrator_port %d out of range (1-65535)", c.OrchestratorPort)
+		return fmt.Errorf("config: cortex_port %d out of range (1-65535)", c.OrchestratorPort)
 	}
 	if c.OrchestratorHost == "" {
-		return fmt.Errorf("config: orchestrator_host must not be empty")
+		return fmt.Errorf("config: cortex_host must not be empty")
 	}
 	return nil
 }

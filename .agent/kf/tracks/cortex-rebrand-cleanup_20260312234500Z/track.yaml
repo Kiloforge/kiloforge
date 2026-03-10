@@ -139,11 +139,11 @@ plan:
   - phase: Config, API & Build Metadata
     tasks:
       - text: Update config.go Validate() error messages from orchestrator_port/host to cortex_port/host
-        done: false
+        done: true
       - text: Update openapi.yaml API description from 'orchestrator API' to 'Cortex API'; run make generate
-        done: false
+        done: true
       - text: Update .goreleaser.yaml description from 'orchestrator' to 'Cortex'
-        done: false
+        done: true
   - phase: Server Internals & File Names
     tasks:
       - text: Update server.go log prefix from [orchestrator] to [cortex] and update code comments
