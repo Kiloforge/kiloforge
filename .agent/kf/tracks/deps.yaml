@@ -47,8 +47,7 @@ project-settings-fe_20260311030002Z:
 track-relations-fe_20260311010001Z:
   - track-tooltip-be_20260311010000Z
 
-work-queue-be_20260311010002Z:
-  - kf-project-settings_20260311030000Z
+track-tooltip-be_20260311010000Z: []
 
 work-queue-fe_20260311010003Z:
   - work-queue-be_20260311010002Z
