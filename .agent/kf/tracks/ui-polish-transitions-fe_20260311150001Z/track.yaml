@@ -59,9 +59,9 @@ plan:
   - phase: Dialog Animations
     tasks:
       - text: Add fadeIn animation to overlay and slideUp to dialog in RemoveProjectDialog, ConsentDialog, and SkillsInstallDialog CSS modules
-        done: false
+        done: true
       - text: Add fadeIn/slideUp to AgentLauncher and ShortcutHelp CSS modules
-        done: false
+        done: true
   - phase: Button Transitions
     tasks:
       - text: Audit all button styles and add transition property where missing — focus on hover states in OverviewPage, AgentCard, ProjectPage

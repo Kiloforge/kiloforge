@@ -6,6 +6,7 @@
   align-items: center;
   justify-content: center;
   z-index: 100;
+  animation: fadeIn 0.2s ease;
 }
 
 .dialog {
@@ -17,6 +18,7 @@
   padding: 24px;
   max-width: 460px;
   width: 90%;
+  animation: slideUp 0.2s ease;
 }
 
 .title {

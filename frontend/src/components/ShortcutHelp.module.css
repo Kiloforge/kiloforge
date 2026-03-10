@@ -8,6 +8,7 @@
   z-index: 10000;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
 }
 
 .modal {
@@ -18,6 +19,7 @@
   max-width: 420px;
   width: 90vw;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s ease;
 }
 
 .header {
