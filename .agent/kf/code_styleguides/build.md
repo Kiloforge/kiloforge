@@ -31,7 +31,8 @@ Build output goes to **`.build/`** (gitignored). The legacy `bin/` directory is 
 
 ## VCS Stamping
 
-Never use `-buildvcs=false` in local builds. Go's built-in VCS stamping embeds commit hash and dirty state into the binary, which is valuable for debugging and version reporting.
+Prefer VCS stamping in local builds. Go's built-in VCS stamping embeds commit hash and dirty state into the binary, which is valuable for debugging and version reporting.
 
-- **Local builds:** Always have full VCS metadata (this is the default).
+- **Local builds (normal repo / worktree):** Full VCS metadata is active by default.
+- **Bare repo root:** VCS detection is unavailable (`git status` returns exit 128). The Makefile automatically detects this and passes `-buildvcs=false`. Version info is still stamped via ldflags — only the `vcs.modified` dirty flag is lost, which is an acceptable tradeoff.
 - **CI environments:** If git metadata is unavailable (e.g., shallow clones), set `GOFLAGS=-buildvcs=false` as an environment variable rather than hardcoding the flag.

@@ -2,7 +2,7 @@
 
 ## Worktree Build Fix (MANDATORY)
 
-This repo uses git worktrees. Go's VCS stamping fails in worktrees because `.git` is a file, not a directory. **Never use `-buildvcs=false`.**
+This repo uses git worktrees. Go's VCS stamping fails in worktrees because `.git` is a file, not a directory. **Do not manually pass `-buildvcs=false`** — the Makefile auto-detects VCS availability and falls back gracefully when needed (e.g., bare repo root).
 
 Before running `go build`, `go test`, or any `go` command that touches VCS metadata, source the worktree env helper:
 
