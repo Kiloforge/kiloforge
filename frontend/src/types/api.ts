@@ -234,6 +234,11 @@ export interface PullResult {
   new_head: string;
 }
 
+export interface ReplaceAgentRequest {
+  model?: string;
+  flags?: string;
+}
+
 export interface SwarmItem {
   track_id: string;
   project_slug: string;
