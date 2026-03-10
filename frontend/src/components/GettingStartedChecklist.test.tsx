@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GettingStartedChecklist } from "./GettingStartedChecklist";
@@ -90,7 +90,7 @@ describe("GettingStartedChecklist", () => {
       <GettingStartedChecklist
         projects={[]}
         agents={[]}
-        tracks={[{ id: "t1", title: "Track 1", status: "pending", project: "p", deps_count: 0, conflict_count: 0, created_at: "", updated_at: "" }]}
+        tracks={[{ id: "t1", title: "Track 1", status: "pending", project: "p", deps_count: 0, conflict_count: 0 }]}
       />,
     );
     const item = screen.getByText("Generate tracks");

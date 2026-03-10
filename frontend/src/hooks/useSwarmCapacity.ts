@@ -15,7 +15,7 @@ interface UseSwarmCapacityResult {
 
 export function useSwarmCapacity(): UseSwarmCapacityResult {
   const queryClient = useQueryClient();
-  const [waitResolve, setWaitResolve] = useState<(() => void) | null>(null);
+  const [, setWaitResolve] = useState<(() => void) | null>(null);
   const waitResolveRef = useRef<(() => void) | null>(null);
 
   const { data: capacity = null, isLoading } = useQuery({
