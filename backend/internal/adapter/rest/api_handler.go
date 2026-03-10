@@ -726,13 +726,6 @@ func (h *APIHandler) ReplaceAgent(ctx context.Context, req gen.ReplaceAgentReque
 		return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("agent is %s — must be in terminal state to replace", old.Status)}, nil
 	}
 
-	// Mark old agent as replaced.
-	if h.agentRemover != nil {
-		// Use the agents store directly to update status to replaced.
-		// The agentRemover interface only has RemoveAgent, so we rely on the
-		// handler-level pattern of finding and re-saving.
-	}
-
 	// Determine model override.
 	model := old.Model
 	if req.Body != nil && req.Body.Model != nil {
