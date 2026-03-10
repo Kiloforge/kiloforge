@@ -3,7 +3,7 @@ title: Add developer notes section to product.md
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Add a "Developer Notes" section to .agent/kf/product.md capturing the
@@ -20,13 +20,11 @@ spec:
   acceptance_criteria:
     - product.md contains a "Developer Notes" section with the author's message
     - No other files are modified
-  out_of_scope: |
-    Changing any existing sections of product.md
-  technical_notes: |
-    Append a new ## Developer Notes section to the end of product.md.
+  out_of_scope: Changing any existing sections of product.md
+  technical_notes: "Append a new ## Developer Notes section to the end of product.md."
 plan:
   - phase: Add notes
     tasks:
       - text: Append "Developer Notes" section to .agent/kf/product.md
-        done: false
+        done: true
 extra: {}
