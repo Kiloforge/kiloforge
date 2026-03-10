@@ -194,6 +194,7 @@ model-warning-banner_20260310072515Z: {"title":"One-time model compatibility war
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+notification-center-be_20260313060000Z: {"title":"Notification center — backend persistence, service, relay hook, REST API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 onboarding-ux-fe_20260310073721Z: {"title":"Progressive onboarding UX — ease beginners in, empower power users","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 orch-url-inject-be_20260310122108Z: {"title":"Inject KF_ORCH_URL into spawned agent environments","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
