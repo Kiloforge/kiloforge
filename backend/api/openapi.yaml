@@ -2418,6 +2418,40 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TrackConflict"
+        agent_register:
+          $ref: "#/components/schemas/AgentRegister"
+        traces:
+          type: array
+          items:
+            $ref: "#/components/schemas/TraceSummary"
+          description: Recent execution traces for this track (capped at 20)
+
+    AgentIdentity:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        role:
+          type: string
+        session_id:
+          type: string
+        worktree:
+          type: string
+        branch:
+          type: string
+        model:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    AgentRegister:
+      type: object
+      properties:
+        created_by:
+          $ref: "#/components/schemas/AgentIdentity"
+        claimed_by:
+          $ref: "#/components/schemas/AgentIdentity"
 
     TrackDependency:
       type: object

@@ -230,11 +230,28 @@ type AgentRole string
 // AgentStatus defines model for Agent.Status.
 type AgentStatus string
 
+// AgentIdentity defines model for AgentIdentity.
+type AgentIdentity struct {
+	AgentId   *string    `json:"agent_id,omitempty"`
+	Branch    *string    `json:"branch,omitempty"`
+	Model     *string    `json:"model,omitempty"`
+	Role      *string    `json:"role,omitempty"`
+	SessionId *string    `json:"session_id,omitempty"`
+	Timestamp *time.Time `json:"timestamp,omitempty"`
+	Worktree  *string    `json:"worktree,omitempty"`
+}
+
 // AgentLog defines model for AgentLog.
 type AgentLog struct {
 	AgentId string   `json:"agent_id"`
 	Lines   []string `json:"lines"`
 	Total   int      `json:"total"`
+}
+
+// AgentRegister defines model for AgentRegister.
+type AgentRegister struct {
+	ClaimedBy *AgentIdentity `json:"claimed_by,omitempty"`
+	CreatedBy *AgentIdentity `json:"created_by,omitempty"`
 }
 
 // BoardCard defines model for BoardCard.
@@ -986,7 +1003,8 @@ type TrackDependencyStatus string
 
 // TrackDetail defines model for TrackDetail.
 type TrackDetail struct {
-	Conflicts *[]TrackConflict `json:"conflicts,omitempty"`
+	AgentRegister *AgentRegister   `json:"agent_register,omitempty"`
+	Conflicts     *[]TrackConflict `json:"conflicts,omitempty"`
 
 	// CreatedAt ISO 8601 timestamp
 	CreatedAt       *string            `json:"created_at,omitempty"`
@@ -1004,6 +1022,9 @@ type TrackDetail struct {
 	TasksCompleted *int    `json:"tasks_completed,omitempty"`
 	TasksTotal     *int    `json:"tasks_total,omitempty"`
 	Title          string  `json:"title"`
+
+	// Traces Recent execution traces for this track (capped at 20)
+	Traces *[]TraceSummary `json:"traces,omitempty"`
 
 	// Type Track type (feature, bug, chore, refactor)
 	Type *string `json:"type,omitempty"`
