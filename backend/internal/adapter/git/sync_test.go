@@ -582,6 +582,68 @@ func TestForcePushToMirror_EmptyRepo(t *testing.T) {
 	}
 }
 
+func TestMirrorIntegration_CloneCommitSyncVerify(t *testing.T) {
+	t.Parallel()
+	_, cloneDir := initBareAndClone(t)
+
+	mirrorDir := filepath.Join(t.TempDir(), "mirror")
+
+	gs := New()
+
+	// Step 1: Create mirror clone.
+	if err := gs.CreateMirrorClone(context.Background(), cloneDir, mirrorDir); err != nil {
+		t.Fatalf("CreateMirrorClone: %v", err)
+	}
+
+	// Step 2: Verify initial content matches.
+	srcFiles, _ := os.ReadDir(cloneDir)
+	mirrorFiles, _ := os.ReadDir(mirrorDir)
+	// Filter out .git dirs for comparison.
+	srcCount := countNonGit(srcFiles)
+	mirrorCount := countNonGit(mirrorFiles)
+	if srcCount != mirrorCount {
+		t.Errorf("initial file count: source=%d, mirror=%d", srcCount, mirrorCount)
+	}
+
+	// Step 3: Add a new file, commit to source.
+	f, _ := os.Create(filepath.Join(cloneDir, "feature.txt"))
+	f.WriteString("new feature")
+	f.Close()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "add feature").Run()
+
+	// Step 4: Force push to mirror.
+	if err := gs.ForcePushToMirror(context.Background(), cloneDir, mirrorDir); err != nil {
+		t.Fatalf("ForcePushToMirror: %v", err)
+	}
+
+	// Step 5: Verify mirror has the new file.
+	content, err := os.ReadFile(filepath.Join(mirrorDir, "feature.txt"))
+	if err != nil {
+		t.Fatalf("feature.txt not in mirror: %v", err)
+	}
+	if string(content) != "new feature" {
+		t.Errorf("mirror content = %q, want %q", content, "new feature")
+	}
+
+	// Step 6: Verify HEAD matches.
+	srcHead, _ := cleanGitCmd("git", "-C", cloneDir, "rev-parse", "HEAD").Output()
+	mirrorHead, _ := cleanGitCmd("git", "-C", mirrorDir, "rev-parse", "HEAD").Output()
+	if strings.TrimSpace(string(srcHead)) != strings.TrimSpace(string(mirrorHead)) {
+		t.Errorf("HEAD mismatch after sync: source=%s mirror=%s", srcHead, mirrorHead)
+	}
+}
+
+func countNonGit(entries []os.DirEntry) int {
+	n := 0
+	for _, e := range entries {
+		if e.Name() != ".git" {
+			n++
+		}
+	}
+	return n
+}
+
 func TestFetchOrigin(t *testing.T) {
 	t.Parallel()
 	_, cloneDir := initBareAndClone(t)
