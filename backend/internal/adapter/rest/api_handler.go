@@ -32,6 +32,7 @@ type AgentLister interface {
 	Agents() []domain.AgentInfo
 	FindAgent(idPrefix string) (*domain.AgentInfo, error)
 	Load() error
+	ListAgents(opts domain.PageOpts, statuses ...string) (domain.Page[domain.AgentInfo], error)
 }
 
 // QuotaReader provides read access to quota data.
@@ -348,17 +349,42 @@ func (h *APIHandler) ListAgents(_ context.Context, req gen.ListAgentsRequestObje
 	if err := h.agents.Load(); err != nil {
 		return gen.ListAgents500JSONResponse{Error: "failed to load agent state"}, nil
 	}
-	agents := h.agents.Agents()
-	// Default: active=true — show active + recently finished (30 min TTL).
+
+	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
+
+	// Parse optional status filter.
+	var statuses []string
+	if req.Params.Status != nil && *req.Params.Status != "" {
+		statuses = splitCSV(*req.Params.Status)
+	}
+
+	page, err := h.agents.ListAgents(opts, statuses...)
+	if err != nil {
+		return gen.ListAgents500JSONResponse{Error: "failed to list agents"}, nil
+	}
+
+	// Apply active filter (show active + recently finished).
+	items := page.Items
 	showAll := req.Params.Active != nil && !*req.Params.Active
 	if !showAll {
-		agents = filterActiveAgents(agents, time.Now().Add(-30*time.Minute))
+		items = filterActiveAgents(items, time.Now().Add(-30*time.Minute))
 	}
-	result := make(gen.ListAgents200JSONResponse, 0, len(agents))
-	for _, a := range agents {
-		result = append(result, domainAgentToGen(a, h.quota))
+
+	genAgents := make([]gen.Agent, 0, len(items))
+	for _, a := range items {
+		genAgents = append(genAgents, domainAgentToGen(a, h.quota))
 	}
-	return result, nil
+
+	var nextCursor *string
+	if page.NextCursor != "" {
+		nextCursor = &page.NextCursor
+	}
+
+	return gen.ListAgents200JSONResponse{
+		Items:      genAgents,
+		NextCursor: nextCursor,
+		TotalCount: page.TotalCount,
+	}, nil
 }
 
 // filterActiveAgents returns agents that are active (running/waiting) or
@@ -771,19 +797,27 @@ func (h *APIHandler) RemoveProject(ctx context.Context, req gen.RemoveProjectReq
 // ListTracks implements gen.StrictServerInterface.
 func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObject) (gen.ListTracksResponseObject, error) {
 	if h.projects == nil {
-		return gen.ListTracks200JSONResponse{}, nil
+		return gen.ListTracks200JSONResponse{Items: []gen.Track{}, TotalCount: 0}, nil
 	}
+
+	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
+
+	var statusFilter []string
+	if req.Params.Status != nil && *req.Params.Status != "" {
+		statusFilter = splitCSV(*req.Params.Status)
+	}
+
 	projects := h.projects.List()
-	var result gen.ListTracks200JSONResponse
+	var allTracks []gen.Track
 	for _, p := range projects {
 		if req.Params.Project != nil && *req.Params.Project != p.Slug {
 			continue
 		}
-		tracks, err := h.trackReader.DiscoverTracks(p.ProjectDir)
+		page, err := h.trackReader.DiscoverTracksPaginated(p.ProjectDir, opts, statusFilter...)
 		if err != nil {
 			continue
 		}
-		for _, t := range tracks {
+		for _, t := range page.Items {
 			track := gen.Track{
 				Id:      t.ID,
 				Title:   t.Title,
@@ -797,13 +831,18 @@ func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObje
 			if t.ConflictCount > 0 {
 				track.ConflictCount = &t.ConflictCount
 			}
-			result = append(result, track)
+			allTracks = append(allTracks, track)
 		}
 	}
-	if result == nil {
-		result = gen.ListTracks200JSONResponse{}
+
+	if allTracks == nil {
+		allTracks = []gen.Track{}
 	}
-	return result, nil
+
+	return gen.ListTracks200JSONResponse{
+		Items:      allTracks,
+		TotalCount: len(allTracks),
+	}, nil
 }
 
 // GetStatus implements gen.StrictServerInterface.
@@ -1190,22 +1229,28 @@ func (h *APIHandler) UpdateSkills(_ context.Context, req gen.UpdateSkillsRequest
 // ListTraces implements gen.StrictServerInterface.
 func (h *APIHandler) ListTraces(_ context.Context, req gen.ListTracesRequestObject) (gen.ListTracesResponseObject, error) {
 	if h.traceStore == nil {
-		return gen.ListTraces200JSONResponse{}, nil
+		return gen.ListTraces200JSONResponse{Items: []gen.TraceSummary{}, TotalCount: 0}, nil
 	}
 
-	var traces []tracing.TraceSummary
-	switch {
-	case req.Params.TrackId != nil && *req.Params.TrackId != "":
-		traces = h.traceStore.FindByTrackID(*req.Params.TrackId)
-	case req.Params.SessionId != nil && *req.Params.SessionId != "":
-		traces = h.traceStore.FindBySessionID(*req.Params.SessionId)
-	default:
-		traces = h.traceStore.ListTraces()
+	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
+
+	trackID := ""
+	if req.Params.TrackId != nil {
+		trackID = *req.Params.TrackId
+	}
+	sessionID := ""
+	if req.Params.SessionId != nil {
+		sessionID = *req.Params.SessionId
 	}
 
-	result := make(gen.ListTraces200JSONResponse, 0, len(traces))
-	for _, t := range traces {
-		result = append(result, gen.TraceSummary{
+	page, err := h.traceStore.ListTracesPaginated(opts, trackID, sessionID)
+	if err != nil {
+		return gen.ListTraces200JSONResponse{Items: []gen.TraceSummary{}, TotalCount: 0}, nil
+	}
+
+	items := make([]gen.TraceSummary, 0, len(page.Items))
+	for _, t := range page.Items {
+		items = append(items, gen.TraceSummary{
 			TraceId:   t.TraceID,
 			RootName:  t.RootName,
 			SpanCount: t.SpanCount,
@@ -1213,7 +1258,17 @@ func (h *APIHandler) ListTraces(_ context.Context, req gen.ListTracesRequestObje
 			EndTime:   t.EndTime,
 		})
 	}
-	return result, nil
+
+	var nextCursor *string
+	if page.NextCursor != "" {
+		nextCursor = &page.NextCursor
+	}
+
+	return gen.ListTraces200JSONResponse{
+		Items:      items,
+		NextCursor: nextCursor,
+		TotalCount: page.TotalCount,
+	}, nil
 }
 
 // GetTrace implements gen.StrictServerInterface.
@@ -2349,8 +2404,35 @@ func (h *APIHandler) toGenQueueStatus(s *service.QueueStatus) gen.QueueStatus {
 		MaxWorkers:    s.MaxWorkers,
 		ActiveWorkers: s.ActiveWorkers,
 		Items:         items,
+		TotalItems:    len(items),
 	}
 }
 
 func intPtr(v int) *int       { return &v }
 func strPtr(v string) *string { return &v }
+
+// extractPageOpts builds domain.PageOpts from optional query params.
+func extractPageOpts(limit *int, cursor *string) domain.PageOpts {
+	opts := domain.PageOpts{}
+	if limit != nil {
+		opts.Limit = *limit
+	}
+	if cursor != nil {
+		opts.Cursor = *cursor
+	}
+	return opts
+}
+
+// splitCSV splits a comma-separated string into trimmed tokens.
+func splitCSV(s string) []string {
+	parts := strings.Split(s, ",")
+	var result []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
+}
+
