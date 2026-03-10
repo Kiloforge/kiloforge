@@ -1,0 +1,69 @@
+id: expand-agent-namegen-be_20260310150455Z
+title: "Expand agent name generator with large word lists and hyphen separator"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: >
+    Replace the small word lists (30 adverbs, 50 adjectives, 50 names) in the agent
+    name generator with much larger lists (~150+ per category) for more variety and
+    personality, and switch from space to hyphen separator for better display/URL handling.
+  context: |
+    Agents are given randomly generated names at spawn time using a three-word
+    "adverb adjective name" format (e.g., "boldly clever ada"). The current word lists
+    are small (30 × 50 × 50 = 75K combinations) and feel generic. The user wants
+    significantly larger, more creative/fun word lists to give agents more personality
+    and reduce collision probability.
+
+    The separator is currently a space. Switching to hyphen (`-`) makes names more
+    natural as identifiers (e.g., "fiercely-brave-atlas") and avoids quoting issues
+    in logs, URLs, and CLI output.
+  codebase_analysis: |
+    - `backend/internal/adapter/agent/namegen.go` — contains GenerateName() and all
+      three word lists (adverbs, adjectives, names)
+    - `backend/internal/adapter/agent/namegen_test.go` — tests format (3 parts split
+      by space) and randomness (20 samples, ≥5 unique)
+    - `backend/internal/adapter/agent/spawner.go` — calls GenerateName() at lines
+      266, 345, 501 for reviewer/developer/interactive agents
+    - Frontend displays `agent.name` as-is (no parsing of separator)
+    - Traces store name as `agent.name` string attribute
+    - SQLite stores name as TEXT column — no length constraints
+  acceptance_criteria:
+    - Adverbs list has 150+ entries
+    - Adjectives list has 150+ entries
+    - Names list has 150+ entries (short, memorable, fun — mix of human names, nature words, tech terms, mythology)
+    - Separator changed from space to hyphen (e.g., "remarkably-cosmic-phoenix")
+    - All existing tests pass with updated separator
+    - Total combination space is at least 3M+
+  out_of_scope: |
+    - Frontend display changes (names already render as-is)
+    - Uniqueness enforcement (collision at 3M+ combos is negligible)
+    - Configurable separator or naming format
+  technical_notes: |
+    This is a pure data change plus one-character separator swap. The word lists can
+    be curated from common creative name generators — prioritize words that are:
+    fun/memorable, easy to pronounce, not offensive, varied in tone (some serious,
+    some playful). Keep words lowercase, ASCII-only, no special characters.
+plan:
+  - phase: "Expand word lists"
+    tasks:
+      - text: "Expand adverbs list to 150+ entries in namegen.go"
+        done: false
+      - text: "Expand adjectives list to 150+ entries in namegen.go"
+        done: false
+      - text: "Expand names list to 150+ entries with creative mix"
+        done: false
+  - phase: "Switch separator"
+    tasks:
+      - text: "Change separator from space to hyphen in GenerateName()"
+        done: false
+      - text: "Update namegen_test.go to split on hyphen instead of space"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test to verify all tests pass"
+        done: false
+      - text: "Manually call GenerateName() a few times to verify output quality"
+        done: false
+extra: {}
