@@ -1,12 +1,12 @@
 # Kiloforge
 
-**1,000x Productivity.** Forge code at the speed of thought with AI agent swarms.
+**1,000x Productivity.** The Kiloforger's forge — command AI agent swarms and ship code at the speed of thought.
 
 An orchestration platform for coordinating AI coding agents at scale. Runs a private git forge (Gitea), a real-time monitoring dashboard, and a relay server on your machine — while spawning Claude Code CLI agents that implement, review, and merge code autonomously.
 
 ## Why
 
-Coordinating multiple AI agents across multiple projects demands infrastructure that is observable, automated, and under your control. Kiloforge gives you:
+Coordinating multiple AI agents across multiple projects demands infrastructure that is observable, automated, and under your control. Kiloforge gives the Kiloforger:
 
 - **Private infrastructure, cloud AI** — git forge, webhooks, and coordination run locally; agents are Claude Code CLI sessions powered by Anthropic's cloud APIs
 - **Human + AI collaboration** — Gitea for code review and PRs, plus a web dashboard for real-time agent monitoring, quota tracking, and log streaming
