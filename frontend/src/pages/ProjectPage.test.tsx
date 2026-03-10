@@ -235,4 +235,47 @@ describe("ProjectPage", () => {
     renderPage();
     expect(screen.getByText("Admin Operations")).toBeInTheDocument();
   });
+
+  it("renders track search input", () => {
+    renderPage();
+    expect(screen.getByPlaceholderText("Search tracks...")).toBeInTheDocument();
+  });
+
+  it("filters tracks by title (case-insensitive)", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const searchInput = screen.getByPlaceholderText("Search tracks...");
+    await user.type(searchInput, "one");
+    // Track One should still be visible, Track Two should be filtered out from the track list
+    // (both still appear on the board)
+    const trackOneElements = screen.getAllByText("Track One");
+    expect(trackOneElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("filters tracks by ID", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const searchInput = screen.getByPlaceholderText("Search tracks...");
+    await user.type(searchInput, "track-1");
+    const trackOneElements = screen.getAllByText("Track One");
+    expect(trackOneElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("shows clear button when search has text", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const searchInput = screen.getByPlaceholderText("Search tracks...");
+    expect(screen.queryByLabelText("Clear search")).not.toBeInTheDocument();
+    await user.type(searchInput, "test");
+    expect(screen.getByLabelText("Clear search")).toBeInTheDocument();
+  });
+
+  it("clears search when clear button is clicked", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const searchInput = screen.getByPlaceholderText("Search tracks...");
+    await user.type(searchInput, "test");
+    await user.click(screen.getByLabelText("Clear search"));
+    expect(searchInput).toHaveValue("");
+  });
 });

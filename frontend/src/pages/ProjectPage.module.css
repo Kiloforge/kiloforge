@@ -251,3 +251,49 @@
   text-align: center;
   line-height: 1.6;
 }
+
+/* Track search */
+.trackSearchWrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.trackSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 8px 32px 8px 12px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.trackSearchInput:focus {
+  border-color: var(--accent);
+}
+
+.trackSearchInput::placeholder {
+  color: var(--text-dim);
+}
+
+.trackSearchClear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.trackSearchClear:hover {
+  color: var(--text);
+}

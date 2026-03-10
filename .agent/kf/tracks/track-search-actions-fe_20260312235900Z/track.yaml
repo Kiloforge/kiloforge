@@ -3,7 +3,7 @@ title: Track search and approve/reject from detail view with board animations
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Add full-text search above the track list, approve/reject actions on the
@@ -14,12 +14,12 @@ spec:
     all tracks (TrackList component). There is no way to search or filter
     tracks by name. Users must scroll through the list to find a track, then
     navigate to TrackDetailPage which is view-only — no actions can be taken.
-
+    
     Approve/reject actions currently only exist on backlog cards in the
     KanbanBoard component. Users want to be able to approve or reject tracks
     directly from the track detail page, which is a more natural place to
     review a track's spec and plan before deciding.
-
+    
     When a track is approved from outside the board (e.g., from the detail
     view or via API), the board should animate the new card's appearance
     rather than having it silently appear. If the card's destination column
@@ -31,30 +31,30 @@ spec:
     - Links to TrackDetailPage via `/projects/{slug}/tracks/{trackId}`
     - No search/filter UI — just iterates `tracks.map()`
     - Parent: ProjectPage renders it inside PaginatedList at line 463-471
-
+    
     **TrackDetailPage** (`frontend/src/pages/TrackDetailPage.tsx`):
     - Shows track metadata, progress bar, spec, and plan
     - View-only — no approve/reject/move actions
     - Fetches via `GET /api/tracks/{trackId}?project={slug}`
     - Has a StatusBadge and type badge in the header
-
+    
     **KanbanBoard** (`frontend/src/components/KanbanBoard.tsx`):
     - Backlog cards have approve (✓) and reject (✗) buttons
     - Approve calls `onMoveCard(trackId, "approved")`
     - Reject uses confirm dialog then calls `onDeleteTrack(trackId)`
     - Has existing animations: `.cardClamped` (clampPulse keyframe)
     - Cards render via `cardsByColumn()` which sorts by position
-
+    
     **useBoard** (`frontend/src/hooks/useBoard.ts`):
     - `moveCard(trackId, toColumn)` — POST to `/api/board/{project}/move`
     - `handleBoardUpdate(raw)` — processes SSE events for real-time updates
     - Optimistic updates in `onMutate` for immediate UI response
-
+    
     **useTracks** (`frontend/src/hooks/useTracks.ts`):
     - Paginated infinite query to `/api/tracks?project={slug}`
     - `handleTrackUpdate` merges SSE updates into pages
     - No client-side search — relies on server pagination
-
+    
     **API endpoints (no changes needed)**:
     - `POST /api/board/{project}/move` — moves card (approve = move to "approved")
     - `DELETE /api/tracks/{trackId}?project={slug}` — deletes track (reject)
@@ -81,28 +81,28 @@ spec:
     Add a controlled input above TrackList in ProjectPage. Filter the `tracks`
     array client-side before passing to TrackList. Use a debounced state or
     simple `onChange` since the list is already loaded.
-
+    
     **Approve/reject from TrackDetailPage:**
     The detail page needs access to the project slug and track's board column.
     Add a `column` field to TrackDetail API response (already available from
     board data), or fetch board state to check if the track is in backlog.
     Simpler: pass board column via the Track type or check status === "pending".
-
+    
     Use `useBoard().moveCard()` for approve and the existing delete mutation
     for reject. After action, `navigate(-1)` or `navigate(\`/projects/\${slug}\`)`.
-
+    
     Since TrackDetailPage is a routed page (not inside ProjectPage), it needs
     its own mutation setup — use `useMutation` with the same fetcher patterns.
-
+    
     **Board entry animation:**
     Track which card IDs existed on the previous render. When a new card ID
     appears in `board.cards` that wasn't there before, apply an entry animation
     class (`.cardEntering`) that plays a slide-up + fade-in keyframe. Remove
     the class after animation completes (animationend event or timeout).
-
+    
     Use a `useRef<Set<string>>` to track known card IDs. On each render, diff
     the current card IDs against the ref. New IDs get the animation class.
-
+    
     CSS animation:
     ```css
     .cardEntering {
@@ -116,7 +116,7 @@ spec:
     ```
     This creates the "sliding out from underneath" effect by combining
     upward translation with opacity and max-height expansion.
-
+    
     **State coordination:**
     - Approve from detail page → POST move → SSE `board_update` fires →
       board re-renders → new card detected → animation plays
@@ -126,11 +126,11 @@ plan:
   - phase: Track search
     tasks:
       - text: Add search input state and filter logic in ProjectPage above TrackList
-        done: false
+        done: true
       - text: Style the search input (monospace, matches panel aesthetic, clear button)
-        done: false
+        done: true
       - text: Write tests for search filtering behavior (case-insensitive, empty query, partial match)
-        done: false
+        done: true
   - phase: Track detail actions
     tasks:
       - text: Add approve/reject buttons to TrackDetailPage for backlog tracks

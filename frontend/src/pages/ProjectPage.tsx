@@ -80,6 +80,7 @@ export function ProjectPage() {
     : undefined;
 
   const [pageTab, setPageTab] = useState<"board" | "info" | "settings">("board");
+  const [trackSearch, setTrackSearch] = useState("");
   const { settings: projectSettings, loading: settingsLoading, updating: settingsUpdating, updateSettings } = useProjectSettings(slug);
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
@@ -460,14 +461,39 @@ export function ProjectPage() {
         {tracksLoading ? (
           <InlineSpinner label="Loading tracks..." />
         ) : (
-          <PaginatedList
-            remainingCount={trackRemaining}
-            hasNextPage={trackHasNext}
-            isFetchingNextPage={trackFetching}
-            onLoadMore={() => trackLoadMore()}
-          >
-            <TrackList tracks={tracks} projectSlug={slug} />
-          </PaginatedList>
+          <>
+            <div className={styles.trackSearchWrap}>
+              <input
+                type="text"
+                className={styles.trackSearchInput}
+                placeholder="Search tracks..."
+                value={trackSearch}
+                onChange={(e) => setTrackSearch(e.target.value)}
+              />
+              {trackSearch && (
+                <button
+                  className={styles.trackSearchClear}
+                  onClick={() => setTrackSearch("")}
+                  aria-label="Clear search"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+            <PaginatedList
+              remainingCount={trackRemaining}
+              hasNextPage={trackHasNext}
+              isFetchingNextPage={trackFetching}
+              onLoadMore={() => trackLoadMore()}
+            >
+              <TrackList
+                tracks={trackSearch
+                  ? tracks.filter((t) => t.title.toLowerCase().includes(trackSearch.toLowerCase()) || t.id.toLowerCase().includes(trackSearch.toLowerCase()))
+                  : tracks}
+                projectSlug={slug}
+              />
+            </PaginatedList>
+          </>
         )}
       </section>
       </>)}
