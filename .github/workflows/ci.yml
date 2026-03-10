@@ -111,4 +111,3 @@ jobs:
 
       - name: npm audit
         run: cd frontend && npm ci && npm audit --audit-level=moderate
-        continue-on-error: true
