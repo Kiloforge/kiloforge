@@ -1,0 +1,59 @@
+id: responsive-nav-fe_20260311220000Z
+title: "Responsive header navigation with hamburger menu"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Collapse header items into a hamburger drawer below 768px. Hide subtitle,
+    histogram chips, and terminal count behind the drawer. Keep logo and
+    connection status dot visible.
+  context: |
+    The dashboard runs on localhost but users may access it via SSH port
+    forwarding on mobile devices. The header currently renders all items
+    in a single flex row with no collapse mechanism.
+  codebase_analysis: |
+    Key files:
+    - frontend/src/App.tsx — Header renders logo, subtitle, ConnectionStatus,
+      AgentHistogram, TerminalDock toggle, and nav links in a flex row.
+    - frontend/src/App.module.css — .header uses sticky positioning, .headerLeft
+      and .headerRight are flex containers with gap: 12px and padding: 24px.
+    No existing media queries in App.module.css.
+  acceptance_criteria:
+    - Below 768px, header shows only logo, connection dot, and hamburger icon
+    - Hamburger opens a full-width drawer with nav links, histogram, terminal count
+    - Drawer closes on link click or outside tap
+    - Above 768px, layout is unchanged
+    - Hamburger button has accessible aria-label
+  out_of_scope: |
+    - Redesigning navigation structure
+    - Bottom tab bar
+    - Swipe gestures
+  technical_notes: |
+    Add useState for drawer, hamburger icon visible below 768px via CSS media query,
+    fixed overlay drawer, close on backdrop tap or link click.
+plan:
+  - phase: "Foundation"
+    tasks:
+      - text: "Add @media (max-width: 767px) to App.module.css — hide .headerRight, reduce padding"
+        done: false
+      - text: "Add .hamburger and .drawer styles to App.module.css"
+        done: false
+  - phase: "Implementation"
+    tasks:
+      - text: "Add hamburger state and toggle button to App.tsx header"
+        done: false
+      - text: "Create mobile drawer rendering nav links, AgentHistogram, terminal count"
+        done: false
+      - text: "Add backdrop overlay and close-on-click behavior"
+        done: false
+      - text: "Keep ConnectionStatus dot visible on mobile"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify header at 1200px, 768px, and 375px — no desktop regression"
+        done: false
+      - text: "Run frontend test suite"
+        done: false
+extra: {}

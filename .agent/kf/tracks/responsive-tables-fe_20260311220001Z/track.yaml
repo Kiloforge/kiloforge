@@ -1,0 +1,61 @@
+id: responsive-tables-fe_20260311220001Z
+title: "Responsive tables and fixed-width layouts"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Convert project tables, reliability tables, and agent history tables to
+    stacked card layouts below 640px. Make DiffView sidebar collapsible.
+    Clamp TraceTimeline columns for small screens.
+  context: |
+    Several dashboard pages use table-like layouts with fixed min-width columns
+    that overflow on small screens. The DiffView has a 280px fixed sidebar.
+  codebase_analysis: |
+    Problem files: OverviewPage.module.css (.projectSlug min-width: 160px),
+    DiffView.module.css (.sidebar width: 280px, flex-shrink: 0),
+    TraceTimeline.module.css (.nameCol flex: 0 0 220px).
+    AgentGrid and StatCards already work (auto-fill/auto-fit grids).
+  acceptance_criteria:
+    - Below 640px, project/reliability/history table rows stack as cards
+    - DiffView sidebar collapses to toggleable drawer below 768px
+    - TraceTimeline columns shrink with ellipsis below 640px
+    - Fixed input widths use max-width instead of width
+    - No regression above breakpoints
+  out_of_scope: |
+    - KanbanBoard responsive (separate track)
+    - Header/nav responsive (separate track)
+  technical_notes: |
+    CSS media queries for table stacking, DiffView sidebar toggle state,
+    TraceTimeline column clamping, input width fixes.
+plan:
+  - phase: "Table Layouts"
+    tasks:
+      - text: "Add @media (max-width: 639px) to OverviewPage — stack project rows as cards"
+        done: false
+      - text: "Add @media (max-width: 639px) to ReliabilityPage — stack rows as cards"
+        done: false
+      - text: "Add @media (max-width: 639px) to AgentHistoryPage — stack rows as cards"
+        done: false
+  - phase: "DiffView Sidebar"
+    tasks:
+      - text: "Add @media (max-width: 767px) to DiffView — convert sidebar to overlay drawer"
+        done: false
+      - text: "Add toggle button to DiffView.tsx for mobile file list drawer"
+        done: false
+  - phase: "Misc Fixed Widths"
+    tasks:
+      - text: "Add @media (max-width: 639px) to TraceTimeline — shrink columns, add ellipsis"
+        done: false
+      - text: "Replace fixed width with max-width + width:100% on inputs"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify tables at 375px, 640px, 1200px"
+        done: false
+      - text: "Verify DiffView sidebar toggle works"
+        done: false
+      - text: "Run frontend test suite"
+        done: false
+extra: {}
