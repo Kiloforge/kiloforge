@@ -230,7 +230,7 @@ func TestListEmbedded(t *testing.T) {
 	for _, n := range names {
 		nameSet[n] = true
 	}
-	for _, expected := range []string{"kf-developer", "kf-reviewer", "kf-architect"} {
+	for _, expected := range []string{"kf-developer", "kf-reviewer", "kf-architect", "kf-advisor-product", "kf-advisor-reliability", "kf-repair"} {
 		if !nameSet[expected] {
 			t.Errorf("expected %q in embedded skills", expected)
 		}
@@ -246,7 +246,8 @@ func TestRequiredSkillsForRole(t *testing.T) {
 		{"reviewer", "kf-reviewer"},
 		{"interactive", "kf-architect"},
 		{"architect", "kf-architect"},
-		{"product-advisor", "kf-product-advisor"},
+		{"advisor-product", "kf-advisor-product"},
+		{"advisor-reliability", "kf-advisor-reliability"},
 		{"setup", "kf-setup"},
 	}
 	for _, tt := range tests {
@@ -273,7 +274,8 @@ func TestSkillCommandForRole(t *testing.T) {
 		want string
 	}{
 		{"architect", "/kf-architect"},
-		{"product-advisor", "/kf-product-advisor"},
+		{"advisor-product", "/kf-advisor-product"},
+		{"advisor-reliability", "/kf-advisor-reliability"},
 		{"interactive", ""},
 		{"developer", ""},
 		{"reviewer", ""},
