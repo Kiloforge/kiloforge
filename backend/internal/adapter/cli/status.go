@@ -8,6 +8,7 @@ import (
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/pidfile"
 	"kiloforge/internal/core/service"
+	"kiloforge/pkg/kf"
 
 	"github.com/spf13/cobra"
 )
@@ -43,6 +44,13 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
 	} else {
 		fmt.Println("Dashboard:   disabled")
+	}
+
+	// Track progress (from .agent/kf in current directory).
+	if kfClient := kf.NewClientFromProject("."); kfClient.IsInitialized() {
+		if summary, err := kfClient.GetTrackSummary(); err == nil && summary.Total > 0 {
+			fmt.Printf("%s\n", formatTrackSummary(summary))
+		}
 	}
 
 	// Load quota and agent data via runtime.
@@ -111,6 +119,25 @@ func printAgentCosts(tracker *agent.QuotaTracker, agentSvc *service.AgentService
 		fmt.Printf("  %-10s %-30s tokens: %-10s cost: $%.2f\n",
 			r.id, r.ref, formatTokens(r.tokens), r.cost)
 	}
+}
+
+// formatTrackSummary formats a TrackSummary as a single status line.
+// Done = completed + archived.
+func formatTrackSummary(s *kf.TrackSummary) string {
+	done := s.Completed + s.Archived
+	line := fmt.Sprintf("Tracks:      %d/%d done", done, s.Total)
+
+	var parts []string
+	if s.Pending > 0 {
+		parts = append(parts, fmt.Sprintf("%d pending", s.Pending))
+	}
+	if s.InProgress > 0 {
+		parts = append(parts, fmt.Sprintf("%d in-progress", s.InProgress))
+	}
+	if len(parts) > 0 {
+		line += " (" + strings.Join(parts, ", ") + ")"
+	}
+	return line
 }
 
 // formatTokens formats an integer with comma separators.
