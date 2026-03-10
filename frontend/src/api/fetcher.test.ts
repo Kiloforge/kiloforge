@@ -20,7 +20,7 @@ describe("fetcher", () => {
 
     const result = await fetcher<{ name: string }>("/api/test");
     expect(result).toEqual({ name: "test" });
-    expect(globalThis.fetch).toHaveBeenCalledWith("/api/test", undefined);
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/test", expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 
   it("passes init options to fetch", async () => {
@@ -30,7 +30,7 @@ describe("fetcher", () => {
     } as Response);
 
     await fetcher("/api/test", { method: "POST", body: "{}" });
-    expect(globalThis.fetch).toHaveBeenCalledWith("/api/test", { method: "POST", body: "{}" });
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/test", expect.objectContaining({ method: "POST", body: "{}", signal: expect.any(AbortSignal) }));
   });
 
   it("throws FetchError on non-ok response", async () => {

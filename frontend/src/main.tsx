@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, MutationCache } from '@tanstack/react-query'
 import { ToastProvider, useToast } from './components/toast/ToastProvider'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { formatMutationError, setToastRef } from './api/errorToast'
 import './index.css'
 import App from './App'
@@ -28,11 +29,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ToastProvider>
       <QueryErrorBridge />
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter basename="/">
-          <App />
-        </BrowserRouter>
-      </QueryClientProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter basename="/">
+            <App />
+          </BrowserRouter>
+        </QueryClientProvider>
+      </ErrorBoundary>
     </ToastProvider>
   </StrictMode>,
 )

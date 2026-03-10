@@ -1,11 +1,11 @@
 id: frontend-stability-fe_20260311120002Z
-title: "Frontend stability — error boundary, hook fixes, fetch timeouts"
+title: Frontend stability — error boundary, hook fixes, fetch timeouts
 type: bug
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
-  summary: "Add React Error Boundary, fix ref-during-render in useSSE, fix setState-in-effect patterns, add AbortController timeouts to fetcher."
+  summary: Add React Error Boundary, fix ref-during-render in useSSE, fix setState-in-effect patterns, add AbortController timeouts to fetcher.
   context: |
     Production audit found several stability issues in the frontend that could cause
     crashes or degraded behavior in production: no Error Boundary means any render error
@@ -37,38 +37,38 @@ spec:
     Error Boundary must be a class component (React requirement). Place it in
     src/components/ErrorBoundary.tsx wrapping the main App content in main.tsx.
     The fallback should show a "Something went wrong" message with a reload button.
-
+    
     For the useSSE ref fix: move `handlersRef.current = handlers` into a useEffect
     with [handlers] dependency. This is the standard React pattern for syncing refs.
 plan:
-  - phase: "Error boundary and fetch safety"
+  - phase: Error boundary and fetch safety
     tasks:
-      - text: "Create ErrorBoundary class component with fallback UI in src/components/ErrorBoundary.tsx"
-        done: false
-      - text: "Wrap App content with ErrorBoundary in main.tsx"
-        done: false
-      - text: "Add AbortController with configurable timeout to fetcher.ts"
-        done: false
-      - text: "Write tests for ErrorBoundary (render error triggers fallback)"
-        done: false
-  - phase: "Hook fixes"
+      - text: Create ErrorBoundary class component with fallback UI in src/components/ErrorBoundary.tsx
+        done: true
+      - text: Wrap App content with ErrorBoundary in main.tsx
+        done: true
+      - text: Add AbortController with configurable timeout to fetcher.ts
+        done: true
+      - text: Write tests for ErrorBoundary (render error triggers fallback)
+        done: true
+  - phase: Hook fixes
     tasks:
-      - text: "Fix useSSE.ts — move ref mutation into useEffect"
+      - text: Fix useSSE.ts — move ref mutation into useEffect
         done: false
-      - text: "Fix App.tsx — resolve setState-in-effect for setWaitingForCapacity"
+      - text: Fix App.tsx — resolve setState-in-effect for setWaitingForCapacity
         done: false
-      - text: "Fix AgentDetailPage.tsx — resolve setState-in-effect for setLogLoading"
+      - text: Fix AgentDetailPage.tsx — resolve setState-in-effect for setLogLoading
         done: false
-      - text: "Fix useAgentWebSocket.ts — resolve forward reference to connect"
+      - text: Fix useAgentWebSocket.ts — resolve forward reference to connect
         done: false
-      - text: "Replace silent catch blocks with console.warn in SSE/WebSocket hooks"
+      - text: Replace silent catch blocks with console.warn in SSE/WebSocket hooks
         done: false
-  - phase: "Verification"
+  - phase: Verification
     tasks:
-      - text: "Run npm test — all existing + new tests pass"
+      - text: Run npm test — all existing + new tests pass
         done: false
-      - text: "Run npm run build — clean TypeScript compilation"
+      - text: Run npm run build — clean TypeScript compilation
         done: false
-      - text: "Run make build — full stack build passes"
+      - text: Run make build — full stack build passes
         done: false
 extra: {}
