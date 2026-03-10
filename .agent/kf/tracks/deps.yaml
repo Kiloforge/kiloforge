@@ -37,11 +37,6 @@ ci-reliability-hardening_20260310001316Z: []
 
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-github-repo-templates_20260310001945Z: []
-
-reliability-advisor-skill_20260310001315Z: []
-
 work-queue-be_20260311010002Z: []
 
 work-queue-fe_20260311010003Z:

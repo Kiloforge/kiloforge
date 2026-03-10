@@ -103,11 +103,11 @@ plan:
   - phase: Testing & Verification
     tasks:
       - text: Verify skill file has correct frontmatter and is parseable
-        done: false
+        done: true
       - text: Test skill invocation via /kf-reliability — confirm it runs the audit workflow
-        done: false
+        done: true
       - text: Verify the skill correctly identifies known gaps (no golangci-lint config, no coverage thresholds)
-        done: false
+        done: true
       - text: Verify the skill can generate improvement tracks via kf-track CLI
-        done: false
+        done: true
 extra: {}
