@@ -3,7 +3,7 @@ title: Show only interactive agent role in dashboard launcher
 type: feature
 status: pending
 created: 2026-03-13
-updated: 2026-03-13
+updated: 2026-03-10
 spec:
   summary: |
     Simplify the dashboard AgentLauncher to show only the "Interactive"
@@ -16,7 +16,7 @@ spec:
     proper kf-aware general-purpose agent. The launcher should now show
     this as the sole option from the dashboard, making it the default
     agent type users can start.
-
+    
     In project context, the launcher should show Interactive plus the
     advisor roles. The architect role is removed from the launcher entirely
     — users invoke /kf-architect from within an interactive session.
@@ -28,14 +28,14 @@ spec:
     - Default selected role: "architect" (line 48)
     - Role type: `"interactive" | "architect" | "advisor-product" | "advisor-reliability"`
     - Each role has: value, label, description, placeholder
-
+    
     **App.tsx** (dashboard launcher, lines 321-330):
     - Renders `<AgentLauncher>` without projectSlug when on dashboard
     - `handleLaunch` passes role to `spawnMutation`
-
+    
     **ProjectPage.tsx** (project launcher, lines 429-436):
     - Renders `<AgentLauncher projectSlug={slug}>` with project context
-
+    
     **Backend** (`checker.go`):
     - "interactive" role already exists in the API enum
     - With BE track complete, it will have its own skill and command prefix
@@ -78,15 +78,15 @@ spec:
       },
     ];
     ```
-
+    
     **Simplify dashboard launcher:**
     When `!projectSlug`, filter out advisor roles. This leaves only
     "interactive" — with a single role, the role selector cards can be
     hidden and the UI simplifies to just the prompt textarea + start button.
-
+    
     **Default role:**
     Change `useState<AgentRole>("architect")` to `useState<AgentRole>("interactive")`.
-
+    
     **AgentRole type:**
     Keep "architect" in the type for backwards compatibility (backend still
     uses it for swarm-spawned architects), but remove it from the ROLES UI
@@ -95,11 +95,11 @@ plan:
   - phase: Launcher update
     tasks:
       - text: Replace architect with interactive in ROLES array — new label, description, placeholder
-        done: false
+        done: true
       - text: Change default role state from "architect" to "interactive"
-        done: false
+        done: true
       - text: When only one role available (dashboard), hide role selector and show simplified UI
-        done: false
+        done: true
   - phase: Integration
     tasks:
       - text: Verify App.tsx dashboard launcher shows only interactive role

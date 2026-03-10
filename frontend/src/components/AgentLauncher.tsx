@@ -13,10 +13,10 @@ interface RoleOption {
 
 const ROLES: RoleOption[] = [
   {
-    value: "architect",
-    label: "Architect",
-    description: "Research codebase and generate implementation tracks",
-    placeholder: "Describe the features or changes you want to plan...",
+    value: "interactive",
+    label: "Interactive",
+    description: "General-purpose kf-aware assistant",
+    placeholder: "Ask anything about the project...",
   },
   {
     value: "advisor-product",
@@ -45,7 +45,7 @@ interface AgentLauncherProps {
 export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waitingForCapacity, waitingCapacity, onCancelWaiting }: AgentLauncherProps) {
   // Advisor roles are only available within a project context.
   const availableRoles = projectSlug ? ROLES : ROLES.filter((r) => !r.value.startsWith("advisor-"));
-  const [role, setRole] = useState<AgentRole>("architect");
+  const [role, setRole] = useState<AgentRole>("interactive");
   const [prompt, setPrompt] = useState("");
 
   const selectedRole = availableRoles.find((r) => r.value === role) ?? availableRoles[0];
@@ -88,19 +88,21 @@ export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waiti
         <h3 className={styles.title}>New Agent</h3>
         <p className={styles.subtitle}>Choose an agent type and optionally provide a prompt.</p>
 
-        <div className={styles.roleList}>
-          {availableRoles.map((r) => (
-            <button
-              key={r.value}
-              className={`${styles.roleCard} ${role === r.value ? styles.roleCardActive : ""}`}
-              onClick={() => setRole(r.value)}
-              type="button"
-            >
-              <span className={styles.roleLabel}>{r.label}</span>
-              <span className={styles.roleDesc}>{r.description}</span>
-            </button>
-          ))}
-        </div>
+        {availableRoles.length > 1 && (
+          <div className={styles.roleList}>
+            {availableRoles.map((r) => (
+              <button
+                key={r.value}
+                className={`${styles.roleCard} ${role === r.value ? styles.roleCardActive : ""}`}
+                onClick={() => setRole(r.value)}
+                type="button"
+              >
+                <span className={styles.roleLabel}>{r.label}</span>
+                <span className={styles.roleDesc}>{r.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <textarea
           className={styles.promptInput}
