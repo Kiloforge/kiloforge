@@ -23,6 +23,7 @@ import { ConsentDialog } from "../components/ConsentDialog";
 import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
 import { AgentLauncher } from "../components/AgentLauncher";
+import { PaginatedList } from "../components/PaginatedList";
 import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
@@ -34,7 +35,7 @@ import styles from "./ProjectPage.module.css";
 
 export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { tracks, loading: tracksLoading } = useTracks(slug);
+  const { tracks, loading: tracksLoading, remainingCount: trackRemaining, hasNextPage: trackHasNext, isFetchingNextPage: trackFetching, fetchNextPage: trackLoadMore } = useTracks(slug);
   const { projects } = useProjects();
   const { board, loading: boardLoading, moveCard, syncBoard, syncing } = useBoard(slug);
   const boardTrackIds = useMemo(() => board ? Object.keys(board.cards) : [], [board]);
@@ -409,7 +410,14 @@ export function ProjectPage() {
         {tracksLoading ? (
           <p className={appStyles.empty}>Loading tracks...</p>
         ) : (
-          <TrackList tracks={tracks} projectSlug={slug} />
+          <PaginatedList
+            remainingCount={trackRemaining}
+            hasNextPage={trackHasNext}
+            isFetchingNextPage={trackFetching}
+            onLoadMore={() => trackLoadMore()}
+          >
+            <TrackList tracks={tracks} projectSlug={slug} />
+          </PaginatedList>
         )}
       </section>
       </>)}

@@ -39,7 +39,7 @@ import styles from "./App.module.css";
 export default function App() {
   const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved, remainingCount: agentRemainingCount, hasNextPage: agentHasNextPage, isFetchingNextPage: agentFetchingNextPage, fetchNextPage: agentFetchNextPage } = useAgents();
   const { quota, handleQuotaUpdate } = useQuota();
-  const { tracks, handleTrackUpdate, handleTrackRemoved } = useTracks();
+  const { tracks, handleTrackUpdate, handleTrackRemoved, remainingCount: trackRemainingCount, hasNextPage: trackHasNextPage, isFetchingNextPage: trackFetchingNextPage, fetchNextPage: trackFetchNextPage } = useTracks();
   const { handleProjectUpdate, handleProjectRemoved } = useProjects();
   const { queue, loading: queueLoading, starting: queueStarting, stopping: queueStopping, updatingSettings: queueUpdatingSettings, start: queueStart, stop: queueStop, updateSettings: queueUpdateSettings, handleQueueUpdate } = useQueue();
   const { data: status = null } = useQuery({
@@ -196,6 +196,10 @@ export default function App() {
                 onQueueStart={queueStart}
                 onQueueStop={queueStop}
                 onQueueUpdateSettings={queueUpdateSettings}
+                trackRemainingCount={trackRemainingCount}
+                trackHasNextPage={trackHasNextPage}
+                trackFetchingNextPage={trackFetchingNextPage}
+                onTrackLoadMore={trackFetchNextPage}
               />
             }
           />

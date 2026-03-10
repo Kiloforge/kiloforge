@@ -40,9 +40,11 @@ export function usePaginatedList<T>(options: UsePaginatedListOptions): UsePagina
       if (pageParam) {
         searchParams.set("cursor", pageParam as string);
       }
-      return fetcher<PaginatedResponse<T>>(`${url}?${searchParams.toString()}`);
+      return fetcher<PaginatedResponse<T>>(`${url}?${searchParams.toString()}`).then(
+        (res) => res ?? { items: [], total_count: 0 },
+      );
     },
-    getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
+    getNextPageParam: (lastPage) => lastPage?.next_cursor || undefined,
     initialPageParam: "",
     enabled,
   });

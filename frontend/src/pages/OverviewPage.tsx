@@ -38,6 +38,10 @@ interface OverviewPageProps {
   onQueueStart?: () => void;
   onQueueStop?: () => void;
   onQueueUpdateSettings?: (settings: QueueSettings) => void;
+  trackRemainingCount?: number;
+  trackHasNextPage?: boolean;
+  trackFetchingNextPage?: boolean;
+  onTrackLoadMore?: () => void;
 }
 
 function trackCountsByStatus(tracks: Track[], slug: string) {
@@ -116,7 +120,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -249,7 +253,14 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>All Tracks</h2>
-        <TrackList tracks={tracks} />
+        <PaginatedList
+          remainingCount={trackRemainingCount}
+          hasNextPage={trackHasNextPage}
+          isFetchingNextPage={trackFetchingNextPage}
+          onLoadMore={onTrackLoadMore ?? (() => {})}
+        >
+          <TrackList tracks={tracks} />
+        </PaginatedList>
       </section>
 
       <section className={appStyles.panel}>
