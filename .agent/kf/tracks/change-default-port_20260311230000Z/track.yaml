@@ -60,9 +60,9 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make test to verify all backend tests pass with new default
-        done: false
+        done: true
       - text: Run frontend lint/type-check to verify no build errors
-        done: false
+        done: true
 extra:
   created_by:
     role: architect

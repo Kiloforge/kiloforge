@@ -49,7 +49,7 @@ board-link-polish-fe_20260311210000Z: {"title":"Polish board relationship link v
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-change-default-port_20260311230000Z: {"title":"Change default orchestrator port from 4001 to 39517","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+change-default-port_20260311230000Z: {"title":"Change default orchestrator port from 4001 to 39517","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 ci-covdata-fix_20260311142900Z: {"title":"Fix CI test failure — missing covdata tool in coverage step","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 ci-fast-lint_20260311180000Z: {"title":"Replace golangci-lint with fast direct linters in CI","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 ci-lint-enforcement_20260310092158Z: {"title":"Fix CI lint failures — gofmt violations, local lint enforcement, VCS fix","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
