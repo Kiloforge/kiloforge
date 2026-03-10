@@ -29,7 +29,8 @@ type Config struct {
 	AgentMaxDuration  string  `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled  *bool   `json:"analytics_enabled,omitempty"`
 	PostHogAPIKey     string  `json:"posthog_api_key,omitempty"`
-	BudgetUSD         float64 `json:"budget_usd,omitempty"`
+	BudgetUSD            float64 `json:"budget_usd,omitempty"`
+	IdleSuspendSeconds   *int    `json:"idle_suspend_seconds,omitempty"`
 }
 
 // GetMaxSwarmSize returns the configured max swarm size, defaulting to 3.
@@ -86,6 +87,15 @@ func (c *Config) IsAnalyticsEnabled() bool {
 		return true
 	}
 	return *c.AnalyticsEnabled
+}
+
+// GetIdleSuspendSeconds returns the idle disconnect grace period in seconds.
+// Default is 30. A value of 0 disables auto-suspension.
+func (c *Config) GetIdleSuspendSeconds() int {
+	if c.IdleSuspendSeconds != nil {
+		return *c.IdleSuspendSeconds
+	}
+	return 30
 }
 
 // GetSkillsDir returns the configured skills directory, or the default (~/.claude/skills).

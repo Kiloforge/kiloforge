@@ -1953,6 +1953,9 @@ components:
           type: number
           format: double
           description: "Global budget limit in USD. 0 means unlimited (default)."
+        agent_idle_suspend_seconds:
+          type: integer
+          description: "Grace period before auto-suspending idle interactive agents (seconds). 0 disables."
 
     UpdateConfigRequest:
       type: object
@@ -1968,6 +1971,9 @@ components:
           type: number
           format: double
           description: "Global budget limit in USD. 0 means unlimited."
+        agent_idle_suspend_seconds:
+          type: integer
+          description: "Grace period before auto-suspending idle interactive agents (seconds). 0 disables."
 
     PreflightResponse:
       type: object
@@ -2168,6 +2174,9 @@ components:
           type: integer
         model:
           type: string
+        connected_clients:
+          type: integer
+          description: Number of active WebSocket connections observing this agent
 
     AgentLog:
       type: object

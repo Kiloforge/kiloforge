@@ -101,6 +101,27 @@ func TestIsAdvisorRole(t *testing.T) {
 	}
 }
 
+func TestIsWorkerRole(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		role string
+		want bool
+	}{
+		{"developer", true},
+		{"reviewer", true},
+		{"interactive", false},
+		{"architect", false},
+		{"advisor-product", false},
+		{"advisor-reliability", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := domain.IsWorkerRole(tt.role); got != tt.want {
+			t.Errorf("IsWorkerRole(%q) = %v, want %v", tt.role, got, tt.want)
+		}
+	}
+}
+
 func TestAgentStatus_Constants(t *testing.T) {
 	t.Parallel()
 

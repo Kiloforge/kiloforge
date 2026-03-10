@@ -39,5 +39,11 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		cfg.PostHogAPIKey = v
 	}
 
+	if v := os.Getenv("KF_AGENT_IDLE_SUSPEND_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.IdleSuspendSeconds = &n
+		}
+	}
+
 	return cfg, nil
 }

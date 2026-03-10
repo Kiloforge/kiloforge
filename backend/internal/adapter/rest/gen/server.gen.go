@@ -197,6 +197,9 @@ type Agent struct {
 	CacheCreationTokens *int `json:"cache_creation_tokens,omitempty"`
 	CacheReadTokens     *int `json:"cache_read_tokens,omitempty"`
 
+	// ConnectedClients Number of active WebSocket connections observing this agent
+	ConnectedClients *int `json:"connected_clients,omitempty"`
+
 	// EstimatedCostUsd Informational — API-equivalent cost estimate
 	EstimatedCostUsd *float64   `json:"estimated_cost_usd,omitempty"`
 	FinishedAt       *time.Time `json:"finished_at,omitempty"`
@@ -268,6 +271,9 @@ type BranchInfo struct {
 
 // ConfigResponse defines model for ConfigResponse.
 type ConfigResponse struct {
+	// AgentIdleSuspendSeconds Grace period before auto-suspending idle interactive agents (seconds). 0 disables.
+	AgentIdleSuspendSeconds *int `json:"agent_idle_suspend_seconds,omitempty"`
+
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). Empty or "0s" disables timeout.
 	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled *bool   `json:"analytics_enabled,omitempty"`
@@ -993,6 +999,9 @@ type TrackSummary struct {
 
 // UpdateConfigRequest defines model for UpdateConfigRequest.
 type UpdateConfigRequest struct {
+	// AgentIdleSuspendSeconds Grace period before auto-suspending idle interactive agents (seconds). 0 disables.
+	AgentIdleSuspendSeconds *int `json:"agent_idle_suspend_seconds,omitempty"`
+
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). "0s" disables timeout.
 	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled *bool   `json:"analytics_enabled,omitempty"`

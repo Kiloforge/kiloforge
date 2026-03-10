@@ -38,6 +38,12 @@ func IsAdvisorRole(role string) bool {
 	return strings.HasPrefix(role, "advisor-")
 }
 
+// IsWorkerRole returns true if the role runs autonomously without a browser connection.
+// Worker roles (developer, reviewer) should never be auto-suspended on disconnect.
+func IsWorkerRole(role string) bool {
+	return role == string(AgentRoleDeveloper) || role == string(AgentRoleReviewer)
+}
+
 // AgentInfo tracks a spawned Claude agent.
 type AgentInfo struct {
 	ID             string     `json:"id"`
