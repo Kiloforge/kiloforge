@@ -154,7 +154,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make build-frontend — no TypeScript errors
-        done: false
+        done: true
       - text: Verify full flow — search track, open detail, approve, see board animation
-        done: false
+        done: true
 extra: {}
