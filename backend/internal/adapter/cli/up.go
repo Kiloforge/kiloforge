@@ -105,7 +105,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 		fmt.Println()
 		fmt.Println("You're ready, Kiloforger!")
-		fmt.Printf("  Dashboard:  %s\n", dashboardURL(cfg))
+		fmt.Printf("  Command Deck:  %s\n", dashboardURL(cfg))
 		fmt.Printf("  Data:       %s\n", cfg.DataDir)
 		fmt.Println()
 		fmt.Println("Register your first project with 'kf add <path>'.")
@@ -144,7 +144,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	if !firstRun {
 		fmt.Println()
-		fmt.Printf("Dashboard:   %s\n", dashboardURL(cfg))
+		fmt.Printf("Command Deck:   %s\n", dashboardURL(cfg))
 	}
 
 	fmt.Println()

@@ -52,7 +52,7 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&flagNoBrowser, "no-browser", os.Getenv("KF_NO_BROWSER") == "1", "Do not open the dashboard in a browser")
+	rootCmd.PersistentFlags().BoolVar(&flagNoBrowser, "no-browser", os.Getenv("KF_NO_BROWSER") == "1", "Do not open the Command Deck in a browser")
 	rootCmd.PersistentFlags().StringVar(&flagDataDir, "data-dir", "", "Persistent data directory (defaults to ~/.kiloforge)")
 
 	rootCmd.AddCommand(initCmd)

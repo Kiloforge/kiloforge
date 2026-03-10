@@ -22,10 +22,10 @@ import (
 
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
-	Short: "Start the web dashboard (standalone)",
-	Long: `Starts the web dashboard server without starting the orchestrator.
-Useful when the orchestrator is already running via 'kf up' and you want
-to view the dashboard separately.`,
+	Short: "Start the Command Deck (standalone)",
+	Long: `Starts the Command Deck server without starting the Cortex.
+Useful when the Cortex is already running via 'kf up' and you want
+to view the Command Deck separately.`,
 	RunE: runDashboard,
 }
 
@@ -97,7 +97,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	wsHandler := wsAdapter.NewHandler(wsSessions, store, nil)
 	wsHandler.RegisterRoutes(srv.Mux())
 
-	fmt.Printf("Dashboard running at http://localhost:%d\n", cfg.OrchestratorPort)
+	fmt.Printf("Command Deck running at http://localhost:%d\n", cfg.OrchestratorPort)
 	fmt.Println("Press Ctrl+C to stop.")
 	return srv.Run(ctx)
 }

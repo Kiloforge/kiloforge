@@ -41,9 +41,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Data:        %s\n", cfg.DataDir)
 	fmt.Printf("Server:      http://localhost:%d\n", cfg.OrchestratorPort)
 	if cfg.IsDashboardEnabled() {
-		fmt.Printf("Dashboard:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
+		fmt.Printf("Command Deck:   http://localhost:%d/-/\n", cfg.OrchestratorPort)
 	} else {
-		fmt.Println("Dashboard:   disabled")
+		fmt.Println("Command Deck:   disabled")
 	}
 
 	// Track progress (from .agent/kf in current directory).

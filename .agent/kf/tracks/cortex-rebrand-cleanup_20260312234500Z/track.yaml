@@ -3,7 +3,7 @@ title: Complete Cortex/Command Deck rebrand — missed orchestrator and dashboar
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Rename remaining "orchestrator" → "Cortex" and "Dashboard" → "Command Deck"
@@ -15,64 +15,64 @@ spec:
     site-rebrand) completed the bulk of rebranding but missed many internal and
     user-facing references. A comprehensive audit found 30+ remaining "orchestrator"
     references and 8 "Dashboard" CLI output labels that should use the new branding.
-
+    
     Swarm branding was also audited — it is already consistent throughout the
     codebase with no old terminology remaining. No swarm changes needed.
   codebase_analysis: |
     **ORCHESTRATOR → CORTEX (missed references):**
-
+    
     User-facing CLI strings:
     - serve.go:29 — "Run the orchestrator in the foreground (internal)" → "Run the Cortex..."
     - serve.go:164 — "Orchestrator starting on %s:%d" → "Cortex starting..."
     - serve.go:172 — "Orchestrator stopped" → "Cortex stopped"
     - dashboard.go:26-28 — "web dashboard server without starting the orchestrator" → "...Cortex"
-
+    
     Config validation errors:
     - config.go:117 — "config: orchestrator_port %d out of range" → "config: cortex_port..."
     - config.go:120 — "config: orchestrator_host must not be empty" → "config: cortex_host..."
-
+    
     Log prefix:
     - server.go:159 — "[orchestrator]" → "[cortex]"
-
+    
     Shutdown reason (user-visible in FE):
     - shutdown.go:77 — "orchestrator shutdown" → "cortex shutdown"
     - AgentDetailPage.test.tsx:199,203 — test assertions for shutdown reason
     - AgentCard.test.tsx:180,181 — test assertions for shutdown reason
-
+    
     PID/log file names:
     - pidfile.go:13 — "orchestrator.pid" → "cortex.pid" (with backward compat check)
     - daemon.go:40, serve.go:41 — "orchestrator.log" → "cortex.log" (with backward compat)
-
+    
     OpenAPI & release:
     - openapi.yaml:4 — API description says "orchestrator API"
     - .goreleaser.yaml:54 — "Local AI agent orchestrator"
-
+    
     Code comments (non-user-facing but should match branding):
     - server.go:33,130,157,345 — "orchestrator server", "orchestrator REST API", etc.
     - daemon.go:72 — "sends SIGTERM to the orchestrator daemon"
     - spawner.go:160 — "without needing the orchestrator"
-
+    
     Backend docs:
     - docs/design-agent-orchestration.md — 5+ references
     - docs/commands.md — 6+ references
     - docs/architecture.md — 2+ references
-
+    
     **DASHBOARD → COMMAND DECK (missed CLI references):**
-
+    
     CLI output labels:
     - up.go:108 — "Dashboard:  %s" → "Command Deck:  %s"
     - up.go:147 — "Dashboard:   %s" → "Command Deck:   %s"
     - status.go:44 — "Dashboard:   http://..." → "Command Deck:   http://..."
     - status.go:46 — "Dashboard:   disabled" → "Command Deck:   disabled"
-
+    
     CLI command help:
     - dashboard.go:25 — Short: "Start the web dashboard" → "Start the Command Deck"
     - dashboard.go:26-28 — Long description references "web dashboard"
     - dashboard.go:100 — "Dashboard running at http://..." → "Command Deck running at..."
-
+    
     CLI flag help:
     - root.go:53 — "Do not open the dashboard in a browser" → "Do not open the Command Deck..."
-
+    
     Internal function/variable names (dashboardURL, dashboardCmd, etc.) stay as-is.
   acceptance_criteria:
     - No user-facing string contains "orchestrator" (grep confirms zero hits outside code identifiers, config keys, and env vars)
@@ -102,60 +102,60 @@ spec:
     1. Check for old file name first, rename if found
     2. Use new name for fresh installs
     3. This avoids breaking running daemons on upgrade
-
+    
     For pidfile.go, update the constant but add a migration in New() or Write()
     that renames orchestrator.pid → cortex.pid if the old file exists.
-
+    
     For log files in daemon.go and serve.go, same pattern: check for old name,
     rename or create with new name.
-
+    
     **Config validation errors:**
     These are error strings, not config keys. Changing "orchestrator_port" to
     "cortex_port" in error messages is a display-only change — the actual JSON
     key remains "orchestrator_port" for backward compatibility.
-
+    
     **Shutdown reason string:**
     The string "orchestrator shutdown" is stored in agent records and displayed
     in the frontend. Changing it to "cortex shutdown" is safe — it only affects
     new shutdowns. Old records will still show "orchestrator shutdown" but that's
     acceptable for historical data.
-
+    
     **OpenAPI regeneration:**
     After updating openapi.yaml description, run `make generate` to regenerate
     server/client stubs. The description change is cosmetic — no API contract change.
 plan:
   - phase: CLI User-Facing Strings
     tasks:
-      - text: "Update serve.go: command help text, startup log, and stopped log from orchestrator to Cortex"
-        done: false
-      - text: "Update dashboard.go: command Short/Long help text and running message from dashboard to Command Deck"
-        done: false
-      - text: "Update up.go: output labels from 'Dashboard:' to 'Command Deck:'"
-        done: false
-      - text: "Update status.go: output labels from 'Dashboard:' to 'Command Deck:'"
-        done: false
-      - text: "Update root.go: --no-browser flag help text from 'dashboard' to 'Command Deck'"
-        done: false
+      - text: Update serve.go: command help text, startup log, and stopped log from orchestrator to Cortex
+        done: true
+      - text: Update dashboard.go: command Short/Long help text and running message from dashboard to Command Deck
+        done: true
+      - text: Update up.go: output labels from 'Dashboard:' to 'Command Deck:'
+        done: true
+      - text: Update status.go: output labels from 'Dashboard:' to 'Command Deck:'
+        done: true
+      - text: Update root.go: --no-browser flag help text from 'dashboard' to 'Command Deck'
+        done: true
   - phase: Config, API & Build Metadata
     tasks:
-      - text: "Update config.go Validate() error messages from orchestrator_port/host to cortex_port/host"
+      - text: Update config.go Validate() error messages from orchestrator_port/host to cortex_port/host
         done: false
-      - text: "Update openapi.yaml API description from 'orchestrator API' to 'Cortex API'; run make generate"
+      - text: Update openapi.yaml API description from 'orchestrator API' to 'Cortex API'; run make generate
         done: false
-      - text: "Update .goreleaser.yaml description from 'orchestrator' to 'Cortex'"
+      - text: Update .goreleaser.yaml description from 'orchestrator' to 'Cortex'
         done: false
   - phase: Server Internals & File Names
     tasks:
-      - text: "Update server.go log prefix from [orchestrator] to [cortex] and update code comments"
+      - text: Update server.go log prefix from [orchestrator] to [cortex] and update code comments
         done: false
-      - text: "Update shutdown.go reason from 'orchestrator shutdown' to 'cortex shutdown'; update FE test assertions in AgentDetailPage.test.tsx and AgentCard.test.tsx"
+      - text: Update shutdown.go reason from 'orchestrator shutdown' to 'cortex shutdown'; update FE test assertions in AgentDetailPage.test.tsx and AgentCard.test.tsx
         done: false
-      - text: "Update pidfile.go constant from 'orchestrator.pid' to 'cortex.pid' with backward-compat migration; update daemon.go and serve.go log file from 'orchestrator.log' to 'cortex.log' with migration"
+      - text: Update pidfile.go constant from 'orchestrator.pid' to 'cortex.pid' with backward-compat migration; update daemon.go and serve.go log file from 'orchestrator.log' to 'cortex.log' with migration
         done: false
-      - text: "Update backend/docs/*.md — replace orchestrator references with Cortex in design-agent-orchestration.md, commands.md, architecture.md"
+      - text: Update backend/docs/*.md — replace orchestrator references with Cortex in design-agent-orchestration.md, commands.md, architecture.md
         done: false
   - phase: Verification
     tasks:
-      - text: "Run make test, make lint, make build — verify no regressions; grep -ri orchestrator to confirm no user-facing strings remain"
+      - text: Run make test, make lint, make build — verify no regressions; grep -ri orchestrator to confirm no user-facing strings remain
         done: false
 extra: {}
