@@ -7,7 +7,8 @@ updated: 2026-03-10
 spec:
   summary: >
     Add standard GitHub repository templates (bug report, feature request, PR template)
-    and a workflow that auto-closes pull requests from non-org members.
+    a workflow that auto-closes pull requests from non-org members, and a README
+    section stating the project is not accepting external contributions.
   context: |
     As kiloforge prepares for public release, the GitHub repo needs standard community
     templates for issues and PRs, plus a security workflow to auto-close external PRs
@@ -30,9 +31,10 @@ spec:
     - Auto-close workflow allows MEMBER, OWNER, and COLLABORATOR associations
     - Auto-close workflow posts a polite comment directing to issues before closing
     - All templates use standard GitHub frontmatter (name, about, title prefix, labels)
+    - README includes a clear statement that the project is not accepting external contributions (PRs will be auto-closed)
   out_of_scope: |
     - GitHub Discussions setup
-    - CONTRIBUTING.md or CODE_OF_CONDUCT.md
+    - CODE_OF_CONDUCT.md
     - Branch protection rules (configured via GitHub settings, not files)
   technical_notes: |
     Straightforward file creation. Use actions/github-script@v7 for the auto-close workflow.
@@ -53,6 +55,10 @@ plan:
       - text: "Create .github/workflows/close-external-prs.yml using actions/github-script@v7"
         done: false
       - text: "Verify workflow allows MEMBER, OWNER, COLLABORATOR and closes others with a polite message"
+        done: false
+  - phase: "README Update"
+    tasks:
+      - text: "Add a 'Contributing' section to README stating the project is not accepting external contributions and PRs will be auto-closed"
         done: false
   - phase: "Verification"
     tasks:
