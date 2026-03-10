@@ -75,6 +75,7 @@ func init() {
 	rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(analyticsCmd)
 	rootCmd.AddCommand(skillsCmd)
 	rootCmd.AddCommand(versionCmd)
 }
