@@ -124,35 +124,35 @@ plan:
   - phase: "Window manager extension"
     tasks:
       - text: "Extend useWindowManager (from multi-window track) with minimized boolean and unreadCount per window, plus minimize(agentId), restore(agentId), and incrementUnread(agentId) methods"
-        done: false
+        done: true
       - text: "Add getMinimizedWindows() method that returns only minimized windows for dock rendering"
-        done: false
+        done: true
   - phase: "AgentTerminal minimize support"
     tasks:
       - text: "Add minimized and onActivity props to AgentTerminal — when minimized, render with display:none to keep WS alive"
-        done: false
+        done: true
       - text: "Add minimize button to terminal header (next to close button) — calls onMinimize callback"
-        done: false
+        done: true
       - text: "Add useEffect that calls onActivity when new messages arrive while minimized (watches messages.length)"
-        done: false
+        done: true
   - phase: "Terminal dock component"
     tasks:
       - text: "Create TerminalDock component — fixed bar at bottom of viewport showing pills for each minimized terminal"
-        done: false
+        done: true
       - text: "Create TerminalDock.module.css — dock bar styling, pill layout, unread badge with pulse animation, role color indicators"
-        done: false
+        done: true
       - text: "Wire dock pills: click to restore, × to close, tooltip with full agent name"
-        done: false
+        done: true
   - phase: "Integration and wiring"
     tasks:
       - text: "Update App.tsx — render TerminalDock alongside terminal windows, wire minimize/restore/close/activity callbacks from window manager"
-        done: false
+        done: true
       - text: "Ensure restore brings window to front and resets unread count"
-        done: false
+        done: true
   - phase: "Verification"
     tasks:
       - text: "Verify make build-frontend succeeds with no TypeScript errors"
-        done: false
+        done: true
       - text: "Manual test: minimize terminal, send prompt, wait for response, verify unread badge appears on dock pill, restore and verify count resets"
-        done: false
+        done: true
 extra: {}

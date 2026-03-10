@@ -48,6 +48,4 @@ merge-lock-hardening-be_20260310220000Z: []
 merge-lock-skill-consolidation_20260310220001Z:
   - merge-lock-hardening-be_20260310220000Z
 
-minimizable-terminals_20260310070000Z:
-  - multi-window-agents_20260310062704Z
 queue-project-scope-fe_20260310050001Z: []
