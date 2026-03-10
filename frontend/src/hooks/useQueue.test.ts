@@ -138,4 +138,44 @@ describe("useQueue", () => {
 
     expect(typeof result.current.handleQueueUpdate).toBe("function");
   });
+
+  describe("project-scoped", () => {
+    it("fetches with project query param", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const { result } = renderHook(() => useQueue("my-proj"), { wrapper: createWrapper() });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(fetcher).toHaveBeenCalledWith("/api/queue?project=my-proj");
+    });
+
+    it("start defaults to projectSlug when no explicit project given", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const { result } = renderHook(() => useQueue("my-proj"), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      (fetcher as Mock).mockResolvedValue({});
+      await act(async () => { await result.current.start(); });
+
+      expect(fetcher).toHaveBeenCalledWith("/api/queue/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project: "my-proj" }),
+      });
+    });
+
+    it("start with explicit project overrides projectSlug", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const { result } = renderHook(() => useQueue("my-proj"), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      (fetcher as Mock).mockResolvedValue({});
+      await act(async () => { await result.current.start("other-proj"); });
+
+      expect(fetcher).toHaveBeenCalledWith("/api/queue/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project: "other-proj" }),
+      });
+    });
+  });
 });
