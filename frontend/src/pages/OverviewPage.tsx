@@ -13,6 +13,7 @@ import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { SwarmPanel } from "../components/SwarmPanel";
 import { PaginatedList } from "../components/PaginatedList";
 import { InlineSpinner } from "../components/InlineSpinner";
+import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
 import { HelpTooltip } from "../components/HelpTooltip";
 import { AdvisorHub } from "../components/AdvisorHub";
 import type { AgentRole } from "../components/AgentLauncher";
@@ -162,6 +163,8 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
 
   return (
     <>
+      <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />
+
       <section className={appStyles.panel}>
         <div className={styles.sectionHeader}>
           <h2 className={appStyles.panelTitle}>
