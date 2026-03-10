@@ -14,21 +14,23 @@ function renderLauncher(props?: Partial<Parameters<typeof AgentLauncher>[0]>) {
 }
 
 describe("AgentLauncher", () => {
-  it("renders role options and prompt input", () => {
+  it("renders prompt input without role selector on dashboard", () => {
     renderLauncher();
     expect(screen.getByText("New Agent")).toBeInTheDocument();
-    expect(screen.getByText("Architect")).toBeInTheDocument();
+    // Single role (interactive) — role selector is hidden
+    expect(screen.queryByText("Interactive")).not.toBeInTheDocument();
     expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("hides advisor roles when no projectSlug", () => {
+  it("hides advisor roles and role selector when no projectSlug", () => {
     renderLauncher();
     expect(screen.queryByText("Product Advisor")).not.toBeInTheDocument();
     expect(screen.queryByText("Reliability Advisor")).not.toBeInTheDocument();
   });
 
-  it("shows advisor roles when projectSlug is provided", () => {
+  it("shows interactive and advisor roles when projectSlug is provided", () => {
     renderLauncher({ projectSlug: "my-project" });
+    expect(screen.getByText("Interactive")).toBeInTheDocument();
     expect(screen.getByText("Product Advisor")).toBeInTheDocument();
     expect(screen.getByText("Reliability Advisor")).toBeInTheDocument();
   });
@@ -44,12 +46,12 @@ describe("AgentLauncher", () => {
     expect(props.onLaunch).toHaveBeenCalledWith("advisor-product", "Help me design a logo");
   });
 
-  it("defaults to architect role", async () => {
+  it("defaults to interactive role", async () => {
     const user = userEvent.setup();
     const { props } = renderLauncher();
 
     await user.click(screen.getByText("Start"));
-    expect(props.onLaunch).toHaveBeenCalledWith("architect", "");
+    expect(props.onLaunch).toHaveBeenCalledWith("interactive", "");
   });
 
   it("calls onClose when Cancel is clicked", async () => {
@@ -81,7 +83,7 @@ describe("AgentLauncher", () => {
     renderLauncher({ projectSlug: "my-project" });
 
     const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
-    expect(textarea.placeholder).toContain("plan");
+    expect(textarea.placeholder).toContain("project");
 
     await user.click(screen.getByText("Product Advisor"));
     expect(textarea.placeholder).toContain("product guidance");

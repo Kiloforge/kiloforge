@@ -103,11 +103,11 @@ plan:
   - phase: Integration
     tasks:
       - text: Verify App.tsx dashboard launcher shows only interactive role
-        done: false
+        done: true
       - text: Verify ProjectPage launcher shows interactive + advisor roles
-        done: false
+        done: true
       - text: Update AgentLauncher tests for new role options
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build-frontend — no TypeScript errors
