@@ -63,6 +63,7 @@ export function useAgentWebSocket(agentId: string | null) {
   const [messages, setMessages] = useState<WSMessage[]>([]);
   const [status, setStatus] = useState<WSConnectionState>("disconnected");
   const [agentStatus, setAgentStatus] = useState<string | null>(null);
+  const [turnActive, setTurnActive] = useState(false);
   const agentStatusRef = useRef(agentStatus);
   const wsRef = useRef<WebSocket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,6 +113,7 @@ export function useAgentWebSocket(agentId: string | null) {
             }]);
             break;
           case "turn_start":
+            setTurnActive(true);
             setMessages((prev) => [...prev, {
               type: "turn_start",
               text: "",
@@ -120,6 +122,7 @@ export function useAgentWebSocket(agentId: string | null) {
             }]);
             break;
           case "turn_end":
+            setTurnActive(false);
             setMessages((prev) => [...prev, {
               type: "turn_end",
               text: "",
@@ -262,6 +265,7 @@ export function useAgentWebSocket(agentId: string | null) {
 
     setMessages([]);
     setAgentStatus(null);
+    setTurnActive(false);
     retryCountRef.current = 0;
     connect();
 
@@ -286,5 +290,5 @@ export function useAgentWebSocket(agentId: string | null) {
     setMessages([]);
   }, []);
 
-  return { messages, sendMessage, clearMessages, status, agentStatus };
+  return { messages, sendMessage, clearMessages, status, agentStatus, turnActive };
 }

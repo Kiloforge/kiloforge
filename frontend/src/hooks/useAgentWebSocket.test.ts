@@ -242,6 +242,50 @@ describe("useAgentWebSocket", () => {
     expect(MockWebSocket.latest!.send).not.toHaveBeenCalled();
   });
 
+  it("tracks turnActive state from turn_start/turn_end messages", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    // Initially false
+    expect(result.current.turnActive).toBe(false);
+
+    // turn_start → active
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "turn_start", turn_id: "t1" });
+    });
+    expect(result.current.turnActive).toBe(true);
+
+    // turn_end → inactive
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({
+        type: "turn_end", turn_id: "t1", cost_usd: 0.01,
+        usage: { input_tokens: 10, output_tokens: 5, cache_read_tokens: 0, cache_creation_tokens: 0 },
+      });
+    });
+    expect(result.current.turnActive).toBe(false);
+
+    // Another turn
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "turn_start", turn_id: "t2" });
+    });
+    expect(result.current.turnActive).toBe(true);
+  });
+
+  it("resets turnActive when agentId changes", () => {
+    const { result, rerender } = renderHook(
+      ({ id }: { id: string | null }) => useAgentWebSocket(id),
+      { initialProps: { id: "agent-1" } },
+    );
+    act(() => MockWebSocket.latest!.simulateOpen());
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "turn_start", turn_id: "t1" });
+    });
+    expect(result.current.turnActive).toBe(true);
+
+    rerender({ id: "agent-2" });
+    expect(result.current.turnActive).toBe(false);
+  });
+
   it("resets messages when agentId changes", () => {
     const { result, rerender } = renderHook(
       ({ id }: { id: string | null }) => useAgentWebSocket(id),
