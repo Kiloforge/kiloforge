@@ -122,7 +122,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
 
 export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, queue, queueLoading, queueStarting, queueStopping, queueUpdatingSettings, onQueueStart, onQueueStop, onQueueUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
-  const { traces } = useTraces();
+  const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -265,7 +265,14 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Traces</h2>
-        <TraceList traces={traces} />
+        <PaginatedList
+          remainingCount={traceRemainingCount}
+          hasNextPage={traceHasNextPage}
+          isFetchingNextPage={traceFetchingNextPage}
+          onLoadMore={() => traceFetchNextPage()}
+        >
+          <TraceList traces={traces} />
+        </PaginatedList>
       </section>
 
       {removeSlug && (

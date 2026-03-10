@@ -1,10 +1,10 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import type { TraceSummary, SSEEventData } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
-import { fetcher } from "../api/fetcher";
+import { usePaginatedList, type UsePaginatedListResult } from "./usePaginatedList";
 
-interface UseTracesResult {
+interface UseTracesResult extends UsePaginatedListResult<TraceSummary> {
   traces: TraceSummary[];
   loading: boolean;
   handleTraceUpdate: (raw: unknown) => void;
@@ -12,29 +12,25 @@ interface UseTracesResult {
 
 export function useTraces(): UseTracesResult {
   const queryClient = useQueryClient();
+  const qk = queryKeys.tracesPaginated;
 
-  const { data: traces = [], isLoading } = useQuery({
-    queryKey: queryKeys.traces,
-    queryFn: () => fetcher<TraceSummary[]>("/api/traces").then((d) => d ?? []),
+  const paginated = usePaginatedList<TraceSummary>({
+    queryKey: qk,
+    url: "/api/traces",
   });
 
   const handleTraceUpdate = useCallback(
     (raw: unknown) => {
-      const event = raw as SSEEventData;
-      const data = event.data as TraceSummary;
-      if (!data?.trace_id) return;
-      queryClient.setQueryData<TraceSummary[]>(queryKeys.traces, (prev = []) => {
-        const idx = prev.findIndex((t) => t.trace_id === data.trace_id);
-        if (idx >= 0) {
-          const next = [...prev];
-          next[idx] = { ...next[idx], ...data };
-          return next;
-        }
-        return [data, ...prev];
-      });
+      const _event = raw as SSEEventData;
+      queryClient.invalidateQueries({ queryKey: qk });
     },
-    [queryClient],
+    [queryClient, qk],
   );
 
-  return { traces, loading: isLoading, handleTraceUpdate };
+  return {
+    ...paginated,
+    traces: paginated.items,
+    loading: paginated.isLoading,
+    handleTraceUpdate,
+  };
 }
