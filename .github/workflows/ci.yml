@@ -18,6 +18,31 @@ jobs:
       - name: Run kf-track test suite
         run: .agent/kf/bin/tests/run_tests.sh
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Go lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.11
+          working-directory: backend
+
+      - name: Frontend lint
+        run: cd frontend && npm run lint
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -34,8 +59,41 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm ci && npm run build
 
-      - name: Run tests
-        run: cd backend && go test -race ./...
+      - name: Run Go tests with coverage
+        run: |
+          cd backend && go test -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out | grep '^total:'
+
+      - name: Run frontend tests
+        run: cd frontend && npm test -- --run
 
       - name: Build binary
         run: make build-backend
+
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Go module verify
+        run: cd backend && go mod verify
+
+      - name: Go mod tidy check
+        run: |
+          cd backend
+          cp go.mod /tmp/go.mod.bak && cp go.sum /tmp/go.sum.bak
+          go mod tidy
+          diff go.mod /tmp/go.mod.bak && diff go.sum /tmp/go.sum.bak || \
+            (echo "FAIL: go.mod or go.sum is not tidy" && exit 1)
+
+      - name: npm audit
+        run: cd frontend && npm ci && npm audit --audit-level=moderate
+        continue-on-error: true
