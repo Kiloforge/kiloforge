@@ -106,13 +106,13 @@ plan:
   - phase: Embed Guard in Review & Advisory Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-reviewer SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-conflict-resolver SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-report SKILL.md
-        done: false
+        done: true
       - text: Add Data Integrity Guard section to kf-new-track SKILL.md
-        done: false
+        done: true
   - phase: Embed Guard in Remaining Skills
     tasks:
       - text: Add Data Integrity Guard section to kf-setup SKILL.md
