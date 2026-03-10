@@ -44,11 +44,12 @@ type SDKSession struct {
 
 	responseTimeout time.Duration // timeout for waiting on response messages; 0 = default
 
-	mu          sync.Mutex
-	querying    bool               // prevents concurrent turns
-	queryCancel context.CancelFunc // cancels the current turn's relay context
-	onTurnEnd   func()             // called after each turn completes (e.g., to drain queued input)
-	closeOnce   sync.Once
+	mu                sync.Mutex
+	querying          bool               // prevents concurrent turns
+	queryCancel       context.CancelFunc // cancels the current turn's relay context
+	onTurnEnd         func()             // called after each turn completes (e.g., to drain queued input)
+	sessionIDCallback func(string)       // called when the real Claude session ID is received
+	closeOnce         sync.Once
 }
 
 // NewSDKSession creates an SDK client configured for an interactive agent.
@@ -178,6 +179,14 @@ func (s *SDKSession) SetOnTurnEnd(fn func()) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onTurnEnd = fn
+}
+
+// SetSessionIDCallback sets a callback invoked when the real Claude SDK session ID
+// is received in a ResultMessage. Used to persist the real session ID for resume.
+func (s *SDKSession) SetSessionIDCallback(fn func(string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.sessionIDCallback = fn
 }
 
 // Interrupt cancels the current turn's relay context if a turn is in progress.
@@ -318,6 +327,16 @@ func (s *SDKSession) handleResponseMessage(msg types.Message, turnID string, tra
 		}
 
 		s.logLine(fmt.Sprintf("[result] cost=$%.4f session=%s", costUSD, m.SessionID))
+
+		// Invoke session ID callback if a real session ID was received.
+		if m.SessionID != "" {
+			s.mu.Lock()
+			cb := s.sessionIDCallback
+			s.mu.Unlock()
+			if cb != nil {
+				cb(m.SessionID)
+			}
+		}
 	}
 }
 

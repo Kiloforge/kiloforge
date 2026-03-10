@@ -339,6 +339,64 @@ func TestSDKSession_Interrupt_SessionStillUsable(t *testing.T) {
 	}
 }
 
+func TestSDKSession_SessionIDCallback_Invoked(t *testing.T) {
+	// When a ResultMessage with a SessionID is received, the sessionIDCallback
+	// should be invoked with the real session ID.
+	mock := &mockSDKClient{
+		connected:  true,
+		responseCh: make(chan types.Message, 1),
+	}
+	s := newTestSDKSessionWithMock(mock)
+	s.querying = true
+
+	var capturedID string
+	s.SetSessionIDCallback(func(id string) {
+		capturedID = id
+	})
+
+	// Send a ResultMessage with a real session ID, then close the channel.
+	costUSD := 0.01
+	mock.responseCh <- &types.ResultMessage{
+		SessionID:    "real-sdk-session-id",
+		TotalCostUSD: &costUSD,
+	}
+	close(mock.responseCh)
+
+	s.relayResponse(s.ctx, nil, "", nil)
+
+	if capturedID != "real-sdk-session-id" {
+		t.Errorf("expected callback with 'real-sdk-session-id', got %q", capturedID)
+	}
+}
+
+func TestSDKSession_SessionIDCallback_NotCalledWhenEmpty(t *testing.T) {
+	// When a ResultMessage has an empty SessionID, the callback should NOT be invoked.
+	mock := &mockSDKClient{
+		connected:  true,
+		responseCh: make(chan types.Message, 1),
+	}
+	s := newTestSDKSessionWithMock(mock)
+	s.querying = true
+
+	called := false
+	s.SetSessionIDCallback(func(_ string) {
+		called = true
+	})
+
+	costUSD := 0.01
+	mock.responseCh <- &types.ResultMessage{
+		SessionID:    "",
+		TotalCostUSD: &costUSD,
+	}
+	close(mock.responseCh)
+
+	s.relayResponse(s.ctx, nil, "", nil)
+
+	if called {
+		t.Error("callback should not be called when SessionID is empty")
+	}
+}
+
 func TestSDKSession_Query_Disconnected(t *testing.T) {
 	// Query should return an error immediately if the client is disconnected.
 	mock := &mockSDKClient{
