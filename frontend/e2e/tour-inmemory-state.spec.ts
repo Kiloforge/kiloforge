@@ -73,8 +73,8 @@ test.describe("Tour — In-Memory Demo State", () => {
     // Skip and finish
     await page.locator("text=Skip and finish tour").click();
 
-    // Tour should be complete — completion banner visible
-    await expect(page.locator("text=You're all set")).toBeVisible({ timeout: 5_000 });
+    // Tour should be complete — toast notification visible (auto-dismisses)
+    await expect(page.locator("text=Tour complete")).toBeVisible({ timeout: 5_000 });
   });
 
   test("tour dismiss clears demo data and restores real state", async ({ page, serverURL }) => {
@@ -111,14 +111,12 @@ test.describe("Tour — In-Memory Demo State", () => {
     // Wait for dismissal
     await expect(page.locator("text=example-project")).not.toBeVisible({ timeout: 5_000 });
 
-    // Restart the tour
-    const restartBtn = page.locator("text=Restart tour");
-    if (await restartBtn.isVisible()) {
-      await restartBtn.click();
+    // Restart the tour via settings menu
+    await page.locator("button[title='Settings']").click();
+    await page.locator("text=Take Tour").click();
 
-      // Demo data should be re-injected
-      await expect(page.locator("text=Welcome to Kiloforge")).toBeVisible({ timeout: 5_000 });
-      await expect(page.locator("text=example-project")).toBeVisible({ timeout: 5_000 });
-    }
+    // Demo data should be re-injected
+    await expect(page.locator("text=Welcome to Kiloforge")).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("text=example-project")).toBeVisible({ timeout: 5_000 });
   });
 });
