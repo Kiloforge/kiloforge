@@ -49,6 +49,3 @@ merge-lock-hardening-be_20260310220000Z: []
 onboarding-ux-fe_20260310073721Z: []
 
 queue-project-scope-fe_20260310050001Z: []
-
-swarm-capacity-fe_20260311000001Z:
-  - swarm-capacity-be_20260311000000Z
