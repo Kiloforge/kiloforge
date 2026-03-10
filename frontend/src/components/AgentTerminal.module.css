@@ -1,25 +1,24 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal {
+.panel {
   background: var(--bg-surface-elevated);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  width: 90%;
-  max-width: 720px;
-  height: 80vh;
   display: flex;
   flex-direction: column;
   font-family: var(--font-mono);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.panel *:not(.messages):not(.messages *):not(.inputField) {
+  user-select: none;
+}
+
+.messages,
+.messages *,
+.inputField {
+  user-select: text;
 }
 
 .header {
