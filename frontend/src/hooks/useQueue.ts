@@ -16,16 +16,12 @@ interface UseQueueResult {
   handleQueueUpdate: (raw: unknown) => void;
 }
 
-export function useQueue(projectSlug?: string): UseQueueResult {
+export function useQueue(): UseQueueResult {
   const queryClient = useQueryClient();
-  const queueKey = queryKeys.queue(projectSlug);
 
   const { data: queue = null, isLoading } = useQuery({
-    queryKey: queueKey,
-    queryFn: () =>
-      fetcher<QueueStatus>(
-        projectSlug ? `/api/queue?project=${encodeURIComponent(projectSlug)}` : "/api/queue",
-      ),
+    queryKey: queryKeys.queue,
+    queryFn: () => fetcher<QueueStatus>("/api/queue"),
   });
 
   const startMutation = useMutation({
@@ -36,11 +32,7 @@ export function useQueue(projectSlug?: string): UseQueueResult {
         body: JSON.stringify(project ? { project } : {}),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queueKey });
-      // Also invalidate global queue if we're in project scope
-      if (projectSlug) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.queue });
     },
   });
 
@@ -48,10 +40,7 @@ export function useQueue(projectSlug?: string): UseQueueResult {
     mutationFn: () =>
       fetcher("/api/queue/stop", { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queueKey });
-      if (projectSlug) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.queue });
     },
   });
 
@@ -63,15 +52,12 @@ export function useQueue(projectSlug?: string): UseQueueResult {
         body: JSON.stringify(settings),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queueKey });
-      if (projectSlug) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.queue });
     },
   });
 
   const start = async (project?: string): Promise<void> => {
-    await startMutation.mutateAsync(project ?? projectSlug);
+    await startMutation.mutateAsync(project);
   };
 
   const stop = async (): Promise<void> => {
@@ -87,16 +73,12 @@ export function useQueue(projectSlug?: string): UseQueueResult {
       const event = raw as SSEEventData;
       const data = event.data as QueueStatus;
       if (data && typeof data.running === "boolean") {
-        queryClient.setQueryData<QueueStatus>(queueKey, data);
+        queryClient.setQueryData<QueueStatus>(queryKeys.queue, data);
       } else {
-        queryClient.invalidateQueries({ queryKey: queueKey });
-      }
-      // Also invalidate global queue when in project scope
-      if (projectSlug) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.queue });
       }
     },
-    [queryClient, queueKey, projectSlug],
+    [queryClient],
   );
 
   return {

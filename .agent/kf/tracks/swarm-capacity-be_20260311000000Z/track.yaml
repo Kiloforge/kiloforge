@@ -1,0 +1,102 @@
+id: swarm-capacity-be_20260311000000Z
+title: "Global agent swarm capacity — unified concurrency limit and API"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Add a unified capacity system that limits total active agents (interactive +
+    queue workers) to a configurable max swarm size. Rename user-facing
+    config/API fields from "max_workers" to "max_swarm_size". Return 429 with
+    structured capacity info when the limit is reached.
+  context: |
+    Currently interactive agents have NO concurrency limit — they spawn freely.
+    Queue workers use a separate semaphore (max_workers, default 3) but the
+    queue service isn't even wired in serve.go yet. The user wants a single
+    global limit that caps ALL agent types (interactive + queue workers) sharing
+    one capacity pool. The concept is rebranded from "Work Queue" to "AI Agent
+    Swarm" with the setting called "Max Swarm Size".
+  codebase_analysis: |
+    Spawner (backend/internal/adapter/agent/spawner.go):
+    - SpawnInteractive() at line 384 — no capacity check, spawns unconditionally
+    - activeAgents map tracks running agents but has no limit enforcement
+    - activeMu RWMutex protects the map — thread-safe counting already possible
+
+    QueueService (backend/internal/core/service/queue_service.go):
+    - maxWorkers field (line 34) — currently only limits queue-spawned agents
+    - SpawnUpToLimit() respects maxWorkers but doesn't count interactive agents
+    - SetMaxWorkers(n) / MaxWorkers() already exist
+
+    Config (backend/internal/adapter/config/config.go):
+    - MaxWorkers int json:"max_workers" — needs rename to max_swarm_size
+    - GetMaxWorkers() helper — needs rename to GetMaxSwarmSize()
+    - Persisted in config.json
+
+    REST handler (backend/internal/adapter/rest/api_handler.go):
+    - SpawnInteractiveAgent() at line 372 — needs capacity gate
+    - GET /api/queue returns queue status — needs capacity info added
+    - PATCH /api/queue/settings updates max_workers — field rename needed
+
+    Pool (backend/internal/adapter/pool/pool.go):
+    - DefaultMaxSize = 3 — worktree pool is separate from agent capacity
+    - Pool should remain independent (worktrees != agent slots)
+  acceptance_criteria:
+    - "Total active agents (interactive + queue workers) never exceeds max_swarm_size"
+    - "SpawnInteractive returns HTTP 429 with JSON body {capacity: {max, active, available}} when at limit"
+    - "Config field renamed from max_workers to max_swarm_size (backwards-compat: reads old field on load)"
+    - "GET /api/swarm/capacity returns current capacity status"
+    - "PATCH /api/swarm/settings accepts max_swarm_size field"
+    - "QueueService.SpawnUpToLimit respects global capacity (not just its own semaphore)"
+    - "Agent completion (both interactive and queue) decrements active count and publishes capacity_changed event"
+    - "Default max_swarm_size is 3"
+  out_of_scope: |
+    - Renaming internal Go types (QueueService, QueueStore etc.) — cosmetic refactor for later
+    - Frontend changes (separate track)
+    - Wiring QueueService in serve.go (separate concern, can be done alongside)
+    - Per-project capacity limits
+  technical_notes: |
+    Create a SwarmCapacity struct in core/domain with Max, Active, Available
+    fields. Add a capacity registry to the Spawner that counts all active agents
+    regardless of type. The REST handler checks capacity before spawning. On
+    completion callbacks, the capacity is decremented and a "capacity_changed"
+    SSE event is published so the frontend can update in real time.
+
+    Config backwards compat: on load, if max_swarm_size is 0 but max_workers > 0,
+    migrate the value. On save, write only max_swarm_size.
+plan:
+  - phase: "Domain and config"
+    tasks:
+      - text: "Add SwarmCapacity domain type to core/domain (Max, Active, Available int fields)"
+        done: false
+      - text: "Rename config MaxWorkers → MaxSwarmSize with JSON tag max_swarm_size; add backwards-compat migration from max_workers on load"
+        done: false
+      - text: "Update GetMaxWorkers → GetMaxSwarmSize helper; update all internal callers"
+        done: false
+  - phase: "Capacity enforcement"
+    tasks:
+      - text: "Add capacity methods to Spawner: ActiveCount() int, CanSpawn() bool, Capacity() SwarmCapacity — uses activeMu-protected activeAgents map + config max"
+        done: false
+      - text: "Add capacity check at top of SpawnInteractive — return new ErrAtCapacity with SwarmCapacity when CanSpawn() is false"
+        done: false
+      - text: "Update QueueService.SpawnUpToLimit to call spawner.CanSpawn() instead of its own internal semaphore count"
+        done: false
+      - text: "On agent completion callback, publish capacity_changed event via EventBus"
+        done: false
+  - phase: "API integration"
+    tasks:
+      - text: "Add GET /api/swarm/capacity endpoint returning SwarmCapacity JSON"
+        done: false
+      - text: "Add PATCH /api/swarm/settings endpoint accepting {max_swarm_size: int}"
+        done: false
+      - text: "Update SpawnInteractiveAgent handler to return 429 + capacity JSON on ErrAtCapacity"
+        done: false
+      - text: "Update OpenAPI spec with new /api/swarm/* endpoints and 429 response schema"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Write tests for Spawner capacity methods (ActiveCount, CanSpawn, Capacity)"
+        done: false
+      - text: "Write test for SpawnInteractive capacity gating — verify 429 returned when at limit and success after agent completes"
+        done: false
+extra: {}

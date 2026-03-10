@@ -26,9 +26,7 @@ import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
 import { useProjectMetadata } from "../hooks/useProjectMetadata";
 import { useProjectSettings } from "../hooks/useProjectSettings";
-import { useQueue } from "../hooks/useQueue";
 import { ProjectSettingsPanel } from "../components/ProjectSettingsPanel";
-import { QueuePanel } from "../components/QueuePanel";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -78,7 +76,6 @@ export function ProjectPage() {
 
   const [pageTab, setPageTab] = useState<"board" | "info" | "settings">("board");
   const { settings: projectSettings, loading: settingsLoading, updating: settingsUpdating, updateSettings } = useProjectSettings(slug);
-  const { queue, loading: queueLoading, starting: queueStarting, stopping: queueStopping, updatingSettings: queueUpdatingSettings, start: queueStart, stop: queueStop, updateSettings: queueUpdateSettings } = useQueue(slug);
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -389,20 +386,6 @@ export function ProjectPage() {
           onCancel={setupPrompt.cancel}
         />
       )}
-
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Work Queue</h2>
-        <QueuePanel
-          queue={queue}
-          loading={queueLoading}
-          starting={queueStarting}
-          stopping={queueStopping}
-          updatingSettings={queueUpdatingSettings}
-          onStart={() => queueStart()}
-          onStop={queueStop}
-          onUpdateSettings={queueUpdateSettings}
-        />
-      </section>
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>
