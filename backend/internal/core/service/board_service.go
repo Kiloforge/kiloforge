@@ -37,7 +37,7 @@ func (s *NativeBoardService) GetBoard(slug string) (*domain.BoardState, error) {
 // MoveCard moves a card to a new column.
 func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*port.BoardMoveCardResult, error) {
 	if !domain.IsValidColumn(toColumn) {
-		return nil, fmt.Errorf("invalid column: %s", toColumn)
+		return nil, fmt.Errorf("%w: %s", domain.ErrInvalidColumn, toColumn)
 	}
 
 	board, err := s.store.GetBoard(slug)
@@ -45,12 +45,12 @@ func (s *NativeBoardService) MoveCard(slug, trackID, toColumn string) (*port.Boa
 		return nil, fmt.Errorf("get board: %w", err)
 	}
 	if board == nil {
-		return nil, fmt.Errorf("no board for project %q", slug)
+		return nil, fmt.Errorf("%w: project %q", domain.ErrBoardNotFound, slug)
 	}
 
 	card, ok := board.Cards[trackID]
 	if !ok {
-		return nil, fmt.Errorf("track %q not on board", trackID)
+		return nil, fmt.Errorf("%w: %q", domain.ErrCardNotFound, trackID)
 	}
 
 	fromColumn := card.Column
