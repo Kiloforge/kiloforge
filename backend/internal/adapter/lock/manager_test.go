@@ -289,6 +289,61 @@ func TestPersistence_CorruptFile(t *testing.T) {
 	}
 }
 
+func TestHeartbeat_PersistsSurvivesRestart(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	m := New(dir)
+	ctx := context.Background()
+
+	// Acquire with short TTL.
+	_, _ = m.Acquire(ctx, "merge", "dev-1", 2*time.Second)
+
+	// Heartbeat extends to 30s — this should persist.
+	_, err := m.Heartbeat("merge", "dev-1", 30*time.Second)
+	if err != nil {
+		t.Fatalf("heartbeat: %v", err)
+	}
+
+	// Load into a new manager (simulates restart).
+	m2 := New(dir)
+	locks := m2.List()
+	if len(locks) != 1 {
+		t.Fatalf("expected 1 lock after restart, got %d", len(locks))
+	}
+	// The TTL should be ~30s, not the original 2s.
+	remaining := time.Until(locks[0].ExpiresAt)
+	if remaining < 20*time.Second {
+		t.Errorf("expected heartbeat TTL to survive restart, remaining=%v", remaining)
+	}
+}
+
+func TestReap_PersistsLockRemoval(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	m := New(dir)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Acquire with very short TTL.
+	_, _ = m.Acquire(ctx, "merge", "dev-1", 100*time.Millisecond)
+
+	// Verify persisted.
+	m2 := New(dir)
+	if locks := m2.List(); len(locks) != 1 {
+		t.Fatalf("expected 1 lock before reap, got %d", len(locks))
+	}
+
+	// Start reaper and wait for expiry.
+	m.StartReaper(ctx)
+	time.Sleep(500 * time.Millisecond)
+
+	// Reaper should have persisted the removal.
+	m3 := New(dir)
+	if locks := m3.List(); len(locks) != 0 {
+		t.Errorf("expected 0 locks after reap + restart, got %d", len(locks))
+	}
+}
+
 func TestReentrantAcquire(t *testing.T) {
 	t.Parallel()
 	m := New("")

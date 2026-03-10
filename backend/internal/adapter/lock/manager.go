@@ -122,18 +122,21 @@ func (m *Manager) Release(scope, holder string) error {
 // Heartbeat extends the TTL of a held lock.
 func (m *Manager) Heartbeat(scope, holder string, ttl time.Duration) (*Lock, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	existing, ok := m.locks[scope]
 	if !ok || time.Now().After(existing.ExpiresAt) {
+		m.mu.Unlock()
 		return nil, ErrNotFound
 	}
 	if existing.Holder != holder {
+		m.mu.Unlock()
 		return nil, ErrNotHolder
 	}
 
 	existing.ExpiresAt = time.Now().Add(ttl)
 	l := *existing
+	m.mu.Unlock()
+	_ = m.save()
 	return &l, nil
 }
 
@@ -170,14 +173,20 @@ func (m *Manager) StartReaper(ctx context.Context) {
 
 func (m *Manager) reap() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	now := time.Now()
+	reaped := false
 	for scope, l := range m.locks {
 		if now.After(l.ExpiresAt) {
 			delete(m.locks, scope)
 			m.notifyWaiters(scope)
+			reaped = true
 		}
+	}
+	m.mu.Unlock()
+
+	if reaped {
+		_ = m.save()
 	}
 }
 
