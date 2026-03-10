@@ -109,22 +109,80 @@ describe("useAgentWebSocket", () => {
   });
 
   it("reconnects with exponential backoff on non-clean close", async () => {
+    // Give the first connection a status message so reconnect takes the
+    // direct path (no fetch), which makes timing deterministic.
     renderHook(() => useAgentWebSocket("agent-1"));
     act(() => MockWebSocket.latest!.simulateOpen());
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "status", status: "running" });
+    });
     expect(MockWebSocket._instances).toHaveLength(1);
 
+    // First close — agentStatus is "running" (non-terminal), direct reconnect.
     act(() => MockWebSocket.latest!.simulateClose(1006));
 
-    // After first close, retry delay is 1000ms
+    // Retry delay starts at 1000ms.
     act(() => { vi.advanceTimersByTime(1000); });
     expect(MockWebSocket._instances).toHaveLength(2);
 
-    // Second close should use 2000ms delay
+    // Second close — delay doubles to 2000ms.
     act(() => MockWebSocket.latest!.simulateClose(1006));
     act(() => { vi.advanceTimersByTime(1000); });
     expect(MockWebSocket._instances).toHaveLength(2); // Not yet
     act(() => { vi.advanceTimersByTime(1000); });
     expect(MockWebSocket._instances).toHaveLength(3);
+  });
+
+  it("stops reconnecting when REST API shows terminal agent", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ status: "completed" }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    // Close without having received a status message.
+    act(() => MockWebSocket.latest!.simulateClose(1006));
+    await act(async () => { await vi.runAllTimersAsync(); });
+
+    // Should have fetched agent status.
+    expect(fetchSpy).toHaveBeenCalledWith("/api/agents/agent-1");
+    // Should NOT reconnect — agent is completed.
+    expect(result.current.status).toBe("disconnected");
+    expect(result.current.agentStatus).toBe("completed");
+    expect(MockWebSocket._instances).toHaveLength(1); // No new connection.
+
+    vi.unstubAllGlobals();
+    vi.stubGlobal("WebSocket", MockWebSocket);
+  });
+
+  it("stops reconnecting after max attempts", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+    // Give it a non-terminal status so it takes the direct reconnect path.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "status", status: "running" });
+    });
+
+    // Simulate 10 close → reconnect cycles (MAX_RECONNECT_ATTEMPTS = 10).
+    // Don't send messages on reconnect so retryCount is NOT reset.
+    for (let i = 0; i < 10; i++) {
+      act(() => MockWebSocket.latest!.simulateClose(1006));
+      act(() => { vi.advanceTimersByTime(10000); }); // Max delay is 10s
+      if (i < 9) {
+        act(() => MockWebSocket.latest!.simulateOpen());
+        // No message → retryCount stays accumulated.
+      }
+    }
+
+    // The 11th close should NOT trigger a reconnect — limit reached.
+    const instanceCountBefore = MockWebSocket._instances.length;
+    act(() => MockWebSocket.latest!.simulateClose(1006));
+    act(() => { vi.advanceTimersByTime(10000); });
+    expect(MockWebSocket._instances).toHaveLength(instanceCountBefore);
+    expect(result.current.status).toBe("disconnected");
   });
 
   it("does not reconnect when agent completed", () => {

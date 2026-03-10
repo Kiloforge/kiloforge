@@ -146,7 +146,8 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
     if (fw.isDragging) fw.onDragEnd();
   }, [fw]);
 
-  const isTerminal = agentStatus === "completed" || agentStatus === "failed";
+  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced"]);
+  const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
   const canSend = status === "connected" && !isTerminal;
 
   // Compute turn numbers for turn_start messages

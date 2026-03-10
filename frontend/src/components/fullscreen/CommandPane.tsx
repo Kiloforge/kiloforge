@@ -79,7 +79,8 @@ export function CommandPane({
     [handleSend],
   );
 
-  const isTerminal = agentStatus === "completed" || agentStatus === "failed";
+  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced"]);
+  const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
   const canSend = agentId !== null && status === "connected" && !isTerminal;
 
   const activeAgents = agents.filter(

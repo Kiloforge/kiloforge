@@ -45,6 +45,14 @@ interface ServerMessage {
   data?: Record<string, unknown>;
 }
 
+/** Terminal agent statuses that should stop reconnection attempts. */
+const TERMINAL_STATUSES = new Set([
+  "completed", "failed", "stopped", "force-killed", "resume-failed", "replaced",
+]);
+
+/** Maximum number of consecutive reconnect attempts before giving up. */
+const MAX_RECONNECT_ATTEMPTS = 10;
+
 export function useAgentWebSocket(agentId: string | null) {
   const [messages, setMessages] = useState<WSMessage[]>([]);
   const [status, setStatus] = useState<WSConnectionState>("disconnected");
@@ -53,6 +61,7 @@ export function useAgentWebSocket(agentId: string | null) {
   const wsRef = useRef<WebSocket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryDelayRef = useRef(1000);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     agentStatusRef.current = agentStatus;
@@ -75,6 +84,8 @@ export function useAgentWebSocket(agentId: string | null) {
       try {
         const msg = JSON.parse(event.data as string) as ServerMessage;
         const now = new Date();
+        // Successfully received a message — reset reconnect counter.
+        retryCountRef.current = 0;
         // Defensive: coerce text fields to string in case server sends unexpected types
         const safeText = typeof msg.text === "string" ? msg.text : String(msg.text ?? "");
         const safeThinking = typeof msg.thinking === "string" ? msg.thinking : String(msg.thinking ?? "");
@@ -141,14 +152,14 @@ export function useAgentWebSocket(agentId: string | null) {
             break;
           case "status":
             setAgentStatus(msg.status ?? null);
-            if (msg.status === "completed" || msg.status === "failed") {
+            if (msg.status && TERMINAL_STATUSES.has(msg.status)) {
               setMessages((prev) => [
                 ...prev,
                 {
                   type: "status",
                   text: msg.status === "completed"
                     ? `Agent exited (code ${msg.exit_code ?? 0})`
-                    : "Agent failed",
+                    : `Agent ${msg.status}`,
                   timestamp: now,
                 },
               ]);
@@ -165,19 +176,60 @@ export function useAgentWebSocket(agentId: string | null) {
 
     ws.onclose = () => {
       wsRef.current = null;
-      if (agentStatusRef.current === "completed" || agentStatusRef.current === "failed") {
+
+      // If we already know the agent is in a terminal state, stop.
+      if (agentStatusRef.current && TERMINAL_STATUSES.has(agentStatusRef.current)) {
         setStatus("disconnected");
         return;
       }
-      setStatus("reconnecting");
-      const delay = Math.min(retryDelayRef.current, 10000);
-      retryDelayRef.current = Math.min(retryDelayRef.current * 2, 10000);
-      retryRef.current = setTimeout(connect, delay);
+
+      // Max retry limit reached — give up.
+      if (retryCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        console.warn(`[WebSocket] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached for agent ${agentId}`);
+        setStatus("disconnected");
+        return;
+      }
+
+      // If agentStatus is null (never received a status message), the WS
+      // may have closed before the status arrived. Check via REST API.
+      if (agentStatusRef.current == null && agentId) {
+        fetch(`/api/agents/${encodeURIComponent(agentId)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data: { status?: string } | null) => {
+            if (data?.status && TERMINAL_STATUSES.has(data.status)) {
+              setAgentStatus(data.status);
+              setStatus("disconnected");
+              setMessages((prev) => [
+                ...prev,
+                { type: "status", text: `Agent ${data.status}`, timestamp: new Date() },
+              ]);
+              return;
+            }
+            // Not terminal — schedule reconnect.
+            scheduleReconnect();
+          })
+          .catch(() => {
+            // REST also failed — schedule reconnect anyway.
+            scheduleReconnect();
+          });
+        return;
+      }
+
+      // Agent is in a non-terminal state — schedule reconnect.
+      scheduleReconnect();
     };
 
     ws.onerror = () => {
       // onclose will fire after onerror
     };
+
+    function scheduleReconnect() {
+      setStatus("reconnecting");
+      retryCountRef.current += 1;
+      const delay = Math.min(retryDelayRef.current, 10000);
+      retryDelayRef.current = Math.min(retryDelayRef.current * 2, 10000);
+      retryRef.current = setTimeout(connect, delay);
+    }
   }, [agentId]);
 
   useEffect(() => {
@@ -185,6 +237,7 @@ export function useAgentWebSocket(agentId: string | null) {
 
     setMessages([]);
     setAgentStatus(null);
+    retryCountRef.current = 0;
     connect();
 
     return () => {
