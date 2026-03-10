@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -453,6 +454,9 @@ func TestResumeAgent_AlreadyRunning(t *testing.T) {
 
 func TestResumeDeveloper_Success(t *testing.T) {
 	t.Parallel()
+	if _, err := exec.LookPath("claude"); err != nil {
+		t.Skip("claude CLI not available")
+	}
 
 	store := &stubAgentStore{
 		agents: []domain.AgentInfo{
