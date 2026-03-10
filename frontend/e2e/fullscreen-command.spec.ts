@@ -45,6 +45,40 @@ test.describe("Full-screen command mode", () => {
     await expect(agentSelect).toHaveValue("");
   });
 
+  test("help panel toggle via button and escape", async ({ page, serverURL }) => {
+    await page.goto(serverURL);
+    await page.waitForLoadState("networkidle");
+
+    await page.keyboard.press("Meta+Shift+KeyF");
+    await expect(page.locator("[data-tour='fullscreen-command']")).toBeVisible();
+
+    // Help panel should not be visible initially
+    await expect(page.locator("[data-testid='command-mode-help']")).toHaveCount(0);
+
+    // Click "?" help button
+    await page.getByRole("button", { name: "?" }).click();
+    await expect(page.locator("[data-testid='command-mode-help']")).toBeVisible();
+
+    // Help panel should show shortcut entries
+    await expect(page.locator("[data-testid='command-mode-help'] kbd")).toHaveCount(8);
+
+    // Escape closes help panel (not the fullscreen overlay)
+    await page.keyboard.press("Escape");
+    await expect(page.locator("[data-testid='command-mode-help']")).toHaveCount(0);
+    await expect(page.locator("[data-tour='fullscreen-command']")).toBeVisible();
+  });
+
+  test("clear button appears when messages exist", async ({ page, serverURL }) => {
+    await page.goto(serverURL);
+    await page.waitForLoadState("networkidle");
+
+    await page.keyboard.press("Meta+Shift+KeyF");
+    await expect(page.locator("[data-tour='fullscreen-command']")).toBeVisible();
+
+    // Clear button should not be present when no messages
+    await expect(page.getByRole("button", { name: "Clear" })).toHaveCount(0);
+  });
+
   test("split pane buttons create additional panes", async ({ page, serverURL }) => {
     await page.goto(serverURL);
     await page.waitForLoadState("networkidle");
