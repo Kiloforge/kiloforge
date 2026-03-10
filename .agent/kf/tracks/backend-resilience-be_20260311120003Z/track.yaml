@@ -1,11 +1,11 @@
 id: backend-resilience-be_20260311120003Z
-title: "Backend resilience — config validation, DB safety, log hardening"
+title: Backend resilience — config validation, DB safety, log hardening
 type: bug
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
-  summary: "Add rows.Err() checks to SQLite store iterators, add config Validate() method, fix log file permissions, add migration down blocks, wrap compound DB ops in transactions."
+  summary: Add rows.Err() checks to SQLite store iterators, add config Validate() method, fix log file permissions, add migration down blocks, wrap compound DB ops in transactions.
   context: |
     Production audit identified several resilience gaps in the backend: SQLite row iteration
     loops silently skip errors (missing rows.Err() checks), configuration has no runtime
@@ -41,43 +41,43 @@ spec:
     For rows.Err(): follow the pattern in queue_store.go — check rows.Err() after the
     for rows.Next() loop and return the error. For row scan failures, log the error
     and continue (don't fail the entire query for one bad row).
-
+    
     For config validation: add a Validate() method to Config struct, call it at the
     end of Resolve(). Return descriptive errors for each invalid field.
-
+    
     For migration down blocks: add DROP TABLE or ALTER TABLE DROP COLUMN as appropriate.
     These should be safe rollbacks, not destructive.
 plan:
-  - phase: "Database safety"
+  - phase: Database safety
     tasks:
-      - text: "Add rows.Err() check after every for-rows.Next() loop in agent_store.go"
-        done: false
-      - text: "Add rows.Err() check after every for-rows.Next() loop in project_store.go"
-        done: false
-      - text: "Add rows.Err() check after every for-rows.Next() loop in trace_store.go"
-        done: false
-      - text: "Log row scan errors instead of silently continuing in all store files"
-        done: false
-      - text: "Wrap compound operations in project_store.go in transactions"
-        done: false
-  - phase: "Config validation"
+      - text: Add rows.Err() check after every for-rows.Next() loop in agent_store.go
+        done: true
+      - text: Add rows.Err() check after every for-rows.Next() loop in project_store.go
+        done: true
+      - text: Add rows.Err() check after every for-rows.Next() loop in trace_store.go
+        done: true
+      - text: Log row scan errors instead of silently continuing in all store files
+        done: true
+      - text: Wrap compound operations in project_store.go in transactions
+        done: true
+  - phase: Config validation
     tasks:
-      - text: "Add Validate() method to Config struct with port range and DataDir checks"
-        done: false
-      - text: "Call Validate() at the end of config.Resolve()"
-        done: false
-      - text: "Write tests for Validate() — invalid port, empty DataDir, valid config"
-        done: false
-  - phase: "Log and migration hardening"
+      - text: Add Validate() method to Config struct with port range and DataDir checks
+        done: true
+      - text: Call Validate() at the end of config.Resolve()
+        done: true
+      - text: Write tests for Validate() — invalid port, empty DataDir, valid config
+        done: true
+  - phase: Log and migration hardening
     tasks:
-      - text: "Change log file permissions from 0644 to 0640 in daemon.go and serve.go"
-        done: false
-      - text: "Add -- +goose Down blocks to all 4 migration files"
-        done: false
-  - phase: "Verification"
+      - text: Change log file permissions from 0644 to 0640 in daemon.go and serve.go
+        done: true
+      - text: Add -- +goose Down blocks to all 4 migration files
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test — all tests pass"
-        done: false
-      - text: "Run make build — clean compilation"
-        done: false
+      - text: Run make test — all tests pass
+        done: true
+      - text: Run make build — clean compilation
+        done: true
 extra: {}

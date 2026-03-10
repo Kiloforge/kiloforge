@@ -26,7 +26,7 @@ arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignm
 auto-open-dashboard_20260310230000Z: {"title":"Auto-open browser to dashboard on init and up","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 aws-static-deploy_20260310200000Z: {"title":"Migrate kiloforge.dev from Vercel to AWS S3 + CloudFront","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
