@@ -44,9 +44,6 @@ cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
 fix-merge-protocol-be_20260311160000Z: []
-
-fix-setup-git-init-be_20260311230001Z: []
-
 gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
