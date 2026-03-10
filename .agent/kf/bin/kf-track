@@ -2029,6 +2029,163 @@ cmd_status() {
   echo "================================================================================"
 }
 
+# --- Config settings ---
+# Known settings: key|type|default
+_CONFIG_SCHEMA=(
+  "primary_branch|string|main"
+  "enforce_dep_ordering|bool|true"
+)
+CONFIG_FILE="${KF_DIR}/config.yaml"
+
+# Read a config value, applying default if missing.
+_config_get_value() {
+  local key="$1"
+  local default_val=""
+  local type=""
+  for entry in "${_CONFIG_SCHEMA[@]}"; do
+    local k t d
+    k="${entry%%|*}"
+    local rest="${entry#*|}"
+    t="${rest%%|*}"
+    d="${rest#*|}"
+    if [[ "$k" == "$key" ]]; then
+      default_val="$d"
+      type="$t"
+      break
+    fi
+  done
+
+  if [[ -z "$type" ]]; then
+    echo "ERROR: Unknown config key: $key" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "$default_val"
+    return 0
+  fi
+
+  # Read value from YAML (flat key: value format)
+  local val
+  val=$(grep "^${key}:" "$CONFIG_FILE" 2>/dev/null | head -1 | sed "s/^${key}:[[:space:]]*//" | sed 's/[[:space:]]*$//')
+  if [[ -z "$val" ]]; then
+    echo "$default_val"
+  else
+    echo "$val"
+  fi
+}
+
+cmd_config() {
+  local subcmd="${1:-}"; shift || true
+  case "$subcmd" in
+    list) _config_list "$@" ;;
+    get)  _config_get "$@" ;;
+    set)  _config_set "$@" ;;
+    *)
+      echo "Usage: kf-track config <list|get|set>" >&2
+      echo "" >&2
+      echo "  list                   Show all settings with current values and defaults" >&2
+      echo "  get <key>              Get a single setting value" >&2
+      echo "  set <key> <value>      Set a setting value" >&2
+      return 1
+      ;;
+  esac
+}
+
+_config_list() {
+  for entry in "${_CONFIG_SCHEMA[@]}"; do
+    local k t d
+    k="${entry%%|*}"
+    local rest="${entry#*|}"
+    t="${rest%%|*}"
+    d="${rest#*|}"
+    local current
+    current=$(_config_get_value "$k")
+    echo "${k}: ${current} (default: ${d})"
+  done
+}
+
+_config_get() {
+  local key="${1:-}"
+  if [[ -z "$key" ]]; then
+    echo "Usage: kf-track config get <key>" >&2
+    return 1
+  fi
+  _config_get_value "$key"
+}
+
+_config_set() {
+  local key="${1:-}" value="${2:-}"
+  if [[ -z "$key" || -z "$value" ]]; then
+    echo "Usage: kf-track config set <key> <value>" >&2
+    return 1
+  fi
+
+  # Validate key exists in schema
+  local type="" found=false
+  for entry in "${_CONFIG_SCHEMA[@]}"; do
+    local k t d
+    k="${entry%%|*}"
+    local rest="${entry#*|}"
+    t="${rest%%|*}"
+    d="${rest#*|}"
+    if [[ "$k" == "$key" ]]; then
+      type="$t"
+      found=true
+      break
+    fi
+  done
+
+  if [[ "$found" != "true" ]]; then
+    echo "ERROR: Unknown config key: $key" >&2
+    echo "Known keys:" >&2
+    for entry in "${_CONFIG_SCHEMA[@]}"; do
+      echo "  ${entry%%|*}" >&2
+    done
+    return 1
+  fi
+
+  # Type validation
+  if [[ "$type" == "bool" ]]; then
+    case "$value" in
+      true|false) ;;
+      *)
+        echo "ERROR: ${key} must be a boolean (true|false), got: $value" >&2
+        return 1
+        ;;
+    esac
+  fi
+
+  # Create config file if it doesn't exist
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    cat > "$CONFIG_FILE" <<'HEADER'
+# Kiloforge Project Configuration
+#
+# SCHEMA:
+#   primary_branch: string (default: "main")
+#     The branch agents read track state from.
+#
+#   enforce_dep_ordering: bool (default: true)
+#     When true, the work queue scheduler skips tracks with unmet dependencies
+#     and continues to the next eligible track (drain-loop). When false, tracks
+#     are popped in order regardless of dependency status.
+#
+# Structured project settings used by kf tooling and agent skills.
+# TOOL: Managed by `kf-track config` and agent skills. Hand-editable.
+
+HEADER
+  fi
+
+  # Update or add the key
+  if grep -q "^${key}:" "$CONFIG_FILE" 2>/dev/null; then
+    sedi "s/^${key}:.*/${key}: ${value}/" "$CONFIG_FILE"
+  else
+    echo "${key}: ${value}" >> "$CONFIG_FILE"
+  fi
+
+  echo "Set ${key} = ${value}"
+}
+
 cmd_help() {
   cat <<'HELP'
 kf-track — Track registry management for Kiloforge agents
@@ -2079,6 +2236,10 @@ COMMANDS:
 
   status [--ref <branch|commit>]                          Full project status report
   index [--ref <branch|commit>]                          Generate project index from tracks.yaml
+  config list                                            List all project settings
+  config get <key>                                       Get a setting value
+  config set <key> <value>                               Set a setting value
+
   quick-links [show [--ref <ref>]]                       Show quick links
   quick-links add <label> <path>                         Add a quick link
   quick-links remove <label>                             Remove a quick link
@@ -2114,6 +2275,7 @@ case "$cmd" in
   index)       cmd_index "$@" ;;
   quick-links) cmd_quick_links "$@" ;;
   status)      cmd_status "$@" ;;
+  config)      cmd_config "$@" ;;
   # Content commands delegate to kf-track-content (Python3 required)
   show|spec|plan|task|progress|extra|init|migrate|migrate-all)
     cmd_content "$cmd" "$@" ;;
