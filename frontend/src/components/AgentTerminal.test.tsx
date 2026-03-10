@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentTerminal } from "./AgentTerminal";
 import type { WSMessage } from "../hooks/useAgentWebSocket";
 
-// jsdom doesn't implement scrollIntoView
-Element.prototype.scrollIntoView = vi.fn();
+// jsdom doesn't implement scrollIntoView — polyfill in beforeAll.
+beforeAll(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
 
 vi.mock("../hooks/useAgentWebSocket", () => ({
   useAgentWebSocket: vi.fn(),
@@ -101,7 +103,7 @@ describe("AgentTerminal", () => {
 
   it("shows Reconnecting status", () => {
     setup({ status: "reconnecting" });
-    expect(screen.getByText("Reconnecting...")).toBeInTheDocument();
+    expect(screen.getAllByText("Reconnecting...").length).toBeGreaterThan(0);
   });
 
   it("shows Disconnected status", () => {
@@ -191,5 +193,16 @@ describe("AgentTerminal", () => {
     const { container } = setup({}, { minimized: true });
     const panel = container.firstElementChild as HTMLElement;
     expect(panel.style.display).toBe("none");
+  });
+
+  it("shows terminal status in empty state when agent is stopped", () => {
+    setup({ status: "disconnected", agentStatus: "stopped", messages: [] });
+    expect(screen.getByText("Agent stopped")).toBeInTheDocument();
+  });
+
+  it("disables input when agent is stopped", () => {
+    setup({ status: "connected", agentStatus: "stopped" });
+    const textarea = screen.getByPlaceholderText("Agent has exited");
+    expect(textarea).toBeDisabled();
   });
 });

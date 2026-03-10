@@ -10,13 +10,13 @@ const (
 	MsgError  = "error"  // server → client: error message
 
 	// Enriched message types for SDK-based agents.
-	MsgTurnStart = "turn_start" // server → client: new turn begins
-	MsgText      = "text"       // server → client: text content block
+	MsgTurnStart  = "turn_start"  // server → client: new turn begins
+	MsgText       = "text"        // server → client: text content block
 	MsgToolUse    = "tool_use"    // server → client: tool invocation
 	MsgToolResult = "tool_result" // server → client: tool execution result
-	MsgThinking   = "thinking"   // server → client: thinking content
-	MsgTurnEnd    = "turn_end"   // server → client: turn completed with cost/usage
-	MsgSystem     = "system"     // server → client: system notification
+	MsgThinking   = "thinking"    // server → client: thinking content
+	MsgTurnEnd    = "turn_end"    // server → client: turn completed with cost/usage
+	MsgSystem     = "system"      // server → client: system notification
 )
 
 // Message is the WebSocket protocol envelope.

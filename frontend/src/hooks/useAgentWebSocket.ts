@@ -81,7 +81,9 @@ export function useAgentWebSocket(agentId: string | null) {
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws/agent/${encodeURIComponent(agentId)}`);
     wsRef.current = ws;
 
+    let didOpen = false;
     ws.onopen = () => {
+      didOpen = true;
       setStatus("connected");
       retryDelayRef.current = 1000;
     };
@@ -237,7 +239,13 @@ export function useAgentWebSocket(agentId: string | null) {
     };
 
     ws.onerror = () => {
-      // onclose will fire after onerror
+      // If onerror fires before onopen, the WS upgrade failed (e.g., 404/503).
+      // The onclose handler's REST fallback will handle this — flag it so onclose
+      // knows the connection never established.
+      if (!didOpen) {
+        // Force agentStatusRef to null so onclose takes the REST fallback path.
+        agentStatusRef.current = null;
+      }
     };
 
     function scheduleReconnect() {

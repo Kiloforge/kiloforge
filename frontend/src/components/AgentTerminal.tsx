@@ -208,6 +208,12 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
         {messages.length === 0 && status === "connected" && (
           <p className={styles.emptyState}>Waiting for agent output...</p>
         )}
+        {messages.length === 0 && status === "disconnected" && isTerminal && (
+          <p className={styles.emptyState}>Agent {agentStatus}</p>
+        )}
+        {messages.length === 0 && status === "reconnecting" && (
+          <p className={styles.emptyState}>Reconnecting...</p>
+        )}
         {messages.map((msg, i) => {
           if (msg.type === "turn_start") turnCounter++;
           return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
