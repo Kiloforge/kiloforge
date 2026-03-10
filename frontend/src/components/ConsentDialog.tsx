@@ -19,9 +19,10 @@ export function ConsentDialog({ onAccept, onDeny }: Props) {
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <h3 className={styles.title}>Agent Permissions Required</h3>
         <p className={styles.message}>
-          Kiloforge agents run with <code className={styles.code}>--dangerously-skip-permissions</code>.
-          This grants agents unrestricted access to tools (file read/write, shell commands, etc.)
-          within their worktree directory.
+          Claude Code will run in <strong>Dangerously bypass permissions</strong> mode
+          (<code className={styles.code}>--dangerously-skip-permissions</code>).
+          This grants agents unrestricted access to tools (file read/write,
+          shell commands, network access, etc.) within their worktree directory.
         </p>
         <p className={styles.warning}>
           This is required for non-interactive agent operation.
