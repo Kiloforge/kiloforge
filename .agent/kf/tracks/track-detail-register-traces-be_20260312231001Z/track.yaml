@@ -1,7 +1,7 @@
 id: track-detail-register-traces-be_20260312231001Z
 title: Add agent register and traces to TrackDetail API response
 type: feature
-status: pending
+status: completed
 created: 2026-03-12
 updated: 2026-03-12
 spec:
@@ -89,27 +89,27 @@ plan:
   - phase: API Schema
     tasks:
       - text: Add AgentRegister, AgentIdentity schemas to openapi.yaml
-        done: false
+        done: true
       - text: Add agent_register and traces fields to TrackDetail schema
-        done: false
+        done: true
       - text: Regenerate server/client code (make generate or oapi-codegen)
-        done: false
+        done: true
   - phase: Handler Implementation
     tasks:
       - text: Parse extra.created_by and extra.claim from track.yaml in getTrackDetail handler
-        done: false
+        done: true
       - text: Query traceStore.FindByTrackID(trackID) and include capped results in response
-        done: false
+        done: true
       - text: Map parsed YAML data to AgentRegister response struct
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Add test for getTrackDetail with agent register data present
-        done: false
+        done: true
       - text: Add test for getTrackDetail with traces present
-        done: false
+        done: true
       - text: Add test for getTrackDetail with empty register/traces (no errors)
-        done: false
+        done: true
       - text: Run make test, make build, make lint
-        done: false
+        done: true
 extra: {}

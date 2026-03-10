@@ -306,7 +306,7 @@ tracing-default-on-be_20260309133000Z: {"title":"Enable Tracing by Default with 
 tracing-default-on-fe_20260309133001Z: {"title":"Tracing Toggle in Dashboard UI (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-claim-api_20260310120000Z: {"title":"Track claim API — server-side claim detection via scoped locks","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 track-claim-register_20260312230000Z: {"title":"Record agent claim metadata in track.yaml for session restoration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-track-detail-register-traces-be_20260312231001Z: {"title":"Add agent register and traces to TrackDetail API response","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+track-detail-register-traces-be_20260312231001Z: {"title":"Add agent register and traces to TrackDetail API response","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 track-detail-register-traces-fe_20260312231002Z: {"title":"Display agent register and traces in track detail view","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 track-detail-view-be_20260309001726Z: {"title":"Track Detail View API","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-detail-view-fe_20260309001727Z: {"title":"Track Detail View UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
