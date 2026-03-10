@@ -1,9 +1,9 @@
 id: fix-ws-reconnect-fe_20260312010001Z
-title: "Fix frontend reconnect loop — stop retrying when agent is terminal"
+title: Fix frontend reconnect loop — stop retrying when agent is terminal
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     The frontend WebSocket hook enters an infinite reconnect loop when the agent
@@ -22,12 +22,12 @@ spec:
     - If status is null (never received a status message), always reconnects
     - No maximum retry limit — exponential backoff caps at 10s but retries forever
     - No fallback to REST API to check agent state
-
+    
     **AgentCard.tsx:102-103** — Resume success opens terminal immediately
     via `onAttach()`. The terminal mounts before the SDK session may be
     fully initialized, leading to a period where WS connects but no output
     arrives (looks "stuck").
-
+    
     **useAgentActions.ts** — provides stop/resume mutations but no hook
     to query individual agent status on demand.
   acceptance_criteria:
@@ -46,38 +46,38 @@ spec:
     is null, call `GET /api/agents/{agentId}` to fetch current status. If
     status is terminal ("completed", "failed", "stopped"), set agentStatus
     and stop reconnecting. Use the existing `fetcher` utility.
-
+    
     **Fix 2 — Maximum reconnect attempts:**
     Add a counter ref that increments on each reconnect. After 10 attempts,
     stop and set status to "disconnected". Reset counter on successful
     connection (onopen).
-
+    
     **Fix 3 — Handle WS upgrade failure (non-101 response):**
     When WebSocket onerror fires before onopen (upgrade failed), treat
     it as a signal to check agent status via REST before retrying.
 plan:
-  - phase: "Reconnect resilience"
+  - phase: Reconnect resilience
     tasks:
-      - text: "Add REST status fallback in onclose — fetch GET /api/agents/{agentId} when agentStatus is null to determine if agent is terminal"
-        done: false
-      - text: "Add reconnect attempt counter ref — stop after 10 attempts, set status to 'disconnected'"
-        done: false
-      - text: "Reset reconnect counter on successful connection (onopen)"
-        done: false
-      - text: "Handle WS upgrade failure — on onerror before onopen, fetch agent status via REST"
-        done: false
-  - phase: "Terminal status display"
+      - text: Add REST status fallback in onclose — fetch GET /api/agents/{agentId} when agentStatus is null to determine if agent is terminal
+        done: true
+      - text: Add reconnect attempt counter ref — stop after 10 attempts, set status to 'disconnected'
+        done: true
+      - text: Reset reconnect counter on successful connection (onopen)
+        done: true
+      - text: Handle WS upgrade failure — on onerror before onopen, fetch agent status via REST
+        done: true
+  - phase: Terminal status display
     tasks:
-      - text: "Show 'Agent stopped' / 'Agent completed' message in terminal when agentStatus is terminal instead of 'Connecting...'"
-        done: false
-      - text: "Disable input field when agent is in terminal state"
-        done: false
-  - phase: "Verification"
+      - text: Show 'Agent stopped' / 'Agent completed' message in terminal when agentStatus is terminal instead of 'Connecting...'
+        done: true
+      - text: Disable input field when agent is in terminal state
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Add unit test for useAgentWebSocket reconnect limit behavior"
-        done: false
-      - text: "Add unit test for REST fallback on WS close without status"
-        done: false
-      - text: "Run npm test and verify no regressions"
-        done: false
+      - text: Add unit test for useAgentWebSocket reconnect limit behavior
+        done: true
+      - text: Add unit test for REST fallback on WS close without status
+        done: true
+      - text: Run npm test and verify no regressions
+        done: true
 extra: {}
