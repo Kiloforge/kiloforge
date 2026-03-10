@@ -2550,3 +2550,114 @@ func splitCSV(s string) []string {
 	}
 	return result
 }
+
+// ListReliabilityEvents implements gen.StrictServerInterface.
+func (h *APIHandler) ListReliabilityEvents(_ context.Context, req gen.ListReliabilityEventsRequestObject) (gen.ListReliabilityEventsResponseObject, error) {
+	if h.reliabilitySvc == nil {
+		return gen.ListReliabilityEvents500JSONResponse{Error: "reliability service not configured"}, nil
+	}
+
+	opts := extractPageOpts(req.Params.Limit, req.Params.Cursor)
+
+	var filter domain.ReliabilityFilter
+	if req.Params.EventType != nil && *req.Params.EventType != "" {
+		for _, t := range splitCSV(*req.Params.EventType) {
+			filter.EventTypes = append(filter.EventTypes, domain.ReliabilityEventType(t))
+		}
+	}
+	if req.Params.Severity != nil && *req.Params.Severity != "" {
+		for _, s := range splitCSV(*req.Params.Severity) {
+			filter.Severities = append(filter.Severities, domain.Severity(s))
+		}
+	}
+	if req.Params.AgentId != nil && *req.Params.AgentId != "" {
+		filter.AgentID = *req.Params.AgentId
+	}
+	if req.Params.Since != nil {
+		filter.Since = req.Params.Since
+	}
+	if req.Params.Until != nil {
+		filter.Until = req.Params.Until
+	}
+
+	page, err := h.reliabilitySvc.ListEvents(filter, opts)
+	if err != nil {
+		return gen.ListReliabilityEvents500JSONResponse{Error: "failed to list reliability events"}, nil
+	}
+
+	items := make([]gen.ReliabilityEvent, 0, len(page.Items))
+	for _, e := range page.Items {
+		items = append(items, domainReliabilityToGen(e))
+	}
+
+	var nextCursor *string
+	if page.NextCursor != "" {
+		nextCursor = &page.NextCursor
+	}
+
+	return gen.ListReliabilityEvents200JSONResponse{
+		Items:      items,
+		NextCursor: nextCursor,
+		TotalCount: page.TotalCount,
+	}, nil
+}
+
+// GetReliabilitySummary implements gen.StrictServerInterface.
+func (h *APIHandler) GetReliabilitySummary(_ context.Context, req gen.GetReliabilitySummaryRequestObject) (gen.GetReliabilitySummaryResponseObject, error) {
+	if h.reliabilitySvc == nil {
+		return gen.GetReliabilitySummary500JSONResponse{Error: "reliability service not configured"}, nil
+	}
+
+	now := time.Now().UTC()
+	since := now.Add(-24 * time.Hour)
+	until := now
+	if req.Params.Since != nil {
+		since = *req.Params.Since
+	}
+	if req.Params.Until != nil {
+		until = *req.Params.Until
+	}
+
+	bucket := "hour"
+	if req.Params.Bucket != nil {
+		bucket = string(*req.Params.Bucket)
+	}
+
+	summary, err := h.reliabilitySvc.GetSummary(since, until, bucket)
+	if err != nil {
+		return gen.GetReliabilitySummary500JSONResponse{Error: "failed to get reliability summary"}, nil
+	}
+
+	genBuckets := make([]gen.ReliabilityBucket, 0, len(summary.Buckets))
+	for _, b := range summary.Buckets {
+		genBuckets = append(genBuckets, gen.ReliabilityBucket{
+			Timestamp: b.Timestamp,
+			Counts:    b.Counts,
+		})
+	}
+
+	return gen.GetReliabilitySummary200JSONResponse{
+		Buckets: genBuckets,
+		Totals:  summary.Totals,
+	}, nil
+}
+
+func domainReliabilityToGen(e domain.ReliabilityEvent) gen.ReliabilityEvent {
+	ge := gen.ReliabilityEvent{
+		Id:        e.ID,
+		EventType: gen.ReliabilityEventEventType(e.EventType),
+		Severity:  gen.ReliabilityEventSeverity(e.Severity),
+		CreatedAt: e.CreatedAt,
+	}
+	if e.AgentID != "" {
+		ge.AgentId = &e.AgentID
+	}
+	if e.Scope != "" {
+		ge.Scope = &e.Scope
+	}
+	if e.Detail != nil {
+		detail := map[string]interface{}(e.Detail)
+		ge.Detail = &detail
+	}
+	return ge
+}

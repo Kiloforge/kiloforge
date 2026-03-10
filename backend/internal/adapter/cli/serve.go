@@ -123,12 +123,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 	tourStore := sqlite.NewTourStore(db)
 	opts = append(opts, rest.WithTourStore(tourStore))
 
+	// Wire reliability event store for agent reliability metrics.
+	reliabilityStore := sqlite.NewReliabilityStore(db)
+	opts = append(opts, rest.WithReliabilityStore(reliabilityStore))
+
 	// Wire analytics tracker into server for API-level events.
 	opts = append(opts, rest.WithAnalytics(tracker))
 
 	// Wire interactive agent spawner for WebSocket-based agent sessions.
 	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
 	spawner.SetAnalyticsTracker(tracker)
+	// Wire reliability service into spawner and quota tracker.
+	relSvc := service.NewReliabilityService(reliabilityStore, nil)
+	spawner.SetReliabilityService(relSvc)
+	quotaTracker.SetReliabilityService(relSvc)
 	opts = append(opts, rest.WithInteractiveSpawner(spawner))
 
 	// Start auto-update checker if enabled.
