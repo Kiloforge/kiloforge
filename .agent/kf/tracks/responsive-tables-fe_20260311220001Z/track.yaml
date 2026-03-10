@@ -41,9 +41,9 @@ plan:
   - phase: DiffView Sidebar
     tasks:
       - text: Add @media (max-width: 767px) to DiffView — convert sidebar to overlay drawer
-        done: false
+        done: true
       - text: Add toggle button to DiffView.tsx for mobile file list drawer
-        done: false
+        done: true
   - phase: Misc Fixed Widths
     tasks:
       - text: Add @media (max-width: 639px) to TraceTimeline — shrink columns, add ellipsis

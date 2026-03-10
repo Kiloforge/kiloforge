@@ -14,6 +14,7 @@ interface Props {
 export function DiffView({ slug, branch, onDiscuss }: Props) {
   const { data, isLoading, error } = useProjectDiff(slug, branch);
   const [activeFile, setActiveFile] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const fileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const handleFileSelect = useCallback((index: number) => {
@@ -53,7 +54,14 @@ export function DiffView({ slug, branch, onDiscuss }: Props) {
         )}
       </div>
       <div className={styles.layout}>
-        <div className={styles.sidebar}>
+        <button
+          className={styles.sidebarToggle}
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label={sidebarOpen ? "Hide files" : "Show files"}
+        >
+          {sidebarOpen ? "\u2190 Files" : "Files \u2192"}
+        </button>
+        <div className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
           <FileList files={data.files} activeIndex={activeFile} onSelect={handleFileSelect} />
         </div>
         <div className={styles.content}>
