@@ -32,9 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-
-add-developer-notes_20260312030000Z: []
-
 advisor-hub-fe_20260310115600Z:
   - advisor-skills-be_20260310115559Z
 

@@ -7,7 +7,7 @@
 # TOOL:   Use `kf-track` to manage entries. Do not edit by hand.
 #
 
-add-developer-notes_20260312030000Z: {"title":"Add developer notes section to product.md","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+add-developer-notes_20260312030000Z: {"title":"Add developer notes section to product.md","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 add-local-ssh-identity_20260308220000Z: {"title":"Add Command SSH Identity and Repo Name Improvements","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 add-project-command_20260307122000Z: {"title":"Implement 'kf add' Command for Project Registration","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 admin-operations-ui_20260309173001Z: {"title":"Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
