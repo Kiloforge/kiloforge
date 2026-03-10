@@ -49,7 +49,7 @@ spec:
     - Keyboard shortcuts for tiling/arrangement (Track 3)
     - Tab-based interface as alternative to floating windows
     - Persisting open windows across page refreshes
-    - Window minimize/maximize (Track 3)
+    - Window minimize/maximize (minimizable-terminals_20260310070000Z)
     - LogViewer multi-window support (future)
   technical_notes: |
     State change in App.tsx:
