@@ -19,14 +19,14 @@ import (
 
 // stubInteractiveSpawner implements InteractiveSpawner for testing.
 type stubInteractiveSpawner struct {
-	resumeDevResult  *domain.AgentInfo
-	resumeDevErr     error
-	resumeResult     *agent.InteractiveAgent
-	resumeErr        error
-	spawnDevResult   *domain.AgentInfo
-	spawnDevErr      error
-	spawnRevResult   *domain.AgentInfo
-	spawnRevErr      error
+	resumeDevResult *domain.AgentInfo
+	resumeDevErr    error
+	resumeResult    *agent.InteractiveAgent
+	resumeErr       error
+	spawnDevResult  *domain.AgentInfo
+	spawnDevErr     error
+	spawnRevResult  *domain.AgentInfo
+	spawnRevErr     error
 }
 
 func (s *stubInteractiveSpawner) SpawnInteractive(_ context.Context, _ agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error) {
@@ -574,10 +574,10 @@ func TestResumeAgent_InteractiveRequiresWSSessions(t *testing.T) {
 		SessionID: "sess-1",
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{agents: []domain.AgentInfo{interAgent}},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
+		Agents:       &stubAgentLister{agents: []domain.AgentInfo{interAgent}},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
 		InterSpawner: &stubInteractiveSpawner{},
 		// wsSessions is nil — interactive resume should fail
 	})
@@ -1602,11 +1602,11 @@ func TestUpdateSkills_LocalInstall(t *testing.T) {
 	projectDir := t.TempDir()
 	slug := "test-proj"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:   &stubAgentLister{},
-		Quota:    &stubQuotaReader{},
-		LockMgr:  lock.New(""),
-		Projects: &stubProjectLister{projects: []domain.Project{{Slug: slug, ProjectDir: projectDir}}},
-		Cfg:      &config.Config{}, // no SkillsRepo → embedded install path
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: slug, ProjectDir: projectDir}}},
+		Cfg:        &config.Config{}, // no SkillsRepo → embedded install path
 		SSEClients: func() int { return 0 },
 	})
 
@@ -1637,11 +1637,11 @@ func TestUpdateSkills_LocalInstall(t *testing.T) {
 func TestUpdateSkills_LocalInstall_ProjectNotFound(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:   &stubAgentLister{},
-		Quota:    &stubQuotaReader{},
-		LockMgr:  lock.New(""),
-		Projects: &stubProjectLister{},
-		Cfg:      &config.Config{},
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{},
+		Cfg:        &config.Config{},
 		SSEClients: func() int { return 0 },
 	})
 

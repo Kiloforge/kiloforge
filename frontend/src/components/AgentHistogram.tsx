@@ -6,6 +6,14 @@ import styles from "./AgentHistogram.module.css";
 export function AgentHistogram({ agents }: { agents: Agent[] }) {
   const [openStatus, setOpenStatus] = useState<string | null>(null);
 
+  const handleChipClick = useCallback((status: string) => {
+    setOpenStatus((prev) => (prev === status ? null : status));
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setOpenStatus(null);
+  }, []);
+
   const active = agents.filter(
     (a) => a.status === "running" || a.status === "waiting",
   );
@@ -16,14 +24,6 @@ export function AgentHistogram({ agents }: { agents: Agent[] }) {
 
   const entries = Object.entries(counts);
   if (entries.length === 0) return null;
-
-  const handleChipClick = useCallback((status: string) => {
-    setOpenStatus((prev) => (prev === status ? null : status));
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setOpenStatus(null);
-  }, []);
 
   return (
     <div className={styles.histogram}>
