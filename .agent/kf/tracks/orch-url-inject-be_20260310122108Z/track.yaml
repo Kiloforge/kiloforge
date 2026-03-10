@@ -1,0 +1,61 @@
+id: orch-url-inject-be_20260310122108Z
+title: "Inject KF_ORCH_URL into spawned agent environments"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: "The orchestrator knows its port but never passes KF_ORCH_URL to spawned agents. Add it to SDK WithEnvVar() calls so shell scripts resolve the correct orchestrator address."
+  context: |
+    The orchestrator listens on a configurable port (default 4001, set via KF_ORCH_PORT env,
+    --port flag, or JSON config). Shell scripts like kf-merge-lock and kf-track default to
+    http://localhost:4001 when KF_ORCH_URL is unset. If the port differs, HTTP lock operations
+    silently fall back to mkdir mode instead of reaching the orchestrator.
+  codebase_analysis: |
+    - Config: backend/internal/adapter/config/config.go — OrchestratorPort field (default 4001)
+    - Spawner: backend/internal/adapter/agent/spawner.go — SpawnDeveloper, SpawnReviewer,
+      SpawnInteractive, ResumeAgent all create SDK sessions without setting KF_ORCH_URL
+    - SDK client: backend/internal/adapter/agent/sdk_client.go — NewSDKSession,
+      NewSDKSessionWithResume, QueryOneShot create claude.Client/Query options but never
+      call WithEnvVar for KF_ORCH_URL
+    - SDK supports WithEnvVar(key, value) on ClaudeAgentOptions (schlunsen/claude-agent-sdk-go v0.5.1)
+    - Shell consumers: .agent/kf/bin/kf-merge-lock (line 20), .agent/kf/bin/kf-track (line 124)
+      both read KF_ORCH_URL with fallback to http://localhost:4001
+  acceptance_criteria:
+    - Spawned agents receive KF_ORCH_URL=http://localhost:{port} in their environment
+    - The URL reflects the actual configured OrchestratorPort, not hardcoded 4001
+    - All spawn paths (developer, reviewer, interactive, resume) inject the variable
+    - Existing behavior unchanged when port is default 4001
+    - Shell scripts (kf-merge-lock, kf-track) pick up the injected URL automatically
+  out_of_scope: |
+    - Changing the shell script defaults (they already read the env var correctly)
+    - Supporting non-localhost orchestrator hosts (future work if needed)
+    - Modifying SKILL.md inline lock code (kf-developer delegates to kf-merge-lock)
+  technical_notes: |
+    The SDK's WithEnvVar merges into the child process environment. Adding it to the
+    ClaudeAgentOptions in sdk_client.go ensures every spawned Claude process inherits
+    the correct URL. The spawner already has access to cfg.OrchestratorPort.
+
+    Approach: Add an orchURL string parameter to NewSDKSession, NewSDKSessionWithResume,
+    and QueryOneShot. Each function calls opts.WithEnvVar("KF_ORCH_URL", orchURL).
+    The spawner computes the URL once and passes it through.
+plan:
+  - phase: "Core — SDK session env injection"
+    tasks:
+      - text: "Add orchURL parameter to NewSDKSession and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)"
+        done: false
+      - text: "Add orchURL parameter to NewSDKSessionWithResume and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)"
+        done: false
+      - text: "Add orchURL parameter to QueryOneShot and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)"
+        done: false
+  - phase: "Integration — spawner wiring"
+    tasks:
+      - text: "Add helper method or local var in spawner to compute orchURL from cfg.OrchestratorPort"
+        done: false
+      - text: "Update all call sites (SpawnDeveloper, SpawnReviewer, SpawnInteractive, ResumeAgent) to pass orchURL"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test and verify all existing tests pass with the new parameter"
+        done: false
+extra: {}
