@@ -4,6 +4,7 @@ import type { BoardState, BoardCard, TrackDependency, TrackConflict } from "../t
 import { useTourContextSafe } from "./tour/TourProvider";
 import { TOUR_STEPS } from "./tour/tourSteps";
 import { RelationshipOverlay } from "./RelationshipOverlay";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import styles from "./KanbanBoard.module.css";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -35,6 +36,8 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [confirmReject, setConfirmReject] = useState<string | null>(null);
   const [showRelations, setShowRelations] = useState(true);
+  const [activeColumn, setActiveColumn] = useState(board.columns[0] ?? "backlog");
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
   const boardRef = useRef<HTMLDivElement>(null);
   const cardRefsMap = useRef(new Map<string, HTMLElement>());
@@ -89,27 +92,50 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
 
   const emptyMap = emptyMapRef.current;
 
+  const handleMobileMove = useCallback((trackId: string, toColumn: string) => {
+    onMoveCard(trackId, toColumn);
+  }, [onMoveCard]);
+
   return (
     <div className={styles.boardWrapper} style={{ position: "relative" }}>
-      <RelationshipOverlay
-        cardRefs={cardRefsMap.current}
-        containerRef={boardRef}
-        dependencies={dependencies ?? emptyMap}
-        conflicts={conflicts ?? emptyMap}
-        visible={showRelations}
-        onToggle={() => setShowRelations((v) => !v)}
-      />
+      {!isMobile && (
+        <RelationshipOverlay
+          cardRefs={cardRefsMap.current}
+          containerRef={boardRef}
+          dependencies={dependencies ?? emptyMap}
+          conflicts={conflicts ?? emptyMap}
+          visible={showRelations}
+          onToggle={() => setShowRelations((v) => !v)}
+        />
+      )}
+      {isMobile && (
+        <div className={styles.tabBar}>
+          {board.columns.map((col) => (
+            <button
+              key={col}
+              className={`${styles.tab} ${activeColumn === col ? styles.tabActive : ""}`}
+              onClick={() => setActiveColumn(col)}
+            >
+              <span className={styles.tabDot} style={{ background: COLUMN_COLORS[col] }} />
+              {COLUMN_LABELS[col] || col}
+              <span className={styles.tabBadge}>{cardsByColumn(col).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className={styles.board} data-tour="kanban-board" ref={boardRef}>
         {board.columns.map((col) => {
           const cards = cardsByColumn(col);
           const isOver = dropTarget === col;
+          const isActive = !isMobile || activeColumn === col;
           return (
             <div
               key={col}
-              className={`${styles.column} ${isOver ? styles.columnOver : ""}`}
-              onDragOver={(e) => handleDragOver(e, col)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, col)}
+              className={`${styles.column} ${isOver ? styles.columnOver : ""} ${isMobile && isActive ? styles.columnActive : ""}`}
+              style={isMobile && !isActive ? { display: "none" } : undefined}
+              onDragOver={isMobile ? undefined : (e) => handleDragOver(e, col)}
+              onDragLeave={isMobile ? undefined : handleDragLeave}
+              onDrop={isMobile ? undefined : (e) => handleDrop(e, col)}
             >
               <div className={styles.columnHeader}>
                 <span
@@ -131,8 +157,8 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     isBacklog={col === "backlog"}
                     dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
                     confirmingReject={confirmReject === card.track_id}
-                    onDragStart={() => handleDragStart(card.track_id)}
-                    onDragEnd={handleDragEnd}
+                    onDragStart={isMobile ? undefined : () => handleDragStart(card.track_id)}
+                    onDragEnd={isMobile ? undefined : handleDragEnd}
                     onApprove={() => onMoveCard(card.track_id, "approved")}
                     onReject={() => setConfirmReject(card.track_id)}
                     onConfirmReject={() => {
@@ -141,6 +167,10 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     }}
                     onCancelReject={() => setConfirmReject(null)}
                     cardRef={(el) => registerCardRef(card.track_id, el)}
+                    isMobile={isMobile}
+                    currentColumn={col}
+                    columns={board.columns}
+                    onMobileMove={handleMobileMove}
                   />
                 ))}
               </div>
@@ -163,19 +193,23 @@ interface CardItemProps {
   confirmingReject: boolean;
   dataTour?: string;
   cardRef?: (el: HTMLDivElement | null) => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
   onApprove: () => void;
   onReject: () => void;
   onConfirmReject: () => void;
   onCancelReject: () => void;
+  isMobile?: boolean;
+  currentColumn?: string;
+  columns?: string[];
+  onMobileMove?: (trackId: string, toColumn: string) => void;
 }
 
-function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
   return (
     <div
       className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isBacklog ? styles.cardBacklog : ""}`}
-      draggable
+      draggable={!isMobile}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       data-tour={dataTour}
@@ -230,6 +264,20 @@ function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, 
             </>
           )}
         </div>
+      )}
+      {isMobile && columns && currentColumn && onMobileMove && (
+        <select
+          className={styles.moveButton}
+          value=""
+          onChange={(e) => {
+            if (e.target.value) onMobileMove(card.track_id, e.target.value);
+          }}
+        >
+          <option value="">Move to...</option>
+          {columns.filter((c) => c !== currentColumn).map((c) => (
+            <option key={c} value={c}>{COLUMN_LABELS[c] || c}</option>
+          ))}
+        </select>
       )}
     </div>
   );
