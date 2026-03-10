@@ -169,7 +169,7 @@ init-ssh-and-auth_20260307125500Z: {"title":"SSH Key Auto-Registration and Rando
 install-script_20260311130000Z: {"title":"Add curl-pipe install script for one-line kf installation","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via WebSocket (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-interactive-only-launcher-fe_20260313000001Z: {"title":"Show only interactive agent role in dashboard launcher","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+interactive-only-launcher-fe_20260313000001Z: {"title":"Show only interactive agent role in dashboard launcher","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling and arrangement","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
