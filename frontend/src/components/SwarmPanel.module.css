@@ -101,6 +101,7 @@
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .saveBtn:hover:not(:disabled) {

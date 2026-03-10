@@ -65,7 +65,7 @@ plan:
   - phase: Button Transitions
     tasks:
       - text: Audit all button styles and add transition property where missing — focus on hover states in OverviewPage, AgentCard, ProjectPage
-        done: false
+        done: true
   - phase: Form Error Styling
     tasks:
       - text: Add .inputError class to AddProjectForm — red border on invalid URL and slug inputs, wire to validation state

@@ -70,6 +70,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .syncBtn:hover {
@@ -91,6 +92,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity var(--transition-fast);
 }
 
 .generateBtn:hover {
@@ -139,6 +141,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity var(--transition-fast);
 }
 
 .promptSubmit:disabled {
@@ -154,6 +157,7 @@
   padding: 6px 16px;
   font-size: 12px;
   cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .promptCancel:hover {
@@ -189,6 +193,7 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: opacity var(--transition-fast);
 }
 
 .setupBannerBtn:hover {
