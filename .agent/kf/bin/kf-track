@@ -566,18 +566,19 @@ cmd_get() {
 }
 
 cmd_list() {
-  local filter_status="" filter_active="" filter_ready="" show_all=false format="table" ref=""
+  local filter_status="" filter_active="" filter_ready="" filter_unclaimed="" show_all=false format="table" ref=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --status)  filter_status="$2"; shift 2 ;;
-      --active)  filter_active=true; shift ;;
-      --ready)   filter_ready=true; shift ;;
-      --all)     show_all=true; shift ;;
-      --json)    format="json"; shift ;;
-      --ids)     format="ids"; shift ;;
-      --ref)     ref="$2"; shift 2 ;;
-      -*)        echo "Unknown option: $1" >&2; return 1 ;;
-      *)         echo "Unknown argument: $1" >&2; return 1 ;;
+      --status)     filter_status="$2"; shift 2 ;;
+      --active)     filter_active=true; shift ;;
+      --ready)      filter_ready=true; shift ;;
+      --unclaimed)  filter_unclaimed=true; filter_active=true; shift ;;
+      --all)        show_all=true; shift ;;
+      --json)       format="json"; shift ;;
+      --ids)        format="ids"; shift ;;
+      --ref)        ref="$2"; shift 2 ;;
+      -*)           echo "Unknown option: $1" >&2; return 1 ;;
+      *)            echo "Unknown argument: $1" >&2; return 1 ;;
     esac
   done
 
@@ -639,8 +640,34 @@ ${line}"
     lines="$ready_lines"
   fi
 
+  # Build claimed tracks cache for enrichment
+  local claimed_cache=""
+  if [[ -n "$lines" ]]; then
+    claimed_cache=$(get_claimed_tracks 2>/dev/null || true)
+  fi
+
+  # Apply --unclaimed filter: remove tracks that have implementation branches
+  if [[ "$filter_unclaimed" == "true" && -n "$lines" && -n "$claimed_cache" ]]; then
+    local unclaimed_lines=""
+    while IFS= read -r line; do
+      local id
+      id=$(echo "$line" | sed 's/:.*//')
+      if ! echo "$claimed_cache" | awk -F'\t' -v tid="$id" '$1 == tid {found=1; exit} END{exit !found}' 2>/dev/null; then
+        if [[ -z "$unclaimed_lines" ]]; then
+          unclaimed_lines="$line"
+        else
+          unclaimed_lines="${unclaimed_lines}
+${line}"
+        fi
+      fi
+    done <<< "$lines"
+    lines="$unclaimed_lines"
+  fi
+
   if [[ -z "$lines" ]]; then
-    if [[ "$filter_ready" == "true" ]]; then
+    if [[ "$filter_unclaimed" == "true" ]]; then
+      echo "(no unclaimed tracks — all active tracks are claimed by workers)"
+    elif [[ "$filter_ready" == "true" ]]; then
       echo "(no ready tracks — all active tracks have unmet dependencies)"
     else
       echo "(no tracks match filter)"
@@ -708,6 +735,16 @@ ${line}"
           title=$(echo "$json" | grep -o '"title":"[^"]*"' | head -1 | sed 's/"title":"\(.*\)"/\1/')
           status=$(echo "$json" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
           type=$(echo "$json" | grep -o '"type":"[^"]*"' | head -1 | sed 's/"type":"\(.*\)"/\1/')
+        fi
+        # Enrich status with claim detection
+        if [[ "$status" == "pending" && -n "$claimed_cache" ]]; then
+          local claimer
+          claimer=$(echo "$claimed_cache" | awk -F'\t' -v tid="$id" '$1 == tid {print $2; exit}')
+          if [[ -n "$claimer" ]]; then
+            status="claimed"
+          elif echo "$claimed_cache" | awk -F'\t' -v tid="$id" '$1 == tid {found=1; exit} END{exit !found}' 2>/dev/null; then
+            status="claimed"
+          fi
         fi
         deps_info=$(dep_summary "$id")
         # Truncate title if too long
