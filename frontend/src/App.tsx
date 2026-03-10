@@ -46,7 +46,7 @@ const ReliabilityPage = lazy(() => import("./pages/ReliabilityPage").then(m => (
 
 export default function App() {
   const { agents, loading: agentsLoading, handleAgentUpdate, handleAgentRemoved, remainingCount: agentRemainingCount, hasNextPage: agentHasNextPage, isFetchingNextPage: agentFetchingNextPage, fetchNextPage: agentFetchNextPage } = useAgents();
-  const { quota, handleQuotaUpdate } = useQuota();
+  const { handleQuotaUpdate } = useQuota();
   const { tracks, handleTrackUpdate, handleTrackRemoved, remainingCount: trackRemainingCount, hasNextPage: trackHasNextPage, isFetchingNextPage: trackFetchingNextPage, fetchNextPage: trackFetchNextPage } = useTracks();
   const { handleProjectUpdate, handleProjectRemoved } = useProjects();
   const { swarm, loading: swarmLoading, starting: swarmStarting, stopping: swarmStopping, updatingSettings: swarmUpdatingSettings, start: swarmStart, stop: swarmStop, updateSettings: swarmUpdateSettings, handleSwarmUpdate } = useSwarm();
