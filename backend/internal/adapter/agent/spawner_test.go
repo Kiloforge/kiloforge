@@ -528,6 +528,51 @@ func TestResumeDeveloper_NoSessionID(t *testing.T) {
 	}
 }
 
+func TestEnsureGitRepo_InitializesWhenMissing(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	dir := t.TempDir()
+	// dir has no .git — ensureGitRepo should create one
+	if err := ensureGitRepo(context.Background(), dir); err != nil {
+		t.Fatalf("ensureGitRepo failed: %v", err)
+	}
+
+	info, err := os.Stat(filepath.Join(dir, ".git"))
+	if err != nil {
+		t.Fatalf(".git not created: %v", err)
+	}
+	if !info.IsDir() {
+		t.Error(".git should be a directory")
+	}
+}
+
+func TestEnsureGitRepo_SkipsExistingRepo(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	dir := t.TempDir()
+	// Pre-create a .git directory
+	if err := os.MkdirAll(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(dir, ".git", "marker")
+	os.WriteFile(marker, []byte("test"), 0o644)
+
+	if err := ensureGitRepo(context.Background(), dir); err != nil {
+		t.Fatalf("ensureGitRepo failed: %v", err)
+	}
+
+	// Marker file should still exist (git init was NOT re-run)
+	if _, err := os.Stat(marker); err != nil {
+		t.Error("marker file missing — git init may have re-run on existing repo")
+	}
+}
+
 func TestIntFromMap(t *testing.T) {
 	t.Parallel()
 

@@ -493,11 +493,8 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	}
 
 	// Ensure workDir is a git repository — the Claude SDK requires it.
-	if _, err := os.Stat(filepath.Join(workDir, ".git")); os.IsNotExist(err) {
-		initCmd := exec.CommandContext(ctx, "git", "init", workDir)
-		if out, initErr := initCmd.CombinedOutput(); initErr != nil {
-			return nil, fmt.Errorf("initializing git repository in %s: %s: %w", workDir, string(out), initErr)
-		}
+	if err := ensureGitRepo(ctx, workDir); err != nil {
+		return nil, err
 	}
 
 	model := opts.Model
@@ -812,4 +809,32 @@ func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, sp
 	}
 
 	s.onCompletion(agentID, ref, "completed")
+}
+
+// ensureGitRepo checks if workDir contains a .git directory. If not, it runs
+// git init to create one. Returns an error only if git init itself fails.
+func ensureGitRepo(ctx context.Context, workDir string) error {
+	if _, err := os.Stat(filepath.Join(workDir, ".git")); !os.IsNotExist(err) {
+		return nil // .git exists (or stat error unrelated to not-exist)
+	}
+	initCmd := exec.CommandContext(ctx, "git", "init", workDir)
+	// Clear GIT_DIR/GIT_WORK_TREE so git init targets the given directory
+	// rather than being redirected by inherited worktree env vars.
+	initCmd.Env = filterGitEnv(os.Environ())
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("initializing git repository in %s: %s: %w", workDir, string(out), err)
+	}
+	return nil
+}
+
+// filterGitEnv returns env without GIT_DIR and GIT_WORK_TREE entries.
+func filterGitEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, e := range env {
+		if strings.HasPrefix(e, "GIT_DIR=") || strings.HasPrefix(e, "GIT_WORK_TREE=") {
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
 }
