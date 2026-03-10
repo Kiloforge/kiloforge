@@ -115,6 +115,13 @@ func WithQueueService(svc QueueServicer) ServerOption {
 	}
 }
 
+// WithAnalytics sets the analytics tracker for product telemetry.
+func WithAnalytics(t port.AnalyticsTracker) ServerOption {
+	return func(s *Server) {
+		s.analytics = t
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -145,6 +152,7 @@ type Server struct {
 	consent      ConsentChecker
 	tourStore    *sqlite.TourStore
 	queueSvc     QueueServicer
+	analytics    port.AnalyticsTracker
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -275,6 +283,7 @@ func (s *Server) Run(ctx context.Context) error {
 		Consent:      s.consent,
 		AgentRemover: s.store,
 		QueueSvc:     s.queueSvc,
+		Analytics:    s.analytics,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

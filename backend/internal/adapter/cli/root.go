@@ -1,6 +1,11 @@
 package cli
 
 import (
+	"context"
+
+	"kiloforge/internal/adapter/analytics"
+	"kiloforge/internal/adapter/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,6 +16,23 @@ var rootCmd = &cobra.Command{
 and automated code review with Claude Code agents.
 
 Initialize with 'kf init' to start the global Gitea server.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Fire-and-forget CLI command tracking.
+		// Only tracks if kf is initialized and analytics is enabled.
+		cfg, err := config.Resolve()
+		if err != nil || !cfg.IsAnalyticsEnabled() {
+			return
+		}
+		apiKey := cfg.PostHogAPIKey
+		if apiKey == "" {
+			apiKey = analytics.DefaultPostHogAPIKey
+		}
+		tracker := analytics.NewPostHog(apiKey, analytics.AnonymousID(cfg.DataDir))
+		tracker.Track(cmd.Context(), "cli_command", map[string]any{
+			"command": cmd.Name(),
+		})
+		_ = tracker.Shutdown(context.Background())
+	},
 }
 
 func Execute() error {

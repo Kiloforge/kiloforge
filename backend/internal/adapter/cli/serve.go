@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"kiloforge/internal/adapter/agent"
@@ -135,6 +136,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	tourStore := sqlite.NewTourStore(db)
 	opts = append(opts, rest.WithTourStore(tourStore))
 
+	// Wire analytics tracker into server for API-level events.
+	opts = append(opts, rest.WithAnalytics(tracker))
+
 	// Wire interactive agent spawner for WebSocket-based agent sessions.
 	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
 	spawner.SetAnalyticsTracker(tracker)
@@ -146,6 +150,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 		updater.Start(ctx)
 		log.Printf("[skills] Auto-update enabled for %s", cfg.SkillsRepo)
 	}
+
+	// Track app_started event with runtime metadata.
+	tracker.Track(ctx, "app_started", map[string]any{
+		"version":    appVersion,
+		"go_version": runtime.Version(),
+		"os":         runtime.GOOS,
+		"arch":       runtime.GOARCH,
+	})
 
 	log.Printf("Orchestrator starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
 

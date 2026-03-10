@@ -143,6 +143,13 @@ func (s *Spawner) onCompletion(agentID, ref, status string) {
 	}
 }
 
+// trackEvent sends an analytics event if a tracker is configured.
+func (s *Spawner) trackEvent(event string, props map[string]any) {
+	if s.analytics != nil {
+		s.analytics.Track(context.Background(), event, props)
+	}
+}
+
 // checkAuth verifies Claude CLI authentication before spawning.
 func (s *Spawner) checkAuth(ctx context.Context) error {
 	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
@@ -217,6 +224,7 @@ func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string)
 		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned")
+	s.trackEvent("agent_spawned", map[string]any{"role": "reviewer", "model": model})
 
 	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span)
 
@@ -296,6 +304,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned")
+	s.trackEvent("agent_spawned", map[string]any{"role": "developer", "model": model})
 
 	go s.runSDKAgent(context.Background(), agentID, opts.TrackID, prompt, workDir, model, logFile, span)
 
@@ -306,6 +315,7 @@ func (s *Spawner) SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (
 func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir, model, logFile string, span port.SpanEnder) {
 	defer span.End()
 
+	startTime := time.Now()
 	finalStatus, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span)
 	if err != nil {
 		finalStatus = "failed"
@@ -325,6 +335,17 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 	if s.tracker != nil {
 		_ = s.tracker.Save()
 	}
+
+	// Determine role from ref for analytics.
+	role := "developer"
+	if strings.HasPrefix(ref, "PR #") {
+		role = "reviewer"
+	}
+	s.trackEvent("agent_completed", map[string]any{
+		"role":             role,
+		"status":           finalStatus,
+		"duration_seconds": time.Since(startTime).Seconds(),
+	})
 
 	s.onCompletion(agentID, ref, finalStatus)
 }
@@ -443,6 +464,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 		port.StringAttr("session.id", sessionID),
 	)
 	span.AddEvent("agent.spawned")
+	s.trackEvent("agent_spawned", map[string]any{"role": "interactive", "model": model})
 
 	// If initial prompt is set, send the first query.
 	// Use the session's own context (not the HTTP request context).
@@ -611,6 +633,7 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 
 // monitorSDKSession waits for the SDK session to end and updates agent state.
 func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, span port.SpanEnder) {
+	startTime := time.Now()
 	<-session.ctx.Done()
 
 	// Remove from active agents registry.
@@ -625,6 +648,12 @@ func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, sp
 
 	span.AddEvent("agent.completed")
 	span.End()
+
+	s.trackEvent("agent_completed", map[string]any{
+		"role":             "interactive",
+		"status":           "completed",
+		"duration_seconds": time.Since(startTime).Seconds(),
+	})
 
 	if uerr := s.store.UpdateStatus(agentID, "completed"); uerr != nil {
 		fmt.Fprintf(os.Stderr, "warning: update status: %v\n", uerr)

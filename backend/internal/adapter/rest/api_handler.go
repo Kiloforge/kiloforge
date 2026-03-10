@@ -106,6 +106,7 @@ type APIHandler struct {
 	consent      ConsentChecker
 	agentRemover AgentRemover
 	queueSvc     QueueServicer
+	analytics    port.AnalyticsTracker
 
 	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -132,6 +133,7 @@ type APIHandlerOpts struct {
 	Consent      ConsentChecker
 	AgentRemover AgentRemover
 	QueueSvc     QueueServicer
+	Analytics    port.AnalyticsTracker
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -156,6 +158,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		consent:      opts.Consent,
 		agentRemover: opts.AgentRemover,
 		queueSvc:     opts.QueueSvc,
+		analytics:    opts.Analytics,
 	}
 }
 
@@ -708,6 +711,13 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 			"repo_name": p.RepoName,
 			"active":    p.Active,
 		}))
+	}
+	if h.analytics != nil {
+		source := "clone"
+		if remoteURL == "" {
+			source = "create"
+		}
+		h.analytics.Track(ctx, "project_added", map[string]any{"source": source})
 	}
 	resp := gen.AddProject201JSONResponse{
 		Slug:     p.Slug,
