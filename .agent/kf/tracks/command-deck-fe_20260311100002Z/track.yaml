@@ -60,9 +60,9 @@ plan:
   - phase: Verification
     tasks:
       - text: Grep frontend/src/ for remaining user-facing 'dashboard' references (exclude internal code, CSS, file paths)
-        done: false
+        done: true
       - text: Run frontend build to verify no errors
-        done: false
+        done: true
       - text: Run frontend tests to verify no breakage
-        done: false
+        done: true
 extra: {}

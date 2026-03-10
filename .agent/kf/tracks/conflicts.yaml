@@ -12,4 +12,3 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-command-deck-fe_20260311100002Z/quota-gauges-fe_20260310092418Z: {"risk":"low","note":"Both modify frontend UI components; command-deck-fe renames titles/labels while quota-gauges-fe replaces StatCards with MetricsPanel","added":"2026-03-10"}

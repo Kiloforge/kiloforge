@@ -32,7 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-command-deck-fe_20260311100002Z: []
 
 cortex-rebrand-be_20260311100001Z:
   - gitea-removal-be_20260311070000Z
