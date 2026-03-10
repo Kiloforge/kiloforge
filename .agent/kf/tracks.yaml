@@ -17,10 +17,9 @@ advisor-project-scoped-be_20260310192600Z: {"title":"Scope advisors to existing 
 advisor-project-scoped-fe_20260310192601Z: {"title":"Scope advisors to project context (frontend)","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename advisors to kf-advisor-* prefix","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+agent-diff-panel-fe_20260312210900Z: {"title":"Per-file diff panel in agent terminal windows","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-fe_20260310014001Z: {"title":"Agent Display TTL and History Page (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-agent-interrupt-be_20260312220001Z: {"title":"Agent turn interrupt via WebSocket and input queueing in Bridge","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-agent-interrupt-fe_20260312220002Z: {"title":"Interrupt button and input queueing UI for agent terminals","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-lifecycle-be_20260310030000Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-lifecycle-fe_20260310030001Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track Links and Monitoring View","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -42,7 +41,7 @@ backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg
 backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 board-clamp-forward-moves-be_20260312220000Z: {"title":"Clamp forward column moves — max one step, block beyond approved","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-board-clamp-forward-moves-fe_20260312220001Z: {"title":"Clamp forward column moves in board UI","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+board-clamp-forward-moves-fe_20260312220001Z: {"title":"Clamp forward column moves in board UI","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 board-link-polish-fe_20260311210000Z: {"title":"Polish board relationship link visuals","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -185,7 +184,6 @@ merge-init-into-up_20260311193000Z: {"title":"Merge kf init into kf up — singl
 merge-lock-hardening-be_20260310220000Z: {"title":"Harden merge lock manager — persist heartbeat, stale detection, lock status CLI","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 merge-lock-skill-consolidation_20260310220001Z: {"title":"Consolidate merge lock protocol into shared kf-merge-lock helper","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 minimizable-terminals_20260310070000Z: {"title":"Minimizable agent terminals with activity notifications","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-minimize-floating-cards-fe_20260312220000Z: {"title":"Minimized agent windows as draggable edge-clamped mini-cards with notifications","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 model-warning-banner_20260310072515Z: {"title":"One-time model compatibility warning banner on first dashboard load","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -257,7 +255,6 @@ review-cycle-relay_20260307125002Z: {"title":"Developer-Reviewer Relay Cycle","s
 schema-first-guidance_20260308200002Z: {"title":"Schema-First API Development Guidance and Standards","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 sdk-agent-migration-be_20260310014147Z: {"title":"Migrate Agent Spawner to Claude Agent SDK (Backend)","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 sdk-agent-migration-fe_20260310014148Z: {"title":"Structured Agent Terminal Display (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-server-host-port-config_20260312230100Z: {"title":"Add --host/--port flags to kf up and detect port conflicts","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 setup-gate-be_20260310234710Z: {"title":"Gate All Agent Endpoints Behind Setup Check (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 setup-gate-fe_20260310234711Z: {"title":"Disable Agent Actions Until Setup Complete (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 setup-prereq-be_20260310004000Z: {"title":"Setup Prerequisite Check Before Agent Spawning (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
