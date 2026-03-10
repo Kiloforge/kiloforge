@@ -1,0 +1,86 @@
+id: alpha-release_20260310214101Z
+title: Prepare and tag v0.1.0-alpha.1 release
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Update all release configuration to target kiloforge/kiloforge GitHub repo,
+    remove homebrew tap publishing, tag v0.1.0-alpha.1, and push to trigger the
+    GitHub Actions release workflow.
+  context: |
+    Kiloforge is preparing for its first public alpha release. The release infrastructure
+    exists (goreleaser, GitHub Actions workflow, install script) but points to the old
+    repo name (Goblinlordx/crelay). The target is kiloforge/kiloforge on GitHub.
+    
+    This track is intentionally blocked by ALL other pending tracks — it should be the
+    very last thing completed before going live.
+  codebase_analysis: |
+    Files that reference the old repo and need updating:
+    
+    .goreleaser.yaml:
+    - line 49-51: brews section references Goblinlordx/homebrew-tap — REMOVE entirely
+    - line 53: homepage references github.com/Goblinlordx/crelay
+    - line 54: description says "Local AI agent Cortex — Gitea + Claude Code" — update
+    - line 62-64: release.github references Goblinlordx/crelay → kiloforge/kiloforge
+    
+    install.sh:
+    - line 4: REPO="Goblinlordx/crelay" → "kiloforge/kiloforge"
+    
+    .github/workflows/release.yml:
+    - line 22: Go version 1.24 but go.mod uses 1.25 — update
+    - line 38-39: HOMEBREW_TAP_TOKEN secret — remove (no homebrew)
+    
+    frontend/package.json:
+    - line 4: version "0.0.0" → "0.1.0-alpha.1"
+  acceptance_criteria:
+    - goreleaser.yaml targets kiloforge/kiloforge, no homebrew section
+    - install.sh fetches from kiloforge/kiloforge
+    - release.yml uses Go 1.25, no HOMEBREW_TAP_TOKEN
+    - frontend/package.json version is 0.1.0-alpha.1
+    - v0.1.0-alpha.1 tag exists on main
+    - Tag is pushed to origin, triggering release workflow
+  out_of_scope: |
+    - Homebrew tap publishing (removed for now)
+    - Creating the GitHub organization (user handles this)
+    - Making the repo public (user handles this)
+    - Testing the built release artifacts (user handles post-release)
+  technical_notes: |
+    The goreleaser "prerelease: auto" setting will automatically detect alpha/beta
+    tags and mark the GitHub release as a prerelease. v0.1.0-alpha.1 will be flagged
+    as prerelease automatically.
+    
+    The install.sh currently fetches from /releases/latest which won't match prereleases.
+    This is fine — the install script is for stable releases. Alpha testers will download
+    directly from the releases page or build from source.
+plan:
+  - phase: Update Release Configuration
+    tasks:
+      - text: Update .goreleaser.yaml: change release.github to kiloforge/kiloforge, remove entire brews section, update description
+        done: false
+      - text: Update install.sh: change REPO to kiloforge/kiloforge
+        done: false
+      - text: Update .github/workflows/release.yml: Go version 1.24 → 1.25, remove HOMEBREW_TAP_TOKEN from env
+        done: false
+      - text: Update frontend/package.json version from 0.0.0 to 0.1.0-alpha.1
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run goreleaser release --snapshot --clean locally to verify config produces valid artifacts
+        done: false
+      - text: Verify kf version output shows correct version info from git describe
+        done: false
+      - text: Review all files for any remaining references to Goblinlordx/crelay
+        done: false
+  - phase: Tag and Push
+    tasks:
+      - text: Create annotated tag: git tag -a v0.1.0-alpha.1 -m 'Kiloforge v0.1.0-alpha.1 — early alpha'
+        done: false
+      - text: Push tag to origin: git push origin v0.1.0-alpha.1
+        done: false
+extra:
+  created_by:
+    role: architect
+    session_id: 93d4066b-bcc1-425c-bcdd-20d53aae5244
+    timestamp: 2026-03-10T21:43:46Z

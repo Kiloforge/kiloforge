@@ -1,0 +1,97 @@
+id: posthog-analytics_20260310214100Z
+title: Activate PostHog analytics with real API key and frontend SDK
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Replace the placeholder PostHog API key in defaults.go with the real project key,
+    add posthog-js to the frontend with core page view and event tracking, and verify
+    events flow to the PostHog dashboard.
+  context: |
+    The backend analytics infrastructure is already built:
+    - backend/internal/adapter/analytics/posthog.go — async event tracker with buffered sender
+    - backend/internal/adapter/analytics/noop.go — no-op fallback when disabled
+    - backend/internal/adapter/analytics/identity.go — anonymous ID (SHA-256 of hostname+dataDir)
+    - backend/internal/adapter/analytics/defaults.go — placeholder key "phc_kiloforge_placeholder"
+    - Config reads KF_POSTHOG_API_KEY env var or posthog_api_key from config.json
+    - KF_ANALYTICS_ENABLED env var controls opt-in/opt-out (default: enabled)
+    
+    Backend already tracks 3 events:
+    - "cli_command" in root.go PersistentPreRun (covers "kf up" → cli_command with command="up")
+    - "project_added" in api_handler.go
+    - "app_started" in serve.go
+    
+    User-requested events to track (priority):
+    - "up" — kf up invocation (already covered by cli_command where command="up")
+    - "agent_session_started" — when an agent session begins (spawner)
+    - "track_created" — when a track is registered via kf-track add
+    - "track_completed" — when a track is marked complete via kf-track update
+    - "track_rejected" — when a track is rejected/deleted
+    
+    Frontend has zero analytics — no PostHog SDK, no page tracking, no event tracking.
+  codebase_analysis: |
+    Key files:
+    - backend/internal/adapter/analytics/defaults.go — replace placeholder key
+    - backend/internal/adapter/cli/root.go:41 — cli_command event
+    - backend/internal/adapter/cli/serve.go:171 — app_started event
+    - backend/internal/adapter/rest/api_handler.go:956 — project_added event
+    - frontend/src/main.tsx — React entry point, add PostHog provider here
+    - frontend/package.json — add posthog-js dependency
+  acceptance_criteria:
+    - defaults.go contains a real PostHog project API key (not placeholder)
+    - posthog-js is installed in the frontend
+    - Frontend initializes PostHog in main.tsx with the same project key
+    - Frontend tracks page views on route changes
+    - Events appear in the PostHog dashboard when running locally
+    - Backend tracks agent_session_started, track_created, track_completed, track_rejected events
+    - Analytics can be disabled via KF_ANALYTICS_ENABLED=false
+  out_of_scope: |
+    - Comprehensive event instrumentation (just core events for validation)
+    - User-facing analytics opt-in/opt-out UI (config/env var is sufficient)
+    - Self-hosted PostHog setup
+  technical_notes: |
+    The user will provide the PostHog project API key (phc_...). The developer should:
+    1. Update defaults.go with the real key
+    2. Add posthog-js to frontend, init in main.tsx
+    3. Add automatic page view tracking via React Router
+    4. Test locally that events reach PostHog cloud
+plan:
+  - phase: Backend — Real API Key
+    tasks:
+      - text: Get PostHog API key from user (phc_...) and update DefaultPostHogAPIKey in backend/internal/adapter/analytics/defaults.go
+        done: false
+      - text: Verify backend analytics wiring — run kf up, confirm 'PostHog analytics enabled' log line and app_started event fires
+        done: false
+  - phase: Backend — Additional Events
+    tasks:
+      - text: Add agent_session_started event in spawner.go — fire when SpawnDeveloper/SpawnReviewer/SpawnInteractive starts a new agent (include agent_id, role)
+        done: false
+      - text: Add track_created event in the kf-track add CLI handler or REST endpoint that registers new tracks (include track_id, type)
+        done: false
+      - text: Add track_completed event in kf-track update when status changes to completed (include track_id)
+        done: false
+      - text: Add track_rejected event in kf-track delete/reject handler (include track_id)
+        done: false
+  - phase: Frontend — PostHog SDK
+    tasks:
+      - text: Install posthog-js in frontend (npm install posthog-js)
+        done: false
+      - text: Create frontend/src/analytics.ts — PostHog init helper with project API key, opt_out_capturing_by_default: false, autocapture: false
+        done: false
+      - text: Initialize PostHog in frontend/src/main.tsx on app mount
+        done: false
+      - text: Add page view tracking on React Router route changes (posthog.capture('$pageview'))
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run kf up locally, navigate the dashboard, verify events appear in PostHog dashboard (both backend app_started and frontend pageviews)
+        done: false
+      - text: Test opt-out — set KF_ANALYTICS_ENABLED=false, verify no events are sent from backend
+        done: false
+extra:
+  created_by:
+    role: architect
+    session_id: 93d4066b-bcc1-425c-bcdd-20d53aae5244
+    timestamp: 2026-03-10T21:43:46Z
