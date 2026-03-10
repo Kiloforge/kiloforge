@@ -1,7 +1,7 @@
 id: quota-gauges-be_20260310092417Z
 title: "Quota gauges backend — budget config, rate tracking, and time-windowed metrics"
 type: feature
-status: pending
+status: completed
 created: "2026-03-10"
 updated: "2026-03-10"
 spec:
@@ -69,25 +69,25 @@ plan:
   - phase: "Rate Tracking Core"
     tasks:
       - text: "Add RateSnapshot type and ring buffer to QuotaTracker with append-on-RecordEvent"
-        done: false
+        done: true
       - text: "Implement rate computation methods: TokensPerMin(window) and CostPerHour(window)"
-        done: false
+        done: true
       - text: "Write unit tests for ring buffer append, window filtering, and rate math"
-        done: false
+        done: true
   - phase: "Budget Config & API"
     tasks:
       - text: "Add budget_usd field to config.Config with default 0, wire through Resolve()"
-        done: false
+        done: true
       - text: "Extend OpenAPI QuotaInfo schema with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins and regenerate"
-        done: false
+        done: true
       - text: "Update GetQuota handler to populate new fields from QuotaTracker and config"
-        done: false
+        done: true
       - text: "Write integration tests for /api/quota with and without budget set"
-        done: false
+        done: true
   - phase: "SSE & Verification"
     tasks:
       - text: "Update watcher.go quotaResponse() and change detection to include rate and budget fields"
-        done: false
+        done: true
       - text: "Run make test and make build to verify all tests pass and no regressions"
-        done: false
+        done: true
 extra: {}
