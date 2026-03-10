@@ -1,19 +1,16 @@
 id: quota-gauges-fe_20260310092418Z
-title: "Quota gauges frontend — gauge visualizations for the Command Deck"
+title: Quota gauges frontend — gauge visualizations for the Command Deck
 type: feature
 status: pending
-created: "2026-03-10"
-updated: "2026-03-10"
+created: 2026-03-10
+updated: 2026-03-10
 spec:
-  summary: >
-    Replace StatCards with gauge-style visualizations showing budget
-    utilization, token consumption rate, and cost velocity as animated
-    progress indicators on the overview page.
+  summary: ">"
   context: |
     The backend track (quota-gauges-be) adds budget config, rate-of-consumption
     metrics, and time-to-budget projection to the /api/quota response. This
     track builds the frontend gauge visualizations to display those metrics.
-
+    
     Current StatCards shows 4 flat cards: Agents, Tokens (in/out), Rate Limit,
     Est. API Cost. The new design replaces these with gauge-style indicators
     that show utilization against limits and consumption velocity.
@@ -29,7 +26,7 @@ spec:
     - **OverviewPage.tsx** — Already renders <StatCards>, will render
       <MetricsPanel> instead.
     - **App.tsx** — Passes quota to OverviewPage, no change needed.
-
+    
     Design patterns to follow:
     - CSS variables from index.css (--accent, --green, --yellow, --red)
     - Glassmorphic card styling (--bg-surface, --border, --blur)
@@ -71,26 +68,26 @@ spec:
     5. Update QuotaResponse type with new optional fields.
     6. Update or replace StatCards tests.
 plan:
-  - phase: "Foundation Components"
+  - phase: Foundation Components
     tasks:
-      - text: "Create GaugeCard component with SVG arc, animated fill, label, value, and color-from-percentage logic"
-        done: false
-      - text: "Create GaugeCard.module.css with arc styling, transitions, and color threshold classes"
-        done: false
-      - text: "Write tests for GaugeCard rendering at 0%, 50%, 100% and with no max (flat display)"
-        done: false
-  - phase: "MetricsPanel Integration"
+      - text: Create GaugeCard component with SVG arc, animated fill, label, value, and color-from-percentage logic
+        done: true
+      - text: Create GaugeCard.module.css with arc styling, transitions, and color threshold classes
+        done: true
+      - text: Write tests for GaugeCard rendering at 0%, 50%, 100% and with no max (flat display)
+        done: true
+  - phase: MetricsPanel Integration
     tasks:
-      - text: "Update QuotaResponse type in types/api.ts with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins"
+      - text: Update QuotaResponse type in types/api.ts with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins
         done: false
-      - text: "Create MetricsPanel component with 4 gauge cards (budget, token rate, cost rate, agents)"
+      - text: Create MetricsPanel component with 4 gauge cards (budget, token rate, cost rate, agents)
         done: false
-      - text: "Create MetricsPanel.module.css with grid layout matching current StatCards spacing"
+      - text: Create MetricsPanel.module.css with grid layout matching current StatCards spacing
         done: false
-      - text: "Replace StatCards with MetricsPanel in OverviewPage.tsx and update props"
+      - text: Replace StatCards with MetricsPanel in OverviewPage.tsx and update props
         done: false
-  - phase: "Verification"
+  - phase: Verification
     tasks:
-      - text: "Run frontend type-check and build, update or replace StatCards tests, verify all tests pass"
+      - text: Run frontend type-check and build, update or replace StatCards tests, verify all tests pass
         done: false
 extra: {}
