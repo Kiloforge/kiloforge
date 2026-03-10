@@ -117,7 +117,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Write component tests for ReliabilitySummaryCards and ReliabilityEventTable
-        done: false
+        done: true
       - text: Run make build to verify frontend compiles without errors
-        done: false
+        done: true
 extra: {}

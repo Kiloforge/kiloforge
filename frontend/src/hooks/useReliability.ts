@@ -1,9 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import type {
   ReliabilityEvent,
   ReliabilitySummary,
-  PaginatedResponse,
 } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
