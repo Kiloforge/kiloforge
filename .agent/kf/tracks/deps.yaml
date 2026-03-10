@@ -35,9 +35,6 @@
 
 e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
-
-tour-inmemory-state_20260310120000Z: []
-
 work-queue-be_20260311010002Z: []
 
 work-queue-fe_20260311010003Z:

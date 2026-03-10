@@ -1,5 +1,5 @@
 id: tour-inmemory-state_20260310120000Z
-title: "Tour In-Memory State — Controlled Demo Data for Guided Tour"
+title: Tour In-Memory State — Controlled Demo Data for Guided Tour
 type: feature
 status: pending
 created: 2026-03-10
@@ -14,13 +14,13 @@ spec:
     when a new user starts the tour, they have no projects, no tracks, no board. The tour
     references UI elements that don't exist, creating a confusing experience where the tour
     talks about things the user cannot see.
-
+    
     The tour needs to fully control what the user sees at each step: demo projects in the
     project list, a populated kanban board, sample tracks, etc. — all rendered from
     in-memory state that the tour provider manages.
   codebase_analysis: |
     Current tour architecture (all custom, no third-party tour library):
-
+    
     - TourProvider (frontend/src/components/tour/TourProvider.tsx) — Context provider
       managing tour state, navigation, and demo project slug tracking
     - TourOverlay (TourOverlay.tsx) — Renders spotlight + tooltip per step,
@@ -33,11 +33,11 @@ spec:
     - KanbanBoard — Tour-aware: detects drag to "approved" on "move-card" step
     - ProjectPage — Tour-aware: auto-shows generate prompt on "generate-tracks" step
     - OverviewPage — Tour-aware: watches step, sets demoProjectSlug on project add success
-
+    
     State management: TanStack Query for server state, React Context for tour UI state.
     Query keys are centralized in api/queryKeys.ts. Data flows through hooks (useProjects,
     useBoard, useTracks, useAgents) that components consume.
-
+    
     Key types: Project {slug, repo_name, origin_remote?, active}, BoardState {columns, cards},
     BoardCard {track_id, title, type?, column, position}, Agent, Track.
   acceptance_criteria:
@@ -60,61 +60,61 @@ spec:
     Approach: Create a tourDemoData.ts module defining all demo fixtures (projects, board,
     tracks, agents). Extend TourProvider to inject this data into TanStack Query cache
     via queryClient.setQueryData() when tour activates, and clear it when tour ends.
-
+    
     Per-step state: Each step definition gains an optional `demoState` field describing
     which query keys to populate and what route to navigate to. On step transition,
     TourProvider updates the cache and navigates accordingly.
-
+    
     Query isolation: During tour mode, disable refetching for demo-controlled query keys
     (set staleTime: Infinity) so real API responses don't overwrite demo data. Restore
     normal stale times on tour end.
-
+    
     Component changes: Remove existing tour-aware hacks (prefill effects, etc.) from
     AddProjectForm, ProjectPage, OverviewPage. Instead, the demo data itself contains
     the desired state (e.g., a project already exists, board is populated).
-
+    
     The existing backend tour API (/api/tour) can remain for persisting tour
     status (pending/active/dismissed/completed) across sessions. Only the data
     layer moves to in-memory.
 plan:
-  - phase: "Foundation — Demo Data & Types"
+  - phase: Foundation — Demo Data & Types
     tasks:
-      - text: "Create tourDemoData.ts with typed demo fixtures: projects, board (with cards in multiple columns), tracks, agents, and per-step state configurations"
-        done: false
-      - text: "Add demoState field to TourStep interface in tourSteps.ts — optional config specifying which query keys to populate and target route"
-        done: false
-      - text: "Update each step definition in tourSteps.ts with its demoState (route, which demo data sets to inject)"
-        done: false
-  - phase: "Core — TourProvider State Injection"
+      - text: Create tourDemoData.ts with typed demo fixtures: projects, board (with cards in multiple columns), tracks, agents, and per-step state configurations
+        done: true
+      - text: Add demoState field to TourStep interface in tourSteps.ts — optional config specifying which query keys to populate and target route
+        done: true
+      - text: Update each step definition in tourSteps.ts with its demoState (route, which demo data sets to inject)
+        done: true
+  - phase: Core — TourProvider State Injection
     tasks:
-      - text: "Extend TourProvider to inject demo data into TanStack Query cache (queryClient.setQueryData) on tour start and step transitions"
-        done: false
-      - text: "Add cache cleanup logic: on tour dismiss/complete, remove all demo query data and invalidate real queries to restore live state"
-        done: false
-      - text: "Add query isolation during tour: set staleTime to Infinity for demo-controlled keys to prevent API refetch overwriting demo data"
-        done: false
-      - text: "Handle route navigation per step: TourProvider navigates to the correct route when step changes, using demoState config"
-        done: false
-  - phase: "Integration — Component Cleanup"
+      - text: Extend TourProvider to inject demo data into TanStack Query cache (queryClient.setQueryData) on tour start and step transitions
+        done: true
+      - text: Add cache cleanup logic: on tour dismiss/complete, remove all demo query data and invalidate real queries to restore live state
+        done: true
+      - text: Add query isolation during tour: set staleTime to Infinity for demo-controlled keys to prevent API refetch overwriting demo data
+        done: true
+      - text: Handle route navigation per step: TourProvider navigates to the correct route when step changes, using demoState config
+        done: true
+  - phase: Integration — Component Cleanup
     tasks:
-      - text: "Remove tour-aware prefill hack from AddProjectForm (the demo data already has a project; the form interaction becomes optional)"
-        done: false
-      - text: "Remove tour-aware auto-show prompt hack from ProjectPage (demo state handles generate-tracks step context)"
-        done: false
-      - text: "Remove tour-aware demoProjectSlug tracking from OverviewPage (demo project slug is now a constant in tourDemoData)"
-        done: false
-      - text: "Update KanbanBoard tour integration to work with demo board data (drag-to-approved still triggers tour advance)"
-        done: false
-      - text: "Verify TourOverlay spotlight targeting works with demo-rendered elements (data-tour attributes still present)"
-        done: false
-  - phase: "Verification"
+      - text: Remove tour-aware prefill hack from AddProjectForm (the demo data already has a project; the form interaction becomes optional)
+        done: true
+      - text: Remove tour-aware auto-show prompt hack from ProjectPage (demo state handles generate-tracks step context)
+        done: true
+      - text: Remove tour-aware demoProjectSlug tracking from OverviewPage (demo project slug is now a constant in tourDemoData)
+        done: true
+      - text: Update KanbanBoard tour integration to work with demo board data (drag-to-approved still triggers tour advance)
+        done: true
+      - text: Verify TourOverlay spotlight targeting works with demo-rendered elements (data-tour attributes still present)
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Write E2E test: full tour flow with in-memory state — verify each step shows correct route and data"
-        done: false
-      - text: "Write E2E test: tour dismiss clears demo data and restores real (empty) state"
-        done: false
-      - text: "Write E2E test: tour restart re-injects demo data correctly"
-        done: false
-      - text: "Manual verification: step through tour on fresh install, confirm no references to missing data"
-        done: false
+      - text: Write E2E test: full tour flow with in-memory state — verify each step shows correct route and data
+        done: true
+      - text: Write E2E test: tour dismiss clears demo data and restores real (empty) state
+        done: true
+      - text: Write E2E test: tour restart re-injects demo data correctly
+        done: true
+      - text: Manual verification: step through tour on fresh install, confirm no references to missing data
+        done: true
 extra: {}
