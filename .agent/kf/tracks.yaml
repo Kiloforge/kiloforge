@@ -124,7 +124,7 @@ interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent
 interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling and arrangement","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-kf-repair-skill_20260311060000Z: {"title":"System repair agent skill — KF health auditing, diagnostics, and auto-repair","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+kf-repair-skill_20260311060000Z: {"title":"System repair agent skill — KF health auditing, diagnostics, and auto-repair","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 kiloforger-branding_20260310073720Z: {"title":"Kiloforger branding — name the human user across CLI and dashboard","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
