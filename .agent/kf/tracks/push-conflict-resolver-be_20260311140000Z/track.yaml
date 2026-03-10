@@ -1,0 +1,97 @@
+id: push-conflict-resolver-be_20260311140000Z
+title: Sync conflict detection and resolver agent spawn — backend
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Detect merge conflicts on both push and pull, return structured 409 responses, and add
+    an endpoint to spawn a conflict resolver agent that resolves conflicts automatically.
+  context: |
+    The push flow (POST /api/projects/{slug}/push) currently returns HTTP 500 with the raw
+    git stderr for all push failures. When the remote has diverged (non-fast-forward push),
+    the user sees an opaque error message. There is no way to resolve the conflict from
+    the Command Deck — the user must manually SSH into the machine and resolve it.
+
+    The pull endpoint already returns 409 for diverged branches, but the frontend has no
+    way to act on it — it just shows the error. Both push and pull conflict cases should
+    offer the user an option to spawn a conflict resolver agent.
+  codebase_analysis: |
+    Affected files:
+    - backend/api/openapi.yaml — Add 409 response to pushProject, add resolveConflict endpoint
+    - backend/internal/adapter/rest/api_handler.go — PushProject: detect conflict, return 409. New ResolveConflict handler.
+    - backend/internal/adapter/git/sync.go — PushToRemote: detect non-fast-forward and return typed error
+    - backend/internal/adapter/skills/checker.go — Add "conflict-resolver" role to RequiredSkillsForRole
+    - backend/internal/adapter/agent/spawner.go — Support conflict-resolver role
+
+    Current push flow (sync.go:PushToRemote):
+      cmd := gs.gitCmd(ctx, projectDir, sshKeyPath, "push", "origin", refspec)
+      if out, err := cmd.CombinedOutput(); err != nil {
+        return nil, fmt.Errorf("push failed: %s: %w", strings.TrimSpace(string(out)), err)
+      }
+
+    Git non-fast-forward errors contain "rejected" and "non-fast-forward" in stderr.
+
+    Current pull conflict handling (api_handler.go:PullProject):
+      if strings.Contains(err.Error(), "diverged") {
+        return gen.PullProject409JSONResponse{Error: err.Error()}, nil
+      }
+    Pull already returns 409 — just needs the resolve-conflict endpoint to act on it.
+
+    The resolve-conflict endpoint accepts a direction parameter ("push" or "pull") and
+    the remote branch, passing these to the kf-conflict-resolver skill as context.
+  acceptance_criteria:
+    - Push to remote with diverged history returns HTTP 409 (not 500)
+    - Pull with diverged branches continues to return 409 (already works)
+    - 409 response body includes structured info (error message, direction)
+    - New endpoint POST /api/projects/{slug}/resolve-conflict spawns a conflict resolver agent
+    - Resolve-conflict endpoint accepts direction (push/pull) and remote_branch parameters
+    - Conflict resolver agent role is registered in RequiredSkillsForRole
+    - OpenAPI spec updated with 409 on push and new resolve-conflict endpoint
+    - Existing success flows unchanged
+    - Generated API code regenerated via oapi-codegen
+  out_of_scope: |
+    - The kf-conflict-resolver skill itself (separate track)
+    - Frontend UI changes (separate track)
+    - Auto-resolving without user interaction (user must click to spawn agent)
+  technical_notes: |
+    Approach:
+    1. Add ErrSyncConflict error type in sync.go
+    2. PushToRemote checks git stderr for "non-fast-forward" / "rejected" patterns
+    3. PushProject handler checks for ErrSyncConflict and returns 409
+    4. PullProject already returns 409 — no change needed
+    5. Add resolve-conflict endpoint that spawns agent with conflict-resolver role
+       and passes direction + remote_branch as agent environment/prompt context
+    6. Register "conflict-resolver" role with kf-conflict-resolver skill requirement
+    7. Regenerate API code with oapi-codegen
+plan:
+  - phase: API Contract
+    tasks:
+      - text: Add 409 response to pushProject in openapi.yaml with conflict error schema
+        done: false
+      - text: Add POST /api/projects/{slug}/resolve-conflict endpoint to openapi.yaml — accepts direction and remote_branch, spawns resolver agent, returns agent ID
+        done: false
+      - text: Regenerate API server code with oapi-codegen
+        done: false
+  - phase: Core Implementation
+    tasks:
+      - text: Add ErrSyncConflict error type in git/sync.go — detect non-fast-forward rejection in PushToRemote
+        done: false
+      - text: Update PushProject handler to check for ErrSyncConflict and return 409 instead of 500
+        done: false
+      - text: Add "conflict-resolver" role to RequiredSkillsForRole and SkillCommandForRole in skills/checker.go
+        done: false
+      - text: Implement ResolveConflict handler — validate project, check skills, spawn agent with conflict-resolver role, direction, and remote branch context
+        done: false
+  - phase: Tests
+    tasks:
+      - text: Add test for PushToRemote conflict detection — verify ErrSyncConflict returned on non-fast-forward
+        done: false
+      - text: Add test for PushProject handler — verify 409 returned on conflict
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run make test, make build, make lint
+        done: false
+extra: {}
