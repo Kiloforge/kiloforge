@@ -32,9 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-
-create-project-be_20260310150000Z: []
-
 create-project-fe_20260310150001Z:
   - create-project-be_20260310150000Z
 fix-test-failures_20260310140000Z: []

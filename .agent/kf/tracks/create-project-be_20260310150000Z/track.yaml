@@ -1,20 +1,18 @@
 id: create-project-be_20260310150000Z
-title: "Support creating projects without a remote URL"
+title: Support creating projects without a remote URL
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Make remote_url optional in the AddProject API so users can create
-    brand-new repos from scratch instead of only cloning from an existing remote.
+  summary: ">"
   context: |
     Currently the entire project registration flow assumes a remote URL exists:
     AddProjectRequest requires remote_url, the REST handler rejects empty URLs,
     ProjectService.AddProject() validates via isRemoteURL() and clones.
     Users who want to start a fresh project have no path — they must create
     a repo elsewhere first, push at least one commit, then add it.
-
+    
     This track adds a "create from scratch" mode where the backend:
     1. Accepts requests with no remote_url (name becomes required)
     2. Runs `git init` instead of `git clone`
@@ -22,30 +20,30 @@ spec:
     4. Registers the project with no origin_remote
   codebase_analysis: |
     Key files to modify:
-
+    
     1. backend/api/openapi.yaml (AddProjectRequest schema)
        - Make remote_url optional (remove from required list)
        - Add description noting that name is required when remote_url is absent
-
+    
     2. backend/internal/adapter/rest/gen/server.gen.go (regenerated)
        - Run oapi-codegen after schema change
-
+    
     3. backend/internal/adapter/rest/api_handler.go (AddProject handler, lines 650-694)
        - Remove hard check for empty remote_url
        - Require name when remote_url is empty
        - Route to CreateProject vs AddProject based on presence of remote_url
-
+    
     4. backend/internal/core/service/project_service.go
        - Add CreateProject(ctx, name string) method
        - git init in {DataDir}/repos/{slug}
        - Create Gitea repo, add gitea remote, create webhook
        - Register in store with empty OriginRemote
        - Reuse rollback pattern from AddProject
-
+    
     5. backend/internal/adapter/cli/add.go
        - Update CLI: allow `kf add --name my-project` without positional arg
        - Or add `kf create <name>` subcommand (simpler, clearer)
-
+    
     6. backend/internal/core/domain/project.go
        - No schema changes needed — OriginRemote is already omitempty
   acceptance_criteria:
@@ -68,10 +66,10 @@ spec:
     overloading AddProject. The REST handler dispatches based on whether
     remote_url is present. This keeps the existing AddProject path unchanged
     and avoids regression risk.
-
+    
     For the CLI, prefer adding a `kf create <name>` subcommand — it's clearer
     than making the positional arg optional on `kf add`.
-
+    
     The Gitea repo should be created with auto_init=false (matching current
     behavior). The local repo is initialized with `git init` and the gitea
     remote is added. No initial commit is made — the repo starts empty,
@@ -80,29 +78,29 @@ plan:
   - phase: Schema & codegen
     tasks:
       - text: Update OpenAPI spec — make remote_url optional in AddProjectRequest, document name-required-when-no-url constraint
-        done: false
+        done: true
       - text: Regenerate server/client code with oapi-codegen
-        done: false
+        done: true
   - phase: Core implementation
     tasks:
       - text: Add CreateProject(ctx, name) method to ProjectService — git init, Gitea repo, gitea remote, webhook, register
-        done: false
+        done: true
       - text: Write unit tests for CreateProject — success path, duplicate slug, rollback on failure
-        done: false
+        done: true
       - text: Update REST handler AddProject — dispatch to CreateProject when remote_url is empty, require name
-        done: false
+        done: true
       - text: Write handler tests for create-from-scratch path (no remote_url + name) and error cases
-        done: false
+        done: true
   - phase: CLI
     tasks:
       - text: Add `kf create <name>` CLI subcommand that calls CreateProject
-        done: false
+        done: true
       - text: Write CLI test for create subcommand
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build to verify no build errors
-        done: false
+        done: true
       - text: Run make test to verify all tests pass (existing + new)
-        done: false
+        done: true
 extra: {}
