@@ -60,10 +60,15 @@ vi.mock("../hooks/useAgentActions", () => ({
   useAgentActions: () => ({
     stop: { mutate: vi.fn(), isPending: false },
     resume: { mutate: vi.fn(), isPending: false },
+    replace: { mutate: vi.fn(), isPending: false },
     del: { mutate: vi.fn(), isPending: false },
   }),
   canStop: (a: Agent) => a.status === "running" || a.status === "waiting",
-  canResume: (a: Agent) => (a.status === "stopped" || a.status === "completed" || a.status === "failed") && a.role === "interactive",
+  canResume: (a: Agent) => {
+    if (a.status === "suspended" || a.status === "force-killed") return true;
+    return (a.status === "stopped" || a.status === "completed" || a.status === "failed") && a.role === "interactive";
+  },
+  canReplace: (a: Agent) => a.status === "resume-failed" || a.status === "force-killed",
   canDelete: (a: Agent) => a.status !== "running" && a.status !== "waiting",
 }));
 
@@ -175,6 +180,52 @@ describe("AgentDetailPage", () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/log line 1/)).toBeInTheDocument();
+    });
+  });
+
+  it("shows resume_error for resume-failed agent", async () => {
+    currentAgent = { ...mockAgent, status: "resume-failed", resume_error: "worktree missing" };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/worktree missing/)).toBeInTheDocument();
+    });
+  });
+
+  it("shows suspended_at and shutdown_reason for suspended agent", async () => {
+    currentAgent = {
+      ...mockAgent,
+      status: "suspended",
+      suspended_at: "2026-03-10T12:00:00Z",
+      shutdown_reason: "orchestrator shutdown",
+    };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/orchestrator shutdown/)).toBeInTheDocument();
+    });
+    expect(screen.getByText("Suspended At")).toBeInTheDocument();
+  });
+
+  it("shows resume button for suspended agent", async () => {
+    currentAgent = { ...mockAgent, status: "suspended" };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Resume")).toBeInTheDocument();
+    });
+  });
+
+  it("shows replace button for resume-failed agent", async () => {
+    currentAgent = { ...mockAgent, status: "resume-failed", resume_error: "session expired" };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Replace")).toBeInTheDocument();
+    });
+  });
+
+  it("shows replaced banner for replaced agent", async () => {
+    currentAgent = { ...mockAgent, status: "replaced" };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/replaced by a new agent/)).toBeInTheDocument();
     });
   });
 });
