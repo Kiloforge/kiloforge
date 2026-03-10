@@ -40,7 +40,8 @@ build-backend: ensure-dist
 	$(eval GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev"))
 	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none"))
 	$(eval BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ))
-	$(GO_CMD) build $$BUILDVCS -ldflags "-s -w -X main.version=$(GIT_VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)" \
+	$(eval POSTHOG_KEY := $(or $(KF_POSTHOG_API_KEY),))
+	$(GO_CMD) build $$BUILDVCS -ldflags "-s -w -X main.version=$(GIT_VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)$(if $(POSTHOG_KEY), -X kiloforge/internal/adapter/analytics.DefaultPostHogAPIKey=$(POSTHOG_KEY),)" \
 		-o ../$(BINARY) ./cmd/kf
 
 dev: ensure-dist

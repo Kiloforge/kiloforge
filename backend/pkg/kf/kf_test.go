@@ -394,7 +394,7 @@ func TestTrackYAMLRoundtrip(t *testing.T) {
 		t.Error("task 2 should be done")
 	}
 	if loaded.Extra["key1"] != "val1" {
-		t.Errorf("extra key1 mismatch: %q", loaded.Extra["key1"])
+		t.Errorf("extra key1 mismatch: %v", loaded.Extra["key1"])
 	}
 }
 

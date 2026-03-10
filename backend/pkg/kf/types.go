@@ -57,15 +57,15 @@ type Phase struct {
 
 // Track is the full structured content of a per-track track.yaml file.
 type Track struct {
-	ID      string            `yaml:"id"`
-	Title   string            `yaml:"title"`
-	Type    string            `yaml:"type"`
-	Status  string            `yaml:"status"`
-	Created string            `yaml:"created"`
-	Updated string            `yaml:"updated"`
-	Spec    Spec              `yaml:"spec"`
-	Plan    []Phase           `yaml:"plan"`
-	Extra   map[string]string `yaml:"extra,omitempty"`
+	ID      string                 `yaml:"id"`
+	Title   string                 `yaml:"title"`
+	Type    string                 `yaml:"type"`
+	Status  string                 `yaml:"status"`
+	Created string                 `yaml:"created"`
+	Updated string                 `yaml:"updated"`
+	Spec    Spec                   `yaml:"spec"`
+	Plan    []Phase                `yaml:"plan"`
+	Extra   map[string]interface{} `yaml:"extra,omitempty"`
 }
 
 // Progress computes completion statistics for a track's plan.
