@@ -8,7 +8,7 @@ import (
 func TestGenerateName_Format(t *testing.T) {
 	t.Parallel()
 	name := GenerateName()
-	parts := strings.SplitN(name, "-", 3)
+	parts := strings.SplitN(name, " ", 3)
 	if len(parts) != 3 {
 		t.Fatalf("expected 3 parts, got %d: %q", len(parts), name)
 	}
