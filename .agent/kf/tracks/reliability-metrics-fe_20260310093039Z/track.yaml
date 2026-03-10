@@ -109,11 +109,11 @@ plan:
   - phase: Navigation and Integration
     tasks:
       - text: Add /reliability route to App.tsx router configuration
-        done: false
+        done: true
       - text: Add Reliability link to dashboard navigation/sidebar
-        done: false
+        done: true
       - text: Add empty state with helpful message when no reliability events exist
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Write component tests for ReliabilitySummaryCards and ReliabilityEventTable

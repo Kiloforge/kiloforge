@@ -37,6 +37,7 @@ import { AgentHistoryPage } from "./pages/AgentHistoryPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { TracePage } from "./pages/TracePage";
 import { TrackDetailPage } from "./pages/TrackDetailPage";
+import { ReliabilityPage } from "./pages/ReliabilityPage";
 import styles from "./App.module.css";
 
 export default function App() {
@@ -90,6 +91,13 @@ export default function App() {
     [queryClient],
   );
 
+  const handleReliabilityEvent = useCallback(
+    () => {
+      queryClient.invalidateQueries({ queryKey: ["reliability"] });
+    },
+    [queryClient],
+  );
+
   const sseHandlers = useMemo(
     () => ({
       agent_update: handleAgentUpdate,
@@ -103,8 +111,9 @@ export default function App() {
       queue_update: handleSwarmUpdate,
       capacity_changed: handleCapacityChanged,
       project_settings_update: handleProjectSettingsUpdate,
+      reliability_event: handleReliabilityEvent,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleSwarmUpdate, handleCapacityChanged, handleProjectSettingsUpdate],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleSwarmUpdate, handleCapacityChanged, handleProjectSettingsUpdate, handleReliabilityEvent],
   );
 
   const connectionState = useSSE("/events", sseHandlers);
@@ -204,6 +213,7 @@ export default function App() {
         </div>
         <nav className={styles.nav}>
           <Link to="/agents" className={styles.link}>Agents</Link>
+          <Link to="/reliability" className={styles.link}>Reliability</Link>
           {status?.gitea_url && (
             <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.link}>
               Gitea
@@ -251,6 +261,7 @@ export default function App() {
           <Route path="/projects/:slug" element={<ProjectPage />} />
           <Route path="/projects/:slug/tracks/:trackId" element={<TrackDetailPage />} />
           <Route path="/traces/:traceId" element={<TracePage />} />
+          <Route path="/reliability" element={<ReliabilityPage />} />
         </Routes>
       </main>
 
