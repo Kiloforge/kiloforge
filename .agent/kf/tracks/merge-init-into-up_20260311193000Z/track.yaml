@@ -1,9 +1,9 @@
 id: merge-init-into-up_20260311193000Z
-title: "Merge kf init into kf up — single entry point with auto-setup"
+title: Merge kf init into kf up — single entry point with auto-setup
 type: refactor
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Absorb all kf init logic into kf up so users only need kf up / kf down.
@@ -12,7 +12,7 @@ spec:
     Currently kf has two commands for starting: `kf init` (first-time setup + start)
     and `kf up` (restart only). This forces users to remember which to use and creates
     a confusing "not initialized" error when they naturally try `kf up` first.
-
+    
     The UX should be: `kf up` always works — it detects first-run vs restart and does
     the right thing. `kf down` stops. That's it.
   codebase_analysis: |
@@ -23,7 +23,7 @@ spec:
     - backend/internal/adapter/cli/errhelp.go — update notInitializedError to say "kf up"
     - backend/internal/adapter/cli/errhelp_test.go — update test expectations
     - backend/internal/adapter/cli/down.go — remove notInitializedError, just report "not running"
-
+    
     Current init flow (init.go:runInit):
     1. prereq.Check() — verify required tools
     2. prereq.CheckClaudeAuth() — warn if not authenticated
@@ -35,26 +35,26 @@ spec:
     8. startDaemon() — spawn kf serve
     9. installEmbeddedSkills(cfg) — auto-install skills
     10. browser.Open() — open dashboard
-
+    
     Current up flow (up.go:runUp):
     1. config.Resolve() — fails with notInitializedError if no config
     2. startDaemon() or report already running
     3. browser.Open()
-
+    
     Key insight: config.Resolve() actually succeeds without init — JSONAdapter
     returns zero config on missing file, DefaultsAdapter fills defaults. The
     "not initialized" error is artificial. First-run detection should check
     whether config.json exists in the data directory.
-
+    
     16 commands reference notInitializedError() — all need updating from
     "kf init" to "kf up".
-
+    
     The --data-dir flag currently lives on initCmd. It should move to rootCmd
     (persistent flag) or upCmd so it's still accessible.
   acceptance_criteria:
     - "kf up" performs first-time setup if config.json doesn't exist (create dir, analytics prompt, save config, install skills)
     - "kf up" on subsequent runs just starts the daemon (no prompts, no skill install)
-    - "kf init" either removed entirely or prints deprecation pointing to "kf up"
+    - kf init" either removed entirely or prints deprecation pointing to "kf up
     - All error messages say "kf up" instead of "kf init"
     - "--data-dir" flag still works (moved to upCmd or rootCmd)
     - "kf down" works unchanged
@@ -73,42 +73,42 @@ spec:
     5. Update notInitializedError() text: "kf init" → "kf up"
     6. Update errhelp_test.go assertions
     7. Update root.go Long description
-
+    
     First-run detection: check os.Stat(filepath.Join(dataDir, "config.json")).
     If ErrNotExist → first run. This is reliable because init always calls cfg.Save().
 plan:
-  - phase: "Foundation"
+  - phase: Foundation
     tasks:
       - text: Move --data-dir flag from initCmd to rootCmd as persistent flag so it's available to all subcommands
-        done: false
+        done: true
       - text: Add isFirstRun(dataDir string) bool helper in up.go — returns true if config.json doesn't exist
-        done: false
-  - phase: "Core Refactor"
+        done: true
+  - phase: Core Refactor
     tasks:
       - text: Rewrite runUp to absorb init logic — prereq check, first-run detection, data dir creation, analytics prompt, config save, skill install, then start daemon
-        done: false
+        done: true
       - text: Convert init.go to print deprecation notice ("kf init is now kf up") and delegate to runUp
-        done: false
+        done: true
       - text: Update runDown to not require init — if config resolves but daemon isn't running, just say so (remove notInitializedError gate)
-        done: false
-  - phase: "Error Messages & Help Text"
+        done: true
+  - phase: Error Messages & Help Text
     tasks:
-      - text: "Update notInitializedError() in errhelp.go: replace all 'kf init' references with 'kf up'"
-        done: false
+      - text: Update notInitializedError() in errhelp.go: replace all 'kf init' references with 'kf up'
+        done: true
       - text: Update errhelp_test.go assertions to expect "kf up" instead of "kf init"
-        done: false
+        done: true
       - text: Update configLoadError() in errhelp.go to reference "kf up"
-        done: false
+        done: true
       - text: Update rootCmd Long description in root.go to say "kf up" instead of "kf init"
-        done: false
-  - phase: "Verification"
+        done: true
+  - phase: Verification
     tasks:
       - text: Run make test — verify all CLI tests pass with updated expectations
-        done: false
+        done: true
       - text: Run make build — verify binary compiles
-        done: false
+        done: true
       - text: Run make lint — verify no lint issues
-        done: false
+        done: true
       - text: Manual smoke test — verify "kf up" on fresh data dir performs full init flow
-        done: false
+        done: true
 extra: {}
