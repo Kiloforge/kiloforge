@@ -20,6 +20,7 @@ import { AgentTerminal } from "./components/AgentTerminal";
 import { TerminalDock } from "./components/TerminalDock";
 import { useWindowManager } from "./hooks/useWindowManager";
 import { SkillsBanner } from "./components/SkillsBanner";
+import { ModelWarningBanner } from "./components/ModelWarningBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
 import { SkillsInstallDialog } from "./components/SkillsInstallDialog";
 import { AgentLauncher } from "./components/AgentLauncher";
@@ -139,6 +140,7 @@ export default function App() {
     <TourProvider>
       <ToastContainer />
       <TourOverlay />
+      <ModelWarningBanner />
       <SkillsBanner />
       <header className={styles.header}>
         <div className={styles.headerLeft}>
