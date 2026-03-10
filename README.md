@@ -2,20 +2,20 @@
 
 **1,000x Productivity.** The Kiloforger's forge — command AI agent swarms and ship code at the speed of thought.
 
-An orchestration platform for coordinating AI coding agents at scale. Runs a private git forge (Gitea), a real-time monitoring dashboard, and a relay server on your machine — while spawning Claude Code CLI agents that implement, review, and merge code autonomously.
+An orchestration platform for coordinating AI coding agents at scale. Runs the Cortex control plane, Command Deck, and Claude Code swarms directly on your machine — transforming pure intent into meaningful action.
 
 ## Why
 
 Coordinating multiple AI agents across multiple projects demands infrastructure that is observable, automated, and under your control. Kiloforge gives the Kiloforger:
 
-- **Private infrastructure, cloud AI** — git forge, webhooks, and coordination run locally; agents are Claude Code CLI sessions powered by Anthropic's cloud APIs
-- **Human + AI collaboration** — Gitea for code review and PRs, plus a web dashboard for real-time agent monitoring, quota tracking, and log streaming
-- **Agent orchestration at scale** — spawn, monitor, throttle, suspend, and resume dozens of concurrent agents across multiple projects
+- **Private infrastructure, cloud AI** — the Cortex and all coordination run locally; agents are Claude Code CLI sessions powered by Anthropic's cloud APIs
+- **Kiloforger + Swarm** — direct collaboration between Kiloforgers and Claude Code swarms via tracks, worktrees, and the Command Deck
+- **Agent orchestration at scale** — spawn, monitor, throttle, suspend, and resume dozens of concurrent agents across multiple projects via the Cortex
 - **Session persistence** — gracefully shut down agents and auto-recover them on restart, with full session continuity
 - **Quota-aware** — track token usage and cost per agent/track, enforce budgets, and handle rate limits gracefully
-- **End-to-end tracing** — OpenTelemetry traces follow each track from claim through agent work, PR review, and merge
+- **End-to-end tracing** — OpenTelemetry traces follow each track from conception through agent work, verification, and merge
 - **Extensible** — scoped lock service, webhook relay, and REST APIs that agents and tools can build on
-- **Full control** — your code stays on your machine; only requires Git, Docker, and Claude Code
+- **Full control** — your code stays on your machine; only requires Git and Claude Code
 
 ## Installation
 
@@ -53,7 +53,6 @@ make build
 ## Prerequisites
 
 - **Git** — `git` command available in PATH
-- **Docker** with Docker Compose — either Docker Desktop (includes compose v2) or Docker Engine + `docker-compose` (v1, for Colima users)
 - **Claude Code CLI** — `claude` command available in PATH
 
 ### Building from Source
@@ -61,65 +60,46 @@ make build
 - **Go 1.25+**
 - **Node.js 18+**
 
-### Colima Users
-
-If you're using Colima on macOS, install docker-compose separately:
-
-```bash
-brew install docker-compose
-```
-
-Both `docker compose` (v2) and `docker-compose` (v1) are auto-detected.
-
 ## Quick Start
 
 ```bash
 # Build
 make build
 
-# Initialize the global Gitea server
+# Initialize the Cortex
 kf init
 
 # Register your project
-kf add git@github.com:user/my-project.git
+kf add /path/to/my-project
 
 # List registered projects
 kf projects
 ```
 
 This will:
-1. Detect your Docker Compose CLI variant (v2 or v1)
-2. Generate a `docker-compose.yml` in `~/.kiloforge/`
-3. Start a Gitea instance at `http://localhost:4000`
-4. Create an admin user (`conductor` / random password)
-5. Generate an API token and save config
-6. Register your project: create Gitea repo, add remote, push code
+1. Create the data directory (`~/.kiloforge/`)
+2. Save the global configuration
+3. Start the Cortex control plane on `localhost:4001`
+4. Register your project for agent orchestration
 
 ## Commands
 
 ### `kf init`
 
-One-time setup: start the global Gitea server via Docker Compose.
+One-time setup: initialize the Cortex control plane.
 
 ```bash
 kf init [flags]
 
 Flags:
-  --gitea-port int    Port for Gitea web UI (default 3000)
   --data-dir string   Persistent data directory (default ~/.kiloforge)
-  --admin-pass string Admin password (default: generated random)
-  --ssh-key string    Path to SSH public key (default: auto-detect)
 ```
 
-On first init, a random admin password is generated and saved to `config.json`. Subsequent runs reuse the saved password. Use `--admin-pass` to override.
-
-Your SSH public key is auto-detected from `~/.ssh/` (tries `id_ed25519.pub`, `id_rsa.pub`, `id_ecdsa.pub`) and registered with the Gitea admin user. Use `--ssh-key` to specify a custom path. Missing SSH keys produce a warning but do not prevent initialization.
-
-**Idempotent:** Running again when Gitea is already running prints the status and exits.
+**Idempotent:** Running again when the Cortex is already running prints the status and exits.
 
 ### `kf up`
 
-Start Gitea and the orchestrator (daily use). Returns immediately after both are running.
+Start the Cortex (daily use). Returns immediately after it is running.
 
 ```bash
 kf up
@@ -127,7 +107,7 @@ kf up
 
 ### `kf down`
 
-Stop the Gitea server without removing data (daily use).
+Stop the Cortex without removing data (daily use).
 
 ```bash
 kf down
@@ -135,28 +115,28 @@ kf down
 
 ### `kf status`
 
-Show Gitea server status.
+Show Cortex status, quota usage, and agent costs.
 
 ```bash
 $ kf status
-Kiloforge Status
-======================
-Gitea:       running (v1.22.0) — http://localhost:4000
+Kiloforge Status — Kiloforger
+================================
+Cortex:      running (PID 12345) on :4001
 Data:        /Users/you/.kiloforge
-Compose:     /Users/you/.kiloforge/docker-compose.yml
+Server:      http://localhost:4001
+Dashboard:   http://localhost:4001/-/
 ```
 
 ### `kf add`
 
-Clone a remote repo and register it with the Gitea server.
+Register a project with the Cortex.
 
 ```bash
-kf add git@github.com:user/repo.git          # SSH URL
-kf add https://github.com/user/repo.git      # HTTPS URL
-kf add git@github.com:user/repo.git --name x  # override slug
+kf add /path/to/project              # local path
+kf add /path/to/project --name x     # override slug
 ```
 
-Clones the remote into `~/.kiloforge/repos/<slug>/`, creates a Gitea repo, adds a `gitea` remote, pushes the main branch, and registers a webhook.
+Registers the project for agent orchestration, quota tracking, and worktree management.
 
 ### `kf projects`
 
@@ -214,7 +194,7 @@ kf pool
 
 ### `kf escalated`
 
-Show PRs that hit the review cycle limit and require human intervention.
+Show tracks that hit the review cycle limit and require human intervention.
 
 ```bash
 kf escalated
@@ -234,52 +214,21 @@ kf destroy --force  # skip confirmation
 ```
 kf init / kf up
     │
-    ├─ Docker Compose: start Gitea (localhost:4000)
-    ├─ Orchestrator (localhost:4001)
-    │   ├─ Receives events from all registered projects
-    │   ├─ Routes by repository name → project registry
-    │   ├─ Scoped lock service (merge coordination)
-    │   └─ Handles: issues, PRs, reviews, push events
+    ├─ Cortex (localhost:4001)
+    │   ├─ Agent lifecycle: spawn, suspend, resume
+    │   ├─ Quota tracking and budget enforcement
+    │   ├─ Scoped lock API (merge serialization)
+    │   └─ Track and worktree coordination
     │
-    ├─ Dashboard (localhost:4001/-/)
+    ├─ Command Deck (localhost:4001/-/)
     │   ├─ Real-time agent status via SSE
     │   ├─ Quota/cost monitoring
     │   └─ Log streaming
     │
-    └─ kf add: register project → Gitea repo + webhook
-
-┌─────────────────────────────────────────────────────────────┐
-│  Gitea (Docker)                            localhost:4000    │
-│  • Git repos, PRs, code review for multiple projects        │
-│  • Webhooks → orchestrator on events                         │
-└────────────────────────┬────────────────────────────────────┘
-                         │ webhooks
-┌────────────────────────▼────────────────────────────────────┐
-│  Orchestrator                              localhost:4001    │
-│  • Multi-project event routing                              │
-│  • Developer-reviewer review cycle                          │
-│  • Agent lifecycle: spawn, suspend, resume                  │
-│  • Quota tracking and budget enforcement                    │
-│  • Scoped lock API (merge serialization)                    │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│  Dashboard                                 localhost:4001/-/    │
-│  • Agent status, logs, and cost — live in the browser       │
-│  • Links to Gitea PRs and repos                             │
-└─────────────────────────────────────────────────────────────┘
+    └─ Claude Code Swarm
+        ├─ Autonomous agents in pooled worktrees
+        └─ Implement, verify, and merge directly
 ```
-
-## Supported Events
-
-| Event | Actions |
-|-------|---------|
-| `issues` | opened, edited, closed, label_updated, assigned |
-| `issue_comment` | created |
-| `pull_request` | opened, reopened, closed, merged, synchronize |
-| `pull_request_review` | submitted |
-| `pull_request_comment` | created |
-| `push` | (all) |
 
 ## Data Directory
 
@@ -291,25 +240,21 @@ All persistent data lives in `~/.kiloforge/` (configurable via `--data-dir`):
 ├── projects.json         # Project registry
 ├── pool.json             # Worktree pool state
 ├── state.json            # Agent state (running/completed agents)
-├── docker-compose.yml    # Generated compose file
-├── repos/                # Cloned project repositories
-│   └── <slug>/
 ├── projects/             # Per-project data
 │   └── <slug>/
-│       ├── logs/             # Agent log files
-│       └── pr-tracking.json  # PR-to-agent tracking
-└── gitea-data/           # Gitea Docker volume (repos, DB)
+│       └── logs/             # Agent log files
+└── orchestrator.log      # Cortex daemon log
 ```
 
 ## Tracing
 
-Kiloforge supports OpenTelemetry distributed tracing with **track lifecycle tracing** — a single trace follows a development track from claim through agent work, PR review, merge, and completion. This gives end-to-end visibility into the full lifecycle of every track.
+Kiloforge supports OpenTelemetry distributed tracing with **track lifecycle tracing** — a single trace follows a development track from conception through agent work, verification, and merge. This gives end-to-end visibility into the full lifecycle of every track.
 
 When enabled:
 - **`kf implement`** creates a root span `track/{trackId}` with child spans for worktree acquisition, agent spawning, and session tracking
-- **Webhook events** (PR opened, review submitted, merge) automatically join the track's trace via stored trace IDs, so all activity for a track appears in one trace
+- **Track events** (implementation, verification, merge) automatically join the track's trace via stored trace IDs, so all activity for a track appears in one trace
 - **Agent spans** include `session.id` attributes for cross-referencing with Claude Code sessions
-- **The dashboard** shows track IDs in the trace list and "Trace" links on board cards
+- **The Command Deck** shows track IDs in the trace list and "Trace" links on board cards
 
 To enable tracing, add to your `config.json`:
 
@@ -328,7 +273,7 @@ docker run -d --name jaeger \
   jaegertracing/all-in-one:latest
 ```
 
-View traces at `http://localhost:16686` or in the dashboard at `/-/dashboard/traces/{traceId}`.
+View traces at `http://localhost:16686` or in the Command Deck at `/-/dashboard/traces/{traceId}`.
 
 The trace API is available at:
 - `GET /-/api/traces` — list trace summaries (filter with `?track_id=X` or `?session_id=Y`)
@@ -356,7 +301,7 @@ There are three ways to disable analytics:
    Help improve kiloforge by sending anonymous usage data? (Y/n) n
    ```
 
-2. **Dashboard toggle** — Open the settings menu (gear icon) and toggle "Anonymous usage data" off.
+2. **Command Deck toggle** — Open the settings menu (gear icon) and toggle "Anonymous usage data" off.
 
 3. **Environment variable** — Set before running any command:
    ```bash
@@ -364,10 +309,6 @@ There are three ways to disable analytics:
    ```
 
 When disabled, a no-op tracker is used — no network requests are made.
-
-## Origin Bridging
-
-When you register a project with `kf add <remote-url>`, the remote URL is stored as the origin. This enables a future workflow: develop locally against Gitea (PRs, reviews, CI), then bridge changes back to your real remote (GitHub, GitLab) with a single command.
 
 ## Project Structure
 
@@ -378,12 +319,12 @@ kiloforge/
 │   ├── internal/     # Clean architecture (adapter/, core/)
 │   ├── go.mod
 │   └── go.sum
-├── frontend/         # React/Vite/TypeScript dashboard
+├── frontend/         # React/Vite/TypeScript Command Deck
 │   ├── src/
 │   ├── vite.config.ts
 │   └── package.json
 ├── go.work           # Go workspace (IDE support)
-└── Makefile          # Build orchestration
+└── Makefile          # Build automation
 ```
 
 ## Development
