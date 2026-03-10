@@ -1,9 +1,9 @@
 id: server-host-port-config_20260312230100Z
-title: "Add --host/--port flags to kf up and detect port conflicts"
+title: Add --host/--port flags to kf up and detect port conflicts
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Add OrchestratorHost config field with --host/--port CLI flags on `kf up`,
@@ -24,20 +24,20 @@ spec:
     - FlagsAdapter (flags_adapter.go:6) has WithOrchestratorPort() but no host
     - Validate() (config.go:110-119) checks port range 1-65535
     - Merger (merger.go) overlays non-zero fields — 0 means "not set"
-
+    
     **CLI layer** (adapter/cli/):
     - root.go:52-54 registers --no-browser and --data-dir, NO --port/--host
     - up.go:37-143 — runUp builds config with FlagsAdapter, checks firstRun,
       spawns daemon via startDaemon(). Prints hardcoded "http://localhost:{port}/"
     - daemon.go:47 — spawns `kf serve` with no args; config resolved inside serve
     - serve.go:166 — NewServer receives cfg.OrchestratorPort as the port arg
-
+    
     **Server layer** (adapter/rest/server.go):
     - Line 328: `Addr: fmt.Sprintf(":%d", s.port)` — binds 0.0.0.0, no host
     - Line 339: ListenAndServe() — no pre-check, no retry, no friendly error
     - Server struct has `port int` field but no host field
     - NewServer() signature takes port as a positional int arg
-
+    
     **Dashboard URL** (up.go:96,123,136):
     - All use `fmt.Sprintf("http://localhost:%d/", cfg.OrchestratorPort)`
     - Should use configured host instead of hardcoded "localhost"
@@ -66,12 +66,12 @@ spec:
     - Add `KF_ORCH_HOST` to EnvAdapter
     - Default host in DefaultsAdapter: "127.0.0.1"
     - Validate: reject empty host (but allow "0.0.0.0" for explicit wildcard)
-
+    
     **CLI changes (up.go + root.go):**
     - Register `--port` and `--host` as persistent flags on rootCmd (or on upCmd)
     - Wire into FlagsAdapter in runUp()
     - Update dashboard URL formatting to use cfg.OrchestratorHost
-
+    
     **Port conflict detection (up.go, before startDaemon):**
     ```go
     addr := fmt.Sprintf("%s:%d", cfg.OrchestratorHost, cfg.OrchestratorPort)
@@ -85,12 +85,12 @@ spec:
     }
     ln.Close()
     ```
-
+    
     **Server changes (rest/server.go):**
     - Add `host string` to Server struct
     - Update NewServer to accept host (or take full config)
     - Change Addr to `fmt.Sprintf("%s:%d", s.host, s.port)`
-
+    
     **Note on 0.0.0.0 vs 127.0.0.1:**
     The current server binds to 0.0.0.0 (`:4001` with no host). Changing the
     default to 127.0.0.1 is a behavioral change — it restricts access to
@@ -99,32 +99,32 @@ spec:
 plan:
   - phase: Config Layer
     tasks:
-      - text: "Add OrchestratorHost field to Config struct, DefaultsAdapter (127.0.0.1), EnvAdapter (KF_ORCH_HOST), and FlagsAdapter (WithOrchestratorHost)"
-        done: false
-      - text: "Update Validate() to reject empty OrchestratorHost; update merger to overlay non-empty host"
-        done: false
-      - text: "Write tests: config resolution with host from env, flags, and JSON; validation rejects empty host"
-        done: false
+      - text: Add OrchestratorHost field to Config struct, DefaultsAdapter (127.0.0.1), EnvAdapter (KF_ORCH_HOST), and FlagsAdapter (WithOrchestratorHost)
+        done: true
+      - text: Update Validate() to reject empty OrchestratorHost; update merger to overlay non-empty host
+        done: true
+      - text: Write tests: config resolution with host from env, flags, and JSON; validation rejects empty host
+        done: true
   - phase: CLI Flags & Port Detection
     tasks:
-      - text: "Register --port and --host flags on upCmd in root.go/up.go; wire into FlagsAdapter in runUp()"
-        done: false
-      - text: "Add port-conflict pre-check in runUp() before startDaemon() — net.Listen probe with actionable error"
-        done: false
-      - text: "Update dashboard URL formatting in up.go to use cfg.OrchestratorHost instead of hardcoded localhost"
-        done: false
-      - text: "Write tests: port conflict detection returns helpful error; flags override config"
-        done: false
+      - text: Register --port and --host flags on upCmd in root.go/up.go; wire into FlagsAdapter in runUp()
+        done: true
+      - text: Add port-conflict pre-check in runUp() before startDaemon() — net.Listen probe with actionable error
+        done: true
+      - text: Update dashboard URL formatting in up.go to use cfg.OrchestratorHost instead of hardcoded localhost
+        done: true
+      - text: Write tests: port conflict detection returns helpful error; flags override config
+        done: true
   - phase: Server Binding
     tasks:
-      - text: "Add host field to rest.Server struct; update NewServer to accept host; change Addr to host:port"
-        done: false
-      - text: "Update serve.go to pass cfg.OrchestratorHost to NewServer"
-        done: false
-      - text: "Write test: server binds to configured host:port"
-        done: false
+      - text: Add host field to rest.Server struct; update NewServer to accept host; change Addr to host:port
+        done: true
+      - text: Update serve.go to pass cfg.OrchestratorHost to NewServer
+        done: true
+      - text: Write test: server binds to configured host:port
+        done: true
   - phase: Verification
     tasks:
-      - text: "Run make test, make lint, make build — verify no regressions"
+      - text: Run make test, make lint, make build — verify no regressions
         done: false
 extra: {}
