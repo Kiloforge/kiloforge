@@ -25,4 +25,5 @@ export const queryKeys = {
   projectMetadata: (slug: string) => ["projectMetadata", slug] as const,
   projectSettings: (slug: string) => ["projectSettings", slug] as const,
   queue: (projectSlug?: string) => projectSlug ? ["queue", projectSlug] as const : ["queue"] as const,
+  swarm: (projectSlug?: string) => projectSlug ? ["swarm", projectSlug] as const : ["swarm"] as const,
 };

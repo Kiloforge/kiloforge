@@ -8,7 +8,7 @@ import { useAgents } from "./hooks/useAgents";
 import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
 import { useProjects } from "./hooks/useProjects";
-import { useQueue } from "./hooks/useQueue";
+import { useSwarm } from "./hooks/useSwarm";
 import { useConsent } from "./hooks/useConsent";
 import { useSkillsPrompt } from "./hooks/useSkillsPrompt";
 import { queryKeys } from "./api/queryKeys";
@@ -41,7 +41,7 @@ export default function App() {
   const { quota, handleQuotaUpdate } = useQuota();
   const { tracks, handleTrackUpdate, handleTrackRemoved, remainingCount: trackRemainingCount, hasNextPage: trackHasNextPage, isFetchingNextPage: trackFetchingNextPage, fetchNextPage: trackFetchNextPage } = useTracks();
   const { handleProjectUpdate, handleProjectRemoved } = useProjects();
-  const { queue, loading: queueLoading, starting: queueStarting, stopping: queueStopping, updatingSettings: queueUpdatingSettings, start: queueStart, stop: queueStop, updateSettings: queueUpdateSettings, handleQueueUpdate } = useQueue();
+  const { swarm, loading: swarmLoading, starting: swarmStarting, stopping: swarmStopping, updatingSettings: swarmUpdatingSettings, start: swarmStart, stop: swarmStop, updateSettings: swarmUpdateSettings, handleSwarmUpdate } = useSwarm();
   const { data: status = null } = useQuery({
     queryKey: queryKeys.status,
     queryFn: () => fetcher<StatusResponse>("/api/status"),
@@ -77,10 +77,10 @@ export default function App() {
       project_update: handleProjectUpdate,
       project_removed: handleProjectRemoved,
       board_update: handleBoardUpdate,
-      queue_update: handleQueueUpdate,
+      queue_update: handleSwarmUpdate,
       project_settings_update: handleProjectSettingsUpdate,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleQueueUpdate, handleProjectSettingsUpdate],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleSwarmUpdate, handleProjectSettingsUpdate],
   );
 
   const connectionState = useSSE("/events", sseHandlers);
@@ -188,14 +188,14 @@ export default function App() {
                 onAttach={handleAttach}
                 onSpawnInteractive={handleOpenLauncher}
                 spawningInteractive={spawnMutation.isPending}
-                queue={queue}
-                queueLoading={queueLoading}
-                queueStarting={queueStarting}
-                queueStopping={queueStopping}
-                queueUpdatingSettings={queueUpdatingSettings}
-                onQueueStart={queueStart}
-                onQueueStop={queueStop}
-                onQueueUpdateSettings={queueUpdateSettings}
+                swarm={swarm}
+                swarmLoading={swarmLoading}
+                swarmStarting={swarmStarting}
+                swarmStopping={swarmStopping}
+                swarmUpdatingSettings={swarmUpdatingSettings}
+                onSwarmStart={swarmStart}
+                onSwarmStop={swarmStop}
+                onSwarmUpdateSettings={swarmUpdateSettings}
                 trackRemainingCount={trackRemainingCount}
                 trackHasNextPage={trackHasNextPage}
                 trackFetchingNextPage={trackFetchingNextPage}

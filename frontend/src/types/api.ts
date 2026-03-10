@@ -224,7 +224,7 @@ export interface PullResult {
   new_head: string;
 }
 
-export interface QueueItem {
+export interface SwarmItem {
   track_id: string;
   project_slug: string;
   status: "queued" | "assigned" | "completed" | "failed";
@@ -234,15 +234,21 @@ export interface QueueItem {
   completed_at?: string | null;
 }
 
-export interface QueueStatus {
+export interface SwarmStatus {
   running: boolean;
   max_workers: number;
   active_workers: number;
-  items: QueueItem[];
+  items: SwarmItem[];
 }
 
-export interface QueueSettings {
+export interface SwarmSettings {
   max_workers: number;
+}
+
+export interface SwarmCapacity {
+  max: number;
+  active: number;
+  available: number;
 }
 
 export interface ConfigResponse {

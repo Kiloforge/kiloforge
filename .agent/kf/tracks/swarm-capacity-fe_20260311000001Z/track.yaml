@@ -1,9 +1,9 @@
 id: swarm-capacity-fe_20260311000001Z
-title: "Agent swarm UI — rename queue panel, capacity gating, and waiting state"
+title: Agent swarm UI — rename queue panel, capacity gating, and waiting state
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Rename QueuePanel → SwarmPanel and useQueue → useSwarm throughout the
@@ -22,42 +22,42 @@ spec:
     - File rename: QueuePanel.tsx → SwarmPanel.tsx, QueuePanel.module.css → SwarmPanel.module.css
     - Props interface rename: QueuePanelProps → SwarmPanelProps
     - API type refs: QueueStatus → SwarmStatus, QueueSettings → SwarmSettings
-
+    
     useQueue.ts:
     - File rename: useQueue.ts → useSwarm.ts
     - Hook rename: useQueue → useSwarm
     - Query key: ["queue"] → ["swarm"]
     - Endpoints: /api/queue/* → /api/swarm/*
     - Return type rename: UseQueueResult → UseSwarmResult
-
+    
     AgentLauncher.tsx:
     - Currently no capacity awareness — just shows "Starting..." during mutation
     - Needs: check capacity before spawn, show waiting overlay on 429
     - Waiting state: animated indicator, "Kiloforge at max capacity", usage display
     - Auto-dismiss when capacity_changed SSE arrives and slots are available
-
+    
     App.tsx:
     - spawnMutation error handler (lines 112-118): handles 403, 412 — needs 429 case
     - useQueue() call → useSwarm()
     - All queue* variables renamed to swarm*
-
+    
     OverviewPage.tsx:
     - Renders QueuePanel → SwarmPanel
     - Props rename: queue* → swarm*
-
+    
     types/api.ts:
     - QueueItem, QueueStatus, QueueSettings types — all need rename
     - Add SwarmCapacity type: { max: number, active: number, available: number }
   acceptance_criteria:
-    - "All user-visible 'Work Queue' text replaced with 'AI Agent Swarm'"
-    - "All user-visible 'Max Workers' text replaced with 'Max Swarm Size'"
-    - "QueuePanel component renamed to SwarmPanel (file, component, CSS module)"
-    - "useQueue hook renamed to useSwarm (file, function, query keys)"
-    - "When agent spawn returns 429, AgentLauncher shows waiting overlay instead of error"
-    - "Waiting overlay displays: animated indicator, 'Kiloforge at max capacity', current usage (e.g. 3/3 agents active), and link/button to increase Max Swarm Size"
-    - "When capacity_changed SSE event arrives with available > 0, waiting overlay auto-retries the spawn"
-    - "User can cancel waiting at any time"
-    - "SwarmPanel shows 'Max Swarm Size' input (1-10) instead of 'Max Workers'"
+    - All user-visible 'Work Queue' text replaced with 'AI Agent Swarm'
+    - All user-visible 'Max Workers' text replaced with 'Max Swarm Size'
+    - QueuePanel component renamed to SwarmPanel (file, component, CSS module)
+    - useQueue hook renamed to useSwarm (file, function, query keys)
+    - When agent spawn returns 429, AgentLauncher shows waiting overlay instead of error
+    - Waiting overlay displays: animated indicator, 'Kiloforge at max capacity', current usage (e.g. 3/3 agents active), and link/button to increase Max Swarm Size
+    - When capacity_changed SSE event arrives with available > 0, waiting overlay auto-retries the spawn
+    - User can cancel waiting at any time
+    - SwarmPanel shows 'Max Swarm Size' input (1-10) instead of 'Max Workers'
   out_of_scope: |
     - Internal Go type renames (backend)
     - Per-project swarm limits
@@ -66,53 +66,53 @@ spec:
   technical_notes: |
     The rename is mostly mechanical (find-replace across files). The capacity
     gating UX is the interesting part:
-
+    
     1. User clicks "Start" in AgentLauncher
     2. POST /api/agents/interactive returns 429 with capacity JSON
     3. AgentLauncher transitions to "waiting" state with overlay
     4. SSE listener watches for capacity_changed events
     5. When available > 0, auto-retry the spawn request
     6. On success, dismiss overlay and open agent terminal
-
+    
     The waiting overlay message should be:
       "Kiloforge at max capacity"
       "3/3 agents active — increase Max Swarm Size to prevent waiting"
     with a subtle pulsing animation and a "Cancel" button.
 plan:
-  - phase: "Rename types and hooks"
+  - phase: Rename types and hooks
     tasks:
-      - text: "Rename types in api.ts: QueueItem → SwarmItem, QueueStatus → SwarmStatus, QueueSettings → SwarmSettings; add SwarmCapacity type"
-        done: false
-      - text: "Rename useQueue.ts → useSwarm.ts; rename hook, query keys, endpoints (/api/queue/* → /api/swarm/*)"
-        done: false
-      - text: "Update all imports of useQueue across App.tsx, OverviewPage.tsx, and any other consumers"
-        done: false
-  - phase: "Rename UI components"
+      - text: Rename types in api.ts: QueueItem → SwarmItem, QueueStatus → SwarmStatus, QueueSettings → SwarmSettings; add SwarmCapacity type
+        done: true
+      - text: Rename useQueue.ts → useSwarm.ts; rename hook, query keys, endpoints (/api/queue/* → /api/swarm/*)
+        done: true
+      - text: Update all imports of useQueue across App.tsx, OverviewPage.tsx, and any other consumers
+        done: true
+  - phase: Rename UI components
     tasks:
-      - text: "Rename QueuePanel.tsx → SwarmPanel.tsx and QueuePanel.module.css → SwarmPanel.module.css"
+      - text: Rename QueuePanel.tsx → SwarmPanel.tsx and QueuePanel.module.css → SwarmPanel.module.css
         done: false
-      - text: "Update SwarmPanel labels: 'Workers' → 'Agents', 'Max workers' → 'Max Swarm Size', 'queued' → 'queued'"
+      - text: Update SwarmPanel labels: 'Workers' → 'Agents', 'Max workers' → 'Max Swarm Size', 'queued' → 'queued'
         done: false
-      - text: "Update OverviewPage.tsx: swap QueuePanel → SwarmPanel, rename all queue* props to swarm*"
+      - text: Update OverviewPage.tsx: swap QueuePanel → SwarmPanel, rename all queue* props to swarm*
         done: false
-      - text: "Update App.tsx: rename all queue* variables to swarm*, update useSwarm() call"
+      - text: Update App.tsx: rename all queue* variables to swarm*, update useSwarm() call
         done: false
-  - phase: "Capacity gating UX"
+  - phase: Capacity gating UX
     tasks:
-      - text: "Add useSwarmCapacity hook that fetches GET /api/swarm/capacity and listens for capacity_changed SSE events"
+      - text: Add useSwarmCapacity hook that fetches GET /api/swarm/capacity and listens for capacity_changed SSE events
         done: false
-      - text: "Add 429 handler in App.tsx spawnMutation.onError — transition AgentLauncher to waiting state with capacity info from response body"
+      - text: Add 429 handler in App.tsx spawnMutation.onError — transition AgentLauncher to waiting state with capacity info from response body
         done: false
-      - text: "Add waiting overlay to AgentLauncher: pulsing indicator, 'Kiloforge at max capacity', usage display (X/Y agents active), 'increase Max Swarm Size' link, Cancel button"
+      - text: Add waiting overlay to AgentLauncher: pulsing indicator, 'Kiloforge at max capacity', usage display (X/Y agents active), 'increase Max Swarm Size' link, Cancel button
         done: false
-      - text: "Implement SSE-driven auto-retry: on capacity_changed event with available > 0, automatically re-submit the spawn request"
+      - text: Implement SSE-driven auto-retry: on capacity_changed event with available > 0, automatically re-submit the spawn request
         done: false
-      - text: "Add CSS for waiting overlay in AgentLauncher.module.css — subtle pulse animation, glass effect consistent with existing panels"
+      - text: Add CSS for waiting overlay in AgentLauncher.module.css — subtle pulse animation, glass effect consistent with existing panels
         done: false
-  - phase: "Verification"
+  - phase: Verification
     tasks:
-      - text: "Verify all QueuePanel/useQueue references are gone (grep for old names)"
+      - text: Verify all QueuePanel/useQueue references are gone (grep for old names)
         done: false
-      - text: "E2E test: spawn agent when at capacity → verify waiting overlay appears with correct messaging → simulate capacity_changed → verify auto-retry"
+      - text: E2E test: spawn agent when at capacity → verify waiting overlay appears with correct messaging → simulate capacity_changed → verify auto-retry
         done: false
 extra: {}
