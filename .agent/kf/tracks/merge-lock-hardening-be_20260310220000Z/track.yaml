@@ -1,0 +1,90 @@
+id: merge-lock-hardening-be_20260310220000Z
+title: "Harden merge lock manager — persist heartbeat, stale detection, lock status CLI"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Fix three backend lock safety issues: persist heartbeat state, add PID-based
+    stale detection to mkdir fallback, and create a shared kf-merge-lock helper
+    script. Also fixes reaper not persisting expired lock cleanup.
+  context: |
+    The merge lock coordinates multi-worktree merges to main. The HTTP mode
+    (via orchestrator) works well but has persistence gaps. The mkdir fallback
+    has no TTL or crash recovery — a crashed agent leaves the lock stuck forever,
+    requiring manual rm -rf. With multiple developer agents running simultaneously,
+    lock reliability is critical to avoid merge corruption or indefinite blocking.
+  codebase_analysis: |
+    Lock manager at backend/internal/adapter/lock/manager.go:
+    - Heartbeat() (line 123-138) does NOT call save() — crash loses TTL extension
+    - Release() (line 118) uses async save via goroutine — small data loss window
+    - reap() (line 171-182) deletes expired locks but doesn't persist the deletion
+    - save() (line 200-218) releases mutex before file write — acceptable trade-off
+
+    mkdir fallback (in skill SKILL.md):
+    - Uses POSIX atomic mkdir at $(git rev-parse --git-common-dir)/merge.lock
+    - Writes only timestamp + holder name to info file
+    - No PID, no TTL, no way to detect if holder is alive
+    - Stale lock requires manual cleanup (rm -rf)
+
+    No existing kf-merge-lock helper — lock protocol is 60+ lines of inline bash
+    duplicated in both kf-developer and kf-architect skills.
+
+    Tests at backend/internal/adapter/lock/manager_test.go cover acquire, release,
+    heartbeat, reaper, persistence, re-entrancy, and concurrency.
+  acceptance_criteria:
+    - "Heartbeat() calls save() after updating ExpiresAt — verified by test that kills manager after heartbeat and reloads"
+    - "reap() calls save() after deleting expired locks"
+    - "mkdir fallback writes PID to info file alongside timestamp and holder"
+    - "mkdir acquire checks if holder PID is alive (kill -0) — auto-cleans stale locks from dead processes"
+    - "New kf-merge-lock shell script at .agent/kf/bin/kf-merge-lock implements acquire, release, heartbeat, status subcommands"
+    - "kf-merge-lock status shows current lock holder, mode (HTTP/mkdir), TTL remaining, and PID"
+    - "kf-merge-lock acquire --timeout 0 fails immediately if lock held (non-blocking mode)"
+    - "kf-merge-lock acquire --timeout 300 polls/waits up to 300s (blocking mode)"
+    - "All existing lock manager tests pass"
+    - "New tests cover heartbeat persistence and stale PID cleanup"
+  out_of_scope: |
+    - Skill file updates (covered by merge-lock-skill-consolidation track)
+    - Distributed lock (multi-machine) — this is single-machine only
+    - Lock UI in dashboard
+  technical_notes: |
+    Backend changes are minimal — add m.save() calls in Heartbeat and reap.
+    The kf-merge-lock script is the bulk of the work: it encapsulates the
+    dual-mode (HTTP/mkdir) lock protocol into a single executable that both
+    skills can call. The mkdir enhancement stores PID in the info file and
+    checks liveness on acquire failure via kill -0.
+plan:
+  - phase: "Backend lock persistence fixes"
+    tasks:
+      - text: "Add save() call in Heartbeat() after updating ExpiresAt"
+        done: false
+      - text: "Add save() call in reap() after deleting expired locks (only when deletions occurred)"
+        done: false
+      - text: "Write test: heartbeat persistence survives manager restart"
+        done: false
+      - text: "Write test: reap persists lock removal"
+        done: false
+  - phase: "kf-merge-lock helper script"
+    tasks:
+      - text: "Create .agent/kf/bin/kf-merge-lock with subcommands: acquire, release, heartbeat, status"
+        done: false
+      - text: "Implement HTTP mode: acquire with configurable timeout, heartbeat loop, release, status via curl"
+        done: false
+      - text: "Implement mkdir fallback: PID+timestamp in info file, stale PID detection via kill -0, auto-cleanup"
+        done: false
+      - text: "Implement status subcommand: show holder, mode, TTL remaining, PID liveness"
+        done: false
+  - phase: "mkdir stale detection"
+    tasks:
+      - text: "On mkdir acquire failure, read info file, parse PID, check kill -0 $PID — if dead, remove stale lock and retry"
+        done: false
+      - text: "Add safety: only auto-clean if lock is older than 2x TTL (240s) AND PID is dead"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test to verify all lock manager tests pass"
+        done: false
+      - text: "Manual test: kf-merge-lock acquire/status/release cycle in both HTTP and mkdir modes"
+        done: false
+extra: {}
