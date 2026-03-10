@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import type { BoardState, BoardCard } from "../types/api";
+import type { BoardState, BoardCard, TrackDependency, TrackConflict } from "../types/api";
 import { useTourContextSafe } from "./tour/TourProvider";
 import { TOUR_STEPS } from "./tour/tourSteps";
+import { RelationshipOverlay } from "./RelationshipOverlay";
 import styles from "./KanbanBoard.module.css";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -26,13 +27,27 @@ interface KanbanBoardProps {
   projectSlug?: string;
   onMoveCard: (trackId: string, toColumn: string) => void;
   onDeleteTrack?: (trackId: string) => void;
+  dependencies?: Map<string, TrackDependency[]>;
+  conflicts?: Map<string, TrackConflict[]>;
 }
 
-export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack }: KanbanBoardProps) {
+export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dependencies, conflicts }: KanbanBoardProps) {
   const tour = useTourContextSafe();
   const [dragTrackId, setDragTrackId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [confirmReject, setConfirmReject] = useState<string | null>(null);
+  const [showRelations, setShowRelations] = useState(true);
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  const cardRefsMap = useRef(new Map<string, HTMLElement>());
+
+  const registerCardRef = useCallback((trackId: string, el: HTMLElement | null) => {
+    if (el) {
+      cardRefsMap.current.set(trackId, el);
+    } else {
+      cardRefsMap.current.delete(trackId);
+    }
+  }, []);
 
   const cardsByColumn = (col: string): BoardCard[] => {
     return Object.values(board.cards)
@@ -74,57 +89,73 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack }: K
     setDropTarget(null);
   };
 
+  const emptyMap = emptyMapRef.current;
+
   return (
-    <div className={styles.board} data-tour="kanban-board">
-      {board.columns.map((col) => {
-        const cards = cardsByColumn(col);
-        const isOver = dropTarget === col;
-        return (
-          <div
-            key={col}
-            className={`${styles.column} ${isOver ? styles.columnOver : ""}`}
-            onDragOver={(e) => handleDragOver(e, col)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, col)}
-          >
-            <div className={styles.columnHeader}>
-              <span
-                className={styles.columnDot}
-                style={{ background: COLUMN_COLORS[col] }}
-              />
-              <span className={styles.columnTitle}>
-                {COLUMN_LABELS[col] || col}
-              </span>
-              <span className={styles.columnCount}>{cards.length}</span>
-            </div>
-            <div className={styles.cards}>
-              {cards.map((card, idx) => (
-                <CardItem
-                  key={card.track_id}
-                  card={card}
-                  projectSlug={projectSlug}
-                  isDragging={dragTrackId === card.track_id}
-                  isBacklog={col === "backlog"}
-                  dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
-                  confirmingReject={confirmReject === card.track_id}
-                  onDragStart={() => handleDragStart(card.track_id)}
-                  onDragEnd={handleDragEnd}
-                  onApprove={() => onMoveCard(card.track_id, "approved")}
-                  onReject={() => setConfirmReject(card.track_id)}
-                  onConfirmReject={() => {
-                    onDeleteTrack?.(card.track_id);
-                    setConfirmReject(null);
-                  }}
-                  onCancelReject={() => setConfirmReject(null)}
+    <div className={styles.boardWrapper} style={{ position: "relative" }}>
+      <RelationshipOverlay
+        cardRefs={cardRefsMap.current}
+        containerRef={boardRef}
+        dependencies={dependencies ?? emptyMap}
+        conflicts={conflicts ?? emptyMap}
+        visible={showRelations}
+        onToggle={() => setShowRelations((v) => !v)}
+      />
+      <div className={styles.board} data-tour="kanban-board" ref={boardRef}>
+        {board.columns.map((col) => {
+          const cards = cardsByColumn(col);
+          const isOver = dropTarget === col;
+          return (
+            <div
+              key={col}
+              className={`${styles.column} ${isOver ? styles.columnOver : ""}`}
+              onDragOver={(e) => handleDragOver(e, col)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, col)}
+            >
+              <div className={styles.columnHeader}>
+                <span
+                  className={styles.columnDot}
+                  style={{ background: COLUMN_COLORS[col] }}
                 />
-              ))}
+                <span className={styles.columnTitle}>
+                  {COLUMN_LABELS[col] || col}
+                </span>
+                <span className={styles.columnCount}>{cards.length}</span>
+              </div>
+              <div className={styles.cards}>
+                {cards.map((card, idx) => (
+                  <CardItem
+                    key={card.track_id}
+                    card={card}
+                    projectSlug={projectSlug}
+                    isDragging={dragTrackId === card.track_id}
+                    isBacklog={col === "backlog"}
+                    dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
+                    confirmingReject={confirmReject === card.track_id}
+                    onDragStart={() => handleDragStart(card.track_id)}
+                    onDragEnd={handleDragEnd}
+                    onApprove={() => onMoveCard(card.track_id, "approved")}
+                    onReject={() => setConfirmReject(card.track_id)}
+                    onConfirmReject={() => {
+                      onDeleteTrack?.(card.track_id);
+                      setConfirmReject(null);
+                    }}
+                    onCancelReject={() => setConfirmReject(null)}
+                    cardRef={(el) => registerCardRef(card.track_id, el)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
+
+// Stable empty map to avoid re-renders
+const emptyMapRef = { current: new Map<string, never[]>() };
 
 interface CardItemProps {
   card: BoardCard;
@@ -133,6 +164,7 @@ interface CardItemProps {
   isBacklog: boolean;
   confirmingReject: boolean;
   dataTour?: string;
+  cardRef?: (el: HTMLDivElement | null) => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onApprove: () => void;
@@ -141,7 +173,7 @@ interface CardItemProps {
   onCancelReject: () => void;
 }
 
-function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, dataTour, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject }: CardItemProps) {
   return (
     <div
       className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isBacklog ? styles.cardBacklog : ""}`}
@@ -149,6 +181,8 @@ function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, 
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       data-tour={dataTour}
+      ref={cardRef}
+      data-track-id={card.track_id}
     >
       <div className={styles.cardHeader}>
         {card.type && <span className={styles.cardType}>{card.type}</span>}

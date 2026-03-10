@@ -1,9 +1,10 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
 import { useBoard } from "../hooks/useBoard";
+import { useTrackRelations } from "../hooks/useTrackRelations";
 import { useOriginSync } from "../hooks/useOriginSync";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher, FetchError } from "../api/fetcher";
@@ -30,6 +31,8 @@ export function ProjectPage() {
   const { tracks, loading: tracksLoading } = useTracks(slug);
   const { projects } = useProjects();
   const { board, loading: boardLoading, moveCard, syncBoard, syncing } = useBoard(slug);
+  const boardTrackIds = useMemo(() => board ? Object.keys(board.cards) : [], [board]);
+  const { dependencies, conflicts } = useTrackRelations(boardTrackIds, slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, push, pull, refresh: refreshSync, clearError: clearSyncError } = useOriginSync(slug);
   const project = projects.find((p) => p.slug === slug);
 
@@ -331,6 +334,8 @@ export function ProjectPage() {
             projectSlug={slug}
             onMoveCard={moveCard}
             onDeleteTrack={handleDeleteTrack}
+            dependencies={dependencies}
+            conflicts={conflicts}
           />
         )}
       </section>

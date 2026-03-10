@@ -1,3 +1,7 @@
+.boardWrapper {
+  position: relative;
+}
+
 .board {
   display: flex;
   gap: 12px;

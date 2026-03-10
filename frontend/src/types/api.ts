@@ -49,6 +49,22 @@ export interface Track {
   title: string;
   status: string;
   project?: string;
+  deps_count?: number;
+  deps_met?: number;
+  conflict_count?: number;
+}
+
+export interface TrackDependency {
+  id: string;
+  title?: string;
+  status: string;
+}
+
+export interface TrackConflict {
+  track_id: string;
+  track_title?: string;
+  risk: "high" | "medium" | "low";
+  note?: string;
 }
 
 export interface TrackDetail {
@@ -64,6 +80,8 @@ export interface TrackDetail {
   tasks_completed?: number;
   created_at?: string;
   updated_at?: string;
+  dependencies?: TrackDependency[];
+  conflicts?: TrackConflict[];
 }
 
 export interface Project {
