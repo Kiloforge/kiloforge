@@ -20,5 +20,6 @@ export const queryKeys = {
   projectDiff: (slug: string, branch: string) => ["projectDiff", slug, branch] as const,
   projectBranches: (slug: string) => ["projectBranches", slug] as const,
   projectMetadata: (slug: string) => ["projectMetadata", slug] as const,
+  projectSettings: (slug: string) => ["projectSettings", slug] as const,
   queue: ["queue"] as const,
 };

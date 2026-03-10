@@ -317,6 +317,16 @@ export interface TrackSummary {
   archived: number;
 }
 
+export interface ProjectSettings {
+  primary_branch: string;
+  enforce_dep_ordering: boolean;
+}
+
+export interface UpdateProjectSettingsRequest {
+  primary_branch?: string;
+  enforce_dep_ordering?: boolean;
+}
+
 export interface ProjectMetadata {
   product: string;
   product_guidelines?: string;
