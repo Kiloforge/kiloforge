@@ -12,11 +12,11 @@ import (
 
 // mockSDKClient implements sdkClientAPI for testing.
 type mockSDKClient struct {
-	connected    bool
-	responseCh   chan types.Message
-	queryCalled  bool
-	queryErr     error
-	closeCalled  bool
+	connected   bool
+	responseCh  chan types.Message
+	queryCalled bool
+	queryErr    error
+	closeCalled bool
 }
 
 func (m *mockSDKClient) Query(_ context.Context, _ string) error {
@@ -245,9 +245,9 @@ func TestSDKSession_Query_Disconnected(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when client is disconnected")
 	}
-	if !mock.queryCalled {
-		// Query should check IsConnected before calling client.Query.
-		// If it doesn't call client.Query, that's correct.
+	// Query should check IsConnected before calling client.Query.
+	if mock.queryCalled {
+		t.Error("client.Query should not be called when client is disconnected")
 	}
 
 	// querying should NOT be stuck true.
