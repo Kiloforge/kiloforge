@@ -21,7 +21,7 @@ import { ConsentDialog } from "./components/ConsentDialog";
 import { SkillsInstallDialog } from "./components/SkillsInstallDialog";
 import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
-import { TourOverlay, TourComplete } from "./components/tour/TourOverlay";
+import { TourOverlay } from "./components/tour/TourOverlay";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AgentDetailPage } from "./pages/AgentDetailPage";
@@ -187,7 +187,6 @@ export default function App() {
           onCancel={skillsPrompt.cancel}
         />
       )}
-      <TourComplete />
     </TourProvider>
   );
 }

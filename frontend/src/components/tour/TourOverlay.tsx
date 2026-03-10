@@ -187,17 +187,3 @@ function computeTooltipPosition(
   }
 }
 
-export function TourComplete() {
-  const { tourState, restartTour } = useTourContext();
-
-  if (tourState.status !== "completed") return null;
-
-  return (
-    <div className={styles.completeBanner}>
-      <span>You're all set! You've completed the Kiloforge tour.</span>
-      <button className={styles.restartLink} onClick={restartTour}>
-        Restart tour
-      </button>
-    </div>
-  );
-}
