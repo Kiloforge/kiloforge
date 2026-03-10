@@ -12,7 +12,6 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-agent-work-stash-be_20260310121626Z/test-coverage-be_20260311120004Z: {"risk":"medium","note":"Both modify backend/internal/core/testutil/mocks.go","added":"2026-03-10"}
 command-deck-fe_20260311100002Z/frontend-stability-fe_20260311120002Z: {"risk":"low","note":"Both touch App.tsx but different sections","added":"2026-03-10"}
 ui-accessibility-fe_20260310123912Z/ui-polish-states-fe_20260311150000Z: {"risk":"medium","note":"Both create ConfirmDialog and replace window.confirm() in AgentCard","added":"2026-03-10"}
 ui-polish-transitions-fe_20260311150001Z/ui-responsive-forms-fe_20260310123913Z: {"risk":"low","note":"Both touch form validation styling in AddProjectForm","added":"2026-03-10"}
