@@ -50,8 +50,8 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Println("Kiloforge Status")
-	fmt.Println("======================")
+	fmt.Println("Kiloforge Status — Kiloforger")
+	fmt.Println("================================")
 
 	if orchRunning {
 		fmt.Printf("Orchestrator: running (PID %d) on :%d\n", orchPID, cfg.OrchestratorPort)

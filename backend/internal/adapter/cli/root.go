@@ -15,8 +15,10 @@ var flagNoBrowser bool
 var rootCmd = &cobra.Command{
 	Use:   "kf",
 	Short: "Development orchestration forge with Claude Code agents",
-	Long: `kiloforge manages a local Gitea instance for conductor-based development
-and automated code review with Claude Code agents.
+	Long: `Kiloforge — the development forge for the Kiloforger.
+
+Manages a local Gitea instance for conductor-based development and automated
+code review with Claude Code agents.
 
 Initialize with 'kf init' to start the global Gitea server.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {

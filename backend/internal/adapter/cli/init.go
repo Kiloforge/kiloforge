@@ -86,7 +86,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Check idempotency: if Gitea is already running, report and exit.
 	client := gitea.NewClient(cfg.GiteaURL(), cfg.GiteaAdminUser, cfg.GiteaAdminPass)
 	if _, err := client.CheckVersion(ctx); err == nil {
-		fmt.Println("Kiloforge is already initialized.")
+		fmt.Println("Kiloforge is already initialized, Kiloforger.")
 		fmt.Printf("  Dashboard:  http://localhost:%d/\n", cfg.OrchestratorPort)
 		fmt.Printf("  Gitea:      http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
 		fmt.Printf("  Data:       %s\n", cfg.DataDir)
@@ -170,12 +170,12 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("Kiloforge is ready!")
+	fmt.Println("You're ready, Kiloforger!")
 	fmt.Printf("  Dashboard:  http://localhost:%d/\n", cfg.OrchestratorPort)
 	fmt.Printf("  Gitea:      http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
 	fmt.Printf("  Data:       %s\n", cfg.DataDir)
 	fmt.Println()
-	fmt.Println("Register a project with 'kf add <path>'.")
+	fmt.Println("Register your first project with 'kf add <path>'.")
 	fmt.Println()
 
 	// Start orchestrator daemon.
