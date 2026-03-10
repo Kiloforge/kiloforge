@@ -37,9 +37,6 @@ e2e-merge-lock_20260309194838Z:
   - e2e-infra-mock-agent_20260309194830Z
 
 header-title-link_20260310070000Z: []
-
-interactive-roles-be_20260310100000Z: []
-
 interactive-roles-fe_20260310100001Z:
   - interactive-roles-be_20260310100000Z
 

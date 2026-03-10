@@ -1,13 +1,11 @@
 id: interactive-roles-be_20260310100000Z
-title: "Add role-based interactive agent spawning API"
+title: Add role-based interactive agent spawning API
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Extend the interactive agent API to accept a role and optional prompt,
-    with per-role skill validation and role-to-skill dispatch.
+  summary: ">"
   context: |
     Currently POST /api/agents/interactive spawns a generic agent with no role
     or prompt. POST /api/tracks/generate hard-wires the /kf-architect skill.
@@ -16,36 +14,36 @@ spec:
     maps to a specific skill that the agent invokes.
   codebase_analysis: |
     Key files to modify:
-
+    
     1. backend/api/openapi.yaml — SpawnInteractiveAgent operation
        Current request body: { work_dir, model, project }
        Needs: role (string enum), prompt (optional string)
-
+    
     2. backend/internal/adapter/rest/api_handler.go
        - SpawnInteractiveAgent handler (line ~354): needs to accept role + prompt,
          dispatch to correct skill based on role
        - GenerateTracks handler (line ~1548): can be refactored to use the same
          role-based dispatch (role="architect", prompt=user input)
        - checkSkillsForRole helper (line ~1940): already supports role lookup
-
+    
     3. backend/internal/adapter/skills/checker.go
        - RequiredSkillsForRole() (line 62): currently maps "interactive" → kf-architect
        - Needs new mappings: "architect" → kf-architect, "product-advisor" → kf-product-advisor
        - The generic "interactive" role can remain as fallback (requires kf-architect)
-
+    
     4. backend/internal/core/domain/agent.go
        - Only has AgentRoleDeveloper and AgentRoleReviewer constants
        - Needs: AgentRoleArchitect, AgentRoleAdvisor (or per-advisor constants)
-
+    
     5. backend/internal/adapter/agent/spawner.go
        - SpawnInteractiveOpts already has Prompt and Ref fields
        - Ref should be set to the role name for tracking
        - The skill invocation prefix (e.g., "/kf-architect") should be prepended
          to the prompt based on the role, similar to how GenerateTracks does it
-
+    
     6. backend/internal/adapter/skills/checker_test.go
        - TestRequiredSkillsForRole needs new test cases
-
+    
     Role-to-skill mapping:
       "architect"        → kf-architect (skill: /kf-architect)
       "product-advisor"  → kf-product-advisor (skill: /kf-product-advisor)
@@ -74,41 +72,41 @@ spec:
     4. Build full prompt: "/{skill-name} {user prompt}" (if prompt provided)
     5. Spawn interactive agent with Ref=role, Prompt=fullPrompt
     6. Return agent info + ws_url as before
-
+    
     The GenerateTracks endpoint can be refactored to internally call the same
     dispatch with role="architect" and the track generation prompt wrapper.
     This avoids duplicating the spawn logic.
 plan:
-  - phase: "Schema & codegen"
+  - phase: Schema & codegen
     tasks:
-      - text: "Update OpenAPI schema: add optional 'role' (string enum) and 'prompt' (string) to SpawnInteractiveRequest"
-        done: false
-      - text: "Run make gen-api to regenerate Go server code"
-        done: false
-      - text: "Run make verify-codegen to confirm schema matches generated code"
-        done: false
-  - phase: "Domain & skill mapping"
+      - text: Update OpenAPI schema: add optional 'role' (string enum) and 'prompt' (string) to SpawnInteractiveRequest
+        done: true
+      - text: Run make gen-api to regenerate Go server code
+        done: true
+      - text: Run make verify-codegen to confirm schema matches generated code
+        done: true
+  - phase: Domain & skill mapping
     tasks:
-      - text: "Add AgentRoleArchitect and AgentRoleAdvisor constants to domain/agent.go"
-        done: false
-      - text: "Add 'architect' and 'product-advisor' role mappings to RequiredSkillsForRole() in checker.go"
-        done: false
-      - text: "Add role-to-skill-command mapping (role → slash command prefix) in api_handler or spawner"
-        done: false
-  - phase: "API handler updates"
+      - text: Add AgentRoleArchitect and AgentRoleAdvisor constants to domain/agent.go
+        done: true
+      - text: Add 'architect' and 'product-advisor' role mappings to RequiredSkillsForRole() in checker.go
+        done: true
+      - text: Add role-to-skill-command mapping (role → slash command prefix) in api_handler or spawner
+        done: true
+  - phase: API handler updates
     tasks:
-      - text: "Update SpawnInteractiveAgent handler to read role + prompt, dispatch to correct skill"
-        done: false
-      - text: "Refactor GenerateTracks to use the same role-based dispatch internally (role=architect)"
-        done: false
-      - text: "Ensure backwards compatibility: omitting role defaults to 'interactive' behavior"
-        done: false
-  - phase: "Testing & verification"
+      - text: Update SpawnInteractiveAgent handler to read role + prompt, dispatch to correct skill
+        done: true
+      - text: Refactor GenerateTracks to use the same role-based dispatch internally (role=architect)
+        done: true
+      - text: Ensure backwards compatibility: omitting role defaults to 'interactive' behavior
+        done: true
+  - phase: Testing & verification
     tasks:
-      - text: "Add tests for new RequiredSkillsForRole mappings in checker_test.go"
-        done: false
-      - text: "Add/update API handler tests for role-based spawning"
-        done: false
-      - text: "Run make test to verify all tests pass"
-        done: false
+      - text: Add tests for new RequiredSkillsForRole mappings in checker_test.go
+        done: true
+      - text: Add/update API handler tests for role-based spawning
+        done: true
+      - text: Run make test to verify all tests pass
+        done: true
 extra: {}
