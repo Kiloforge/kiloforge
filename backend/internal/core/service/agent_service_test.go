@@ -26,6 +26,9 @@ func (s *stubAgentStore) AddAgent(info domain.AgentInfo) error {
 func (s *stubAgentStore) Agents() []domain.AgentInfo                    { return s.agents }
 func (s *stubAgentStore) AgentsByStatus(_ ...string) []domain.AgentInfo { return nil }
 func (s *stubAgentStore) FindByRef(_ string) *domain.AgentInfo          { return nil }
+func (s *stubAgentStore) ListAgents(_ domain.PageOpts, _ ...string) (domain.Page[domain.AgentInfo], error) {
+	return domain.Page[domain.AgentInfo]{Items: s.agents, TotalCount: len(s.agents)}, nil
+}
 
 func (s *stubAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 	for i := range s.agents {
@@ -80,6 +83,9 @@ func (s *stubProjectStoreForAgent) FindByDir(_ string) (domain.Project, bool) {
 	return domain.Project{}, false
 }
 func (s *stubProjectStoreForAgent) Save() error { return nil }
+func (s *stubProjectStoreForAgent) ListPaginated(_ domain.PageOpts) (domain.Page[domain.Project], error) {
+	return domain.Page[domain.Project]{Items: s.projects, TotalCount: len(s.projects)}, nil
+}
 
 // stubPRTrackingStore implements port.PRTrackingStore for testing.
 type stubPRTrackingStore struct {

@@ -118,12 +118,23 @@ func (m *mockQueueStore) Clear() error {
 	return nil
 }
 
+func (m *mockQueueStore) ListPaginated(opts domain.PageOpts, _ string, _ ...string) (domain.Page[domain.QueueItem], error) {
+	items, err := m.List()
+	if err != nil {
+		return domain.Page[domain.QueueItem]{}, err
+	}
+	return domain.Page[domain.QueueItem]{Items: items, TotalCount: len(items)}, nil
+}
+
 type mockTrackReader struct {
 	tracks []port.TrackEntry
 }
 
 func (m *mockTrackReader) DiscoverTracks(_ string) ([]port.TrackEntry, error) {
 	return m.tracks, nil
+}
+func (m *mockTrackReader) DiscoverTracksPaginated(_ string, _ domain.PageOpts, _ ...string) (domain.Page[port.TrackEntry], error) {
+	return domain.Page[port.TrackEntry]{Items: m.tracks, TotalCount: len(m.tracks)}, nil
 }
 func (m *mockTrackReader) GetTrackDetail(_, _ string) (*port.TrackDetail, error) { return nil, nil }
 func (m *mockTrackReader) RemoveTrack(_, _ string) error                         { return nil }

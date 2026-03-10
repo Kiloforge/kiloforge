@@ -9,6 +9,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"kiloforge/internal/adapter/tracing"
+	"kiloforge/internal/core/domain"
 )
 
 // TraceStore persists trace and span data to SQLite.
@@ -262,6 +263,78 @@ func (s *TraceStore) FindBySessionID(sessionID string) []tracing.TraceSummary {
 	}
 	defer rows.Close()
 	return scanTraceSummaries(rows)
+}
+
+
+// ListTracesPaginated returns paginated trace summaries with optional filters.
+func (s *TraceStore) ListTracesPaginated(opts domain.PageOpts, trackID, sessionID string) (domain.Page[tracing.TraceSummary], error) {
+	opts.Normalize()
+
+	var whereParts []string
+	var args []any
+	if trackID != "" {
+		whereParts = append(whereParts, "track_id = ?")
+		args = append(args, trackID)
+	}
+	if sessionID != "" {
+		whereParts = append(whereParts, "session_id = ?")
+		args = append(args, sessionID)
+	}
+
+	// Count total.
+	countArgs := make([]any, len(args))
+	copy(countArgs, args)
+	countWhere := ""
+	if len(whereParts) > 0 {
+		countWhere = " WHERE " + whereParts[0]
+		for _, p := range whereParts[1:] {
+			countWhere += " AND " + p
+		}
+	}
+	var total int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM traces"+countWhere, countArgs...).Scan(&total); err != nil {
+		return domain.Page[tracing.TraceSummary]{}, fmt.Errorf("count traces: %w", err)
+	}
+
+	if opts.Cursor != "" {
+		cur := domain.DecodeCursor(opts.Cursor)
+		if cur.SortVal != "" {
+			whereParts = append(whereParts, "(started_at < ? OR (started_at = ? AND trace_id < ?))")
+			args = append(args, cur.SortVal, cur.SortVal, cur.ID)
+		}
+	}
+
+	where := ""
+	if len(whereParts) > 0 {
+		where = " WHERE " + whereParts[0]
+		for _, p := range whereParts[1:] {
+			where += " AND " + p
+		}
+	}
+
+	query := `SELECT trace_id, root_span_name, span_count, started_at, COALESCE(ended_at, started_at)
+	          FROM traces` + where + ` ORDER BY started_at DESC, trace_id DESC LIMIT ?`
+	args = append(args, opts.Limit+1)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return domain.Page[tracing.TraceSummary]{}, fmt.Errorf("list traces: %w", err)
+	}
+	defer rows.Close()
+
+	traces := scanTraceSummaries(rows)
+	var nextCursor string
+	if len(traces) > opts.Limit {
+		last := traces[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.StartTime.Format(time.RFC3339Nano), last.TraceID)
+		traces = traces[:opts.Limit]
+	}
+
+	return domain.Page[tracing.TraceSummary]{
+		Items:      traces,
+		NextCursor: nextCursor,
+		TotalCount: total,
+	}, nil
 }
 
 func scanTraceSummaries(rows *sql.Rows) []tracing.TraceSummary {

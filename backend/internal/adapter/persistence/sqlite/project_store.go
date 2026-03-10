@@ -121,6 +121,63 @@ func (s *ProjectStore) FindByDir(dir string) (domain.Project, bool) {
 	return p, true
 }
 
+
+// ListPaginated returns a paginated list of projects ordered by slug ASC.
+func (s *ProjectStore) ListPaginated(opts domain.PageOpts) (domain.Page[domain.Project], error) {
+	opts.Normalize()
+
+	var total int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM projects").Scan(&total); err != nil {
+		return domain.Page[domain.Project]{}, fmt.Errorf("count projects: %w", err)
+	}
+
+	var args []any
+	where := ""
+	if opts.Cursor != "" {
+		cur := domain.DecodeCursor(opts.Cursor)
+		if cur.SortVal != "" {
+			where = " WHERE slug > ?"
+			args = append(args, cur.SortVal)
+		}
+	}
+
+	query := `SELECT slug, repo_name, project_dir, origin_remote, ssh_key_path, registered_at, active
+	          FROM projects` + where + ` ORDER BY slug ASC LIMIT ?`
+	args = append(args, opts.Limit+1)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return domain.Page[domain.Project]{}, fmt.Errorf("list projects: %w", err)
+	}
+	defer rows.Close()
+
+	var projects []domain.Project
+	for rows.Next() {
+		var p domain.Project
+		var regAt string
+		var active int
+		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active); err != nil {
+			continue
+		}
+		p.RegisteredAt, _ = time.Parse(time.RFC3339, regAt)
+		p.Active = active != 0
+		projects = append(projects, p)
+	}
+
+	var nextCursor string
+	if len(projects) > opts.Limit {
+		last := projects[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.Slug, last.Slug)
+		projects = projects[:opts.Limit]
+	}
+
+	return domain.Page[domain.Project]{
+		Items:      projects,
+		NextCursor: nextCursor,
+		TotalCount: total,
+	}, nil
+}
+
 // Save is a no-op for SQLite — writes are immediate.
 func (s *ProjectStore) Save() error { return nil }
 

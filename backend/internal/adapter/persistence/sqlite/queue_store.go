@@ -177,3 +177,112 @@ func (s *QueueStore) Clear() error {
 	_, err := s.db.Exec(`DELETE FROM queue_items`)
 	return err
 }
+
+// ListPaginated returns a paginated list of queue items with optional filters.
+func (s *QueueStore) ListPaginated(opts domain.PageOpts, projectSlug string, statuses ...string) (domain.Page[domain.QueueItem], error) {
+	opts.Normalize()
+
+	var whereParts []string
+	var args []any
+	if projectSlug != "" {
+		whereParts = append(whereParts, "project_slug = ?")
+		args = append(args, projectSlug)
+	}
+	if len(statuses) > 0 {
+		ph := make([]string, len(statuses))
+		for i, st := range statuses {
+			ph[i] = "?"
+			args = append(args, st)
+		}
+		whereParts = append(whereParts, "status IN ("+strings.Join(ph, ",")+")")
+	}
+	if opts.Cursor != "" {
+		cur := domain.DecodeCursor(opts.Cursor)
+		if cur.SortVal != "" {
+			whereParts = append(whereParts, "(enqueued_at > ? OR (enqueued_at = ? AND track_id > ?))")
+			args = append(args, cur.SortVal, cur.SortVal, cur.ID)
+		}
+	}
+
+	where := ""
+	if len(whereParts) > 0 {
+		where = " WHERE " + strings.Join(whereParts, " AND ")
+	}
+
+	// Count total (without cursor).
+	var countParts []string
+	var countArgs []any
+	if projectSlug != "" {
+		countParts = append(countParts, "project_slug = ?")
+		countArgs = append(countArgs, projectSlug)
+	}
+	if len(statuses) > 0 {
+		ph := make([]string, len(statuses))
+		for i, st := range statuses {
+			ph[i] = "?"
+			countArgs = append(countArgs, st)
+		}
+		countParts = append(countParts, "status IN ("+strings.Join(ph, ",")+")")
+	}
+	countWhere := ""
+	if len(countParts) > 0 {
+		countWhere = " WHERE " + strings.Join(countParts, " AND ")
+	}
+	var total int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM queue_items"+countWhere, countArgs...).Scan(&total); err != nil {
+		return domain.Page[domain.QueueItem]{}, fmt.Errorf("count queue: %w", err)
+	}
+
+	query := `SELECT track_id, project_slug, status, agent_id, enqueued_at, assigned_at, completed_at
+	          FROM queue_items` + where + ` ORDER BY enqueued_at ASC, track_id ASC LIMIT ?`
+	args = append(args, opts.Limit+1)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return domain.Page[domain.QueueItem]{}, fmt.Errorf("list queue: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.QueueItem
+	for rows.Next() {
+		var item domain.QueueItem
+		var agentID, enqueuedAt, assignedAt, completedAt sql.NullString
+		if err := rows.Scan(&item.TrackID, &item.ProjectSlug, &item.Status,
+			&agentID, &enqueuedAt, &assignedAt, &completedAt); err != nil {
+			return domain.Page[domain.QueueItem]{}, err
+		}
+		item.AgentID = agentID.String
+		if enqueuedAt.Valid {
+			if t, err := time.Parse(time.RFC3339, enqueuedAt.String); err == nil {
+				item.EnqueuedAt = t
+			}
+		}
+		if assignedAt.Valid {
+			if t, err := time.Parse(time.RFC3339, assignedAt.String); err == nil {
+				item.AssignedAt = &t
+			}
+		}
+		if completedAt.Valid {
+			if t, err := time.Parse(time.RFC3339, completedAt.String); err == nil {
+				item.CompletedAt = &t
+			}
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return domain.Page[domain.QueueItem]{}, err
+	}
+
+	var nextCursor string
+	if len(items) > opts.Limit {
+		last := items[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.EnqueuedAt.UTC().Format(time.RFC3339), last.TrackID)
+		items = items[:opts.Limit]
+	}
+
+	return domain.Page[domain.QueueItem]{
+		Items:      items,
+		NextCursor: nextCursor,
+		TotalCount: total,
+	}, nil
+}

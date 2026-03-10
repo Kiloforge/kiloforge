@@ -2,8 +2,10 @@ package service
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
+	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/pkg/kf"
 )
@@ -57,6 +59,55 @@ func (r *TrackReaderImpl) DiscoverTracks(projectDir string) ([]port.TrackEntry, 
 		result[i] = entry
 	}
 	return result, nil
+}
+
+
+// DiscoverTracksPaginated returns a paginated, optionally status-filtered list of tracks.
+func (r *TrackReaderImpl) DiscoverTracksPaginated(projectDir string, opts domain.PageOpts, statuses ...string) (domain.Page[port.TrackEntry], error) {
+	opts.Normalize()
+
+	all, err := r.DiscoverTracks(projectDir)
+	if err != nil {
+		return domain.Page[port.TrackEntry]{}, err
+	}
+
+	if len(statuses) > 0 {
+		set := make(map[string]bool, len(statuses))
+		for _, s := range statuses {
+			set[s] = true
+		}
+		var filtered []port.TrackEntry
+		for _, e := range all {
+			if set[e.Status] {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
+	}
+
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	total := len(all)
+
+	if opts.Cursor != "" {
+		cur := domain.DecodeCursor(opts.Cursor)
+		if cur.SortVal != "" {
+			idx := sort.Search(len(all), func(i int) bool { return all[i].ID > cur.SortVal })
+			all = all[idx:]
+		}
+	}
+
+	var nextCursor string
+	if len(all) > opts.Limit {
+		last := all[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.ID, last.ID)
+		all = all[:opts.Limit]
+	}
+
+	return domain.Page[port.TrackEntry]{
+		Items:      all,
+		NextCursor: nextCursor,
+		TotalCount: total,
+	}, nil
 }
 
 func (r *TrackReaderImpl) GetTrackDetail(projectDir, trackID string) (*port.TrackDetail, error) {

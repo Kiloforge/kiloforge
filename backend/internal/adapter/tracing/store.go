@@ -1,10 +1,13 @@
 package tracing
 
 import (
+	"sort"
 	"sync"
 	"time"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"kiloforge/internal/core/domain"
 )
 
 // SpanSummary is a lightweight representation of a completed span for API queries.
@@ -213,6 +216,60 @@ func (s *Store) traceSummariesForIDs(traceIDs map[string]struct{}) []TraceSummar
 		result = append(result, *t)
 	}
 	return result
+}
+
+
+// ListTracesPaginated returns a paginated list of trace summaries from in-memory store.
+func (s *Store) ListTracesPaginated(opts domain.PageOpts, trackID, sessionID string) (domain.Page[TraceSummary], error) {
+	opts.Normalize()
+
+	var allTraces []TraceSummary
+	switch {
+	case trackID != "":
+		allTraces = s.FindByTrackID(trackID)
+	case sessionID != "":
+		allTraces = s.FindBySessionID(sessionID)
+	default:
+		allTraces = s.ListTraces()
+	}
+
+	sort.Slice(allTraces, func(i, j int) bool {
+		if allTraces[i].StartTime.Equal(allTraces[j].StartTime) {
+			return allTraces[i].TraceID > allTraces[j].TraceID
+		}
+		return allTraces[i].StartTime.After(allTraces[j].StartTime)
+	})
+
+	total := len(allTraces)
+
+	if opts.Cursor != "" {
+		cur := domain.DecodeCursor(opts.Cursor)
+		if cur.SortVal != "" {
+			curTime, _ := time.Parse(time.RFC3339Nano, cur.SortVal)
+			idx := 0
+			for i, t := range allTraces {
+				if t.StartTime.Before(curTime) || (t.StartTime.Equal(curTime) && t.TraceID < cur.ID) {
+					idx = i
+					break
+				}
+				idx = i + 1
+			}
+			allTraces = allTraces[idx:]
+		}
+	}
+
+	var nextCursor string
+	if len(allTraces) > opts.Limit {
+		last := allTraces[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.StartTime.Format(time.RFC3339Nano), last.TraceID)
+		allTraces = allTraces[:opts.Limit]
+	}
+
+	return domain.Page[TraceSummary]{
+		Items:      allTraces,
+		NextCursor: nextCursor,
+		TotalCount: total,
+	}, nil
 }
 
 // SeedSpan inserts a pre-built SpanSummary directly (bypassing OTel).

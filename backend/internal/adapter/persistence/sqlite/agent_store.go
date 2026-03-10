@@ -169,6 +169,81 @@ func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	return scanAgents(rows)
 }
 
+
+// ListAgents returns a paginated list of agents, optionally filtered by statuses.
+func (s *AgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domain.Page[domain.AgentInfo], error) {
+	opts.Normalize()
+
+	var whereParts []string
+	var args []any
+	if len(statuses) > 0 {
+		placeholders := make([]string, len(statuses))
+		for i, st := range statuses {
+			placeholders[i] = "?"
+			args = append(args, st)
+		}
+		whereParts = append(whereParts, "status IN ("+strings.Join(placeholders, ",")+")") 
+	}
+
+	if opts.Cursor != "" {
+		cur := domain.DecodeCursor(opts.Cursor)
+		if cur.SortVal != "" {
+			whereParts = append(whereParts, "(started_at < ? OR (started_at = ? AND id < ?))")
+			args = append(args, cur.SortVal, cur.SortVal, cur.ID)
+		}
+	}
+
+	where := ""
+	if len(whereParts) > 0 {
+		where = " WHERE " + strings.Join(whereParts, " AND ")
+	}
+
+	// Count total (without cursor filter).
+	var countParts []string
+	var countArgs []any
+	if len(statuses) > 0 {
+		placeholders := make([]string, len(statuses))
+		for i, st := range statuses {
+			placeholders[i] = "?"
+			countArgs = append(countArgs, st)
+		}
+		countParts = append(countParts, "status IN ("+strings.Join(placeholders, ",")+")")
+	}
+	countWhere := ""
+	if len(countParts) > 0 {
+		countWhere = " WHERE " + strings.Join(countParts, " AND ")
+	}
+	var total int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM agents"+countWhere, countArgs...).Scan(&total); err != nil {
+		return domain.Page[domain.AgentInfo]{}, fmt.Errorf("count agents: %w", err)
+	}
+
+	query := `SELECT id, name, role, ref, status, session_id, pid, worktree_dir, log_file,
+	          started_at, updated_at, suspended_at, finished_at, shutdown_reason, resume_error, model
+	          FROM agents` + where + ` ORDER BY started_at DESC, id DESC LIMIT ?`
+	args = append(args, opts.Limit+1)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return domain.Page[domain.AgentInfo]{}, fmt.Errorf("list agents: %w", err)
+	}
+	defer rows.Close()
+
+	agents := scanAgents(rows)
+	var nextCursor string
+	if len(agents) > opts.Limit {
+		last := agents[opts.Limit-1]
+		nextCursor = domain.EncodeCursor(last.StartedAt.Format(time.RFC3339), last.ID)
+		agents = agents[:opts.Limit]
+	}
+
+	return domain.Page[domain.AgentInfo]{
+		Items:      agents,
+		NextCursor: nextCursor,
+		TotalCount: total,
+	}, nil
+}
+
 func scanAgents(rows *sql.Rows) []domain.AgentInfo {
 	var agents []domain.AgentInfo
 	for rows.Next() {

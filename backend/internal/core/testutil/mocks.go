@@ -117,6 +117,32 @@ func (m *MockAgentStore) FindByRef(ref string) *domain.AgentInfo {
 	return best
 }
 
+
+func (m *MockAgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domain.Page[domain.AgentInfo], error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	opts.Normalize()
+	var filtered []domain.AgentInfo
+	if len(statuses) > 0 {
+		set := make(map[string]bool, len(statuses))
+		for _, s := range statuses {
+			set[s] = true
+		}
+		for _, a := range m.AgentData {
+			if set[a.Status] {
+				filtered = append(filtered, a)
+			}
+		}
+	} else {
+		filtered = append(filtered, m.AgentData...)
+	}
+	total := len(filtered)
+	if len(filtered) > opts.Limit {
+		filtered = filtered[:opts.Limit]
+	}
+	return domain.Page[domain.AgentInfo]{Items: filtered, TotalCount: total}, nil
+}
+
 func (m *MockAgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	m.mu.Lock()
 	defer m.mu.Unlock()
