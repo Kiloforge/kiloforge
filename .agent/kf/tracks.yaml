@@ -146,7 +146,7 @@ model-warning-banner_20260310072515Z: {"title":"One-time model compatibility war
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-onboarding-ux-fe_20260310073721Z: {"title":"Progressive onboarding UX — ease beginners in, empower power users","status":"in-progress","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+onboarding-ux-fe_20260310073721Z: {"title":"Progressive onboarding UX — ease beginners in, empower power users","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
