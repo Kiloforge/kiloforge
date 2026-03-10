@@ -3915,6 +3915,7 @@ type SpawnInteractiveAgentResponse struct {
 	JSON201      *Agent
 	JSON401      *ErrorResponse
 	JSON403      *ErrorResponse
+	JSON409      *ErrorResponse
 	JSON412      *SkillsMissingResponse
 	JSON428      *SetupRequiredResponse
 	JSON429      *SwarmCapacityResponse
@@ -5939,6 +5940,13 @@ func ParseSpawnInteractiveAgentResponse(rsp *http.Response) (*SpawnInteractiveAg
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
 		var dest SkillsMissingResponse

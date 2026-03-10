@@ -3054,6 +3054,15 @@ func (response SpawnInteractiveAgent403JSONResponse) VisitSpawnInteractiveAgentR
 	return json.NewEncoder(w).Encode(response)
 }
 
+type SpawnInteractiveAgent409JSONResponse ErrorResponse
+
+func (response SpawnInteractiveAgent409JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type SpawnInteractiveAgent412JSONResponse SkillsMissingResponse
 
 func (response SpawnInteractiveAgent412JSONResponse) VisitSpawnInteractiveAgentResponse(w http.ResponseWriter) error {

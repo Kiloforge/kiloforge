@@ -999,6 +999,104 @@ func TestSpawnInteractiveAgent_NilSpawner(t *testing.T) {
 	}
 }
 
+// --- setupAdvisorProject Tests ---
+
+func TestSetupAdvisorProject_CreatesProjectAndReturnsDir(t *testing.T) {
+	t.Parallel()
+	projectDir := t.TempDir()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		ProjectMgr: &stubProjectManager{
+			createResult: &domain.AddProjectResult{
+				Project: domain.Project{
+					Slug:       "my-app",
+					ProjectDir: projectDir,
+				},
+			},
+		},
+	})
+
+	dir, errResp := h.setupAdvisorProject(context.Background(), "my-app")
+	if errResp != nil {
+		t.Fatalf("expected no error response, got %T", errResp)
+	}
+	if dir != projectDir {
+		t.Errorf("expected dir %s, got %s", projectDir, dir)
+	}
+}
+
+func TestSetupAdvisorProject_ExistingProjectReturns409(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		ProjectMgr: &stubProjectManager{
+			createErr: fmt.Errorf("project my-app: %w", domain.ErrProjectExists),
+		},
+	})
+
+	dir, errResp := h.setupAdvisorProject(context.Background(), "my-app")
+	if dir != "" {
+		t.Errorf("expected empty dir, got %s", dir)
+	}
+	if errResp == nil {
+		t.Fatal("expected error response")
+	}
+	if _, ok := errResp.(gen.SpawnInteractiveAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409, got %T", errResp)
+	}
+}
+
+func TestSetupAdvisorProject_CreateFailureReturns500(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		ProjectMgr: &stubProjectManager{
+			createErr: fmt.Errorf("disk full"),
+		},
+	})
+
+	dir, errResp := h.setupAdvisorProject(context.Background(), "my-app")
+	if dir != "" {
+		t.Errorf("expected empty dir, got %s", dir)
+	}
+	if errResp == nil {
+		t.Fatal("expected error response")
+	}
+	if _, ok := errResp.(gen.SpawnInteractiveAgent500JSONResponse); !ok {
+		t.Fatalf("expected 500, got %T", errResp)
+	}
+}
+
+func TestSetupAdvisorProject_NilProjectMgrReturns500(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+	})
+
+	dir, errResp := h.setupAdvisorProject(context.Background(), "my-app")
+	if dir != "" {
+		t.Errorf("expected empty dir, got %s", dir)
+	}
+	if errResp == nil {
+		t.Fatal("expected error response")
+	}
+	if _, ok := errResp.(gen.SpawnInteractiveAgent500JSONResponse); !ok {
+		t.Fatalf("expected 500, got %T", errResp)
+	}
+}
+
 // --- GetProjectSetupStatus Tests ---
 
 func TestGetProjectSetupStatus_ProjectNotFound(t *testing.T) {
