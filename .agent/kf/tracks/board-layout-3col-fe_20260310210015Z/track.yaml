@@ -1,0 +1,148 @@
+id: board-layout-3col-fe_20260310210015Z
+title: Remove Done column and restructure board to 3-column layout with completion animation
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Remove the "Done" column from the kanban board, restructure the layout so
+    Backlog and Approved each get ~equal space with In Progress as a narrower
+    single column, and add a celebratory completion animation when cards leave
+    in_progress. Completed tracks become accessible via the track list only.
+  context: |
+    The current board has 4 equal-width columns: Backlog, Approved, In Progress,
+    Done. The user finds that the Done column serves no purpose — once work is
+    complete, it doesn't need to sit on the board. The desired layout is:
+
+    - Backlog and Approved: ~equal space, roughly 40-45% each
+    - In Progress: narrower single column, roughly 10-20%
+    - Done: removed from board entirely
+
+    When a card transitions from in_progress to done, it should play a fancy
+    "completion" animation (e.g., confetti burst, scale+fade, checkmark flash)
+    before disappearing from the board. Completed tracks remain accessible via
+    the track list (TrackList component / tracks page).
+
+    The backend still tracks the "done" column in BoardColumns — this is a
+    frontend-only change that filters done cards out of the board view.
+  codebase_analysis: |
+    **KanbanBoard.tsx** (`frontend/src/components/KanbanBoard.tsx`):
+    - Renders `board.columns` array from API (currently 4 columns)
+    - Uses `COLUMN_LABELS` and `COLUMN_COLORS` maps for column metadata
+    - Cards sorted by position within columns via `cardsByColumn()`
+    - Drag-and-drop with `clampForwardMove()` utility
+
+    **KanbanBoard.module.css** (`frontend/src/components/KanbanBoard.module.css`):
+    - `.board` is flexbox with `gap: 12px`, each `.column` has `flex: 1`
+    - Mobile: tab bar with column switching, `display: none` on inactive
+    - Existing animations: `clampPulse` (scale + yellow glow on clamped moves)
+
+    **board.go** (`backend/internal/core/domain/board.go`):
+    - `BoardColumns = ["backlog", "approved", "in_progress", "done"]`
+    - `ColumnOrder` maps columns to ordinal positions
+    - `ClampForwardMove()` prevents manual moves beyond approved
+    - Backend still needs done column for lifecycle transitions — no BE changes
+
+    **board.ts** (`frontend/src/utils/board.ts`):
+    - Frontend `clampForwardMove()` mirrors backend logic
+    - References column array positions
+
+    **tourDemoData.ts** (`frontend/src/components/tour/tourDemoData.ts`):
+    - `DEMO_BOARD` has 4 columns including "done" with a demo card
+    - `DEMO_TRACKS` includes a "complete" status track
+    - Tour step "board-explanation" mentions "Done" in its content
+
+    **useBoard.ts** (`frontend/src/hooks/useBoard.ts`):
+    - Fetches `/api/board/{project}` and returns full BoardState
+    - Optimistic updates on card moves
+    - SSE handling for real-time board changes
+
+    **RelationshipOverlay.tsx**:
+    - SVG overlay drawing dependency/conflict lines between cards
+    - Only draws lines for visible cards — will auto-adapt when done cards are hidden
+  acceptance_criteria:
+    - Board renders only 3 columns — Backlog, Approved, In Progress
+    - Backlog and Approved columns each take ~equal space (~40-45% width)
+    - In Progress column is narrower (~15-20% width)
+    - Cards in "done" status are filtered out of the board view
+    - When a card transitions to done (via SSE or optimistic update), a completion animation plays before the card disappears
+    - Completion animation is visually celebratory (scale + glow + checkmark or similar)
+    - Mobile tab bar shows 3 tabs instead of 4
+    - Tour demo data updated to remove done column and card
+    - Tour step "board-explanation" content updated to reflect 3-column layout
+    - Existing drag-and-drop behavior preserved for 3 columns
+    - clampForwardMove utility works correctly with 3 visible columns
+    - RelationshipOverlay adapts to 3-column layout (no changes needed — it uses card refs)
+    - All existing KanbanBoard tests updated/passing
+    - E2E board tests updated for 3-column layout
+  out_of_scope: |
+    - Backend changes to BoardColumns or board API
+    - Track list / track detail page changes (done tracks already visible there)
+    - Mobile-specific completion animations (standard animation is fine)
+    - Confetti particle effects (keep animation tasteful and performant)
+  technical_notes: |
+    **Approach:**
+
+    1. **Filter done cards in KanbanBoard**: Before rendering columns, filter
+       `board.columns` to exclude "done". Cards with `column === "done"` are
+       not rendered in the board.
+
+    2. **Detect completion transitions**: Track a `completingCards` set in state.
+       When a card moves from `in_progress` to `done` (detected via SSE update
+       or optimistic update), add it to `completingCards` temporarily. Render
+       it in the in_progress column with the completion animation class. After
+       animation completes (~1s), remove from `completingCards` and it
+       disappears.
+
+    3. **CSS layout change**: Instead of `flex: 1` for all columns, use:
+       - Backlog: `flex: 3`
+       - Approved: `flex: 3`
+       - In Progress: `flex: 1` (or `flex: 1.5`)
+       This gives a roughly 3:3:1 ratio.
+
+    4. **Completion animation CSS**: New keyframe `completionCelebrate`:
+       - 0%: normal state
+       - 30%: scale(1.05) + green glow + checkmark icon overlay
+       - 70%: scale(1.05) + opacity fading
+       - 100%: scale(0.95) + opacity(0) + translateY(-10px)
+       Duration: ~800ms ease-out.
+
+    5. **Tour updates**: Remove `db-schema_demo` card from DEMO_BOARD,
+       update columns array to 3, update board-explanation step content.
+plan:
+  - phase: Board column filtering and layout
+    tasks:
+      - text: "Filter board.columns to exclude 'done' in KanbanBoard.tsx — only render backlog, approved, in_progress"
+        done: false
+      - text: "Update CSS flex ratios — backlog and approved get flex:3, in_progress gets flex:1.5"
+        done: false
+      - text: "Update COLUMN_LABELS and COLUMN_COLORS to remove 'done' entries (or leave as dead code — prefer removal)"
+        done: false
+      - text: "Update mobile tab bar to show 3 tabs"
+        done: false
+      - text: "Write tests: board renders 3 columns, done cards are hidden"
+        done: false
+  - phase: Completion animation
+    tasks:
+      - text: "Add completingCards state tracking — detect when cards transition from in_progress to done"
+        done: false
+      - text: "Render completing cards temporarily in in_progress column with animation class"
+        done: false
+      - text: "Add CSS @keyframes completionCelebrate — scale, green glow, fade out"
+        done: false
+      - text: "Auto-remove completing cards from view after animation duration (setTimeout ~1s)"
+        done: false
+      - text: "Write tests: completion animation triggers on card move to done, card disappears after animation"
+        done: false
+  - phase: Tour and test updates
+    tasks:
+      - text: "Update DEMO_BOARD in tourDemoData.ts — remove done column and db-schema_demo card"
+        done: false
+      - text: "Update board-explanation step content to describe 3-column flow without Done"
+        done: false
+      - text: "Update existing KanbanBoard unit tests for 3-column assertions"
+        done: false
+      - text: "Run make test and make build — all pass"
+        done: false
+extra: {}
