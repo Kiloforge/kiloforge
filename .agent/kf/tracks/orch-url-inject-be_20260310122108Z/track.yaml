@@ -1,11 +1,11 @@
 id: orch-url-inject-be_20260310122108Z
-title: "Inject KF_ORCH_URL into spawned agent environments"
+title: Inject KF_ORCH_URL into spawned agent environments
 type: chore
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: "The orchestrator knows its port but never passes KF_ORCH_URL to spawned agents. Add it to SDK WithEnvVar() calls so shell scripts resolve the correct orchestrator address."
+  summary: The orchestrator knows its port but never passes KF_ORCH_URL to spawned agents. Add it to SDK WithEnvVar() calls so shell scripts resolve the correct orchestrator address.
   context: |
     The orchestrator listens on a configurable port (default 4001, set via KF_ORCH_PORT env,
     --port flag, or JSON config). Shell scripts like kf-merge-lock and kf-track default to
@@ -35,27 +35,27 @@ spec:
     The SDK's WithEnvVar merges into the child process environment. Adding it to the
     ClaudeAgentOptions in sdk_client.go ensures every spawned Claude process inherits
     the correct URL. The spawner already has access to cfg.OrchestratorPort.
-
+    
     Approach: Add an orchURL string parameter to NewSDKSession, NewSDKSessionWithResume,
     and QueryOneShot. Each function calls opts.WithEnvVar("KF_ORCH_URL", orchURL).
     The spawner computes the URL once and passes it through.
 plan:
-  - phase: "Core — SDK session env injection"
+  - phase: Core — SDK session env injection
     tasks:
-      - text: "Add orchURL parameter to NewSDKSession and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)"
-        done: false
-      - text: "Add orchURL parameter to NewSDKSessionWithResume and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)"
-        done: false
-      - text: "Add orchURL parameter to QueryOneShot and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)"
-        done: false
-  - phase: "Integration — spawner wiring"
+      - text: Add orchURL parameter to NewSDKSession and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)
+        done: true
+      - text: Add orchURL parameter to NewSDKSessionWithResume and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)
+        done: true
+      - text: Add orchURL parameter to QueryOneShot and call opts.WithEnvVar(\"KF_ORCH_URL\", orchURL)
+        done: true
+  - phase: Integration — spawner wiring
     tasks:
-      - text: "Add helper method or local var in spawner to compute orchURL from cfg.OrchestratorPort"
-        done: false
-      - text: "Update all call sites (SpawnDeveloper, SpawnReviewer, SpawnInteractive, ResumeAgent) to pass orchURL"
-        done: false
-  - phase: "Verification"
+      - text: Add helper method or local var in spawner to compute orchURL from cfg.OrchestratorPort
+        done: true
+      - text: Update all call sites (SpawnDeveloper, SpawnReviewer, SpawnInteractive, ResumeAgent) to pass orchURL
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test and verify all existing tests pass with the new parameter"
-        done: false
+      - text: Run make test and verify all existing tests pass with the new parameter
+        done: true
 extra: {}
