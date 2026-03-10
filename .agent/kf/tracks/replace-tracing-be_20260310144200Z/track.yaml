@@ -1,0 +1,77 @@
+id: replace-tracing-be_20260310144200Z
+title: Add reliability events and trace spans for agent replacement lifecycle
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Emit reliability event on agent replacement capturing the old→new agent
+    transition, and add trace span attributes linking replaced agents to their
+    successors for full lifecycle observability.
+  context: |
+    The POST /api/agents/{id}/replace endpoint was added in agent-recovery-be
+    but has no tracing or reliability instrumentation. When a resume-failed agent
+    is replaced, there is no record of the transition — the old agent just stops
+    and a new one appears with no linkage. This makes it impossible to trace the
+    full lifecycle of a track's agent chain (original → suspended → resume-failed
+    → replaced → new agent running).
+  codebase_analysis: |
+    Files to modify:
+    - backend/internal/core/domain/reliability.go
+      - Add RelEventAgentReplaced constant (pattern: existing constants at lines 8-14)
+    - backend/internal/adapter/rest/api_handler.go (ReplaceAgent handler, ~line 712)
+      - Handler already has h.reliabilitySvc available
+      - Record event after successful spawn with old/new agent IDs
+    - backend/internal/adapter/agent/spawner.go
+      - SpawnDeveloperOpts needs optional ReplacesAgentID field
+      - SpawnDeveloper/SpawnReviewer trace spans should include "replaces" attribute
+    - backend/internal/adapter/rest/api_handler_extra_test.go
+      - Existing ReplaceAgent tests to extend with reliability assertions
+
+    Existing patterns:
+    - Reliability events: RecordEvent(eventType, severity, agentID, scope, detail)
+    - Trace spans: port.StringAttr("agent.id", id) pattern in spawner.go
+    - reliabilitySvc is already wired into APIHandler via opts
+  acceptance_criteria:
+    - RelEventAgentReplaced constant exists in domain/reliability.go
+    - ReplaceAgent handler records a reliability event on successful replacement
+    - Event detail includes old_agent_id, new_agent_id, role, ref, old_status
+    - New agent's trace span includes "agent.replaces" attribute with old agent ID
+    - All existing tests pass, new tests cover the reliability event recording
+  out_of_scope: |
+    - Frontend changes (covered by agent-recovery-fe track)
+    - Modifying the reliability dashboard/UI to display replacement events
+    - Adding trace span links (OpenTelemetry SpanLink) — simple attributes suffice
+  technical_notes: |
+    Approach:
+    1. Add RelEventAgentReplaced = "agent_replaced" constant
+    2. In ReplaceAgent handler, after successful spawn, call
+       h.reliabilitySvc.RecordEvent() with detail map containing both agent IDs
+    3. Add ReplacesAgentID to SpawnDeveloperOpts; pass it through to trace span
+       as port.StringAttr("agent.replaces", oldID)
+    4. For SpawnReviewer, add an optional replacesID parameter or use a wrapper
+plan:
+  - phase: Reliability event
+    tasks:
+      - text: Add RelEventAgentReplaced constant to domain/reliability.go
+        done: false
+      - text: Write test — ReplaceAgent handler records reliability event with old/new agent IDs on success
+        done: false
+      - text: Wire reliabilitySvc.RecordEvent into ReplaceAgent handler after successful spawn
+        done: false
+      - text: Include detail fields — old_agent_id, new_agent_id, role, ref, old_status, model
+        done: false
+  - phase: Trace span linkage
+    tasks:
+      - text: Add ReplacesAgentID field to SpawnDeveloperOpts and pass as trace span attribute
+        done: false
+      - text: Update ReplaceAgent handler to pass old agent ID through spawn opts
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run make test — all existing + new tests pass
+        done: false
+      - text: Run make lint — no new lint issues
+        done: false
+extra: {}
