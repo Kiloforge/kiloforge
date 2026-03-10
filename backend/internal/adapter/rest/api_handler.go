@@ -41,6 +41,8 @@ type QuotaReader interface {
 	GetTotalUsage() agent.TotalUsage
 	IsRateLimited() bool
 	RetryAfter() time.Duration
+	TokensPerMin(window time.Duration) float64
+	CostPerHour(window time.Duration) float64
 }
 
 // ProjectLister provides read access to registered projects for API handlers.
@@ -232,11 +234,16 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
-	return gen.GetConfig200JSONResponse{
+	resp := gen.GetConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
 		AnalyticsEnabled: &analyticsEnabled,
-	}, nil
+	}
+	if h.cfg.BudgetUSD > 0 {
+		b := h.cfg.BudgetUSD
+		resp.BudgetUsd = &b
+	}
+	return resp, nil
 }
 
 // UpdateConfig implements gen.StrictServerInterface.
@@ -259,6 +266,9 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		v := *req.Body.AnalyticsEnabled
 		h.cfg.AnalyticsEnabled = &v
 	}
+	if req.Body.BudgetUsd != nil {
+		h.cfg.BudgetUSD = *req.Body.BudgetUsd
+	}
 
 	if err := h.cfg.Save(); err != nil {
 		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
@@ -270,11 +280,16 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
-	return gen.UpdateConfig200JSONResponse{
+	resp := gen.UpdateConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
 		AnalyticsEnabled: &analyticsEnabled,
-	}, nil
+	}
+	if h.cfg.BudgetUSD > 0 {
+		b := h.cfg.BudgetUSD
+		resp.BudgetUsd = &b
+	}
+	return resp, nil
 }
 
 // GetAgentPermissionsConsent implements gen.StrictServerInterface.
@@ -673,6 +688,27 @@ func (h *APIHandler) GetQuota(_ context.Context, _ gen.GetQuotaRequestObject) (g
 	}
 	if h.quota.IsRateLimited() {
 		resp.RetryAfterSeconds = intPtr(int(h.quota.RetryAfter().Seconds()))
+	}
+
+	// Rate metrics.
+	tokensPerMin := h.quota.TokensPerMin(5 * time.Minute)
+	costPerHour := h.quota.CostPerHour(30 * time.Minute)
+	resp.RateTokensPerMin = &tokensPerMin
+	resp.RateCostPerHour = &costPerHour
+
+	// Budget metrics.
+	if h.cfg != nil && h.cfg.BudgetUSD > 0 {
+		budget := h.cfg.BudgetUSD
+		resp.BudgetUsd = &budget
+		pct := total.TotalCostUSD / budget * 100.0
+		resp.BudgetUsedPct = &pct
+		if costPerHour > 0 {
+			remaining := budget - total.TotalCostUSD
+			if remaining > 0 {
+				ttb := remaining / costPerHour * 60.0
+				resp.TimeToBudgetMins = &ttb
+			}
+		}
 	}
 
 	// Per-agent breakdown.

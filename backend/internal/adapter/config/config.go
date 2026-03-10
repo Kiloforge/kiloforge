@@ -30,6 +30,7 @@ type Config struct {
 	AgentMaxDuration  string  `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled  *bool   `json:"analytics_enabled,omitempty"`
 	PostHogAPIKey     string  `json:"posthog_api_key,omitempty"`
+	BudgetUSD         float64 `json:"budget_usd,omitempty"`
 }
 
 // GetMaxSwarmSize returns the configured max swarm size, defaulting to 3.

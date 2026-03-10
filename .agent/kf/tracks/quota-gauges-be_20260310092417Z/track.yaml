@@ -74,13 +74,13 @@ plan:
   - phase: Budget Config & API
     tasks:
       - text: Add budget_usd field to config.Config with default 0, wire through Resolve()
-        done: false
+        done: true
       - text: Extend OpenAPI QuotaInfo schema with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins and regenerate
-        done: false
+        done: true
       - text: Update GetQuota handler to populate new fields from QuotaTracker and config
-        done: false
+        done: true
       - text: Write integration tests for /api/quota with and without budget set
-        done: false
+        done: true
   - phase: SSE & Verification
     tasks:
       - text: Update watcher.go quotaResponse() and change detection to include rate and budget fields

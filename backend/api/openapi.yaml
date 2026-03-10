@@ -1703,6 +1703,10 @@ components:
         agent_max_duration:
           type: string
           description: "Max duration for non-interactive agents (Go duration string, e.g. \"2h\", \"30m\"). Empty or \"0s\" disables timeout."
+        budget_usd:
+          type: number
+          format: double
+          description: "Global spend budget in USD. 0 means unlimited (default)."
 
     UpdateConfigRequest:
       type: object
@@ -1714,6 +1718,10 @@ components:
         agent_max_duration:
           type: string
           description: "Max duration for non-interactive agents (Go duration string, e.g. \"2h\", \"30m\"). \"0s\" disables timeout."
+        budget_usd:
+          type: number
+          format: double
+          description: "Global spend budget in USD. 0 means unlimited."
 
     PreflightResponse:
       type: object
@@ -1954,6 +1962,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QuotaAgentUsage"
+        budget_usd:
+          type: number
+          format: double
+          description: "Configured budget in USD. 0 or omitted means unlimited."
+        budget_used_pct:
+          type: number
+          format: double
+          description: "Percentage of budget consumed (0-100+). Omitted when budget is 0."
+        rate_tokens_per_min:
+          type: number
+          format: double
+          description: "Token consumption rate (input+output) per minute over a 5-minute window."
+        rate_cost_per_hour:
+          type: number
+          format: double
+          description: "Cost rate in USD/hour over a 30-minute window."
+        time_to_budget_mins:
+          type: number
+          format: double
+          description: "Estimated minutes until budget exhaustion at current rate. Omitted when budget is 0 or rate is 0."
 
     QuotaAgentUsage:
       type: object

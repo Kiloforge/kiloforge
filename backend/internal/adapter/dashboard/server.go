@@ -25,6 +25,8 @@ type QuotaReader interface {
 	GetTotalUsage() agent.TotalUsage
 	IsRateLimited() bool
 	RetryAfter() time.Duration
+	TokensPerMin(window time.Duration) float64
+	CostPerHour(window time.Duration) float64
 }
 
 // ProjectLister provides read access to registered projects.

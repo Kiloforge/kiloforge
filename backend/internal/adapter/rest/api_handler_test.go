@@ -64,9 +64,11 @@ type stubQuotaReader struct {
 	rateLimited bool
 }
 
-func (s *stubQuotaReader) GetTotalUsage() agent.TotalUsage { return s.total }
-func (s *stubQuotaReader) IsRateLimited() bool             { return s.rateLimited }
-func (s *stubQuotaReader) RetryAfter() time.Duration       { return 0 }
+func (s *stubQuotaReader) GetTotalUsage() agent.TotalUsage         { return s.total }
+func (s *stubQuotaReader) IsRateLimited() bool                     { return s.rateLimited }
+func (s *stubQuotaReader) RetryAfter() time.Duration               { return 0 }
+func (s *stubQuotaReader) TokensPerMin(_ time.Duration) float64    { return 0 }
+func (s *stubQuotaReader) CostPerHour(_ time.Duration) float64     { return 0 }
 func (s *stubQuotaReader) GetAgentUsage(id string) *agent.AgentUsage {
 	return s.agentUsage[id]
 }
@@ -367,6 +369,74 @@ func TestGetQuota(t *testing.T) {
 			t.Errorf("agent CacheReadTokens: want 1200, got %d", au.CacheReadTokens)
 		}
 	})
+}
+
+func TestGetQuota_WithBudget(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{BudgetUSD: 10.0}
+	quota := &stubQuotaReader{
+		total: agent.TotalUsage{
+			TotalCostUSD: 4.0,
+			InputTokens:  10000,
+			OutputTokens: 5000,
+			AgentCount:   1,
+		},
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:  &stubAgentLister{},
+		Quota:   quota,
+		Cfg:     cfg,
+		LockMgr: lock.New(""),
+		GiteaURL: "http://localhost:3000",
+	})
+	resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r := resp.(gen.GetQuota200JSONResponse)
+
+	if r.BudgetUsd == nil || *r.BudgetUsd != 10.0 {
+		t.Errorf("BudgetUsd: want 10.0, got %v", r.BudgetUsd)
+	}
+	if r.BudgetUsedPct == nil || *r.BudgetUsedPct != 40.0 {
+		t.Errorf("BudgetUsedPct: want 40.0, got %v", r.BudgetUsedPct)
+	}
+	// Rate fields should be present (zero from stub).
+	if r.RateTokensPerMin == nil {
+		t.Error("RateTokensPerMin should be set")
+	}
+	if r.RateCostPerHour == nil {
+		t.Error("RateCostPerHour should be set")
+	}
+}
+
+func TestGetQuota_NoBudget(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{} // BudgetUSD = 0
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:  &stubAgentLister{},
+		Quota:   &stubQuotaReader{},
+		Cfg:     cfg,
+		LockMgr: lock.New(""),
+		GiteaURL: "http://localhost:3000",
+	})
+	resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r := resp.(gen.GetQuota200JSONResponse)
+
+	if r.BudgetUsd != nil {
+		t.Errorf("BudgetUsd should be nil when budget is 0, got %v", *r.BudgetUsd)
+	}
+	if r.BudgetUsedPct != nil {
+		t.Errorf("BudgetUsedPct should be nil when budget is 0, got %v", *r.BudgetUsedPct)
+	}
+	if r.TimeToBudgetMins != nil {
+		t.Errorf("TimeToBudgetMins should be nil when budget is 0, got %v", *r.TimeToBudgetMins)
+	}
 }
 
 func TestGetStatus(t *testing.T) {
