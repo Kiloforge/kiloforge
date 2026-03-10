@@ -15,8 +15,6 @@ import { PaginatedList } from "../components/PaginatedList";
 import { InlineSpinner } from "../components/InlineSpinner";
 import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
 import { HelpTooltip } from "../components/HelpTooltip";
-import { AdvisorHub } from "../components/AdvisorHub";
-import type { AgentRole } from "../components/AgentLauncher";
 import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
@@ -45,8 +43,6 @@ interface OverviewPageProps {
   trackHasNextPage?: boolean;
   trackFetchingNextPage?: boolean;
   onTrackLoadMore?: () => void;
-  onAdvisorLaunch?: (role: AgentRole, prompt: string, project?: string) => void;
-  advisorLaunching?: boolean;
 }
 
 function trackCountsByStatus(tracks: Track[], slug: string) {
@@ -125,7 +121,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore, onAdvisorLaunch, advisorLaunching }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -225,16 +221,6 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
           </PaginatedList>
         )}
       </section>
-
-      {onAdvisorLaunch && (
-        <AdvisorHub
-          agents={agents}
-          onLaunch={onAdvisorLaunch}
-          launching={advisorLaunching}
-          onViewLog={onViewLog}
-          onAttach={onAttach}
-        />
-      )}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>
