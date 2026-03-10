@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	claude "github.com/schlunsen/claude-agent-sdk-go"
 	"github.com/schlunsen/claude-agent-sdk-go/types"
@@ -17,14 +18,31 @@ import (
 	"github.com/google/uuid"
 )
 
+// defaultResponseTimeout is the maximum time to wait for the first response
+// message after sending a query. If no message arrives within this window,
+// the session is closed to avoid permanently stuck turns.
+const defaultResponseTimeout = 2 * time.Minute
+
+// sdkClientAPI abstracts the Claude SDK Client methods used by SDKSession.
+// This enables testing without a real CLI process.
+type sdkClientAPI interface {
+	Query(ctx context.Context, prompt string) error
+	ReceiveResponse(ctx context.Context) <-chan types.Message
+	IsConnected() bool
+	Close(ctx context.Context) error
+	Connect(ctx context.Context) error
+}
+
 // SDKSession wraps a claude.Client for interactive agent sessions.
 type SDKSession struct {
-	client  *claude.Client
+	client  sdkClientAPI
 	ctx     context.Context
 	cancel  context.CancelFunc
 	output  chan []byte // structured messages for WS relay
 	done    chan struct{}
 	logFile *os.File
+
+	responseTimeout time.Duration // timeout for waiting on response messages; 0 = default
 
 	mu        sync.Mutex
 	querying  bool // prevents concurrent turns
@@ -126,6 +144,14 @@ func (s *SDKSession) Query(ctx context.Context, prompt string, tracker *QuotaTra
 	s.querying = true
 	s.mu.Unlock()
 
+	// Check client is still connected before attempting the query.
+	if s.client == nil || !s.client.IsConnected() {
+		s.mu.Lock()
+		s.querying = false
+		s.mu.Unlock()
+		return fmt.Errorf("client disconnected")
+	}
+
 	if err := s.client.Query(ctx, prompt); err != nil {
 		s.mu.Lock()
 		s.querying = false
@@ -138,6 +164,10 @@ func (s *SDKSession) Query(ctx context.Context, prompt string, tracker *QuotaTra
 }
 
 // relayResponse reads SDK messages and forwards them as structured WS messages.
+// It applies a timeout for the initial response — if no message arrives within
+// the timeout, it emits an error and closes the session.
+// After the response channel closes, if the SDK client has disconnected (process
+// exited), it closes the session to unblock monitorSDKSession.
 func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, agentID string, span port.SpanEnder) {
 	defer func() {
 		s.mu.Lock()
@@ -150,65 +180,111 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 	// Emit turn_start.
 	s.emit(ws.TurnStartMsg(turnID))
 
-	for msg := range s.client.ReceiveResponse(ctx) {
-		switch m := msg.(type) {
-		case *types.AssistantMessage:
-			for _, block := range m.Content {
-				switch b := block.(type) {
-				case *types.TextBlock:
-					s.emit(ws.TextMsg(b.Text, turnID))
-					// Also log to file if available.
-					s.logLine(fmt.Sprintf("[text] %s", b.Text))
-				case *types.ToolUseBlock:
-					s.emit(ws.ToolUseMsg(b.Name, b.ID, turnID, b.Input))
-					s.logLine(fmt.Sprintf("[tool_use] %s (id=%s)", b.Name, b.ID))
-				case *types.ToolResultBlock:
-					content := normalizeToolResultContent(b.Content)
-					isError := b.IsError != nil && *b.IsError
-					s.emit(ws.ToolResultMsg(b.ToolUseID, content, turnID, isError))
-					if isError {
-						s.logLine(fmt.Sprintf("[tool_result] ERROR id=%s", b.ToolUseID))
-					} else {
-						s.logLine(fmt.Sprintf("[tool_result] id=%s len=%d", b.ToolUseID, len(content)))
-					}
-				case *types.ThinkingBlock:
-					s.emit(ws.ThinkingMsg(b.Thinking, turnID))
-					s.logLine("[thinking] ...")
+	timeout := s.responseTimeout
+	if timeout == 0 {
+		timeout = defaultResponseTimeout
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	responseCh := s.client.ReceiveResponse(ctx)
+	gotMessage := false
+
+	for {
+		select {
+		case msg, ok := <-responseCh:
+			if !ok {
+				// Response channel closed — turn is done.
+				// If the SDK client has disconnected (CLI process exited),
+				// close the session to unblock monitorSDKSession.
+				if s.client != nil && !s.client.IsConnected() {
+					s.logLine("[relay] client disconnected after response ended — closing session")
+					s.Close()
+				}
+				return
+			}
+
+			gotMessage = true
+			// Reset timer on each message — timeout only applies to gaps.
+			if !timer.Stop() {
+				select {
+				case <-timer.C:
+				default:
 				}
 			}
+			timer.Reset(timeout)
 
-		case *types.SystemMessage:
-			s.emit(ws.SystemMsg(m.Subtype, m.Data))
-			s.logLine(fmt.Sprintf("[system] subtype=%s", m.Subtype))
+			s.handleResponseMessage(msg, turnID, tracker, agentID, span)
 
-		case *types.ResultMessage:
-			var costUSD float64
-			if m.TotalCostUSD != nil {
-				costUSD = *m.TotalCostUSD
-			}
+		case <-timer.C:
+			// No message received within timeout.
+			s.logLine(fmt.Sprintf("[relay] response timeout after %s (got_message=%v)", timeout, gotMessage))
+			s.emit(ws.ErrorMsg("agent not responding — no output received"))
+			s.Close()
+			return
 
-			usage := extractUsageInfo(m.Usage)
-			s.emit(ws.TurnEndMsg(turnID, costUSD, usage))
-
-			// Update quota tracker.
-			if tracker != nil {
-				ev := resultToStreamEvent(m)
-				tracker.RecordEvent(agentID, ev)
-			}
-
-			// Update span attributes.
-			if span != nil && usage != nil {
-				span.SetAttributes(
-					port.IntAttr("tokens.input", usage.InputTokens),
-					port.IntAttr("tokens.output", usage.OutputTokens),
-					port.IntAttr("tokens.cache_read", usage.CacheReadTokens),
-					port.IntAttr("tokens.cache_create", usage.CacheCreationTokens),
-					port.Float64Attr("cost.usd", costUSD),
-				)
-			}
-
-			s.logLine(fmt.Sprintf("[result] cost=$%.4f session=%s", costUSD, m.SessionID))
+		case <-ctx.Done():
+			return
 		}
+	}
+}
+
+// handleResponseMessage processes a single SDK response message.
+func (s *SDKSession) handleResponseMessage(msg types.Message, turnID string, tracker *QuotaTracker, agentID string, span port.SpanEnder) {
+	switch m := msg.(type) {
+	case *types.AssistantMessage:
+		for _, block := range m.Content {
+			switch b := block.(type) {
+			case *types.TextBlock:
+				s.emit(ws.TextMsg(b.Text, turnID))
+				s.logLine(fmt.Sprintf("[text] %s", b.Text))
+			case *types.ToolUseBlock:
+				s.emit(ws.ToolUseMsg(b.Name, b.ID, turnID, b.Input))
+				s.logLine(fmt.Sprintf("[tool_use] %s (id=%s)", b.Name, b.ID))
+			case *types.ToolResultBlock:
+				content := normalizeToolResultContent(b.Content)
+				isError := b.IsError != nil && *b.IsError
+				s.emit(ws.ToolResultMsg(b.ToolUseID, content, turnID, isError))
+				if isError {
+					s.logLine(fmt.Sprintf("[tool_result] ERROR id=%s", b.ToolUseID))
+				} else {
+					s.logLine(fmt.Sprintf("[tool_result] id=%s len=%d", b.ToolUseID, len(content)))
+				}
+			case *types.ThinkingBlock:
+				s.emit(ws.ThinkingMsg(b.Thinking, turnID))
+				s.logLine("[thinking] ...")
+			}
+		}
+
+	case *types.SystemMessage:
+		s.emit(ws.SystemMsg(m.Subtype, m.Data))
+		s.logLine(fmt.Sprintf("[system] subtype=%s", m.Subtype))
+
+	case *types.ResultMessage:
+		var costUSD float64
+		if m.TotalCostUSD != nil {
+			costUSD = *m.TotalCostUSD
+		}
+
+		usage := extractUsageInfo(m.Usage)
+		s.emit(ws.TurnEndMsg(turnID, costUSD, usage))
+
+		if tracker != nil {
+			ev := resultToStreamEvent(m)
+			tracker.RecordEvent(agentID, ev)
+		}
+
+		if span != nil && usage != nil {
+			span.SetAttributes(
+				port.IntAttr("tokens.input", usage.InputTokens),
+				port.IntAttr("tokens.output", usage.OutputTokens),
+				port.IntAttr("tokens.cache_read", usage.CacheReadTokens),
+				port.IntAttr("tokens.cache_create", usage.CacheCreationTokens),
+				port.Float64Attr("cost.usd", costUSD),
+			)
+		}
+
+		s.logLine(fmt.Sprintf("[result] cost=$%.4f session=%s", costUSD, m.SessionID))
 	}
 }
 
@@ -249,7 +325,7 @@ func (s *SDKSession) Close() {
 	s.closeOnce.Do(func() {
 		s.cancel()
 		if s.client != nil {
-			_ = s.client.Close(s.ctx)
+			_ = s.client.Close(context.Background())
 		}
 		close(s.output)
 		close(s.done)
