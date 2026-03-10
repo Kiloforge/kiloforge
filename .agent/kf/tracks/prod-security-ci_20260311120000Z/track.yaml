@@ -1,11 +1,11 @@
 id: prod-security-ci_20260311120000Z
-title: "Harden CI pipeline — add security scanning, block vulnerable deps"
+title: Harden CI pipeline — add security scanning, block vulnerable deps
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
-  summary: "Add gosec linter, enable SAST in CI, make npm audit blocking, harden .gitignore, create SECURITY.md."
+  summary: Add gosec linter, enable SAST in CI, make npm audit blocking, harden .gitignore, create SECURITY.md.
   context: |
     Production readiness audit identified that the CI pipeline lacks security scanning entirely.
     No SAST tool (gosec) runs in CI, npm audit is non-blocking (continue-on-error: true),
@@ -34,30 +34,30 @@ spec:
     gosec may flag existing code. If so, fix the flagged issues or add targeted nolint
     directives with justification comments. Do not blanket-disable gosec findings.
 plan:
-  - phase: "Linter additions"
+  - phase: Linter additions
     tasks:
-      - text: "Add gosec, bodyclose, and misspell to .golangci.yaml linter list"
-        done: false
-      - text: "Run golangci-lint and fix any new findings from added linters"
-        done: false
-      - text: "Verify make lint passes cleanly"
-        done: false
-  - phase: "CI hardening"
+      - text: Add gosec, bodyclose, and misspell to .golangci.yaml linter list
+        done: true
+      - text: Run golangci-lint and fix any new findings from added linters
+        done: true
+      - text: Verify make lint passes cleanly
+        done: true
+  - phase: CI hardening
     tasks:
-      - text: "Remove continue-on-error: true from npm audit step in ci.yml"
-        done: false
-      - text: "Add .env*, *.key, *.pem, *.p12, *.cert patterns to .gitignore"
-        done: false
-      - text: "Create SECURITY.md with vulnerability reporting process"
-        done: false
-  - phase: "Verification"
+      - text: Remove continue-on-error: true from npm audit step in ci.yml
+        done: true
+      - text: Add .env*, *.key, *.pem, *.p12, *.cert patterns to .gitignore
+        done: true
+      - text: Create SECURITY.md with vulnerability reporting process
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make lint — verify all new linters pass"
-        done: false
-      - text: "Run make test — verify no regressions"
-        done: false
-      - text: "Run make build — verify clean compilation"
-        done: false
-      - text: "Verify CI workflow YAML is valid (act --list or manual review)"
-        done: false
+      - text: Run make lint — verify all new linters pass
+        done: true
+      - text: Run make test — verify no regressions
+        done: true
+      - text: Run make build — verify clean compilation
+        done: true
+      - text: Verify CI workflow YAML is valid (act --list or manual review)
+        done: true
 extra: {}
