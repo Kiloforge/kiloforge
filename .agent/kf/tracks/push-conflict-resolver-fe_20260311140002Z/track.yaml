@@ -3,7 +3,7 @@ title: Sync conflict resolution UI — detect 409 on push/pull and offer resolve
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Update the SyncPanel to detect sync conflicts (409) on both push and pull, and offer
@@ -16,7 +16,7 @@ spec:
     3. When clicked, call POST /api/projects/{slug}/resolve-conflict with direction
     4. Open an AgentTerminal to monitor the resolver agent
     5. After completion, refresh sync status
-
+    
     The existing SyncPanel shows errors as text in a red dismissible box for both push
     and pull. The 409 case should instead show a structured conflict message with an
     action button. The pull endpoint already returns 409 for diverged branches but the
@@ -27,7 +27,7 @@ spec:
     - frontend/src/components/SyncPanel.tsx — Show conflict UI with "Resolve Conflicts" button for both directions
     - frontend/src/pages/ProjectPage.tsx — Wire resolver agent spawn and AgentTerminal
     - frontend/src/types/api.ts — Add ResolveConflictResponse type if needed
-
+    
     Current push error handling in useOriginSync.ts:
       onError: (err) => {
         if (err instanceof FetchError) {
@@ -37,10 +37,10 @@ spec:
           setError("Network error");
         }
       }
-
+    
     Current pull error handling is similar — all errors set the same error state.
     Both need to distinguish 409 from other errors.
-
+    
     The spawn + terminal pattern already exists in ProjectPage.tsx for admin operations:
       <AdminPanel onStartOperation={setAdminAgentId} />
       {adminAgentId && <AgentTerminal agentId={adminAgentId} ... />}
@@ -70,21 +70,21 @@ plan:
   - phase: Hook Changes
     tasks:
       - text: Add conflict state to useOriginSync — detect 409 on both push and pull, expose conflict object with direction and clearConflict
-        done: false
+        done: true
   - phase: UI Implementation
     tasks:
       - text: Update SyncPanel to show conflict banner with "Resolve Conflicts" button when conflict is active, showing direction context
-        done: false
+        done: true
       - text: Add resolve-conflict mutation to ProjectPage — spawn agent on click with direction, open AgentTerminal
-        done: false
+        done: true
       - text: Handle consent/skills gates on resolve-conflict (403/412 cascading)
-        done: false
+        done: true
   - phase: Tests
     tasks:
       - text: Add test for useOriginSync conflict detection — verify 409 sets conflict state for both push and pull
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make test and make build
-        done: false
+        done: true
 extra: {}
