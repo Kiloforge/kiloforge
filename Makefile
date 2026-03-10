@@ -4,11 +4,21 @@ BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
 DIST_DIR := backend/internal/adapter/dashboard/dist
 
-# VCS detection: probe whether git status works in the build context.
-# In normal repos/worktrees this succeeds and BUILDVCS is empty (VCS stamping active).
-# At a bare repo root (no worktree), git status fails — fall back to -buildvcs=false.
-BUILDVCS := $(shell cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-	git status --porcelain >/dev/null 2>&1 && echo "" || echo "-buildvcs=false")
+# Worktree-aware Go command helper.
+# In a worktree (.git is a file), sets GIT_DIR and GIT_WORK_TREE so Go's VCS stamping
+# can find the real repo. In a normal clone (.git is a directory), runs Go unmodified.
+# If VCS detection fails in either case, falls back to -buildvcs=false.
+define GO_CMD
+cd backend && \
+if [ -f ../.git ]; then \
+	export GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd); \
+fi; \
+BUILDVCS=""; \
+if ! git status --porcelain >/dev/null 2>&1; then \
+	BUILDVCS="-buildvcs=false"; \
+fi; \
+go
+endef
 
 # Ensure dist/ has at least a placeholder so //go:embed dist/* succeeds.
 # dist/ is committed with production assets; this only triggers if somehow missing.
@@ -30,8 +40,7 @@ build-backend: ensure-dist
 	$(eval GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev"))
 	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none"))
 	$(eval BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ))
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go build $(BUILDVCS) -ldflags "-s -w -X main.version=$(GIT_VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)" \
+	$(GO_CMD) build $$BUILDVCS -ldflags "-s -w -X main.version=$(GIT_VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)" \
 		-o ../$(BINARY) ./cmd/kf
 
 dev: ensure-dist
@@ -41,36 +50,28 @@ dev: ensure-dist
 	wait
 
 test: ensure-dist
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go test $(BUILDVCS) -race ./...
+	$(GO_CMD) test $$BUILDVCS -race ./...
 	cd frontend && npm test -- --run
 
 test-smoke: ensure-dist
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go test $(BUILDVCS) -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
+	$(GO_CMD) test $$BUILDVCS -race -run "TestBinaryBuilds|TestRouteRegistration|TestAllCommandsRegistered|TestCommandHelp" ./...
 
 test-integration: ensure-dist
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go test $(BUILDVCS) -race -tags=integration ./...
+	$(GO_CMD) test $$BUILDVCS -race -tags=integration ./...
 
 test-e2e: ensure-dist
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go test $(BUILDVCS) -race -tags=e2e -run 'TestE2E' -count=1 ./internal/adapter/rest/ -v
+	$(GO_CMD) test $$BUILDVCS -race -tags=e2e -run 'TestE2E' -count=1 ./internal/adapter/rest/ -v
 
 test-all: ensure-dist
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go test $(BUILDVCS) -race -tags=integration ./...
+	$(GO_CMD) test $$BUILDVCS -race -tags=integration ./...
 	cd frontend && npm test -- --run
 
 GO_COVERAGE_THRESHOLD := 45
 
 test-coverage: ensure-dist
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go test $(BUILDVCS) -race -coverprofile=coverage.out ./...
-	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go tool cover -func=coverage.out
-	@TOTAL=$$(cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
-		go tool cover -func=coverage.out | grep '^total:' | awk '{print $$NF}' | tr -d '%'); \
+	$(GO_CMD) test $$BUILDVCS -race -coverprofile=coverage.out ./...
+	cd backend && go tool cover -func=coverage.out
+	@TOTAL=$$(cd backend && go tool cover -func=coverage.out | grep '^total:' | awk '{print $$NF}' | tr -d '%'); \
 	echo "Total coverage: $${TOTAL}% (threshold: $(GO_COVERAGE_THRESHOLD)%)"; \
 	if [ $$(echo "$${TOTAL} < $(GO_COVERAGE_THRESHOLD)" | bc) -eq 1 ]; then \
 		echo "FAIL: coverage $${TOTAL}% is below threshold $(GO_COVERAGE_THRESHOLD)%"; \
