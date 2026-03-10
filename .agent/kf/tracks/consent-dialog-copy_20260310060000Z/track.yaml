@@ -1,14 +1,11 @@
 id: consent-dialog-copy_20260310060000Z
-title: "Update consent dialog to reference 'Dangerously bypass permissions'"
+title: Update consent dialog to reference 'Dangerously bypass permissions'
 type: chore
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Update ConsentDialog copy to explicitly state that Claude Code will run in
-    "Dangerously bypass permissions" mode, making the security implications
-    clearer to users by using the Claude Code UI terminology.
+  summary: ">"
   context: |
     The ConsentDialog currently mentions the CLI flag --dangerously-skip-permissions
     but does not use the Claude Code UI label "Dangerously bypass permissions".
@@ -19,13 +16,13 @@ spec:
     - frontend/src/components/ConsentDialog.tsx — Dialog component with current copy
     - frontend/src/components/ConsentDialog.module.css — Dialog styles
     - backend/internal/adapter/rest/api_handler.go:checkConsent() — API error message
-
+    
     Current ConsentDialog copy:
       Title: "Agent Permissions Required"
       Body: "Kiloforge agents run with --dangerously-skip-permissions. This grants
       agents unrestricted access to tools (file read/write, shell commands, etc.)
       within their worktree directory."
-
+    
     The backend checkConsent() error message is internal (used for 403 response code
     detection, not shown to users), so it does not need updating.
   acceptance_criteria:
@@ -41,22 +38,22 @@ spec:
   technical_notes: |
     Frontend-only change to ConsentDialog.tsx component copy. No API, schema,
     or backend changes needed. The dialog text should read something like:
-
+    
     "Claude Code will run in Dangerously bypass permissions mode
     (--dangerously-skip-permissions). This grants agents unrestricted access
     to tools (file read/write, shell commands, network access, etc.) within
     their worktree directory."
 plan:
-  - phase: "Update dialog copy"
+  - phase: Update dialog copy
     tasks:
-      - text: "Update ConsentDialog.tsx title and body copy to reference 'Dangerously bypass permissions' mode"
-        done: false
-      - text: "Verify dialog renders correctly in browser"
-        done: false
-  - phase: "Verification"
+      - text: Update ConsentDialog.tsx title and body copy to reference 'Dangerously bypass permissions' mode
+        done: true
+      - text: Verify dialog renders correctly in browser
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make build-frontend to verify no build errors"
-        done: false
-      - text: "Run make test-e2e to verify existing E2E tests pass (update assertions if needed)"
-        done: false
+      - text: Run make build-frontend to verify no build errors
+        done: true
+      - text: Run make test-e2e to verify existing E2E tests pass (update assertions if needed)
+        done: true
 extra: {}
