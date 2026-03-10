@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import type { SwarmCapacity } from "../types/api";
 import styles from "./AgentLauncher.module.css";
 
 export type AgentRole = "interactive" | "architect" | "product-advisor";
@@ -30,9 +31,12 @@ interface AgentLauncherProps {
   onClose: () => void;
   launching?: boolean;
   projectSlug?: string;
+  waitingForCapacity?: boolean;
+  waitingCapacity?: SwarmCapacity | null;
+  onCancelWaiting?: () => void;
 }
 
-export function AgentLauncher({ onLaunch, onClose, launching, projectSlug }: AgentLauncherProps) {
+export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waitingForCapacity, waitingCapacity, onCancelWaiting }: AgentLauncherProps) {
   const [role, setRole] = useState<AgentRole>(projectSlug ? "architect" : "architect");
   const [prompt, setPrompt] = useState("");
 
@@ -41,6 +45,34 @@ export function AgentLauncher({ onLaunch, onClose, launching, projectSlug }: Age
   const handleSubmit = useCallback(() => {
     onLaunch(role, prompt.trim());
   }, [role, prompt, onLaunch]);
+
+  if (waitingForCapacity) {
+    const active = waitingCapacity?.active ?? 0;
+    const max = waitingCapacity?.max ?? 0;
+
+    return (
+      <div className={styles.overlay} onClick={onCancelWaiting}>
+        <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.waitingOverlay}>
+            <div className={styles.waitingPulse} />
+            <h3 className={styles.waitingTitle}>Kiloforge at max capacity</h3>
+            <p className={styles.waitingUsage}>
+              {active}/{max} agents active — increase Max Swarm Size to prevent waiting
+            </p>
+            <p className={styles.waitingHint}>
+              Will auto-retry when a slot opens...
+            </p>
+            <button
+              className={styles.cancelBtn}
+              onClick={onCancelWaiting}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.overlay} onClick={onClose}>

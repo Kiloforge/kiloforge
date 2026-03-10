@@ -75,4 +75,49 @@ describe("AgentLauncher", () => {
     await user.click(screen.getByText("Product Advisor"));
     expect(textarea.placeholder).toContain("product guidance");
   });
+
+  describe("waiting for capacity", () => {
+    it("shows waiting overlay when waitingForCapacity is true", () => {
+      renderLauncher({
+        waitingForCapacity: true,
+        waitingCapacity: { max: 3, active: 3, available: 0 },
+        onCancelWaiting: vi.fn(),
+      });
+      expect(screen.getByText("Kiloforge at max capacity")).toBeInTheDocument();
+      expect(screen.getByText(/3\/3 agents active/)).toBeInTheDocument();
+      expect(screen.getByText(/increase Max Swarm Size/)).toBeInTheDocument();
+      expect(screen.getByText(/Will auto-retry/)).toBeInTheDocument();
+    });
+
+    it("shows cancel button in waiting state", () => {
+      renderLauncher({
+        waitingForCapacity: true,
+        waitingCapacity: { max: 3, active: 3, available: 0 },
+        onCancelWaiting: vi.fn(),
+      });
+      expect(screen.getByText("Cancel")).toBeInTheDocument();
+    });
+
+    it("calls onCancelWaiting when cancel is clicked in waiting state", async () => {
+      const user = userEvent.setup();
+      const onCancelWaiting = vi.fn();
+      renderLauncher({
+        waitingForCapacity: true,
+        waitingCapacity: { max: 3, active: 3, available: 0 },
+        onCancelWaiting,
+      });
+      await user.click(screen.getByText("Cancel"));
+      expect(onCancelWaiting).toHaveBeenCalled();
+    });
+
+    it("handles null capacity gracefully", () => {
+      renderLauncher({
+        waitingForCapacity: true,
+        waitingCapacity: null,
+        onCancelWaiting: vi.fn(),
+      });
+      expect(screen.getByText("Kiloforge at max capacity")).toBeInTheDocument();
+      expect(screen.getByText(/0\/0 agents active/)).toBeInTheDocument();
+    });
+  });
 });

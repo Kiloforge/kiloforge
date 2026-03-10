@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Agent, SpawnInteractiveRequest, StatusResponse } from "./types/api";
+import type { Agent, SpawnInteractiveRequest, StatusResponse, SwarmCapacity } from "./types/api";
 import type { AgentRole } from "./components/AgentLauncher";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
@@ -9,6 +9,7 @@ import { useQuota } from "./hooks/useQuota";
 import { useTracks } from "./hooks/useTracks";
 import { useProjects } from "./hooks/useProjects";
 import { useSwarm } from "./hooks/useSwarm";
+import { useSwarmCapacity } from "./hooks/useSwarmCapacity";
 import { useConsent } from "./hooks/useConsent";
 import { useSkillsPrompt } from "./hooks/useSkillsPrompt";
 import { queryKeys } from "./api/queryKeys";
@@ -46,9 +47,12 @@ export default function App() {
     queryKey: queryKeys.status,
     queryFn: () => fetcher<StatusResponse>("/api/status"),
   });
+  const { capacity, handleCapacityChanged } = useSwarmCapacity();
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
   const wm = useWindowManager();
   const [showLauncher, setShowLauncher] = useState(false);
+  const [waitingForCapacity, setWaitingForCapacity] = useState(false);
+  const [waitingCapacity, setWaitingCapacity] = useState<SwarmCapacity | null>(null);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const queryClient = useQueryClient();
@@ -78,9 +82,10 @@ export default function App() {
       project_removed: handleProjectRemoved,
       board_update: handleBoardUpdate,
       queue_update: handleSwarmUpdate,
+      capacity_changed: handleCapacityChanged,
       project_settings_update: handleProjectSettingsUpdate,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleSwarmUpdate, handleProjectSettingsUpdate],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleSwarmUpdate, handleCapacityChanged, handleProjectSettingsUpdate],
   );
 
   const connectionState = useSSE("/events", sseHandlers);
@@ -115,6 +120,10 @@ export default function App() {
         consent.requestConsent(() => spawnMutation.mutate(lastSpawnReq));
       } else if (err instanceof FetchError && err.status === 412) {
         skillsPrompt.requestInstall(() => spawnMutation.mutate(lastSpawnReq));
+      } else if (err instanceof FetchError && err.status === 429) {
+        const cap = err.body as SwarmCapacity | undefined;
+        setWaitingForCapacity(true);
+        setWaitingCapacity(cap ?? null);
       }
     },
   });
@@ -135,6 +144,28 @@ export default function App() {
     setLastSpawnReq(req);
     spawnMutation.mutate(req);
   }, [spawnMutation]);
+
+  // Auto-retry spawn when capacity becomes available
+  useEffect(() => {
+    if (waitingForCapacity && capacity && capacity.available > 0) {
+      setWaitingForCapacity(false);
+      setWaitingCapacity(null);
+      spawnMutation.mutate(lastSpawnReq);
+    }
+  }, [waitingForCapacity, capacity, lastSpawnReq, spawnMutation]);
+
+  // Update displayed capacity while waiting
+  useEffect(() => {
+    if (waitingForCapacity && capacity) {
+      setWaitingCapacity(capacity);
+    }
+  }, [waitingForCapacity, capacity]);
+
+  const handleCancelWaiting = useCallback(() => {
+    setWaitingForCapacity(false);
+    setWaitingCapacity(null);
+    setShowLauncher(false);
+  }, []);
 
   return (
     <TourProvider>
@@ -231,11 +262,14 @@ export default function App() {
         onRestore={(id) => wm.restore(id)}
         onClose={(id) => wm.close(id)}
       />
-      {showLauncher && (
+      {(showLauncher || waitingForCapacity) && (
         <AgentLauncher
           onLaunch={handleLaunch}
           onClose={handleCloseLauncher}
           launching={spawnMutation.isPending}
+          waitingForCapacity={waitingForCapacity}
+          waitingCapacity={waitingCapacity}
+          onCancelWaiting={handleCancelWaiting}
         />
       )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}

@@ -100,15 +100,15 @@ plan:
   - phase: Capacity gating UX
     tasks:
       - text: Add useSwarmCapacity hook that fetches GET /api/swarm/capacity and listens for capacity_changed SSE events
-        done: false
+        done: true
       - text: Add 429 handler in App.tsx spawnMutation.onError — transition AgentLauncher to waiting state with capacity info from response body
-        done: false
+        done: true
       - text: Add waiting overlay to AgentLauncher: pulsing indicator, 'Kiloforge at max capacity', usage display (X/Y agents active), 'increase Max Swarm Size' link, Cancel button
-        done: false
+        done: true
       - text: Implement SSE-driven auto-retry: on capacity_changed event with available > 0, automatically re-submit the spawn request
-        done: false
+        done: true
       - text: Add CSS for waiting overlay in AgentLauncher.module.css — subtle pulse animation, glass effect consistent with existing panels
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Verify all QueuePanel/useQueue references are gone (grep for old names)
