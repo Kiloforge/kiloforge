@@ -18,6 +18,8 @@ interface UseFloatingWindowOptions {
   defaultHeight?: number;
   minWidth?: number;
   minHeight?: number;
+  initialX?: number;
+  initialY?: number;
 }
 
 const EDGE_ZONE = 8;
@@ -96,11 +98,19 @@ export function useFloatingWindow(options: UseFloatingWindowOptions = {}) {
     defaultHeight = 500,
     minWidth = 400,
     minHeight = 300,
+    initialX,
+    initialY,
   } = options;
 
   const [state, setState] = useState<FloatingWindowState>(() => {
     const size = clampSize(defaultWidth, defaultHeight, minWidth, minHeight);
-    const pos = centerPosition(size.width, size.height);
+    const centered = centerPosition(size.width, size.height);
+    const pos = clampPosition(
+      initialX ?? centered.x,
+      initialY ?? centered.y,
+      size.width,
+      size.height,
+    );
     return { ...pos, ...size, zIndex: ++globalZIndex };
   });
 

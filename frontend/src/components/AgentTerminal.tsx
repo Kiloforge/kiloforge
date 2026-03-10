@@ -9,7 +9,10 @@ interface Props {
   agentId: string;
   name?: string;
   role?: string;
+  initialX?: number;
+  initialY?: number;
   onClose: () => void;
+  onFocus?: () => void;
 }
 
 function ConnectionDot({ status }: { status: WSConnectionState }) {
@@ -35,14 +38,14 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, name, role, onClose }: Props) {
+export function AgentTerminal({ agentId, name, role, initialX, initialY, onClose, onFocus }: Props) {
   const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const fw = useFloatingWindow({ defaultWidth: 720, defaultHeight: 500, minWidth: 400, minHeight: 300 });
+  const fw = useFloatingWindow({ defaultWidth: 720, defaultHeight: 500, minWidth: 400, minHeight: 300, initialX, initialY });
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -55,15 +58,6 @@ export function AgentTerminal({ agentId, name, role, onClose }: Props) {
     fw.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // ESC to close
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
@@ -86,6 +80,7 @@ export function AgentTerminal({ agentId, name, role, onClose }: Props) {
   const handlePanelPointerDown = useCallback(
     (e: React.PointerEvent) => {
       fw.bringToFront();
+      onFocus?.();
       if (!panelRef.current) return;
       const rect = panelRef.current.getBoundingClientRect();
       const edge = detectEdge(e.clientX, e.clientY, rect);
@@ -93,7 +88,7 @@ export function AgentTerminal({ agentId, name, role, onClose }: Props) {
         fw.onResizeStart(e, edge);
       }
     },
-    [fw],
+    [fw, onFocus],
   );
 
   const handlePanelPointerMove = useCallback(

@@ -17,6 +17,7 @@ import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
+import { useWindowManager } from "./hooks/useWindowManager";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
 import { SkillsInstallDialog } from "./components/SkillsInstallDialog";
@@ -44,7 +45,7 @@ export default function App() {
     queryFn: () => fetcher<StatusResponse>("/api/status"),
   });
   const [logAgentId, setLogAgentId] = useState<string | null>(null);
-  const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
+  const wm = useWindowManager();
   const [showLauncher, setShowLauncher] = useState(false);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -91,12 +92,10 @@ export default function App() {
   }, []);
 
   const handleAttach = useCallback((agentId: string) => {
-    setTerminalAgentId(agentId);
-  }, []);
-
-  const handleCloseTerminal = useCallback(() => {
-    setTerminalAgentId(null);
-  }, []);
+    if (wm.has(agentId)) return; // already open — z-index handled by panel click
+    const agent = agents.find((a) => a.id === agentId);
+    wm.open(agentId, agent?.name, agent?.role);
+  }, [wm, agents]);
 
   const spawnMutation = useMutation({
     mutationFn: (req: SpawnInteractiveRequest) =>
@@ -106,7 +105,7 @@ export default function App() {
         body: JSON.stringify(req),
       }),
     onSuccess: (agent) => {
-      setTerminalAgentId(agent.id);
+      wm.open(agent.id, agent.name, agent.role);
       setShowLauncher(false);
     },
     onError: (err) => {
@@ -150,6 +149,12 @@ export default function App() {
           <span className={styles.headerDivider} />
           <span className={styles.headerLabel}>Agents</span>
           <AgentHistogram agents={agents} />
+          {wm.count > 0 && (
+            <>
+              <span className={styles.headerDivider} />
+              <span className={styles.headerLabel}>{wm.count} terminal{wm.count !== 1 ? "s" : ""}</span>
+            </>
+          )}
         </div>
         <nav className={styles.nav}>
           <Link to="/agents" className={styles.link}>Agents</Link>
@@ -196,10 +201,17 @@ export default function App() {
       </main>
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
-      {terminalAgentId && (() => {
-        const agent = agents.find((a) => a.id === terminalAgentId);
-        return <AgentTerminal agentId={terminalAgentId} name={agent?.name} role={agent?.role} onClose={handleCloseTerminal} />;
-      })()}
+      {wm.getWindows().map((entry) => (
+        <AgentTerminal
+          key={entry.agentId}
+          agentId={entry.agentId}
+          name={entry.name}
+          role={entry.role}
+          initialX={entry.initialX}
+          initialY={entry.initialY}
+          onClose={() => wm.close(entry.agentId)}
+        />
+      ))}
       {showLauncher && (
         <AgentLauncher
           onLaunch={handleLaunch}
