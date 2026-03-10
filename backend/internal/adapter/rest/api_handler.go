@@ -92,24 +92,24 @@ type ConsentChecker interface {
 // APIHandler implements gen.StrictServerInterface by delegating to existing
 // adapters for agents, locks, quota, and tracks.
 type APIHandler struct {
-	agents       AgentLister
-	quota        QuotaReader
-	lockMgr      *lock.Manager
-	projects     ProjectLister
-	projectMgr   ProjectManager
-	gitSync      *gitadapter.GitSync
-	diffProv     port.DiffProvider
-	traceStore   tracing.TraceReader
-	boardSvc     port.BoardService
-	trackReader  port.TrackReader
-	eventBus     port.EventBus
-	giteaURL     string
-	sseClients   func() int
-	cfg          *config.Config
-	interSpawner InteractiveSpawner
-	wsSessions   *wsAdapter.SessionManager
-	consent      ConsentChecker
-	agentRemover AgentRemover
+	agents         AgentLister
+	quota          QuotaReader
+	lockMgr        *lock.Manager
+	projects       ProjectLister
+	projectMgr     ProjectManager
+	gitSync        *gitadapter.GitSync
+	diffProv       port.DiffProvider
+	traceStore     tracing.TraceReader
+	boardSvc       port.BoardService
+	trackReader    port.TrackReader
+	eventBus       port.EventBus
+	giteaURL       string
+	sseClients     func() int
+	cfg            *config.Config
+	interSpawner   InteractiveSpawner
+	wsSessions     *wsAdapter.SessionManager
+	consent        ConsentChecker
+	agentRemover   AgentRemover
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
@@ -120,24 +120,24 @@ type APIHandler struct {
 
 // APIHandlerOpts configures the API handler.
 type APIHandlerOpts struct {
-	Agents       AgentLister
-	Quota        QuotaReader
-	LockMgr      *lock.Manager
-	Projects     ProjectLister
-	ProjectMgr   ProjectManager
-	GitSync      *gitadapter.GitSync
-	DiffProvider port.DiffProvider
-	TraceStore   tracing.TraceReader
-	BoardSvc     port.BoardService
-	TrackReader  port.TrackReader
-	EventBus     port.EventBus
-	GiteaURL     string
-	SSEClients   func() int
-	Cfg          *config.Config
-	InterSpawner InteractiveSpawner
-	WSSessions   *wsAdapter.SessionManager
-	Consent      ConsentChecker
-	AgentRemover AgentRemover
+	Agents         AgentLister
+	Quota          QuotaReader
+	LockMgr        *lock.Manager
+	Projects       ProjectLister
+	ProjectMgr     ProjectManager
+	GitSync        *gitadapter.GitSync
+	DiffProvider   port.DiffProvider
+	TraceStore     tracing.TraceReader
+	BoardSvc       port.BoardService
+	TrackReader    port.TrackReader
+	EventBus       port.EventBus
+	GiteaURL       string
+	SSEClients     func() int
+	Cfg            *config.Config
+	InterSpawner   InteractiveSpawner
+	WSSessions     *wsAdapter.SessionManager
+	Consent        ConsentChecker
+	AgentRemover   AgentRemover
 	QueueSvc       QueueServicer
 	Analytics      port.AnalyticsTracker
 	ReliabilitySvc *service.ReliabilityService
@@ -146,24 +146,24 @@ type APIHandlerOpts struct {
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
 func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 	return &APIHandler{
-		agents:       opts.Agents,
-		quota:        opts.Quota,
-		lockMgr:      opts.LockMgr,
-		projects:     opts.Projects,
-		projectMgr:   opts.ProjectMgr,
-		gitSync:      opts.GitSync,
-		diffProv:     opts.DiffProvider,
-		traceStore:   opts.TraceStore,
-		boardSvc:     opts.BoardSvc,
-		trackReader:  opts.TrackReader,
-		eventBus:     opts.EventBus,
-		giteaURL:     opts.GiteaURL,
-		sseClients:   opts.SSEClients,
-		cfg:          opts.Cfg,
-		interSpawner: opts.InterSpawner,
-		wsSessions:   opts.WSSessions,
-		consent:      opts.Consent,
-		agentRemover: opts.AgentRemover,
+		agents:         opts.Agents,
+		quota:          opts.Quota,
+		lockMgr:        opts.LockMgr,
+		projects:       opts.Projects,
+		projectMgr:     opts.ProjectMgr,
+		gitSync:        opts.GitSync,
+		diffProv:       opts.DiffProvider,
+		traceStore:     opts.TraceStore,
+		boardSvc:       opts.BoardSvc,
+		trackReader:    opts.TrackReader,
+		eventBus:       opts.EventBus,
+		giteaURL:       opts.GiteaURL,
+		sseClients:     opts.SSEClients,
+		cfg:            opts.Cfg,
+		interSpawner:   opts.InterSpawner,
+		wsSessions:     opts.WSSessions,
+		consent:        opts.Consent,
+		agentRemover:   opts.AgentRemover,
 		queueSvc:       opts.QueueSvc,
 		analytics:      opts.Analytics,
 		reliabilitySvc: opts.ReliabilitySvc,

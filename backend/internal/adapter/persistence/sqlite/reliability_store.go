@@ -74,11 +74,11 @@ func (s *ReliabilityStore) List(filter domain.ReliabilityFilter, opts domain.Pag
 	}
 	if filter.Since != nil {
 		whereParts = append(whereParts, "created_at >= ?")
-		args = append(args, filter.Since.Format(time.RFC3339))
+		args = append(args, filter.Since.UTC().Format(time.RFC3339))
 	}
 	if filter.Until != nil {
 		whereParts = append(whereParts, "created_at < ?")
-		args = append(args, filter.Until.Format(time.RFC3339))
+		args = append(args, filter.Until.UTC().Format(time.RFC3339))
 	}
 
 	// Save filter parts for count query (no cursor).
@@ -147,7 +147,7 @@ func (s *ReliabilityStore) Summary(since, until time.Time, bucket string) (domai
 	          GROUP BY bucket, event_type
 	          ORDER BY bucket ASC, event_type ASC`
 
-	rows, err := s.db.Query(query, truncExpr, since.Format(time.RFC3339), until.Format(time.RFC3339))
+	rows, err := s.db.Query(query, truncExpr, since.UTC().Format(time.RFC3339), until.UTC().Format(time.RFC3339))
 	if err != nil {
 		return domain.ReliabilitySummary{}, fmt.Errorf("summary query: %w", err)
 	}
