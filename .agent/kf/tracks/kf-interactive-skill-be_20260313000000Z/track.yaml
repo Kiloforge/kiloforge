@@ -1,9 +1,9 @@
 id: kf-interactive-skill-be_20260313000000Z
 title: Create kf-interactive embedded skill for general-purpose kf-aware agents
 type: feature
-status: pending
+status: completed
 created: 2026-03-13
-updated: 2026-03-13
+updated: 2026-03-10
 spec:
   summary: |
     Create a new embedded skill "kf-interactive" that gives agents full
@@ -17,7 +17,7 @@ spec:
     kf system (can read tracks, check status, navigate the project) but
     responds freely to any user request — code changes, questions, debugging,
     etc. — without being locked into a specific skill workflow.
-
+    
     The "interactive" role already exists in the backend but currently maps
     to requiring `kf-architect` skill and has no skill command prefix. It
     needs its own dedicated skill that loads kf context without imposing a
@@ -30,21 +30,21 @@ spec:
     - `AllRequiredSkills()` iterates known roles including "interactive"
     - Embedded skills live in `backend/internal/adapter/skills/embedded/{name}/SKILL.md`
     - Skills use YAML frontmatter (name, description, metadata)
-
+    
     **Role definitions** (`backend/internal/core/domain/agent.go`):
     - No `AgentRoleInteractive` constant exists — "interactive" is used as a
       string literal in the API handler
     - `IsAdvisorRole()` and `IsWorkerRole()` don't cover "interactive"
-
+    
     **API handler** (`backend/internal/adapter/rest/api_handler.go`):
     - `SpawnInteractiveAgent` defaults role to "interactive" (line ~470)
     - Prepends skill command via `SkillCommandForRole(role)` (line ~493)
     - Currently, interactive gets no prefix — user prompt goes raw
-
+    
     **OpenAPI spec** (`backend/api/openapi.yaml`):
     - SpawnInteractiveRequest role enum: [interactive, architect, advisor-product, advisor-reliability]
     - No changes needed — "interactive" is already in the enum
-
+    
     **Existing skill pattern** (e.g., `kf-architect/SKILL.md`):
     - YAML frontmatter: name, description, metadata.argument-hint
     - Markdown body with instructions
@@ -67,22 +67,22 @@ spec:
     **Skill content approach:**
     The kf-interactive skill should be lightweight — it's not a multi-phase
     workflow like kf-architect. It should:
-
+    
     1. Load project context on first invocation:
        - `.agent/kf/product.md` (product description)
        - `.agent/kf/tech-stack.md` (technology stack)
        - `.agent/kf/tracks.yaml` (track registry, via `kf-track list`)
        - `.agent/kf/workflow.md` (if exists)
-
+    
     2. Tell the agent it can use kf CLI tools:
        - `.agent/kf/bin/kf-track` for track queries
        - `.agent/kf/bin/kf-track-content` for reading track specs/plans
        - Standard skills via slash commands: /kf-status, /kf-architect, etc.
-
+    
     3. Instruct the agent to respond freely — it's a general-purpose
        assistant that happens to know about the project's kf context.
        It should NOT automatically run a workflow.
-
+    
     **Role mapping changes in checker.go:**
     ```go
     case "interactive":
@@ -90,12 +90,12 @@ spec:
         {Name: "kf-interactive", Reason: "required for interactive agent spawning"},
       }
     ```
-
+    
     ```go
     case "interactive":
       return "/kf-interactive"
     ```
-
+    
     **Domain constant (optional):**
     Add `AgentRoleInteractive AgentRole = "interactive"` to domain/agent.go
     for consistency with other role constants.
@@ -103,23 +103,23 @@ plan:
   - phase: Skill creation
     tasks:
       - text: Create embedded skill SKILL.md at backend/internal/adapter/skills/embedded/kf-interactive/SKILL.md with frontmatter and instructions
-        done: false
+        done: true
       - text: Skill loads kf project context (product, tech-stack, tracks) and lists available kf commands
-        done: false
+        done: true
       - text: Skill instructs agent to act as general-purpose assistant without imposing a workflow
-        done: false
+        done: true
   - phase: Backend wiring
     tasks:
       - text: Update RequiredSkillsForRole in checker.go — interactive requires kf-interactive instead of kf-architect
-        done: false
+        done: true
       - text: Update SkillCommandForRole in checker.go — interactive returns /kf-interactive
-        done: false
+        done: true
       - text: Add AgentRoleInteractive constant to domain/agent.go for consistency
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build — verify embedded skill compiles into binary
-        done: false
+        done: true
       - text: Run make test — verify no regressions in skill checker or agent spawn tests
-        done: false
+        done: true
 extra: {}
