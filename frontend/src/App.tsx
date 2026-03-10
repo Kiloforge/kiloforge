@@ -22,6 +22,7 @@ import { SkillsInstallDialog } from "./components/SkillsInstallDialog";
 import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay, TourComplete } from "./components/tour/TourOverlay";
+import { SettingsMenu } from "./components/SettingsMenu";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AgentDetailPage } from "./pages/AgentDetailPage";
 import { AgentHistoryPage } from "./pages/AgentHistoryPage";
@@ -138,6 +139,7 @@ export default function App() {
               Gitea
             </a>
           )}
+          <SettingsMenu />
         </nav>
       </header>
 
