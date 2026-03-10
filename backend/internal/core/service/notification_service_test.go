@@ -66,10 +66,10 @@ type stubEventBus struct {
 	events []domain.Event
 }
 
-func (b *stubEventBus) Publish(e domain.Event)                { b.events = append(b.events, e) }
-func (b *stubEventBus) Subscribe() <-chan domain.Event         { return nil }
-func (b *stubEventBus) Unsubscribe(_ <-chan domain.Event)      {}
-func (b *stubEventBus) ClientCount() int                       { return 0 }
+func (b *stubEventBus) Publish(e domain.Event)            { b.events = append(b.events, e) }
+func (b *stubEventBus) Subscribe() <-chan domain.Event    { return nil }
+func (b *stubEventBus) Unsubscribe(_ <-chan domain.Event) {}
+func (b *stubEventBus) ClientCount() int                  { return 0 }
 
 func TestNotificationService_Create_Deduplicates(t *testing.T) {
 	store := &stubNotificationStore{}

@@ -113,6 +113,13 @@ func WithReliability(svc *service.ReliabilityService) ServerOption {
 	}
 }
 
+// WithNotifications enables the notification service for agent attention alerts.
+func WithNotifications(svc *service.NotificationService) ServerOption {
+	return func(s *Server) {
+		s.notifSvc = svc
+	}
+}
+
 // WithHealthPinger enables database health checking in the /health endpoint.
 func WithHealthPinger(p HealthPinger) ServerOption {
 	return func(s *Server) {
@@ -151,6 +158,7 @@ type Server struct {
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
+	notifSvc       *service.NotificationService
 	healthPinger   HealthPinger
 }
 
@@ -290,8 +298,42 @@ func (s *Server) Run(ctx context.Context) error {
 		QueueSvc:       s.queueSvc,
 		Analytics:      s.analytics,
 		ReliabilitySvc: s.reliabilitySvc,
+		NotifSvc:       s.notifSvc,
 		HealthPinger:   s.healthPinger,
 	})
+
+	// Wire notification service event bus (dashboard provides it).
+	if s.notifSvc != nil && eventBus != nil {
+		s.notifSvc.SetEventBus(eventBus)
+	}
+
+	// Wire notification service into relay hook and dashboard watcher.
+	if s.notifSvc != nil && s.wsSessions != nil {
+		notifSvc := s.notifSvc
+		agentStore := s.store
+		s.wsSessions.SetOnRelayMessage(func(agentID, msgType string) {
+			switch msgType {
+			case "turn_end":
+				agent, err := agentStore.FindAgent(agentID)
+				if err != nil || agent == nil {
+					return
+				}
+				name := agent.Name
+				if name == "" {
+					name = agentID[:min(8, len(agentID))]
+				}
+				_ = notifSvc.Create(agentID, name+" needs your attention", "waiting for input")
+			case "turn_start":
+				_ = notifSvc.DismissForAgent(agentID)
+			}
+		})
+	}
+	if s.notifSvc != nil && s.dashboard != nil {
+		s.dashboard.SetNotificationChecker(s.notifSvc)
+		if s.wsSessions != nil {
+			s.dashboard.SetBridgeChecker(s.wsSessions)
+		}
+	}
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
 

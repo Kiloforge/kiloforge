@@ -143,6 +143,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 	reliabilitySvc := service.NewReliabilityService(reliabilityStore, nil)
 	opts = append(opts, rest.WithReliability(reliabilitySvc))
 
+	// Wire notification service for agent attention alerts.
+	notifStore := sqlite.NewNotificationStore(db)
+	notifSvc := service.NewNotificationService(notifStore, nil) // eventBus set later by server
+	opts = append(opts, rest.WithNotifications(notifSvc))
+
 	// Wire database health pinger for /health endpoint.
 	opts = append(opts, rest.WithHealthPinger(db))
 

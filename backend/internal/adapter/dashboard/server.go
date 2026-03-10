@@ -43,23 +43,23 @@ type NotificationChecker interface {
 
 // BridgeChecker checks whether an agent has a WebSocket bridge.
 type BridgeChecker interface {
-	GetBridge(agentID string) (any, bool)
+	HasBridge(agentID string) bool
 }
 
 // Server serves the web dashboard on a dedicated HTTP port.
 type Server struct {
-	port           int
-	agents         AgentLister
-	quota          QuotaReader
-	projects       ProjectLister
-	hub            *SSEHub
-	eventBus       port.EventBus
-	traceStore     tracing.TraceReader
-	trackReader    port.TrackReader
-	budgetUSD      float64
-	mux            *http.ServeMux
-	notifChecker   NotificationChecker
-	bridgeChecker  BridgeChecker
+	port          int
+	agents        AgentLister
+	quota         QuotaReader
+	projects      ProjectLister
+	hub           *SSEHub
+	eventBus      port.EventBus
+	traceStore    tracing.TraceReader
+	trackReader   port.TrackReader
+	budgetUSD     float64
+	mux           *http.ServeMux
+	notifChecker  NotificationChecker
+	bridgeChecker BridgeChecker
 }
 
 // New creates a dashboard server. If eventBus is nil, a new SSEHub is created

@@ -122,6 +122,7 @@ type APIHandler struct {
 	queueSvc       QueueServicer
 	analytics      port.AnalyticsTracker
 	reliabilitySvc *service.ReliabilityService
+	notifSvc       *service.NotificationService
 	healthPinger   HealthPinger
 
 	adminMu           sync.Mutex
@@ -150,6 +151,7 @@ type APIHandlerOpts struct {
 	QueueSvc       QueueServicer
 	Analytics      port.AnalyticsTracker
 	ReliabilitySvc *service.ReliabilityService
+	NotifSvc       *service.NotificationService
 	HealthPinger   HealthPinger
 }
 
@@ -176,6 +178,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		queueSvc:       opts.QueueSvc,
 		analytics:      opts.Analytics,
 		reliabilitySvc: opts.ReliabilitySvc,
+		notifSvc:       opts.NotifSvc,
 		healthPinger:   opts.HealthPinger,
 	}
 }
