@@ -64,11 +64,11 @@ type stubQuotaReader struct {
 	rateLimited bool
 }
 
-func (s *stubQuotaReader) GetTotalUsage() agent.TotalUsage         { return s.total }
-func (s *stubQuotaReader) IsRateLimited() bool                     { return s.rateLimited }
-func (s *stubQuotaReader) RetryAfter() time.Duration               { return 0 }
-func (s *stubQuotaReader) TokensPerMin(_ time.Duration) float64    { return 0 }
-func (s *stubQuotaReader) CostPerHour(_ time.Duration) float64     { return 0 }
+func (s *stubQuotaReader) GetTotalUsage() agent.TotalUsage      { return s.total }
+func (s *stubQuotaReader) IsRateLimited() bool                  { return s.rateLimited }
+func (s *stubQuotaReader) RetryAfter() time.Duration            { return 0 }
+func (s *stubQuotaReader) TokensPerMin(_ time.Duration) float64 { return 0 }
+func (s *stubQuotaReader) CostPerHour(_ time.Duration) float64  { return 0 }
 func (s *stubQuotaReader) GetAgentUsage(id string) *agent.AgentUsage {
 	return s.agentUsage[id]
 }
@@ -384,10 +384,10 @@ func TestGetQuota_WithBudget(t *testing.T) {
 		},
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:  &stubAgentLister{},
-		Quota:   quota,
-		Cfg:     cfg,
-		LockMgr: lock.New(""),
+		Agents:   &stubAgentLister{},
+		Quota:    quota,
+		Cfg:      cfg,
+		LockMgr:  lock.New(""),
 		GiteaURL: "http://localhost:3000",
 	})
 	resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
@@ -416,10 +416,10 @@ func TestGetQuota_NoBudget(t *testing.T) {
 
 	cfg := &config.Config{} // BudgetUSD = 0
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:  &stubAgentLister{},
-		Quota:   &stubQuotaReader{},
-		Cfg:     cfg,
-		LockMgr: lock.New(""),
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		Cfg:      cfg,
+		LockMgr:  lock.New(""),
 		GiteaURL: "http://localhost:3000",
 	})
 	resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})

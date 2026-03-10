@@ -276,6 +276,9 @@ func (s *Server) Run(ctx context.Context) error {
 		if s.traceStore != nil {
 			s.dashboard.SetTraceStore(s.traceStore)
 		}
+		if s.cfg != nil {
+			s.dashboard.SetConfig(s.cfg)
+		}
 		s.dashboard.RegisterNonAPIRoutes(mux)
 		s.dashboard.StartWatcher(ctx)
 	}

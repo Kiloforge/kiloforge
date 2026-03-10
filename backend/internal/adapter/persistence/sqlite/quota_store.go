@@ -66,7 +66,7 @@ func (s *QuotaStore) GetTotalUsage() agent.TotalUsage {
 	return t
 }
 
-func (s *QuotaStore) IsRateLimited() bool                     { return false }
-func (s *QuotaStore) RetryAfter() time.Duration               { return 0 }
-func (s *QuotaStore) TokensPerMin(_ time.Duration) float64    { return 0 }
-func (s *QuotaStore) CostPerHour(_ time.Duration) float64     { return 0 }
+func (s *QuotaStore) IsRateLimited() bool                  { return false }
+func (s *QuotaStore) RetryAfter() time.Duration            { return 0 }
+func (s *QuotaStore) TokensPerMin(_ time.Duration) float64 { return 0 }
+func (s *QuotaStore) CostPerHour(_ time.Duration) float64  { return 0 }

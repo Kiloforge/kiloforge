@@ -84,7 +84,7 @@ plan:
   - phase: SSE & Verification
     tasks:
       - text: Update watcher.go quotaResponse() and change detection to include rate and budget fields
-        done: false
+        done: true
       - text: Run make test and make build to verify all tests pass and no regressions
-        done: false
+        done: true
 extra: {}

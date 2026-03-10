@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/tracing"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
@@ -45,6 +46,7 @@ type Server struct {
 	eventBus    port.EventBus
 	traceStore  tracing.TraceReader
 	trackReader port.TrackReader
+	cfg         *config.Config
 	mux         *http.ServeMux
 }
 
@@ -137,6 +139,11 @@ func (s *Server) SetTraceStore(store tracing.TraceReader) {
 // SetTrackReader sets the track reader for track discovery.
 func (s *Server) SetTrackReader(reader port.TrackReader) {
 	s.trackReader = reader
+}
+
+// SetConfig sets the config reference for budget/rate SSE fields.
+func (s *Server) SetConfig(cfg *config.Config) {
+	s.cfg = cfg
 }
 
 func (s *Server) routes() {
