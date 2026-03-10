@@ -1,3 +1,9 @@
+export interface PaginatedResponse<T> {
+  items: T[];
+  next_cursor?: string;
+  total_count: number;
+}
+
 export interface Agent {
   id: string;
   name?: string;
