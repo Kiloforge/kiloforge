@@ -50,6 +50,8 @@ ACTIVE ROLE: kf-reliability — skill at ~/.claude/skills/kf-reliability/SKILL.m
 
 ## Phase 1: Pre-flight
 
+This advisor runs inside an existing, initialized Kiloforge project. It uses the project's working directory and existing artifacts — it does NOT create a new project.
+
 ### Step 1 — Verify project context
 
 ```bash

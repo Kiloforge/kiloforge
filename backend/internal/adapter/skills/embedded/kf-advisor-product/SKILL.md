@@ -29,23 +29,20 @@ Reports are written to `.agent/kf/_reports/product-advisor/` as markdown files.
 
 ## Pre-flight
 
-1. **Sync with primary branch** — your working tree may be stale:
-   ```bash
-   git reset --hard main
-   ```
+This advisor runs inside an existing, initialized Kiloforge project. It uses the project's working directory and existing artifacts — it does NOT create a new project.
 
-2. **Verify Kiloforge is initialized:**
+1. **Verify Kiloforge is initialized:**
    - Check `.agent/kf/product.md` exists
    - Check `.agent/kf/tracks.yaml` exists
    - If missing: Display error and suggest `/kf-setup`
 
-3. **Load project context:**
+2. **Load project context:**
    - Read `.agent/kf/product.md` — project description, problem statement, target users, key goals
    - Read `.agent/kf/product-guidelines.md` — design principles, voice and tone
    - Read `.agent/kf/tech-stack.md` — technology choices and constraints
    - Read `.agent/kf/tracks.yaml` — current track statuses for understanding project maturity
 
-4. **Ensure output directory exists:**
+3. **Ensure output directory exists:**
    ```bash
    mkdir -p .agent/kf/_reports/product-advisor
    ```
