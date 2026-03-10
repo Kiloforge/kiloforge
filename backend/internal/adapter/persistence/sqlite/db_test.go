@@ -171,12 +171,22 @@ func TestGooseDown_RollsBack(t *testing.T) {
 		t.Fatalf("NewProvider: %v", err)
 	}
 
-	// Roll back migration 003.
+	// Roll back migration 005 (queue_project_status_index).
+	if _, err := provider.Down(context.Background()); err != nil {
+		t.Fatalf("goose.Down (005): %v", err)
+	}
+
+	// Roll back migration 004 (work_queue).
+	if _, err := provider.Down(context.Background()); err != nil {
+		t.Fatalf("goose.Down (004): %v", err)
+	}
+
+	// Roll back migration 003 (agent_finished_at).
 	if _, err := provider.Down(context.Background()); err != nil {
 		t.Fatalf("goose.Down (003): %v", err)
 	}
 
-	// Roll back migration 002.
+	// Roll back migration 002 (agent_name).
 	if _, err := provider.Down(context.Background()); err != nil {
 		t.Fatalf("goose.Down (002): %v", err)
 	}
@@ -186,7 +196,7 @@ func TestGooseDown_RollsBack(t *testing.T) {
 		t.Error("agents.name should not exist after rolling back 002")
 	}
 
-	// Roll back migration 001.
+	// Roll back migration 001 (initial_schema).
 	if _, err := provider.Down(context.Background()); err != nil {
 		t.Fatalf("goose.Down (001): %v", err)
 	}
