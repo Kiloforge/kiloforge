@@ -38,7 +38,7 @@ func startDaemon(dataDir string) (int, error) {
 
 	// Open log file for daemon output.
 	logPath := filepath.Join(dataDir, "orchestrator.log")
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
 	if err != nil {
 		return 0, fmt.Errorf("open log file: %w", err)
 	}

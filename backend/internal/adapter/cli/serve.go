@@ -39,7 +39,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Open log file.
 	logPath := filepath.Join(cfg.DataDir, "orchestrator.log")
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
 	if err != nil {
 		return fmt.Errorf("open log file: %w", err)
 	}
