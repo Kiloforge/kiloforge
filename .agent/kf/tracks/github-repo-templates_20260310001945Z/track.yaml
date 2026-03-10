@@ -1,14 +1,11 @@
 id: github-repo-templates_20260310001945Z
-title: "GitHub repo templates — issue templates, PR template, and external PR auto-close workflow"
+title: GitHub repo templates — issue templates, PR template, and external PR auto-close workflow
 type: chore
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Add standard GitHub repository templates (bug report, feature request, PR template)
-    a workflow that auto-closes pull requests from non-org members, and a README
-    section stating the project is not accepting external contributions.
+  summary: ">"
   context: |
     As kiloforge prepares for public release, the GitHub repo needs standard community
     templates for issues and PRs, plus a security workflow to auto-close external PRs
@@ -17,7 +14,7 @@ spec:
     The repo already has CI (.github/workflows/ci.yml) and release (.github/workflows/release.yml)
     workflows. No issue or PR templates exist yet. The .github/ directory structure is already
     established.
-
+    
     Files to create:
     - .github/ISSUE_TEMPLATE/bug_report.md — bug report template with environment info fields
     - .github/ISSUE_TEMPLATE/feature_request.md — feature request template
@@ -40,30 +37,30 @@ spec:
     Straightforward file creation. Use actions/github-script@v7 for the auto-close workflow.
     The PR template test plan should reference project-specific commands (go test, npm run build).
 plan:
-  - phase: "Issue Templates"
+  - phase: Issue Templates
     tasks:
-      - text: "Create .github/ISSUE_TEMPLATE/bug_report.md with environment fields (OS, kf version, Docker version, Claude Code version)"
-        done: false
-      - text: "Create .github/ISSUE_TEMPLATE/feature_request.md with problem/solution/alternatives structure"
-        done: false
-  - phase: "PR Template"
+      - text: Create .github/ISSUE_TEMPLATE/bug_report.md with environment fields (OS, kf version, Docker version, Claude Code version)
+        done: true
+      - text: Create .github/ISSUE_TEMPLATE/feature_request.md with problem/solution/alternatives structure
+        done: true
+  - phase: PR Template
     tasks:
-      - text: "Create .github/PULL_REQUEST_TEMPLATE.md with summary, related issues, changes, and test plan checklist"
-        done: false
-  - phase: "Security Workflow"
+      - text: Create .github/PULL_REQUEST_TEMPLATE.md with summary, related issues, changes, and test plan checklist
+        done: true
+  - phase: Security Workflow
     tasks:
-      - text: "Create .github/workflows/close-external-prs.yml using actions/github-script@v7"
-        done: false
-      - text: "Verify workflow allows MEMBER, OWNER, COLLABORATOR and closes others with a polite message"
-        done: false
-  - phase: "README Update"
+      - text: Create .github/workflows/close-external-prs.yml using actions/github-script@v7
+        done: true
+      - text: Verify workflow allows MEMBER, OWNER, COLLABORATOR and closes others with a polite message
+        done: true
+  - phase: README Update
     tasks:
-      - text: "Add a 'Contributing' section to README stating: no external PRs accepted (auto-closed), all contributions flow through issues/bug reports, maintainer assesses and manages implementation"
-        done: false
-  - phase: "Verification"
+      - text: Add a 'Contributing' section to README stating: no external PRs accepted (auto-closed), all contributions flow through issues/bug reports, maintainer assesses and manages implementation
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Validate all YAML frontmatter in issue templates is well-formed"
-        done: false
-      - text: "Validate workflow YAML syntax"
-        done: false
+      - text: Validate all YAML frontmatter in issue templates is well-formed
+        done: true
+      - text: Validate workflow YAML syntax
+        done: true
 extra: {}
