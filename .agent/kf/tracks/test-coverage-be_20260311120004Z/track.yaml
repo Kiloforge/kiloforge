@@ -1,0 +1,82 @@
+id: test-coverage-be_20260311120004Z
+title: "Increase backend test coverage — CLI, REST, persistence layers"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Add unit tests for CLI commands (14.9%→60%+), REST handlers (31.4%→60%+), and SQLite stores (28.5%→60%+). Fix broken Makefile coverage reporting."
+  context: |
+    Production audit found critically low test coverage in three core backend layers:
+    CLI (14.9%), REST (31.4%), and persistence/sqlite (28.5%). The Makefile test-coverage
+    target is also broken (references nonexistent 'covdata' tool). These layers handle
+    user input, HTTP requests, and data persistence — all high-risk for production.
+  codebase_analysis: |
+    Coverage by module (from audit):
+    - cli: 14.9% — 29 source files, 9 test files. Most commands lack unit tests.
+    - rest: 31.4% — 5 source files, 12 test files. Integration-heavy but unit gaps.
+    - persistence/sqlite: 28.5% — Store CRUD operations lack direct unit tests.
+    - dashboard: 32.0% — handlers.go has no tests.
+    - cmd/kf: 0% — Main entrypoint completely untested.
+
+    Makefile lines 72-79: test-coverage target uses 'go tool covdata' which doesn't exist
+    in standard Go toolchain. Needs to use 'go test -coverprofile' + 'go tool cover' instead.
+  acceptance_criteria:
+    - CLI package test coverage ≥ 50%
+    - REST package test coverage ≥ 50%
+    - persistence/sqlite package test coverage ≥ 50%
+    - Makefile test-coverage target works correctly and reports accurate numbers
+    - Coverage threshold in Makefile is enforced (currently 45%)
+    - All new tests follow table-driven pattern per Go style guide
+    - All existing tests still pass
+  out_of_scope: |
+    - E2E test additions (separate concern)
+    - Dashboard handler tests (low priority — thin wrapper)
+    - cmd/kf main() testing (requires process-level testing)
+  technical_notes: |
+    For CLI tests: use cobra's testing patterns — execute commands with test args and
+    capture output. Mock external dependencies (database, filesystem) via interfaces.
+
+    For REST tests: use httptest.NewRequest + httptest.NewRecorder pattern already
+    established in routes_test.go. Add tests for individual handler methods.
+
+    For SQLite tests: use t.TempDir() + sqlite.Open() pattern from existing tests.
+    Test CRUD operations, edge cases (not found, duplicate), and error paths.
+
+    For Makefile fix: replace covdata approach with standard:
+    go test -coverprofile=coverage.out ./...
+    go tool cover -func=coverage.out | tail -1
+plan:
+  - phase: "Fix coverage infrastructure"
+    tasks:
+      - text: "Fix Makefile test-coverage target to use go test -coverprofile + go tool cover"
+        done: false
+      - text: "Verify make test-coverage runs and reports correct percentage"
+        done: false
+  - phase: "CLI test coverage"
+    tasks:
+      - text: "Add tests for cli/init.go — config creation, data dir setup"
+        done: false
+      - text: "Add tests for cli/add.go and cli/create.go — project registration"
+        done: false
+      - text: "Add tests for cli/up.go and cli/down.go — daemon start/stop"
+        done: false
+      - text: "Add tests for cli/status.go — status output formatting"
+        done: false
+  - phase: "REST and persistence test coverage"
+    tasks:
+      - text: "Add unit tests for REST handler methods (spawn, agents list, project CRUD)"
+        done: false
+      - text: "Add unit tests for SQLite agent_store.go CRUD operations"
+        done: false
+      - text: "Add unit tests for SQLite project_store.go CRUD operations"
+        done: false
+      - text: "Add unit tests for SQLite board_store.go operations"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test-coverage — verify all target modules meet 50% threshold"
+        done: false
+      - text: "Run make test — all tests pass including new ones"
+        done: false
+extra: {}

@@ -1,0 +1,83 @@
+id: frontend-bundle-opt-fe_20260311120006Z
+title: "Frontend bundle optimization — code splitting and lazy loading"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Add route-based code splitting with React.lazy, lazy-load heavy components, configure Vite manual chunks. Target: main chunk <300kB (from 532kB)."
+  context: |
+    Production audit found the frontend produces a single 532kB JS chunk, triggering
+    Vite's large chunk warning. This impacts initial load time, especially on slower
+    connections. Code splitting by route and lazy-loading heavy components can reduce
+    the main chunk significantly.
+  codebase_analysis: |
+    Current build output:
+    - CSS: 77.47 kB (gzip: 13.61 kB) — acceptable
+    - JS: 532.62 kB (gzip: 165.02 kB) — WARNING, exceeds 500kB threshold
+
+    Heavy components suitable for lazy loading:
+    - Pages: ProjectPage (complexity 42), AgentDetailPage (complexity 42)
+    - Components: KanbanBoard, RelationshipOverlay, DiffView/FileDiff
+    - Libraries: react-markdown (used only in terminal), @tanstack/react-virtual
+
+    Vite config at frontend/vite.config.ts — no manual chunks or splitVendorChunk configured.
+    React Router already used for routing — natural split point for React.lazy().
+  acceptance_criteria:
+    - Main JS chunk < 300kB (uncompressed)
+    - Route-based code splitting for all page components
+    - Heavy components (KanbanBoard, DiffView, RelationshipOverlay) lazy-loaded
+    - Loading fallback (Suspense) shows during chunk loads
+    - No visible performance regression (chunks load on navigation)
+    - Vite large chunk warning eliminated
+    - All tests pass, all pages load correctly
+  out_of_scope: |
+    - Service worker / offline support
+    - Image optimization (no significant images in app)
+    - SSR / pre-rendering
+  technical_notes: |
+    Use React.lazy() + Suspense for route-based splits. Wrap lazy components in
+    Suspense with a minimal loading indicator (spinner or skeleton).
+
+    For Vite manual chunks, consider splitting vendor libraries:
+    ```js
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-query': ['@tanstack/react-query'],
+            'vendor-markdown': ['react-markdown'],
+          }
+        }
+      }
+    }
+    ```
+
+    Measure before/after with `npx vite-bundle-visualizer`.
+plan:
+  - phase: "Route-based code splitting"
+    tasks:
+      - text: "Convert page imports in App.tsx to React.lazy() with Suspense wrappers"
+        done: false
+      - text: "Create a LoadingFallback component for Suspense boundaries"
+        done: false
+      - text: "Verify all routes load correctly with lazy components"
+        done: false
+  - phase: "Component and vendor splitting"
+    tasks:
+      - text: "Lazy-load KanbanBoard, RelationshipOverlay, and DiffView components"
+        done: false
+      - text: "Configure Vite manualChunks for vendor libraries (react, tanstack, markdown)"
+        done: false
+      - text: "Run build and verify chunk sizes — main chunk must be <300kB"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run npm run build — no large chunk warnings"
+        done: false
+      - text: "Run npm test — all tests pass with lazy components"
+        done: false
+      - text: "Run make build — full stack build passes"
+        done: false
+extra: {}

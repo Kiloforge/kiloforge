@@ -25,6 +25,7 @@ analytics-fe_20260310060645Z: {"title":"Analytics opt-out toggle in dashboard se
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"archived","type":"research","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 auto-open-dashboard_20260310230000Z: {"title":"Auto-open browser to dashboard on init and up","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -94,10 +95,13 @@ fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Er
 fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-track-progress_20260311110000Z: {"title":"Fix track progress — count archived as finalized","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-ws-context-lifecycle_20260310041005Z: {"title":"Fix WebSocket Session Context and Graceful Shutdown","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+frontend-bundle-opt-fe_20260311120006Z: {"title":"Frontend bundle optimization — code splitting and lazy loading","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+frontend-stability-fe_20260311120002Z: {"title":"Frontend stability — error boundary, hook fixes, fetch timeouts","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 frontend-test-hooks_20260310041006Z: {"title":"Frontend Test Coverage — Critical Hooks","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 frontend-test-infra_20260309225000Z: {"title":"Frontend Test Infrastructure and Makefile Integration","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 frontend-test-pages_20260310041007Z: {"title":"Frontend Test Coverage — Pages and Components","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 getting-started-skill_20260310055656Z: {"title":"Getting Started skill — interactive project bootstrapper with platform-aware defaults","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+gitea-dead-code-be_20260311120001Z: {"title":"Remove remaining giteaURL dead code from API, dashboard, and schema","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 gitea-proxy-authn_20260309123000Z: {"title":"Passwordless Gitea Login via Reverse Proxy Authentication","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 gitea-removal-be_20260311070000Z: {"title":"Remove Gitea dependency — strip adapter, webhook handlers, proxy, and lifecycle commands","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 github-repo-templates_20260310001945Z: {"title":"GitHub repo templates — issue templates, PR template, and external PR auto-close workflow","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -152,6 +156,7 @@ origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote
 origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-ui_20260309143001Z: {"title":"Origin Push/Pull Dashboard UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 prereq-check-init_20260308230000Z: {"title":"Prerequisite Check During Init","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
+prod-security-ci_20260311120000Z: {"title":"Harden CI pipeline — add security scanning, block vulnerable deps","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 product-advisor-skill_20260310080000Z: {"title":"Add kf-product-advisor embedded skill","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 product-audit_20260310054534Z: {"title":"Comprehensive product audit — feature inventory, gap analysis, and roadmap recommendations","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 project-documentation_20260310034000Z: {"title":"Project Documentation with Author's Foreword","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -218,6 +223,8 @@ swarm-capacity-fe_20260311000001Z: {"title":"Agent swarm UI — rename queue pan
 tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+test-coverage-be_20260311120004Z: {"title":"Increase backend test coverage — CLI, REST, persistence layers","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 tour-inmemory-state_20260310120000Z: {"title":"Tour In-Memory State — Controlled Demo Data for Guided Tour","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 tour-settings-menu_20260310041000Z: {"title":"Tour UX — Settings Menu with Take Tour Option and Auto-Dismiss Banner","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
