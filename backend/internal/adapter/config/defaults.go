@@ -17,7 +17,6 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 	return &Config{
 		OrchestratorPort: 4001,
 		DataDir:          filepath.Join(home, ".kiloforge"),
-		ContainerName:    "kf-gitea",
-		Model:            "opus",
+		Model: "opus",
 	}, nil
 }

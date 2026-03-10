@@ -14,8 +14,6 @@ const (
 type Config struct {
 	OrchestratorPort int    `json:"orchestrator_port"`
 	DataDir          string `json:"data_dir"`
-	ComposeFile      string `json:"compose_file,omitempty"`
-	ContainerName    string `json:"container_name,omitempty"`
 	// Deprecated: MaxSessionCostUSD is no longer enforced. Subscription rate
 	// limits are the primary constraint. Retained for backward compatibility.
 	MaxSessionCostUSD float64 `json:"max_session_cost_usd,omitempty"`
