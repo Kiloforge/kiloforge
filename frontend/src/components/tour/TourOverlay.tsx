@@ -168,8 +168,11 @@ export function TourOverlay() {
           </div>
         ) : (
           <div className={styles.tooltipActions}>
-            <button className={styles.skipLink} onClick={completeTour}>
-              Skip and finish tour
+            <button className={styles.nextBtn} onClick={nextStep}>
+              Next
+            </button>
+            <button className={styles.skipLink} onClick={nextStep}>
+              Skip step
             </button>
           </div>
         )}
