@@ -1,9 +1,9 @@
 id: api-polish-errors-be_20260311150003Z
-title: "API polish — structured error responses, status code consistency, and request logging"
+title: API polish — structured error responses, status code consistency, and request logging
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Improve REST API error handling with consistent status codes, add structured request
@@ -19,15 +19,15 @@ spec:
     - Line 1470: SyncBoard returns 400 for project not found (should be 404)
     - Line 365, 378: Generic "failed to load" without logging root cause
     - Line 653: os.Remove error silently swallowed (should log)
-
+    
     Health endpoint (lines 173-183):
     - Only returns {status: "ok"} — no database, Gitea, or quota checks
     - No distinction between liveness and readiness
-
+    
     Missing request logging:
     - backend/internal/adapter/rest/server.go line 149 has basic logger
     - No middleware logging request method, path, status code, duration
-
+    
     Shutdown concerns:
     - backend/internal/adapter/rest/server.go line 305 uses context.Background() instead of provided ctx
     - ShutdownTimeout hardcoded at 10s (line 317)
@@ -51,26 +51,26 @@ spec:
     4. Add database ping to health check
     5. Fix shutdown to use provided context
 plan:
-  - phase: "Error Classification"
+  - phase: Error Classification
     tasks:
       - text: Create error mapping helper in rest package — classify service errors to appropriate HTTP status codes (404, 409, 422, 500)
-        done: false
+        done: true
       - text: Audit and fix status codes in api_handler.go — MoveCard, SyncBoard, and other handlers returning generic 400
-        done: false
-  - phase: "Logging"
+        done: true
+  - phase: Logging
     tasks:
       - text: Add request logging middleware to Fiber — log method, path, status code, and duration using slog
-        done: false
+        done: true
       - text: Add error logging to handlers that currently swallow errors (os.Remove, silent failures)
-        done: false
-  - phase: "Health & Shutdown"
+        done: true
+  - phase: Health & Shutdown
     tasks:
       - text: Enhance health endpoint to check database connectivity (SQLite ping)
-        done: false
+        done: true
       - text: Fix shutdown to use provided context instead of context.Background()
-        done: false
-  - phase: "Verification"
+        done: true
+  - phase: Verification
     tasks:
       - text: Run make test and make build
-        done: false
+        done: true
 extra: {}
