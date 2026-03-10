@@ -125,8 +125,10 @@ export default function App() {
       <SkillsBanner />
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <img src="/kf_logo.webp" alt="kiloforge" className={styles.logo} />
-          <h1 className={styles.title}>kiloforge</h1>
+          <Link to="/" className={styles.homeLink}>
+            <img src="/kf_logo.webp" alt="kiloforge" className={styles.logo} />
+            <h1 className={styles.title}>kiloforge</h1>
+          </Link>
           <ConnectionStatus state={connectionState} />
           <span className={styles.headerDivider} />
           <span className={styles.headerLabel}>Agents</span>

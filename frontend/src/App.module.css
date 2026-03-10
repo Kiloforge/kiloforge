@@ -12,6 +12,14 @@
   z-index: 50;
 }
 
+.homeLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
 .logo {
   height: 16px;
   width: auto;
