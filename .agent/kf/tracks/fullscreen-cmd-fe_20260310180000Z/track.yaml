@@ -59,42 +59,42 @@ spec:
 plan:
   - phase: Core Mode Shell
     tasks:
-      - text: "Create FullScreenCommand component with fixed full-viewport overlay (z-index 200), dark background, and minimal header bar (mode title, shortcut hints, exit button)"
-        done: false
-      - text: "Create FullScreenCommand.module.css with overlay, header, and content area styles following existing glassmorphism/design-token patterns"
-        done: false
-      - text: "Add Cmd+Shift+F keyboard shortcut to useKeyboardShortcuts in App.tsx to toggle full-screen command mode state"
-        done: false
-      - text: "Add enter/exit transitions (opacity+scale 200ms) and Escape key to exit; render FullScreenCommand conditionally in App.tsx"
-        done: false
+      - text: Create FullScreenCommand component with fixed full-viewport overlay (z-index 200), dark background, and minimal header bar (mode title, shortcut hints, exit button)
+        done: true
+      - text: Create FullScreenCommand.module.css with overlay, header, and content area styles following existing glassmorphism/design-token patterns
+        done: true
+      - text: Add Cmd+Shift+F keyboard shortcut to useKeyboardShortcuts in App.tsx to toggle full-screen command mode state
+        done: true
+      - text: Add enter/exit transitions (opacity+scale 200ms) and Escape key to exit; render FullScreenCommand conditionally in App.tsx
+        done: true
   - phase: Terminal Integration
     tasks:
-      - text: "Create CommandPane component that renders a single terminal view: message list (reusing MessageDispatch), input field, connection status, and agent picker dropdown in pane header"
-        done: false
-      - text: "Create useCommandPanes hook managing pane tree state — initially single root pane with agentId assignment, active pane tracking, and localStorage persistence"
-        done: false
-      - text: "Wire CommandPane into FullScreenCommand with agent picker populated from useAgents, connecting via useAgentWebSocket per pane"
-        done: false
-      - text: "Add data-tour attributes and header button (terminal icon) as secondary entry point for full-screen mode"
-        done: false
+      - text: Create CommandPane component that renders a single terminal view: message list (reusing MessageDispatch), input field, connection status, and agent picker dropdown in pane header
+        done: true
+      - text: Create useCommandPanes hook managing pane tree state — initially single root pane with agentId assignment, active pane tracking, and localStorage persistence
+        done: true
+      - text: Wire CommandPane into FullScreenCommand with agent picker populated from useAgents, connecting via useAgentWebSocket per pane
+        done: true
+      - text: Add data-tour attributes and header button (terminal icon) as secondary entry point for full-screen mode
+        done: true
   - phase: Multi-Pane Layout
     tasks:
-      - text: "Extend useCommandPanes with binary split tree — splitPane(id, direction) creates two children, closePane(id) collapses parent"
-        done: false
-      - text: "Create SplitContainer component that recursively renders pane tree with resizable dividers (horizontal/vertical)"
-        done: false
-      - text: "Add Cmd+D (vertical split), Cmd+Shift+D (horizontal split), Cmd+W (close pane) keyboard shortcuts"
-        done: false
-      - text: "Add Cmd+[ and Cmd+] for focus navigation between panes with visible focus ring on active pane"
-        done: false
-      - text: "Persist full pane tree layout (splits, agent assignments, sizes) to localStorage; restore on re-enter"
-        done: false
+      - text: Extend useCommandPanes with binary split tree — splitPane(id, direction) creates two children, closePane(id) collapses parent
+        done: true
+      - text: Create SplitContainer component that recursively renders pane tree with resizable dividers (horizontal/vertical)
+        done: true
+      - text: Add Cmd+D (vertical split), Cmd+Shift+D (horizontal split), Cmd+W (close pane) keyboard shortcuts
+        done: true
+      - text: Add Cmd+[ and Cmd+] for focus navigation between panes with visible focus ring on active pane
+        done: true
+      - text: Persist full pane tree layout (splits, agent assignments, sizes) to localStorage; restore on re-enter
+        done: true
   - phase: Verification
     tasks:
-      - text: "Write E2E tests: toggle full-screen mode via shortcut, verify overlay appears/disappears, connect to agent in single pane, split and navigate panes"
-        done: false
-      - text: "Run make test — all existing and new tests pass"
-        done: false
-      - text: "Run make build — clean compilation with no warnings from new code"
-        done: false
+      - text: Write E2E tests: toggle full-screen mode via shortcut, verify overlay appears/disappears, connect to agent in single pane, split and navigate panes
+        done: true
+      - text: Run make test — all existing and new tests pass
+        done: true
+      - text: Run make build — clean compilation with no warnings from new code
+        done: true
 extra: {}
