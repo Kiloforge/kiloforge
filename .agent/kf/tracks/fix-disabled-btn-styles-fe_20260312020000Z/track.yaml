@@ -3,7 +3,7 @@ title: Improve disabled state visibility for accent/green buttons
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Change disabled green/accent buttons from a subtle opacity fade to a clearly
@@ -15,13 +15,13 @@ spec:
     nothing happens.
   codebase_analysis: |
     11 green/accent buttons affected across these CSS modules:
-
+    
     opacity 0.5:
       - AdvisorHub.module.css .startBtn (line ~198)
       - ConsentDialog.module.css .acceptBtn (line ~81)
       - AgentLauncher.module.css .startBtn (line ~121)
       - AddProjectForm.module.css .submitBtn (line ~190)
-
+    
     opacity 0.4:
       - OverviewPage.module.css .spawnBtn (line ~44)
       - ProjectSettingsPanel.module.css .saveBtn (line ~121)
@@ -29,11 +29,11 @@ spec:
       - SyncPanel.module.css .btn (line ~162)
       - FullScreenCommand.module.css .sendBtn (line ~263)
       - AgentTerminal.module.css .sendBtn (line ~242)
-
+    
     All follow the same pattern:
       .foo:disabled { opacity: 0.4; cursor: not-allowed; }
     Some are missing cursor: not-allowed.
-
+    
     The accent color var is defined in index.css line 31.
   acceptance_criteria:
     - Disabled green buttons are visually distinct from active ones (not just faded)
@@ -56,16 +56,16 @@ spec:
 plan:
   - phase: Fix disabled styles
     tasks:
-      - text: "Update all 11 accent button :disabled styles: set background to var(--border), color to var(--text-dim), opacity 0.6, cursor not-allowed"
-        done: false
-      - text: "Ensure all buttons have consistent :hover:not(:disabled) guards"
-        done: false
-      - text: "Verify AddProjectForm .modeBtnActive disabled state is also updated"
-        done: false
+      - text: Update all 11 accent button :disabled styles: set background to var(--border), color to var(--text-dim), opacity 0.6, cursor not-allowed
+        done: true
+      - text: Ensure all buttons have consistent :hover:not(:disabled) guards
+        done: true
+      - text: Verify AddProjectForm .modeBtnActive disabled state is also updated
+        done: true
   - phase: Verification
     tasks:
-      - text: "Run make build to verify CSS compiles and no TS errors"
-        done: false
-      - text: "Run make test to ensure no test regressions"
-        done: false
+      - text: Run make build to verify CSS compiles and no TS errors
+        done: true
+      - text: Run make test to ensure no test regressions
+        done: true
 extra: {}
