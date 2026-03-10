@@ -79,6 +79,21 @@ export interface TrackConflict {
   note?: string;
 }
 
+export interface AgentIdentity {
+  agent_id?: string;
+  role?: string;
+  session_id?: string;
+  worktree?: string;
+  branch?: string;
+  model?: string;
+  timestamp?: string;
+}
+
+export interface AgentRegister {
+  created_by?: AgentIdentity;
+  claimed_by?: AgentIdentity;
+}
+
 export interface TrackDetail {
   id: string;
   title: string;
@@ -94,6 +109,8 @@ export interface TrackDetail {
   updated_at?: string;
   dependencies?: TrackDependency[];
   conflicts?: TrackConflict[];
+  agent_register?: AgentRegister;
+  traces?: TraceSummary[];
 }
 
 export interface Project {

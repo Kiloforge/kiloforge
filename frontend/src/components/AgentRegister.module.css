@@ -1,0 +1,118 @@
+.register {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.label {
+  flex-shrink: 0;
+  width: 80px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-top: 2px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.primaryLine {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.role {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.agentId {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+}
+
+.timestamp {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.sessionLine {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sessionLabel {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.sessionId {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.copyBtn {
+  background: var(--border);
+  border: none;
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.copyBtn:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.metaLine {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.metaKey {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.metaValue {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+}
+
+@media (max-width: 480px) {
+  .row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .label {
+    width: auto;
+  }
+}

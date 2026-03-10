@@ -5,6 +5,8 @@ import type { TrackDetail } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
 import { StatusBadge } from "../components/StatusBadge";
+import { AgentRegister } from "../components/AgentRegister";
+import { TraceList } from "../components/TraceList";
 import styles from "./TrackDetailPage.module.css";
 
 export function TrackDetailPage() {
@@ -168,6 +170,26 @@ export function TrackDetailPage() {
             {tasksCompleted}/{tasksTotal} tasks complete
           </span>
         </div>
+      )}
+
+      {track.agent_register &&
+        (track.agent_register.created_by || track.agent_register.claimed_by) && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Agent Register</h3>
+          <AgentRegister register={track.agent_register} />
+        </section>
+      )}
+
+      {track.traces && track.traces.length > 0 && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>
+            Traces
+            <span className={styles.sectionCount}>{track.traces.length}</span>
+          </h3>
+          <div className={styles.tracesWrapper}>
+            <TraceList traces={track.traces} />
+          </div>
+        </section>
       )}
 
       {track.spec && (

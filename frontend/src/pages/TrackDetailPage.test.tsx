@@ -174,4 +174,88 @@ describe("TrackDetailPage", () => {
       expect(screen.getByText("0/10 tasks complete")).toBeInTheDocument();
     });
   });
+
+  it("renders agent register when data present", async () => {
+    const trackWithRegister: TrackDetail = {
+      ...activeTrack,
+      agent_register: {
+        created_by: {
+          role: "architect",
+          agent_id: "arch-abc123def456",
+          session_id: "sess-architect-1",
+          timestamp: "2026-03-12T14:00:00Z",
+        },
+        claimed_by: {
+          role: "developer",
+          agent_id: "dev-xyz789",
+          session_id: "sess-developer-1",
+          worktree: "worker-3",
+          branch: "feature/track-1",
+          model: "claude-opus-4-6",
+          timestamp: "2026-03-12T15:00:00Z",
+        },
+      },
+    };
+    mockFetcher.mockImplementation(() => Promise.resolve(trackWithRegister));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Agent Register")).toBeInTheDocument();
+    });
+    expect(screen.getByText("architect")).toBeInTheDocument();
+    expect(screen.getByText("developer")).toBeInTheDocument();
+    expect(screen.getByText("worker-3")).toBeInTheDocument();
+    expect(screen.getByText("feature/track-1")).toBeInTheDocument();
+    expect(screen.getByText("sess-developer-1")).toBeInTheDocument();
+    // Copy buttons should be present for session IDs
+    expect(screen.getAllByText("Copy")).toHaveLength(2);
+  });
+
+  it("hides agent register when data absent", async () => {
+    mockFetcher.mockImplementation(() => Promise.resolve(activeTrack));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Test Feature Track")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Agent Register")).not.toBeInTheDocument();
+  });
+
+  it("renders traces section with links", async () => {
+    const trackWithTraces: TrackDetail = {
+      ...activeTrack,
+      traces: [
+        {
+          trace_id: "trace-abc",
+          root_name: "track/track-1",
+          span_count: 5,
+          start_time: "2026-03-12T14:00:00Z",
+          end_time: "2026-03-12T14:01:00Z",
+        },
+        {
+          trace_id: "trace-def",
+          root_name: "build",
+          span_count: 3,
+          start_time: "2026-03-12T15:00:00Z",
+          end_time: "2026-03-12T15:00:30Z",
+        },
+      ],
+    };
+    mockFetcher.mockImplementation(() => Promise.resolve(trackWithTraces));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Traces")).toBeInTheDocument();
+    });
+    // TraceList renders root_name as links
+    const link = screen.getByText("track/track-1");
+    expect(link.closest("a")).toHaveAttribute("href", "/traces/trace-abc");
+    expect(screen.getByText("build")).toBeInTheDocument();
+  });
+
+  it("hides traces section when no traces", async () => {
+    mockFetcher.mockImplementation(() => Promise.resolve(activeTrack));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Test Feature Track")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Traces")).not.toBeInTheDocument();
+  });
 });
