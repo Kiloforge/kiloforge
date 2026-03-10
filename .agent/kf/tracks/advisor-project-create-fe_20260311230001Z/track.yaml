@@ -1,0 +1,78 @@
+id: advisor-project-create-fe_20260311230001Z
+title: "Advisor Hub: add project name input to launch dialog"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Add a required "Project Name" text field to the Advisor Hub launch dialog
+    so users name the project before the advisor runs. Send the name as the
+    project field in the spawn request.
+  context: |
+    The backend now creates a fresh project repo when an advisor is spawned
+    with a project name. The frontend needs to collect this name from the user
+    and pass it through the API. Currently the AdvisorHub launch dialog only
+    has a prompt textarea — it needs a project name input above it.
+  codebase_analysis: |
+    Key files:
+    - frontend/src/components/AdvisorHub.tsx — launch dialog with prompt textarea.
+      onLaunch callback signature: (role: AgentRole, prompt: string).
+      Need to add project name state + input field, extend onLaunch to include
+      project name.
+    - frontend/src/types/api.ts:279 — SpawnInteractiveRequest already has
+      optional `project?: string` field.
+    - frontend/src/App.tsx:174 — handleLaunch creates SpawnInteractiveRequest
+      with {role, prompt}. Need to also set `project` field.
+    - frontend/src/components/AgentLauncher.tsx:5 — AgentRole type.
+
+    The onLaunch callback chain:
+      AdvisorHub.onLaunch(role, prompt)
+        → OverviewPage.onAdvisorLaunch(role, prompt)
+          → App.handleLaunch(role, prompt)
+            → POST /api/agents/interactive {role, prompt}
+
+    Need to thread `project` through this chain.
+  acceptance_criteria:
+    - Advisor launch dialog has a "Project Name" text input (required)
+    - Project name is validated client-side (non-empty, slug-safe characters)
+    - Project name is sent as `project` field in SpawnInteractiveRequest
+    - After advisor launches, new project appears in the Projects section
+    - Non-advisor launches are unaffected
+    - Existing AdvisorHub tests updated for new input field
+  out_of_scope: |
+    - Backend changes (separate BE track)
+    - Modifying advisor skills behavior
+    - Project deletion or management UI
+    - Auto-navigation to the new project after creation
+  technical_notes: |
+    Approach:
+    1. Add projectName state to AdvisorHub component
+    2. Add text input with label "Project Name" above the prompt textarea
+    3. Validate: required, only lowercase alphanumeric + hyphens
+    4. Extend onLaunch signature to (role, prompt, project)
+    5. Thread project through OverviewPage → App.handleLaunch
+    6. In handleLaunch, set req.project = project when provided
+    7. Update tests for new input field
+plan:
+  - phase: Component changes
+    tasks:
+      - text: "Add projectName state and text input to AdvisorHub launch dialog"
+        done: false
+      - text: "Add client-side validation: required, slug-safe (lowercase alphanumeric + hyphens)"
+        done: false
+      - text: "Extend onLaunch callback signature to include project name"
+        done: false
+  - phase: Wiring
+    tasks:
+      - text: "Thread project name through OverviewPage.onAdvisorLaunch to App.handleLaunch"
+        done: false
+      - text: "In handleLaunch, include project in SpawnInteractiveRequest when provided"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Update AdvisorHub tests for new project name input"
+        done: false
+      - text: "Run make test and make lint — all pass"
+        done: false
+extra: {}

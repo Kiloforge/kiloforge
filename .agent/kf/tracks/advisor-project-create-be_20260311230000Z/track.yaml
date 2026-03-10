@@ -1,0 +1,88 @@
+id: advisor-project-create-be_20260311230000Z
+title: "Advisor launch creates a fresh project repo and runs against it"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    When spawning an advisor agent via POST /api/agents/interactive with an
+    advisor role and a project name, create a fresh git repo via CreateProject,
+    install local skills, and use that repo dir as the agent's WorkDir.
+  context: |
+    The Advisor Hub lets users launch Product Advisor or Reliability Advisor
+    agents, but currently advisors run in the server's CWD with no project
+    context. The desired flow is: user enters a project name + prompt, backend
+    creates a fresh repo (git init + initial commit), installs skills, registers
+    the project, and spawns the advisor agent inside that repo.
+  codebase_analysis: |
+    Existing infrastructure:
+    - ProjectService.CreateProject(ctx, name) — git inits a repo at
+      {dataDir}/repos/{name}, registers in project store, creates logs dir.
+      File: backend/internal/core/service/project_service.go:119
+    - SpawnInteractiveAgent handler at api_handler.go:443 — already receives
+      optional `project` field in SpawnInteractiveRequest but only uses it for
+      setup checks, never resolves ProjectDir as WorkDir.
+    - installLocalSkills(projectDir) in cli/create.go:76 — installs embedded
+      kf skills into project's .claude/skills/. Need to extract this or make
+      it callable from the handler.
+    - APIHandler already has projectMgr with CreateProject method (api_handler.go:57).
+
+    Changes needed:
+    - api_handler.go SpawnInteractiveAgent: when role is advisor-* and project
+      name is provided, call projectMgr.CreateProject, install skills, and set
+      WorkDir to the new project dir.
+    - Skills installation: the installLocalSkills function is in cli package.
+      Either move to a shared package or call the skills installer from the
+      handler via the existing skills infrastructure.
+    - OpenAPI: document that `project` field for advisor roles means "create
+      this project" (not "use existing project").
+  acceptance_criteria:
+    - POST /api/agents/interactive with role=advisor-product and project=my-app
+      creates a new git repo at {dataDir}/repos/my-app
+    - The new repo has an initial commit
+    - Local skills are installed into the new project directory
+    - The project appears in GET /api/projects after creation
+    - The advisor agent runs with WorkDir set to the new project directory
+    - If project name already exists, return 409 Conflict
+    - Existing non-advisor spawn behavior is unchanged
+  out_of_scope: |
+    - Frontend changes (separate FE track)
+    - Changing the advisor skill itself (kf-advisor-product/reliability)
+    - Adding git remote or clone functionality
+    - Modifying CreateProject service logic
+  technical_notes: |
+    Approach:
+    1. In SpawnInteractiveAgent handler, detect advisor role + project name
+    2. Call projectMgr.CreateProject(ctx, projectName) to create repo
+    3. Install local skills into the new project dir (reuse or extract
+       installLocalSkills logic from cli/create.go)
+    4. Set opts.WorkDir to result.Project.ProjectDir
+    5. Proceed with normal spawn flow — agent runs inside the new repo
+    6. Add test: advisor spawn with project name creates repo and sets WorkDir
+plan:
+  - phase: Skills extraction
+    tasks:
+      - text: "Extract installLocalSkills from cli package into a shared skills installer callable from both CLI and REST handler"
+        done: false
+      - text: "Write test for the extracted skills installer"
+        done: false
+  - phase: Handler integration
+    tasks:
+      - text: "Write test: SpawnInteractiveAgent with advisor role + project creates repo and sets WorkDir"
+        done: false
+      - text: "Write test: advisor spawn with existing project name returns 409"
+        done: false
+      - text: "Write test: non-advisor spawn ignores project field for creation (existing behavior preserved)"
+        done: false
+      - text: "In SpawnInteractiveAgent handler, when role is advisor-* and project is set: call CreateProject, install skills, set WorkDir"
+        done: false
+      - text: "Return 409 if project name already exists"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Run make test — all existing + new tests pass"
+        done: false
+      - text: "Run make lint — no new lint issues"
+        done: false
+extra: {}

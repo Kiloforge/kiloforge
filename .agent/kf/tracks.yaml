@@ -11,6 +11,8 @@ add-local-ssh-identity_20260308220000Z: {"title":"Add Command SSH Identity and R
 add-project-command_20260307122000Z: {"title":"Implement 'kf add' Command for Project Registration","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 admin-operations-ui_20260309173001Z: {"title":"Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 advisor-hub-fe_20260310115600Z: {"title":"Advisor Hub — dedicated UI section for launching and viewing advisor agents","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+advisor-project-create-be_20260311230000Z: {"title":"Advisor launch creates a fresh project repo and runs against it","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+advisor-project-create-fe_20260311230001Z: {"title":"Advisor Hub: add project name input to launch dialog","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename advisors to kf-advisor-* prefix","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -83,7 +85,6 @@ fix-board-sync-ux-be_20260310012000Z: {"title":"Fix Board Sync and SSE Events (B
 fix-board-sync-ux-fe_20260310012001Z: {"title":"Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-build-outside-worktree_20260310040000Z: {"title":"Fix Go Build VCS Detection Outside Worktrees","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-buildvcs-worktree_20260309114000Z: {"title":"Fix VCS Stamping in Git Worktrees","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-fix-consent-zindex-fe_20260311230000Z: {"title":"Fix ConsentDialog z-index — render above other modals","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 fix-dashboard-interactive-agent_20260309230000Z: {"title":"Fix Interactive Agent Wiring in Dashboard Command","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-developer-availability_20260310120001Z: {"title":"Fix track availability detection — CLI branch awareness + skill updates","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 fix-gitea-push-auth_20260309224000Z: {"title":"Fix Gitea Push Authentication — Embed Credentials in Remote URL","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -100,7 +101,6 @@ fix-relay-goroutine-leak_20260310041000Z: {"title":"Fix Agent Relay Goroutine Le
 fix-route-conflict_20260308200100Z: {"title":"Fix Route Pattern Conflict Panic on Startup","status":"archived","type":"bug","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-serve-interactive-agent_20260309232000Z: {"title":"Fix Interactive Agent Wiring in Serve Command (kf up)","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-setup-consent-403_20260311120000Z: {"title":"Fix setup dialog 403 — cascade to consent dialog instead of showing raw error","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-setup-git-init-be_20260311230001Z: {"title":"Fix setup 500 on repos without git — auto-run git init","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 fix-skill-prereq-be_20260310000644Z: {"title":"Fix Skill Prerequisite Chain — Rename and Required List (Backend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-skill-prereq-fe_20260310000645Z: {"title":"Fix Skill Prerequisite Chain — Frontend Proactive Gating","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-skills-412-prompt_20260309233000Z: {"title":"Handle 412 Skills Missing with Install Prompt Instead of Error","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -219,8 +219,6 @@ release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitH
 reliability-advisor-skill_20260310001315Z: {"title":"Reliability advisor skill — automated testing, linting, and static analysis guidance agent","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 reliability-metrics-be_20260310093038Z: {"title":"Agent reliability metrics — backend collection, storage, and API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 reliability-metrics-fe_20260310093039Z: {"title":"Agent reliability metrics — frontend dashboard and historical visualization","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-remove-inreview-column-be_20260310153823Z: {"title":"Remove in_review kanban column from backend","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-remove-inreview-column-fe_20260310153824Z: {"title":"Remove in_review kanban column from frontend","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 replace-tracing-be_20260310144200Z: {"title":"Add reliability events and trace spans for agent replacement lifecycle","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
