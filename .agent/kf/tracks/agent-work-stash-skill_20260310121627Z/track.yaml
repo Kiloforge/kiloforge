@@ -101,7 +101,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Test kf-track stash subcommands manually with a dummy stash branch
-        done: false
+        done: true
       - text: Run make build to verify no syntax errors in modified files
-        done: false
+        done: true
 extra: {}
