@@ -13,6 +13,8 @@ import { AddProjectForm } from "../components/AddProjectForm";
 import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { SwarmPanel } from "../components/SwarmPanel";
 import { PaginatedList } from "../components/PaginatedList";
+import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
+import { HelpTooltip } from "../components/HelpTooltip";
 import { useTraces } from "../hooks/useTraces";
 import styles from "./OverviewPage.module.css";
 import appStyles from "../App.module.css";
@@ -154,9 +156,14 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
     <>
       <StatCards agentCount={agents.length} quota={quota} />
 
+      <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />
+
       <section className={appStyles.panel}>
         <div className={styles.sectionHeader}>
-          <h2 className={appStyles.panelTitle}>Agents</h2>
+          <h2 className={appStyles.panelTitle}>
+            Agents
+            <HelpTooltip term="Agents" definition="AI workers that implement tracks. Each agent runs in its own worktree and can be a developer, reviewer, or interactive session." />
+          </h2>
           <div className={styles.sectionActions}>
             <Link to="/agents" className={styles.viewAllLink}>View all</Link>
             {onSpawnInteractive && (
@@ -213,14 +220,23 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
       </section>
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Projects</h2>
+        <h2 className={appStyles.panelTitle}>
+          Projects
+          <HelpTooltip term="Projects" definition="Registered Git repositories that Kiloforge manages. Each project can have tracks generated and agents assigned." />
+        </h2>
         <AddProjectForm adding={adding} error={error} onAdd={addProject} onClearError={clearError} />
         {projectsLoading ? (
           <p className={appStyles.empty}>Loading projects...</p>
         ) : projects.length === 0 ? (
-          <p className={appStyles.empty}>
-            No projects registered yet, Kiloforger. Use the form above or run <code>kf add &lt;remote&gt;</code>
-          </p>
+          <div className={appStyles.empty}>
+            <p>No projects registered yet, Kiloforger.</p>
+            <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-dimmed)" }}>
+              Use the form above, or from the terminal:
+            </p>
+            <code style={{ display: "block", marginTop: 4, padding: "6px 10px", background: "var(--bg-code)", borderRadius: 6, fontSize: 12 }}>
+              kf add https://github.com/you/repo.git
+            </code>
+          </div>
         ) : (
           <div className={styles.projectList}>
             <div className={styles.projectHeader}>
@@ -238,7 +254,10 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
       </section>
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>AI Agent Swarm</h2>
+        <h2 className={appStyles.panelTitle}>
+          AI Agent Swarm
+          <HelpTooltip term="Swarm" definition="A managed pool of AI agents that automatically pick up and implement tracks. Start the swarm to parallelize development work." />
+        </h2>
         <SwarmPanel
           swarm={swarm ?? null}
           loading={swarmLoading ?? false}
@@ -252,7 +271,10 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
       </section>
 
       <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>All Tracks</h2>
+        <h2 className={appStyles.panelTitle}>
+          All Tracks
+          <HelpTooltip term="Tracks" definition="Units of work generated from feature requests. Each track has a spec, implementation plan, and phases that agents execute sequentially." />
+        </h2>
         <PaginatedList
           remainingCount={trackRemainingCount}
           hasNextPage={trackHasNextPage}

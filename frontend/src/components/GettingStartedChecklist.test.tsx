@@ -15,18 +15,6 @@ function renderWithQuery(ui: React.ReactElement) {
 
 const STORAGE_KEY = "kf_getting_started_dismissed";
 
-const storageMock: Record<string, string> = {};
-const localStorageMock = {
-  getItem: (key: string) => storageMock[key] ?? null,
-  setItem: (key: string, value: string) => { storageMock[key] = value; },
-  removeItem: (key: string) => { delete storageMock[key]; },
-  clear: () => { for (const k of Object.keys(storageMock)) delete storageMock[k]; },
-  get length() { return Object.keys(storageMock).length; },
-  key: (_i: number) => null as string | null,
-};
-
-Object.defineProperty(globalThis, "localStorage", { value: localStorageMock, writable: true });
-
 function makeAgent(overrides: Partial<Agent> = {}): Agent {
   return {
     id: "a1", role: "developer", ref: "", status: "running",
@@ -38,7 +26,7 @@ function makeAgent(overrides: Partial<Agent> = {}): Agent {
 
 describe("GettingStartedChecklist", () => {
   beforeEach(() => {
-    localStorageMock.clear();
+    localStorage.clear();
   });
 
   it("renders checklist when fewer than 2 projects", () => {
@@ -98,11 +86,8 @@ describe("GettingStartedChecklist", () => {
   });
 
   it("marks 'Spawn your first agent' complete when agents exist", () => {
-    const agents: Agent[] = [
-      makeAgent(),
-    ];
     renderWithQuery(
-      <GettingStartedChecklist projects={[]} agents={agents} tracks={[]} />,
+      <GettingStartedChecklist projects={[]} agents={[makeAgent()]} tracks={[]} />,
     );
     const item = screen.getByText("Spawn your first agent");
     expect(item.closest("[data-done='true']")).toBeInTheDocument();
@@ -130,12 +115,9 @@ describe("GettingStartedChecklist", () => {
     const projects: Project[] = [
       { slug: "test", repo_name: "test", origin_remote: "", active: true },
     ];
-    const agents: Agent[] = [
-      makeAgent(),
-    ];
-    const tracks = [{ id: "t1", title: "T", status: "pending", project: "p", deps_count: 0, conflict_count: 0, created_at: "", updated_at: "" }];
+    const tracks = [{ id: "t1", title: "T", status: "pending", project: "p", deps_count: 0, conflict_count: 0 }];
     renderWithQuery(
-      <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />,
+      <GettingStartedChecklist projects={projects} agents={[makeAgent()]} tracks={tracks} />,
     );
     expect(screen.queryByText("Getting Started")).not.toBeInTheDocument();
   });

@@ -143,7 +143,7 @@ export function TourProvider({ children }: TourProviderProps) {
     if (status === "completed" && prevStatusRef.current !== "completed") {
       toast?.addToast(
         "success",
-        "Tour complete! You can restart it anytime from the settings menu (gear icon).",
+        "Tour complete! Next step: add a project with `kf add <remote>` or use the form on the overview page.",
       );
     }
     prevStatusRef.current = status;
