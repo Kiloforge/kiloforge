@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+agent-idle-suspend-fe_20260312020001Z/fix-terminal-render-crash-fe_20260311235900Z: {"risk":"medium","note":"Both touch AgentTerminal.tsx — rendering bugs vs status handling","added":"2026-03-10"}

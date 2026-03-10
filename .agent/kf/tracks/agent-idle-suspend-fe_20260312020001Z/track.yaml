@@ -1,0 +1,102 @@
+id: agent-idle-suspend-fe_20260312020001Z
+title: "Frontend awareness of connection-based agent auto-suspension"
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Add frontend support for the connection-based auto-suspension feature.
+    Display connection count on interactive agents, handle the "suspended"
+    state correctly in WebSocket reconnection logic, and show appropriate
+    UI for agents suspended due to idle disconnect.
+  context: |
+    The backend (agent-idle-suspend-be track) adds auto-suspension for interactive
+    agents when all browser connections drop to zero. The frontend needs to:
+
+    1. Stop WebSocket reconnection attempts when an agent transitions to "suspended"
+       (currently "suspended" is non-terminal, so the frontend would keep reconnecting)
+    2. Display the connected_clients count from the API
+    3. Show clear status messaging for agents suspended due to idle disconnect
+    4. Provide a resume action for suspended agents
+  codebase_analysis: |
+    **WebSocket reconnection** (`frontend/src/hooks/useAgentWebSocket.ts`):
+    - Stops reconnecting on terminal states: completed, failed, stopped, force-killed,
+      resume-failed, replaced
+    - "suspended" is NOT in this list — frontend will currently keep reconnecting
+      to a suspended agent, which is incorrect for connection-based suspension
+    - Need to add "suspended" to the no-reconnect list
+
+    **Agent types** (`frontend/src/types/`):
+    - Agent interface likely has status field but no connected_clients
+    - Need to add connected_clients: number field
+
+    **AgentTerminal** (`frontend/src/components/AgentTerminal.tsx`):
+    - Shows connection status dot (green/yellow/red)
+    - Disables input when disconnected or agent is terminal
+    - Needs to handle "suspended" as a special non-terminal-but-disconnected state
+
+    **Agent cards/list** (`frontend/src/components/AgentCard.tsx` or similar):
+    - Shows agent status badge
+    - Has Resume button for suspended agents (existing)
+    - Could show connected_clients count
+
+    **Conflict note**: fix-terminal-render-crash-fe_20260311235900Z is claimed
+    and touches AgentTerminal.tsx. Minimal overlap expected — that track fixes
+    rendering bugs while this track adds status handling. But concurrent edits
+    to the same file are possible.
+  acceptance_criteria:
+    - WebSocket hook stops reconnecting when agent status is "suspended"
+    - Agent type includes connected_clients number field
+    - Agent cards show connected viewer count for running interactive agents
+    - Suspended-by-disconnect agents show clear "Suspended — no active connections" status
+    - Resume button works for suspended agents (existing functionality, verify works)
+    - Terminal component handles suspended state — shows message instead of reconnecting
+    - No regression in existing terminal functionality
+  out_of_scope: |
+    - Backend auto-suspension logic (separate BE track)
+    - Auto-resume on reconnect (user must click Resume)
+    - Changing the WebSocket message protocol
+    - Real-time connection count updates (relies on SSE agent_update events)
+  technical_notes: |
+    **Key changes:**
+
+    1. **useAgentWebSocket.ts** — Add "suspended" to the set of statuses that
+       stop reconnection. When the WebSocket closes and agent status is "suspended",
+       do NOT enter the reconnect loop.
+
+    2. **Agent type** — Add `connected_clients?: number` to the Agent interface.
+
+    3. **AgentCard** — Show a small "N viewers" badge when connected_clients > 0
+       for running interactive agents. This helps users understand multi-window state.
+
+    4. **AgentTerminal** — When agent status transitions to "suspended", show a
+       message like "Agent suspended — no active connections. Click Resume to continue."
+       instead of showing "Reconnecting..." forever.
+
+    5. **Status badge** — Add "idle_disconnect" as a recognized ShutdownReason
+       to display "Suspended (idle)" vs generic "Suspended".
+plan:
+  - phase: "Type and hook updates"
+    tasks:
+      - text: "Add connected_clients field to Agent TypeScript interface"
+        done: false
+      - text: "Add 'suspended' to WebSocket reconnect stop-list in useAgentWebSocket.ts"
+        done: false
+      - text: "When WS closes and REST status check returns 'suspended', set agent status and stop reconnecting"
+        done: false
+  - phase: "UI components"
+    tasks:
+      - text: "Show connected viewer count badge on AgentCard for running interactive agents"
+        done: false
+      - text: "Display 'Suspended — no active connections' status for idle-disconnect agents"
+        done: false
+      - text: "Handle suspended state in AgentTerminal — show resume prompt instead of reconnecting"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build-frontend — no TypeScript errors"
+        done: false
+      - text: "Verify Resume button works for suspended agents in the UI"
+        done: false
+extra: {}
