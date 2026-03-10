@@ -148,6 +148,77 @@ describe("useOriginSync", () => {
     expect(result.current.error).toBe("Network error");
   });
 
+  it("push 409 sets conflict state with push direction", async () => {
+    mockFetcher.mockResolvedValueOnce(mockSyncStatus);
+
+    const { result } = renderHook(() => useOriginSync("my-proj"), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    mockFetcher.mockRejectedValueOnce(
+      new FetchError(409, { error: "Branches have diverged", direction: "push" }),
+    );
+
+    await act(async () => {
+      await result.current.push({ remote_branch: "kf/main" });
+    });
+
+    expect(result.current.conflict).toEqual({ active: true, direction: "push" });
+    expect(result.current.error).toBeNull();
+  });
+
+  it("pull 409 sets conflict state with pull direction", async () => {
+    mockFetcher.mockResolvedValueOnce(mockSyncStatus);
+
+    const { result } = renderHook(() => useOriginSync("my-proj"), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    mockFetcher.mockRejectedValueOnce(
+      new FetchError(409, { error: "Branches have diverged", direction: "pull" }),
+    );
+
+    await act(async () => {
+      await result.current.pull();
+    });
+
+    expect(result.current.conflict).toEqual({ active: true, direction: "pull" });
+    expect(result.current.error).toBeNull();
+  });
+
+  it("clearConflict resets conflict state", async () => {
+    mockFetcher.mockResolvedValueOnce(mockSyncStatus);
+
+    const { result } = renderHook(() => useOriginSync("my-proj"), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    mockFetcher.mockRejectedValueOnce(
+      new FetchError(409, { error: "Diverged", direction: "push" }),
+    );
+
+    await act(async () => {
+      await result.current.push({ remote_branch: "kf/main" });
+    });
+    expect(result.current.conflict?.active).toBe(true);
+
+    act(() => result.current.clearConflict());
+    expect(result.current.conflict).toBeNull();
+  });
+
+  it("non-409 push error still sets generic error", async () => {
+    mockFetcher.mockResolvedValueOnce(mockSyncStatus);
+
+    const { result } = renderHook(() => useOriginSync("my-proj"), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    mockFetcher.mockRejectedValueOnce(new FetchError(500, { error: "Server error" }));
+
+    await act(async () => {
+      await result.current.push({ remote_branch: "kf/main" });
+    });
+
+    expect(result.current.conflict).toBeNull();
+    expect(result.current.error).toBe("Server error");
+  });
+
   it("clearError resets error state", async () => {
     mockFetcher.mockResolvedValueOnce(mockSyncStatus);
 
