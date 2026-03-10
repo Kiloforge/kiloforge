@@ -16,12 +16,15 @@ interface UseQueueResult {
   handleQueueUpdate: (raw: unknown) => void;
 }
 
-export function useQueue(): UseQueueResult {
+export function useQueue(projectSlug?: string): UseQueueResult {
   const queryClient = useQueryClient();
 
   const { data: queue = null, isLoading } = useQuery({
-    queryKey: queryKeys.queue,
-    queryFn: () => fetcher<QueueStatus>("/api/queue"),
+    queryKey: queryKeys.queue(projectSlug),
+    queryFn: () =>
+      fetcher<QueueStatus>(
+        projectSlug ? `/api/queue?project=${projectSlug}` : "/api/queue",
+      ),
   });
 
   const startMutation = useMutation({
@@ -32,7 +35,10 @@ export function useQueue(): UseQueueResult {
         body: JSON.stringify(project ? { project } : {}),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.queue });
+      queryClient.invalidateQueries({ queryKey: queryKeys.queue(projectSlug) });
+      if (projectSlug) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
+      }
     },
   });
 
@@ -40,7 +46,10 @@ export function useQueue(): UseQueueResult {
     mutationFn: () =>
       fetcher("/api/queue/stop", { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.queue });
+      queryClient.invalidateQueries({ queryKey: queryKeys.queue(projectSlug) });
+      if (projectSlug) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
+      }
     },
   });
 
@@ -52,12 +61,15 @@ export function useQueue(): UseQueueResult {
         body: JSON.stringify(settings),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.queue });
+      queryClient.invalidateQueries({ queryKey: queryKeys.queue(projectSlug) });
+      if (projectSlug) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
+      }
     },
   });
 
   const start = async (project?: string): Promise<void> => {
-    await startMutation.mutateAsync(project);
+    await startMutation.mutateAsync(project ?? projectSlug);
   };
 
   const stop = async (): Promise<void> => {
@@ -73,12 +85,18 @@ export function useQueue(): UseQueueResult {
       const event = raw as SSEEventData;
       const data = event.data as QueueStatus;
       if (data && typeof data.running === "boolean") {
-        queryClient.setQueryData<QueueStatus>(queryKeys.queue, data);
+        queryClient.setQueryData<QueueStatus>(queryKeys.queue(projectSlug), data);
+        if (projectSlug) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
+        }
       } else {
-        queryClient.invalidateQueries({ queryKey: queryKeys.queue });
+        queryClient.invalidateQueries({ queryKey: queryKeys.queue(projectSlug) });
+        if (projectSlug) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.queue() });
+        }
       }
     },
-    [queryClient],
+    [queryClient, projectSlug],
   );
 
   return {

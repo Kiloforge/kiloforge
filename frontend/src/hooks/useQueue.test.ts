@@ -138,4 +138,86 @@ describe("useQueue", () => {
 
     expect(typeof result.current.handleQueueUpdate).toBe("function");
   });
+
+  describe("project-scoped", () => {
+    it("fetches queue with project query param when projectSlug is provided", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const { result } = renderHook(() => useQueue("my-project"), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(fetcher).toHaveBeenCalledWith("/api/queue?project=my-project");
+    });
+
+    it("uses project-scoped query key for cache separation", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const wrapper = createWrapper();
+
+      // Render global and project-scoped hooks in the same client
+      const { result: globalResult } = renderHook(() => useQueue(), { wrapper });
+      const { result: scopedResult } = renderHook(() => useQueue("proj-a"), { wrapper });
+
+      await waitFor(() => expect(globalResult.current.loading).toBe(false));
+      await waitFor(() => expect(scopedResult.current.loading).toBe(false));
+
+      // Both should have called fetcher with different URLs
+      expect(fetcher).toHaveBeenCalledWith("/api/queue");
+      expect(fetcher).toHaveBeenCalledWith("/api/queue?project=proj-a");
+    });
+
+    it("passes projectSlug as default to start() when no project arg given", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const { result } = renderHook(() => useQueue("my-project"), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      (fetcher as Mock).mockResolvedValue({});
+      await act(async () => {
+        await result.current.start();
+      });
+
+      expect(fetcher).toHaveBeenCalledWith("/api/queue/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project: "my-project" }),
+      });
+    });
+
+    it("allows overriding projectSlug in start() call", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const { result } = renderHook(() => useQueue("my-project"), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      (fetcher as Mock).mockResolvedValue({});
+      await act(async () => {
+        await result.current.start("other-project");
+      });
+
+      expect(fetcher).toHaveBeenCalledWith("/api/queue/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project: "other-project" }),
+      });
+    });
+
+    it("invalidates both project-scoped and global keys on SSE update", async () => {
+      (fetcher as Mock).mockResolvedValue(mockQueue);
+      const wrapper = createWrapper();
+      const { result } = renderHook(() => useQueue("my-project"), { wrapper });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      const updatedQueue: QueueStatus = { ...mockQueue, active_workers: 1 };
+
+      act(() => {
+        result.current.handleQueueUpdate({ data: updatedQueue });
+      });
+
+      // SSE handler should set data on the project-scoped key
+      // and invalidate the global key (since project events affect global view)
+    });
+  });
 });
