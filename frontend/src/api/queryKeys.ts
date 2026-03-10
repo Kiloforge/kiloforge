@@ -26,4 +26,7 @@ export const queryKeys = {
   projectSettings: (slug: string) => ["projectSettings", slug] as const,
   queue: (projectSlug?: string) => projectSlug ? ["queue", projectSlug] as const : ["queue"] as const,
   swarm: (projectSlug?: string) => projectSlug ? ["swarm", projectSlug] as const : ["swarm"] as const,
+  reliabilityEvents: (filters?: Record<string, string>) => ["reliability", "events", filters] as const,
+  reliabilityEventsPaginated: (filters?: Record<string, string>) => ["reliability", "events", filters, "paginated"] as const,
+  reliabilitySummary: (since?: string, bucket?: string) => ["reliability", "summary", since, bucket] as const,
 };

@@ -358,3 +358,23 @@ export interface ProjectMetadata {
   style_guides?: StyleGuideEntry[];
   track_summary: TrackSummary;
 }
+
+export interface ReliabilityEvent {
+  id: string;
+  event_type: string;
+  severity: "warn" | "error" | "critical";
+  agent_id?: string;
+  scope?: string;
+  detail?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ReliabilityBucket {
+  timestamp: string;
+  counts: Record<string, number>;
+}
+
+export interface ReliabilitySummary {
+  buckets: ReliabilityBucket[];
+  totals: Record<string, number>;
+}

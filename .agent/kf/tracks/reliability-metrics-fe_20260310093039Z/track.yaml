@@ -5,17 +5,14 @@ status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Build a Reliability dashboard page showing historical agent failures,
-    lock contention, and operational health metrics with charts and
-    filterable event tables.
+  summary: ">"
   context: |
     The backend track (reliability-metrics-be) adds a reliability_events
     table and REST API endpoints:
     - GET /api/reliability/events — paginated, filterable event list
     - GET /api/reliability/summary — time-bucketed aggregation counts
     - SSE event type for real-time reliability event updates
-
+    
     This frontend track consumes those APIs to present users with:
     - A dedicated Reliability page in the dashboard navigation
     - Summary cards showing event counts by type and severity
@@ -24,29 +21,29 @@ spec:
     - Real-time updates via SSE when new reliability events occur
   codebase_analysis: |
     Frontend patterns to follow:
-
+    
     1. Routing: frontend/src/App.tsx defines routes with React Router.
        Add /reliability route with ReliabilityPage component.
-
+    
     2. Navigation: frontend/src/components/layout/Sidebar.tsx or
        equivalent nav component — add "Reliability" link.
-
+    
     3. Data fetching: TanStack Query hooks in frontend/src/hooks/.
        Pattern: useQuery with queryKeys from api/queryKeys.ts.
        SSE integration via useSSE hook for real-time updates.
-
+    
     4. API types: frontend/src/types/api.ts — add ReliabilityEvent,
        ReliabilitySummary types matching OpenAPI schemas.
-
+    
     5. Existing visualization: AgentHistogram.tsx exists for agent
        data visualization. Can reference for chart patterns.
-
+    
     6. Component library: Uses Tailwind CSS with custom components.
        Cards, tables, and layout components already exist.
-
+    
     7. Pagination: usePaginatedList hook handles cursor-based
        pagination with PaginatedResponse<T> type.
-
+    
     8. Tour/help: tourSteps.ts could include reliability page.
   acceptance_criteria:
     - New /reliability route accessible from dashboard navigation
@@ -65,40 +62,40 @@ spec:
     - Modifying existing dashboard pages
   technical_notes: |
     Implementation approach:
-
+    
     1. API types: Add ReliabilityEvent and ReliabilitySummary interfaces
        to types/api.ts matching the OpenAPI response schemas.
-
+    
     2. Query hooks: Create hooks/useReliability.ts with:
        - useReliabilityEvents(filters) — paginated event list
        - useReliabilitySummary(timeWindow) — aggregated counts
        - SSE subscription for real-time event_reliability_event updates
-
+    
     3. Query keys: Add reliability keys to api/queryKeys.ts
-
+    
     4. Page component: Create pages/ReliabilityPage.tsx with:
        - Summary cards row (one card per event type with count + severity)
        - Time-series chart (simple bar chart or line chart)
        - Event log table with filter controls
-
+    
     5. Chart: Use a lightweight approach — could be a simple CSS/SVG
        bar chart like AgentHistogram, or use a small chart library
        if one is already in dependencies.
-
+    
     6. Navigation: Add "Reliability" link to sidebar/nav with a
        shield or chart icon.
-
+    
     7. Follow existing patterns: match SwarmPanel, TracePage layout
        and component composition style.
 plan:
   - phase: Types and Data Hooks
     tasks:
       - text: Add ReliabilityEvent and ReliabilitySummary TypeScript interfaces to types/api.ts
-        done: false
+        done: true
       - text: Add reliability query keys to api/queryKeys.ts
-        done: false
+        done: true
       - text: Create hooks/useReliability.ts with useReliabilityEvents (paginated) and useReliabilitySummary hooks with SSE integration
-        done: false
+        done: true
   - phase: Page and Components
     tasks:
       - text: Create components/reliability/ReliabilitySummaryCards.tsx showing event counts by type with severity color coding
