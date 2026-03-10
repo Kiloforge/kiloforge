@@ -1,0 +1,121 @@
+id: track-claim-register_20260312230000Z
+title: Record agent claim metadata in track.yaml for session restoration
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    When a developer agent claims a track, record its Claude session ID,
+    worktree name, branch, and timestamp in the track's extra.claim field.
+    This creates a git-persisted record that enables session restoration
+    from outside the orchestrator (e.g., claude --resume <session_id>).
+  context: |
+    Currently, agent session information lives only in the orchestrator's
+    SQLite database. If the orchestrator is not running or the database is
+    lost, there is no way to determine which agent session was working on
+    a track. By writing claim metadata into track.yaml (which is committed
+    to git), the information survives across system restarts and is
+    discoverable by anyone with repo access.
+  codebase_analysis: |
+    **track.yaml extra field:** Already part of the schema on all 200+ tracks
+    but completely unused (extra: {}). The kf-track-content tool supports
+    reading/writing scalar keys via `kf-track-content extra --key K --set V`.
+    For structured data (nested YAML), we need a dedicated subcommand.
+
+    **Session ID discovery:** Agents can discover their Claude session ID by
+    scanning ~/.claude/projects/-{sanitized_path}/*.jsonl for the most recent
+    file. The kf-developer skill already documents this technique (Step 10r).
+
+    **Agent identity at claim time:** The agent knows its worktree name
+    (basename of cwd or git branch --show-current), the branch it created
+    (type/trackId), and can discover its session ID. It does NOT know its
+    orchestrator agent ID (generated server-side, never passed to process).
+
+    **Commit point:** The natural place to record the claim is right after
+    the implementation branch is created (kf-developer Step 5), before the
+    first implementation task. The claim record gets committed with the
+    first task commit.
+
+    **Key files:**
+    - .agent/kf/bin/kf-track-content — Python CLI (1093 lines)
+    - .agent/kf/bin/kf-developer/SKILL.md — Developer workflow skill
+    - .agent/kf/tracks/*/track.yaml — Track definitions
+  acceptance_criteria:
+    - kf-track-content claim <trackId> writes structured claim metadata to extra.claim
+    - kf-track-content claim <trackId> --show reads back the claim record
+    - kf-track-content claim <trackId> --clear removes the claim record
+    - Claim record includes session_id, worktree, branch, claimed_at, and model
+    - kf-developer skill calls claim after branch creation (Step 5)
+    - Claim record is committed with the first implementation commit
+    - Session ID is discoverable and can be used with claude --resume
+  out_of_scope: |
+    - Backend changes (no Go code — this is tooling-only)
+    - Orchestrator integration (the orchestrator has its own recovery system)
+    - Automatic session restoration (just record the data; restoration is manual)
+    - Modifying the claim record during implementation (write-once at claim time)
+    - Frontend display of claim information
+  technical_notes: |
+    **Claim record schema (written to extra.claim):**
+    ```yaml
+    extra:
+      claim:
+        session_id: "<claude session UUID>"
+        worktree: "worker-3"
+        branch: "feature/my-track_20260312Z"
+        claimed_at: "2026-03-12T14:30:00Z"
+        model: "claude-opus-4-6"
+    ```
+
+    **Session ID discovery (reuse existing pattern from kf-developer):**
+    ```bash
+    PROJECT_DIR=$(echo "$PWD" | sed 's|/|-|g; s|^-||')
+    SESSION_ID=$(ls -t ~/.claude/projects/-${PROJECT_DIR}/*.jsonl \
+      2>/dev/null | head -1 | xargs basename | sed 's/.jsonl//')
+    ```
+
+    **Implementation approach:**
+    1. Add `cmd_claim()` to kf-track-content that writes a structured YAML
+       block to extra.claim (not individual scalar keys)
+    2. The claim command auto-discovers session_id, worktree, and branch
+       from the environment (no args needed beyond track ID)
+    3. Update kf-developer SKILL.md Step 5 to call kf-track-content claim
+       after creating the implementation branch
+    4. The claim data is NOT committed separately — it gets included in
+       the first task commit (or the track completion commit)
+
+    **Restoration usage (manual, outside the system):**
+    ```bash
+    # Find session for a track
+    .agent/kf/bin/kf-track-content claim <trackId> --show
+    # Resume it
+    claude --resume <session_id>
+    ```
+plan:
+  - phase: Tooling
+    tasks:
+      - text: Add cmd_claim() to kf-track-content — writes session_id, worktree, branch, claimed_at, model to extra.claim
+        done: false
+      - text: Add --show flag to cmd_claim() that reads and displays the claim record
+        done: false
+      - text: Add --clear flag to cmd_claim() that removes the claim record
+        done: false
+      - text: Auto-discover session_id from ~/.claude/projects/ filesystem, worktree from git branch, branch from git branch --show-current
+        done: false
+  - phase: Skill Integration
+    tasks:
+      - text: Update kf-developer SKILL.md Step 5 to call kf-track-content claim after branch creation
+        done: false
+      - text: Document the claim record in kf-developer SKILL.md (what it stores, how to use it for restoration)
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Test kf-track-content claim writes correct YAML structure to extra.claim
+        done: false
+      - text: Test kf-track-content claim --show reads back the claim record
+        done: false
+      - text: Test kf-track-content claim --clear removes the claim record
+        done: false
+      - text: Verify claim record does not interfere with existing kf-track-content commands
+        done: false
+extra: {}
