@@ -1,0 +1,61 @@
+id: fix-agent-name-in-api-be_20260312200000Z
+title: "Fix agent name missing from REST API response"
+type: bug
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Add the missing Name field copy in domainAgentToGen() so agent names
+    reach the frontend terminal windows.
+  context: |
+    Agent terminal windows display a truncated random ID (e.g. "a84ad9c9")
+    instead of the human-readable name (e.g. "curiously brave ruby"). The
+    backend generates names via GenerateName() at spawn time and stores them
+    in domain.AgentInfo.Name, but the REST API conversion function never
+    copies the field to the response.
+  codebase_analysis: |
+    Root cause: backend/internal/adapter/rest/api_handler.go — domainAgentToGen()
+    copies ID, Role, Ref, Status, PID, timestamps, etc. but skips Name.
+
+    The full chain:
+    - namegen.go GenerateName() → creates "adverb adjective name" strings ✓
+    - Spawner (all 3: developer, reviewer, interactive) sets Name ✓
+    - domain.AgentInfo has Name string `json:"name,omitempty"` ✓
+    - OpenAPI schema defines name field on Agent ✓
+    - gen.Agent has Name *string `json:"name,omitempty"` ✓
+    - domainAgentToGen() does NOT copy a.Name → g.Name ✗ ← FIX HERE
+    - Frontend Agent type has name?: string ✓
+    - App.tsx passes agent.name to window manager ✓
+    - AgentTerminal displays name || agentId.slice(0,8) ✓
+
+    Fix: add `if a.Name != "" { g.Name = &a.Name }` in domainAgentToGen().
+
+    Also check SSE agent_update events — agentInfoToSSE or similar may have
+    the same gap, causing names to disappear on live updates.
+  acceptance_criteria:
+    - GET /api/agents returns name field for each agent
+    - SSE agent_update events include the name field
+    - Agent terminal windows display human-readable names
+    - make test passes
+  out_of_scope: |
+    - Changing the name generation logic
+    - Frontend changes (already handles name correctly)
+    - Changing the OpenAPI schema (already correct)
+  technical_notes: |
+    1-line fix in domainAgentToGen(). Check if SSE serialization has the
+    same gap. Add a test asserting the name field is present in API response.
+plan:
+  - phase: "Core Fix"
+    tasks:
+      - text: "Add Name field copy in domainAgentToGen() in api_handler.go"
+        done: false
+      - text: "Verify SSE agent_update events also include the name field (fix if missing)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Add test asserting GET /api/agents response includes agent name"
+        done: false
+      - text: "Run make test — all pass"
+        done: false
+extra: {}
