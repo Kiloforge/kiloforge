@@ -393,7 +393,16 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 	defer span.End()
 
 	startTime := time.Now()
-	finalStatus, _, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span, envVars)
+	finalStatus, realSessionID, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span, envVars)
+
+	// Persist the real Claude SDK session ID so resume uses the correct ID.
+	if realSessionID != "" {
+		if agent, ferr := s.store.FindAgent(agentID); ferr == nil {
+			agent.SessionID = realSessionID
+			_ = s.store.AddAgent(*agent) // upsert
+		}
+	}
+
 	if err != nil {
 		finalStatus = "failed"
 		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {
