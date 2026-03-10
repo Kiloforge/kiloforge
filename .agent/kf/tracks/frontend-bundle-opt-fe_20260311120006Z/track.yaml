@@ -75,9 +75,9 @@ plan:
   - phase: Verification
     tasks:
       - text: Run npm run build — no large chunk warnings
-        done: false
+        done: true
       - text: Run npm test — all tests pass with lazy components
-        done: false
+        done: true
       - text: Run make build — full stack build passes
-        done: false
+        done: true
 extra: {}
