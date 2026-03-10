@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"kiloforge/internal/core/domain"
@@ -55,11 +56,15 @@ func (s *ProjectStore) List() []domain.Project {
 		var regAt string
 		var active int
 		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active); err != nil {
+			log.Printf("warn: scan project row: %v", err)
 			continue
 		}
 		p.RegisteredAt, _ = time.Parse(time.RFC3339, regAt)
 		p.Active = active != 0
 		projects = append(projects, p)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("warn: iterate project rows: %v", err)
 	}
 	return projects
 }
@@ -156,11 +161,15 @@ func (s *ProjectStore) ListPaginated(opts domain.PageOpts) (domain.Page[domain.P
 		var regAt string
 		var active int
 		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active); err != nil {
+			log.Printf("warn: scan project row: %v", err)
 			continue
 		}
 		p.RegisteredAt, _ = time.Parse(time.RFC3339, regAt)
 		p.Active = active != 0
 		projects = append(projects, p)
+	}
+	if err := rows.Err(); err != nil {
+		return domain.Page[domain.Project]{}, fmt.Errorf("iterate project rows: %w", err)
 	}
 
 	var nextCursor string
