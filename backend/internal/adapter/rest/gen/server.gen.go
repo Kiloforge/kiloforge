@@ -404,6 +404,11 @@ type LockReleasedResponse struct {
 	Released bool `json:"released"`
 }
 
+// MirrorSyncResult defines model for MirrorSyncResult.
+type MirrorSyncResult struct {
+	Synced bool `json:"synced"`
+}
+
 // MoveCardRequest defines model for MoveCardRequest.
 type MoveCardRequest struct {
 	ToColumn MoveCardRequestToColumn `json:"to_column"`
@@ -1282,6 +1287,9 @@ type ServerInterface interface {
 	// Get project metadata including product info, guidelines, tech stack, and track summary
 	// (GET /api/projects/{slug}/metadata)
 	GetProjectMetadata(w http.ResponseWriter, r *http.Request, slug string)
+	// Force-push main to the project's mirror directory
+	// (POST /api/projects/{slug}/mirror-sync)
+	SyncProjectMirror(w http.ResponseWriter, r *http.Request, slug string)
 	// Pull latest from upstream and fast-forward merge
 	// (POST /api/projects/{slug}/pull)
 	PullProject(w http.ResponseWriter, r *http.Request, slug string)
@@ -2007,6 +2015,31 @@ func (siw *ServerInterfaceWrapper) GetProjectMetadata(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetProjectMetadata(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SyncProjectMirror operation middleware
+func (siw *ServerInterfaceWrapper) SyncProjectMirror(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SyncProjectMirror(w, r, slug)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2890,6 +2923,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/branches", wrapper.GetProjectBranches)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/diff", wrapper.GetProjectDiff)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects/{slug}/metadata", wrapper.GetProjectMetadata)
+	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/mirror-sync", wrapper.SyncProjectMirror)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/pull", wrapper.PullProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/push", wrapper.PushProject)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects/{slug}/resolve-conflict", wrapper.ResolveConflict)
@@ -3854,6 +3888,41 @@ type GetProjectMetadata404JSONResponse ErrorResponse
 func (response GetProjectMetadata404JSONResponse) VisitGetProjectMetadataResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SyncProjectMirrorRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type SyncProjectMirrorResponseObject interface {
+	VisitSyncProjectMirrorResponse(w http.ResponseWriter) error
+}
+
+type SyncProjectMirror200JSONResponse MirrorSyncResult
+
+func (response SyncProjectMirror200JSONResponse) VisitSyncProjectMirrorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SyncProjectMirror404JSONResponse ErrorResponse
+
+func (response SyncProjectMirror404JSONResponse) VisitSyncProjectMirrorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SyncProjectMirror500JSONResponse ErrorResponse
+
+func (response SyncProjectMirror500JSONResponse) VisitSyncProjectMirrorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -4831,6 +4900,9 @@ type StrictServerInterface interface {
 	// Get project metadata including product info, guidelines, tech stack, and track summary
 	// (GET /api/projects/{slug}/metadata)
 	GetProjectMetadata(ctx context.Context, request GetProjectMetadataRequestObject) (GetProjectMetadataResponseObject, error)
+	// Force-push main to the project's mirror directory
+	// (POST /api/projects/{slug}/mirror-sync)
+	SyncProjectMirror(ctx context.Context, request SyncProjectMirrorRequestObject) (SyncProjectMirrorResponseObject, error)
 	// Pull latest from upstream and fast-forward merge
 	// (POST /api/projects/{slug}/pull)
 	PullProject(ctx context.Context, request PullProjectRequestObject) (PullProjectResponseObject, error)
@@ -5687,6 +5759,32 @@ func (sh *strictHandler) GetProjectMetadata(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProjectMetadataResponseObject); ok {
 		if err := validResponse.VisitGetProjectMetadataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SyncProjectMirror operation middleware
+func (sh *strictHandler) SyncProjectMirror(w http.ResponseWriter, r *http.Request, slug string) {
+	var request SyncProjectMirrorRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SyncProjectMirror(ctx, request.(SyncProjectMirrorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SyncProjectMirror")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SyncProjectMirrorResponseObject); ok {
+		if err := validResponse.VisitSyncProjectMirrorResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

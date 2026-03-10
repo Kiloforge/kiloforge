@@ -188,6 +188,9 @@ type ClientInterface interface {
 	// GetProjectMetadata request
 	GetProjectMetadata(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SyncProjectMirror request
+	SyncProjectMirror(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PullProjectWithBody request with any body
 	PullProjectWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -713,6 +716,18 @@ func (c *Client) GetProjectDiff(ctx context.Context, slug string, params *GetPro
 
 func (c *Client) GetProjectMetadata(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectMetadataRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SyncProjectMirror(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSyncProjectMirrorRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -2273,6 +2288,40 @@ func NewGetProjectMetadataRequest(server string, slug string) (*http.Request, er
 	return req, nil
 }
 
+// NewSyncProjectMirrorRequest generates requests for SyncProjectMirror
+func NewSyncProjectMirrorRequest(server string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/projects/%s/mirror-sync", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPullProjectRequest calls the generic PullProject builder with application/json body
 func NewPullProjectRequest(server string, slug string, body PullProjectJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3755,6 +3804,9 @@ type ClientWithResponsesInterface interface {
 	// GetProjectMetadataWithResponse request
 	GetProjectMetadataWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetProjectMetadataResponse, error)
 
+	// SyncProjectMirrorWithResponse request
+	SyncProjectMirrorWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*SyncProjectMirrorResponse, error)
+
 	// PullProjectWithBodyWithResponse request with any body
 	PullProjectWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PullProjectResponse, error)
 
@@ -4497,6 +4549,30 @@ func (r GetProjectMetadataResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetProjectMetadataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SyncProjectMirrorResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MirrorSyncResult
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SyncProjectMirrorResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SyncProjectMirrorResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5479,6 +5555,15 @@ func (c *ClientWithResponses) GetProjectMetadataWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseGetProjectMetadataResponse(rsp)
+}
+
+// SyncProjectMirrorWithResponse request returning *SyncProjectMirrorResponse
+func (c *ClientWithResponses) SyncProjectMirrorWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*SyncProjectMirrorResponse, error) {
+	rsp, err := c.SyncProjectMirror(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSyncProjectMirrorResponse(rsp)
 }
 
 // PullProjectWithBodyWithResponse request with arbitrary body returning *PullProjectResponse
@@ -6858,6 +6943,46 @@ func ParseGetProjectMetadataResponse(rsp *http.Response) (*GetProjectMetadataRes
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSyncProjectMirrorResponse parses an HTTP response from a SyncProjectMirrorWithResponse call
+func ParseSyncProjectMirrorResponse(rsp *http.Response) (*SyncProjectMirrorResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SyncProjectMirrorResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MirrorSyncResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 

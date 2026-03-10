@@ -720,6 +720,10 @@ func (m *stubProjectManager) RemoveProject(_ context.Context, slug string, clean
 	return m.removeErr
 }
 
+func (m *stubProjectManager) SyncMirror(_ context.Context, _ string) error {
+	return nil
+}
+
 func TestAddProject_Success(t *testing.T) {
 	t.Parallel()
 

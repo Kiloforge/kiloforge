@@ -518,6 +518,10 @@ func (m *e2eProjectManager) RemoveProject(_ context.Context, slug string, _ bool
 	return nil
 }
 
+func (m *e2eProjectManager) SyncMirror(_ context.Context, _ string) error {
+	return nil
+}
+
 // e2eTrackReader is a no-op TrackReader for E2E tests.
 type e2eTrackReader struct{}
 

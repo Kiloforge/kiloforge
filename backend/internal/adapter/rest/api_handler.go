@@ -56,6 +56,7 @@ type ProjectManager interface {
 	AddProject(ctx context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
 	CreateProject(ctx context.Context, name string) (*domain.AddProjectResult, error)
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
+	SyncMirror(ctx context.Context, slug string) error
 }
 
 // InteractiveSpawner creates and manages interactive agent sessions.
@@ -1197,6 +1198,12 @@ func (h *APIHandler) ReleaseLock(_ context.Context, req gen.ReleaseLockRequestOb
 	if h.eventBus != nil {
 		h.eventBus.Publish(domain.NewLockReleasedEvent(req.Scope))
 	}
+
+	// On merge lock release, sync mirrors for all active projects.
+	if req.Scope == "merge" && h.projectMgr != nil && h.projects != nil {
+		go h.syncAllMirrors()
+	}
+
 	return gen.ReleaseLock200JSONResponse{Released: true}, nil
 }
 
@@ -1769,6 +1776,34 @@ func (h *APIHandler) GetSyncStatus(ctx context.Context, req gen.GetSyncStatusReq
 		resp.RemoteUrl = &status.RemoteURL
 	}
 	return resp, nil
+}
+
+// syncAllMirrors syncs mirrors for all active projects. Best-effort, logs errors.
+func (h *APIHandler) syncAllMirrors() {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	for _, p := range h.projects.List() {
+		if !p.Active || p.MirrorDir == "" {
+			continue
+		}
+		if err := h.projectMgr.SyncMirror(ctx, p.Slug); err != nil {
+			slog.Warn("mirror sync failed after merge", "slug", p.Slug, "error", err)
+		}
+	}
+}
+
+// SyncProjectMirror implements gen.StrictServerInterface.
+func (h *APIHandler) SyncProjectMirror(ctx context.Context, req gen.SyncProjectMirrorRequestObject) (gen.SyncProjectMirrorResponseObject, error) {
+	if h.projectMgr == nil {
+		return gen.SyncProjectMirror500JSONResponse{Error: "project manager not configured"}, nil
+	}
+	if err := h.projectMgr.SyncMirror(ctx, req.Slug); err != nil {
+		if errors.Is(err, domain.ErrProjectNotFound) {
+			return gen.SyncProjectMirror404JSONResponse{Error: fmt.Sprintf("project %q not found", req.Slug)}, nil
+		}
+		return gen.SyncProjectMirror500JSONResponse{Error: err.Error()}, nil
+	}
+	return gen.SyncProjectMirror200JSONResponse{Synced: true}, nil
 }
 
 // GetProjectDiff implements gen.StrictServerInterface.
