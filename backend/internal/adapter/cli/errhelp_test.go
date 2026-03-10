@@ -9,87 +9,89 @@ import (
 func TestNotInitializedError(t *testing.T) {
 	t.Parallel()
 	msg := notInitializedError()
-	if msg == "" {
-		t.Fatal("expected non-empty error message")
+	if !strings.Contains(msg, "not initialized") {
+		t.Errorf("expected 'not initialized' in message, got: %q", msg)
 	}
-	assertContains(t, msg, "not initialized")
-	assertContains(t, msg, "kf init")
-}
-
-func TestNotInitializedErrorDistinctFromGiteaDown(t *testing.T) {
-	t.Parallel()
-	initMsg := notInitializedError()
-	giteaMsg := giteaNotRunningError()
-	if initMsg == giteaMsg {
-		t.Error("not-initialized and gitea-not-running errors should be distinct")
+	if !strings.Contains(msg, "kf init") {
+		t.Errorf("expected 'kf init' guidance in message, got: %q", msg)
 	}
 }
 
 func TestGiteaNotRunningError(t *testing.T) {
 	t.Parallel()
 	msg := giteaNotRunningError()
-	if msg == "" {
-		t.Fatal("expected non-empty error message")
+	if !strings.Contains(msg, "not running") {
+		t.Errorf("expected 'not running' in message, got: %q", msg)
 	}
-	assertContains(t, msg, "not running")
-	assertContains(t, msg, "kf up")
+	if !strings.Contains(msg, "kf up") {
+		t.Errorf("expected 'kf up' guidance in message, got: %q", msg)
+	}
+}
+
+func TestNotInitializedDistinctFromGiteaDown(t *testing.T) {
+	t.Parallel()
+	if notInitializedError() == giteaNotRunningError() {
+		t.Error("not-initialized and gitea-not-running errors should be distinct")
+	}
 }
 
 func TestConfigLoadError(t *testing.T) {
 	t.Parallel()
 	msg := configLoadError(fmt.Errorf("file not found"))
-	assertContains(t, msg, "file not found")
-	assertContains(t, msg, "kf init")
+	if !strings.Contains(msg, "file not found") {
+		t.Errorf("expected wrapped error in message, got: %q", msg)
+	}
+	if !strings.Contains(msg, "kf init") {
+		t.Errorf("expected 'kf init' guidance in message, got: %q", msg)
+	}
 }
 
-func TestEmptyStateMessage(t *testing.T) {
+func TestEmptyState(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name     string
 		resource string
 		hint     string
-		wantRes  string
-		wantHint string
+		wantSub  []string
 	}{
 		{
 			name:     "with hint",
-			resource: "agents",
+			resource: "agents tracked",
 			hint:     "Spawn one with: kf implement <track-id>",
-			wantRes:  "No agents",
-			wantHint: "kf implement",
+			wantSub:  []string{"No agents tracked.", "Spawn one"},
 		},
 		{
 			name:     "without hint",
-			resource: "cost data",
+			resource: "projects",
 			hint:     "",
-			wantRes:  "No cost data",
+			wantSub:  []string{"No projects."},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			msg := emptyState(tt.resource, tt.hint)
-			assertContains(t, msg, tt.wantRes)
-			if tt.wantHint != "" {
-				assertContains(t, msg, tt.wantHint)
+			got := emptyState(tt.resource, tt.hint)
+			for _, sub := range tt.wantSub {
+				if !strings.Contains(got, sub) {
+					t.Errorf("emptyState(%q, %q) = %q, want substring %q", tt.resource, tt.hint, got, sub)
+				}
 			}
 		})
 	}
 }
 
-func TestPrereqErrorContext_NoPanic(t *testing.T) {
+func TestEmptyState_NoHintNoNewline(t *testing.T) {
 	t.Parallel()
-	// prereqErrorContext should return a string without panicking,
-	// regardless of which tools are installed on the test machine.
-	result := prereqErrorContext()
-	_ = result
+	got := emptyState("items", "")
+	if strings.Contains(got, "\n") {
+		t.Errorf("emptyState with empty hint should not contain newline, got: %q", got)
+	}
 }
 
-func assertContains(t *testing.T, s, substr string) {
-	t.Helper()
-	if !strings.Contains(s, substr) {
-		t.Errorf("expected %q to contain %q", s, substr)
-	}
+func TestPrereqErrorContext_NoPanic(t *testing.T) {
+	t.Parallel()
+	// Should not panic regardless of installed tools on test machine.
+	_ = prereqErrorContext()
 }

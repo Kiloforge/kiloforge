@@ -124,6 +124,29 @@ func TestAddCmd_SSHKeyFlagRegistered(t *testing.T) {
 	}
 }
 
+func TestIsSSHRemote(t *testing.T) {
+	tests := []struct {
+		url  string
+		want bool
+	}{
+		{"git@github.com:user/repo.git", true},
+		{"ssh://git@github.com/user/repo.git", true},
+		{"https://github.com/user/repo.git", false},
+		{"http://github.com/user/repo.git", false},
+		{"/local/path", false},
+		{".", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.url, func(t *testing.T) {
+			got := isSSHRemote(tt.url)
+			if got != tt.want {
+				t.Errorf("isSSHRemote(%q) = %v, want %v", tt.url, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIsRemoteURL(t *testing.T) {
 	tests := []struct {
 		arg  string
