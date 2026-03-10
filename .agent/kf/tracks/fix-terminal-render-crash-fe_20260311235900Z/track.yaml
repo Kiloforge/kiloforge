@@ -1,0 +1,97 @@
+id: fix-terminal-render-crash-fe_20260311235900Z
+title: "Fix React error #310 crash when opening agent terminal"
+type: bug
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    React throws minified error #310 when first messages arrive in the agent terminal,
+    crashing the UI. Likely caused by fragile ReactElement casting in MarkdownContent's
+    pre renderer or react-markdown v10 / React 19 compatibility issues.
+  context: |
+    Users report "Uncaught Error: Minified React error #310" when starting to talk to
+    an agent via the WebSocket terminal. The stack trace shows the crash occurs during
+    render in a component using useCallback, routed through MessageDispatch → TextBubble
+    or ThinkingBubble → MarkdownContent → ReactMarkdown.
+
+    Three entry points use the terminal and are affected:
+    - AgentTerminal.tsx (floating window terminals)
+    - AgentDetailPage.tsx (TerminalSection on agent detail view)
+    - CommandPane.tsx (full-screen command mode panes)
+  codebase_analysis: |
+    Primary suspects (ordered by likelihood):
+
+    1. **MarkdownContent.tsx:28-38** — The `pre` custom renderer unsafely casts
+       `children` to `ReactElement` and accesses `.props.children`. In react-markdown
+       v10, the component API changed; children may not always be a single ReactElement.
+       This fragile casting can produce objects that are not valid React children.
+
+    2. **react-markdown ^10.1.0 + React ^19.2.0** — This is a relatively new
+       combination. The `Components` type changed in v10 (from v9's `ReactMarkdownProps`
+       style). Custom component functions may receive different prop shapes than expected.
+
+    3. **Bubble components** — ThinkingBubble renders MarkdownContent with
+       `msg.thinking ?? ""` and TextBubble with `msg.text`. If the server sends
+       unexpected shapes (e.g., thinking as an object instead of string), the
+       fallback to "" may not trigger due to nullish coalescing only catching
+       null/undefined, not objects.
+
+    Previous hook violations were fixed in commit 7061b07 but this error persists.
+
+    Files involved:
+    - frontend/src/components/terminal/MarkdownContent.tsx (primary fix target)
+    - frontend/src/components/terminal/TerminalBubbles.tsx (type guards)
+    - frontend/src/hooks/useAgentWebSocket.ts (message parsing)
+    - frontend/src/components/AgentTerminal.tsx (entry point)
+    - frontend/src/pages/AgentDetailPage.tsx (entry point)
+    - frontend/src/components/fullscreen/CommandPane.tsx (entry point)
+  acceptance_criteria:
+    - Agent terminal renders without errors when connecting to a running agent
+    - Markdown text and thinking messages render correctly (including code blocks)
+    - Error boundary catches and displays render errors gracefully instead of crashing
+    - No React warnings about invalid hook calls or objects as children in dev mode
+    - Existing terminal bubble tests pass
+  out_of_scope: |
+    - Redesigning the terminal message system
+    - Upgrading or replacing react-markdown
+    - Backend WebSocket protocol changes
+    - Adding new terminal features
+  technical_notes: |
+    Approach:
+    1. Reproduce in dev mode (vite dev server) to get the full unminified error message
+    2. Fix the MarkdownContent pre renderer to safely handle children without casting
+    3. Add typeof/string guards in bubble components for message fields
+    4. Wrap MessageDispatch in a React error boundary so individual message render
+       failures don't crash the entire terminal
+    5. Rebuild frontend and verify in production mode
+plan:
+  - phase: "Diagnosis"
+    tasks:
+      - text: "Run `npm run dev` and reproduce the error to get the full unminified React error message and exact component stack trace"
+        done: false
+      - text: "Identify the exact line and data shape that triggers the error"
+        done: false
+  - phase: "Core Fix"
+    tasks:
+      - text: "Fix MarkdownContent.tsx pre renderer — remove unsafe ReactElement casting, use safe string extraction (e.g., textContent helper or Children.toArray)"
+        done: false
+      - text: "Add type guards in TerminalBubbles.tsx — ensure msg.text and msg.thinking are always strings before passing to MarkdownContent"
+        done: false
+      - text: "Validate useAgentWebSocket message parsing — add runtime type coercion for text/thinking fields (String() wrap)"
+        done: false
+  - phase: "Error Boundary"
+    tasks:
+      - text: "Create a MessageErrorBoundary component that catches render errors in individual messages and displays a fallback"
+        done: false
+      - text: "Wrap MessageDispatch output in MessageErrorBoundary in all three entry points (AgentTerminal, AgentDetailPage, CommandPane)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Add/update tests for MarkdownContent with edge cases (empty string, code blocks, nested elements)"
+        done: false
+      - text: "Run full frontend test suite (`npm test`) and verify no regressions"
+        done: false
+      - text: "Build production bundle (`make build-frontend`) and verify no runtime errors"
+        done: false
+extra: {}
