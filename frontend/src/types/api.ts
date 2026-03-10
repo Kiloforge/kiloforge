@@ -92,7 +92,7 @@ export interface Project {
 }
 
 export interface AddProjectRequest {
-  remote_url: string;
+  remote_url?: string;
   name?: string;
   ssh_key?: string;
 }
