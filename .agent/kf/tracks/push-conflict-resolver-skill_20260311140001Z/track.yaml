@@ -3,7 +3,7 @@ title: Embedded kf-conflict-resolver skill for AI-assisted merge conflict resolu
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Create the kf-conflict-resolver embedded skill that an agent uses to fetch remote
@@ -13,23 +13,23 @@ spec:
     rejection) or pull (diverged branches) — the user can spawn a "conflict resolver agent"
     from the Command Deck. This agent runs the kf-conflict-resolver skill which automates
     the merge resolution workflow for both directions.
-
+    
     For push conflicts: fetch remote, merge remote into local, resolve conflicts, push.
     For pull conflicts: fetch remote, merge remote into local, resolve conflicts (pull complete).
   codebase_analysis: |
     Affected files:
     - backend/internal/adapter/skills/embedded/kf-conflict-resolver/SKILL.md (NEW)
-
+    
     Existing skill pattern (from kf-developer/SKILL.md):
     - Skills are markdown files with structured workflow sections
     - Each skill has: purpose, prerequisites, phases, error handling
     - Skills reference project context from .agent/kf/ artifacts
-
+    
     The skill will be invoked by the agent spawner with:
     - Working directory set to the project directory
     - Direction (push/pull) and remote branch passed as context
     - SSH key path available for authenticated push/pull
-
+    
     The agent needs to:
     1. git fetch origin
     2. Determine merge strategy based on direction
@@ -38,7 +38,7 @@ spec:
     5. git add resolved files, git commit
     6. For push direction: git push origin main:{remoteBranch}
     7. Report success/failure back
-
+    
     The skill should be conservative: if a conflict seems ambiguous or high-risk,
     it should report the conflict details and ask for human guidance rather than
     making a potentially incorrect merge.
@@ -66,18 +66,18 @@ spec:
        - Phase 4: Complete sync (push for push direction, done for pull direction)
        - Phase 5: Report (success/failure summary)
     5. Error handling table
-
+    
     The agent receives direction and remote branch as context via prompt.
     It operates in the project's main worktree directory.
 plan:
   - phase: Implementation
     tasks:
       - text: Create kf-conflict-resolver/SKILL.md — define the conflict resolution workflow with fetch/merge/resolve/push phases, supporting both push and pull directions
-        done: false
+        done: true
       - text: Include handling for no-conflict case (auto-merge), simple conflicts (AI resolution), and complex conflicts (escalation to user)
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build to verify skill is embedded correctly
-        done: false
+        done: true
 extra: {}
