@@ -11,6 +11,8 @@ import (
 
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
+
+	gitadapter "kiloforge/internal/adapter/git"
 )
 
 // ProjectServiceConfig holds configuration needed by ProjectService.
@@ -21,15 +23,17 @@ type ProjectServiceConfig struct {
 
 // ProjectService handles project registration and removal.
 type ProjectService struct {
-	store  port.ProjectStore
-	config ProjectServiceConfig
+	store   port.ProjectStore
+	config  ProjectServiceConfig
+	gitSync *gitadapter.GitSync
 }
 
 // NewProjectService creates a new ProjectService.
 func NewProjectService(store port.ProjectStore, cfg ProjectServiceConfig) *ProjectService {
 	return &ProjectService{
-		store:  store,
-		config: cfg,
+		store:   store,
+		config:  cfg,
+		gitSync: gitadapter.New(),
 	}
 }
 
@@ -89,21 +93,31 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		return nil, fmt.Errorf("create project dir: %w", err)
 	}
 
+	// Create mirror clone at output/{slug}.
+	mirrorDir := filepath.Join(s.config.DataDir, "output", slug)
+	if err := s.gitSync.CreateMirrorClone(ctx, cloneDir, mirrorDir); err != nil {
+		os.RemoveAll(cloneDir)
+		return nil, fmt.Errorf("create mirror: %w", err)
+	}
+
 	// Register in store.
 	p := domain.Project{
 		Slug:         slug,
 		RepoName:     repoName,
 		ProjectDir:   cloneDir,
+		MirrorDir:    mirrorDir,
 		OriginRemote: remoteURL,
 		RegisteredAt: time.Now().Truncate(time.Second),
 		Active:       true,
 	}
 	if err := s.store.Add(p); err != nil {
 		os.RemoveAll(cloneDir)
+		os.RemoveAll(mirrorDir)
 		return nil, fmt.Errorf("register project: %w", err)
 	}
 	if err := s.store.Save(); err != nil {
 		os.RemoveAll(cloneDir)
+		os.RemoveAll(mirrorDir)
 		return nil, fmt.Errorf("save registry: %w", err)
 	}
 
@@ -151,19 +165,29 @@ func (s *ProjectService) CreateProject(ctx context.Context, name string) (*domai
 		return nil, fmt.Errorf("create project dir: %w", err)
 	}
 
+	// Create mirror clone at output/{name}.
+	mirrorDir := filepath.Join(s.config.DataDir, "output", name)
+	if err := s.gitSync.CreateMirrorClone(ctx, repoDir, mirrorDir); err != nil {
+		os.RemoveAll(repoDir)
+		return nil, fmt.Errorf("create mirror: %w", err)
+	}
+
 	p := domain.Project{
 		Slug:         name,
 		RepoName:     name,
 		ProjectDir:   repoDir,
+		MirrorDir:    mirrorDir,
 		RegisteredAt: time.Now().Truncate(time.Second),
 		Active:       true,
 	}
 	if err := s.store.Add(p); err != nil {
 		os.RemoveAll(repoDir)
+		os.RemoveAll(mirrorDir)
 		return nil, fmt.Errorf("register project: %w", err)
 	}
 	if err := s.store.Save(); err != nil {
 		os.RemoveAll(repoDir)
+		os.RemoveAll(mirrorDir)
 		return nil, fmt.Errorf("save registry: %w", err)
 	}
 
@@ -192,7 +216,8 @@ func (s *ProjectService) GetProject(slug string) (*domain.Project, error) {
 // RemoveProject deregisters a project. If cleanup is true, also deletes
 // local filesystem data.
 func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup bool) error {
-	if _, err := s.store.Get(slug); err != nil {
+	p, err := s.store.Get(slug)
+	if err != nil {
 		return err
 	}
 
@@ -202,6 +227,10 @@ func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup
 		_ = os.RemoveAll(repoDir)
 		projectDir := filepath.Join(s.config.DataDir, "projects", slug)
 		_ = os.RemoveAll(projectDir)
+		// Remove mirror directory.
+		if p.MirrorDir != "" {
+			_ = os.RemoveAll(p.MirrorDir)
+		}
 	}
 
 	if err := s.store.Remove(slug); err != nil {
@@ -212,6 +241,18 @@ func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup
 	}
 
 	return nil
+}
+
+// SyncMirror force-pushes main from the project's repo to its mirror directory.
+func (s *ProjectService) SyncMirror(ctx context.Context, slug string) error {
+	p, err := s.store.Get(slug)
+	if err != nil {
+		return err
+	}
+	if p.MirrorDir == "" {
+		return fmt.Errorf("project %s has no mirror directory", slug)
+	}
+	return s.gitSync.ForcePushToMirror(ctx, p.ProjectDir, p.MirrorDir)
 }
 
 // isRemoteURL returns true if the argument looks like a git remote URL.

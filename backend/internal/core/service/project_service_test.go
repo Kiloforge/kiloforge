@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"kiloforge/internal/core/domain"
@@ -281,6 +285,131 @@ func TestProjectService_CreateProject_DuplicateSlug(t *testing.T) {
 	if !errors.Is(err, domain.ErrProjectExists) {
 		t.Errorf("expected ErrProjectExists, got: %v", err)
 	}
+}
+
+func TestProjectService_CreateProject_MirrorDir(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	result, err := svc.CreateProject(context.Background(), "mirror-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedMirrorDir := filepath.Join(dataDir, "output", "mirror-test")
+	if result.Project.MirrorDir != expectedMirrorDir {
+		t.Errorf("MirrorDir = %q, want %q", result.Project.MirrorDir, expectedMirrorDir)
+	}
+
+	// Verify the mirror directory exists.
+	if _, err := os.Stat(expectedMirrorDir); err != nil {
+		t.Errorf("mirror dir does not exist: %v", err)
+	}
+}
+
+func TestProjectService_RemoveProject_CleanupMirror(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	// Create project with mirror.
+	result, err := svc.CreateProject(context.Background(), "cleanup-test")
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+	mirrorDir := result.Project.MirrorDir
+
+	// Verify mirror exists.
+	if _, err := os.Stat(mirrorDir); err != nil {
+		t.Fatalf("mirror dir should exist: %v", err)
+	}
+
+	// Remove with cleanup.
+	if err := svc.RemoveProject(context.Background(), "cleanup-test", true); err != nil {
+		t.Fatalf("RemoveProject: %v", err)
+	}
+
+	// Verify mirror is gone.
+	if _, err := os.Stat(mirrorDir); !os.IsNotExist(err) {
+		t.Error("mirror dir should have been removed")
+	}
+}
+
+func TestProjectService_SyncMirror(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	// Create a project with content.
+	result, err := svc.CreateProject(context.Background(), "sync-test")
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	// Add a commit to the project repo.
+	repoDir := result.Project.ProjectDir
+	writeAndCommit(t, repoDir, "file.txt", "content")
+
+	// Sync mirror.
+	if err := svc.SyncMirror(context.Background(), "sync-test"); err != nil {
+		t.Fatalf("SyncMirror: %v", err)
+	}
+
+	// Verify mirror has the file.
+	mirrorFile := filepath.Join(result.Project.MirrorDir, "file.txt")
+	if _, err := os.Stat(mirrorFile); err != nil {
+		t.Errorf("file.txt not found in mirror after sync: %v", err)
+	}
+}
+
+func TestProjectService_SyncMirror_NotFound(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: t.TempDir()})
+
+	err := svc.SyncMirror(context.Background(), "nonexistent")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+// writeAndCommit creates a file in the repo and commits it.
+func writeAndCommit(t *testing.T, repoDir, filename, content string) {
+	t.Helper()
+	f, err := os.Create(filepath.Join(repoDir, filename))
+	if err != nil {
+		t.Fatalf("create file: %v", err)
+	}
+	f.WriteString(content)
+	f.Close()
+
+	cmd := exec.CommandContext(context.Background(), "git", "-C", repoDir, "add", ".")
+	cmd.Env = cleanGitEnvForTest()
+	cmd.Run()
+
+	cmd = exec.CommandContext(context.Background(), "git", "-C", repoDir, "commit", "-m", "add "+filename)
+	cmd.Env = cleanGitEnvForTest()
+	cmd.Run()
+}
+
+// cleanGitEnvForTest returns env with GIT_DIR/GIT_WORK_TREE removed.
+func cleanGitEnvForTest() []string {
+	var env []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "GIT_DIR=") || strings.HasPrefix(e, "GIT_WORK_TREE=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	return env
 }
 
 func TestIsRemoteURL(t *testing.T) {
