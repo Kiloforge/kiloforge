@@ -50,6 +50,7 @@ type QueueService struct {
 	pool            QueueWorktreePool
 	implSvc         *ImplementService
 	capacityChecker SwarmCapacityChecker
+	analytics       port.AnalyticsTracker
 	logger          *log.Logger
 }
 
@@ -66,6 +67,7 @@ type QueueServiceOpts struct {
 	Pool            QueueWorktreePool
 	ImplSvc         *ImplementService
 	CapacityChecker SwarmCapacityChecker
+	Analytics       port.AnalyticsTracker
 	Logger          *log.Logger
 }
 
@@ -89,6 +91,7 @@ func NewQueueService(opts QueueServiceOpts) *QueueService {
 		pool:            opts.Pool,
 		implSvc:         opts.ImplSvc,
 		capacityChecker: opts.CapacityChecker,
+		analytics:       opts.Analytics,
 		logger:          opts.Logger,
 	}
 }
@@ -410,6 +413,9 @@ func (q *QueueService) OnAgentComplete(ctx context.Context, trackID, status stri
 		q.publishEvent("track_completed", map[string]any{
 			"track_id": trackID,
 		})
+		q.trackAnalytics("track_completed", map[string]any{
+			"track_id": trackID,
+		})
 
 		// Re-evaluate: newly unblocked tracks may now be enqueueable.
 		if err := q.EnqueueReady(); err != nil {
@@ -492,4 +498,10 @@ func (q *QueueService) publishEvent(action string, data any) {
 		return
 	}
 	q.eventBus.Publish(domain.NewQueueUpdateEvent(action, data))
+}
+
+func (q *QueueService) trackAnalytics(event string, props map[string]any) {
+	if q.analytics != nil {
+		q.analytics.Track(context.Background(), event, props)
+	}
 }

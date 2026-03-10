@@ -15,10 +15,11 @@ var ColumnOrder = domain.ColumnOrder
 
 // LifecycleService handles agent lifecycle control driven by board state changes.
 type LifecycleService struct {
-	agents  port.AgentStore
-	spawner port.AgentSpawner
-	pool    port.PoolReturner
-	logger  port.Logger
+	agents    port.AgentStore
+	spawner   port.AgentSpawner
+	pool      port.PoolReturner
+	logger    port.Logger
+	analytics port.AnalyticsTracker
 }
 
 // NewLifecycleService creates a new LifecycleService.
@@ -29,6 +30,11 @@ func NewLifecycleService(agents port.AgentStore, spawner port.AgentSpawner, pool
 		pool:    pool,
 		logger:  logger,
 	}
+}
+
+// SetAnalyticsTracker sets the analytics tracker for lifecycle events.
+func (s *LifecycleService) SetAnalyticsTracker(t port.AnalyticsTracker) {
+	s.analytics = t
 }
 
 // HandleBackwardMove processes a backward column transition for a track.
@@ -80,6 +86,12 @@ func (s *LifecycleService) HandleRejection(ctx context.Context, trackID string, 
 	}
 
 	_ = s.agents.Save()
+
+	if s.analytics != nil {
+		s.analytics.Track(ctx, "track_rejected", map[string]any{
+			"track_id": trackID,
+		})
+	}
 }
 
 // IsBackwardMove returns true if toCol is earlier in the workflow than fromCol.

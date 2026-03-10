@@ -109,13 +109,13 @@ plan:
   - phase: Backend — Track Lifecycle Events
     tasks:
       - text: Wire AnalyticsTracker into service layer — add analytics field to queue_service, lifecycle_service, or use the lowest-common-denominator point (pkg/kf/client.go AddTrack/RemoveTrack or board_service)
-        done: false
+        done: true
       - text: Add track_created event — fire when a track is first registered, covering REST seed endpoint and kf SDK client.AddTrack (include track_id, type)
-        done: false
+        done: true
       - text: Add track_completed event — fire in queue_service.OnAgentComplete or board_service.MoveCard to done column (include track_id)
-        done: false
+        done: true
       - text: Add track_rejected event — fire in lifecycle_service.HandleRejection and track_reader.RemoveTrack (include track_id)
-        done: false
+        done: true
   - phase: Frontend — PostHog SDK
     tasks:
       - text: Install posthog-js in frontend (npm install posthog-js)

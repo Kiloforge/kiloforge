@@ -228,7 +228,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// Track seeding endpoint for E2E tests.
 	if s._projects != nil {
-		mux.HandleFunc("POST /api/tracks/seed", handleSeedTracks(s._projects))
+		mux.HandleFunc("POST /api/tracks/seed", handleSeedTracks(s._projects, s.analytics))
 	}
 
 	// Lock service (shared with generated API handler).

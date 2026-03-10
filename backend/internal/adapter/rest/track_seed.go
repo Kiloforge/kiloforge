@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"kiloforge/internal/core/port"
 	"kiloforge/pkg/kf"
 )
 
@@ -44,7 +45,7 @@ type seedTask struct {
 }
 
 // handleSeedTracks returns an HTTP handler that seeds track data for E2E tests.
-func handleSeedTracks(projects ProjectLister) http.HandlerFunc {
+func handleSeedTracks(projects ProjectLister, analytics port.AnalyticsTracker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req seedTrackRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -106,6 +107,12 @@ func handleSeedTracks(projects ProjectLister) http.HandlerFunc {
 			if err := client.AddTrack(entry, nil); err != nil {
 				http.Error(w, `{"error":"add track: `+err.Error()+`"}`, http.StatusInternalServerError)
 				return
+			}
+			if analytics != nil {
+				analytics.Track(r.Context(), "track_created", map[string]any{
+					"track_id": t.ID,
+					"type":     t.Type,
+				})
 			}
 
 			// If spec or plan provided, save the full track.yaml.

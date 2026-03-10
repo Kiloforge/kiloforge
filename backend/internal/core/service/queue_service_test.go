@@ -575,3 +575,104 @@ func TestQueueService_SpawnFailure_MarksFailed(t *testing.T) {
 		t.Error("expected t2 to be spawned after t1 failure")
 	}
 }
+
+// mockAnalytics records analytics events for testing.
+type mockAnalytics struct {
+	mu     sync.Mutex
+	events []mockAnalyticsEvent
+}
+
+type mockAnalyticsEvent struct {
+	Name  string
+	Props map[string]any
+}
+
+func (m *mockAnalytics) Track(_ context.Context, event string, props map[string]any) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.events = append(m.events, mockAnalyticsEvent{Name: event, Props: props})
+}
+
+func (m *mockAnalytics) Shutdown(_ context.Context) error { return nil }
+
+func (m *mockAnalytics) getEvents() []mockAnalyticsEvent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	cp := make([]mockAnalyticsEvent, len(m.events))
+	copy(cp, m.events)
+	return cp
+}
+
+func TestQueueService_OnAgentComplete_TracksAnalytics(t *testing.T) {
+	t.Parallel()
+
+	store := newMockQueueStore()
+	spawner := newMockSpawner()
+	pool := newMockPool(5)
+	analytics := &mockAnalytics{}
+	trackReader := &mockTrackReader{
+		tracks: []port.TrackEntry{
+			{ID: "t1", Status: StatusPending},
+		},
+	}
+
+	svc := NewQueueService(QueueServiceOpts{
+		MaxWorkers:  1,
+		ProjectDir:  "/tmp/test",
+		DataDir:     "/tmp/data",
+		Store:       store,
+		TrackReader: trackReader,
+		Spawner:     spawner,
+		Pool:        pool,
+		Analytics:   analytics,
+	})
+
+	if err := svc.Start(context.Background(), "proj"); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	// Complete the track — should fire track_completed analytics event.
+	firstTrack := spawner.getSpawned()[0]
+	svc.OnAgentComplete(context.Background(), firstTrack, "completed")
+
+	events := analytics.getEvents()
+	var found bool
+	for _, e := range events {
+		if e.Name == "track_completed" {
+			found = true
+			if e.Props["track_id"] != firstTrack {
+				t.Errorf("track_id = %v, want %q", e.Props["track_id"], firstTrack)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected track_completed analytics event")
+	}
+}
+
+func TestQueueService_NilAnalytics_NoPanic(t *testing.T) {
+	t.Parallel()
+
+	store := newMockQueueStore()
+	spawner := newMockSpawner()
+	pool := newMockPool(5)
+
+	svc := NewQueueService(QueueServiceOpts{
+		MaxWorkers:  1,
+		ProjectDir:  "/tmp/test",
+		DataDir:     "/tmp/data",
+		Store:       store,
+		TrackReader: &mockTrackReader{tracks: []port.TrackEntry{{ID: "t1", Status: StatusPending}}},
+		Spawner:     spawner,
+		Pool:        pool,
+		// Analytics is nil — should not panic.
+	})
+
+	if err := svc.Start(context.Background(), "proj"); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	firstTrack := spawner.getSpawned()[0]
+	// Should not panic with nil analytics.
+	svc.OnAgentComplete(context.Background(), firstTrack, "completed")
+}

@@ -2352,7 +2352,7 @@ func mapAgentIdentity(id *port.AgentIdentity) *gen.AgentIdentity {
 }
 
 // DeleteTrack implements gen.StrictServerInterface.
-func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestObject) (gen.DeleteTrackResponseObject, error) {
+func (h *APIHandler) DeleteTrack(ctx context.Context, req gen.DeleteTrackRequestObject) (gen.DeleteTrackResponseObject, error) {
 	trackID := req.TrackId
 
 	// Find the project to locate track artifacts.
@@ -2410,6 +2410,12 @@ func (h *APIHandler) DeleteTrack(_ context.Context, req gen.DeleteTrackRequestOb
 				}
 			}
 		}
+	}
+
+	if h.analytics != nil {
+		h.analytics.Track(ctx, "track_rejected", map[string]any{
+			"track_id": trackID,
+		})
 	}
 
 	return gen.DeleteTrack204Response{}, nil

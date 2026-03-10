@@ -11,11 +11,12 @@ import (
 
 // Compile-time interface checks.
 var (
-	_ port.AgentStore   = (*MockAgentStore)(nil)
-	_ port.AgentSpawner = (*MockAgentSpawner)(nil)
-	_ port.PoolReturner = (*MockPoolReturner)(nil)
-	_ port.Logger       = (*MockLogger)(nil)
-	_ port.GitRunner    = (*MockGitRunner)(nil)
+	_ port.AgentStore      = (*MockAgentStore)(nil)
+	_ port.AgentSpawner    = (*MockAgentSpawner)(nil)
+	_ port.PoolReturner    = (*MockPoolReturner)(nil)
+	_ port.Logger          = (*MockLogger)(nil)
+	_ port.GitRunner       = (*MockGitRunner)(nil)
+	_ port.AnalyticsTracker = (*SpyAnalytics)(nil)
 )
 
 // MockAgentStore is an in-memory AgentStore.
@@ -364,4 +365,33 @@ func (m *MockGitRunner) DeleteBranches(branches []string) error {
 	defer m.mu.Unlock()
 	m.Calls = append(m.Calls, GitRunnerCall{Method: "DeleteBranches", Args: branches})
 	return nil
+}
+
+// SpyAnalytics records analytics events for testing.
+type SpyAnalytics struct {
+	mu     sync.Mutex
+	events []SpyAnalyticsEvent
+}
+
+// SpyAnalyticsEvent records a single analytics event.
+type SpyAnalyticsEvent struct {
+	Name  string
+	Props map[string]any
+}
+
+func (s *SpyAnalytics) Track(_ context.Context, event string, props map[string]any) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.events = append(s.events, SpyAnalyticsEvent{Name: event, Props: props})
+}
+
+func (s *SpyAnalytics) Shutdown(_ context.Context) error { return nil }
+
+// Events returns a copy of the recorded events.
+func (s *SpyAnalytics) Events() []SpyAnalyticsEvent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cp := make([]SpyAnalyticsEvent, len(s.events))
+	copy(cp, s.events)
+	return cp
 }

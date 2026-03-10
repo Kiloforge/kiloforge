@@ -309,3 +309,45 @@ func TestHandleRejection_DoesNotStash(t *testing.T) {
 		t.Errorf("return calls = %v, want [track-1]", pool.Calls)
 	}
 }
+
+func TestHandleRejection_TracksAnalytics(t *testing.T) {
+	t.Parallel()
+	store := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	pool := &testutil.MockPoolReturner{}
+	analytics := &testutil.SpyAnalytics{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
+	svc.SetAnalyticsTracker(analytics)
+
+	svc.HandleRejection(context.Background(), "track-1", nil)
+
+	events := analytics.Events()
+	var found bool
+	for _, e := range events {
+		if e.Name == "track_rejected" {
+			found = true
+			if e.Props["track_id"] != "track-1" {
+				t.Errorf("track_id = %v, want %q", e.Props["track_id"], "track-1")
+			}
+		}
+	}
+	if !found {
+		t.Error("expected track_rejected analytics event")
+	}
+}
+
+func TestHandleRejection_NilAnalytics_NoPanic(t *testing.T) {
+	t.Parallel()
+	store := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
+	// No analytics set — should not panic.
+	svc.HandleRejection(context.Background(), "track-1", nil)
+}
