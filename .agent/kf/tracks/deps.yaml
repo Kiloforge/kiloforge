@@ -47,6 +47,8 @@ change-default-port_20260311230000Z: []
 
 cmd-mode-help-fe_20260310121738Z: []
 
+destroy-preserve-repos_20260310223827Z: []
+
 docker-gitea-dead-code-be_20260311195000Z: []
 
 fix-consent-zindex-fe_20260311230000Z: []
@@ -81,3 +83,8 @@ track-detail-register-traces-fe_20260312231002Z:
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
+
+user-mirror-be_20260310225404Z: []
+
+user-mirror-fe_20260310225405Z:
+  - user-mirror-be_20260310225404Z

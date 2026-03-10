@@ -69,6 +69,7 @@ dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Fro
 dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kiloforge.dev design guide","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+destroy-preserve-repos_20260310223827Z: {"title":"Make kf destroy preserve project repo clones by default","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 docker-gitea-dead-code-be_20260311195000Z: {"title":"Remove Docker/Gitea dead code from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 docs-branding-cleanup_20260311194000Z: {"title":"Docs branding cleanup — Cortex/Command Deck terminology and remove SECURITY.md","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 docs-overhaul_20260311210000Z: {"title":"Major documentation overhaul with Kiloforger branding and full feature coverage","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
@@ -324,6 +325,8 @@ track-tooltip-be_20260311010000Z: {"title":"Track deps/conflicts API — extend 
 ui-polish-a11y-fe_20260311150002Z: {"title":"UI polish — accessibility (aria-labels, focus-visible, semantic HTML)","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10","archive_reason":"Duplicate of existing ui-accessibility-fe_20260310123912Z"}
 ui-polish-states-fe_20260311150000Z: {"title":"UI polish — loading spinners, empty states, and styled confirmation dialogs","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 ui-polish-transitions-fe_20260311150001Z: {"title":"UI polish — dialog animations, button transitions, and form error styling","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+user-mirror-be_20260310225404Z: {"title":"Add --output flag for user-specified mirror path, preserve on destroy","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+user-mirror-fe_20260310225405Z: {"title":"Surface mirror directory in Command Deck UI","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 work-queue-be_20260311010002Z: {"title":"Work queue — backend service with semaphore, dependency-aware scheduling, and auto-spawn","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and status UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

@@ -1,0 +1,104 @@
+id: user-mirror-fe_20260310225405Z
+title: Surface mirror directory in Command Deck UI
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Display each project's mirror directory in the Command Deck frontend —
+    in the project detail page metadata panel and in the Add Project form
+    as an optional output directory field.
+  context: |
+    The BE track (user-mirror-be) adds `--output` support for user-specified
+    mirror paths and exposes `mirror_dir` in the API response. The frontend
+    needs to surface this information so users can see where their browseable
+    copy lives and specify a custom location when adding projects via the
+    Command Deck.
+  codebase_analysis: |
+    **Project TypeScript interface** (`frontend/src/types/api.ts:116-121`):
+    ```typescript
+    export interface Project {
+      slug: string;
+      repo_name: string;
+      origin_remote?: string;
+      active: boolean;
+    }
+    ```
+    Needs `mirror_dir?: string` added.
+    
+    **Project detail page** (`frontend/src/pages/ProjectPage.tsx:214-238`):
+    - Metadata panel shows slug, repo_name, origin_remote, active
+    - Add mirror_dir row here
+    
+    **Add Project form** (`frontend/src/components/AddProjectForm.tsx`):
+    - Has "Clone from remote" and "Create new" modes
+    - Has optional SSH key selector
+    - Add optional "Output directory" text input
+    
+    **Project hooks** (`frontend/src/hooks/useProjects.ts`):
+    - Fetches from GET /api/projects
+    - No changes needed — mirror_dir will flow through automatically
+      once the TS type is updated
+    
+    **API types** — after BE track adds mirror_dir to OpenAPI schema and
+    runs gen-api, the generated TS types may auto-update if using codegen.
+    Otherwise update manually.
+  acceptance_criteria:
+    - Project detail page shows "Mirror" path when mirror_dir is set
+    - Mirror path is not shown when mirror_dir is empty/null
+    - Add Project form has optional "Output directory" input field
+    - Output directory value is sent as output_dir in POST /api/projects
+    - UI handles both internal (default) and external mirror paths gracefully
+    - make build passes (frontend compiles without TS errors)
+  out_of_scope: |
+    - Backend API changes (handled by BE track)
+    - Mirror sync controls (manual sync button, auto-sync toggle)
+    - Editing mirror path after project creation
+  technical_notes: |
+    **Type update** (`types/api.ts`):
+    - Add `mirror_dir?: string` to Project interface
+    - Add `output_dir?: string` to AddProjectRequest (or whatever the form uses)
+    
+    **ProjectPage.tsx changes:**
+    - In the metadata panel (lines 214-238), add a row:
+      ```tsx
+      {project.mirror_dir && (
+        <div>
+          <span>Mirror:</span>
+          <span>{project.mirror_dir}</span>
+        </div>
+      )}
+      ```
+    
+    **AddProjectForm.tsx changes:**
+    - Add text input for output directory (optional)
+    - Include in POST body when submitting
+    
+    **Styling:** Follow existing metadata panel patterns — no new design needed.
+plan:
+  - phase: Types and project display
+    tasks:
+      - text: Add mirror_dir to Project TypeScript interface
+        done: false
+      - text: Display mirror path in ProjectPage metadata panel (conditional on non-empty)
+        done: false
+  - phase: Add Project form
+    tasks:
+      - text: Add output_dir to AddProjectRequest type or form state
+        done: false
+      - text: Add optional "Output directory" input field to AddProjectForm
+        done: false
+      - text: Include output_dir in POST /api/projects request body
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run make build — frontend compiles without TS errors
+        done: false
+      - text: Verify project detail page renders mirror path correctly
+        done: false
+extra:
+  created_by:
+    role: architect
+    session_id: ba292e22-8e13-4ffc-9791-c815b94c7ad6
+    timestamp: 2026-03-10T22:56:17Z

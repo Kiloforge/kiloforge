@@ -1,0 +1,153 @@
+id: user-mirror-be_20260310225404Z
+title: Add --output flag for user-specified mirror path, preserve on destroy
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Add `--output <path>` flag to `kf add` and `kf create` so users can specify
+    an external directory for the mirror clone. Expose mirror_dir in the API
+    response. Guard `kf destroy` and RemoveProject against deleting external mirrors.
+  context: |
+    Kiloforge clones repos internally at `~/.kiloforge/repos/{slug}/` and creates
+    a mirror at `~/.kiloforge/output/{slug}/` that is force-pushed when main
+    changes. Both live inside the data directory, so the user has no easy-access
+    browseable copy outside kf's managed area.
+    
+    Users want to specify a local directory (e.g., `~/projects/myrepo/`) that kf
+    keeps in sync, giving them a browseable copy. When `kf destroy` runs, these
+    external copies must be preserved — they belong to the user, not to kf.
+  codebase_analysis: |
+    **Mirror system (already functional):**
+    - `MirrorDir` field on `domain.Project` (project.go:23)
+    - `project_service.go:AddProject()` creates mirror via `gitSync.CreateMirrorClone()`
+      at hardcoded `filepath.Join(dataDir, "output", slug)`
+    - `project_service.go:SyncMirror()` force-pushes main to mirror
+    - `project_service.go:RemoveProject(cleanup=true)` calls `os.RemoveAll(p.MirrorDir)`
+      — would delete an external mirror. Needs guard.
+    
+    **kf add** (`cli/add.go`):
+    - Takes remote URL, derives slug, calls `projectSvc.AddProject()`
+    - `domain.AddProjectOpts` has `SSHKeyPath` — add `OutputDir` here.
+    
+    **kf create** (`cli/create.go`):
+    - Also creates a mirror. Should support `--output` too.
+    
+    **kf destroy** (`cli/destroy.go`):
+    - `os.RemoveAll(cfg.DataDir)` — only touches ~/.kiloforge/
+    - External mirrors survive naturally, but RemoveProject cleanup path
+      explicitly deletes MirrorDir. Add guard.
+    
+    **API** (`rest/api_handler.go`):
+    - ListProjects (line 878) returns: Slug, RepoName, Active, OriginRemote
+    - AddProject (line 900) accepts: RemoteUrl, Name, SshKey
+    - Neither exposes mirror_dir. Need to add to OpenAPI schema and handlers.
+    
+    **DB** — projects table stores project_dir but check if mirror_dir persists
+    through SQLite store. May need migration.
+  acceptance_criteria:
+    - "kf add <url> --output ~/projects/foo" creates mirror at the specified path
+    - "kf add <url>" without --output uses default ~/.kiloforge/output/{slug}/
+    - "kf create <name> --output ~/projects/foo" also supports --output
+    - Mirror sync (force-push on main changes) works with external paths
+    - RemoveProject with cleanup=true does NOT delete MirrorDir outside data dir
+    - "kf destroy" confirmation prompt notes external mirrors are preserved
+    - API GET /api/projects returns mirror_dir field per project
+    - API POST /api/projects accepts optional output_dir parameter
+    - "kf projects" CLI output shows mirror path
+    - If --output path exists and is a git repo, reuse it
+    - If --output path exists and is NOT a git repo, error with message
+    - MirrorDir persists through SQLite store round-trip
+    - make test, make build, make lint all pass
+  out_of_scope: |
+    - Frontend UI changes (separate FE track)
+    - Changes to the sync/push mechanism itself (already works with any MirrorDir)
+    - Symlink support for mirror paths
+    - Automatic --output path suggestion
+  technical_notes: |
+    **AddProjectOpts change:**
+    ```go
+    type AddProjectOpts struct {
+        SSHKeyPath string
+        OutputDir  string  // user-specified mirror location
+    }
+    ```
+    
+    **AddProject logic:**
+    - If opts.OutputDir != "": expand ~/, resolve to absolute, use as mirrorDir
+    - Else: use default filepath.Join(dataDir, "output", slug)
+    - Validate: if path exists, must be a git repo or empty dir
+    
+    **RemoveProject guard:**
+    ```go
+    if cleanup && p.MirrorDir != "" {
+        if strings.HasPrefix(p.MirrorDir, s.config.DataDir) {
+            os.RemoveAll(p.MirrorDir)  // internal — safe
+        }
+        // external — skip, belongs to user
+    }
+    ```
+    
+    **OpenAPI schema additions:**
+    - Project response: add `mirror_dir: string` (optional)
+    - AddProjectRequest: add `output_dir: string` (optional)
+    - Regenerate with make gen-api
+    
+    **DB persistence:**
+    - Check if SQLite project store persists MirrorDir
+    - If not, add column via migration
+plan:
+  - phase: Domain and service layer (TDD)
+    tasks:
+      - text: Add OutputDir to domain.AddProjectOpts
+        done: false
+      - text: Write tests for AddProject with custom OutputDir
+        done: false
+      - text: Write tests for AddProject without OutputDir (backward compat)
+        done: false
+      - text: Update AddProject to use opts.OutputDir when provided
+        done: false
+      - text: Write test for RemoveProject skipping external MirrorDir
+        done: false
+      - text: Add guard in RemoveProject for external MirrorDir deletion
+        done: false
+  - phase: CLI flags
+    tasks:
+      - text: Add --output flag to addCmd, pass to AddProjectOpts.OutputDir
+        done: false
+      - text: Add --output flag to createCmd, pass to AddProjectOpts.OutputDir
+        done: false
+      - text: Add mirror path to "kf projects" CLI output
+        done: false
+  - phase: API and schema
+    tasks:
+      - text: Add mirror_dir to OpenAPI Project schema and output_dir to AddProjectRequest
+        done: false
+      - text: Run make gen-api to regenerate types
+        done: false
+      - text: Update ListProjects handler to include mirror_dir in response
+        done: false
+      - text: Update AddProject handler to accept and pass output_dir
+        done: false
+  - phase: Destroy safety
+    tasks:
+      - text: Write test verifying destroy does not delete external mirror paths
+        done: false
+      - text: Update destroy confirmation prompt to note external copies preserved
+        done: false
+  - phase: Persistence
+    tasks:
+      - text: Verify MirrorDir round-trips through SQLite store, add migration if needed
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run make test, make build, make lint — all pass
+        done: false
+      - text: Run make verify-codegen — generated code matches schema
+        done: false
+extra:
+  created_by:
+    role: architect
+    session_id: ba292e22-8e13-4ffc-9791-c815b94c7ad6
+    timestamp: 2026-03-10T22:56:17Z
