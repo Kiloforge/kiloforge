@@ -1830,6 +1830,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/notifications:
+    get:
+      operationId: listNotifications
+      summary: List active notifications
+      tags: [Notifications]
+      parameters:
+        - name: agent_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter notifications by agent ID.
+      responses:
+        "200":
+          description: List of active notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/notifications/{id}/acknowledge:
+    post:
+      operationId: acknowledgeNotification
+      summary: Acknowledge a notification
+      tags: [Notifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Notification ID (UUID)
+      responses:
+        "204":
+          description: Notification acknowledged
+        "404":
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/queue/settings:
     patch:
       operationId: updateQueueSettings
@@ -3110,3 +3164,36 @@ components:
           additionalProperties:
             type: integer
           description: Total counts by severity
+
+    Notification:
+      type: object
+      required: [id, agent_id, title, body, created_at]
+      properties:
+        id:
+          type: string
+          description: Unique notification identifier (UUID)
+        agent_id:
+          type: string
+          description: ID of the agent that needs attention
+        title:
+          type: string
+          description: Notification title (e.g. "agent-name needs your attention")
+        body:
+          type: string
+          description: Additional notification detail
+        created_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+          description: When the notification was acknowledged (null if active)
+
+    NotificationList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"

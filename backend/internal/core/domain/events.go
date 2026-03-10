@@ -17,6 +17,8 @@ const (
 	EventCapacityChanged       = "capacity_changed"
 	EventProjectSettingsUpdate = "project_settings_update"
 	EventReliabilityEvent      = "reliability_event"
+	EventNotificationCreated   = "notification_created"
+	EventNotificationDismissed = "notification_dismissed"
 )
 
 // NewAgentUpdateEvent creates an agent_update event.
@@ -92,4 +94,21 @@ func NewProjectSettingsUpdateEvent(slug string, data any) Event {
 // NewReliabilityEventEvent creates a reliability_event event for SSE streaming.
 func NewReliabilityEventEvent(data any) Event {
 	return Event{Type: EventReliabilityEvent, Data: data}
+}
+
+// NewNotificationCreatedEvent creates a notification_created event.
+func NewNotificationCreatedEvent(n Notification) Event {
+	return Event{Type: EventNotificationCreated, Data: map[string]any{
+		"id":       n.ID,
+		"agent_id": n.AgentID,
+		"title":    n.Title,
+		"body":     n.Body,
+	}}
+}
+
+// NewNotificationDismissedEvent creates a notification_dismissed event.
+func NewNotificationDismissedEvent(agentID string) Event {
+	return Event{Type: EventNotificationDismissed, Data: map[string]string{
+		"agent_id": agentID,
+	}}
 }

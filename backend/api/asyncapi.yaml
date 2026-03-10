@@ -39,6 +39,10 @@ channels:
         $ref: '#/components/messages/LockUpdate'
       lockReleased:
         $ref: '#/components/messages/LockReleased'
+      notificationCreated:
+        $ref: '#/components/messages/NotificationCreated'
+      notificationDismissed:
+        $ref: '#/components/messages/NotificationDismissed'
 
   giteaWebhook:
     address: /webhook
@@ -73,6 +77,8 @@ operations:
       - $ref: '#/channels/sseEvents/messages/projectRemoved'
       - $ref: '#/channels/sseEvents/messages/lockUpdate'
       - $ref: '#/channels/sseEvents/messages/lockReleased'
+      - $ref: '#/channels/sseEvents/messages/notificationCreated'
+      - $ref: '#/channels/sseEvents/messages/notificationDismissed'
 
   consumeWebhook:
     action: receive
@@ -233,6 +239,41 @@ components:
         properties:
           scope:
             type: string
+
+    NotificationCreated:
+      name: notification_created
+      title: Notification Created
+      summary: Emitted when an agent needs user attention (turn ended, waiting for input).
+      contentType: application/json
+      payload:
+        type: object
+        required: [id, agent_id, title, body]
+        properties:
+          id:
+            type: string
+            description: Notification ID (UUID)
+          agent_id:
+            type: string
+            description: ID of the agent needing attention
+          title:
+            type: string
+            description: Notification title
+          body:
+            type: string
+            description: Additional detail
+
+    NotificationDismissed:
+      name: notification_dismissed
+      title: Notification Dismissed
+      summary: Emitted when an agent resumes work or enters terminal status, dismissing its notification.
+      contentType: application/json
+      payload:
+        type: object
+        required: [agent_id]
+        properties:
+          agent_id:
+            type: string
+            description: ID of the agent whose notification was dismissed
 
     GiteaIssueEvent:
       name: gitea_issue

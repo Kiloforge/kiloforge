@@ -431,6 +431,30 @@ type MoveCardResult struct {
 	TrackId    string `json:"track_id"`
 }
 
+// Notification defines model for Notification.
+type Notification struct {
+	// AcknowledgedAt When the notification was acknowledged (null if active)
+	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
+
+	// AgentId ID of the agent that needs attention
+	AgentId string `json:"agent_id"`
+
+	// Body Additional notification detail
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id Unique notification identifier (UUID)
+	Id string `json:"id"`
+
+	// Title Notification title (e.g. "agent-name needs your attention")
+	Title string `json:"title"`
+}
+
+// NotificationList defines model for NotificationList.
+type NotificationList struct {
+	Items []Notification `json:"items"`
+}
+
 // PaginatedAgents defines model for PaginatedAgents.
 type PaginatedAgents struct {
 	Items []Agent `json:"items"`
@@ -1038,6 +1062,12 @@ type GetAgentLogParams struct {
 	Lines *int `form:"lines,omitempty" json:"lines,omitempty"`
 }
 
+// ListNotificationsParams defines parameters for ListNotifications.
+type ListNotificationsParams struct {
+	// AgentId Filter notifications by agent ID.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+}
+
 // RemoveProjectParams defines parameters for RemoveProject.
 type RemoveProjectParams struct {
 	// Cleanup If true, also delete Gitea repo and filesystem data
@@ -1275,6 +1305,12 @@ type ServerInterface interface {
 	// Extend lock TTL
 	// (POST /api/locks/{scope}/heartbeat)
 	HeartbeatLock(w http.ResponseWriter, r *http.Request, scope string)
+	// List active notifications
+	// (GET /api/notifications)
+	ListNotifications(w http.ResponseWriter, r *http.Request, params ListNotificationsParams)
+	// Acknowledge a notification
+	// (POST /api/notifications/{id}/acknowledge)
+	AcknowledgeNotification(w http.ResponseWriter, r *http.Request, id string)
 	// Pre-flight check status for agent spawning
 	// (GET /api/preflight)
 	GetPreflight(w http.ResponseWriter, r *http.Request)
@@ -1845,6 +1881,58 @@ func (siw *ServerInterfaceWrapper) HeartbeatLock(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.HeartbeatLock(w, r, scope)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotifications operation middleware
+func (siw *ServerInterfaceWrapper) ListNotifications(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListNotificationsParams
+
+	// ------------- Optional query parameter "agent_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "agent_id", r.URL.Query(), &params.AgentId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "agent_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotifications(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcknowledgeNotification operation middleware
+func (siw *ServerInterfaceWrapper) AcknowledgeNotification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcknowledgeNotification(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2925,6 +3013,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/locks/{scope}", wrapper.ReleaseLock)
 	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/acquire", wrapper.AcquireLock)
 	m.HandleFunc("POST "+options.BaseURL+"/api/locks/{scope}/heartbeat", wrapper.HeartbeatLock)
+	m.HandleFunc("GET "+options.BaseURL+"/api/notifications", wrapper.ListNotifications)
+	m.HandleFunc("POST "+options.BaseURL+"/api/notifications/{id}/acknowledge", wrapper.AcknowledgeNotification)
 	m.HandleFunc("GET "+options.BaseURL+"/api/preflight", wrapper.GetPreflight)
 	m.HandleFunc("GET "+options.BaseURL+"/api/projects", wrapper.ListProjects)
 	m.HandleFunc("POST "+options.BaseURL+"/api/projects", wrapper.AddProject)
@@ -3680,6 +3770,66 @@ type HeartbeatLock404JSONResponse ErrorResponse
 func (response HeartbeatLock404JSONResponse) VisitHeartbeatLockResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListNotificationsRequestObject struct {
+	Params ListNotificationsParams
+}
+
+type ListNotificationsResponseObject interface {
+	VisitListNotificationsResponse(w http.ResponseWriter) error
+}
+
+type ListNotifications200JSONResponse NotificationList
+
+func (response ListNotifications200JSONResponse) VisitListNotificationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListNotifications500JSONResponse ErrorResponse
+
+func (response ListNotifications500JSONResponse) VisitListNotificationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeNotificationRequestObject struct {
+	Id string `json:"id"`
+}
+
+type AcknowledgeNotificationResponseObject interface {
+	VisitAcknowledgeNotificationResponse(w http.ResponseWriter) error
+}
+
+type AcknowledgeNotification204Response struct {
+}
+
+func (response AcknowledgeNotification204Response) VisitAcknowledgeNotificationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type AcknowledgeNotification404JSONResponse ErrorResponse
+
+func (response AcknowledgeNotification404JSONResponse) VisitAcknowledgeNotificationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeNotification500JSONResponse ErrorResponse
+
+func (response AcknowledgeNotification500JSONResponse) VisitAcknowledgeNotificationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -4888,6 +5038,12 @@ type StrictServerInterface interface {
 	// Extend lock TTL
 	// (POST /api/locks/{scope}/heartbeat)
 	HeartbeatLock(ctx context.Context, request HeartbeatLockRequestObject) (HeartbeatLockResponseObject, error)
+	// List active notifications
+	// (GET /api/notifications)
+	ListNotifications(ctx context.Context, request ListNotificationsRequestObject) (ListNotificationsResponseObject, error)
+	// Acknowledge a notification
+	// (POST /api/notifications/{id}/acknowledge)
+	AcknowledgeNotification(ctx context.Context, request AcknowledgeNotificationRequestObject) (AcknowledgeNotificationResponseObject, error)
 	// Pre-flight check status for agent spawning
 	// (GET /api/preflight)
 	GetPreflight(ctx context.Context, request GetPreflightRequestObject) (GetPreflightResponseObject, error)
@@ -5583,6 +5739,58 @@ func (sh *strictHandler) HeartbeatLock(w http.ResponseWriter, r *http.Request, s
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(HeartbeatLockResponseObject); ok {
 		if err := validResponse.VisitHeartbeatLockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListNotifications operation middleware
+func (sh *strictHandler) ListNotifications(w http.ResponseWriter, r *http.Request, params ListNotificationsParams) {
+	var request ListNotificationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListNotifications(ctx, request.(ListNotificationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListNotifications")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListNotificationsResponseObject); ok {
+		if err := validResponse.VisitListNotificationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcknowledgeNotification operation middleware
+func (sh *strictHandler) AcknowledgeNotification(w http.ResponseWriter, r *http.Request, id string) {
+	var request AcknowledgeNotificationRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcknowledgeNotification(ctx, request.(AcknowledgeNotificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcknowledgeNotification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcknowledgeNotificationResponseObject); ok {
+		if err := validResponse.VisitAcknowledgeNotificationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
