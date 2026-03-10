@@ -1,0 +1,127 @@
+id: immersive-views_20260310110000Z
+title: "Add fullscreen immersive mode for terminal and diff views"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Add a maximize/fullscreen toggle to AgentTerminal and DiffView that expands
+    them to fill the viewport minus the header bar, creating an immersive view.
+  context: |
+    The AgentTerminal modal is capped at 90% width / 720px max / 80vh height.
+    The DiffView is rendered inline in AgentDetailPage with constrained sections.
+    Users want to go "immersive" — filling all available space below the topbar
+    to focus on terminal conversations or code diffs without distraction.
+
+    This applies to:
+    1. AgentTerminal (modal overlay) — used for interactive agent conversations
+    2. DiffView (inline panel) — used on AgentDetailPage for branch diffs
+    3. LogViewer (modal overlay) — secondary, same pattern as terminal
+  codebase_analysis: |
+    Key files:
+
+    1. frontend/src/components/AgentTerminal.tsx
+       - Currently: modal overlay, 90% width, max-width 720px, height 80vh
+       - CSS: AgentTerminal.module.css (.overlay, .modal)
+       - Props: agentId, role, onClose
+       - Rendered in App.tsx (line ~181) and ProjectPage.tsx
+
+    2. frontend/src/components/diff/DiffView.tsx
+       - Currently: inline flex column with sidebar (280px) + content area
+       - CSS: DiffView.module.css
+       - Rendered in AgentDetailPage.tsx (lines ~237-249) within a section panel
+       - Contains FileList sidebar + FileDiff content
+
+    3. frontend/src/components/LogViewer.tsx
+       - Currently: modal overlay, 90% width, max-width 900px, max-height 80vh
+       - CSS: LogViewer.module.css (.overlay, .modal)
+       - Same pattern as AgentTerminal
+
+    4. frontend/src/App.module.css
+       - Header: sticky, z-index 50, padding 12px 24px
+       - Main: max-width 1200px, padding 24px, centered
+       - Header height is not a CSS variable — need to measure or set one
+
+    5. frontend/src/pages/AgentDetailPage.tsx
+       - DiffView rendered inline in a section with 16px padding
+       - Terminal section inline for interactive agents (max-height 400px)
+
+    Layout approach for immersive mode:
+    - position: fixed, top: <header-height>, left: 0, right: 0, bottom: 0
+    - z-index above main content but below modals (z-index ~100)
+    - Remove max-width/max-height constraints when immersive
+    - Add CSS variable --header-height for consistent positioning
+  acceptance_criteria:
+    - AgentTerminal has a maximize toggle button in its header
+    - DiffView has a maximize toggle button in its top bar
+    - Maximized view fills viewport below the header (no side margins, no max-width cap)
+    - Escape key exits immersive mode
+    - Toggle button shows expand icon when normal, collapse icon when immersive
+    - Content scrolling works correctly in both modes
+    - AgentTerminal input area remains visible and functional in immersive mode
+    - DiffView sidebar + file content layout adapts to wider space
+    - LogViewer also supports immersive mode (same pattern)
+    - Transition between modes is smooth (no jarring layout jumps)
+    - E2E tests pass
+  out_of_scope: |
+    - Backend changes
+    - Changing the default (non-immersive) layout
+    - Adding new content to terminal or diff views
+    - Keyboard shortcuts beyond Escape
+  technical_notes: |
+    Implementation approach:
+
+    1. Add a CSS variable --header-height to App.module.css (measure from
+       existing header or set explicit value, ~52px based on padding + content)
+
+    2. Create a shared .immersive CSS class (or per-component variants):
+       - position: fixed
+       - top: var(--header-height)
+       - left: 0; right: 0; bottom: 0
+       - z-index: 200 (above page content, below dialogs at 10000)
+       - background: var(--bg) (opaque, covers page beneath)
+       - Remove max-width, max-height constraints
+       - border-radius: 0 (flush to edges)
+
+    3. For AgentTerminal: add isImmersive state, toggle button in header,
+       conditionally apply .immersive class to .modal element. When immersive,
+       remove the dark backdrop overlay (or make it transparent) since the
+       terminal fills the viewport.
+
+    4. For DiffView: add isImmersive prop or state, toggle button in DiffStats
+       bar, wrap in a container that becomes fixed-position when immersive.
+       Sidebar can use more height in immersive mode.
+
+    5. For LogViewer: same pattern as AgentTerminal.
+
+    6. Escape key handler: useEffect with keydown listener, calls exit when
+       immersive. Only active when the component is in immersive mode.
+plan:
+  - phase: "Foundation"
+    tasks:
+      - text: "Add --header-height CSS variable to App.module.css and set explicit header height"
+        done: false
+      - text: "Create shared immersive CSS class/mixin for fixed fullscreen-below-header positioning"
+        done: false
+  - phase: "Component updates"
+    tasks:
+      - text: "Add immersive state and toggle button to AgentTerminal header"
+        done: false
+      - text: "Apply immersive CSS to AgentTerminal modal when maximized (fixed position, no max-width/height)"
+        done: false
+      - text: "Add immersive state and toggle button to DiffView top bar"
+        done: false
+      - text: "Wrap DiffView in immersive container when maximized"
+        done: false
+      - text: "Add immersive mode to LogViewer (same pattern as AgentTerminal)"
+        done: false
+      - text: "Add Escape key handler to exit immersive mode in all three components"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build-frontend to verify no build errors"
+        done: false
+      - text: "Run make test-e2e to verify existing tests pass and add immersive toggle coverage"
+        done: false
+extra: {}
