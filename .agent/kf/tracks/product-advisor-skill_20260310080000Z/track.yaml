@@ -1,20 +1,17 @@
 id: product-advisor-skill_20260310080000Z
-title: "Add kf-product-advisor embedded skill"
+title: Add kf-product-advisor embedded skill
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Create a new kf-product-advisor embedded skill that provides product design,
-    branding, and feature development advice with competitive analysis capabilities.
-    Outputs actionable markdown reports to .agent/kf/_reports/product-advisor/.
+  summary: ">"
   context: |
     Kiloforge currently has architect, developer, reviewer, and report skills but
     no advisory role for product strategy. Users need a way to get product design,
     branding, and competitive analysis advice that produces actionable reports
     which can be fed to the architect for track generation.
-
+    
     The skill should:
     - Accept an optional prompt from the user; if no prompt, ask what they want
       advice on and suggest capabilities (benchmarking, competitive analysis, etc.)
@@ -30,18 +27,18 @@ spec:
     - Skills are compiled into the Go binary via //go:embed embedded/*
     - Auto-discovered by ListEmbedded() which walks embedded/ directory
     - Installed to ~/.claude/skills/ via InstallAllEmbedded()
-
+    
     Role registration:
     - RequiredSkillsForRole() in checker.go maps roles to required skills
     - The product-advisor does NOT need a new role — it will be invoked as a slash
       command (/kf-product-advisor) through the existing interactive agent session
     - No changes to checker.go or spawner.go needed
-
+    
     Report output pattern (from kf-report):
     - Reports go to .agent/kf/_reports/ with date-prefixed filenames
     - Product advisor will use .agent/kf/_reports/product-advisor/ subdirectory
     - Markdown format, designed for dashboard rendering
-
+    
     Key reference files:
     - backend/internal/adapter/skills/embedded/kf-architect/SKILL.md (similar structure)
     - backend/internal/adapter/skills/embedded/kf-report/SKILL.md (report output pattern)
@@ -73,31 +70,31 @@ spec:
     6. Analysis phase: synthesize findings
     7. Report generation: write to .agent/kf/_reports/product-advisor/
     8. Handoff: summarize findings and suggest /kf-architect follow-up
-
+    
     The allowed-tools should include WebSearch and WebFetch for competitive
     research, plus Read, Glob, Grep, Bash, Write for codebase analysis and
     report output.
 plan:
-  - phase: "Create skill"
+  - phase: Create skill
     tasks:
-      - text: "Create backend/internal/adapter/skills/embedded/kf-product-advisor/ directory"
-        done: false
-      - text: "Write SKILL.md with frontmatter, role definition, capability menu, research workflow, and report output phases"
-        done: false
-      - text: "Verify SKILL.md frontmatter parses correctly (valid YAML)"
-        done: false
-  - phase: "Integration verification"
+      - text: Create backend/internal/adapter/skills/embedded/kf-product-advisor/ directory
+        done: true
+      - text: Write SKILL.md with frontmatter, role definition, capability menu, research workflow, and report output phases
+        done: true
+      - text: Verify SKILL.md frontmatter parses correctly (valid YAML)
+        done: true
+  - phase: Integration verification
     tasks:
-      - text: "Verify ListEmbedded() discovers the new skill (check via test or manual inspection)"
-        done: false
-      - text: "Verify InstallAllEmbedded() installs the skill to ~/.claude/skills/"
-        done: false
-      - text: "Run make test on backend/internal/adapter/skills/ package to verify existing tests pass"
-        done: false
-  - phase: "End-to-end verification"
+      - text: Verify ListEmbedded() discovers the new skill (check via test or manual inspection)
+        done: true
+      - text: Verify InstallAllEmbedded() installs the skill to ~/.claude/skills/
+        done: true
+      - text: Run make test on backend/internal/adapter/skills/ package to verify existing tests pass
+        done: true
+  - phase: End-to-end verification
     tasks:
-      - text: "Build the binary (make build) to verify embedded skill compiles in"
-        done: false
-      - text: "Verify /kf-product-advisor is available as a slash command after skill installation"
-        done: false
+      - text: Build the binary (make build) to verify embedded skill compiles in
+        done: true
+      - text: Verify /kf-product-advisor is available as a slash command after skill installation
+        done: true
 extra: {}
