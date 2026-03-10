@@ -1,0 +1,79 @@
+id: ui-polish-transitions-fe_20260311150001Z
+title: "UI polish — dialog animations, button transitions, and form error styling"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Add fade-in/out animations to all modal dialogs and overlays, smooth transitions
+    to buttons, and red-border visual error states to form inputs.
+  context: |
+    The dashboard has well-designed dialogs (ConsentDialog, AgentLauncher, RemoveProjectDialog,
+    SkillsInstallDialog, ShortcutHelp) but none have entry/exit animations. Buttons lack
+    smooth transition properties. Form inputs show error text below but don't visually
+    highlight the invalid field with a border color change.
+  codebase_analysis: |
+    Dialogs needing animations (all have overlay + dialog pattern):
+    - frontend/src/components/RemoveProjectDialog.module.css — overlay lines 1-9
+    - frontend/src/components/AgentLauncher.module.css — overlay lines 1-9
+    - frontend/src/components/ConsentDialog.module.css — overlay lines 1-20
+    - frontend/src/components/SkillsInstallDialog.module.css
+    - frontend/src/components/ShortcutHelp.module.css
+
+    Good animation reference: Toast.module.css uses slideIn keyframe (line 25-37).
+    Loading spinner uses spin animation. These are the patterns to follow.
+
+    Button transitions needed:
+    - frontend/src/pages/OverviewPage.module.css .spawnBtn — has hover opacity but no transition
+    - frontend/src/components/AgentCard.module.css — button hover lacks transition
+    - Various other buttons throughout the app
+
+    Form error styling needed:
+    - frontend/src/components/AddProjectForm.module.css — .input lacks error variant
+    - frontend/src/components/AddProjectForm.tsx lines 139, 156 — shows fieldError text
+    - frontend/src/components/SwarmPanel.module.css — .sizeInput has no error state
+  acceptance_criteria:
+    - All modal overlays fade in on mount (0.2s ease animation)
+    - Dialog content slides up on mount (subtle translateY animation)
+    - Buttons with hover states have smooth transitions (0.15s)
+    - Form inputs with validation errors show red border (var(--red) or similar)
+    - No layout shifts from animations
+    - All existing tests pass
+  out_of_scope: |
+    - Exit animations (requires React transition libraries or manual unmount delay)
+    - New animation library dependencies
+    - Skeleton loading animations
+  technical_notes: |
+    Approach:
+    1. Define shared @keyframes (fadeIn, slideUp) in index.css or a shared animations file
+    2. Apply fadeIn to all .overlay classes
+    3. Apply slideUp to all .dialog/.card classes within overlays
+    4. Add transition: opacity 0.15s, background 0.15s to interactive elements
+    5. Add .inputError compound class that applies red border to form inputs
+plan:
+  - phase: "Shared Animations"
+    tasks:
+      - text: Define @keyframes fadeIn and slideUp in index.css for reuse across all dialogs
+        done: false
+  - phase: "Dialog Animations"
+    tasks:
+      - text: Add fadeIn animation to overlay and slideUp to dialog in RemoveProjectDialog, ConsentDialog, and SkillsInstallDialog CSS modules
+        done: false
+      - text: Add fadeIn/slideUp to AgentLauncher and ShortcutHelp CSS modules
+        done: false
+  - phase: "Button Transitions"
+    tasks:
+      - text: Audit all button styles and add transition property where missing — focus on hover states in OverviewPage, AgentCard, ProjectPage
+        done: false
+  - phase: "Form Error Styling"
+    tasks:
+      - text: Add .inputError class to AddProjectForm — red border on invalid URL and slug inputs, wire to validation state
+        done: false
+      - text: Add error border styling to SwarmPanel size input when value is invalid
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: Run npm test and make build
+        done: false
+extra: {}

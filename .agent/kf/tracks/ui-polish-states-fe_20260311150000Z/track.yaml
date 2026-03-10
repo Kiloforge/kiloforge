@@ -1,0 +1,84 @@
+id: ui-polish-states-fe_20260311150000Z
+title: "UI polish — loading spinners, empty states, and styled confirmation dialogs"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Replace all bare "Loading..." text with the LoadingFallback spinner, improve empty
+    states with icons and action guidance, and replace window.confirm() with a reusable
+    styled ConfirmDialog component.
+  context: |
+    The dashboard already has a LoadingFallback spinner component (created in the
+    frontend-bundle-opt-fe track) and a good RemoveProjectDialog pattern for styled
+    confirmations. However, many components still show plain "Loading..." text and
+    use native window.confirm() for destructive actions, breaking visual consistency.
+  codebase_analysis: |
+    Loading state replacements needed:
+    - frontend/src/components/PaginatedList.tsx line 26-29 — "Loading..." text
+    - frontend/src/components/LogViewer.tsx line 102 — "Loading..." text
+    - frontend/src/pages/AgentDetailPage.tsx line 119 — "Loading agent..." text
+    - frontend/src/components/SwarmPanel.tsx line 33 — "Loading swarm..." text
+    - frontend/src/pages/OverviewPage.tsx lines 219, 249 — "Loading agents/projects..." text
+    - frontend/src/pages/ProjectPage.tsx line 337 — "Loading board..." text
+
+    Empty state improvements needed:
+    - frontend/src/components/AgentGrid.tsx line 33 — "No agents running" (no guidance)
+    - frontend/src/components/TrackList.tsx line 23 — "No tracks found" (no guidance)
+
+    window.confirm() replacements:
+    - frontend/src/components/AgentCard.tsx line 105 — agent delete
+    - frontend/src/pages/AgentDetailPage.tsx line 162 — agent delete
+    - frontend/src/pages/AgentHistoryPage.tsx line 143 — agent delete
+
+    Pattern to follow: RemoveProjectDialog.tsx (lines 19-58) — styled modal with
+    overlay, cancel/confirm buttons, and descriptive text.
+  acceptance_criteria:
+    - All "Loading..." text replaced with LoadingFallback spinner or inline spinner
+    - Empty states show descriptive message with suggested action
+    - New ConfirmDialog component created following RemoveProjectDialog pattern
+    - All window.confirm() calls replaced with ConfirmDialog
+    - No regressions in existing tests
+  out_of_scope: |
+    - Adding skeleton loaders (too complex for this track)
+    - Changing loading logic or data fetching patterns
+    - Adding new error handling (separate track)
+  technical_notes: |
+    Approach:
+    1. Create a reusable ConfirmDialog component based on RemoveProjectDialog pattern
+    2. Replace all "Loading..." text with inline spinners (smaller variant of LoadingFallback)
+    3. Enhance empty states with descriptive text and optional action buttons
+    4. Replace window.confirm() calls with ConfirmDialog state management
+plan:
+  - phase: "Foundation"
+    tasks:
+      - text: Create reusable ConfirmDialog component with title, message, confirmLabel, onConfirm, onCancel props — follow RemoveProjectDialog pattern
+        done: false
+      - text: Create InlineSpinner component — smaller 16px variant of LoadingFallback for use within sections
+        done: false
+  - phase: "Loading States"
+    tasks:
+      - text: Replace "Loading..." text in PaginatedList, LogViewer, SwarmPanel, and OverviewPage with InlineSpinner
+        done: false
+      - text: Replace "Loading agent..." in AgentDetailPage and "Loading board..." in ProjectPage with InlineSpinner
+        done: false
+  - phase: "Empty States"
+    tasks:
+      - text: Improve AgentGrid empty state — add descriptive message and "New Agent" action hint
+        done: false
+      - text: Improve TrackList empty state — add descriptive message with guidance
+        done: false
+  - phase: "Confirmation Dialogs"
+    tasks:
+      - text: Replace window.confirm() in AgentCard.tsx with ConfirmDialog for agent deletion
+        done: false
+      - text: Replace window.confirm() in AgentDetailPage.tsx and AgentHistoryPage.tsx with ConfirmDialog
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: Run npm test — all tests pass
+        done: false
+      - text: Run make build — full stack build passes
+        done: false
+extra: {}
