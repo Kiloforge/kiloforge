@@ -82,9 +82,9 @@ func (s *stubBoardService) SyncFromTracks(_ string, _ []port.TrackEntry, _ map[s
 	return &port.BoardSyncResult{}, nil
 }
 func (s *stubBoardService) UpdateCardAgent(_, _, _, _ string) error { return nil }
-func (s *stubBoardService) StoreTraceID(_, _, _ string) error      { return nil }
-func (s *stubBoardService) GetTraceID(_, _ string) (string, bool)  { return "", false }
-func (s *stubBoardService) RemoveCard(_, _ string) (bool, error)   { return false, nil }
+func (s *stubBoardService) StoreTraceID(_, _, _ string) error       { return nil }
+func (s *stubBoardService) GetTraceID(_, _ string) (string, bool)   { return "", false }
+func (s *stubBoardService) RemoveCard(_, _ string) (bool, error)    { return false, nil }
 
 // --- Consent Tests ---
 
@@ -758,11 +758,11 @@ func TestListTracks_WithProjects(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.ListTracks(context.Background(), gen.ListTracksRequestObject{})
@@ -783,11 +783,11 @@ func TestListTracks_WithStatusFilter(t *testing.T) {
 	dir := t.TempDir()
 	status := "pending"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.ListTracks(context.Background(), gen.ListTracksRequestObject{
@@ -806,11 +806,11 @@ func TestListTracks_WithProjectFilter(t *testing.T) {
 	dir := t.TempDir()
 	proj := "other"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.ListTracks(context.Background(), gen.ListTracksRequestObject{
@@ -834,12 +834,12 @@ func TestListTracks_WithProjectFilter(t *testing.T) {
 func TestSyncBoard_ProjectNotFound(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		BoardSvc:   &stubBoardService{},
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		BoardSvc:    &stubBoardService{},
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.SyncBoard(context.Background(), gen.SyncBoardRequestObject{Project: "nonexistent"})
@@ -855,12 +855,12 @@ func TestSyncBoard_Success(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		BoardSvc:   &stubBoardService{syncResult: &port.BoardSyncResult{Created: 2, Updated: 1}},
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		BoardSvc:    &stubBoardService{syncResult: &port.BoardSyncResult{Created: 2, Updated: 1}},
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.SyncBoard(context.Background(), gen.SyncBoardRequestObject{Project: "myapp"})
@@ -880,12 +880,12 @@ func TestSyncBoard_SyncError(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		BoardSvc:   &stubBoardService{syncErr: fmt.Errorf("sync failed")},
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		BoardSvc:    &stubBoardService{syncErr: fmt.Errorf("sync failed")},
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.SyncBoard(context.Background(), gen.SyncBoardRequestObject{Project: "myapp"})
@@ -1115,11 +1115,11 @@ func TestGetPreflight_NilConsent(t *testing.T) {
 func TestGetPreflight_ConsentNotGiven(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:       &stubAgentLister{},
-		Quota:        &stubQuotaReader{},
-		LockMgr:      lock.New(""),
-		SSEClients:   func() int { return 0 },
-		Consent: &stubConsentChecker{consented: false},
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		Consent:    &stubConsentChecker{consented: false},
 	})
 	resp, err := h.GetPreflight(context.Background(), gen.GetPreflightRequestObject{})
 	if err != nil {
@@ -1174,11 +1174,11 @@ func TestGetTrackDetail_Success(t *testing.T) {
 		Type:   "feature",
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReaderWithDetail{detail: detail},
 	})
 	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
@@ -1207,11 +1207,11 @@ func TestDeleteTrack_WithProject(t *testing.T) {
 	dir := t.TempDir()
 	proj := "myapp"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.DeleteTrack(context.Background(), gen.DeleteTrackRequestObject{
@@ -1266,11 +1266,11 @@ func TestGetTrackDetail_AllFields(t *testing.T) {
 		},
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReaderWithDetail{detail: detail},
 	})
 	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
@@ -1310,11 +1310,11 @@ func TestGetTrackDetail_AllFields(t *testing.T) {
 func TestGetTrackDetail_UnknownProject(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
@@ -1354,11 +1354,11 @@ func TestDeleteTrack_NilProject_ScanAllProjects(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	// No project param, stub returns no tracks, so 404.
