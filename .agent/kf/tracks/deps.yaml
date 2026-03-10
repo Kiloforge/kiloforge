@@ -60,6 +60,8 @@ prod-security-ci_20260311120000Z: []
 
 site-rebrand_20260311100000Z: []
 
+swarm-dispatch-skill_20260311110000Z: []
+
 test-coverage-be_20260311120004Z:
   - backend-resilience-be_20260311120003Z
 
