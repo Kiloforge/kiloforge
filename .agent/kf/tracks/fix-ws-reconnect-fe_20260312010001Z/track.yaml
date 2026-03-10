@@ -1,0 +1,83 @@
+id: fix-ws-reconnect-fe_20260312010001Z
+title: "Fix frontend reconnect loop — stop retrying when agent is terminal"
+type: bug
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    The frontend WebSocket hook enters an infinite reconnect loop when the agent
+    is stopped/completed/failed because it never receives a status message to know
+    the agent is done. Add REST-based status fallback and reconnect limits.
+  context: |
+    Split from the WebSocket reconnect bug. The backend track
+    (fix-ws-reconnect-be_20260312010000Z) fixes the handler to send correct
+    status and handle missing bridges gracefully. This track hardens the
+    frontend so it doesn't loop forever even if the backend returns unexpected
+    responses.
+  codebase_analysis: |
+    **useAgentWebSocket.ts** — reconnect logic (lines 163-173):
+    - On WS close, checks `agentStatusRef.current` — only stops if
+      "completed" or "failed"
+    - If status is null (never received a status message), always reconnects
+    - No maximum retry limit — exponential backoff caps at 10s but retries forever
+    - No fallback to REST API to check agent state
+
+    **AgentCard.tsx:102-103** — Resume success opens terminal immediately
+    via `onAttach()`. The terminal mounts before the SDK session may be
+    fully initialized, leading to a period where WS connects but no output
+    arrives (looks "stuck").
+
+    **useAgentActions.ts** — provides stop/resume mutations but no hook
+    to query individual agent status on demand.
+  acceptance_criteria:
+    - WebSocket stops reconnecting after agent reaches terminal state
+    - Frontend fetches agent status via REST when WS close fires without prior status
+    - Maximum reconnect attempts (10) prevent infinite loops
+    - Terminal shows clear status when agent is stopped/completed/failed
+    - Resume flow shows brief "Resuming..." state before terminal output appears
+  out_of_scope: |
+    - Backend WebSocket handler changes (covered by BE track)
+    - Changing the terminal UI design
+    - Adding chat persistence
+  technical_notes: |
+    **Fix 1 — REST status fallback on WS close:**
+    In `useAgentWebSocket.ts` onclose handler, when `agentStatusRef.current`
+    is null, call `GET /api/agents/{agentId}` to fetch current status. If
+    status is terminal ("completed", "failed", "stopped"), set agentStatus
+    and stop reconnecting. Use the existing `fetcher` utility.
+
+    **Fix 2 — Maximum reconnect attempts:**
+    Add a counter ref that increments on each reconnect. After 10 attempts,
+    stop and set status to "disconnected". Reset counter on successful
+    connection (onopen).
+
+    **Fix 3 — Handle WS upgrade failure (non-101 response):**
+    When WebSocket onerror fires before onopen (upgrade failed), treat
+    it as a signal to check agent status via REST before retrying.
+plan:
+  - phase: "Reconnect resilience"
+    tasks:
+      - text: "Add REST status fallback in onclose — fetch GET /api/agents/{agentId} when agentStatus is null to determine if agent is terminal"
+        done: false
+      - text: "Add reconnect attempt counter ref — stop after 10 attempts, set status to 'disconnected'"
+        done: false
+      - text: "Reset reconnect counter on successful connection (onopen)"
+        done: false
+      - text: "Handle WS upgrade failure — on onerror before onopen, fetch agent status via REST"
+        done: false
+  - phase: "Terminal status display"
+    tasks:
+      - text: "Show 'Agent stopped' / 'Agent completed' message in terminal when agentStatus is terminal instead of 'Connecting...'"
+        done: false
+      - text: "Disable input field when agent is in terminal state"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Add unit test for useAgentWebSocket reconnect limit behavior"
+        done: false
+      - text: "Add unit test for REST fallback on WS close without status"
+        done: false
+      - text: "Run npm test and verify no regressions"
+        done: false
+extra: {}
