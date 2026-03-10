@@ -6,10 +6,11 @@ import "time"
 type AgentRole string
 
 const (
-	AgentRoleDeveloper AgentRole = "developer"
-	AgentRoleReviewer  AgentRole = "reviewer"
-	AgentRoleArchitect AgentRole = "architect"
-	AgentRoleAdvisor   AgentRole = "product-advisor"
+	AgentRoleDeveloper          AgentRole = "developer"
+	AgentRoleReviewer           AgentRole = "reviewer"
+	AgentRoleArchitect          AgentRole = "architect"
+	AgentRoleAdvisorProduct     AgentRole = "advisor-product"
+	AgentRoleAdvisorReliability AgentRole = "advisor-reliability"
 )
 
 // AgentStatus defines the lifecycle state of an agent.

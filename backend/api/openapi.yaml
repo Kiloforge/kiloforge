@@ -2602,7 +2602,7 @@ components:
           description: Project slug (optional — used for setup prerequisite check)
         role:
           type: string
-          enum: [interactive, architect, product-advisor]
+          enum: [interactive, architect, advisor-product, advisor-reliability]
           description: Agent role — determines which skill is invoked. Defaults to "interactive" for backwards compatibility.
         prompt:
           type: string

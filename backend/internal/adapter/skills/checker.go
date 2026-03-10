@@ -78,9 +78,13 @@ func RequiredSkillsForRole(role string) []RequiredSkill {
 		return []RequiredSkill{
 			{Name: "kf-architect", Reason: "required for architect agent spawning"},
 		}
-	case "product-advisor":
+	case "advisor-product":
 		return []RequiredSkill{
-			{Name: "kf-product-advisor", Reason: "required for product advisor agent spawning"},
+			{Name: "kf-advisor-product", Reason: "required for product advisor agent spawning"},
+		}
+	case "advisor-reliability":
+		return []RequiredSkill{
+			{Name: "kf-advisor-reliability", Reason: "required for reliability advisor agent spawning"},
 		}
 	case "setup":
 		return []RequiredSkill{
@@ -97,8 +101,10 @@ func SkillCommandForRole(role string) string {
 	switch role {
 	case "architect":
 		return "/kf-architect"
-	case "product-advisor":
-		return "/kf-product-advisor"
+	case "advisor-product":
+		return "/kf-advisor-product"
+	case "advisor-reliability":
+		return "/kf-advisor-reliability"
 	default:
 		return ""
 	}
@@ -161,7 +167,7 @@ func ListEmbedded() []string {
 func AllRequiredSkills() []RequiredSkill {
 	var all []RequiredSkill
 	seen := map[string]bool{}
-	for _, role := range []string{"developer", "reviewer", "interactive", "architect", "product-advisor", "setup"} {
+	for _, role := range []string{"developer", "reviewer", "interactive", "architect", "advisor-product", "advisor-reliability", "setup"} {
 		for _, r := range RequiredSkillsForRole(role) {
 			if !seen[r.Name] {
 				seen[r.Name] = true

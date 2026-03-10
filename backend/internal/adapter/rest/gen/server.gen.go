@@ -106,9 +106,10 @@ const (
 
 // Defines values for SpawnInteractiveRequestRole.
 const (
-	SpawnInteractiveRequestRoleArchitect      SpawnInteractiveRequestRole = "architect"
-	SpawnInteractiveRequestRoleInteractive    SpawnInteractiveRequestRole = "interactive"
-	SpawnInteractiveRequestRoleProductAdvisor SpawnInteractiveRequestRole = "product-advisor"
+	SpawnInteractiveRequestRoleAdvisorProduct     SpawnInteractiveRequestRole = "advisor-product"
+	SpawnInteractiveRequestRoleAdvisorReliability SpawnInteractiveRequestRole = "advisor-reliability"
+	SpawnInteractiveRequestRoleArchitect          SpawnInteractiveRequestRole = "architect"
+	SpawnInteractiveRequestRoleInteractive        SpawnInteractiveRequestRole = "interactive"
 )
 
 // Defines values for SyncStatusResponseStatus.
