@@ -13,10 +13,10 @@ function renderLogViewer(agentId = "agent-123") {
 }
 
 describe("LogViewer", () => {
-  it("shows Loading... initially", () => {
+  it("shows loading spinner initially", () => {
     vi.spyOn(globalThis, "fetch").mockReturnValue(new Promise(() => {}));
     renderLogViewer();
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("renders log lines after fetch", async () => {
