@@ -160,7 +160,13 @@ func TestAcquireExhausted(t *testing.T) {
 }
 
 type fakeGitRunner struct {
-	calls [][]string
+	calls          [][]string
+	hasAhead       bool
+	hasAheadErr    error
+	commitWIPErr   error
+	listStash      []string
+	listStashErr   error
+	mergeBranchErr error
 }
 
 func (f *fakeGitRunner) WorktreeAdd(path, branch string) error {
@@ -190,6 +196,42 @@ func (f *fakeGitRunner) CreateBranch(worktreePath, branch string) error {
 
 func (f *fakeGitRunner) DeleteBranch(branch string) error {
 	f.calls = append(f.calls, []string{"branch", "-D", branch})
+	return nil
+}
+
+func (f *fakeGitRunner) AddAll(worktreePath string) error {
+	f.calls = append(f.calls, []string{"add", "-A", worktreePath})
+	return nil
+}
+
+func (f *fakeGitRunner) CommitWIP(worktreePath string) error {
+	f.calls = append(f.calls, []string{"commit", "wip", worktreePath})
+	return f.commitWIPErr
+}
+
+func (f *fakeGitRunner) HasCommitsAhead(worktreePath, base string) (bool, error) {
+	f.calls = append(f.calls, []string{"log", base + "..HEAD", worktreePath})
+	return f.hasAhead, f.hasAheadErr
+}
+
+func (f *fakeGitRunner) CreateStashBranch(worktreePath, stashBranch string) error {
+	f.calls = append(f.calls, []string{"branch", stashBranch, worktreePath})
+	return nil
+}
+
+func (f *fakeGitRunner) ListStashBranches(trackID string) ([]string, error) {
+	f.calls = append(f.calls, []string{"branch", "--list", "stash/" + trackID + "/*"})
+	return f.listStash, f.listStashErr
+}
+
+func (f *fakeGitRunner) MergeBranch(worktreePath, branch string) error {
+	f.calls = append(f.calls, []string{"merge", branch, worktreePath})
+	return f.mergeBranchErr
+}
+
+func (f *fakeGitRunner) DeleteBranches(branches []string) error {
+	args := append([]string{"branch", "-D"}, branches...)
+	f.calls = append(f.calls, args)
 	return nil
 }
 

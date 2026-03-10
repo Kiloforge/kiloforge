@@ -235,6 +235,14 @@ type MockGitRunner struct {
 	CheckoutErr       error
 	CreateBranchErr   error
 	DeleteBranchErr   error
+
+	// Stash operation controls.
+	CommitWIPErr   error
+	HasAhead       bool
+	HasAheadErr    error
+	StashBranches  []string
+	ListStashErr   error
+	MergeBranchErr error
 }
 
 type GitRunnerCall struct {
@@ -282,4 +290,53 @@ func (m *MockGitRunner) DeleteBranch(branch string) error {
 	defer m.mu.Unlock()
 	m.Calls = append(m.Calls, GitRunnerCall{Method: "DeleteBranch", Args: []string{branch}})
 	return m.DeleteBranchErr
+}
+
+func (m *MockGitRunner) AddAll(worktreePath string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "AddAll", Args: []string{worktreePath}})
+	return nil
+}
+
+func (m *MockGitRunner) CommitWIP(worktreePath string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "CommitWIP", Args: []string{worktreePath}})
+	return m.CommitWIPErr
+}
+
+func (m *MockGitRunner) HasCommitsAhead(worktreePath, base string) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "HasCommitsAhead", Args: []string{worktreePath, base}})
+	return m.HasAhead, m.HasAheadErr
+}
+
+func (m *MockGitRunner) CreateStashBranch(worktreePath, stashBranch string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "CreateStashBranch", Args: []string{worktreePath, stashBranch}})
+	return nil
+}
+
+func (m *MockGitRunner) ListStashBranches(trackID string) ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "ListStashBranches", Args: []string{trackID}})
+	return m.StashBranches, m.ListStashErr
+}
+
+func (m *MockGitRunner) MergeBranch(worktreePath, branch string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "MergeBranch", Args: []string{worktreePath, branch}})
+	return m.MergeBranchErr
+}
+
+func (m *MockGitRunner) DeleteBranches(branches []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, GitRunnerCall{Method: "DeleteBranches", Args: branches})
+	return nil
 }

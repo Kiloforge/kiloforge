@@ -8,4 +8,13 @@ type GitRunner interface {
 	CheckoutBranch(worktreePath, branch string) error
 	CreateBranch(worktreePath, branch string) error
 	DeleteBranch(branch string) error
+
+	// Stash branch operations.
+	AddAll(worktreePath string) error
+	CommitWIP(worktreePath string) error
+	HasCommitsAhead(worktreePath, base string) (bool, error)
+	CreateStashBranch(worktreePath, stashBranch string) error
+	ListStashBranches(trackID string) ([]string, error)
+	MergeBranch(worktreePath, branch string) error
+	DeleteBranches(branches []string) error
 }
