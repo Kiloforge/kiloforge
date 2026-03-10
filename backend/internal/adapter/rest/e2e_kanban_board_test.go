@@ -50,15 +50,6 @@ func seedBoardData(t *testing.T, srv *e2eServer) {
 			Column:    domain.ColumnInProgress,
 			Position:  0,
 			AgentID:   "agent-001",
-			MovedAt:   now,
-			CreatedAt: now,
-		},
-		"track-inreview-1": {
-			TrackID:   "track-inreview-1",
-			Title:     "Ready for Review",
-			Type:      "bug",
-			Column:    domain.ColumnInReview,
-			Position:  0,
 			PRNumber:  42,
 			MovedAt:   now,
 			CreatedAt: now,
@@ -100,11 +91,11 @@ func TestE2E_KanbanBoard_GetEmptyBoard(t *testing.T) {
 	if !ok {
 		t.Fatal("expected columns array")
 	}
-	if len(columns) != 5 {
-		t.Errorf("expected 5 columns, got %d", len(columns))
+	if len(columns) != 4 {
+		t.Errorf("expected 4 columns, got %d", len(columns))
 	}
 
-	expected := []string{"backlog", "approved", "in_progress", "in_review", "done"}
+	expected := []string{"backlog", "approved", "in_progress", "done"}
 	for i, col := range columns {
 		if col != expected[i] {
 			t.Errorf("column %d: expected %q, got %v", i, expected[i], col)
@@ -128,8 +119,8 @@ func TestE2E_KanbanBoard_GetBoardWithCards(t *testing.T) {
 	if !ok {
 		t.Fatal("expected cards map")
 	}
-	if len(cards) != 5 {
-		t.Errorf("expected 5 cards, got %d", len(cards))
+	if len(cards) != 4 {
+		t.Errorf("expected 4 cards, got %d", len(cards))
 	}
 
 	// Verify each card is in the correct column.
@@ -137,7 +128,6 @@ func TestE2E_KanbanBoard_GetBoardWithCards(t *testing.T) {
 		"track-backlog-1":    "backlog",
 		"track-backlog-2":    "backlog",
 		"track-inprogress-1": "in_progress",
-		"track-inreview-1":   "in_review",
 		"track-done-1":       "done",
 	}
 	for trackID, expectedCol := range checks {
@@ -224,8 +214,8 @@ func TestE2E_KanbanBoard_MoveCardBackward(t *testing.T) {
 	seedBoardData(t, srv)
 
 	body, _ := json.Marshal(map[string]string{
-		"track_id":  "track-inreview-1",
-		"to_column": "in_progress",
+		"track_id":  "track-inprogress-1",
+		"to_column": "backlog",
 	})
 	resp, err := http.Post(srv.URL+"/api/board/board-project/move", "application/json", bytes.NewReader(body))
 	if err != nil {
@@ -239,11 +229,11 @@ func TestE2E_KanbanBoard_MoveCardBackward(t *testing.T) {
 
 	var result map[string]any
 	json.NewDecoder(resp.Body).Decode(&result)
-	if result["from_column"] != "in_review" {
-		t.Errorf("expected from_column in_review, got %v", result["from_column"])
+	if result["from_column"] != "in_progress" {
+		t.Errorf("expected from_column in_progress, got %v", result["from_column"])
 	}
-	if result["to_column"] != "in_progress" {
-		t.Errorf("expected to_column in_progress, got %v", result["to_column"])
+	if result["to_column"] != "backlog" {
+		t.Errorf("expected to_column backlog, got %v", result["to_column"])
 	}
 }
 
@@ -393,10 +383,9 @@ func TestE2E_KanbanBoard_CardWithOptionalFields(t *testing.T) {
 	}
 
 	// Card with pr_number set.
-	irCard := cards["track-inreview-1"].(map[string]any)
-	prNum, ok := irCard["pr_number"].(float64) // JSON numbers are float64
+	prNum, ok := ipCard["pr_number"].(float64) // JSON numbers are float64
 	if !ok || int(prNum) != 42 {
-		t.Errorf("expected pr_number 42, got %v", irCard["pr_number"])
+		t.Errorf("expected pr_number 42, got %v", ipCard["pr_number"])
 	}
 
 	// Card type is present.
@@ -434,7 +423,7 @@ func TestE2E_KanbanBoard_RapidMoves(t *testing.T) {
 	seedBoardData(t, srv)
 
 	// Move the same card through multiple columns rapidly.
-	moves := []string{"approved", "in_progress", "in_review", "done"}
+	moves := []string{"approved", "in_progress", "done"}
 	for _, col := range moves {
 		body, _ := json.Marshal(map[string]string{
 			"track_id":  "track-backlog-1",

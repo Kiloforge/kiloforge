@@ -23,8 +23,6 @@ func TestIsBackwardMove(t *testing.T) {
 	}{
 		{"in_progress", "approved", true},
 		{"in_progress", "backlog", true},
-		{"in_review", "in_progress", true},
-		{"in_review", "approved", true},
 		{"approved", "in_progress", false},
 		{"backlog", "approved", false},
 		{"in_progress", "in_progress", false},
@@ -77,25 +75,19 @@ func TestHandleBackwardMove_HaltsDeveloper(t *testing.T) {
 	}
 }
 
-func TestHandleBackwardMove_HaltsBothAgents(t *testing.T) {
+func TestHandleBackwardMove_HaltsDeveloperFromDone(t *testing.T) {
 	t.Parallel()
 	store := &testutil.MockAgentStore{
 		AgentData: []domain.AgentInfo{
 			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
-			{ID: "rev-1", Ref: "PR #5", Status: "running", StartedAt: time.Now()},
 		},
 	}
-	prTracking := &domain.PRTracking{TrackID: "track-1", ReviewerAgentID: "rev-1"}
 	pool := &testutil.MockPoolReturner{}
 	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
-	svc.HandleBackwardMove(context.Background(), "track-1", "in_review", "approved", prTracking)
+	svc.HandleBackwardMove(context.Background(), "track-1", "done", "in_progress", nil)
 	dev, _ := store.FindAgent("dev-1")
 	if dev.Status != "halted" {
 		t.Errorf("developer status = %q, want halted", dev.Status)
-	}
-	rev, _ := store.FindAgent("rev-1")
-	if rev.Status != "halted" {
-		t.Errorf("reviewer status = %q, want halted", rev.Status)
 	}
 }
 

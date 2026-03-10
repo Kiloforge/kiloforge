@@ -39,8 +39,8 @@ func TestNativeBoardService_GetBoard_Empty(t *testing.T) {
 	if board == nil {
 		t.Fatal("expected non-nil board")
 	}
-	if len(board.Columns) != 5 {
-		t.Errorf("expected 5 columns, got %d", len(board.Columns))
+	if len(board.Columns) != 4 {
+		t.Errorf("expected 4 columns, got %d", len(board.Columns))
 	}
 	if len(board.Cards) != 0 {
 		t.Errorf("expected 0 cards, got %d", len(board.Cards))

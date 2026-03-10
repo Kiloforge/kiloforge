@@ -116,24 +116,20 @@ func TestParseTracks_MalformedLines(t *testing.T) {
 	}
 }
 
-func TestParseTracks_NewStatuses(t *testing.T) {
+func TestParseTracks_ApprovedStatus(t *testing.T) {
 	t.Parallel()
 
-	input := `| [!] | track-approved | Approved Track | 2026-03-08 | 2026-03-08 |
-| [r] | track-review | In Review Track | 2026-03-08 | 2026-03-08 |`
+	input := `| [!] | track-approved | Approved Track | 2026-03-08 | 2026-03-08 |`
 
 	tracks, err := service.ParseTracks(strings.NewReader(input))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(tracks) != 2 {
-		t.Fatalf("expected 2 tracks, got %d", len(tracks))
+	if len(tracks) != 1 {
+		t.Fatalf("expected 1 track, got %d", len(tracks))
 	}
 	if tracks[0].Status != service.StatusApproved {
 		t.Errorf("status: want %q, got %q", service.StatusApproved, tracks[0].Status)
-	}
-	if tracks[1].Status != service.StatusInReview {
-		t.Errorf("status: want %q, got %q", service.StatusInReview, tracks[1].Status)
 	}
 }
 
