@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean gen-api verify-codegen release-local
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint gen-api verify-codegen verify-deps release-local
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
@@ -56,12 +56,20 @@ test-all: ensure-dist
 		go test -race -tags=integration ./...
 	cd frontend && npm test -- --run
 
+GO_COVERAGE_THRESHOLD := 45
+
 test-coverage: ensure-dist
 	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
 		go test -race -coverprofile=coverage.out ./...
 	cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
 		go tool cover -func=coverage.out
-	@echo "HTML report: go tool cover -html=backend/coverage.out"
+	@TOTAL=$$(cd backend && GIT_DIR=$$(git rev-parse --git-common-dir) GIT_WORK_TREE=$$(cd .. && pwd) \
+		go tool cover -func=coverage.out | grep '^total:' | awk '{print $$NF}' | tr -d '%'); \
+	echo "Total coverage: $${TOTAL}% (threshold: $(GO_COVERAGE_THRESHOLD)%)"; \
+	if [ $$(echo "$${TOTAL} < $(GO_COVERAGE_THRESHOLD)" | bc) -eq 1 ]; then \
+		echo "FAIL: coverage $${TOTAL}% is below threshold $(GO_COVERAGE_THRESHOLD)%"; \
+		exit 1; \
+	fi
 
 clean:
 	rm -rf $(BIN_DIR)

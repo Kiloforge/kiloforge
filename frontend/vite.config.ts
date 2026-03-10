@@ -26,5 +26,10 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     css: { modules: { classNameStrategy: 'non-scoped' } },
     exclude: ['e2e/**', 'node_modules/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      exclude: ['e2e/**', 'src/test/**', '**/*.d.ts'],
+    },
   },
 })
