@@ -466,9 +466,8 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 		return gen.SpawnInteractiveAgent412JSONResponse(*resp), nil
 	}
 
-	// Check kiloforge setup if a project is specified (skip for advisor roles
-	// which create a new project rather than using an existing one).
-	if req.Body != nil && req.Body.Project != nil && *req.Body.Project != "" && !domain.IsAdvisorRole(role) {
+	// Check kiloforge setup if a project is specified.
+	if req.Body != nil && req.Body.Project != nil && *req.Body.Project != "" {
 		if slug := h.checkSetup(*req.Body.Project); slug != "" {
 			return gen.SpawnInteractiveAgent428JSONResponse{
 				Error:   "kiloforge setup required",
@@ -502,16 +501,6 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 	}
 	if fullPrompt != "" {
 		opts.Prompt = fullPrompt
-	}
-
-	// For advisor roles with a project name, create a fresh project repo
-	// and use it as the agent's working directory.
-	if domain.IsAdvisorRole(role) && req.Body != nil && req.Body.Project != nil && *req.Body.Project != "" {
-		projectDir, errResp := h.setupAdvisorProject(ctx, *req.Body.Project)
-		if errResp != nil {
-			return errResp, nil
-		}
-		opts.WorkDir = projectDir
 	}
 
 	ia, err := h.interSpawner.SpawnInteractive(ctx, opts)
@@ -550,30 +539,6 @@ func (h *APIHandler) SpawnInteractiveAgent(ctx context.Context, req gen.SpawnInt
 	go h.wsSessions.StartStructuredRelay(relayCtx, ia.Info.ID, ia.Output)
 
 	return gen.SpawnInteractiveAgent201JSONResponse(domainAgentToGen(ia.Info, h.quota)), nil
-}
-
-// setupAdvisorProject creates a new project for an advisor agent spawn.
-// Returns the project directory on success, or an error response on failure.
-func (h *APIHandler) setupAdvisorProject(ctx context.Context, projectName string) (string, gen.SpawnInteractiveAgentResponseObject) {
-	if h.projectMgr == nil {
-		return "", gen.SpawnInteractiveAgent500JSONResponse{Error: "project management not configured"}
-	}
-
-	result, err := h.projectMgr.CreateProject(ctx, projectName)
-	if err != nil {
-		if errors.Is(err, domain.ErrProjectExists) {
-			return "", gen.SpawnInteractiveAgent409JSONResponse{Error: fmt.Sprintf("project %q already exists", projectName)}
-		}
-		return "", gen.SpawnInteractiveAgent500JSONResponse{Error: fmt.Sprintf("create project: %v", err)}
-	}
-
-	// Install embedded skills into the new project directory.
-	destDir := filepath.Join(result.Project.ProjectDir, ".claude", "skills")
-	if _, err := skills.InstallAllEmbedded(destDir); err != nil {
-		slog.Warn("failed to install skills into advisor project", "project", projectName, "error", err)
-	}
-
-	return result.Project.ProjectDir, nil
 }
 
 // GetAgent implements gen.StrictServerInterface.
