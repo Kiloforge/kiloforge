@@ -3,7 +3,7 @@ title: Add kf-dispatch skill — AI swarm dispatcher for worker assignment
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     New embedded skill that reviews project state (worktrees, active tracks,
@@ -58,17 +58,17 @@ plan:
   - phase: Research & Design
     tasks:
       - text: Read kf-status and kf-developer SKILL.md files to extract worktree detection and status-reading patterns to reuse
-        done: false
+        done: true
       - text: Design the dispatch heuristic algorithm (priority scoring for tracks, worker matching logic)
-        done: false
+        done: true
   - phase: Implementation
     tasks:
       - text: Write YAML front matter (name, description, argument-hint, metadata)
-        done: false
+        done: true
       - text: Write the main skill instructions — worktree scanning, track analysis, dispatch logic, and output formatting
-        done: false
+        done: true
       - text: Write error states section (no tracks, no idle workers, kiloforge not initialized)
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Verify the skill file is discovered by the embed glob (check backend builds with make build)
