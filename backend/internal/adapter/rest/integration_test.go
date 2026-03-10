@@ -61,7 +61,6 @@ func startTestServer(t *testing.T) *testServer {
 		Agents:   store,
 		LockMgr:  lockMgr,
 		Projects: reg,
-
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

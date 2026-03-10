@@ -11,6 +11,7 @@ const (
 	RelEventAgentResumeFail   = "agent_resume_failure"
 	RelEventMergeConflict     = "merge_conflict"
 	RelEventQuotaExceeded     = "quota_exceeded"
+	RelEventAgentReplaced     = "agent_replaced"
 )
 
 // Reliability severity constants.
@@ -71,6 +72,7 @@ func ValidReliabilityEventTypes() []string {
 		RelEventAgentResumeFail,
 		RelEventMergeConflict,
 		RelEventQuotaExceeded,
+		RelEventAgentReplaced,
 	}
 }
 

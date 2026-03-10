@@ -1,0 +1,114 @@
+id: fix-merge-protocol-be_20260311160000Z
+title: Fix merge lock and rebase conflict resolution — prevent track state regression
+type: bug
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Fix three root causes that corrupt track state during concurrent merges:
+    backwards --theirs/--ours semantics in rebase resolution, dead PIDs in
+    mkdir lock, and missing holder validation on lock release.
+  context: |
+    When multiple developer workers merge concurrently, track state files
+    (tracks.yaml, deps.yaml, conflicts.yaml) frequently conflict during rebase.
+    The current kf-developer and kf-architect skill instructions say to use
+    `git checkout --theirs` to accept "main's version" during rebase conflicts.
+    
+    However, in git rebase semantics, --theirs is the OPPOSITE of what's intended:
+    - --ours  = the branch being rebased ONTO (main — the latest, correct state)
+    - --theirs = the commit being REPLAYED (the worker's old commit — stale state)
+    
+    This means workers accept their OLD stale tracks.yaml, then only re-apply
+    their own track's completion. All other tracks completed by other workers
+    between the branch point and now are silently reverted to "pending".
+    
+    Evidence: commit d57c9e6 reverted push-conflict-resolver-fe and
+    ui-polish-transitions-fe from "completed" back to "pending" while
+    marking push-conflict-resolver-skill as completed.
+    
+    Additionally, the mkdir-based merge lock has two defects:
+    1. Records $$ (script PID) which is always dead by the time anyone checks
+    2. Release doesn't validate holder — any worker can release any lock
+    
+    Finally, the main worktree sometimes accumulates dirty state from failed
+    stash pops or interrupted merges, causing subsequent ff-merges to fail.
+  codebase_analysis: |
+    Files to modify:
+    - .agent/kf/bin/kf-merge-lock (lines 119-122, 217-222, 298-317)
+      - mkdir_acquire: writes $$ which is the script's own PID
+      - mkdir_release: unconditionally rm -rf without holder check
+      - cmd_heartbeat: overwrites info with new dead PID each time
+    
+    Skill files (external, ~/.claude/skills/kf-developer/SKILL.md):
+    - Step 11b rebase conflict resolution says "git checkout --theirs"
+      but should say "git checkout --ours" for rebase semantics
+    - Step 11d should add "git -C main reset --hard HEAD" before ff-merge
+    - Same fix needed in kf-architect SKILL.md Step 12b
+    
+    Current corrupted state on main (tracks.yaml):
+    - cmd-mode-help-fe_20260310121738Z: shows "pending", actually completed
+    - push-conflict-resolver-fe_20260311140002Z: shows "pending", actually completed
+    - ui-polish-transitions-fe_20260311150001Z: shows "pending", actually completed
+  acceptance_criteria:
+    - mkdir lock records a stable PID (caller's PID via $PPID or --pid flag)
+    - mkdir lock heartbeat updates timestamp without changing PID
+    - mkdir release validates holder name before deleting lock
+    - Rebase conflict resolution uses --ours (not --theirs) for track state files
+    - Main worktree is cleaned (reset --hard HEAD) before ff-merge attempt
+    - All 3 corrupted tracks are repaired to "completed" status
+    - Existing lock tests pass
+    - deps.yaml is pruned of completed track entries
+  out_of_scope: |
+    - HTTP lock mode changes (already works correctly with holder validation)
+    - Lock server (Go) changes — only the shell client script needs fixes
+    - Skill file updates — those are documentation changes outside this repo;
+      the track notes the required changes but implements only in-repo code
+  technical_notes: |
+    Approach:
+    
+    1. Fix kf-merge-lock mkdir_acquire to accept --pid flag (default $PPID)
+       so the recorded PID is the calling shell/agent, not the script itself.
+    
+    2. Fix kf-merge-lock mkdir_release to read info file and verify holder
+       matches before deleting. Refuse to release if holder doesn't match.
+    
+    3. Fix kf-merge-lock cmd_heartbeat to update only the timestamp in the
+       info file, preserving the original PID.
+    
+    4. Repair corrupted tracks.yaml: mark the 3 stale tracks as completed.
+    
+    5. Prune deps.yaml of completed track entries.
+    
+    6. Document the correct rebase semantics in a comment block at the top of
+       kf-merge-lock for reference (skill file changes noted but out of scope).
+plan:
+  - phase: Merge Lock Fixes
+    tasks:
+      - text: Fix mkdir_acquire to use $PPID (or --pid flag) instead of $$ for stable PID recording
+        done: true
+      - text: Fix cmd_heartbeat to update only timestamp, preserving original PID from info file
+        done: true
+      - text: Fix mkdir_release to validate holder name before deleting lock directory
+        done: true
+      - text: Add --pid flag to acquire and heartbeat commands for explicit PID override
+        done: true
+  - phase: Track State Repair
+    tasks:
+      - text: Repair 3 corrupted tracks (cmd-mode-help-fe, push-conflict-resolver-fe, ui-polish-transitions-fe) to completed status
+        done: true
+      - text: Prune deps.yaml of all completed track entries
+        done: true
+  - phase: Documentation
+    tasks:
+      - text: Add MERGE PROTOCOL comment block to kf-merge-lock documenting correct --ours/--theirs semantics
+        done: true
+      - text: Add IMPORTANT comment in kf-merge-lock about main worktree cleanup before ff-merge
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Test lock acquire/release/heartbeat cycle manually — verify PID is stable and holder is validated
+        done: true
+      - text: Run make test and make build to verify no regressions
+        done: true
+extra: {}

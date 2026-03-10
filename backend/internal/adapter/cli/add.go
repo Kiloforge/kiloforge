@@ -125,6 +125,19 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Path:   %s\n", p.ProjectDir)
 	fmt.Printf("  Origin: %s\n", p.OriginRemote)
 	fmt.Println()
+
+	// Install embedded skills locally into the project.
+	fmt.Println("==> Transforming your agent into a high-productivity track-slinging machine...")
+	installed, err := installLocalSkills(p.ProjectDir)
+	if err != nil {
+		fmt.Printf("    Warning: local skills installation failed: %v\n", err)
+	} else if len(installed) == 0 {
+		fmt.Println("    Skills already up to date")
+	} else {
+		fmt.Printf("    Installed %d skill(s) to %s/.claude/skills/\n", len(installed), p.ProjectDir)
+	}
+
+	fmt.Println()
 	fmt.Println("View registered projects with 'kf projects'.")
 
 	return nil

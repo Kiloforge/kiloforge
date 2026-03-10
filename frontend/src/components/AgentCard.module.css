@@ -145,3 +145,24 @@
   background: rgba(108, 200, 108, 0.15);
   color: var(--green);
 }
+
+.btnWarning {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.btnWarning:hover:not(:disabled) {
+  background: rgba(232, 148, 74, 0.15);
+  color: var(--orange);
+}
+
+.shutdownReason {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.resumeError {
+  font-size: 11px;
+  color: var(--red);
+}

@@ -50,7 +50,7 @@ func TestFormatErrors_Multiple(t *testing.T) {
 	if strings.Count(result, "Install:") != 3 {
 		t.Errorf("expected 3 install hints, got output:\n%s", result)
 	}
-	if !strings.Contains(result, "run 'kf init' again") {
+	if !strings.Contains(result, "run 'kf up' again") {
 		t.Error("expected retry instruction")
 	}
 }
@@ -66,20 +66,6 @@ func TestGitHint_Linux(t *testing.T) {
 	hint := gitHint("linux")
 	if !strings.Contains(hint, "apt") {
 		t.Errorf("expected apt for linux, got: %s", hint)
-	}
-}
-
-func TestDockerHint_Darwin(t *testing.T) {
-	hint := dockerHint("darwin")
-	if !strings.Contains(hint, "Docker Desktop") {
-		t.Errorf("expected Docker Desktop for darwin, got: %s", hint)
-	}
-}
-
-func TestDockerHint_Linux(t *testing.T) {
-	hint := dockerHint("linux")
-	if !strings.Contains(hint, "docs.docker.com") {
-		t.Errorf("expected docker docs URL for linux, got: %s", hint)
 	}
 }
 

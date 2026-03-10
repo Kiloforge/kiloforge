@@ -1,0 +1,96 @@
+id: docker-gitea-dead-code-be_20260311195000Z
+title: Remove Docker/Gitea dead code from backend
+type: refactor
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Remove all dead Docker/Gitea/Compose code from the backend — unused packages,
+    stale config fields, dead prereq checks, and orphaned error functions.
+  context: |
+    Docker and Gitea were removed from the codebase (March 11 2026) but several
+    backend artifacts remain: the compose adapter package, Docker prerequisite
+    checks that block kf init/up, stale config fields, and unused error helpers.
+  codebase_analysis: |
+    Dead code inventory:
+    
+    1. backend/internal/adapter/compose/ — entire package (4 files, ~260 lines)
+       Runner, Template, tests. Zero imports anywhere in codebase.
+    
+    2. backend/internal/adapter/prereq/check.go:
+       - Docker check (lines 32-39): requires docker in PATH
+       - Compose check (lines 41-48): requires docker compose
+       - hasDockerCompose() helper (lines 62-70)
+       - dockerHint() (lines 97-103)
+       - composeHint() (lines 106-112)
+       These BLOCK kf init/up even though Docker is never used.
+    
+    3. backend/internal/adapter/config/:
+       - config.go: ComposeFile, ContainerName struct fields
+       - defaults.go: ContainerName: "kf-gitea" default
+       - merger.go: merge logic for ComposeFile/ContainerName (lines 26-30)
+       - env_adapter.go: KF_COMPOSE_FILE, KF_CONTAINER_NAME env vars (lines 14-15)
+       - flags_adapter.go: WithComposeFile(), WithContainerName() (lines 8-9)
+    
+    4. backend/internal/adapter/cli/errhelp.go:
+       - giteaNotRunningError() (lines 20-29): never called in production code
+       - errhelp_test.go: test for this function needs removal too
+  acceptance_criteria:
+    - backend/internal/adapter/compose/ directory deleted
+    - prereq.Check() only verifies git and claude (no Docker/Compose checks)
+    - Config struct has no ComposeFile or ContainerName fields
+    - All config adapters (defaults, merger, env, flags) cleaned of Docker/Gitea references
+    - giteaNotRunningError() removed from errhelp.go and its test
+    - make test passes
+    - make build passes
+    - make lint passes
+  out_of_scope: |
+    - Documentation updates (covered by docs-branding-cleanup track)
+    - Any behavioral changes to kf init/up/down beyond removing dead code
+    - Adding new functionality
+  technical_notes: |
+    Pure deletion track — no new code needed. Order of operations:
+    1. Delete compose/ package
+    2. Clean prereq/check.go (remove Docker/Compose checks and helpers)
+    3. Clean config files (remove fields from struct, defaults, merger, env, flags)
+    4. Clean errhelp.go and errhelp_test.go
+    5. Verify build/test/lint
+    
+    Risk: Very low. All removed code is confirmed unused via grep.
+    The prereq Docker check is actually harmful — it blocks users who don't
+    have Docker installed from using kf, even though Docker is never needed.
+plan:
+  - phase: Package Removal
+    tasks:
+      - text: Delete backend/internal/adapter/compose/ directory entirely
+        done: true
+  - phase: Prereq Cleanup
+    tasks:
+      - text: Remove Docker and docker-compose checks from prereq/check.go (docker check, compose check, hasDockerCompose, dockerHint, composeHint)
+        done: true
+  - phase: Config Cleanup
+    tasks:
+      - text: Remove ComposeFile and ContainerName fields from Config struct in config.go
+        done: true
+      - text: Remove ContainerName default from defaults.go
+        done: true
+      - text: Remove ComposeFile/ContainerName merge logic from merger.go
+        done: true
+      - text: Remove KF_COMPOSE_FILE/KF_CONTAINER_NAME from env_adapter.go
+        done: true
+      - text: Remove WithComposeFile/WithContainerName from flags_adapter.go
+        done: true
+  - phase: Error Helper Cleanup
+    tasks:
+      - text: Remove giteaNotRunningError() from errhelp.go and its test from errhelp_test.go
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Run make build — verify binary compiles
+        done: true
+      - text: Run make test — verify all tests pass
+        done: true
+      - text: Run make lint — verify no lint issues
+        done: true
+extra: {}

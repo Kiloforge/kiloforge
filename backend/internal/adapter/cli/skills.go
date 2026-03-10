@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/skills"
@@ -144,6 +145,13 @@ func readLineCtx(ctx context.Context) (string, bool) {
 	case answer := <-ch:
 		return answer, true
 	}
+}
+
+// installLocalSkills installs all embedded skills into {projectDir}/.claude/skills/.
+// Returns the names of skills that were installed or updated.
+func installLocalSkills(projectDir string) ([]string, error) {
+	destDir := filepath.Join(projectDir, ".claude", "skills")
+	return skills.InstallAllEmbedded(destDir)
 }
 
 // installEmbeddedSkills auto-installs all embedded skills without prompting.

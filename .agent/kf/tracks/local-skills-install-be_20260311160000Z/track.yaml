@@ -1,9 +1,9 @@
 id: local-skills-install-be_20260311160000Z
-title: "Install skills into project repo during kf add — local-first skill distribution"
+title: Install skills into project repo during kf add — local-first skill distribution
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Change kf add to auto-install embedded skills into {projectDir}/.claude/skills/ with
@@ -15,51 +15,51 @@ spec:
     command registers a project but does not install skills. The agent spawner already checks
     both global (~/.claude/skills/) and local ({projectDir}/.claude/skills/) directories, so
     the infrastructure for local skills already exists — it just isn't wired into the setup flow.
-
+    
     Users shouldn't need to worry about global skill installation. When they add a project,
     kiloforge should automatically install the specialized skills into the project's repo so
     their agent can use them immediately. This makes the setup self-contained and portable.
-
+    
     The messaging should be branded and exciting — not a dry "installing skills" but
     "Transforming your agent into a high-productivity track-slinging machine."
   codebase_analysis: |
     Key files and current behavior:
-
+    
     1. backend/internal/adapter/skills/checker.go
        - InstallAllEmbedded(destDir) — installs all embedded skills to destDir
        - InstallEmbedded(skillName, destDir) — installs a single skill
        - CheckRequired/CheckStatus — already support globalDir + localDir params
        - hashMatches — SHA-256 freshness check works with any directory
-
+    
     2. backend/internal/adapter/cli/add.go (runAdd)
        - Clones repo, registers project, prints success message
        - Does NOT install skills — this is where we add local install
-
+    
     3. backend/internal/adapter/cli/init.go (runInit)
        - Calls installEmbeddedSkills(cfg) which installs to cfg.GetSkillsDir() (global)
        - This stays as-is for global fallback
-
+    
     4. backend/internal/adapter/cli/skills.go
        - installEmbeddedSkills(cfg) — helper that installs to global dir
        - Needs a new variant: installLocalSkills(projectDir) for per-project install
-
+    
     5. backend/internal/adapter/cli/implement.go (lines 315-357)
        - Already offers "global vs local" choice when skills are missing
        - Can be simplified: if local skills exist, skip the prompt
-
+    
     6. backend/internal/adapter/rest/api_handler.go
        - UpdateSkills (line 1229) — installs to global dir only
        - Needs to accept optional project slug to install locally
        - GetSkillsStatus (line ~1200) — reports global status
        - checkSkillsForRole (line 2175) — already checks both dirs
-
+    
     7. backend/internal/adapter/agent/spawner.go (line 41-58)
        - ValidateSkills already checks both global and local .claude/skills/
        - No changes needed here
-
+    
     8. backend/internal/adapter/cli/create_project.go
        - "kf create" for local projects — should also install skills locally
-
+    
     Patterns to follow:
     - installEmbeddedSkills in skills.go for the install helper
     - The branded messaging style matches init.go ("You're ready, Kiloforger!")
@@ -82,41 +82,41 @@ spec:
     skills.InstallAllEmbedded(filepath.Join(projectDir, ".claude", "skills")) and wiring
     it into runAdd and runCreateProject. The REST API needs a minor extension to accept
     a project slug parameter and resolve the project directory for local install.
-
+    
     .claude/skills/ should be added to .gitignore in the project if not already there,
     since these are machine-local artifacts (like node_modules). However, if the user
     wants to commit them for portability, they can remove the gitignore entry.
 plan:
-  - phase: "Foundation"
+  - phase: Foundation
     tasks:
-      - text: "Add installLocalSkills(projectDir string) helper in cli/skills.go that installs embedded skills to {projectDir}/.claude/skills/ with branded messaging"
-        done: false
-      - text: "Write test for installLocalSkills verifying skills are extracted to the correct local directory"
-        done: false
-  - phase: "CLI Integration"
+      - text: Add installLocalSkills(projectDir string) helper in cli/skills.go that installs embedded skills to {projectDir}/.claude/skills/ with branded messaging
+        done: true
+      - text: Write test for installLocalSkills verifying skills are extracted to the correct local directory
+        done: true
+  - phase: CLI Integration
     tasks:
-      - text: "Wire installLocalSkills into runAdd (cli/add.go) — call after successful project registration"
-        done: false
-      - text: "Wire installLocalSkills into runCreateProject (cli/create_project.go) — call after project creation"
-        done: false
-      - text: "Add branded output: 'Transforming your agent into a high-productivity track-slinging machine' with skill count summary"
-        done: false
-      - text: "Write CLI integration test verifying kf add triggers local skill installation"
-        done: false
-  - phase: "REST API"
+      - text: Wire installLocalSkills into runAdd (cli/add.go) — call after successful project registration
+        done: true
+      - text: Wire installLocalSkills into runCreateProject (cli/create_project.go) — call after project creation
+        done: true
+      - text: Add branded output: 'Transforming your agent into a high-productivity track-slinging machine' with skill count summary
+        done: true
+      - text: Write CLI integration test verifying kf add triggers local skill installation
+        done: true
+  - phase: REST API
     tasks:
-      - text: "Extend POST /api/skills/update to accept optional project_slug body field"
-        done: false
-      - text: "When project_slug is provided, resolve project dir and install to {projectDir}/.claude/skills/ instead of global"
-        done: false
-      - text: "Write API handler test for local install path"
-        done: false
-  - phase: "Verification"
+      - text: Extend POST /api/skills/update to accept optional project_slug body field
+        done: true
+      - text: When project_slug is provided, resolve project dir and install to {projectDir}/.claude/skills/ instead of global
+        done: true
+      - text: Write API handler test for local install path
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test — all existing and new tests pass"
-        done: false
-      - text: "Run make build — binary compiles with changes"
-        done: false
-      - text: "Run make lint — no lint violations"
-        done: false
+      - text: Run make test — all existing and new tests pass
+        done: true
+      - text: Run make build — binary compiles with changes
+        done: true
+      - text: Run make lint — no lint violations
+        done: true
 extra: {}

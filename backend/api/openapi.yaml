@@ -297,6 +297,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/agents/{id}/replace:
+    post:
+      operationId: replaceAgent
+      summary: Replace a terminal agent with a fresh one using the same ref and role
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID of the terminal agent to replace
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceAgentRequest"
+      responses:
+        "201":
+          description: Replacement agent spawned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Agent not in terminal state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/quota:
     get:
       operationId: getQuota
@@ -1786,6 +1824,16 @@ paths:
 
 components:
   schemas:
+    ReplaceAgentRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          description: Override model for the replacement agent (optional, defaults to original agent's model)
+        flags:
+          type: string
+          description: Additional flags for the replacement agent (optional)
+
     SwarmCapacity:
       type: object
       required: [max, active, available]
@@ -2570,6 +2618,9 @@ components:
         force:
           type: boolean
           default: false
+        project_slug:
+          type: string
+          description: When provided, install skills locally into the project's .claude/skills/ directory instead of the global directory.
 
     SkillUpdateResponse:
       type: object

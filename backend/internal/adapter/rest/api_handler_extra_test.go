@@ -8,13 +8,63 @@ import (
 	"testing"
 	"time"
 
+	"kiloforge/internal/adapter/agent"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
+	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 )
+
+// stubInteractiveSpawner implements InteractiveSpawner for testing.
+type stubInteractiveSpawner struct {
+	resumeDevResult *domain.AgentInfo
+	resumeDevErr    error
+	resumeResult    *agent.InteractiveAgent
+	resumeErr       error
+	spawnDevResult  *domain.AgentInfo
+	spawnDevErr     error
+	spawnRevResult  *domain.AgentInfo
+	spawnRevErr     error
+}
+
+func (s *stubInteractiveSpawner) SpawnInteractive(_ context.Context, _ agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error) {
+	return nil, fmt.Errorf("not implemented in stub")
+}
+func (s *stubInteractiveSpawner) SpawnDeveloper(_ context.Context, _ agent.SpawnDeveloperOpts) (*domain.AgentInfo, error) {
+	if s.spawnDevErr != nil {
+		return nil, s.spawnDevErr
+	}
+	return s.spawnDevResult, nil
+}
+func (s *stubInteractiveSpawner) SpawnReviewer(_ context.Context, _ int, _ string) (*domain.AgentInfo, error) {
+	if s.spawnRevErr != nil {
+		return nil, s.spawnRevErr
+	}
+	return s.spawnRevResult, nil
+}
+func (s *stubInteractiveSpawner) StopAgent(_ string) error { return nil }
+func (s *stubInteractiveSpawner) ResumeAgent(_ context.Context, _ string) (*agent.InteractiveAgent, error) {
+	if s.resumeErr != nil {
+		return nil, s.resumeErr
+	}
+	return s.resumeResult, nil
+}
+func (s *stubInteractiveSpawner) ResumeDeveloper(_ context.Context, _ string) (*domain.AgentInfo, error) {
+	if s.resumeDevErr != nil {
+		return nil, s.resumeDevErr
+	}
+	return s.resumeDevResult, nil
+}
+func (s *stubInteractiveSpawner) GetActiveAgent(_ string) (*agent.InteractiveAgent, bool) {
+	return nil, false
+}
+func (s *stubInteractiveSpawner) Capacity() domain.SwarmCapacity {
+	return domain.SwarmCapacity{Max: 6, Active: 0, Available: 6}
+}
+func (s *stubInteractiveSpawner) CanSpawn() bool { return true }
 
 // --- Consent stubs ---
 
@@ -82,9 +132,9 @@ func (s *stubBoardService) SyncFromTracks(_ string, _ []port.TrackEntry, _ map[s
 	return &port.BoardSyncResult{}, nil
 }
 func (s *stubBoardService) UpdateCardAgent(_, _, _, _ string) error { return nil }
-func (s *stubBoardService) StoreTraceID(_, _, _ string) error      { return nil }
-func (s *stubBoardService) GetTraceID(_, _ string) (string, bool)  { return "", false }
-func (s *stubBoardService) RemoveCard(_, _ string) (bool, error)   { return false, nil }
+func (s *stubBoardService) StoreTraceID(_, _, _ string) error       { return nil }
+func (s *stubBoardService) GetTraceID(_, _ string) (string, bool)   { return "", false }
+func (s *stubBoardService) RemoveCard(_, _ string) (bool, error)    { return false, nil }
 
 // --- Consent Tests ---
 
@@ -481,6 +531,281 @@ func TestResumeAgent_NilSpawner(t *testing.T) {
 	}
 }
 
+func TestResumeAgent_DeveloperReturns200(t *testing.T) {
+	t.Parallel()
+	devAgent := domain.AgentInfo{
+		ID:        "dev-1",
+		Role:      "developer",
+		Status:    "suspended",
+		SessionID: "sess-1",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{agents: []domain.AgentInfo{devAgent}},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{
+			resumeDevResult: &domain.AgentInfo{
+				ID:     "dev-1",
+				Role:   "developer",
+				Status: "running",
+			},
+		},
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "dev-1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.ResumeAgent200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.Status != "running" {
+		t.Errorf("expected running, got %s", r.Status)
+	}
+}
+
+func TestResumeAgent_InteractiveRequiresWSSessions(t *testing.T) {
+	t.Parallel()
+	interAgent := domain.AgentInfo{
+		ID:        "ia-1",
+		Role:      "interactive",
+		Status:    "stopped",
+		SessionID: "sess-1",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{agents: []domain.AgentInfo{interAgent}},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+		// wsSessions is nil — interactive resume should fail
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "ia-1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ResumeAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409 when wsSessions is nil for interactive agent, got %T", resp)
+	}
+}
+
+func TestResumeAgent_NotFoundReturns404(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "nonexistent"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ResumeAgent404JSONResponse); !ok {
+		t.Fatalf("expected 404 for not found agent, got %T", resp)
+	}
+}
+
+// --- ReplaceAgent Tests ---
+
+func TestReplaceAgent_ResumeFailed_SpawnsNew(t *testing.T) {
+	t.Parallel()
+	oldAgent := domain.AgentInfo{
+		ID:     "dev-1",
+		Role:   "developer",
+		Status: "resume-failed",
+		Ref:    "my-track-123",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{agents: []domain.AgentInfo{oldAgent}},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{
+			spawnDevResult: &domain.AgentInfo{
+				ID:     "dev-2",
+				Role:   "developer",
+				Status: "running",
+				Ref:    "my-track-123",
+			},
+		},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "dev-1",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.ReplaceAgent201JSONResponse)
+	if !ok {
+		t.Fatalf("expected 201, got %T", resp)
+	}
+	if r.Id != "dev-2" {
+		t.Errorf("expected new agent ID dev-2, got %s", r.Id)
+	}
+	if r.Status != "running" {
+		t.Errorf("expected running, got %s", r.Status)
+	}
+}
+
+func TestReplaceAgent_RunningAgent_Returns409(t *testing.T) {
+	t.Parallel()
+	runningAgent := domain.AgentInfo{
+		ID:     "dev-1",
+		Role:   "developer",
+		Status: "running",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{agents: []domain.AgentInfo{runningAgent}},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "dev-1",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409 for running agent, got %T", resp)
+	}
+}
+
+func TestReplaceAgent_NotFound_Returns404(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "nonexistent",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent404JSONResponse); !ok {
+		t.Fatalf("expected 404, got %T", resp)
+	}
+}
+
+func TestReplaceAgent_InteractiveRole_Returns409(t *testing.T) {
+	t.Parallel()
+	iaAgent := domain.AgentInfo{
+		ID:     "ia-1",
+		Role:   "interactive",
+		Status: "stopped",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:       &stubAgentLister{agents: []domain.AgentInfo{iaAgent}},
+		Quota:        &stubQuotaReader{},
+		LockMgr:      lock.New(""),
+		SSEClients:   func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "ia-1",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent409JSONResponse); !ok {
+		t.Fatalf("expected 409 for interactive role, got %T", resp)
+	}
+}
+
+func TestReplaceAgent_RecordsReliabilityEvent(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	db, err := sqlite.Open(dir)
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	relStore := sqlite.NewReliabilityStore(db)
+	relSvc := service.NewReliabilityService(relStore, nil)
+
+	oldAgent := domain.AgentInfo{
+		ID:     "dev-old",
+		Role:   "developer",
+		Status: "resume-failed",
+		Ref:    "my-track",
+		Model:  "sonnet",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:         &stubAgentLister{agents: []domain.AgentInfo{oldAgent}},
+		Quota:          &stubQuotaReader{},
+		LockMgr:        lock.New(""),
+		SSEClients:     func() int { return 0 },
+		ReliabilitySvc: relSvc,
+		InterSpawner: &stubInteractiveSpawner{
+			spawnDevResult: &domain.AgentInfo{
+				ID:     "dev-new",
+				Role:   "developer",
+				Status: "running",
+				Ref:    "my-track",
+			},
+		},
+	})
+
+	resp, err := h.ReplaceAgent(context.Background(), gen.ReplaceAgentRequestObject{
+		Id:   "dev-old",
+		Body: &gen.ReplaceAgentJSONRequestBody{},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.ReplaceAgent201JSONResponse); !ok {
+		t.Fatalf("expected 201, got %T", resp)
+	}
+
+	// Verify reliability event was recorded.
+	filter := domain.ReliabilityFilter{
+		EventTypes: []string{domain.RelEventAgentReplaced},
+	}
+	page, err := relSvc.ListEvents(filter, domain.PageOpts{Limit: 10})
+	if err != nil {
+		t.Fatalf("list events: %v", err)
+	}
+	if len(page.Items) != 1 {
+		t.Fatalf("expected 1 reliability event, got %d", len(page.Items))
+	}
+	evt := page.Items[0]
+	if evt.AgentID != "dev-old" {
+		t.Errorf("expected agent_id dev-old, got %s", evt.AgentID)
+	}
+	if evt.Detail["new_agent_id"] != "dev-new" {
+		t.Errorf("expected new_agent_id dev-new, got %v", evt.Detail["new_agent_id"])
+	}
+	if evt.Detail["role"] != "developer" {
+		t.Errorf("expected role developer, got %v", evt.Detail["role"])
+	}
+	if evt.Detail["ref"] != "my-track" {
+		t.Errorf("expected ref my-track, got %v", evt.Detail["ref"])
+	}
+	if evt.Detail["old_status"] != "resume-failed" {
+		t.Errorf("expected old_status resume-failed, got %v", evt.Detail["old_status"])
+	}
+}
+
 // --- DeleteAgent Tests ---
 
 func TestDeleteAgent_NilRemover(t *testing.T) {
@@ -758,11 +1083,11 @@ func TestListTracks_WithProjects(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.ListTracks(context.Background(), gen.ListTracksRequestObject{})
@@ -783,11 +1108,11 @@ func TestListTracks_WithStatusFilter(t *testing.T) {
 	dir := t.TempDir()
 	status := "pending"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.ListTracks(context.Background(), gen.ListTracksRequestObject{
@@ -806,11 +1131,11 @@ func TestListTracks_WithProjectFilter(t *testing.T) {
 	dir := t.TempDir()
 	proj := "other"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.ListTracks(context.Background(), gen.ListTracksRequestObject{
@@ -834,12 +1159,12 @@ func TestListTracks_WithProjectFilter(t *testing.T) {
 func TestSyncBoard_ProjectNotFound(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		BoardSvc:   &stubBoardService{},
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		BoardSvc:    &stubBoardService{},
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.SyncBoard(context.Background(), gen.SyncBoardRequestObject{Project: "nonexistent"})
@@ -855,12 +1180,12 @@ func TestSyncBoard_Success(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		BoardSvc:   &stubBoardService{syncResult: &port.BoardSyncResult{Created: 2, Updated: 1}},
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		BoardSvc:    &stubBoardService{syncResult: &port.BoardSyncResult{Created: 2, Updated: 1}},
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.SyncBoard(context.Background(), gen.SyncBoardRequestObject{Project: "myapp"})
@@ -880,12 +1205,12 @@ func TestSyncBoard_SyncError(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		BoardSvc:   &stubBoardService{syncErr: fmt.Errorf("sync failed")},
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		BoardSvc:    &stubBoardService{syncErr: fmt.Errorf("sync failed")},
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.SyncBoard(context.Background(), gen.SyncBoardRequestObject{Project: "myapp"})
@@ -1115,11 +1440,11 @@ func TestGetPreflight_NilConsent(t *testing.T) {
 func TestGetPreflight_ConsentNotGiven(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:       &stubAgentLister{},
-		Quota:        &stubQuotaReader{},
-		LockMgr:      lock.New(""),
-		SSEClients:   func() int { return 0 },
-		Consent: &stubConsentChecker{consented: false},
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		SSEClients: func() int { return 0 },
+		Consent:    &stubConsentChecker{consented: false},
 	})
 	resp, err := h.GetPreflight(context.Background(), gen.GetPreflightRequestObject{})
 	if err != nil {
@@ -1174,11 +1499,11 @@ func TestGetTrackDetail_Success(t *testing.T) {
 		Type:   "feature",
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReaderWithDetail{detail: detail},
 	})
 	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
@@ -1207,11 +1532,11 @@ func TestDeleteTrack_WithProject(t *testing.T) {
 	dir := t.TempDir()
 	proj := "myapp"
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.DeleteTrack(context.Background(), gen.DeleteTrackRequestObject{
@@ -1266,11 +1591,11 @@ func TestGetTrackDetail_AllFields(t *testing.T) {
 		},
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReaderWithDetail{detail: detail},
 	})
 	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
@@ -1310,11 +1635,11 @@ func TestGetTrackDetail_AllFields(t *testing.T) {
 func TestGetTrackDetail_UnknownProject(t *testing.T) {
 	t.Parallel()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "alpha", ProjectDir: "/tmp"}}},
 		TrackReader: &stubTrackReader{},
 	})
 	resp, err := h.GetTrackDetail(context.Background(), gen.GetTrackDetailRequestObject{
@@ -1348,17 +1673,76 @@ func TestUpdateSkills_NilCfg(t *testing.T) {
 	}
 }
 
+func TestUpdateSkills_LocalInstall(t *testing.T) {
+	t.Parallel()
+	projectDir := t.TempDir()
+	slug := "test-proj"
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: slug, ProjectDir: projectDir}}},
+		Cfg:        &config.Config{}, // no SkillsRepo → embedded install path
+		SSEClients: func() int { return 0 },
+	})
+
+	body := gen.SkillUpdateRequest{ProjectSlug: &slug}
+	resp, err := h.UpdateSkills(context.Background(), gen.UpdateSkillsRequestObject{Body: &body})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.UpdateSkills200JSONResponse)
+	if !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+	if r.InstalledCount == 0 {
+		t.Error("expected at least 1 skill installed")
+	}
+
+	// Verify skills were installed to the project's local dir, not global.
+	localSkillsDir := filepath.Join(projectDir, ".claude", "skills")
+	entries, err := os.ReadDir(localSkillsDir)
+	if err != nil {
+		t.Fatalf("failed to read local skills dir: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Error("expected skills in local dir")
+	}
+}
+
+func TestUpdateSkills_LocalInstall_ProjectNotFound(t *testing.T) {
+	t.Parallel()
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:     &stubAgentLister{},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
+		Projects:   &stubProjectLister{},
+		Cfg:        &config.Config{},
+		SSEClients: func() int { return 0 },
+	})
+
+	slug := "nonexistent"
+	body := gen.SkillUpdateRequest{ProjectSlug: &slug}
+	resp, err := h.UpdateSkills(context.Background(), gen.UpdateSkillsRequestObject{Body: &body})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := resp.(gen.UpdateSkills400JSONResponse); !ok {
+		t.Fatalf("expected 400 for unknown project, got %T", resp)
+	}
+}
+
 // --- DeleteTrack without project (cross-project scan) ---
 
 func TestDeleteTrack_NilProject_ScanAllProjects(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		SSEClients: func() int { return 0 },
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
+		Agents:      &stubAgentLister{},
+		Quota:       &stubQuotaReader{},
+		LockMgr:     lock.New(""),
+		SSEClients:  func() int { return 0 },
+		Projects:    &stubProjectLister{projects: []domain.Project{{Slug: "myapp", ProjectDir: dir}}},
 		TrackReader: &stubTrackReader{},
 	})
 	// No project param, stub returns no tracks, so 404.

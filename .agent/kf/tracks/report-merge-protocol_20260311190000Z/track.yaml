@@ -1,0 +1,77 @@
+id: report-merge-protocol_20260311190000Z
+title: Add serial merge protocol to kf-report skill
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Modify kf-report SKILL.md to create a temp branch from main, commit report files, then use the merge lock/rebase/ff-merge protocol to land reports on main."
+  context: |
+    kf-report currently writes reports to .agent/kf/_reports/ but never commits
+    or merges them. Reports are ephemeral local files that get lost across
+    worktree resets and are not visible to other workers. The serial merge
+    protocol (lock → rebase → verify → ff-merge) is well-established in
+    kf-developer and kf-architect and should be adopted here.
+  codebase_analysis: |
+    Skill file: backend/internal/adapter/skills/embedded/kf-report/SKILL.md
+    - Currently writes reports via Write tool to .agent/kf/_reports/
+    - Has no git operations, no commit, no merge
+    - Allowed tools: Read, Glob, Grep, Bash, Write
+
+    Merge protocol reference:
+    - kf-developer SKILL.md Phase 5 (Steps 11a-11e): full merge protocol
+    - .agent/kf/bin/kf-merge-lock: shared lock helper (HTTP + mkdir modes)
+    - Pattern: acquire lock → rebase main → ff-merge in main worktree → release → cleanup
+
+    Key considerations:
+    - Reports only touch .agent/kf/_reports/ — no source code, no tests needed
+    - No post-rebase verification needed (like kf-architect, unlike kf-developer)
+    - Conflict risk is minimal (reports are date-stamped files)
+    - Must resolve primary branch from .agent/kf/config.yaml (default: main)
+    - Must handle worktree identity (worker-* branch as home branch)
+  acceptance_criteria:
+    - kf-report creates a temp branch from main before writing report files
+    - kf-report commits report files with a descriptive commit message
+    - kf-report acquires merge lock, rebases, and ff-merges to main
+    - kf-report returns to home branch and cleans up temp branch after merge
+    - Reports are visible on main after kf-report completes
+    - Merge lock is always released on failure
+  out_of_scope: |
+    - Changing report content or format
+    - Adding new report types
+    - Modifying the merge lock helper script itself
+    - Adding verification commands (reports don't need test/build verification)
+  technical_notes: |
+    The merge phase for kf-report is simpler than kf-developer because:
+    1. No post-rebase verification needed (no source code changes)
+    2. No track state files to reconcile (reports don't modify tracks.yaml)
+    3. Conflicts are extremely unlikely (date-stamped report files)
+
+    Flow to add to SKILL.md:
+    1. Resolve primary branch from config.yaml
+    2. Record home branch (worker-* branch)
+    3. Create temp branch: git checkout -b report/{date} ${PRIMARY_BRANCH}
+    4. Write report files (existing logic)
+    5. git add .agent/kf/_reports/ && git commit
+    6. Acquire merge lock (blocking, timeout 300)
+    7. git rebase ${PRIMARY_BRANCH}
+    8. git -C {main-worktree} merge report/{date} --ff-only
+    9. Release lock
+    10. git checkout {home-branch} && git branch -d report/{date}
+    11. git reset --hard ${PRIMARY_BRANCH}
+plan:
+  - phase: Skill modification
+    tasks:
+      - text: "Read the full kf-report SKILL.md and understand current output flow"
+        done: false
+      - text: "Add merge protocol section to SKILL.md: resolve primary branch, create temp branch, commit reports, acquire lock, rebase, ff-merge, cleanup"
+        done: false
+      - text: "Update the allowed-tools metadata to include Bash (needed for git operations) if not already present"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Verify SKILL.md is valid markdown and all steps are internally consistent"
+        done: false
+      - text: "Run make build to ensure embedded skill compiles into binary"
+        done: false
+extra: {}

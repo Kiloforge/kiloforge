@@ -1,0 +1,103 @@
+id: site-launch-install-guide_20260311170000Z
+title: Launch site — replace Coming Soon with platform-aware install guide
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: |
+    Replace all "Coming Soon" elements on kiloforge.dev with a platform-aware
+    install section featuring OS auto-detection and manual toggle buttons.
+  context: |
+    The kiloforge_site (at ../../kiloforge_site relative to kiloforge-wt worktrees)
+    is a statically-exported Next.js 16 app deployed to AWS S3 + CloudFront via
+    GitHub Actions. It currently displays "Coming Soon" in three places:
+    1. A corner ribbon badge (emerald gradient, fixed top-right)
+    2. A disabled button next to the dimmed `kf init` command in the hero
+    3. A "COMING SOON" pre block in the CTA section at the bottom
+    
+    The project is now ready for public use. We need to replace these placeholder
+    elements with real getting-started install commands, auto-detecting the user's
+    OS and providing manual platform toggle buttons.
+    
+    The GitHub repo is kiloforge/kiloforge (NOT the old Goblinlordx/crelay).
+  codebase_analysis: |
+    Affected files (all in ../../kiloforge_site/):
+    - src/app/page.tsx — single-page landing (433 lines, "use client")
+    
+    Tech stack: Next.js 16.1.6, React 19, Tailwind CSS 4, Framer Motion, Lucide icons
+    Build: static export (output: "export"), deployed to S3 via GitHub Actions
+    
+    Current "Coming Soon" locations in page.tsx:
+    - Lines 47-51: Corner ribbon div with "COMING SOON" text
+    - Lines 167-173: Hero install area — dimmed `kf init` pre (opacity-50) + disabled "Coming Soon" button
+    - Lines 387-389: CTA section — "COMING SOON" pre block (opacity-70)
+    
+    Existing patterns:
+    - Already uses "use client" and useState (mobile menu toggle)
+    - Framer Motion for animations (fadeIn, stagger variants)
+    - Glass-panel styling with Tailwind utility classes
+    - Lucide React icons
+    
+    Install commands (from README.md, updated to kiloforge/kiloforge repo):
+    - macOS Homebrew: brew tap kiloforge/tap && brew install kf
+    - macOS/Linux curl: curl -fsSL https://raw.githubusercontent.com/kiloforge/kiloforge/main/install.sh | sh
+    - Windows: Download from https://github.com/kiloforge/kiloforge/releases
+    - Build from source: git clone https://github.com/kiloforge/kiloforge.git
+    
+    GitHub links in the current site point to https://github.com/kiloforge — these
+    should be updated to https://github.com/kiloforge/kiloforge where appropriate
+    (nav GitHub button, footer GitHub link).
+  acceptance_criteria:
+    - Corner ribbon "COMING SOON" is removed entirely
+    - Hero section shows platform-tabbed install commands (not dimmed)
+    - Platform auto-detected via navigator.userAgent (macOS, Linux, Windows)
+    - Manual toggle buttons allow switching between macOS, Linux, Windows
+    - macOS tab shows brew command as primary, curl as alternative
+    - Linux tab shows curl command as primary
+    - Windows tab shows link to GitHub Releases binary download
+    - CTA section replaces "COMING SOON" with a "Get Started" action (scroll-to-install or GitHub link)
+    - All install URLs reference kiloforge/kiloforge (not Goblinlordx/crelay)
+    - Copy-to-clipboard button on install commands
+    - Site builds successfully (npm run build)
+    - Design matches existing dark theme / glass-panel aesthetic
+  out_of_scope: |
+    - Backend changes to the kiloforge project itself
+    - Documentation pages or guides beyond the landing page
+    - Version-specific install commands (no version pinning)
+    - Package manager support beyond brew/curl/binary
+  technical_notes: |
+    Implementation is in the kiloforge_site repo (../../kiloforge_site), NOT in
+    this kiloforge project. The developer should cd to that repo to implement.
+    
+    Approach:
+    1. Add a usePlatform hook (or inline logic) that reads navigator.userAgent
+       on mount to detect macOS/Linux/Windows, defaulting to macOS
+    2. Add platform toggle buttons (styled like nav pills with the existing
+       glass-panel / border-white/10 aesthetic)
+    3. Replace the hero install block with tabbed content showing the appropriate
+       command per platform, with a copy button
+    4. Remove the corner ribbon entirely (lines 46-51)
+    5. Replace the CTA "COMING SOON" with a "Get Started" button/link
+    6. Update GitHub links from https://github.com/kiloforge to
+       https://github.com/kiloforge/kiloforge where they should point to the repo
+plan:
+  - phase: Implementation
+    tasks:
+      - text: Add platform detection logic (usePlatform hook or inline) — detect macOS/Linux/Windows from navigator.userAgent with useState for manual override, defaulting to macOS on SSR/unknown
+        done: true
+      - text: Create PlatformTabs component — three toggle buttons (macOS/Linux/Windows) with active state styling matching glass-panel aesthetic
+        done: true
+      - text: Create InstallCommand component — displays command in monospace pre block with copy-to-clipboard button, supports multi-line commands
+        done: true
+      - text: Update hero section — remove opacity-50 dimming, replace disabled Coming Soon button with platform-tabbed install block showing brew (macOS), curl (Linux), or GitHub Releases link (Windows)
+        done: true
+      - text: Update CTA section — replace COMING SOON pre with Get Started button (scrolls to hero install or links to GitHub releases)
+        done: true
+      - text: Remove corner ribbon — delete the fixed COMING SOON ribbon div entirely
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Run npm run build in kiloforge_site and verify static export succeeds with no errors
+        done: true
+extra: {}

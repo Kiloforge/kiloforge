@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -448,6 +449,82 @@ func TestResumeAgent_AlreadyRunning(t *testing.T) {
 	}
 	if err.Error() != "agent already running: agent-1" {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestResumeDeveloper_Success(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("claude"); err != nil {
+		t.Skip("claude CLI not available")
+	}
+
+	store := &stubAgentStore{
+		agents: []domain.AgentInfo{
+			{
+				ID:          "dev-1",
+				Role:        "developer",
+				Status:      "suspended",
+				SessionID:   "sess-1",
+				WorktreeDir: os.TempDir(),
+				Model:       "sonnet",
+			},
+		},
+	}
+	s := NewSpawner(&config.Config{}, store, nil)
+
+	info, err := s.ResumeDeveloper(context.Background(), "dev-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.ID != "dev-1" {
+		t.Errorf("expected agent ID dev-1, got %s", info.ID)
+	}
+	if info.Status != "running" {
+		t.Errorf("expected status running, got %s", info.Status)
+	}
+}
+
+func TestResumeDeveloper_NotFound(t *testing.T) {
+	t.Parallel()
+
+	store := &stubAgentStore{}
+	s := NewSpawner(&config.Config{}, store, nil)
+
+	_, err := s.ResumeDeveloper(context.Background(), "nonexistent")
+	if err == nil {
+		t.Fatal("expected error for non-existent agent")
+	}
+}
+
+func TestResumeDeveloper_AlreadyActive(t *testing.T) {
+	t.Parallel()
+
+	store := &stubAgentStore{
+		agents: []domain.AgentInfo{
+			{ID: "dev-1", Role: "developer", Status: "running", SessionID: "s1"},
+		},
+	}
+	s := NewSpawner(&config.Config{}, store, nil)
+
+	_, err := s.ResumeDeveloper(context.Background(), "dev-1")
+	if err == nil {
+		t.Fatal("expected error for active agent")
+	}
+}
+
+func TestResumeDeveloper_NoSessionID(t *testing.T) {
+	t.Parallel()
+
+	store := &stubAgentStore{
+		agents: []domain.AgentInfo{
+			{ID: "dev-1", Role: "developer", Status: "suspended", SessionID: ""},
+		},
+	}
+	s := NewSpawner(&config.Config{}, store, nil)
+
+	_, err := s.ResumeDeveloper(context.Background(), "dev-1")
+	if err == nil {
+		t.Fatal("expected error for missing session ID")
 	}
 }
 

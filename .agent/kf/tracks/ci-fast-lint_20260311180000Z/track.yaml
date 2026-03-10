@@ -1,0 +1,86 @@
+id: ci-fast-lint_20260311180000Z
+title: Replace golangci-lint with fast direct linters in CI
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-10
+spec:
+  summary: Replace slow golangci-lint CI step with direct go vet + staticcheck + gofmt/goimports checks. Keep golangci-lint available as make lint-full for thorough local runs.
+  context: |
+    golangci-lint takes a long time in CI due to plugin orchestration overhead,
+    full-codebase parsing, and lack of incremental caching. It also causes
+    "parallel golangci-lint is running" lock conflicts when multiple worktree
+    workers run make lint simultaneously. The 9 enabled linters can be covered
+    by faster direct tools for CI purposes.
+  codebase_analysis: |
+    Current setup:
+    - CI: golangci/golangci-lint-action@v7 v2.11 in .github/workflows/ci.yml (line 44-48)
+    - Config: backend/.golangci.yaml — 9 linters + 2 formatters, 5m timeout
+    - Makefile lint target (line 85-87): cd backend && golangci-lint run ./...
+    - workflow.md lists make lint as verification command
+    
+    Linter coverage mapping:
+    - go vet (built-in, instant): covers govet linter
+    - staticcheck (fast, cached): covers staticcheck + unused linters
+    - gofmt -l (instant): covers gofmt formatter
+    - goimports -l (instant): covers goimports formatter
+    - Remaining (bodyclose, errcheck, errorlint, gosec, ineffassign, misspell):
+      lower-priority, keep in golangci-lint for local lint-full runs
+    
+    Key files to modify:
+    - .github/workflows/ci.yml — replace golangci-lint-action with direct steps
+    - Makefile — split lint into lint (fast) and lint-full (golangci-lint)
+    - .agent/kf/workflow.md — update verification commands
+    - .agent/kf/tech-stack.md — update tooling reference
+  acceptance_criteria:
+    - CI lint job uses go vet + staticcheck + gofmt/goimports instead of golangci-lint
+    - CI lint job completes significantly faster than before
+    - make lint runs fast direct linters (go vet, staticcheck, format checks)
+    - make lint-full runs golangci-lint for thorough local checking
+    - .golangci.yaml is preserved (used by lint-full)
+    - No new lint violations introduced
+    - workflow.md updated to reflect new make lint target
+  out_of_scope: |
+    - Removing .golangci.yaml entirely (kept for lint-full)
+    - Adding new linters beyond what's currently enabled
+    - Fixing pre-existing lint violations
+    - Frontend lint changes (eslint is already fast)
+  technical_notes: |
+    staticcheck needs to be installed in CI via go install. Use:
+      go install honnef.co/go/tools/cmd/staticcheck@latest
+    goimports needs install too:
+      go install golang.org/x/tools/cmd/goimports@latest
+    
+    staticcheck exclusions from .golangci.yaml that need porting:
+    - SA1019 websocket deprecation warning
+    - QF1002 informational suggestions
+    - ST1005 in internal/adapter/cli/
+    
+    These can be handled via staticcheck.conf or -checks flag.
+    
+    The goimports local-prefixes setting (github.com/benbaldivia/crelay)
+    needs to be passed via -local flag.
+plan:
+  - phase: Makefile and local tooling
+    tasks:
+      - text: Split Makefile lint target: make lint runs go vet + staticcheck + gofmt -l + goimports -l; make lint-full runs golangci-lint run ./...
+        done: true
+      - text: Add staticcheck.conf in backend/ with exclusions matching .golangci.yaml (SA1019 websocket, QF1002, ST1005 in cli)
+        done: true
+      - text: Verify make lint passes locally with no new violations vs main
+        done: true
+  - phase: CI pipeline update
+    tasks:
+      - text: Replace golangci-lint-action step in ci.yml with direct go install + run steps for staticcheck, goimports, go vet, gofmt
+        done: true
+      - text: Ensure CI lint step still requires frontend build (for Go embed)
+        done: true
+      - text: Verify CI workflow syntax is valid (act or manual review)
+        done: true
+  - phase: Documentation and verification
+    tasks:
+      - text: Update .agent/kf/workflow.md verification commands to reference make lint (fast) and note make lint-full for thorough checks
+        done: true
+      - text: Update .agent/kf/tech-stack.md tooling section to reflect staticcheck + go vet as primary CI linters
+        done: true
+extra: {}

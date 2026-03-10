@@ -77,10 +77,10 @@ func (s *stubQuotaReader) GetAgentUsage(id string) *agent.AgentUsage {
 
 func newTestHandler(agents []domain.AgentInfo) *APIHandler {
 	return NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{agents: agents},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "proj-1"}, {Slug: "proj-2"}}},
+		Agents:   &stubAgentLister{agents: agents},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		Projects: &stubProjectLister{projects: []domain.Project{{Slug: "proj-1"}, {Slug: "proj-2"}}},
 
 		SSEClients: func() int { return 0 },
 	})
@@ -319,9 +319,8 @@ func TestLockOperations(t *testing.T) {
 func TestGetQuota(t *testing.T) {
 	t.Run("nil quota", func(t *testing.T) {
 		h := NewAPIHandler(APIHandlerOpts{
-			Agents:   &stubAgentLister{},
-			LockMgr:  lock.New(""),
-
+			Agents:  &stubAgentLister{},
+			LockMgr: lock.New(""),
 		})
 		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
 		if err != nil {
@@ -358,10 +357,9 @@ func TestGetQuota(t *testing.T) {
 			},
 		}
 		h := NewAPIHandler(APIHandlerOpts{
-			Agents:   &stubAgentLister{agents: []domain.AgentInfo{{ID: "a1"}}},
-			Quota:    quota,
-			LockMgr:  lock.New(""),
-
+			Agents:  &stubAgentLister{agents: []domain.AgentInfo{{ID: "a1"}}},
+			Quota:   quota,
+			LockMgr: lock.New(""),
 		})
 		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
 		if err != nil {
@@ -536,10 +534,10 @@ func TestGetSkillsStatus_WithSkills(t *testing.T) {
 		SkillsDir:     tmpDir,
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:     &stubAgentLister{},
-		Quota:      &stubQuotaReader{},
-		LockMgr:    lock.New(""),
-		Projects:   &stubProjectLister{},
+		Agents:   &stubAgentLister{},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		Projects: &stubProjectLister{},
 
 		SSEClients: func() int { return 0 },
 		Cfg:        cfg,
@@ -677,10 +675,9 @@ func TestGetTrace_WithSpans(t *testing.T) {
 
 func TestListTraces_NilStore(t *testing.T) {
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:   &stubAgentLister{},
-		Quota:    &stubQuotaReader{},
-		LockMgr:  lock.New(""),
-
+		Agents:  &stubAgentLister{},
+		Quota:   &stubQuotaReader{},
+		LockMgr: lock.New(""),
 	})
 	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
 	if err != nil {
@@ -742,7 +739,6 @@ func TestAddProject_Success(t *testing.T) {
 		LockMgr:    lock.New(""),
 		Projects:   &stubProjectLister{},
 		ProjectMgr: mgr,
-
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -776,7 +772,6 @@ func TestAddProject_Duplicate(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -803,7 +798,6 @@ func TestAddProject_BadURL(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -827,7 +821,6 @@ func TestAddProject_MissingURL(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: &stubProjectManager{},
-
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -850,7 +843,6 @@ func TestRemoveProject_Success(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-
 	})
 
 	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
@@ -877,7 +869,6 @@ func TestRemoveProject_WithCleanup(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-
 	})
 
 	cleanup := true
@@ -907,7 +898,6 @@ func TestRemoveProject_NotFound(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-
 	})
 
 	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
@@ -960,7 +950,6 @@ func TestGetBoard_AutoSyncOnEmpty(t *testing.T) {
 		Projects: &stubProjectLister{projects: []domain.Project{
 			{Slug: "proj", ProjectDir: projectDir},
 		}},
-
 	})
 
 	// First call: board is empty, should auto-sync.
@@ -1017,7 +1006,6 @@ func TestMoveCard_EmitsBoardUpdate(t *testing.T) {
 		LockMgr:  lock.New(""),
 		BoardSvc: boardSvc,
 		EventBus: spy,
-
 	})
 
 	_, err := h.MoveCard(context.Background(), gen.MoveCardRequestObject{
@@ -1043,7 +1031,6 @@ func TestLockAcquireRelease_EmitsEvents(t *testing.T) {
 		Quota:    &stubQuotaReader{},
 		LockMgr:  lock.New(""),
 		EventBus: spy,
-
 	})
 
 	ttl := 60
@@ -1081,7 +1068,6 @@ func TestAddProject_EmitsProjectUpdate(t *testing.T) {
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
 		EventBus:   spy,
-
 	})
 
 	_, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -1107,7 +1093,6 @@ func TestRemoveProject_EmitsProjectRemoved(t *testing.T) {
 		LockMgr:    lock.New(""),
 		ProjectMgr: &stubProjectManager{},
 		EventBus:   spy,
-
 	})
 
 	_, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
@@ -1129,10 +1114,9 @@ func TestAddProject_NilManager(t *testing.T) {
 	t.Parallel()
 
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:   &stubAgentLister{},
-		Quota:    &stubQuotaReader{},
-		LockMgr:  lock.New(""),
-
+		Agents:  &stubAgentLister{},
+		Quota:   &stubQuotaReader{},
+		LockMgr: lock.New(""),
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -1167,7 +1151,6 @@ func TestAddProject_WithSSHKey(t *testing.T) {
 		Agents:     &stubAgentLister{},
 		LockMgr:    lock.New(t.TempDir()),
 		ProjectMgr: mgr,
-
 	})
 
 	sshKeyPath := "/home/user/.ssh/id_ed25519"

@@ -84,6 +84,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 		log.Printf("OpenTelemetry tracing enabled (OTLP → localhost:4318)")
 	}
 
+	// Detect stale agents from previous run (mark-only, no auto-resume).
+	recovery := agent.NewRecoveryManager(agentStore, &agent.ExecProcessStarter{})
+	if n := recovery.DetectStale(); n > 0 {
+		log.Printf("[recovery] Marked %d stale agent(s) as suspended", n)
+	}
+
 	// Create in-memory quota tracker (receives live cost/token data from SDK).
 	quotaTracker := agent.NewQuotaTracker(cfg.DataDir)
 	_ = quotaTracker.Load()

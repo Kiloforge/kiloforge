@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint gen-api verify-codegen verify-deps release-local
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint lint-full gen-api verify-codegen verify-deps release-local
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
@@ -83,6 +83,17 @@ clean:
 	rm -rf $(DIST_DIR)
 
 lint:
+	@echo "=== go vet ==="
+	$(GO_CMD) vet $$BUILDVCS ./...
+	@echo "=== staticcheck ==="
+	cd backend && staticcheck ./...
+	@echo "=== gofmt ==="
+	@FMTFILES=$$(cd backend && gofmt -l .); if [ -n "$$FMTFILES" ]; then echo "gofmt: files not formatted:"; echo "$$FMTFILES"; exit 1; fi
+	@echo "=== goimports ==="
+	@IMPFILES=$$(cd backend && goimports -l -local github.com/benbaldivia/crelay .); if [ -n "$$IMPFILES" ]; then echo "goimports: files not formatted:"; echo "$$IMPFILES"; exit 1; fi
+	cd frontend && npm run lint
+
+lint-full:
 	cd backend && golangci-lint run ./...
 	cd frontend && npm run lint
 

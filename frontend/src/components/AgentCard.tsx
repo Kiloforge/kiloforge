@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Agent } from "../types/api";
 import { useTracks } from "../hooks/useTracks";
-import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
+import { useAgentActions, canStop, canResume, canReplace, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "./StatusBadge";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
@@ -16,9 +16,10 @@ interface Props {
 
 export function AgentCard({ agent, onViewLog, onAttach }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
   const refLink = agent.ref || null;
   const { tracks } = useTracks();
-  const { stop, resume, del } = useAgentActions();
+  const { stop, resume, replace, del } = useAgentActions();
   const matchedTrack = refLink ? tracks.find((t) => t.id === refLink) : null;
   const projectSlug = matchedTrack?.project ?? null;
 
@@ -63,6 +64,12 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
           <span className={styles.cost}>est. {formatUSD(agent.estimated_cost_usd)}</span>
         )}
       </div>
+      {agent.shutdown_reason && (
+        <div className={styles.shutdownReason}>{agent.shutdown_reason}</div>
+      )}
+      {agent.resume_error && (
+        <div className={styles.resumeError}>{agent.resume_error}</div>
+      )}
       <div className={styles.actions}>
         {agent.role === "interactive" && onAttach && (
           <button className={styles.btn} onClick={() => onAttach(agent.id)}>
@@ -101,6 +108,15 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
             {resume.isPending ? "Resuming..." : "Resume"}
           </button>
         )}
+        {canReplace(agent) && (
+          <button
+            className={`${styles.btn} ${styles.btnWarning}`}
+            onClick={() => setShowReplaceConfirm(true)}
+            disabled={replace.isPending}
+          >
+            {replace.isPending ? "Replacing..." : "Replace"}
+          </button>
+        )}
         {canDelete(agent) && (
           <button
             className={`${styles.btn} ${styles.btnDanger}`}
@@ -111,6 +127,16 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
           </button>
         )}
       </div>
+      {showReplaceConfirm && (
+        <ConfirmDialog
+          title="Replace Agent"
+          message="This agent's session could not be recovered. Replace with a new agent for the same work?"
+          confirmLabel="Replace"
+          confirming={replace.isPending}
+          onConfirm={() => replace.mutate(agent.id)}
+          onCancel={() => setShowReplaceConfirm(false)}
+        />
+      )}
       {showDeleteConfirm && (
         <ConfirmDialog
           title="Delete Agent"
