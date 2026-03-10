@@ -42,6 +42,7 @@ vi.mock("./terminal", () => ({
   MessageDispatch: ({ msg }: { msg: { type: string; text: string } }) => (
     <div data-testid="message">{msg.text}</div>
   ),
+  MessageErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
