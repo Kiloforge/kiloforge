@@ -64,25 +64,25 @@ plan:
   - phase: Skills extraction
     tasks:
       - text: "Extract installLocalSkills from cli package into a shared skills installer callable from both CLI and REST handler"
-        done: false
+        done: true
       - text: "Write test for the extracted skills installer"
-        done: false
+        done: true
   - phase: Handler integration
     tasks:
       - text: "Write test: SpawnInteractiveAgent with advisor role + project creates repo and sets WorkDir"
-        done: false
+        done: true
       - text: "Write test: advisor spawn with existing project name returns 409"
-        done: false
+        done: true
       - text: "Write test: non-advisor spawn ignores project field for creation (existing behavior preserved)"
-        done: false
+        done: true
       - text: "In SpawnInteractiveAgent handler, when role is advisor-* and project is set: call CreateProject, install skills, set WorkDir"
-        done: false
+        done: true
       - text: "Return 409 if project name already exists"
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: "Run make test — all existing + new tests pass"
-        done: false
+        done: true
       - text: "Run make lint — no new lint issues"
-        done: false
+        done: true
 extra: {}

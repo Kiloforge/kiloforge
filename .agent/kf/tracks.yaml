@@ -11,7 +11,7 @@ add-local-ssh-identity_20260308220000Z: {"title":"Add Command SSH Identity and R
 add-project-command_20260307122000Z: {"title":"Implement 'kf add' Command for Project Registration","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 admin-operations-ui_20260309173001Z: {"title":"Admin Operations UI — Bulk Archive, Compact, and Report from Dashboard","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 advisor-hub-fe_20260310115600Z: {"title":"Advisor Hub — dedicated UI section for launching and viewing advisor agents","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-advisor-project-create-be_20260311230000Z: {"title":"Advisor launch creates a fresh project repo and runs against it","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+advisor-project-create-be_20260311230000Z: {"title":"Advisor launch creates a fresh project repo and runs against it","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-project-create-fe_20260311230001Z: {"title":"Advisor Hub: add project name input to launch dialog","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename advisors to kf-advisor-* prefix","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
