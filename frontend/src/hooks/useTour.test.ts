@@ -92,8 +92,8 @@ describe("useTour", () => {
   });
 
   it("sends action 'complete' when completing", async () => {
-    mockFetcher.mockResolvedValueOnce({ status: "active", current_step: 6 });
-    mockFetcher.mockResolvedValueOnce({ status: "completed", current_step: 6 });
+    mockFetcher.mockResolvedValueOnce({ status: "active", current_step: 13 });
+    mockFetcher.mockResolvedValueOnce({ status: "completed", current_step: 13 });
 
     const { result } = renderHook(() => useTour(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isActive).toBe(true));

@@ -25,7 +25,7 @@ test.describe("Tour — In-Memory Demo State", () => {
     await startBtn.click();
 
     // Step 0 (welcome): centered dialog with "Let's Go" button
-    await expect(page.locator("text=Welcome to Kiloforge")).toBeVisible();
+    await expect(page.locator("text=Welcome, Kiloforger")).toBeVisible();
     await expect(page.locator("text=Let's Go")).toBeVisible();
 
     // Demo project should be visible in the overview
@@ -35,7 +35,6 @@ test.describe("Tour — In-Memory Demo State", () => {
     // Advance to step 1 (add-project)
     await page.locator("text=Let's Go").click();
     await expect(page.locator("text=Add a Project")).toBeVisible();
-    // The add-project-form target should be findable (demo project visible)
     await expect(page.locator('[data-tour="add-project-form"]')).toBeAttached({ timeout: 5_000 });
 
     // Advance to step 2 (open-project)
@@ -46,34 +45,39 @@ test.describe("Tour — In-Memory Demo State", () => {
     // Advance to step 3 (setup-notice) — should navigate to project page
     await page.locator("text=Next").click();
     await expect(page.locator("text=Project Setup")).toBeVisible({ timeout: 5_000 });
-    // Should be on the project page now
     await expect(page).toHaveURL(/\/projects\/example-project/);
-    // Board section should be visible with demo data
     await expect(page.locator('[data-tour="board-section"]')).toBeVisible({ timeout: 5_000 });
 
-    // Advance to step 4 (generate-tracks)
+    // Advance to step 4 (swarm-capacity)
+    await page.locator("text=Next").click();
+    await expect(page.locator("text=Swarm Capacity")).toBeVisible();
+    await expect(page.locator('[data-tour="swarm-panel"]')).toBeVisible();
+
+    // Advance to step 5 (generate-tracks)
     await page.locator("text=Next").click();
     await expect(page.locator("text=Generate Tracks")).toBeVisible();
     await expect(page.locator('[data-tour="generate-tracks"]')).toBeVisible();
 
-    // Advance to step 5 (board-explanation)
+    // Advance to step 6 (board-explanation)
     await page.locator("text=Next").click();
     await expect(page.locator("text=The Kanban Board")).toBeVisible();
-    // Kanban board should show demo cards
     await expect(page.locator('[data-tour="kanban-board"]')).toBeVisible();
     // Verify demo cards are rendered
     await expect(page.locator("text=User authentication with login flow")).toBeVisible();
     await expect(page.locator("text=Password reset via email")).toBeVisible();
 
-    // Advance to step 6 (move-card) — last step with "Skip and finish tour"
+    // Advance to step 7 (track-states)
+    await page.locator("text=Next").click();
+    await expect(page.locator("text=Track Lifecycle")).toBeVisible();
+
+    // Advance to step 8 (move-card) — wait-for-drag with "Skip and finish tour"
     await page.locator("text=Next").click();
     await expect(page.locator("text=Try It: Move a Card")).toBeVisible();
     await expect(page.locator('[data-tour="board-card-first"]')).toBeVisible();
-
-    // Skip and finish
+    // Use skip to advance past the drag step
     await page.locator("text=Skip and finish tour").click();
 
-    // Tour should be complete — toast notification visible (auto-dismisses)
+    // Tour should be complete — toast notification visible
     await expect(page.locator("text=Tour complete")).toBeVisible({ timeout: 5_000 });
   });
 
@@ -105,7 +109,7 @@ test.describe("Tour — In-Memory Demo State", () => {
     await startBtn.click();
 
     // Welcome step → skip tour
-    await expect(page.locator("text=Welcome to Kiloforge")).toBeVisible();
+    await expect(page.locator("text=Welcome, Kiloforger")).toBeVisible();
     await page.locator("text=Skip Tour").click();
 
     // Wait for dismissal
@@ -116,7 +120,7 @@ test.describe("Tour — In-Memory Demo State", () => {
     await page.locator("text=Take Tour").click();
 
     // Demo data should be re-injected
-    await expect(page.locator("text=Welcome to Kiloforge")).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("text=Welcome, Kiloforger")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator("text=example-project")).toBeVisible({ timeout: 5_000 });
   });
 });

@@ -172,11 +172,11 @@ plan:
   - phase: Testing and verification
     tasks:
       - text: Update tour unit tests for new step count and step IDs
-        done: false
+        done: true
       - text: Verify tour flows end-to-end in dev environment — all spotlights target correctly
-        done: false
+        done: true
       - text: Run make test and make build — all pass
-        done: false
+        done: true
 extra:
   claim:
     role: developer
