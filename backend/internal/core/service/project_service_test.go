@@ -412,6 +412,109 @@ func cleanGitEnvForTest() []string {
 	return env
 }
 
+func TestProjectService_CreateProject_DefaultOutputDir(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	result, err := svc.CreateProject(context.Background(), "default-out")
+	if err != nil {
+		t.Fatalf("CreateProject without OutputDir: %v", err)
+	}
+
+	expectedDir := filepath.Join(dataDir, "output", "default-out")
+	if result.Project.MirrorDir != expectedDir {
+		t.Errorf("MirrorDir = %q, want %q", result.Project.MirrorDir, expectedDir)
+	}
+}
+
+func TestProjectService_CreateProject_CustomOutputDir(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	outputDir := filepath.Join(t.TempDir(), "custom-create-mirror")
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	result, err := svc.CreateProject(context.Background(), "custom-create", domain.AddProjectOpts{OutputDir: outputDir})
+	if err != nil {
+		t.Fatalf("CreateProject with custom OutputDir: %v", err)
+	}
+
+	if result.Project.MirrorDir != outputDir {
+		t.Errorf("MirrorDir = %q, want %q", result.Project.MirrorDir, outputDir)
+	}
+
+	if _, err := os.Stat(outputDir); err != nil {
+		t.Errorf("custom output dir does not exist: %v", err)
+	}
+}
+
+func TestProjectService_RemoveProject_SkipsExternalMirror(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	externalMirror := filepath.Join(t.TempDir(), "user-mirror")
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	// Create project with external mirror.
+	result, err := svc.CreateProject(context.Background(), "ext-mirror",
+		domain.AddProjectOpts{OutputDir: externalMirror})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	// Verify external mirror exists.
+	if _, err := os.Stat(result.Project.MirrorDir); err != nil {
+		t.Fatalf("mirror should exist: %v", err)
+	}
+
+	// Remove with cleanup — external mirror should survive.
+	if err := svc.RemoveProject(context.Background(), "ext-mirror", true); err != nil {
+		t.Fatalf("RemoveProject: %v", err)
+	}
+
+	// External mirror must still exist.
+	if _, err := os.Stat(externalMirror); err != nil {
+		t.Error("external mirror should NOT have been deleted")
+	}
+}
+
+func TestProjectService_RemoveProject_DeletesInternalMirror(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	// Create project with default (internal) mirror.
+	result, err := svc.CreateProject(context.Background(), "int-mirror")
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	mirrorDir := result.Project.MirrorDir
+	if _, err := os.Stat(mirrorDir); err != nil {
+		t.Fatalf("mirror should exist: %v", err)
+	}
+
+	// Remove with cleanup — internal mirror should be deleted.
+	if err := svc.RemoveProject(context.Background(), "int-mirror", true); err != nil {
+		t.Fatalf("RemoveProject: %v", err)
+	}
+
+	if _, err := os.Stat(mirrorDir); !os.IsNotExist(err) {
+		t.Error("internal mirror should have been deleted")
+	}
+}
+
 func TestIsRemoteURL(t *testing.T) {
 	t.Parallel()
 

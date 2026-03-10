@@ -101,17 +101,17 @@ plan:
   - phase: Domain and service layer (TDD)
     tasks:
       - text: Add OutputDir to domain.AddProjectOpts
-        done: false
+        done: true
       - text: Write tests for AddProject with custom OutputDir
-        done: false
+        done: true
       - text: Write tests for AddProject without OutputDir (backward compat)
-        done: false
+        done: true
       - text: Update AddProject to use opts.OutputDir when provided
-        done: false
+        done: true
       - text: Write test for RemoveProject skipping external MirrorDir
-        done: false
+        done: true
       - text: Add guard in RemoveProject for external MirrorDir deletion
-        done: false
+        done: true
   - phase: CLI flags
     tasks:
       - text: Add --output flag to addCmd, pass to AddProjectOpts.OutputDir
@@ -151,3 +151,8 @@ extra:
     role: architect
     session_id: ba292e22-8e13-4ffc-9791-c815b94c7ad6
     timestamp: 2026-03-10T22:56:17Z
+  claim:
+    role: developer
+    session_id: e29b6494-24b4-4f99-bb06-879123faadb2
+    worktree: worker-1
+    claimed_at: 2026-03-10T22:59:26Z

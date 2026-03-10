@@ -30,6 +30,7 @@ type Project struct {
 // AddProjectOpts contains optional parameters for adding a project.
 type AddProjectOpts struct {
 	SSHKeyPath string // Path to SSH private key for cloning.
+	OutputDir  string // User-specified mirror location (empty = default).
 }
 
 // AddProjectResult contains details about a newly added project.

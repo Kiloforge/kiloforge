@@ -93,8 +93,11 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		return nil, fmt.Errorf("create project dir: %w", err)
 	}
 
-	// Create mirror clone at output/{slug}.
+	// Create mirror clone. Use custom output dir if specified.
 	mirrorDir := filepath.Join(s.config.DataDir, "output", slug)
+	if opt.OutputDir != "" {
+		mirrorDir = opt.OutputDir
+	}
 	if err := s.gitSync.CreateMirrorClone(ctx, cloneDir, mirrorDir); err != nil {
 		os.RemoveAll(cloneDir)
 		return nil, fmt.Errorf("create mirror: %w", err)
@@ -130,7 +133,11 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 
 // CreateProject creates a new project from scratch (no remote URL).
 // It initializes a local git repo and registers the project in the store.
-func (s *ProjectService) CreateProject(ctx context.Context, name string) (*domain.AddProjectResult, error) {
+func (s *ProjectService) CreateProject(ctx context.Context, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
+	var opt domain.AddProjectOpts
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 	if name == "" {
 		return nil, fmt.Errorf("name is required for creating a project from scratch")
 	}
@@ -165,8 +172,11 @@ func (s *ProjectService) CreateProject(ctx context.Context, name string) (*domai
 		return nil, fmt.Errorf("create project dir: %w", err)
 	}
 
-	// Create mirror clone at output/{name}.
+	// Create mirror clone. Use custom output dir if specified.
 	mirrorDir := filepath.Join(s.config.DataDir, "output", name)
+	if opt.OutputDir != "" {
+		mirrorDir = opt.OutputDir
+	}
 	if err := s.gitSync.CreateMirrorClone(ctx, repoDir, mirrorDir); err != nil {
 		os.RemoveAll(repoDir)
 		return nil, fmt.Errorf("create mirror: %w", err)
@@ -227,8 +237,9 @@ func (s *ProjectService) RemoveProject(ctx context.Context, slug string, cleanup
 		_ = os.RemoveAll(repoDir)
 		projectDir := filepath.Join(s.config.DataDir, "projects", slug)
 		_ = os.RemoveAll(projectDir)
-		// Remove mirror directory.
-		if p.MirrorDir != "" {
+		// Remove mirror directory only if it lives inside the data dir.
+		// External mirrors (user-specified --output paths) are preserved.
+		if p.MirrorDir != "" && strings.HasPrefix(p.MirrorDir, s.config.DataDir) {
 			_ = os.RemoveAll(p.MirrorDir)
 		}
 	}
