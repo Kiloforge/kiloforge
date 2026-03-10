@@ -6,6 +6,8 @@ export interface WindowEntry {
   role?: string;
   initialX: number;
   initialY: number;
+  minimized: boolean;
+  unreadCount: number;
 }
 
 const CASCADE_OFFSET = 30;
@@ -29,11 +31,15 @@ export function useWindowManager() {
 
   const open = useCallback((agentId: string, name?: string, role?: string) => {
     setWindows((prev) => {
-      if (prev.has(agentId)) return prev; // already open — caller should use focus
+      if (prev.has(agentId)) return prev;
       const pos = cascadePosition(openCountRef.current);
       openCountRef.current++;
       const next = new Map(prev);
-      next.set(agentId, { agentId, name, role, initialX: pos.x, initialY: pos.y });
+      next.set(agentId, {
+        agentId, name, role,
+        initialX: pos.x, initialY: pos.y,
+        minimized: false, unreadCount: 0,
+      });
       return next;
     });
   }, []);
@@ -47,12 +53,46 @@ export function useWindowManager() {
     });
   }, []);
 
+  const minimize = useCallback((agentId: string) => {
+    setWindows((prev) => {
+      const entry = prev.get(agentId);
+      if (!entry || entry.minimized) return prev;
+      const next = new Map(prev);
+      next.set(agentId, { ...entry, minimized: true });
+      return next;
+    });
+  }, []);
+
+  const restore = useCallback((agentId: string) => {
+    setWindows((prev) => {
+      const entry = prev.get(agentId);
+      if (!entry || !entry.minimized) return prev;
+      const next = new Map(prev);
+      next.set(agentId, { ...entry, minimized: false, unreadCount: 0 });
+      return next;
+    });
+  }, []);
+
+  const incrementUnread = useCallback((agentId: string) => {
+    setWindows((prev) => {
+      const entry = prev.get(agentId);
+      if (!entry || !entry.minimized) return prev;
+      const next = new Map(prev);
+      next.set(agentId, { ...entry, unreadCount: entry.unreadCount + 1 });
+      return next;
+    });
+  }, []);
+
   const has = useCallback((agentId: string): boolean => {
     return windows.has(agentId);
   }, [windows]);
 
   const getWindows = useCallback((): WindowEntry[] => {
     return Array.from(windows.values());
+  }, [windows]);
+
+  const getMinimizedWindows = useCallback((): WindowEntry[] => {
+    return Array.from(windows.values()).filter((w) => w.minimized);
   }, [windows]);
 
   const count = windows.size;
@@ -62,7 +102,11 @@ export function useWindowManager() {
     count,
     open,
     close,
+    minimize,
+    restore,
+    incrementUnread,
     has,
     getWindows,
+    getMinimizedWindows,
   };
 }

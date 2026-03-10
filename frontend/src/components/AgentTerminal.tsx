@@ -11,8 +11,11 @@ interface Props {
   role?: string;
   initialX?: number;
   initialY?: number;
+  minimized?: boolean;
   onClose: () => void;
   onFocus?: () => void;
+  onMinimize?: () => void;
+  onActivity?: () => void;
 }
 
 function ConnectionDot({ status }: { status: WSConnectionState }) {
@@ -38,7 +41,7 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, name, role, initialX, initialY, onClose, onFocus }: Props) {
+export function AgentTerminal({ agentId, name, role, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity }: Props) {
   const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,10 +50,22 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, onClose
 
   const fw = useFloatingWindow({ defaultWidth: 720, defaultHeight: 500, minWidth: 400, minHeight: 300, initialX, initialY });
 
-  // Auto-scroll on new messages
+  const prevMsgCountRef = useRef(0);
+
+  // Auto-scroll on new messages (only when visible)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!minimized) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, minimized]);
+
+  // Notify activity when new messages arrive while minimized
+  useEffect(() => {
+    if (minimized && messages.length > prevMsgCountRef.current) {
+      onActivity?.();
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages.length, minimized, onActivity]);
 
   // Focus input on mount and reset position
   useEffect(() => {
@@ -135,6 +150,7 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, onClose
         height: fw.height,
         zIndex: fw.zIndex,
         cursor: edgeCursor || undefined,
+        display: minimized ? "none" : undefined,
       }}
       onPointerDown={handlePanelPointerDown}
       onPointerMove={handlePanelPointerMove}
@@ -155,9 +171,16 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, onClose
           <span className={styles.agentIdSecondary}>{agentId.slice(0, 8)}</span>
           <ConnectionDot status={status} />
         </div>
-        <button className={styles.closeBtn} onClick={onClose}>
-          &times;
-        </button>
+        <div className={styles.headerActions}>
+          {onMinimize && (
+            <button className={styles.minimizeBtn} onClick={onMinimize} title="Minimize">
+              &#x2013;
+            </button>
+          )}
+          <button className={styles.closeBtn} onClick={onClose}>
+            &times;
+          </button>
+        </div>
       </div>
 
       <div className={styles.messages}>

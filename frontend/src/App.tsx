@@ -17,6 +17,7 @@ import { ConnectionStatus } from "./components/ConnectionStatus";
 import { AgentHistogram } from "./components/AgentHistogram";
 import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
+import { TerminalDock } from "./components/TerminalDock";
 import { useWindowManager } from "./hooks/useWindowManager";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
@@ -209,9 +210,17 @@ export default function App() {
           role={entry.role}
           initialX={entry.initialX}
           initialY={entry.initialY}
+          minimized={entry.minimized}
           onClose={() => wm.close(entry.agentId)}
+          onMinimize={() => wm.minimize(entry.agentId)}
+          onActivity={() => wm.incrementUnread(entry.agentId)}
         />
       ))}
+      <TerminalDock
+        windows={wm.getMinimizedWindows()}
+        onRestore={(id) => wm.restore(id)}
+        onClose={(id) => wm.close(id)}
+      />
       {showLauncher && (
         <AgentLauncher
           onLaunch={handleLaunch}
