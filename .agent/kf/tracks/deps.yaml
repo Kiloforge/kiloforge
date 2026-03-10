@@ -31,13 +31,28 @@
 #   - Developer removes entries when marking a track complete.
 #   - /kf-manage bulk-archive prunes completed entries.
 #
-# UPDATED: 2026-03-11
+# UPDATED: 2026-03-10
 
-agent-recovery-be_20260310142300Z: []
+advisor-hub-fe_20260310115600Z:
+  - advisor-skills-be_20260310115559Z
 
-agent-recovery-fe_20260310142301Z:
-  - agent-recovery-be_20260310142300Z
+advisor-skills-be_20260310115559Z: []
 
-ci-fast-lint_20260311180000Z: []
+cmd-mode-help-fe_20260310121738Z: []
 
-local-skills-install-be_20260311160000Z: []
+fix-merge-protocol-be_20260311160000Z: []
+
+gitea-removal-be_20260311070000Z: []
+
+github-repo-migration_20260311080001Z:
+  - ci-green_20260311080000Z
+
+merge-init-into-up_20260311193000Z: []
+
+onboarding-ux-fe_20260310073721Z: []
+
+quota-gauges-be_20260310092417Z: []
+
+ui-polish-states-fe_20260311150000Z: []
+
+ui-polish-transitions-fe_20260311150001Z: []
