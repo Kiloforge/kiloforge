@@ -1,5 +1,5 @@
 id: list-pagination-be_20260310200000Z
-title: "Cursor pagination and filtering for all list API endpoints"
+title: Cursor pagination and filtering for all list API endpoints
 type: feature
 status: pending
 created: 2026-03-10
@@ -15,7 +15,7 @@ spec:
     will cause performance degradation. Every list endpoint needs cursor-based
     pagination with filtering to support both the dashboard's "+N completed"
     indicator and efficient data loading.
-
+    
     Affected endpoints (7 total):
     - GET /api/agents (has ?active filter, no pagination)
     - GET /api/projects (no params at all)
@@ -26,30 +26,30 @@ spec:
     - GET /api/ssh-keys (no pagination)
   codebase_analysis: |
     Current state — zero pagination anywhere:
-
+    
     OpenAPI spec (backend/api/openapi.yaml):
     - 7 list endpoints, none support pagination params (no limit, cursor, offset)
     - agents has ?active filter, tracks has ?project filter, traces has ?track_id/?session_id
-
+    
     Handler layer (backend/internal/adapter/rest/api_handler.go):
     - All handlers fetch entire dataset and return as-is
     - ListAgents (line 321): loads all, filters active in memory
     - ListProjects (line 631): gets all via h.projects.List()
     - ListTracks (line 739): iterates all projects, discovers from filesystem
     - ListTraces (line 1158): returns all from store
-
+    
     Store interfaces (backend/internal/core/port/):
     - ProjectStore.List() returns []domain.Project (no pagination)
     - AgentStore.Agents() returns []domain.AgentInfo (no pagination)
     - TraceStore.ListTraces() returns all traces
     - QueueStore.List() returns all items
-
+    
     SQLite stores: all queries use SELECT without LIMIT
-
+    
     Schema-first workflow:
     - OpenAPI 3.1 with oapi-codegen v2.5.1 for Go code generation
     - make gen-api regenerates, make verify-codegen verifies in CI
-
+    
     Pagination strategy: cursor-based using opaque token (base64-encoded sort
     key + ID). Cursor tokens are stable across inserts (unlike offset). Each
     response includes next_cursor (empty = no more pages) and total_count
@@ -81,7 +81,7 @@ spec:
     3. Regenerate Go code (make gen-api)
     4. Update port interfaces to accept pagination options
     5. Implement in SQLite stores using keyset pagination
-
+    
     Reusable pagination types in domain:
       type PageOpts struct {
         Limit  int
@@ -92,62 +92,62 @@ spec:
         NextCursor string
         TotalCount int
       }
-
+    
     Cursor encoding: base64(json({sort_field: value, id: value}))
     - Agents: sort by started_at DESC
     - Queue items: sort by enqueued_at ASC
     - Tracks: sort by status priority then name
     - Traces: sort by created_at DESC
     - Projects: sort by slug ASC
-
+    
     Default limit 50, max 200. Empty cursor = first page.
 plan:
-  - phase: "Schema and code generation"
+  - phase: Schema and code generation
     tasks:
-      - text: "Define PaginationParams and PaginatedResponse schemas in OpenAPI spec"
-        done: false
-      - text: "Add ?limit and ?cursor query params to all 7 list endpoints in OpenAPI"
-        done: false
-      - text: "Add ?status filter to agents, tracks, and queue endpoints in OpenAPI"
-        done: false
-      - text: "Run make gen-api and verify generated code compiles"
-        done: false
-  - phase: "Domain and port layer"
+      - text: Define PaginationParams and PaginatedResponse schemas in OpenAPI spec
+        done: true
+      - text: Add ?limit and ?cursor query params to all 7 list endpoints in OpenAPI
+        done: true
+      - text: Add ?status filter to agents, tracks, and queue endpoints in OpenAPI
+        done: true
+      - text: Run make gen-api and verify generated code compiles
+        done: true
+  - phase: Domain and port layer
     tasks:
-      - text: "Add PageOpts and Page[T] generic pagination types to domain package"
-        done: false
-      - text: "Update AgentStore interface to accept PageOpts in list methods"
-        done: false
-      - text: "Update ProjectStore.List to accept PageOpts"
-        done: false
-      - text: "Update QueueStore.List/ListByProject to accept PageOpts"
-        done: false
-      - text: "Update TraceStore.ListTraces to accept PageOpts"
-        done: false
-      - text: "Update TrackReader interface with paginated discovery method"
-        done: false
-  - phase: "Store implementation"
+      - text: Add PageOpts and Page[T] generic pagination types to domain package
+        done: true
+      - text: Update AgentStore interface to accept PageOpts in list methods
+        done: true
+      - text: Update ProjectStore.List to accept PageOpts
+        done: true
+      - text: Update QueueStore.List/ListByProject to accept PageOpts
+        done: true
+      - text: Update TraceStore.ListTraces to accept PageOpts
+        done: true
+      - text: Update TrackReader interface with paginated discovery method
+        done: true
+  - phase: Store implementation
     tasks:
-      - text: "Implement keyset pagination in SQLite agent_store.go with total_count"
-        done: false
-      - text: "Implement keyset pagination in SQLite project_store.go with total_count"
-        done: false
-      - text: "Implement keyset pagination in SQLite queue_store.go with total_count"
-        done: false
-      - text: "Implement keyset pagination in SQLite trace store with total_count"
-        done: false
-      - text: "Implement paginated lock listing in lock manager"
-        done: false
-      - text: "Write unit tests for pagination (empty, single page, multi-page, boundary, total_count)"
-        done: false
-  - phase: "Handler integration and verification"
+      - text: Implement keyset pagination in SQLite agent_store.go with total_count
+        done: true
+      - text: Implement keyset pagination in SQLite project_store.go with total_count
+        done: true
+      - text: Implement keyset pagination in SQLite queue_store.go with total_count
+        done: true
+      - text: Implement keyset pagination in SQLite trace store with total_count
+        done: true
+      - text: Implement paginated lock listing in lock manager
+        done: true
+      - text: Write unit tests for pagination (empty, single page, multi-page, boundary, total_count)
+        done: true
+  - phase: Handler integration and verification
     tasks:
-      - text: "Update all 7 list handlers to extract pagination params and return paginated response"
-        done: false
-      - text: "Add handler tests for pagination query parameter parsing"
-        done: false
-      - text: "Run make verify-codegen to ensure schema and generated code are in sync"
-        done: false
-      - text: "Run make test to verify all existing tests still pass"
-        done: false
+      - text: Update all 7 list handlers to extract pagination params and return paginated response
+        done: true
+      - text: Add handler tests for pagination query parameter parsing
+        done: true
+      - text: Run make verify-codegen to ensure schema and generated code are in sync
+        done: true
+      - text: Run make test to verify all existing tests still pass
+        done: true
 extra: {}
