@@ -1,0 +1,114 @@
+id: agent-timeout_20260310160002Z
+title: Agent timeout enforcement with configurable max duration
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Add configurable agent timeout enforcement to prevent runaway agents. Background
+    reaper periodically checks agent durations and force-stops agents exceeding the limit.
+  context: |
+    Agents can run indefinitely with no configurable max duration. For autonomous
+    agent workflows (queue, pool), a runaway agent blocks the worker slot and
+    consumes tokens without bounds. This is rated Impact 4 in the product audit.
+  codebase_analysis: |
+    Agent lifecycle (backend/internal/adapter/agent/spawner.go):
+    - Three spawn paths: SpawnDeveloper, SpawnReviewer, SpawnInteractive
+    - All create AgentInfo with StartedAt timestamp (line 194, 272, 398)
+    - monitorSDKSession (lines 606-633) waits for SDK context to close
+    - CompletionCallback invoked on agent exit (lines 122-125)
+    
+    Agent domain (backend/internal/core/domain/agent.go):
+    - StartedAt, UpdatedAt, FinishedAt fields
+    - IsActive() checks Running/Waiting status
+    - IsTerminal() checks stopped/completed/failed/force-killed
+    - ShutdownReason field for halt/stop reason
+    
+    Agent store (backend/internal/core/port/agent_store.go):
+    - HaltAgent(idPrefix) — sends SIGINT to process
+    - UpdateStatus(idPrefix, status) — updates agent status
+    - Agents() — returns all agents (for scanning)
+    
+    Lock manager reaper pattern (backend/internal/adapter/lock/manager.go):
+    - StartReaper(ctx) runs background goroutine (line 156-169)
+    - reap() scans locks, expires those past TTL (lines 171-182)
+    - Runs every 30 seconds
+    - Perfect pattern to follow for agent timeout
+    
+    Config system (backend/internal/adapter/config/config.go):
+    - Config struct (lines 13-35) with typed fields
+    - Resolution: defaults → JSON → env → flags
+    - Existing pattern: MaxWorkers int, QueueEnabled *bool
+    - Env vars: KF_* prefix (env_adapter.go)
+    
+    Server startup (backend/internal/adapter/rest/server.go):
+    - lockMgr.StartReaper(ctx) called at line 239
+    - Integration point for agent timeout reaper
+  acceptance_criteria:
+    - New config field AgentMaxDuration with default of 2 hours
+    - Env var KF_AGENT_MAX_DURATION (duration string, e.g., "2h", "30m")
+    - GET/PUT /api/config includes agentMaxDuration field
+    - Background reaper goroutine checks agent durations every 60 seconds
+    - Agents exceeding max duration are halted via HaltAgent with reason "timeout"
+    - Agent status set to "force-killed" with shutdown reason "exceeded max duration"
+    - SSE event emitted when agent times out (agent_update with timeout status)
+    - Interactive agents excluded from timeout (only developer/reviewer agents)
+    - Timeout value of 0 disables enforcement
+    - Tests for reaper logic (timeout detection, exclusion rules, config changes)
+  out_of_scope: |
+    - Per-agent timeout override (future enhancement)
+    - Per-project timeout settings
+    - Frontend timeout configuration UI (uses existing config API)
+    - Agent retry on timeout (separate track R12)
+    - Notification on timeout (separate notification system track)
+  technical_notes: |
+    Implementation approach:
+    1. Add AgentMaxDuration to Config (default 2h)
+    2. Create AgentTimeoutReaper struct (follows lock manager reaper pattern)
+    3. Reaper scans Agents() every 60s, checks time.Since(agent.StartedAt)
+    4. Exceeding agents: call HaltAgent(), UpdateStatus("force-killed"),
+       set ShutdownReason("exceeded max duration of X")
+    5. Start reaper in Server.Run() alongside lockMgr.StartReaper(ctx)
+    6. Update OpenAPI config schema for agentMaxDuration field
+    
+    Exclusion logic:
+    - Skip agents with role="interactive" (user is actively interacting)
+    - Only timeout developer, reviewer, and admin agents
+    - Check IsActive() before attempting halt (avoid double-halt)
+plan:
+  - phase: Configuration
+    tasks:
+      - text: Add AgentMaxDuration field to Config struct with 2h default
+        done: true
+      - text: Add KF_AGENT_MAX_DURATION env var support in EnvAdapter
+        done: true
+      - text: Update OpenAPI config schema with agentMaxDuration field
+        done: true
+      - text: Regenerate API code (make gen-api)
+        done: true
+  - phase: Reaper implementation
+    tasks:
+      - text: Create AgentTimeoutReaper struct with Start(ctx) and reap() methods
+        done: true
+      - text: Implement reap logic — scan active agents, check duration, halt expired
+        done: true
+      - text: Add role exclusion logic (skip interactive agents)
+        done: true
+      - text: Wire reaper into Server.Run() alongside lock manager reaper
+        done: true
+  - phase: API integration
+    tasks:
+      - text: Update config handler to include agentMaxDuration in GET/PUT
+        done: true
+      - text: Support runtime config changes (reaper reads latest config each cycle)
+        done: true
+  - phase: Testing
+    tasks:
+      - text: Unit tests for reaper — timeout detection, role exclusion, disabled timeout
+        done: true
+      - text: Integration test — spawn agent, set short timeout, verify force-kill
+        done: true
+      - text: Test config API roundtrip for agentMaxDuration field
+        done: true
+extra: {}

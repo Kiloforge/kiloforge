@@ -1170,6 +1170,27 @@ func TestUpdateConfig_NilBody(t *testing.T) {
 	}
 }
 
+
+func TestConfigAPI_AgentMaxDuration_Roundtrip(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	cfg := &config.Config{DataDir: dir}
+	h := NewAPIHandler(APIHandlerOpts{Agents: &stubAgentLister{}, LockMgr: lock.New(t.TempDir()), Cfg: cfg})
+	resp, _ := h.GetConfig(context.Background(), gen.GetConfigRequestObject{})
+	r := resp.(gen.GetConfig200JSONResponse)
+	if r.AgentMaxDuration != nil {
+		t.Errorf("expected nil initially, got %q", *r.AgentMaxDuration)
+	}
+	dur := "30m"
+	updateResp, _ := h.UpdateConfig(context.Background(), gen.UpdateConfigRequestObject{
+		Body: &gen.UpdateConfigJSONRequestBody{AgentMaxDuration: &dur},
+	})
+	ur := updateResp.(gen.UpdateConfig200JSONResponse)
+	if ur.AgentMaxDuration == nil || *ur.AgentMaxDuration != "30m" {
+		t.Errorf("expected 30m, got %v", ur.AgentMaxDuration)
+	}
+}
+
 func TestGetProjectDiff(t *testing.T) {
 	t.Run("project not found", func(t *testing.T) {
 		h := newTestHandler(nil)

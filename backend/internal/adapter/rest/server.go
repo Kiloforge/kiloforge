@@ -246,6 +246,14 @@ func (s *Server) Run(ctx context.Context) error {
 	lockMgr := lock.New(s.cfg.DataDir)
 	lockMgr.StartReaper(ctx)
 
+	// Agent timeout reaper — halts agents exceeding configured max duration.
+	var eventBusForReaper port.EventBus
+	if s.dashboard != nil {
+		eventBusForReaper = s.dashboard.EventBus()
+	}
+	timeoutReaper := agent.NewTimeoutReaper(s.store, s.cfg, eventBusForReaper)
+	timeoutReaper.Start(ctx)
+
 	// Wire generated OpenAPI routes (health, agents, quota, tracks, status, locks).
 	var sseClients func() int
 	if s.dashboard != nil {

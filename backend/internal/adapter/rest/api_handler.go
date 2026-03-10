@@ -106,7 +106,6 @@ type APIHandler struct {
 	consent      ConsentChecker
 	agentRemover AgentRemover
 	queueSvc     QueueServicer
-	analytics    port.AnalyticsTracker
 
 	adminMu           sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -133,7 +132,6 @@ type APIHandlerOpts struct {
 	Consent      ConsentChecker
 	AgentRemover AgentRemover
 	QueueSvc     QueueServicer
-	Analytics    port.AnalyticsTracker
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -158,7 +156,6 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		consent:      opts.Consent,
 		agentRemover: opts.AgentRemover,
 		queueSvc:     opts.QueueSvc,
-		analytics:    opts.Analytics,
 	}
 }
 
@@ -223,10 +220,14 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 	if h.cfg == nil {
 		return gen.GetConfig200JSONResponse{}, nil
 	}
-	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
+	var agentMaxDur *string
+	if h.cfg.AgentMaxDuration != "" {
+		s := h.cfg.AgentMaxDuration
+		agentMaxDur = &s
+	}
 	return gen.GetConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
-		AnalyticsEnabled: &analyticsEnabled,
+		AgentMaxDuration: agentMaxDur,
 	}, nil
 }
 
@@ -243,20 +244,22 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		v := *req.Body.DashboardEnabled
 		h.cfg.DashboardEnabled = &v
 	}
-
-	if req.Body.AnalyticsEnabled != nil {
-		v := *req.Body.AnalyticsEnabled
-		h.cfg.AnalyticsEnabled = &v
+	if req.Body.AgentMaxDuration != nil {
+		h.cfg.AgentMaxDuration = *req.Body.AgentMaxDuration
 	}
 
 	if err := h.cfg.Save(); err != nil {
 		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
 	}
 
-	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
+	var agentMaxDur *string
+	if h.cfg.AgentMaxDuration != "" {
+		s := h.cfg.AgentMaxDuration
+		agentMaxDur = &s
+	}
 	return gen.UpdateConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
-		AnalyticsEnabled: &analyticsEnabled,
+		AgentMaxDuration: agentMaxDur,
 	}, nil
 }
 
@@ -711,13 +714,6 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 			"repo_name": p.RepoName,
 			"active":    p.Active,
 		}))
-	}
-	if h.analytics != nil {
-		source := "clone"
-		if remoteURL == "" {
-			source = "create"
-		}
-		h.analytics.Track(ctx, "project_added", map[string]any{"source": source})
 	}
 	resp := gen.AddProject201JSONResponse{
 		Slug:     p.Slug,
