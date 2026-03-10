@@ -121,7 +121,6 @@ func (s *ProjectStore) FindByDir(dir string) (domain.Project, bool) {
 	return p, true
 }
 
-
 // ListPaginated returns a paginated list of projects ordered by slug ASC.
 func (s *ProjectStore) ListPaginated(opts domain.PageOpts) (domain.Page[domain.Project], error) {
 	opts.Normalize()

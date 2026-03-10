@@ -58,10 +58,10 @@ func (s *fakeAgentStore) HaltAgent(idPrefix string) error {
 
 type fakeEventBus struct{ events []domain.Event }
 
-func (b *fakeEventBus) Publish(e domain.Event)       { b.events = append(b.events, e) }
-func (b *fakeEventBus) Subscribe() <-chan domain.Event { return make(chan domain.Event) }
+func (b *fakeEventBus) Publish(e domain.Event)            { b.events = append(b.events, e) }
+func (b *fakeEventBus) Subscribe() <-chan domain.Event    { return make(chan domain.Event) }
 func (b *fakeEventBus) Unsubscribe(_ <-chan domain.Event) {}
-func (b *fakeEventBus) ClientCount() int              { return 0 }
+func (b *fakeEventBus) ClientCount() int                  { return 0 }
 
 var _ port.AgentStore = (*fakeAgentStore)(nil)
 var _ port.EventBus = (*fakeEventBus)(nil)

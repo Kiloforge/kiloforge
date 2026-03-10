@@ -15,7 +15,6 @@ import (
 	gitadapter "kiloforge/internal/adapter/git"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
-	"kiloforge/internal/adapter/pool"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
 	wsAdapter "kiloforge/internal/adapter/ws"
@@ -312,15 +311,3 @@ func (s *Server) Run(ctx context.Context) error {
 	return nil
 }
 
-// poolReturnerAdapter wraps pool.Pool to implement port.PoolReturner.
-type poolReturnerAdapter struct {
-	pool    *pool.Pool
-	dataDir string
-}
-
-func (a *poolReturnerAdapter) ReturnByTrackID(trackID string) error {
-	if err := a.pool.ReturnByTrackID(trackID); err != nil {
-		return err
-	}
-	return a.pool.Save(a.dataDir)
-}

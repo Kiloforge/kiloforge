@@ -32,9 +32,10 @@ The following commands must pass at phase completion and before merge (post-reba
 ```bash
 make test    # Go unit/integration tests
 make build   # Full build (frontend + backend) — catches TS errors, embed failures, etc.
+make lint    # golangci-lint (Go) + npm lint (frontend) — catches formatting and static analysis issues
 ```
 
-Both commands must succeed. A build failure is a blocking error.
+All commands must succeed. A build or lint failure is a blocking error.
 
 ## Verification Checkpoints
 

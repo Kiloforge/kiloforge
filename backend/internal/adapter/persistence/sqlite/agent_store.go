@@ -169,7 +169,6 @@ func (s *AgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 	return scanAgents(rows)
 }
 
-
 // ListAgents returns a paginated list of agents, optionally filtered by statuses.
 func (s *AgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domain.Page[domain.AgentInfo], error) {
 	opts.Normalize()
@@ -182,7 +181,7 @@ func (s *AgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domai
 			placeholders[i] = "?"
 			args = append(args, st)
 		}
-		whereParts = append(whereParts, "status IN ("+strings.Join(placeholders, ",")+")") 
+		whereParts = append(whereParts, "status IN ("+strings.Join(placeholders, ",")+")")
 	}
 
 	if opts.Cursor != "" {

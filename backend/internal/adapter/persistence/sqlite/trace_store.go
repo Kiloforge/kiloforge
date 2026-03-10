@@ -265,7 +265,6 @@ func (s *TraceStore) FindBySessionID(sessionID string) []tracing.TraceSummary {
 	return scanTraceSummaries(rows)
 }
 
-
 // ListTracesPaginated returns paginated trace summaries with optional filters.
 func (s *TraceStore) ListTracesPaginated(opts domain.PageOpts, trackID, sessionID string) (domain.Page[tracing.TraceSummary], error) {
 	opts.Normalize()

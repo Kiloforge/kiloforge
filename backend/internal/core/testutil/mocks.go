@@ -115,7 +115,6 @@ func (m *MockAgentStore) FindByRef(ref string) *domain.AgentInfo {
 	return best
 }
 
-
 func (m *MockAgentStore) ListAgents(opts domain.PageOpts, statuses ...string) (domain.Page[domain.AgentInfo], error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

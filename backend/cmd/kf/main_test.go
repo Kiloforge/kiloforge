@@ -8,7 +8,7 @@ import (
 
 func TestBinaryBuilds(t *testing.T) {
 	t.Parallel()
-	cmd := exec.Command("go", "build", "-o", t.TempDir()+"/kf", ".")
+	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", t.TempDir()+"/kf", ".")
 	// Set GIT_DIR and GIT_WORK_TREE so VCS stamping works in git worktrees.
 	cmd.Env = append(cmd.Environ(), "GIT_DIR="+gitCommonDir(t), "GIT_WORK_TREE="+gitWorkTree(t))
 	out, err := cmd.CombinedOutput()
