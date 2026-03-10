@@ -729,13 +729,16 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 		return nil, fmt.Errorf("open log file: %w", err)
 	}
 	session.SetLogFile(lf)
+	session.logLine(fmt.Sprintf("[resume] session created — agent=%s session_id=%s", id, agent.SessionID))
 
 	// Connect to Claude CLI — detached from HTTP request context.
 	if err := session.Connect(context.Background()); err != nil {
+		session.logLine(fmt.Sprintf("[resume] connect failed — %v", err))
 		lf.Close()
 		session.Close()
 		return nil, fmt.Errorf("SDK connect: %w", err)
 	}
+	session.logLine("[resume] connected to CLI")
 
 	// Update agent status.
 	if uerr := s.store.UpdateStatus(id, "running"); uerr != nil {
@@ -751,6 +754,7 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	span.AddEvent("agent.resumed")
 
 	inputHandler := func(text string) error {
+		session.logLine(fmt.Sprintf("[resume] query sent — len=%d", len(text)))
 		return session.Query(session.ctx, text, s.tracker, id, span)
 	}
 

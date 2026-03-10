@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -166,7 +167,7 @@ func (h *Handler) readLoop(session *Session, bridge *Bridge) {
 
 		if err := bridge.WriteInput(text); err != nil {
 			_ = session.conn.Write(session.ctx, websocket.MessageText,
-				ErrorMsg("failed to send input to agent"))
+				ErrorMsg(fmt.Sprintf("failed to send input to agent: %v", err)))
 		}
 	}
 }
