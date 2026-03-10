@@ -172,9 +172,10 @@ export default function App() {
     setShowLauncher(false);
   }, []);
 
-  const handleLaunch = useCallback((role: AgentRole, prompt: string) => {
+  const handleLaunch = useCallback((role: AgentRole, prompt: string, project?: string) => {
     const req: SpawnInteractiveRequest = { role };
     if (prompt) req.prompt = prompt;
+    if (project) req.project = project;
     setLastSpawnReq(req);
     spawnMutation.mutate(req);
   }, [spawnMutation]);

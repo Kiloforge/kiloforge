@@ -47,7 +47,7 @@ interface OverviewPageProps {
   trackHasNextPage?: boolean;
   trackFetchingNextPage?: boolean;
   onTrackLoadMore?: () => void;
-  onAdvisorLaunch?: (role: AgentRole, prompt: string) => void;
+  onAdvisorLaunch?: (role: AgentRole, prompt: string, project?: string) => void;
   advisorLaunching?: boolean;
 }
 
