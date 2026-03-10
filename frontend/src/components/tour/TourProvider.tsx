@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTour } from "../../hooks/useTour";
 import type { TourState } from "../../hooks/useTour";
+import { useToastSafe } from "../toast/ToastProvider";
 import { TOUR_STEPS, TOTAL_STEPS } from "./tourSteps";
 import { DEMO_STATES, DEMO_PROJECT_SLUG } from "./tourDemoData";
 import type { DemoInjection } from "./tourDemoData";
@@ -93,6 +94,8 @@ export function TourProvider({ children }: TourProviderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const prevActiveRef = useRef(false);
+  const prevStatusRef = useRef(tour.tourState.status);
+  const toast = useToastSafe();
 
   const currentStep = tour.tourState.current_step;
   const isActive = tour.isActive;
@@ -133,6 +136,18 @@ export function TourProvider({ children }: TourProviderProps) {
       navigate(demoState.route);
     }
   }, [isActive, currentStep, navigate, location.pathname]);
+
+  // --- Toast on tour completion ---
+  useEffect(() => {
+    const status = tour.tourState.status;
+    if (status === "completed" && prevStatusRef.current !== "completed") {
+      toast?.addToast(
+        "success",
+        "Tour complete! You can restart it anytime from the settings menu (gear icon).",
+      );
+    }
+    prevStatusRef.current = status;
+  }, [tour.tourState.status, toast]);
 
   const nextStep = useCallback(() => {
     const next = currentStep + 1;
