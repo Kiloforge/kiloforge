@@ -1,4 +1,4 @@
-import type { Project, BoardState, Track } from "../../types/api";
+import type { Project, BoardState, Track, TrackDetail, SwarmStatus } from "../../types/api";
 import { queryKeys } from "../../api/queryKeys";
 import type { DemoState } from "./tourSteps";
 
@@ -58,6 +58,7 @@ export const DEMO_BOARD: BoardState = {
       position: 0,
       agent_status: "running",
       assigned_worker: "developer-1",
+      trace_id: "demo-trace-001",
       moved_at: now,
       created_at: now,
     },
@@ -70,6 +71,63 @@ export const DEMO_TRACKS: Track[] = [
   { id: "auth-reset_demo", title: "Password reset via email", status: "approved", project: DEMO_PROJECT_SLUG },
   { id: "api-middleware_demo", title: "API auth middleware and JWT validation", status: "in-progress", project: DEMO_PROJECT_SLUG },
 ];
+
+/** Demo track details with dependency and conflict data for relationship visualization. */
+export const DEMO_TRACK_DETAILS: TrackDetail[] = [
+  {
+    id: "auth-login_demo",
+    title: "User authentication with login flow",
+    status: "pending",
+    type: "feature",
+  },
+  {
+    id: "auth-register_demo",
+    title: "User registration and onboarding",
+    status: "pending",
+    type: "feature",
+    conflicts: [
+      { track_id: "auth-login_demo", track_title: "User authentication with login flow", risk: "low", note: "Shared auth module" },
+    ],
+  },
+  {
+    id: "auth-reset_demo",
+    title: "Password reset via email",
+    status: "approved",
+    type: "feature",
+    dependencies: [
+      { id: "auth-login_demo", title: "User authentication with login flow", status: "pending" },
+    ],
+  },
+  {
+    id: "api-middleware_demo",
+    title: "API auth middleware and JWT validation",
+    status: "in-progress",
+    type: "feature",
+    dependencies: [
+      { id: "auth-login_demo", title: "User authentication with login flow", status: "pending" },
+    ],
+    conflicts: [
+      { track_id: "auth-reset_demo", track_title: "Password reset via email", risk: "medium", note: "Shared auth routes" },
+    ],
+  },
+];
+
+/** Demo swarm status showing one active agent. */
+export const DEMO_SWARM: SwarmStatus = {
+  running: true,
+  max_workers: 3,
+  active_workers: 1,
+  items: [
+    {
+      track_id: "api-middleware_demo",
+      project_slug: DEMO_PROJECT_SLUG,
+      status: "assigned",
+      agent_id: "developer-1",
+      enqueued_at: now,
+      assigned_at: now,
+    },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // Per-step demo state configurations
@@ -92,6 +150,8 @@ const projectInjections: DemoInjection[] = [
   ...overviewInjections,
   { queryKey: queryKeys.board(DEMO_PROJECT_SLUG), data: DEMO_BOARD },
   { queryKey: queryKeys.tracks(DEMO_PROJECT_SLUG), data: DEMO_TRACKS },
+  { queryKey: queryKeys.swarm(DEMO_PROJECT_SLUG), data: DEMO_SWARM },
+  { queryKey: [...queryKeys.tracks(DEMO_PROJECT_SLUG), "relations"] as const, data: DEMO_TRACK_DETAILS },
 ];
 
 export const DEMO_STATES: Record<string, DemoState> = {
@@ -111,6 +171,10 @@ export const DEMO_STATES: Record<string, DemoState> = {
     route: `/projects/${DEMO_PROJECT_SLUG}`,
     inject: projectInjections,
   },
+  "swarm-capacity": {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
   "generate-tracks": {
     route: `/projects/${DEMO_PROJECT_SLUG}`,
     inject: projectInjections,
@@ -119,7 +183,31 @@ export const DEMO_STATES: Record<string, DemoState> = {
     route: `/projects/${DEMO_PROJECT_SLUG}`,
     inject: projectInjections,
   },
+  "track-states": {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
   "move-card": {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
+  "deps-conflicts": {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
+  "agent-types": {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
+  "notification-center": {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
+  traces: {
+    route: `/projects/${DEMO_PROJECT_SLUG}`,
+    inject: projectInjections,
+  },
+  finish: {
     route: `/projects/${DEMO_PROJECT_SLUG}`,
     inject: projectInjections,
   },

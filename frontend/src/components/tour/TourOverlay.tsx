@@ -10,11 +10,12 @@ export function TourOverlay() {
 
   const step = TOUR_STEPS[currentStep];
   const isWelcome = step?.id === "welcome";
+  const isFinish = step?.id === "finish";
   const isLast = currentStep === totalSteps - 1;
 
   // Find and track the target element
   useEffect(() => {
-    if (!isActive || !step || isWelcome) {
+    if (!isActive || !step || isWelcome || isFinish) {
       setTargetRect(null);
       return;
     }
@@ -38,7 +39,7 @@ export function TourOverlay() {
       window.removeEventListener("resize", findTarget);
       window.removeEventListener("scroll", findTarget, true);
     };
-  }, [isActive, step, isWelcome, currentStep]);
+  }, [isActive, step, isWelcome, isFinish, currentStep]);
 
   // Show welcome dialog
   if (isPending) {
@@ -83,6 +84,31 @@ export function TourOverlay() {
             </button>
             <button className={styles.skipBtn} onClick={dismissTour}>
               Skip Tour
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Finish step (centered dialog, no spotlight)
+  if (isFinish) {
+    return (
+      <div className={styles.overlay}>
+        <div className={styles.welcomeDialog}>
+          <div className={styles.tooltipHeader}>
+            <span className={styles.stepCount}>
+              {currentStep + 1} / {totalSteps}
+            </span>
+            <button className={styles.closeBtn} onClick={dismissTour} title="Close tour">
+              &times;
+            </button>
+          </div>
+          <h2 className={styles.welcomeTitle}>{step.title}</h2>
+          <p className={styles.welcomeText}>{step.content}</p>
+          <div className={styles.welcomeActions}>
+            <button className={styles.startBtn} onClick={completeTour}>
+              Finish
             </button>
           </div>
         </div>
