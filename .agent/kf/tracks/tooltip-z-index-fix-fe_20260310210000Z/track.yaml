@@ -17,18 +17,18 @@ spec:
   out_of_scope: Changing the panel's backdrop-filter (would affect visual design). Adding tooltip arrow/caret. Tooltip repositioning for viewport edges (keep simple for now).
   technical_notes: Use ReactDOM.createPortal to render .card into document.body. Use a ref on the trigger button + getBoundingClientRect to compute absolute top/left. The card already has box-shadow and background, so it will look correct when portalled. Keep the existing hover/click/pin behavior. Update tests to account for portal rendering (tooltip appears in document.body, not as sibling).
 plan:
-  - phase: "Portal Implementation"
+  - phase: Portal Implementation
     tasks:
-      - text: "Refactor HelpTooltip to use ReactDOM.createPortal — render .card into document.body instead of inline"
-        done: false
-      - text: "Add useRef on trigger button, compute popover position via getBoundingClientRect on show"
-        done: false
-      - text: "Update HelpTooltip.module.css — change .card from position:absolute to position:fixed with computed top/left"
-        done: false
-  - phase: "Test & Verify"
+      - text: Refactor HelpTooltip to use ReactDOM.createPortal — render .card into document.body instead of inline
+        done: true
+      - text: Add useRef on trigger button, compute popover position via getBoundingClientRect on show
+        done: true
+      - text: Update HelpTooltip.module.css — change .card from position:absolute to position:fixed with computed top/left
+        done: true
+  - phase: Test & Verify
     tasks:
-      - text: "Update HelpTooltip.test.tsx — portal renders into body, use screen queries (not container-scoped)"
-        done: false
-      - text: "Run tsc --noEmit, vitest run, and frontend build to verify no regressions"
-        done: false
+      - text: Update HelpTooltip.test.tsx — portal renders into body, use screen queries (not container-scoped)
+        done: true
+      - text: Run tsc --noEmit, vitest run, and frontend build to verify no regressions
+        done: true
 extra: {}
