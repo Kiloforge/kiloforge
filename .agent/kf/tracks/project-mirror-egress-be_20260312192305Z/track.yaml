@@ -1,9 +1,9 @@
 id: project-mirror-egress-be_20260312192305Z
-title: "Project mirror — create user-facing clone and auto-sync on main updates"
+title: Project mirror — create user-facing clone and auto-sync on main updates
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Add a MirrorDir field to the Project domain, create a local clone at
@@ -51,40 +51,40 @@ spec:
     release confirms success, call SyncMirror for the affected project.
     Use file:// protocol for local clone/push to avoid path-as-remote ambiguity.
 plan:
-  - phase: "Domain & Infrastructure"
+  - phase: Domain & Infrastructure
     tasks:
-      - text: "Add MirrorDir string field to domain.Project struct and update JSON tags"
-        done: false
-      - text: "Add ForcePushToMirror(ctx, projectDir, mirrorDir string) method to GitSync — uses git push --force"
-        done: false
-      - text: "Write unit tests for ForcePushToMirror (success, mirror not exist, empty repo edge case)"
-        done: false
-      - text: "Add CreateMirrorClone(ctx, sourceDir, mirrorDir string) helper to GitSync — git clone file://<source> <mirror>"
-        done: false
-  - phase: "Project Registration"
+      - text: Add MirrorDir string field to domain.Project struct and update JSON tags
+        done: true
+      - text: Add ForcePushToMirror(ctx, projectDir, mirrorDir string) method to GitSync — uses git push --force
+        done: true
+      - text: Write unit tests for ForcePushToMirror (success, mirror not exist, empty repo edge case)
+        done: true
+      - text: Add CreateMirrorClone(ctx, sourceDir, mirrorDir string) helper to GitSync — git clone file://<source> <mirror>
+        done: true
+  - phase: Project Registration
     tasks:
-      - text: "Update AddProject to create mirror clone at DataDir/output/{slug} and set Project.MirrorDir"
-        done: false
-      - text: "Update CreateProject to create mirror clone at DataDir/output/{slug} and set Project.MirrorDir"
-        done: false
-      - text: "Update RemoveProject to also remove MirrorDir when cleanup=true"
-        done: false
-      - text: "Write tests for AddProject/CreateProject/RemoveProject mirror behavior"
-        done: false
-  - phase: "Auto-sync on Main Update"
+      - text: Update AddProject to create mirror clone at DataDir/output/{slug} and set Project.MirrorDir
+        done: true
+      - text: Update CreateProject to create mirror clone at DataDir/output/{slug} and set Project.MirrorDir
+        done: true
+      - text: Update RemoveProject to also remove MirrorDir when cleanup=true
+        done: true
+      - text: Write tests for AddProject/CreateProject/RemoveProject mirror behavior
+        done: true
+  - phase: Auto-sync on Main Update
     tasks:
-      - text: "Add SyncMirror(ctx, slug string) method to ProjectService that resolves project and calls ForcePushToMirror"
-        done: false
-      - text: "Add POST /api/projects/{slug}/mirror-sync REST endpoint that calls SyncMirror"
-        done: false
-      - text: "Hook merge completion in orchestrator merge-lock release to trigger mirror sync for the affected project"
-        done: false
-  - phase: "Verification"
+      - text: Add SyncMirror(ctx, slug string) method to ProjectService that resolves project and calls ForcePushToMirror
+        done: true
+      - text: Add POST /api/projects/{slug}/mirror-sync REST endpoint that calls SyncMirror
+        done: true
+      - text: Hook merge completion in orchestrator merge-lock release to trigger mirror sync for the affected project
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Integration test: add project, commit, merge to main, verify mirror reflects latest main"
-        done: false
-      - text: "Integration test: RemoveProject with cleanup=true removes mirror directory"
-        done: false
-      - text: "Manual smoke test: verify output/{slug} directory is browsable and has correct content"
-        done: false
+      - text: Integration test: add project, commit, merge to main, verify mirror reflects latest main
+        done: true
+      - text: Integration test: RemoveProject with cleanup=true removes mirror directory
+        done: true
+      - text: Manual smoke test: verify output/{slug} directory is browsable and has correct content
+        done: true
 extra: {}
