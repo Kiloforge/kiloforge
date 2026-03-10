@@ -166,3 +166,8 @@
   font-size: 11px;
   color: var(--red);
 }
+
+.viewers {
+  font-size: 11px;
+  color: var(--accent);
+}

@@ -58,6 +58,9 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
             : <Link to={`/agents/${agent.id}`}>ref: {refLink}</Link>
         )}
         {agent.model && <span>model: {agent.model}</span>}
+        {agent.connected_clients != null && agent.connected_clients > 0 && agent.status === "interactive" && (
+          <span className={styles.viewers}>{agent.connected_clients} viewer{agent.connected_clients !== 1 ? "s" : ""}</span>
+        )}
         {agent.uptime_seconds != null && <span>uptime: {formatUptime(agent.uptime_seconds)}</span>}
         {agent.pid > 0 && <span>PID: {agent.pid}</span>}
         {agent.estimated_cost_usd != null && (
@@ -65,7 +68,9 @@ export function AgentCard({ agent, onViewLog, onAttach }: Props) {
         )}
       </div>
       {agent.shutdown_reason && (
-        <div className={styles.shutdownReason}>{agent.shutdown_reason}</div>
+        <div className={styles.shutdownReason}>
+          {agent.shutdown_reason === "idle_disconnect" ? "Suspended — no active connections" : agent.shutdown_reason}
+        </div>
       )}
       {agent.resume_error && (
         <div className={styles.resumeError}>{agent.resume_error}</div>

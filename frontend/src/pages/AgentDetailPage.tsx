@@ -284,7 +284,7 @@ export function AgentDetailPage() {
         {agent.shutdown_reason && (
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>Shutdown Reason</span>
-            <span>{agent.shutdown_reason}</span>
+            <span>{agent.shutdown_reason === "idle_disconnect" ? "Suspended — no active connections" : agent.shutdown_reason}</span>
           </div>
         )}
         {agent.resume_error && (
