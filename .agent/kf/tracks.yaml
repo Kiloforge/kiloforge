@@ -82,6 +82,7 @@ frontend-test-hooks_20260310041006Z: {"title":"Frontend Test Coverage — Critic
 frontend-test-infra_20260309225000Z: {"title":"Frontend Test Infrastructure and Makefile Integration","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 frontend-test-pages_20260310041007Z: {"title":"Frontend Test Coverage — Pages and Components","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 gitea-proxy-authn_20260309123000Z: {"title":"Passwordless Gitea Login via Reverse Proxy Authentication","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+github-repo-templates_20260310001945Z: {"title":"GitHub repo templates — issue templates, PR template, and external PR auto-close workflow","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 gitignore-frontend-dist_20260310000000Z: {"title":"Stop Committing Frontend Dist — Build Before Backend Instead","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 goose-migrations_20260309184000Z: {"title":"Migrate to Goose for Database Schema Migrations","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 guided-tour-be_20260309203000Z: {"title":"Guided Tour State API and Demo Seed Data (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
