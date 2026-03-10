@@ -1,0 +1,383 @@
+#!/usr/bin/env bash
+# kf-merge-lock — Cross-worktree merge lock helper
+#
+# Encapsulates the dual-mode (HTTP/mkdir) merge lock protocol.
+# Used by kf-developer and kf-architect skills to coordinate merges.
+#
+# USAGE:
+#   kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS]
+#   kf-merge-lock release [--holder NAME]
+#   kf-merge-lock heartbeat [--holder NAME] [--ttl SECONDS]
+#   kf-merge-lock status
+#   kf-merge-lock help
+#
+# ENVIRONMENT:
+#   KF_ORCH_URL     Orchestrator URL (default: http://localhost:4001)
+#   KF_LOCK_HOLDER  Default holder name (default: basename of $PWD)
+
+set -euo pipefail
+
+ORCH_URL="${KF_ORCH_URL:-http://localhost:4001}"
+DEFAULT_HOLDER="${KF_LOCK_HOLDER:-$(basename "$PWD")}"
+DEFAULT_TTL=120
+DEFAULT_TIMEOUT=0
+STALE_THRESHOLD=240  # 2x default TTL — auto-clean mkdir locks older than this
+
+# --- Mode detection ---
+
+is_orch_running() {
+  curl -sf "$ORCH_URL/health" -o /dev/null 2>/dev/null
+}
+
+get_lock_dir() {
+  local common_dir
+  common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || common_dir=$(git rev-parse --git-dir 2>/dev/null)
+  echo "${common_dir}/merge.lock"
+}
+
+# --- HTTP mode helpers ---
+
+http_acquire() {
+  local holder="$1" ttl="$2" timeout="$3"
+  local max_time=$((timeout + 10))
+  [ "$timeout" -eq 0 ] && max_time=10
+
+  local response http_code
+  response=$(curl -sf -w "\n%{http_code}" -X POST "$ORCH_URL/api/locks/merge/acquire" \
+    -H "Content-Type: application/json" \
+    -d "{\"holder\": \"$holder\", \"ttl_seconds\": $ttl, \"timeout_seconds\": $timeout}" \
+    --max-time "$max_time" 2>/dev/null) || { echo "ERROR: Failed to connect to orchestrator at $ORCH_URL" >&2; return 1; }
+
+  http_code=$(echo "$response" | tail -1)
+  if [ "$http_code" = "200" ]; then
+    echo "Merge lock acquired (HTTP mode)"
+    return 0
+  else
+    local body
+    body=$(echo "$response" | sed '$d')
+    local current_holder
+    current_holder=$(echo "$body" | grep -o '"current_holder":"[^"]*"' | head -1 | sed 's/"current_holder":"\(.*\)"/\1/' 2>/dev/null || echo "unknown")
+    echo "MERGE LOCK HELD by $current_holder" >&2
+    return 1
+  fi
+}
+
+http_release() {
+  local holder="$1"
+  curl -sf -X DELETE "$ORCH_URL/api/locks/merge" \
+    -H "Content-Type: application/json" \
+    -d "{\"holder\": \"$holder\"}" -o /dev/null 2>/dev/null || true
+  echo "Lock released (HTTP mode)"
+}
+
+http_heartbeat() {
+  local holder="$1" ttl="$2"
+  curl -sf -X POST "$ORCH_URL/api/locks/merge/heartbeat" \
+    -H "Content-Type: application/json" \
+    -d "{\"holder\": \"$holder\", \"ttl_seconds\": $ttl}" -o /dev/null 2>/dev/null || {
+    echo "WARNING: Heartbeat failed" >&2
+    return 1
+  }
+}
+
+http_status() {
+  local response
+  response=$(curl -sf "$ORCH_URL/api/locks" 2>/dev/null) || {
+    echo "Mode:   HTTP (orchestrator unreachable)"
+    return 1
+  }
+
+  local count
+  count=$(echo "$response" | grep -o '"scope"' | wc -l | tr -d ' ' || true)
+  if [ "$count" -eq 0 ] || [ -z "$count" ]; then
+    echo "Mode:   HTTP"
+    echo "Status: No active locks"
+    return 0
+  fi
+
+  echo "Mode:   HTTP"
+  echo "Locks:  $count active"
+  echo ""
+  # Parse each lock — look for merge scope specifically
+  local merge_holder merge_expires
+  merge_holder=$(echo "$response" | grep -o '"holder":"[^"]*"' | head -1 | sed 's/"holder":"\(.*\)"/\1/' || true)
+  merge_expires=$(echo "$response" | grep -o '"expires_at":"[^"]*"' | head -1 | sed 's/"expires_at":"\(.*\)"/\1/' || true)
+  if [ -n "$merge_holder" ]; then
+    echo "  Scope:   merge"
+    echo "  Holder:  $merge_holder"
+    echo "  Expires: $merge_expires"
+  fi
+}
+
+# --- mkdir mode helpers ---
+
+mkdir_acquire() {
+  local holder="$1" timeout="$2"
+  local lock_dir
+  lock_dir=$(get_lock_dir)
+
+  if mkdir "$lock_dir" 2>/dev/null; then
+    echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+    echo "Merge lock acquired (mkdir mode)"
+    return 0
+  fi
+
+  # Lock exists — check for stale lock
+  if _mkdir_check_stale "$lock_dir"; then
+    # Stale lock was cleaned — retry
+    if mkdir "$lock_dir" 2>/dev/null; then
+      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      echo "Merge lock acquired (mkdir mode, stale lock cleaned)"
+      return 0
+    fi
+  fi
+
+  # Lock is held — poll if timeout > 0
+  if [ "$timeout" -eq 0 ]; then
+    local info
+    info=$(cat "$lock_dir/info" 2>/dev/null || echo "unknown")
+    echo "MERGE LOCK HELD — $info" >&2
+    return 1
+  fi
+
+  # Polling loop
+  local elapsed=0
+  local interval=10
+  while [ "$elapsed" -lt "$timeout" ]; do
+    echo "MERGE LOCK HELD — waiting... (${elapsed}s/${timeout}s)" >&2
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+
+    # Check stale again
+    _mkdir_check_stale "$lock_dir"
+
+    if mkdir "$lock_dir" 2>/dev/null; then
+      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+      echo "Merge lock acquired (mkdir mode) after ${elapsed}s"
+      return 0
+    fi
+  done
+
+  echo "MERGE LOCK TIMEOUT — could not acquire after ${timeout}s" >&2
+  return 1
+}
+
+_mkdir_check_stale() {
+  local lock_dir="$1"
+  local info_file="$lock_dir/info"
+
+  [ ! -f "$info_file" ] && return 1
+
+  local info
+  info=$(cat "$info_file" 2>/dev/null) || return 1
+
+  # Parse: PID TIMESTAMP HOLDER
+  local lock_pid lock_timestamp lock_holder
+  lock_pid=$(echo "$info" | awk '{print $1}')
+  lock_timestamp=$(echo "$info" | awk '{print $2}')
+  lock_holder=$(echo "$info" | awk '{print $3}')
+
+  # Validate PID is numeric
+  case "$lock_pid" in
+    ''|*[!0-9]*) return 1 ;;  # Not a PID — can't check, don't clean
+  esac
+
+  # Check if PID is alive
+  if kill -0 "$lock_pid" 2>/dev/null; then
+    return 1  # Process alive — lock is valid
+  fi
+
+  # PID is dead — check age threshold
+  local lock_epoch now_epoch
+  if command -v gdate &>/dev/null; then
+    lock_epoch=$(gdate -d "$lock_timestamp" +%s 2>/dev/null) || return 1
+    now_epoch=$(gdate +%s)
+  elif date -d "2020-01-01" +%s &>/dev/null 2>&1; then
+    lock_epoch=$(date -d "$lock_timestamp" +%s 2>/dev/null) || return 1
+    now_epoch=$(date +%s)
+  else
+    # macOS date — parse ISO timestamp manually
+    lock_epoch=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$lock_timestamp" +%s 2>/dev/null) || return 1
+    now_epoch=$(date +%s)
+  fi
+
+  local age=$((now_epoch - lock_epoch))
+
+  if [ "$age" -ge "$STALE_THRESHOLD" ]; then
+    echo "Auto-cleaning stale lock: holder=$lock_holder pid=$lock_pid age=${age}s (dead process)" >&2
+    rm -rf "$lock_dir"
+    return 0  # Stale lock cleaned
+  fi
+
+  # PID dead but lock is recent — don't auto-clean (might be a race)
+  echo "WARNING: Lock holder PID $lock_pid is dead (age=${age}s < ${STALE_THRESHOLD}s threshold) — not auto-cleaning" >&2
+  return 1
+}
+
+mkdir_release() {
+  local lock_dir
+  lock_dir=$(get_lock_dir)
+  rm -rf "$lock_dir"
+  echo "Lock released (mkdir mode)"
+}
+
+mkdir_status() {
+  local lock_dir
+  lock_dir=$(get_lock_dir)
+
+  echo "Mode:   mkdir (fallback)"
+
+  if [ ! -d "$lock_dir" ]; then
+    echo "Status: No active lock"
+    return 0
+  fi
+
+  local info
+  info=$(cat "$lock_dir/info" 2>/dev/null || echo "unknown")
+
+  local lock_pid lock_timestamp lock_holder
+  lock_pid=$(echo "$info" | awk '{print $1}')
+  lock_timestamp=$(echo "$info" | awk '{print $2}')
+  lock_holder=$(echo "$info" | awk '{print $3}')
+
+  echo "Status: LOCKED"
+  echo ""
+  echo "  Holder:    $lock_holder"
+  echo "  PID:       $lock_pid"
+  echo "  Acquired:  $lock_timestamp"
+
+  # Check PID liveness
+  case "$lock_pid" in
+    ''|*[!0-9]*) echo "  PID alive: unknown (not a valid PID)" ;;
+    *)
+      if kill -0 "$lock_pid" 2>/dev/null; then
+        echo "  PID alive: yes"
+      else
+        echo "  PID alive: NO — process is dead (lock may be stale)"
+      fi
+      ;;
+  esac
+}
+
+# --- Main command dispatch ---
+
+cmd_acquire() {
+  local holder="$DEFAULT_HOLDER" ttl="$DEFAULT_TTL" timeout="$DEFAULT_TIMEOUT"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --holder)  holder="$2"; shift 2 ;;
+      --ttl)     ttl="$2"; shift 2 ;;
+      --timeout) timeout="$2"; shift 2 ;;
+      *) echo "Unknown option: $1" >&2; return 1 ;;
+    esac
+  done
+
+  if is_orch_running; then
+    http_acquire "$holder" "$ttl" "$timeout"
+  else
+    mkdir_acquire "$holder" "$timeout"
+  fi
+}
+
+cmd_release() {
+  local holder="$DEFAULT_HOLDER"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --holder) holder="$2"; shift 2 ;;
+      *) echo "Unknown option: $1" >&2; return 1 ;;
+    esac
+  done
+
+  if is_orch_running; then
+    http_release "$holder"
+  else
+    mkdir_release
+  fi
+}
+
+cmd_heartbeat() {
+  local holder="$DEFAULT_HOLDER" ttl="$DEFAULT_TTL"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --holder) holder="$2"; shift 2 ;;
+      --ttl)    ttl="$2"; shift 2 ;;
+      *) echo "Unknown option: $1" >&2; return 1 ;;
+    esac
+  done
+
+  if is_orch_running; then
+    http_heartbeat "$holder" "$ttl"
+  else
+    # mkdir has no heartbeat — just update the info file timestamp
+    local lock_dir
+    lock_dir=$(get_lock_dir)
+    if [ -d "$lock_dir" ]; then
+      echo "$$ $(date -u +%Y-%m-%dT%H:%M:%SZ) $holder" > "$lock_dir/info" 2>/dev/null
+    fi
+  fi
+}
+
+cmd_status() {
+  echo "==============================================="
+  echo "           MERGE LOCK STATUS"
+  echo "==============================================="
+  echo ""
+
+  if is_orch_running; then
+    http_status
+  else
+    mkdir_status
+  fi
+
+  echo ""
+  echo "==============================================="
+}
+
+cmd_help() {
+  cat <<'HELP'
+kf-merge-lock — Cross-worktree merge lock helper
+
+USAGE:
+  kf-merge-lock acquire [--holder NAME] [--timeout SECONDS] [--ttl SECONDS]
+  kf-merge-lock release [--holder NAME]
+  kf-merge-lock heartbeat [--holder NAME] [--ttl SECONDS]
+  kf-merge-lock status
+  kf-merge-lock help
+
+OPTIONS:
+  --holder NAME     Lock holder identity (default: basename of $PWD)
+  --timeout SECONDS Acquire timeout: 0=non-blocking, >0=poll/wait (default: 0)
+  --ttl SECONDS     Lock TTL in seconds (default: 120)
+
+MODES:
+  HTTP   — Preferred when orchestrator is running ($KF_ORCH_URL/health responds)
+           Uses TTL, heartbeat, server-side long-poll.
+  mkdir  — Fallback when orchestrator unavailable.
+           Uses PID + timestamp for stale detection. Auto-cleans dead-PID locks
+           older than 240s.
+
+ENVIRONMENT:
+  KF_ORCH_URL      Orchestrator URL (default: http://localhost:4001)
+  KF_LOCK_HOLDER   Default holder name (default: basename of $PWD)
+
+EXAMPLES:
+  kf-merge-lock acquire --holder developer-1 --timeout 300
+  kf-merge-lock heartbeat --holder developer-1
+  kf-merge-lock status
+  kf-merge-lock release --holder developer-1
+HELP
+}
+
+# --- Entry point ---
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  acquire)   cmd_acquire "$@" ;;
+  release)   cmd_release "$@" ;;
+  heartbeat) cmd_heartbeat "$@" ;;
+  status)    cmd_status "$@" ;;
+  help|--help|-h) cmd_help ;;
+  *) echo "Unknown command: $cmd" >&2; cmd_help >&2; exit 1 ;;
+esac
