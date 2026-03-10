@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+tour-settings-menu_20260310041000Z/tour-visual-contrast_20260310050000Z: {"risk":"low","note":"Both touch TourOverlay.module.css but different selectors","added":"2026-03-10"}

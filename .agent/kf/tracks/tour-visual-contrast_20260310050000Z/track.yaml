@@ -1,0 +1,86 @@
+id: tour-visual-contrast_20260310050000Z
+title: "Tour Visual Contrast — Stronger Backdrop, Opaque Tooltip, Spotlight Glow"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Improve tour visual contrast by darkening the backdrop overlay, making the tooltip
+    background fully opaque, and adding a subtle glow around spotlighted elements.
+  context: |
+    The guided tour overlay lacks visual contrast. The backdrop is too transparent
+    (rgba 0.55 opacity) so background content bleeds through and competes with the
+    tooltip text. The tooltip itself uses var(--surface) which may be semi-transparent,
+    causing text to blend with what's behind it. The spotlighted element doesn't stand
+    out enough — there's no visual emphasis beyond the cutout in the backdrop.
+
+    Users need the tour to clearly direct their attention: the spotlight target should
+    pop, the tooltip should be crisp and readable, and the backdrop should suppress
+    the rest of the UI enough to avoid distraction.
+  codebase_analysis: |
+    All changes are in TourOverlay.module.css (frontend/src/components/tour/):
+
+    Current values:
+    - .backdrop: background rgba(0, 0, 0, 0.55) — too transparent
+    - .spotlight: box-shadow 0 0 0 9999px rgba(0, 0, 0, 0.55) — matches backdrop
+    - .tooltip: background var(--surface), border 1px solid var(--accent)
+    - .overlay (welcome): background rgba(0, 0, 0, 0.7) — slightly darker than steps
+
+    Design tokens used: --surface, --accent, --border, --text, --text-dim, --radius.
+    --surface is typically rgba(26, 27, 30, 0.95) or similar — nearly opaque but not fully.
+
+    No changes needed to TourOverlay.tsx — this is purely CSS.
+
+    Conflict note: tour-settings-menu_20260310041000Z also touches TourOverlay files
+    (removing TourComplete component and its CSS). The CSS changes in this track
+    (.backdrop, .spotlight, .tooltip) are in different selectors than what that track
+    removes (.completeBanner, .restartLink), so merge conflicts are unlikely but possible
+    if both tracks edit the same file concurrently.
+  acceptance_criteria:
+    - Backdrop is darker (opacity ~0.75-0.8) so background content is suppressed
+    - Tooltip background is fully opaque (solid color, not var(--surface) transparency)
+    - Tooltip text is crisp and readable against the backdrop without any bleed-through
+    - Spotlighted elements have a subtle glow or accent ring to draw attention
+    - Welcome dialog overlay matches the darker backdrop treatment
+    - Visual changes do not break spotlight positioning or tooltip placement
+    - E2E screenshot comparison or visual verification confirms improvement
+  out_of_scope: |
+    - Changing tour step content or sequence
+    - Tooltip positioning logic changes
+    - Animation or transition changes
+    - Settings menu (separate track)
+  technical_notes: |
+    CSS-only changes in TourOverlay.module.css:
+
+    1. Darken backdrop: change .backdrop background from rgba(0,0,0,0.55) to ~0.75
+    2. Match spotlight box-shadow to new backdrop opacity
+    3. Make tooltip opaque: replace var(--surface) with a solid color like #1a1b1e
+       (the resolved value of --surface without alpha). Add a slightly stronger
+       box-shadow for depth.
+    4. Add spotlight glow: add a box-shadow or outline to .spotlight with accent
+       color glow, e.g. 0 0 12px 2px rgba(accent-color, 0.4), plus a visible
+       border ring around the spotlight cutout.
+    5. Darken welcome overlay to match: update .overlay background to ~0.8.
+plan:
+  - phase: "Core CSS Changes"
+    tasks:
+      - text: "Increase .backdrop and .spotlight box-shadow opacity from 0.55 to ~0.75"
+        done: false
+      - text: "Make .tooltip background a solid opaque color (#1a1b1e or equivalent) instead of var(--surface)"
+        done: false
+      - text: "Add accent glow to .spotlight (e.g. box-shadow with accent color, subtle border-ring)"
+        done: false
+      - text: "Increase .overlay (welcome dialog) background opacity to ~0.8 for consistency"
+        done: false
+      - text: "Increase tooltip box-shadow depth for better visual separation from backdrop"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Visual verification: step through all 7 tour steps, confirm readability and contrast at each"
+        done: false
+      - text: "Verify spotlight glow doesn't interfere with click targets or spotlight positioning"
+        done: false
+      - text: "E2E test: tour flow still works end-to-end with updated styling"
+        done: false
+extra: {}
