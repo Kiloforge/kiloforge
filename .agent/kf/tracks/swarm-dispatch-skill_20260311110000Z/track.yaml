@@ -72,7 +72,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify the skill file is discovered by the embed glob (check backend builds with make build)
-        done: false
+        done: true
       - text: Install skill to ~/.claude/skills/ and test invocation with /kf-dispatch
-        done: false
+        done: true
 extra: {}

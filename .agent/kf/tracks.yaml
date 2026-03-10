@@ -220,7 +220,7 @@ ssh-key-selection_20260309100000Z: {"title":"Interactive SSH Key Selection for A
 status-enrich_20260311000000Z: {"title":"Enrich kf-track status with deps, conflicts, and claimed/available info","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 swarm-capacity-be_20260311000000Z: {"title":"Global agent swarm capacity — unified concurrency limit and API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 swarm-capacity-fe_20260311000001Z: {"title":"Agent swarm UI — rename queue panel, capacity gating, and waiting state","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-swarm-dispatch-skill_20260311110000Z: {"title":"Add kf-dispatch skill — AI swarm dispatcher for worker assignment","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+swarm-dispatch-skill_20260311110000Z: {"title":"Add kf-dispatch skill — AI swarm dispatcher for worker assignment","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
