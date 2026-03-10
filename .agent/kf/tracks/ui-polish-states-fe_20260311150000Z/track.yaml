@@ -1,9 +1,9 @@
 id: ui-polish-states-fe_20260311150000Z
-title: "UI polish — loading spinners, empty states, and styled confirmation dialogs"
+title: UI polish — loading spinners, empty states, and styled confirmation dialogs
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Replace all bare "Loading..." text with the LoadingFallback spinner, improve empty
@@ -22,16 +22,16 @@ spec:
     - frontend/src/components/SwarmPanel.tsx line 33 — "Loading swarm..." text
     - frontend/src/pages/OverviewPage.tsx lines 219, 249 — "Loading agents/projects..." text
     - frontend/src/pages/ProjectPage.tsx line 337 — "Loading board..." text
-
+    
     Empty state improvements needed:
     - frontend/src/components/AgentGrid.tsx line 33 — "No agents running" (no guidance)
     - frontend/src/components/TrackList.tsx line 23 — "No tracks found" (no guidance)
-
+    
     window.confirm() replacements:
     - frontend/src/components/AgentCard.tsx line 105 — agent delete
     - frontend/src/pages/AgentDetailPage.tsx line 162 — agent delete
     - frontend/src/pages/AgentHistoryPage.tsx line 143 — agent delete
-
+    
     Pattern to follow: RemoveProjectDialog.tsx (lines 19-58) — styled modal with
     overlay, cancel/confirm buttons, and descriptive text.
   acceptance_criteria:
@@ -51,34 +51,34 @@ spec:
     3. Enhance empty states with descriptive text and optional action buttons
     4. Replace window.confirm() calls with ConfirmDialog state management
 plan:
-  - phase: "Foundation"
+  - phase: Foundation
     tasks:
       - text: Create reusable ConfirmDialog component with title, message, confirmLabel, onConfirm, onCancel props — follow RemoveProjectDialog pattern
-        done: false
+        done: true
       - text: Create InlineSpinner component — smaller 16px variant of LoadingFallback for use within sections
-        done: false
-  - phase: "Loading States"
+        done: true
+  - phase: Loading States
     tasks:
       - text: Replace "Loading..." text in PaginatedList, LogViewer, SwarmPanel, and OverviewPage with InlineSpinner
-        done: false
+        done: true
       - text: Replace "Loading agent..." in AgentDetailPage and "Loading board..." in ProjectPage with InlineSpinner
-        done: false
-  - phase: "Empty States"
+        done: true
+  - phase: Empty States
     tasks:
       - text: Improve AgentGrid empty state — add descriptive message and "New Agent" action hint
-        done: false
+        done: true
       - text: Improve TrackList empty state — add descriptive message with guidance
-        done: false
-  - phase: "Confirmation Dialogs"
+        done: true
+  - phase: Confirmation Dialogs
     tasks:
       - text: Replace window.confirm() in AgentCard.tsx with ConfirmDialog for agent deletion
-        done: false
+        done: true
       - text: Replace window.confirm() in AgentDetailPage.tsx and AgentHistoryPage.tsx with ConfirmDialog
-        done: false
-  - phase: "Verification"
+        done: true
+  - phase: Verification
     tasks:
       - text: Run npm test — all tests pass
-        done: false
+        done: true
       - text: Run make build — full stack build passes
-        done: false
+        done: true
 extra: {}
