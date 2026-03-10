@@ -1,9 +1,9 @@
 id: site-update-cli-and-screenshots_20260311220000Z
-title: "Update site: remove kf init, replace outdated screenshots"
+title: Update site: remove kf init, replace outdated screenshots
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Update the kiloforge_site "How it Works" section to show kf up / kf down
@@ -17,7 +17,7 @@ spec:
     Docker/Gitea support was dropped.
   codebase_analysis: |
     Site location: ../../kiloforge_site (Next.js 16, static export)
-
+    
     Files to modify:
     - kiloforge_site/src/app/page.tsx (line ~367)
       - "How it Works" Step 1 says: "Start the Cortex control plane on your
@@ -27,7 +27,7 @@ spec:
     - kiloforge_site/public/features/overview.png — shows Gitea in nav
     - kiloforge_site/public/features/kanban-board.png — shows Gitea in nav
     - kiloforge_site/public/features/swarm-capacity.png — shows Gitea in nav
-
+    
     The features page (src/app/features/page.tsx) references these 3 images.
     No code changes needed there — just replace the PNGs.
   acceptance_criteria:
@@ -52,20 +52,20 @@ spec:
 plan:
   - phase: Text Updates
     tasks:
-      - text: "Update page.tsx 'How it Works' Step 1 — replace 'kf init / kf up on subsequent runs' with 'kf up to start / kf down to stop'"
-        done: false
-      - text: "Grep entire site for any other references to 'kf init' or 'init' command and update"
-        done: false
+      - text: Update page.tsx 'How it Works' Step 1 — replace 'kf init / kf up on subsequent runs' with 'kf up to start / kf down to stop'
+        done: true
+      - text: Grep entire site for any other references to 'kf init' or 'init' command and update
+        done: true
   - phase: Screenshot Replacement
     tasks:
-      - text: "Capture fresh overview.png from running instance (agents grid + gauge cards, no Gitea in nav)"
-        done: false
-      - text: "Capture fresh kanban-board.png (board with cards in multiple columns, dependency lines visible)"
-        done: false
-      - text: "Capture fresh swarm-capacity.png (project page with agent swarm section)"
-        done: false
+      - text: Capture fresh overview.png from running instance (agents grid + gauge cards, no Gitea in nav)
+        done: true
+      - text: Capture fresh kanban-board.png (board with cards in multiple columns, dependency lines visible)
+        done: true
+      - text: Capture fresh swarm-capacity.png (project page with agent swarm section)
+        done: true
   - phase: Verification
     tasks:
-      - text: "Run npm run build in kiloforge_site — verify static export succeeds"
-        done: false
+      - text: Run npm run build in kiloforge_site — verify static export succeeds
+        done: true
 extra: {}

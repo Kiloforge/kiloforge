@@ -221,15 +221,15 @@ remove-password-persistence_20260308210000Z: {"title":"Remove Password from Conf
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 replace-tracing-be_20260310144200Z: {"title":"Add reliability events and trace spans for agent replacement lifecycle","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 report-merge-protocol_20260311190000Z: {"title":"Add serial merge protocol to kf-report skill","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-responsive-kanban-fe_20260311220002Z: {"title":"Mobile-friendly kanban board with column tabs","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
-responsive-nav-fe_20260311220000Z: {"title":"Responsive header navigation with hamburger menu","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
-responsive-tables-fe_20260311220001Z: {"title":"Responsive tables and fixed-width layouts","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-10"}
 research-cc-quota-monitoring_20260307150000Z: {"title":"Research: Claude Code Quota Monitoring and Graceful Degradation","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-docker-compose-init_20260307120000Z: {"title":"Research: Docker Compose for Init with v1/v2 CLI Compatibility","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-global-gitea-multiproject_20260307120001Z: {"title":"Research: Global Gitea Server for Multi-Project Coordination","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-graceful-shutdown-recovery_20260307150001Z: {"title":"Research: Graceful Agent Shutdown, Session Persistence, and Recovery","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 research-native-track-board_20260308235000Z: {"title":"Research: Native Track Board in Kiloforge Dashboard","status":"archived","type":"research","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 research-otel-task-tracing_20260308233000Z: {"title":"Research: OpenTelemetry for Task-Level Tracing and Token Metrics","status":"archived","type":"research","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
+responsive-kanban-fe_20260311220002Z: {"title":"Mobile-friendly kanban board with column tabs","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
+responsive-nav-fe_20260311220000Z: {"title":"Responsive header navigation with hamburger menu","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
+responsive-tables-fe_20260311220001Z: {"title":"Responsive tables and fixed-width layouts","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-10"}
 review-cycle-relay_20260307125002Z: {"title":"Developer-Reviewer Relay Cycle","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 schema-first-guidance_20260308200002Z: {"title":"Schema-First API Development Guidance and Standards","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 sdk-agent-migration-be_20260310014147Z: {"title":"Migrate Agent Spawner to Claude Agent SDK (Backend)","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -240,6 +240,7 @@ setup-prereq-be_20260310004000Z: {"title":"Setup Prerequisite Check Before Agent
 setup-prereq-fe_20260310004001Z: {"title":"Setup Prerequisite Check — Dashboard UI (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 site-launch-install-guide_20260311170000Z: {"title":"Launch site — replace Coming Soon with platform-aware install guide","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 site-rebrand_20260311100000Z: {"title":"Kiloforge site overhaul — rebrand to Cortex/Command Deck, strip Gitea, update messaging","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+site-update-cli-and-screenshots_20260311220000Z: {"title":"Update site: remove kf init, replace outdated screenshots","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 skill-install-update_20260308231000Z: {"title":"Conductor Skill Installation and Auto-Update","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 skill-preflight-check_20260309170000Z: {"title":"Pre-flight Skill Validation Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 skill-ref-migration_20260309173002Z: {"title":"Migrate All Skill References from conductor-* to kf-*","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

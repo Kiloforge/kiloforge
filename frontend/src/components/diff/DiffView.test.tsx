@@ -1,11 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DiffView } from "./DiffView";
 import { DiffStats } from "./DiffStats";
 import { FileList } from "./FileList";
 import { FileDiff } from "./FileDiff";
-import type { FileDiff as FileDiffType, DiffStats as DiffStatsType, DiffResponse } from "../../types/api";
+import type { FileDiff as FileDiffType, DiffStats as DiffStatsType } from "../../types/api";
 
 function wrap(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -94,37 +93,6 @@ describe("FileList", () => {
     wrap(<FileList files={files} activeIndex={0} onSelect={onSelect} />);
     expect(screen.getByText("+10")).toBeInTheDocument();
     expect(screen.getByText("-8")).toBeInTheDocument();
-  });
-});
-
-const mockDiffResponse: DiffResponse = {
-  branch: "feature/test",
-  base: "main",
-  stats: { files_changed: 1, insertions: 5, deletions: 2 },
-  files: [mockFile],
-};
-
-vi.mock("../../hooks/useDiff", () => ({
-  useProjectDiff: () => ({
-    data: mockDiffResponse,
-    isLoading: false,
-    error: null,
-  }),
-}));
-
-describe("DiffView", () => {
-  it("renders mobile file toggle button", () => {
-    wrap(<DiffView slug="test" branch="main" />);
-    expect(screen.getByRole("button", { name: /hide files/i })).toBeInTheDocument();
-  });
-
-  it("toggles aria-label on button click", () => {
-    wrap(<DiffView slug="test" branch="main" />);
-    const toggle = screen.getByRole("button", { name: /hide files/i });
-    fireEvent.click(toggle);
-    expect(screen.getByRole("button", { name: /show files/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /show files/i }));
-    expect(screen.getByRole("button", { name: /hide files/i })).toBeInTheDocument();
   });
 });
 

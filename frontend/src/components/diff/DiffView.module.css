@@ -70,47 +70,6 @@
   white-space: nowrap;
 }
 
-.sidebarToggle {
-  display: none;
-}
-
 .discussBtn:hover {
   background: rgba(52, 211, 153, 0.12);
-}
-
-@media (max-width: 767px) {
-  .sidebarToggle {
-    display: block;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--accent);
-    font-size: 12px;
-    padding: 4px 10px;
-    cursor: pointer;
-    align-self: flex-start;
-  }
-
-  .sidebar {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100dvh;
-    max-height: 100dvh;
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-    z-index: 50;
-    padding: 12px;
-    overflow-y: auto;
-  }
-
-  .sidebarOpen {
-    display: block;
-  }
-
-  .layout {
-    flex-direction: column;
-  }
 }

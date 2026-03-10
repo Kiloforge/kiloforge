@@ -240,37 +240,3 @@
   color: var(--bg);
   opacity: 0.9;
 }
-
-@media (max-width: 639px) {
-  .projectHeader {
-    display: none;
-  }
-
-  .projectRow {
-    flex-wrap: wrap;
-    padding: 10px 0;
-    gap: 4px;
-  }
-
-  .projectLink {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .projectSlug {
-    min-width: unset;
-    width: 100%;
-  }
-
-  .projectRemote {
-    width: 100%;
-    font-size: 11px;
-  }
-
-  .trackCounts {
-    min-width: unset;
-    text-align: left;
-    font-size: 11px;
-    width: 100%;
-  }
-}
