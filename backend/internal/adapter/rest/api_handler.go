@@ -237,11 +237,15 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
-	return gen.GetConfig200JSONResponse{
+	resp := gen.GetConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
 		AnalyticsEnabled: &analyticsEnabled,
-	}, nil
+	}
+	if h.cfg.BudgetUSD > 0 {
+		resp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
+	}
+	return resp, nil
 }
 
 // UpdateConfig implements gen.StrictServerInterface.
@@ -264,6 +268,9 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		v := *req.Body.AnalyticsEnabled
 		h.cfg.AnalyticsEnabled = &v
 	}
+	if req.Body.BudgetUsd != nil {
+		h.cfg.BudgetUSD = *req.Body.BudgetUsd
+	}
 
 	if err := h.cfg.Save(); err != nil {
 		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
@@ -275,11 +282,15 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
-	return gen.UpdateConfig200JSONResponse{
+	updateResp := gen.UpdateConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
 		AgentMaxDuration: agentMaxDur,
 		AnalyticsEnabled: &analyticsEnabled,
-	}, nil
+	}
+	if h.cfg.BudgetUSD > 0 {
+		updateResp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
+	}
+	return updateResp, nil
 }
 
 // GetAgentPermissionsConsent implements gen.StrictServerInterface.
@@ -678,6 +689,30 @@ func (h *APIHandler) GetQuota(_ context.Context, _ gen.GetQuotaRequestObject) (g
 	}
 	if h.quota.IsRateLimited() {
 		resp.RetryAfterSeconds = intPtr(int(h.quota.RetryAfter().Seconds()))
+	}
+
+	// Rate metrics.
+	tokPerMin := h.quota.TokensPerMin(5 * time.Minute)
+	costPerHour := h.quota.CostPerHour(30 * time.Minute)
+	if tokPerMin > 0 {
+		resp.RateTokensPerMin = float64Ptr(tokPerMin)
+	}
+	if costPerHour > 0 {
+		resp.RateCostPerHour = float64Ptr(costPerHour)
+	}
+
+	// Budget fields.
+	if h.cfg != nil && h.cfg.BudgetUSD > 0 {
+		resp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
+		pct := (total.TotalCostUSD / h.cfg.BudgetUSD) * 100
+		resp.BudgetUsedPct = float64Ptr(pct)
+		if costPerHour > 0 {
+			remaining := h.cfg.BudgetUSD - total.TotalCostUSD
+			if remaining > 0 {
+				timeToBudget := (remaining / costPerHour) * 60
+				resp.TimeToBudgetMins = float64Ptr(timeToBudget)
+			}
+		}
 	}
 
 	// Per-agent breakdown.
@@ -2492,8 +2527,9 @@ func (h *APIHandler) toGenQueueStatus(s *service.QueueStatus) gen.QueueStatus {
 	}
 }
 
-func intPtr(v int) *int       { return &v }
-func strPtr(v string) *string { return &v }
+func intPtr(v int) *int             { return &v }
+func strPtr(v string) *string       { return &v }
+func float64Ptr(v float64) *float64 { return &v }
 
 // extractPageOpts builds domain.PageOpts from optional query params.
 func extractPageOpts(limit *int, cursor *string) domain.PageOpts {

@@ -1801,6 +1801,10 @@ components:
         agent_max_duration:
           type: string
           description: "Max duration for non-interactive agents (Go duration string, e.g. \"2h\", \"30m\"). Empty or \"0s\" disables timeout."
+        budget_usd:
+          type: number
+          format: double
+          description: "Global budget limit in USD. 0 means unlimited (default)."
 
     UpdateConfigRequest:
       type: object
@@ -1812,6 +1816,10 @@ components:
         agent_max_duration:
           type: string
           description: "Max duration for non-interactive agents (Go duration string, e.g. \"2h\", \"30m\"). \"0s\" disables timeout."
+        budget_usd:
+          type: number
+          format: double
+          description: "Global budget limit in USD. 0 means unlimited."
 
     PreflightResponse:
       type: object
@@ -2048,6 +2056,26 @@ components:
           description: Informational — API-equivalent cost estimate
         agent_count:
           type: integer
+        budget_usd:
+          type: number
+          format: double
+          description: Configured budget limit in USD. 0 means unlimited.
+        budget_used_pct:
+          type: number
+          format: double
+          description: Percentage of budget consumed (0-100). Omitted when budget is 0.
+        rate_tokens_per_min:
+          type: number
+          format: double
+          description: Average tokens (input+output) per minute over a 5-minute sliding window.
+        rate_cost_per_hour:
+          type: number
+          format: double
+          description: Average cost per hour over a 30-minute sliding window.
+        time_to_budget_mins:
+          type: number
+          format: double
+          description: Estimated minutes until budget is exhausted at current rate. Omitted when budget is 0 or rate is 0.
         agents:
           type: array
           items:

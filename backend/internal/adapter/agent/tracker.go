@@ -9,7 +9,19 @@ import (
 	"time"
 )
 
-const quotaFile = "quota-usage.json"
+const (
+	quotaFile = "quota-usage.json"
+	// maxRateSnapshots is the maximum number of rate snapshots retained (1 per event, ~1 hour of data).
+	maxRateSnapshots = 60
+)
+
+// RateSnapshot captures a point-in-time measurement for rate computation.
+type RateSnapshot struct {
+	Timestamp    time.Time `json:"timestamp"`
+	CostUSD      float64   `json:"cost_usd"`
+	InputTokens  int       `json:"input_tokens"`
+	OutputTokens int       `json:"output_tokens"`
+}
 
 // AgentUsage holds cumulative usage for a single agent.
 type AgentUsage struct {
@@ -43,6 +55,7 @@ type quotaSnapshot struct {
 type QuotaTracker struct {
 	mu             sync.RWMutex
 	agents         map[string]*AgentUsage
+	rateSnapshots  []RateSnapshot
 	rateLimitUntil time.Time
 	dataDir        string
 }
@@ -88,6 +101,20 @@ func (t *QuotaTracker) RecordEvent(agentID string, event StreamEvent) {
 		usage.OutputTokens += event.Usage.OutputTokens
 		usage.CacheReadTokens += event.Usage.CacheReadTokens
 		usage.CacheCreationTokens += event.Usage.CacheCreationTokens
+	}
+
+	// Append rate snapshot for rate-of-consumption tracking.
+	snap := RateSnapshot{
+		Timestamp: time.Now(),
+		CostUSD:   event.CostUSD,
+	}
+	if event.Usage != nil {
+		snap.InputTokens = event.Usage.InputTokens
+		snap.OutputTokens = event.Usage.OutputTokens
+	}
+	t.rateSnapshots = append(t.rateSnapshots, snap)
+	if len(t.rateSnapshots) > maxRateSnapshots {
+		t.rateSnapshots = t.rateSnapshots[len(t.rateSnapshots)-maxRateSnapshots:]
 	}
 }
 
@@ -143,11 +170,58 @@ func (t *QuotaTracker) RetryAfter() time.Duration {
 	return remaining
 }
 
-// TokensPerMin returns the token rate over the given window. Stub implementation.
-func (t *QuotaTracker) TokensPerMin(_ time.Duration) float64 { return 0 }
+// TokensPerMin returns the average tokens (input+output) per minute over the given window.
+// Returns 0 if there are fewer than 2 snapshots in the window.
+func (t *QuotaTracker) TokensPerMin(window time.Duration) float64 {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.rateOverWindow(window, func(s RateSnapshot) float64 {
+		return float64(s.InputTokens + s.OutputTokens)
+	})
+}
 
-// CostPerHour returns the cost rate over the given window. Stub implementation.
-func (t *QuotaTracker) CostPerHour(_ time.Duration) float64 { return 0 }
+// CostPerHour returns the average cost per hour over the given window.
+// Returns 0 if there are fewer than 2 snapshots in the window.
+func (t *QuotaTracker) CostPerHour(window time.Duration) float64 {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.rateOverWindow(window, func(s RateSnapshot) float64 {
+		return s.CostUSD
+	}) * 60 // rateOverWindow returns per-minute; multiply for per-hour
+}
+
+// rateOverWindow computes the per-minute rate of a metric over a sliding window.
+// Must be called with t.mu held (at least RLock).
+func (t *QuotaTracker) rateOverWindow(window time.Duration, metric func(RateSnapshot) float64) float64 {
+	if len(t.rateSnapshots) < 2 {
+		return 0
+	}
+	cutoff := time.Now().Add(-window)
+	var total float64
+	var earliest, latest time.Time
+	count := 0
+	for _, s := range t.rateSnapshots {
+		if s.Timestamp.Before(cutoff) {
+			continue
+		}
+		total += metric(s)
+		if count == 0 || s.Timestamp.Before(earliest) {
+			earliest = s.Timestamp
+		}
+		if s.Timestamp.After(latest) {
+			latest = s.Timestamp
+		}
+		count++
+	}
+	if count < 2 {
+		return 0
+	}
+	elapsed := latest.Sub(earliest).Minutes()
+	if elapsed <= 0 {
+		return 0
+	}
+	return total / elapsed
+}
 
 // Save writes the current usage state to disk. No-op if dataDir is empty.
 func (t *QuotaTracker) Save() error {

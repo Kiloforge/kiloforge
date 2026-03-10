@@ -260,7 +260,10 @@ type ConfigResponse struct {
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). Empty or "0s" disables timeout.
 	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled *bool   `json:"analytics_enabled,omitempty"`
-	DashboardEnabled bool    `json:"dashboard_enabled"`
+
+	// BudgetUsd Global budget limit in USD. 0 means unlimited (default).
+	BudgetUsd        *float64 `json:"budget_usd,omitempty"`
+	DashboardEnabled bool     `json:"dashboard_enabled"`
 }
 
 // ConsentState defines model for ConsentState.
@@ -584,17 +587,32 @@ type QuotaAgentUsage struct {
 
 // QuotaInfo defines model for QuotaInfo.
 type QuotaInfo struct {
-	AgentCount          int                `json:"agent_count"`
-	Agents              *[]QuotaAgentUsage `json:"agents,omitempty"`
-	CacheCreationTokens int                `json:"cache_creation_tokens"`
-	CacheReadTokens     int                `json:"cache_read_tokens"`
+	AgentCount int                `json:"agent_count"`
+	Agents     *[]QuotaAgentUsage `json:"agents,omitempty"`
+
+	// BudgetUsd Configured budget limit in USD. 0 means unlimited.
+	BudgetUsd *float64 `json:"budget_usd,omitempty"`
+
+	// BudgetUsedPct Percentage of budget consumed (0-100). Omitted when budget is 0.
+	BudgetUsedPct       *float64 `json:"budget_used_pct,omitempty"`
+	CacheCreationTokens int      `json:"cache_creation_tokens"`
+	CacheReadTokens     int      `json:"cache_read_tokens"`
 
 	// EstimatedCostUsd Informational — API-equivalent cost estimate
-	EstimatedCostUsd  float64 `json:"estimated_cost_usd"`
-	InputTokens       int     `json:"input_tokens"`
-	OutputTokens      int     `json:"output_tokens"`
-	RateLimited       bool    `json:"rate_limited"`
-	RetryAfterSeconds *int    `json:"retry_after_seconds,omitempty"`
+	EstimatedCostUsd float64 `json:"estimated_cost_usd"`
+	InputTokens      int     `json:"input_tokens"`
+	OutputTokens     int     `json:"output_tokens"`
+
+	// RateCostPerHour Average cost per hour over a 30-minute sliding window.
+	RateCostPerHour *float64 `json:"rate_cost_per_hour,omitempty"`
+	RateLimited     bool     `json:"rate_limited"`
+
+	// RateTokensPerMin Average tokens (input+output) per minute over a 5-minute sliding window.
+	RateTokensPerMin  *float64 `json:"rate_tokens_per_min,omitempty"`
+	RetryAfterSeconds *int     `json:"retry_after_seconds,omitempty"`
+
+	// TimeToBudgetMins Estimated minutes until budget is exhausted at current rate. Omitted when budget is 0 or rate is 0.
+	TimeToBudgetMins *float64 `json:"time_to_budget_mins,omitempty"`
 }
 
 // ReliabilityBucket defines model for ReliabilityBucket.
@@ -923,7 +941,10 @@ type UpdateConfigRequest struct {
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). "0s" disables timeout.
 	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled *bool   `json:"analytics_enabled,omitempty"`
-	DashboardEnabled *bool   `json:"dashboard_enabled,omitempty"`
+
+	// BudgetUsd Global budget limit in USD. 0 means unlimited.
+	BudgetUsd        *float64 `json:"budget_usd,omitempty"`
+	DashboardEnabled *bool    `json:"dashboard_enabled,omitempty"`
 }
 
 // UpdateProjectSettingsRequest defines model for UpdateProjectSettingsRequest.

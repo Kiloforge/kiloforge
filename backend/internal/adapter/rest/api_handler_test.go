@@ -59,14 +59,18 @@ func (s *stubAgentLister) FindAgent(id string) (*domain.AgentInfo, error) {
 
 // stubQuotaReader implements QuotaReader for testing.
 type stubQuotaReader struct {
-	total       agent.TotalUsage
-	agentUsage  map[string]*agent.AgentUsage
-	rateLimited bool
+	total        agent.TotalUsage
+	agentUsage   map[string]*agent.AgentUsage
+	rateLimited  bool
+	tokensPerMin float64
+	costPerHour  float64
 }
 
-func (s *stubQuotaReader) GetTotalUsage() agent.TotalUsage { return s.total }
-func (s *stubQuotaReader) IsRateLimited() bool             { return s.rateLimited }
-func (s *stubQuotaReader) RetryAfter() time.Duration       { return 0 }
+func (s *stubQuotaReader) GetTotalUsage() agent.TotalUsage      { return s.total }
+func (s *stubQuotaReader) IsRateLimited() bool                  { return s.rateLimited }
+func (s *stubQuotaReader) RetryAfter() time.Duration            { return 0 }
+func (s *stubQuotaReader) TokensPerMin(_ time.Duration) float64 { return s.tokensPerMin }
+func (s *stubQuotaReader) CostPerHour(_ time.Duration) float64  { return s.costPerHour }
 func (s *stubQuotaReader) GetAgentUsage(id string) *agent.AgentUsage {
 	return s.agentUsage[id]
 }
@@ -367,6 +371,89 @@ func TestGetQuota(t *testing.T) {
 		}
 		if au.CacheReadTokens != 1200 {
 			t.Errorf("agent CacheReadTokens: want 1200, got %d", au.CacheReadTokens)
+		}
+	})
+
+	t.Run("with rate metrics", func(t *testing.T) {
+		quota := &stubQuotaReader{
+			total:        agent.TotalUsage{TotalCostUSD: 2.00, InputTokens: 5000, OutputTokens: 2500, AgentCount: 1},
+			tokensPerMin: 750.0,
+			costPerHour:  1.80,
+		}
+		h := NewAPIHandler(APIHandlerOpts{
+			Agents:  &stubAgentLister{},
+			Quota:   quota,
+			LockMgr: lock.New(""),
+		})
+		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r := resp.(gen.GetQuota200JSONResponse)
+		if r.RateTokensPerMin == nil || *r.RateTokensPerMin != 750.0 {
+			t.Errorf("RateTokensPerMin: want 750, got %v", r.RateTokensPerMin)
+		}
+		if r.RateCostPerHour == nil || *r.RateCostPerHour != 1.80 {
+			t.Errorf("RateCostPerHour: want 1.80, got %v", r.RateCostPerHour)
+		}
+		if r.BudgetUsd != nil {
+			t.Errorf("BudgetUsd should be nil when no budget set")
+		}
+	})
+
+	t.Run("with budget", func(t *testing.T) {
+		quota := &stubQuotaReader{
+			total:       agent.TotalUsage{TotalCostUSD: 5.00, AgentCount: 1},
+			costPerHour: 2.00,
+		}
+		cfg := &config.Config{BudgetUSD: 20.0}
+		h := NewAPIHandler(APIHandlerOpts{
+			Agents:  &stubAgentLister{},
+			Quota:   quota,
+			Cfg:     cfg,
+			LockMgr: lock.New(""),
+		})
+		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r := resp.(gen.GetQuota200JSONResponse)
+		if r.BudgetUsd == nil || *r.BudgetUsd != 20.0 {
+			t.Errorf("BudgetUsd: want 20.0, got %v", r.BudgetUsd)
+		}
+		if r.BudgetUsedPct == nil || *r.BudgetUsedPct != 25.0 {
+			t.Errorf("BudgetUsedPct: want 25.0, got %v", r.BudgetUsedPct)
+		}
+		if r.TimeToBudgetMins == nil || *r.TimeToBudgetMins != 450.0 {
+			t.Errorf("TimeToBudgetMins: want 450.0, got %v", r.TimeToBudgetMins)
+		}
+	})
+
+	t.Run("budget zero omits fields", func(t *testing.T) {
+		quota := &stubQuotaReader{
+			total:       agent.TotalUsage{TotalCostUSD: 5.00},
+			costPerHour: 2.00,
+		}
+		cfg := &config.Config{BudgetUSD: 0}
+		h := NewAPIHandler(APIHandlerOpts{
+			Agents:  &stubAgentLister{},
+			Quota:   quota,
+			Cfg:     cfg,
+			LockMgr: lock.New(""),
+		})
+		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		r := resp.(gen.GetQuota200JSONResponse)
+		if r.BudgetUsd != nil {
+			t.Errorf("BudgetUsd should be nil when budget is 0")
+		}
+		if r.BudgetUsedPct != nil {
+			t.Errorf("BudgetUsedPct should be nil when budget is 0")
+		}
+		if r.TimeToBudgetMins != nil {
+			t.Errorf("TimeToBudgetMins should be nil when budget is 0")
 		}
 	})
 }
