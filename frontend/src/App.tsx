@@ -61,6 +61,7 @@ export default function App() {
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { mod, shift } = usePlatform();
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -218,18 +219,26 @@ export default function App() {
             </>
           )}
         </div>
-        <nav className={styles.nav}>
+        <button
+          className={styles.hamburger}
+          onClick={() => setMobileNavOpen((v) => !v)}
+          aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileNavOpen}
+        >
+          <span className={`${styles.hamburgerBar} ${mobileNavOpen ? styles.hamburgerOpen : ""}`} />
+        </button>
+        <nav className={`${styles.nav} ${mobileNavOpen ? styles.navOpen : ""}`}>
           <button
             className={styles.link}
-            onClick={() => setShowFullScreen(true)}
+            onClick={() => { setShowFullScreen(true); setMobileNavOpen(false); }}
             title={`Full-screen command mode (${mod}${shift}F)`}
             data-tour="fullscreen-toggle"
             style={{ background: "none", border: "none", cursor: "pointer" }}
           >
             &#9638; Command
           </button>
-          <Link to="/agents" className={styles.link}>Agents</Link>
-          <Link to="/reliability" className={styles.link}>Reliability</Link>
+          <Link to="/agents" className={styles.link} onClick={() => setMobileNavOpen(false)}>Agents</Link>
+          <Link to="/reliability" className={styles.link} onClick={() => setMobileNavOpen(false)}>Reliability</Link>
           {status?.gitea_url && (
             <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.link}>
               Gitea
