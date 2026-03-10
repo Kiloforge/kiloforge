@@ -1,76 +1,114 @@
 id: docs-branding-cleanup_20260311194000Z
-title: Docs branding cleanup — Cortex/Command Deck terminology and remove SECURITY.md
+title: Docs overhaul — remove Docker/Gitea references, apply Cortex/Command Deck branding, delete SECURITY.md
 type: chore
 status: pending
 created: 2026-03-11
 updated: 2026-03-11
 spec:
   summary: |
-    Update docs/ files to use "Cortex" and "Command Deck" branding consistently,
-    and remove SECURITY.md (references an email address that isn't configured).
+    Overhaul docs/ to reflect the current architecture (no Docker, no Gitea),
+    apply Cortex/Command Deck branding, and remove SECURITY.md.
   context: |
-    The product uses branded names: "Cortex" for the backend orchestrator/control plane
-    and "Command Deck" for the web dashboard. The root README.md already uses these
-    terms correctly, but the docs/ subdirectory still uses generic terms like
-    "orchestrator server" and "web dashboard".
-
-    Additionally, SECURITY.md references security@kiloforge.dev which is not set up.
-    The user wants it removed for now.
+    Docker and Gitea were completely removed from the codebase (March 11 2026,
+    commits ea55e68..1bba244) but docs/ still describes them as core components.
+    The product uses branded names — "Cortex" for the backend control plane and
+    "Command Deck" for the web dashboard — but docs use generic terms.
+    SECURITY.md references security@kiloforge.dev which isn't configured.
   codebase_analysis: |
-    Files that need branding updates:
-    - docs/architecture.md — uses "orchestrator server" (should be "Cortex"),
-      "web dashboard" (should be "Command Deck") throughout. The system diagram,
-      section headers, and prose all use generic terms.
-    - docs/getting-started.md — says "Start the Orchestrator" (should reference Cortex),
-      refers to "Dashboard" without "Command Deck" branding.
-    - docs/README.md — says "orchestrator server" and "web dashboard" in the
-      contents descriptions.
+    Current architecture (what docs should describe):
+    - kf up: creates data dir, analytics prompt, saves config, starts Cortex daemon,
+      installs embedded skills, opens Command Deck
+    - Cortex: pure Go daemon with SQLite, REST API, SSE, WebSocket, agent spawner,
+      quota tracker, scoped lock service
+    - Command Deck: React dashboard served at /-/ by the Cortex
+    - No Docker, no Gitea, no containers
+    - Prerequisites: git + claude CLI only
+    - Projects registered via `kf add <local-path>`
 
-    Files that are fine (no changes needed):
-    - docs/why-i-built-this.md — personal story, no component references
-    - docs/kiloforge-data-formats.md — technical spec, no component references
-    - README.md (root) — already uses "Cortex" and "Command Deck" correctly
+    Files needing updates:
+    - docs/architecture.md — SEVERELY outdated. References "Gitea (Docker)" in
+      diagram, "A self-hosted git forge running in Docker" section, Docker volumes,
+      Gitea webhooks. Uses "orchestrator server" and "web dashboard" instead of
+      Cortex/Command Deck.
+    - docs/getting-started.md — Lists Docker + Docker Compose as prerequisites,
+      has Colima section, references Gitea instance. Uses generic terms.
+    - docs/README.md — Uses generic component names in descriptions.
+    - SECURITY.md (root) — Delete entirely (email not configured).
 
-    File to remove:
-    - SECURITY.md (root) — references security@kiloforge.dev which isn't configured.
-      The prod-security-ci track created this, but the email isn't live.
+    Files that are fine:
+    - docs/why-i-built-this.md — Personal story, no component references
+    - docs/kiloforge-data-formats.md — Technical spec, no component references
+    - README.md (root) — Already uses Cortex/Command Deck, no Gitea references
+
+    Related dead code (OUT OF SCOPE for this track — docs only):
+    - backend/internal/adapter/compose/ — orphaned package
+    - backend/internal/adapter/prereq/check.go — still checks for docker
+    - backend/internal/adapter/config/ — stale ComposeFile/ContainerName fields
+    - backend/internal/adapter/cli/errhelp.go — unused giteaNotRunningError()
   acceptance_criteria:
     - SECURITY.md is deleted from the repository root
-    - docs/architecture.md uses "Cortex" for the orchestrator and "Command Deck" for the dashboard
-    - docs/getting-started.md uses "Cortex" and "Command Deck" branding
+    - docs/architecture.md reflects current architecture (Cortex daemon, SQLite, no Docker/Gitea)
+    - docs/architecture.md uses "Cortex" and "Command Deck" branding
+    - docs/architecture.md system diagram updated (no Gitea box, Cortex label, Command Deck label)
+    - docs/getting-started.md prerequisites list git + claude only (no Docker)
+    - docs/getting-started.md describes current kf up flow (no Gitea, no Docker Compose)
+    - docs/getting-started.md uses Cortex/Command Deck branding
     - docs/README.md uses branded component names
-    - Terminology is consistent with root README.md usage patterns
+    - No docs/ file references Docker, Gitea, or docker-compose as current components
   out_of_scope: |
+    - Backend dead code cleanup (compose package, prereq checks, config fields) — separate track
     - Updating CLI command references (kf init → kf up) — covered by merge-init-into-up track
     - Creating a new SECURITY.md with a working email
-    - Changes to source code, only documentation files
     - Changes to root README.md (already correct)
+    - Changes to source code
   technical_notes: |
-    Straightforward find-and-replace plus one file deletion. Key substitutions:
-    - "orchestrator server" / "orchestrator" → "Cortex" (when referring to the backend server)
-    - "web dashboard" / "dashboard" → "Command Deck" (when referring to the UI)
-    - Keep lowercase "orchestrator" when used generically (e.g., "orchestration platform")
-    - Match the style used in root README.md for consistency
+    docs/architecture.md needs substantial rewrite:
+    - System diagram: remove Gitea box, rename Orchestrator → Cortex, Dashboard → Command Deck
+    - Components section: remove Gitea section, update Orchestrator → Cortex description,
+      update Dashboard → Command Deck
+    - Communication protocols table: remove Gitea rows
+    - Data storage: remove Docker volumes, add SQLite as primary
+    - Codebase structure: remove gitea/ adapter reference
 
-    The architecture.md system diagram ASCII art references "Orchestrator" in the box —
-    update to "Cortex" there too. The "Dashboard" box in the diagram should say
-    "Command Deck" or "Cmd Deck" if space is tight.
+    docs/getting-started.md needs moderate rewrite:
+    - Prerequisites: just git + claude
+    - Remove Colima section entirely
+    - Initialize section: describe kf init/up flow without Docker
+    - Remove Gitea references (port 4000, admin user, etc.)
+
+    Use root README.md as the source of truth for current terminology.
 plan:
   - phase: Cleanup
     tasks:
       - text: Delete SECURITY.md from the repository root
         done: false
-  - phase: Branding Updates
+  - phase: Architecture Doc
     tasks:
-      - text: Update docs/architecture.md — replace "orchestrator server"/"Orchestrator" with "Cortex" and "web dashboard"/"Dashboard" with "Command Deck" throughout (headings, diagram, prose)
+      - text: Rewrite docs/architecture.md system diagram — remove Gitea box, rename Orchestrator → Cortex, Dashboard → Command Deck
         done: false
-      - text: Update docs/getting-started.md — replace "Orchestrator" with "Cortex" and "Dashboard" with "Command Deck" in section headers and prose
+      - text: Rewrite Components section — remove Gitea, update CLI/Cortex/Command Deck descriptions to match current architecture
         done: false
-      - text: Update docs/README.md — update component descriptions to use "Cortex" and "Command Deck"
+      - text: Update Communication Protocols table — remove Gitea rows, update terminology
         done: false
-  - phase: Verification
+      - text: Update Codebase Structure tree — remove gitea/ adapter, update component labels
+        done: false
+      - text: Update Data Storage section — remove Docker volumes, describe SQLite + JSON + embedded assets
+        done: false
+  - phase: Getting Started Doc
     tasks:
-      - text: Review all docs/ files for any remaining generic terminology that should use branded names
+      - text: Update Prerequisites — git + claude only, remove Docker/Compose/Colima sections
+        done: false
+      - text: Rewrite Initialize and Start sections — describe current kf init/up flow (data dir, analytics, Cortex daemon, Command Deck)
+        done: false
+      - text: Update Register a Project section — kf add with local paths, remove Gitea mirror references
+        done: false
+      - text: Update Monitor section — use Cortex/Command Deck branding
+        done: false
+  - phase: Index and Verification
+    tasks:
+      - text: Update docs/README.md — use Cortex/Command Deck in component descriptions
+        done: false
+      - text: Review all docs/ files for any remaining Docker, Gitea, or generic terminology
         done: false
       - text: Verify SECURITY.md is gone and no broken links reference it
         done: false
