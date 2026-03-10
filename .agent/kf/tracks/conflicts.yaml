@@ -12,7 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-advisor-hub-fe_20260310115600Z/frontend-bundle-opt-fe_20260311120006Z: {"risk":"medium","note":"Both modify OverviewPage.tsx and AgentLauncher.tsx","added":"2026-03-10"}
-advisor-skills-be_20260310115559Z/gitea-dead-code-be_20260311120001Z: {"risk":"medium","note":"Both modify openapi.yaml and regenerate server/client code","added":"2026-03-10"}
-command-deck-fe_20260311100002Z/frontend-stability-fe_20260311120002Z: {"risk":"low","note":"Both touch App.tsx but different sections","added":"2026-03-10"}
 cortex-rebrand-be_20260311100001Z/gitea-dead-code-be_20260311120001Z: {"risk":"medium","note":"Both modify openapi.yaml and cli/root.go","added":"2026-03-10"}

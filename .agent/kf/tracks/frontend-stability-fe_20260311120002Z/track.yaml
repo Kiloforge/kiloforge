@@ -66,9 +66,9 @@ plan:
   - phase: Verification
     tasks:
       - text: Run npm test — all existing + new tests pass
-        done: false
+        done: true
       - text: Run npm run build — clean TypeScript compilation
-        done: false
+        done: true
       - text: Run make build — full stack build passes
-        done: false
+        done: true
 extra: {}

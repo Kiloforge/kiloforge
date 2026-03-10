@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Agent, SpawnInteractiveRequest, StatusResponse, SwarmCapacity } from "./types/api";
+import type { Agent, SpawnInteractiveRequest, StatusResponse } from "./types/api";
 import type { AgentRole } from "./components/AgentLauncher";
 import { useSSE } from "./hooks/useSSE";
 import { useAgents } from "./hooks/useAgents";
@@ -166,7 +166,6 @@ export default function App() {
   useEffect(() => {
     if (waitingForCapacity && capacity && capacity.available > 0) {
       setWaitingForCapacity(false);
-      setWaitingCapacity(null);
       spawnMutation.mutate(lastSpawnReq);
     }
   }, [waitingForCapacity, capacity, lastSpawnReq, spawnMutation]);
