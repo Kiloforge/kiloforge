@@ -1211,6 +1211,9 @@ func domainAgentToGen(a domain.AgentInfo, quota QuotaReader) gen.Agent {
 		StartedAt: a.StartedAt,
 		UpdatedAt: a.UpdatedAt,
 	}
+	if a.Name != "" {
+		g.Name = &a.Name
+	}
 	if a.SessionID != "" {
 		g.SessionId = &a.SessionID
 	}

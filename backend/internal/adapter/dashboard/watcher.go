@@ -133,6 +133,7 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 func agentToJSON(a domain.AgentInfo) map[string]any {
 	m := map[string]any{
 		"id":           a.ID,
+		"name":         a.Name,
 		"role":         a.Role,
 		"ref":          a.Ref,
 		"status":       a.Status,
