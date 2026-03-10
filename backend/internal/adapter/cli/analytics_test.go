@@ -175,6 +175,27 @@ func TestAnalyticsStatus_EnvOverride(t *testing.T) {
 	}
 }
 
+func TestAnalyticsStatus_EnvOverrideEnabled(t *testing.T) {
+	dir := t.TempDir()
+	boolFalse := false
+	writeTestConfig(t, dir, &boolFalse)
+	t.Setenv("KF_DATA_DIR", dir)
+	t.Setenv("KF_ANALYTICS_ENABLED", "true")
+
+	cmd, buf := testCmd(runAnalyticsStatus)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("analytics status: %v", err)
+	}
+
+	output := buf.String()
+	if !containsStr(output, "enabled") {
+		t.Errorf("expected 'enabled' (env override), got: %q", output)
+	}
+	if !containsStr(output, "env") {
+		t.Errorf("expected 'env' source in output, got: %q", output)
+	}
+}
+
 func TestAnalyticsEnable_NotInitialized(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
 	t.Setenv("KF_DATA_DIR", dir)
