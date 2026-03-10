@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	claude "github.com/schlunsen/claude-agent-sdk-go"
@@ -161,6 +162,15 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 				case *types.ToolUseBlock:
 					s.emit(ws.ToolUseMsg(b.Name, b.ID, turnID, b.Input))
 					s.logLine(fmt.Sprintf("[tool_use] %s (id=%s)", b.Name, b.ID))
+				case *types.ToolResultBlock:
+					content := normalizeToolResultContent(b.Content)
+					isError := b.IsError != nil && *b.IsError
+					s.emit(ws.ToolResultMsg(b.ToolUseID, content, turnID, isError))
+					if isError {
+						s.logLine(fmt.Sprintf("[tool_result] ERROR id=%s", b.ToolUseID))
+					} else {
+						s.logLine(fmt.Sprintf("[tool_result] id=%s len=%d", b.ToolUseID, len(content)))
+					}
 				case *types.ThinkingBlock:
 					s.emit(ws.ThinkingMsg(b.Thinking, turnID))
 					s.logLine("[thinking] ...")
@@ -200,6 +210,37 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 			s.logLine(fmt.Sprintf("[result] cost=$%.4f session=%s", costUSD, m.SessionID))
 		}
 	}
+}
+
+// normalizeToolResultContent converts the SDK's ToolResultBlock.Content
+// (which can be a string or []map[string]interface{}) into a plain string.
+func normalizeToolResultContent(content interface{}) string {
+	if content == nil {
+		return ""
+	}
+	if s, ok := content.(string); ok {
+		return s
+	}
+	// Content can be an array of content blocks (e.g., [{type: "text", text: "..."}]).
+	if arr, ok := content.([]interface{}); ok {
+		var parts []string
+		for _, item := range arr {
+			if m, ok := item.(map[string]interface{}); ok {
+				if text, ok := m["text"].(string); ok {
+					parts = append(parts, text)
+				}
+			}
+		}
+		if len(parts) > 0 {
+			return strings.Join(parts, "\n")
+		}
+	}
+	// Fallback: JSON-encode whatever it is.
+	b, err := json.Marshal(content)
+	if err != nil {
+		return fmt.Sprintf("%v", content)
+	}
+	return string(b)
 }
 
 // Close terminates the SDK session. It is safe to call multiple times

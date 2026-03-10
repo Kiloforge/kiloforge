@@ -12,10 +12,11 @@ const (
 	// Enriched message types for SDK-based agents.
 	MsgTurnStart = "turn_start" // server → client: new turn begins
 	MsgText      = "text"       // server → client: text content block
-	MsgToolUse   = "tool_use"   // server → client: tool invocation
-	MsgThinking  = "thinking"   // server → client: thinking content
-	MsgTurnEnd   = "turn_end"   // server → client: turn completed with cost/usage
-	MsgSystem    = "system"     // server → client: system notification
+	MsgToolUse    = "tool_use"    // server → client: tool invocation
+	MsgToolResult = "tool_result" // server → client: tool execution result
+	MsgThinking   = "thinking"   // server → client: thinking content
+	MsgTurnEnd    = "turn_end"   // server → client: turn completed with cost/usage
+	MsgSystem     = "system"     // server → client: system notification
 )
 
 // Message is the WebSocket protocol envelope.
@@ -55,6 +56,15 @@ type ToolUseMessage struct {
 	ToolID   string      `json:"tool_id"`
 	Input    interface{} `json:"input,omitempty"`
 	TurnID   string      `json:"turn_id"`
+}
+
+// ToolResultMessage is sent for tool execution results.
+type ToolResultMessage struct {
+	Type      string `json:"type"`
+	ToolUseID string `json:"tool_use_id"`
+	Content   string `json:"content"`
+	IsError   bool   `json:"is_error"`
+	TurnID    string `json:"turn_id"`
 }
 
 // ThinkingMessage is sent for thinking content.
@@ -117,6 +127,18 @@ func ToolUseMsg(toolName, toolID, turnID string, input interface{}) []byte {
 		ToolID:   toolID,
 		Input:    input,
 		TurnID:   turnID,
+	})
+	return b
+}
+
+// ToolResultMsg creates a tool_result message.
+func ToolResultMsg(toolUseID, content, turnID string, isError bool) []byte {
+	b, _ := json.Marshal(ToolResultMessage{
+		Type:      MsgToolResult,
+		ToolUseID: toolUseID,
+		Content:   content,
+		IsError:   isError,
+		TurnID:    turnID,
 	})
 	return b
 }
