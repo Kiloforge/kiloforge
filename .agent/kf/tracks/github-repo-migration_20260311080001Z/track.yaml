@@ -1,0 +1,77 @@
+id: github-repo-migration_20260311080001Z
+title: "Migrate repo to kiloforge/kiloforge — create private repo, update remotes and CI"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Create the kiloforge/kiloforge private repo on GitHub, push the full history,
+    update the origin remote, and adjust CI workflows for the new org context.
+  context: |
+    The project currently lives at Goblinlordx/crelay (private). The kiloforge
+    GitHub org already exists (created 2026-03-08, sole member: Goblinlordx) with
+    one existing repo (Kiloforge/example-project). The user wants to establish
+    kiloforge/kiloforge as the canonical home, private for now.
+  codebase_analysis: |
+    Current state:
+    - Origin remote: git@github.com:Goblinlordx/crelay.git
+    - Gitea remote: http://localhost:3000/conductor/main.git (local dev)
+    - GitHub auth: Goblinlordx via keyring, scopes: gist, read:org, repo, workflow
+    - Org: Kiloforge (free plan, unlimited private repos)
+    - kiloforge/kiloforge does NOT exist yet
+
+    Files that reference the repo:
+    - .github/workflows/ci.yml — no repo-specific references
+    - .github/workflows/close-external-prs.yml — may reference Goblinlordx/crelay
+    - .github/workflows/release.yml — may reference repo name
+    - go.mod — currently uses "kiloforge" as module name (not github path)
+    - No import path changes needed (module is "kiloforge", not "github.com/...")
+
+    Note: go.mod module path is just "kiloforge" (not github.com/Goblinlordx/crelay),
+    so no Go import path refactoring is needed. This is a remote/CI migration only.
+  acceptance_criteria:
+    - kiloforge/kiloforge private repo exists on GitHub
+    - All branches and tags pushed to kiloforge/kiloforge
+    - Origin remote updated to point to kiloforge/kiloforge
+    - CI workflows trigger and pass on the new repo
+    - close-external-prs.yml updated for new org context if needed
+    - Old Goblinlordx/crelay repo archived or redirected (user decision)
+  out_of_scope: |
+    - Go module path changes (already uses "kiloforge", not github path)
+    - Deleting the old Goblinlordx/crelay repo (user decision, not automated)
+    - Making the repo public (user wants private for now)
+    - Setting up GitHub org settings (teams, permissions, branch protection)
+  technical_notes: |
+    Steps:
+    1. gh repo create kiloforge/kiloforge --private --description "..."
+    2. git remote set-url origin git@github.com:kiloforge/kiloforge.git
+    3. git push origin --all && git push origin --tags
+    4. Verify CI triggers on the new repo
+    5. Update any workflow files that hardcode Goblinlordx/crelay
+    6. Optionally archive old repo: gh repo archive Goblinlordx/crelay
+
+    The Goblinlordx/crelay repo can be kept as a redirect or archived later
+    at the user's discretion — this track does not delete it.
+plan:
+  - phase: "Phase 1: Create repo and push"
+    tasks:
+      - text: "Create kiloforge/kiloforge private repo via gh repo create"
+        done: false
+      - text: "Update origin remote URL to git@github.com:kiloforge/kiloforge.git"
+        done: false
+      - text: "Push all branches and tags to the new remote"
+        done: false
+  - phase: "Phase 2: Update CI and references"
+    tasks:
+      - text: "Audit workflow files for Goblinlordx/crelay references and update to kiloforge/kiloforge"
+        done: false
+      - text: "Update close-external-prs.yml for new org context"
+        done: false
+  - phase: "Phase 3: Verification"
+    tasks:
+      - text: "Push to new remote and verify CI triggers and passes"
+        done: false
+      - text: "Verify gh CLI commands work against kiloforge/kiloforge (gh repo view, gh run list)"
+        done: false
+extra: {}

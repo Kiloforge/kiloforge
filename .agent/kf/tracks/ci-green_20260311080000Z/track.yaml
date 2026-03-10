@@ -1,0 +1,79 @@
+id: ci-green_20260311080000Z
+title: "Fix CI pipeline — git identity, default branch, and embed stub"
+type: bug
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Fix 3 root causes breaking all CI runs on GitHub Actions: missing git user
+    identity in kf-tools job, git default branch not set to main in test job,
+    and missing frontend build before the lint step. Also fix go.sum cache path.
+  context: |
+    All 10 most recent CI runs on Goblinlordx/crelay have failed. The deps job
+    passes consistently, but kf-tools, lint, and test all fail with distinct
+    root causes. These are CI environment configuration issues, not code bugs.
+  codebase_analysis: |
+    Affected files:
+    - .github/workflows/ci.yml — main CI workflow (4 jobs: kf-tools, lint, test, deps)
+    - .agent/kf/bin/tests/run_tests.sh — kf-track test suite uses git init without user identity
+    - backend/internal/adapter/git/sync_test.go — uses "git init --bare" without --initial-branch=main
+    - backend/internal/adapter/rest/sync_handler_test.go — same issue
+    - backend/internal/adapter/persistence/sqlite/db_test.go — TestGooseDown_RollsBack failure
+    - backend/cmd/kf/*_test.go — TestBinaryBuilds VCS status error
+
+    Root causes:
+    1. kf-tools job: run_tests.sh line 37 does "git init --quiet" without setting
+       user.name/user.email. GitHub runners have no git identity configured.
+    2. test job: Git 2.53 on CI defaults to branch "master". Tests create bare repos
+       with "git init --bare" but expect branch "main". Failures in sync_test.go,
+       sync_handler_test.go, and cli_test.go.
+    3. lint job: golangci-lint runs before frontend is built, so the Go embed
+       directive "//go:embed dist/*" in dashboard/embed.go fails (no dist/ directory).
+    4. deps job (warning only): setup-go cache looks for go.sum at repo root but
+       it's at backend/go.sum.
+  acceptance_criteria:
+    - All 4 CI jobs pass on GitHub Actions (kf-tools, lint, test, deps)
+    - kf-tools tests pass with git user identity configured
+    - Go tests pass with init.defaultBranch=main set in CI environment
+    - Lint step has frontend dist/ available before golangci-lint runs
+    - go.sum cache path warning resolved
+    - No changes to application behavior — CI config and test helpers only
+  out_of_scope: |
+    - Fixing application bugs (this is CI environment only)
+    - Adding new CI jobs or coverage thresholds
+    - Changing test logic beyond git init configuration
+    - Repo migration (separate track)
+  technical_notes: |
+    Fix approach per root cause:
+    1. kf-tools: Add git config user.name/email setup step before running tests,
+       OR add it to run_tests.sh setup function.
+    2. test: Add "git config --global init.defaultBranch main" as a setup step
+       in the CI workflow. This is the simplest fix — avoids touching every test file.
+    3. lint: Add "npm ci && npm run build" in frontend/ before the lint step,
+       OR restructure to build frontend first. The test job already does this correctly.
+    4. deps: Add cache-dependency-path: backend/go.sum to setup-go action config.
+plan:
+  - phase: "Phase 1: CI workflow fixes"
+    tasks:
+      - text: "Add git user identity setup (user.name, user.email) to kf-tools job before running tests"
+        done: false
+      - text: "Add git config --global init.defaultBranch main to test job setup steps"
+        done: false
+      - text: "Add frontend build step (npm ci && npm run build) before golangci-lint in lint job"
+        done: false
+      - text: "Fix setup-go cache-dependency-path to backend/go.sum in all jobs that use it"
+        done: false
+  - phase: "Phase 2: Test helper fixes"
+    tasks:
+      - text: "Add git config --global init.defaultBranch main to kf-tools job (for run_tests.sh git init)"
+        done: false
+      - text: "Verify TestGooseDown_RollsBack passes with default branch fix (may need separate investigation)"
+        done: false
+  - phase: "Phase 3: Verification"
+    tasks:
+      - text: "Run make test locally to verify all Go tests pass"
+        done: false
+      - text: "Push to trigger CI and verify all 4 jobs pass green"
+        done: false
+extra: {}
