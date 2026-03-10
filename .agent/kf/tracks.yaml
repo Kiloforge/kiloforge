@@ -39,7 +39,7 @@ dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kil
 dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-draggable-resizable-windows_20260310062703Z: {"title":"Draggable and resizable agent terminal windows","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+draggable-resizable-windows_20260310062703Z: {"title":"Draggable and resizable agent terminal windows","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 e2e-distributed-tracing_20260309194839Z: {"title":"E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 e2e-git-origin-sync_20260309194840Z: {"title":"E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
