@@ -32,9 +32,6 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-10
-
-aws-static-deploy_20260310200000Z: []
-
 backend-resilience-be_20260311120003Z: []
 
 command-deck-fe_20260311100002Z: []
