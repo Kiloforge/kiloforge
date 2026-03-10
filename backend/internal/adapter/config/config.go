@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -32,6 +33,9 @@ type Config struct {
 	Model             string  `json:"model,omitempty"`
 	MaxWorkers        int     `json:"max_workers,omitempty"`
 	QueueEnabled      *bool   `json:"queue_enabled,omitempty"`
+	AgentMaxDuration  string  `json:"agent_max_duration,omitempty"`
+	AnalyticsEnabled  *bool   `json:"analytics_enabled,omitempty"`
+	PostHogAPIKey     string  `json:"posthog_api_key,omitempty"`
 }
 
 // GetMaxWorkers returns the configured max workers, defaulting to 3.
@@ -40,6 +44,19 @@ func (c *Config) GetMaxWorkers() int {
 		return 3
 	}
 	return c.MaxWorkers
+}
+
+// GetAgentMaxDuration returns the configured agent max duration, defaulting to 2 hours.
+// A zero duration means timeout enforcement is disabled.
+func (c *Config) GetAgentMaxDuration() time.Duration {
+	if c.AgentMaxDuration == "" {
+		return 2 * time.Hour
+	}
+	d, err := time.ParseDuration(c.AgentMaxDuration)
+	if err != nil {
+		return 2 * time.Hour
+	}
+	return d
 }
 
 // IsQueueEnabled returns whether the work queue is enabled. Defaults to false.
@@ -57,6 +74,15 @@ func (c *Config) IsDashboardEnabled() bool {
 		return true
 	}
 	return *c.DashboardEnabled
+}
+
+// IsAnalyticsEnabled returns whether analytics is enabled.
+// Defaults to true when AnalyticsEnabled is nil.
+func (c *Config) IsAnalyticsEnabled() bool {
+	if c.AnalyticsEnabled == nil {
+		return true
+	}
+	return *c.AnalyticsEnabled
 }
 
 // GetSkillsDir returns the configured skills directory, or the default (~/.claude/skills).

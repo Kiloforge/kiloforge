@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 )
 
 func TestEnvAdapter_ImplementsConfigProvider(t *testing.T) {
@@ -113,6 +114,51 @@ func TestEnvAdapter_Model(t *testing.T) {
 	}
 	if cfg.Model != "sonnet" {
 		t.Errorf("Model: want %q, got %q", "sonnet", cfg.Model)
+	}
+}
+
+func TestEnvAdapter_AgentMaxDuration(t *testing.T) {
+	t.Setenv("KF_AGENT_MAX_DURATION", "30m")
+
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.AgentMaxDuration != "30m" {
+		t.Errorf("AgentMaxDuration: want %q, got %q", "30m", cfg.AgentMaxDuration)
+	}
+}
+
+func TestGetAgentMaxDuration_Default(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{}
+	if got := cfg.GetAgentMaxDuration(); got != 2*time.Hour {
+		t.Errorf("GetAgentMaxDuration default: want 2h, got %v", got)
+	}
+}
+
+func TestGetAgentMaxDuration_Custom(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{AgentMaxDuration: "45m"}
+	if got := cfg.GetAgentMaxDuration(); got != 45*time.Minute {
+		t.Errorf("GetAgentMaxDuration custom: want 45m, got %v", got)
+	}
+}
+
+func TestGetAgentMaxDuration_Zero_DisablesTimeout(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{AgentMaxDuration: "0s"}
+	if got := cfg.GetAgentMaxDuration(); got != 0 {
+		t.Errorf("GetAgentMaxDuration zero: want 0 (disabled), got %v", got)
+	}
+}
+
+func TestGetAgentMaxDuration_InvalidFallsBackToDefault(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{AgentMaxDuration: "notaduration"}
+	if got := cfg.GetAgentMaxDuration(); got != 2*time.Hour {
+		t.Errorf("GetAgentMaxDuration invalid: want 2h (default), got %v", got)
 	}
 }
 

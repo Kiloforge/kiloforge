@@ -231,7 +231,9 @@ type BranchInfo struct {
 
 // ConfigResponse defines model for ConfigResponse.
 type ConfigResponse struct {
-	DashboardEnabled bool `json:"dashboard_enabled"`
+	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). Empty or "0s" disables timeout.
+	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
+	DashboardEnabled bool    `json:"dashboard_enabled"`
 }
 
 // ConsentState defines model for ConsentState.
@@ -775,7 +777,9 @@ type TrackSummary struct {
 
 // UpdateConfigRequest defines model for UpdateConfigRequest.
 type UpdateConfigRequest struct {
-	DashboardEnabled *bool `json:"dashboard_enabled,omitempty"`
+	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). "0s" disables timeout.
+	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
+	DashboardEnabled *bool   `json:"dashboard_enabled,omitempty"`
 }
 
 // UpdateProjectSettingsRequest defines model for UpdateProjectSettingsRequest.

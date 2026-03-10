@@ -10,15 +10,16 @@ type EnvAdapter struct{}
 
 func (a *EnvAdapter) Load() (*Config, error) {
 	cfg := &Config{
-		DataDir:         os.Getenv("KF_DATA_DIR"),
-		APIToken:        os.Getenv("KF_API_TOKEN"),
-		ComposeFile:     os.Getenv("KF_COMPOSE_FILE"),
-		ContainerName:   os.Getenv("KF_CONTAINER_NAME"),
-		GiteaImage:      os.Getenv("KF_GITEA_IMAGE"),
-		GiteaAdminUser:  os.Getenv("KF_GITEA_ADMIN_USER"),
-		GiteaAdminPass:  os.Getenv("KF_GITEA_ADMIN_PASS"),
-		GiteaAdminEmail: os.Getenv("KF_GITEA_ADMIN_EMAIL"),
-		Model:           os.Getenv("KF_MODEL"),
+		DataDir:          os.Getenv("KF_DATA_DIR"),
+		APIToken:         os.Getenv("KF_API_TOKEN"),
+		ComposeFile:      os.Getenv("KF_COMPOSE_FILE"),
+		ContainerName:    os.Getenv("KF_CONTAINER_NAME"),
+		GiteaImage:       os.Getenv("KF_GITEA_IMAGE"),
+		GiteaAdminUser:   os.Getenv("KF_GITEA_ADMIN_USER"),
+		GiteaAdminPass:   os.Getenv("KF_GITEA_ADMIN_PASS"),
+		GiteaAdminEmail:  os.Getenv("KF_GITEA_ADMIN_EMAIL"),
+		Model:            os.Getenv("KF_MODEL"),
+		AgentMaxDuration: os.Getenv("KF_AGENT_MAX_DURATION"),
 	}
 
 	if v := os.Getenv("KF_GITEA_PORT"); v != "" {
@@ -38,6 +39,17 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		if err == nil {
 			cfg.DashboardEnabled = &b
 		}
+	}
+
+	if v := os.Getenv("KF_ANALYTICS_ENABLED"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err == nil {
+			cfg.AnalyticsEnabled = &b
+		}
+	}
+
+	if v := os.Getenv("KF_POSTHOG_API_KEY"); v != "" {
+		cfg.PostHogAPIKey = v
 	}
 
 	return cfg, nil

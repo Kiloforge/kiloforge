@@ -68,4 +68,19 @@ func overlay(dst, src *Config) {
 	if src.Model != "" {
 		dst.Model = src.Model
 	}
+	if src.MaxWorkers != 0 {
+		dst.MaxWorkers = src.MaxWorkers
+	}
+	if src.QueueEnabled != nil {
+		dst.QueueEnabled = src.QueueEnabled
+	}
+	if src.AgentMaxDuration != "" {
+		dst.AgentMaxDuration = src.AgentMaxDuration
+	}
+	if src.AnalyticsEnabled != nil {
+		dst.AnalyticsEnabled = src.AnalyticsEnabled
+	}
+	if src.PostHogAPIKey != "" {
+		dst.PostHogAPIKey = src.PostHogAPIKey
+	}
 }
