@@ -277,6 +277,21 @@ type ClientInterface interface {
 	// GetTrackDetail request
 	GetTrackDetail(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ReleaseTrackClaimWithBody request with any body
+	ReleaseTrackClaimWithBody(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReleaseTrackClaim(ctx context.Context, trackId string, body ReleaseTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClaimTrackWithBody request with any body
+	ClaimTrackWithBody(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ClaimTrack(ctx context.Context, trackId string, body ClaimTrackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HeartbeatTrackClaimWithBody request with any body
+	HeartbeatTrackClaimWithBody(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	HeartbeatTrackClaim(ctx context.Context, trackId string, body HeartbeatTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHealth request
 	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -1087,6 +1102,78 @@ func (c *Client) DeleteTrack(ctx context.Context, trackId string, params *Delete
 
 func (c *Client) GetTrackDetail(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTrackDetailRequest(c.Server, trackId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReleaseTrackClaimWithBody(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReleaseTrackClaimRequestWithBody(c.Server, trackId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReleaseTrackClaim(ctx context.Context, trackId string, body ReleaseTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReleaseTrackClaimRequest(c.Server, trackId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ClaimTrackWithBody(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClaimTrackRequestWithBody(c.Server, trackId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ClaimTrack(ctx context.Context, trackId string, body ClaimTrackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClaimTrackRequest(c.Server, trackId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HeartbeatTrackClaimWithBody(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHeartbeatTrackClaimRequestWithBody(c.Server, trackId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HeartbeatTrackClaim(ctx context.Context, trackId string, body HeartbeatTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHeartbeatTrackClaimRequest(c.Server, trackId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3466,6 +3553,147 @@ func NewGetTrackDetailRequest(server string, trackId string, params *GetTrackDet
 	return req, nil
 }
 
+// NewReleaseTrackClaimRequest calls the generic ReleaseTrackClaim builder with application/json body
+func NewReleaseTrackClaimRequest(server string, trackId string, body ReleaseTrackClaimJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReleaseTrackClaimRequestWithBody(server, trackId, "application/json", bodyReader)
+}
+
+// NewReleaseTrackClaimRequestWithBody generates requests for ReleaseTrackClaim with any type of body
+func NewReleaseTrackClaimRequestWithBody(server string, trackId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "trackId", runtime.ParamLocationPath, trackId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/%s/claim", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewClaimTrackRequest calls the generic ClaimTrack builder with application/json body
+func NewClaimTrackRequest(server string, trackId string, body ClaimTrackJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewClaimTrackRequestWithBody(server, trackId, "application/json", bodyReader)
+}
+
+// NewClaimTrackRequestWithBody generates requests for ClaimTrack with any type of body
+func NewClaimTrackRequestWithBody(server string, trackId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "trackId", runtime.ParamLocationPath, trackId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/%s/claim", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewHeartbeatTrackClaimRequest calls the generic HeartbeatTrackClaim builder with application/json body
+func NewHeartbeatTrackClaimRequest(server string, trackId string, body HeartbeatTrackClaimJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewHeartbeatTrackClaimRequestWithBody(server, trackId, "application/json", bodyReader)
+}
+
+// NewHeartbeatTrackClaimRequestWithBody generates requests for HeartbeatTrackClaim with any type of body
+func NewHeartbeatTrackClaimRequestWithBody(server string, trackId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "trackId", runtime.ParamLocationPath, trackId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/%s/claim/heartbeat", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetHealthRequest generates requests for GetHealth
 func NewGetHealthRequest(server string) (*http.Request, error) {
 	var err error
@@ -3723,6 +3951,21 @@ type ClientWithResponsesInterface interface {
 
 	// GetTrackDetailWithResponse request
 	GetTrackDetailWithResponse(ctx context.Context, trackId string, params *GetTrackDetailParams, reqEditors ...RequestEditorFn) (*GetTrackDetailResponse, error)
+
+	// ReleaseTrackClaimWithBodyWithResponse request with any body
+	ReleaseTrackClaimWithBodyWithResponse(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReleaseTrackClaimResponse, error)
+
+	ReleaseTrackClaimWithResponse(ctx context.Context, trackId string, body ReleaseTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*ReleaseTrackClaimResponse, error)
+
+	// ClaimTrackWithBodyWithResponse request with any body
+	ClaimTrackWithBodyWithResponse(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ClaimTrackResponse, error)
+
+	ClaimTrackWithResponse(ctx context.Context, trackId string, body ClaimTrackJSONRequestBody, reqEditors ...RequestEditorFn) (*ClaimTrackResponse, error)
+
+	// HeartbeatTrackClaimWithBodyWithResponse request with any body
+	HeartbeatTrackClaimWithBodyWithResponse(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatTrackClaimResponse, error)
+
+	HeartbeatTrackClaimWithResponse(ctx context.Context, trackId string, body HeartbeatTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatTrackClaimResponse, error)
 
 	// GetHealthWithResponse request
 	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
@@ -4963,6 +5206,78 @@ func (r GetTrackDetailResponse) StatusCode() int {
 	return 0
 }
 
+type ReleaseTrackClaimResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TrackClaimReleased
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ReleaseTrackClaimResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReleaseTrackClaimResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ClaimTrackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TrackClaimInfo
+	JSON400      *ErrorResponse
+	JSON409      *TrackClaimConflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ClaimTrackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClaimTrackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type HeartbeatTrackClaimResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TrackClaimInfo
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r HeartbeatTrackClaimResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HeartbeatTrackClaimResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5579,6 +5894,57 @@ func (c *ClientWithResponses) GetTrackDetailWithResponse(ctx context.Context, tr
 		return nil, err
 	}
 	return ParseGetTrackDetailResponse(rsp)
+}
+
+// ReleaseTrackClaimWithBodyWithResponse request with arbitrary body returning *ReleaseTrackClaimResponse
+func (c *ClientWithResponses) ReleaseTrackClaimWithBodyWithResponse(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReleaseTrackClaimResponse, error) {
+	rsp, err := c.ReleaseTrackClaimWithBody(ctx, trackId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReleaseTrackClaimResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReleaseTrackClaimWithResponse(ctx context.Context, trackId string, body ReleaseTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*ReleaseTrackClaimResponse, error) {
+	rsp, err := c.ReleaseTrackClaim(ctx, trackId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReleaseTrackClaimResponse(rsp)
+}
+
+// ClaimTrackWithBodyWithResponse request with arbitrary body returning *ClaimTrackResponse
+func (c *ClientWithResponses) ClaimTrackWithBodyWithResponse(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ClaimTrackResponse, error) {
+	rsp, err := c.ClaimTrackWithBody(ctx, trackId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClaimTrackResponse(rsp)
+}
+
+func (c *ClientWithResponses) ClaimTrackWithResponse(ctx context.Context, trackId string, body ClaimTrackJSONRequestBody, reqEditors ...RequestEditorFn) (*ClaimTrackResponse, error) {
+	rsp, err := c.ClaimTrack(ctx, trackId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClaimTrackResponse(rsp)
+}
+
+// HeartbeatTrackClaimWithBodyWithResponse request with arbitrary body returning *HeartbeatTrackClaimResponse
+func (c *ClientWithResponses) HeartbeatTrackClaimWithBodyWithResponse(ctx context.Context, trackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*HeartbeatTrackClaimResponse, error) {
+	rsp, err := c.HeartbeatTrackClaimWithBody(ctx, trackId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHeartbeatTrackClaimResponse(rsp)
+}
+
+func (c *ClientWithResponses) HeartbeatTrackClaimWithResponse(ctx context.Context, trackId string, body HeartbeatTrackClaimJSONRequestBody, reqEditors ...RequestEditorFn) (*HeartbeatTrackClaimResponse, error) {
+	rsp, err := c.HeartbeatTrackClaim(ctx, trackId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHeartbeatTrackClaimResponse(rsp)
 }
 
 // GetHealthWithResponse request returning *GetHealthResponse
@@ -7561,6 +7927,126 @@ func ParseGetTrackDetailResponse(rsp *http.Response) (*GetTrackDetailResponse, e
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReleaseTrackClaimResponse parses an HTTP response from a ReleaseTrackClaimWithResponse call
+func ParseReleaseTrackClaimResponse(rsp *http.Response) (*ReleaseTrackClaimResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReleaseTrackClaimResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TrackClaimReleased
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseClaimTrackResponse parses an HTTP response from a ClaimTrackWithResponse call
+func ParseClaimTrackResponse(rsp *http.Response) (*ClaimTrackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClaimTrackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TrackClaimInfo
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest TrackClaimConflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseHeartbeatTrackClaimResponse parses an HTTP response from a HeartbeatTrackClaimWithResponse call
+func ParseHeartbeatTrackClaimResponse(rsp *http.Response) (*HeartbeatTrackClaimResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HeartbeatTrackClaimResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TrackClaimInfo
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

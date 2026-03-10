@@ -253,6 +253,15 @@ type BranchInfo struct {
 	TrackId *string `json:"track_id,omitempty"`
 }
 
+// ClaimTrackRequest defines model for ClaimTrackRequest.
+type ClaimTrackRequest struct {
+	// Holder Identifier of the worker claiming the track (e.g. worker-1, agent-abc)
+	Holder string `json:"holder"`
+
+	// TtlSeconds Claim TTL in seconds. Must be renewed via heartbeat.
+	TtlSeconds *int `json:"ttl_seconds,omitempty"`
+}
+
 // ConfigResponse defines model for ConfigResponse.
 type ConfigResponse struct {
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). Empty or "0s" disables timeout.
@@ -613,6 +622,11 @@ type QuotaInfo struct {
 	TimeToBudgetMins *float64 `json:"time_to_budget_mins,omitempty"`
 }
 
+// ReleaseTrackClaimRequest defines model for ReleaseTrackClaimRequest.
+type ReleaseTrackClaimRequest struct {
+	Holder string `json:"holder"`
+}
+
 // ReliabilityBucket defines model for ReliabilityBucket.
 type ReliabilityBucket struct {
 	// Counts Event counts keyed by event_type within this bucket.
@@ -854,6 +868,15 @@ type TraceSummary struct {
 
 // Track defines model for Track.
 type Track struct {
+	// ClaimExpiresAt When the claim expires if not heartbeated
+	ClaimExpiresAt *time.Time `json:"claim_expires_at,omitempty"`
+
+	// ClaimedAt When the track was claimed
+	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
+
+	// ClaimedBy Holder ID that has claimed this track (empty if unclaimed)
+	ClaimedBy *string `json:"claimed_by,omitempty"`
+
 	// ConflictCount Number of active conflict risk pairs
 	ConflictCount *int `json:"conflict_count,omitempty"`
 
@@ -870,6 +893,32 @@ type Track struct {
 
 // TrackStatus defines model for Track.Status.
 type TrackStatus string
+
+// TrackClaimConflict defines model for TrackClaimConflict.
+type TrackClaimConflict struct {
+	CurrentHolder *string `json:"current_holder,omitempty"`
+	Error         string  `json:"error"`
+}
+
+// TrackClaimHeartbeatRequest defines model for TrackClaimHeartbeatRequest.
+type TrackClaimHeartbeatRequest struct {
+	Holder     string `json:"holder"`
+	TtlSeconds *int   `json:"ttl_seconds,omitempty"`
+}
+
+// TrackClaimInfo defines model for TrackClaimInfo.
+type TrackClaimInfo struct {
+	AcquiredAt          time.Time `json:"acquired_at"`
+	ExpiresAt           time.Time `json:"expires_at"`
+	Holder              string    `json:"holder"`
+	TrackId             string    `json:"track_id"`
+	TtlRemainingSeconds float64   `json:"ttl_remaining_seconds"`
+}
+
+// TrackClaimReleased defines model for TrackClaimReleased.
+type TrackClaimReleased struct {
+	Released bool `json:"released"`
+}
 
 // TrackConflict defines model for TrackConflict.
 type TrackConflict struct {
@@ -1142,6 +1191,15 @@ type UpdateSwarmSettingsJSONRequestBody UpdateSwarmSettingsJSONBody
 // GenerateTracksJSONRequestBody defines body for GenerateTracks for application/json ContentType.
 type GenerateTracksJSONRequestBody = GenerateTracksRequest
 
+// ReleaseTrackClaimJSONRequestBody defines body for ReleaseTrackClaim for application/json ContentType.
+type ReleaseTrackClaimJSONRequestBody = ReleaseTrackClaimRequest
+
+// ClaimTrackJSONRequestBody defines body for ClaimTrack for application/json ContentType.
+type ClaimTrackJSONRequestBody = ClaimTrackRequest
+
+// HeartbeatTrackClaimJSONRequestBody defines body for HeartbeatTrackClaim for application/json ContentType.
+type HeartbeatTrackClaimJSONRequestBody = TrackClaimHeartbeatRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Spawn an interactive agent to run an admin operation
@@ -1300,6 +1358,15 @@ type ServerInterface interface {
 	// Get full detail for a track including spec, plan, and metadata
 	// (GET /api/tracks/{trackId})
 	GetTrackDetail(w http.ResponseWriter, r *http.Request, trackId string, params GetTrackDetailParams)
+	// Release a track claim
+	// (DELETE /api/tracks/{trackId}/claim)
+	ReleaseTrackClaim(w http.ResponseWriter, r *http.Request, trackId string)
+	// Claim a track for implementation
+	// (POST /api/tracks/{trackId}/claim)
+	ClaimTrack(w http.ResponseWriter, r *http.Request, trackId string)
+	// Extend track claim TTL
+	// (POST /api/tracks/{trackId}/claim/heartbeat)
+	HeartbeatTrackClaim(w http.ResponseWriter, r *http.Request, trackId string)
 	// Health check
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -2632,6 +2699,81 @@ func (siw *ServerInterfaceWrapper) GetTrackDetail(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// ReleaseTrackClaim operation middleware
+func (siw *ServerInterfaceWrapper) ReleaseTrackClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", r.PathValue("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trackId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReleaseTrackClaim(w, r, trackId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ClaimTrack operation middleware
+func (siw *ServerInterfaceWrapper) ClaimTrack(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", r.PathValue("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trackId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClaimTrack(w, r, trackId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// HeartbeatTrackClaim operation middleware
+func (siw *ServerInterfaceWrapper) HeartbeatTrackClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", r.PathValue("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trackId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.HeartbeatTrackClaim(w, r, trackId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -2818,6 +2960,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/api/tracks/generate", wrapper.GenerateTracks)
 	m.HandleFunc("DELETE "+options.BaseURL+"/api/tracks/{trackId}", wrapper.DeleteTrack)
 	m.HandleFunc("GET "+options.BaseURL+"/api/tracks/{trackId}", wrapper.GetTrackDetail)
+	m.HandleFunc("DELETE "+options.BaseURL+"/api/tracks/{trackId}/claim", wrapper.ReleaseTrackClaim)
+	m.HandleFunc("POST "+options.BaseURL+"/api/tracks/{trackId}/claim", wrapper.ClaimTrack)
+	m.HandleFunc("POST "+options.BaseURL+"/api/tracks/{trackId}/claim/heartbeat", wrapper.HeartbeatTrackClaim)
 	m.HandleFunc("GET "+options.BaseURL+"/health", wrapper.GetHealth)
 
 	return m
@@ -4534,6 +4679,114 @@ func (response GetTrackDetail500JSONResponse) VisitGetTrackDetailResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ReleaseTrackClaimRequestObject struct {
+	TrackId string `json:"trackId"`
+	Body    *ReleaseTrackClaimJSONRequestBody
+}
+
+type ReleaseTrackClaimResponseObject interface {
+	VisitReleaseTrackClaimResponse(w http.ResponseWriter) error
+}
+
+type ReleaseTrackClaim200JSONResponse TrackClaimReleased
+
+func (response ReleaseTrackClaim200JSONResponse) VisitReleaseTrackClaimResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReleaseTrackClaim400JSONResponse ErrorResponse
+
+func (response ReleaseTrackClaim400JSONResponse) VisitReleaseTrackClaimResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReleaseTrackClaim404JSONResponse ErrorResponse
+
+func (response ReleaseTrackClaim404JSONResponse) VisitReleaseTrackClaimResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClaimTrackRequestObject struct {
+	TrackId string `json:"trackId"`
+	Body    *ClaimTrackJSONRequestBody
+}
+
+type ClaimTrackResponseObject interface {
+	VisitClaimTrackResponse(w http.ResponseWriter) error
+}
+
+type ClaimTrack200JSONResponse TrackClaimInfo
+
+func (response ClaimTrack200JSONResponse) VisitClaimTrackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClaimTrack400JSONResponse ErrorResponse
+
+func (response ClaimTrack400JSONResponse) VisitClaimTrackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClaimTrack409JSONResponse TrackClaimConflict
+
+func (response ClaimTrack409JSONResponse) VisitClaimTrackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type HeartbeatTrackClaimRequestObject struct {
+	TrackId string `json:"trackId"`
+	Body    *HeartbeatTrackClaimJSONRequestBody
+}
+
+type HeartbeatTrackClaimResponseObject interface {
+	VisitHeartbeatTrackClaimResponse(w http.ResponseWriter) error
+}
+
+type HeartbeatTrackClaim200JSONResponse TrackClaimInfo
+
+func (response HeartbeatTrackClaim200JSONResponse) VisitHeartbeatTrackClaimResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type HeartbeatTrackClaim400JSONResponse ErrorResponse
+
+func (response HeartbeatTrackClaim400JSONResponse) VisitHeartbeatTrackClaimResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type HeartbeatTrackClaim404JSONResponse ErrorResponse
+
+func (response HeartbeatTrackClaim404JSONResponse) VisitHeartbeatTrackClaimResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -4708,6 +4961,15 @@ type StrictServerInterface interface {
 	// Get full detail for a track including spec, plan, and metadata
 	// (GET /api/tracks/{trackId})
 	GetTrackDetail(ctx context.Context, request GetTrackDetailRequestObject) (GetTrackDetailResponseObject, error)
+	// Release a track claim
+	// (DELETE /api/tracks/{trackId}/claim)
+	ReleaseTrackClaim(ctx context.Context, request ReleaseTrackClaimRequestObject) (ReleaseTrackClaimResponseObject, error)
+	// Claim a track for implementation
+	// (POST /api/tracks/{trackId}/claim)
+	ClaimTrack(ctx context.Context, request ClaimTrackRequestObject) (ClaimTrackResponseObject, error)
+	// Extend track claim TTL
+	// (POST /api/tracks/{trackId}/claim/heartbeat)
+	HeartbeatTrackClaim(ctx context.Context, request HeartbeatTrackClaimRequestObject) (HeartbeatTrackClaimResponseObject, error)
 	// Health check
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -6162,6 +6424,105 @@ func (sh *strictHandler) GetTrackDetail(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetTrackDetailResponseObject); ok {
 		if err := validResponse.VisitGetTrackDetailResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReleaseTrackClaim operation middleware
+func (sh *strictHandler) ReleaseTrackClaim(w http.ResponseWriter, r *http.Request, trackId string) {
+	var request ReleaseTrackClaimRequestObject
+
+	request.TrackId = trackId
+
+	var body ReleaseTrackClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReleaseTrackClaim(ctx, request.(ReleaseTrackClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReleaseTrackClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReleaseTrackClaimResponseObject); ok {
+		if err := validResponse.VisitReleaseTrackClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ClaimTrack operation middleware
+func (sh *strictHandler) ClaimTrack(w http.ResponseWriter, r *http.Request, trackId string) {
+	var request ClaimTrackRequestObject
+
+	request.TrackId = trackId
+
+	var body ClaimTrackJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ClaimTrack(ctx, request.(ClaimTrackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ClaimTrack")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ClaimTrackResponseObject); ok {
+		if err := validResponse.VisitClaimTrackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// HeartbeatTrackClaim operation middleware
+func (sh *strictHandler) HeartbeatTrackClaim(w http.ResponseWriter, r *http.Request, trackId string) {
+	var request HeartbeatTrackClaimRequestObject
+
+	request.TrackId = trackId
+
+	var body HeartbeatTrackClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.HeartbeatTrackClaim(ctx, request.(HeartbeatTrackClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "HeartbeatTrackClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(HeartbeatTrackClaimResponseObject); ok {
+		if err := validResponse.VisitHeartbeatTrackClaimResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
