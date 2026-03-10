@@ -37,13 +37,22 @@ advisor-hub-fe_20260310115600Z:
   - advisor-skills-be_20260310115559Z
 
 advisor-project-create-be_20260311230000Z: []
+
 advisor-skills-be_20260310115559Z: []
+
+agent-diff-panel-fe_20260312210900Z: []
+
+agent-idle-suspend-fe_20260312020001Z:
+  - agent-idle-suspend-be_20260312020000Z
+
+agent-interrupt-be_20260312220001Z: []
+
+agent-interrupt-fe_20260312220002Z:
+  - agent-interrupt-be_20260312220001Z
 
 cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
-
-fix-agent-name-in-api-be_20260312200000Z: []
 
 fix-consent-zindex-fe_20260311230000Z: []
 
@@ -58,13 +67,17 @@ github-repo-migration_20260311080001Z:
 
 hide-advisor-hub-fe_20260312000100Z: []
 
+minimize-floating-cards-fe_20260312220000Z: []
+
 onboarding-ux-fe_20260310073721Z: []
+
 quota-gauges-be_20260310092417Z: []
 
 replace-tracing-be_20260310144200Z: []
 
 responsive-kanban-fe_20260311220002Z:
   - responsive-nav-fe_20260311220000Z
+
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []

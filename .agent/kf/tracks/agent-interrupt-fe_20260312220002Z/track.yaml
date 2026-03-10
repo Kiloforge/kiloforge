@@ -1,0 +1,103 @@
+id: agent-interrupt-fe_20260312220002Z
+title: "Interrupt button and input queueing UI for agent terminals"
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Add an interrupt button to agent terminal windows that is active when the
+    agent is mid-turn. Implement frontend input queueing with visual feedback
+    so users can type messages while the agent is thinking.
+  context: |
+    The backend (agent-interrupt-be track) adds interrupt capability via WS
+    "interrupt" message and input queueing in Bridge. The frontend needs to:
+    1. Track turn state (thinking vs idle) from turn_start/turn_end messages
+    2. Show an interrupt button during agent's turn
+    3. Allow input during agent's turn with "queued" visual feedback
+    4. Show queue depth indicator
+  codebase_analysis: |
+    **useAgentWebSocket** (`frontend/src/hooks/useAgentWebSocket.ts`):
+    - Parses WS messages but does not track turn_start/turn_end state
+    - `sendMessage()` sends input immediately — no queueing concept
+    - Need to add `turnActive` boolean and `sendInterrupt()` method
+
+    **AgentTerminal** (`frontend/src/components/AgentTerminal.tsx`):
+    - Input area with Cmd+Enter to send
+    - No interrupt button exists
+    - `canSend` is based on connection status and terminal state only
+    - Need to add interrupt button and queue indicator
+
+    **WS message types** (from backend):
+    - `turn_start` with `turn_id` — marks beginning of agent's turn
+    - `turn_end` with `turn_id`, `interrupted` flag — marks end of turn
+    - `interrupt` (client→server) — new message type from BE track
+  acceptance_criteria:
+    - Frontend tracks turn state via turn_start/turn_end messages
+    - Interrupt button visible in terminal header when agent is mid-turn (turnActive=true)
+    - Clicking interrupt sends {"type":"interrupt"} via WebSocket
+    - Interrupt button shows visual feedback (spinner/disabled) while interrupt is processing
+    - Button disappears when turn_end (with interrupted=true) arrives
+    - Input field remains enabled during agent's turn — typed text shows "queued" indicator
+    - When input is sent during agent's turn, it appears in chat with "queued" visual treatment
+    - Queued messages are automatically sent by backend when turn completes
+    - Queue depth shown as small counter near input area
+    - Escape key triggers interrupt when terminal is focused and agent is mid-turn
+    - No regression in existing terminal input behavior
+  out_of_scope: |
+    - Backend interrupt mechanism (handled by BE track)
+    - Minimized window notifications (separate track)
+    - Changing the WS protocol beyond using the new interrupt message
+  technical_notes: |
+    **Implementation approach:**
+
+    1. **Track turn state in useAgentWebSocket**
+       Add `turnActive: boolean` state. Set to `true` on `turn_start` message,
+       `false` on `turn_end` message. Expose in hook return value.
+       This may overlap with the minimize-floating-cards-fe track which also
+       adds turn tracking — coordinate to avoid duplicate state.
+
+    2. **sendInterrupt() in useAgentWebSocket**
+       New method that sends `{"type":"interrupt"}` over WebSocket.
+       Only callable when `turnActive === true`.
+
+    3. **Interrupt button in AgentTerminal**
+       Add button to terminal header area (near the close/minimize buttons).
+       Styled as a compact button with stop/pause icon.
+       - Visible when `turnActive === true`
+       - Disabled when agent is in terminal state
+       - onClick → `sendInterrupt()`
+
+    4. **Input queueing UI**
+       When `turnActive === true` and user sends input:
+       - Input still sends via WebSocket (backend queues it)
+       - Show the sent message in chat with "queued" visual style (dimmed, dotted border)
+       - Show small queue depth counter near input area
+
+    5. **Escape key shortcut**
+       When terminal input is focused and `turnActive === true`, pressing
+       Escape triggers interrupt (similar to Claude CLI behavior).
+plan:
+  - phase: "Turn state and interrupt"
+    tasks:
+      - text: "Add turnActive boolean to useAgentWebSocket — set from turn_start/turn_end messages"
+        done: false
+      - text: "Add sendInterrupt() method to useAgentWebSocket — sends {type:'interrupt'} message"
+        done: false
+      - text: "Add Escape key handler in AgentTerminal — triggers sendInterrupt when turnActive"
+        done: false
+  - phase: "UI components"
+    tasks:
+      - text: "Add interrupt button to AgentTerminal header — visible when turnActive, styled with stop icon"
+        done: false
+      - text: "Style queued messages in chat — dimmed appearance with 'queued' label"
+        done: false
+      - text: "Add queue depth counter near input area when messages are queued"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build-frontend — no TypeScript errors"
+        done: false
+      - text: "Verify interrupt button appears during agent turn and disappears on turn_end"
+        done: false
+extra: {}
