@@ -1,0 +1,44 @@
+name: Close External PRs
+
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  close-external-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check author association and close if external
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const association = context.payload.pull_request.author_association;
+            const allowedAssociations = ['MEMBER', 'OWNER', 'COLLABORATOR'];
+
+            if (allowedAssociations.includes(association)) {
+              console.log(`Author association "${association}" is allowed. Skipping.`);
+              return;
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const repo = context.repo;
+
+            await github.rest.issues.createComment({
+              ...repo,
+              issue_number: prNumber,
+              body: [
+                'Thank you for your interest in Kiloforge! However, this project is not currently accepting external pull requests.',
+                '',
+                'All contributions are managed internally. If you have a bug to report or a feature to suggest, please [open an issue](https://github.com/' + repo.owner + '/' + repo.repo + '/issues/new/choose) instead. The maintainer will assess it and manage implementation.',
+                '',
+                'This PR will now be closed automatically.'
+              ].join('\n')
+            });
+
+            await github.rest.pulls.update({
+              ...repo,
+              pull_number: prNumber,
+              state: 'closed'
+            });
+
+            console.log(`Closed external PR #${prNumber} (association: "${association}")`);
