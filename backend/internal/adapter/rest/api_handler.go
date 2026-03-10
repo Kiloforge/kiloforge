@@ -898,6 +898,16 @@ func (h *APIHandler) ListTracks(_ context.Context, req gen.ListTracksRequestObje
 		allTracks = []gen.Track{}
 	}
 
+	// Enrich tracks with claim status from active track-scoped locks.
+	claims := h.activeTrackClaims()
+	for i, track := range allTracks {
+		if cl, ok := claims[track.Id]; ok {
+			allTracks[i].ClaimedBy = &cl.Holder
+			allTracks[i].ClaimedAt = &cl.AcquiredAt
+			allTracks[i].ClaimExpiresAt = &cl.ExpiresAt
+		}
+	}
+
 	return gen.ListTracks200JSONResponse{
 		Items:      allTracks,
 		TotalCount: len(allTracks),
