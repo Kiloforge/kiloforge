@@ -403,6 +403,17 @@ make release-local   # goreleaser --snapshot --clean
 - [Getting Started](docs/getting-started.md) — Installation and first agent
 - [Architecture Overview](docs/architecture.md) — How the pieces fit together
 
+## Contributing
+
+Kiloforge is not currently accepting external pull requests — they are automatically closed by a GitHub Actions workflow. All development is managed by the maintainer using AI agent orchestration.
+
+To contribute, please [open an issue](https://github.com/Goblinlordx/crelay/issues/new/choose):
+
+- **Bug reports** — describe the problem, steps to reproduce, and your environment
+- **Feature requests** — describe the problem you're solving and your proposed solution
+
+The maintainer will assess each issue and manage implementation through the internal development workflow.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE) for details.
