@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 
+	"kiloforge/internal/adapter/browser"
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
@@ -69,6 +70,13 @@ func runUp(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Gitea:       http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
 	fmt.Println()
 	fmt.Println("Use 'kf down' to stop.")
+
+	if !flagNoBrowser {
+		dashURL := fmt.Sprintf("http://localhost:%d/", cfg.OrchestratorPort)
+		if err := browser.Open(dashURL); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
+		}
+	}
 
 	return nil
 }

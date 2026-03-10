@@ -2,12 +2,15 @@ package cli
 
 import (
 	"context"
+	"os"
 
 	"kiloforge/internal/adapter/analytics"
 	"kiloforge/internal/adapter/config"
 
 	"github.com/spf13/cobra"
 )
+
+var flagNoBrowser bool
 
 var rootCmd = &cobra.Command{
 	Use:   "kf",
@@ -42,6 +45,8 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.PersistentFlags().BoolVar(&flagNoBrowser, "no-browser", os.Getenv("KF_NO_BROWSER") == "1", "Do not open the dashboard in a browser")
+
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(upCmd)
 	rootCmd.AddCommand(downCmd)

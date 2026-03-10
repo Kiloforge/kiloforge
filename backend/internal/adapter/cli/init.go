@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"kiloforge/internal/adapter/auth"
+	"kiloforge/internal/adapter/browser"
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
@@ -89,6 +90,12 @@ func runInit(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Dashboard:  http://localhost:%d/\n", cfg.OrchestratorPort)
 		fmt.Printf("  Gitea:      http://localhost:%d/gitea/ (auto-authenticated)\n", cfg.OrchestratorPort)
 		fmt.Printf("  Data:       %s\n", cfg.DataDir)
+		if !flagNoBrowser {
+			dashURL := fmt.Sprintf("http://localhost:%d/", cfg.OrchestratorPort)
+			if err := browser.Open(dashURL); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
+			}
+		}
 		return nil
 	}
 
@@ -191,6 +198,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Auto-install embedded skills (no prompt, no repo needed).
 	fmt.Println("==> Installing skills...")
 	installEmbeddedSkills(cfg)
+
+	if !flagNoBrowser {
+		dashURL := fmt.Sprintf("http://localhost:%d/", cfg.OrchestratorPort)
+		if err := browser.Open(dashURL); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
+		}
+	}
 
 	return nil
 }
