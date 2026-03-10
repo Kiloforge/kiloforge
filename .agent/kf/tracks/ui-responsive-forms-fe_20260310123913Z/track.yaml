@@ -1,0 +1,74 @@
+id: ui-responsive-forms-fe_20260310123913Z
+title: "Responsive design, form validation UX, and table polish"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: "Add mobile breakpoints to all page layouts, improve form validation with inline feedback, and polish data tables with sticky headers and sort indicators."
+  context: |
+    The Command Deck lacks responsive design — only AdvisorHub has a @media query.
+    Tables overflow on mobile with no horizontal scroll indicator. The AddProjectForm
+    shows errors only after submission with no field-level feedback. Data tables lack
+    sticky headers and sort direction indicators.
+  codebase_analysis: |
+    - AdvisorHub.module.css line 213-217: only component with @media query
+    - OverviewPage.module.css lines 53-72: project row has multi-column layout, no mobile breakpoint
+    - AgentHistoryPage.module.css line 65: overflow-x auto but no visual scroll indicator
+    - AgentHistoryPage.module.css line 74-83: table header not sticky
+    - AgentHistoryPage.tsx line 26-30: table is sorted but no column sort indicators
+    - AddProjectForm.tsx: no real-time field validation, error shown only after submit
+    - AddProjectForm.module.css line 87-98: no required field indicators
+    - App.module.css: header layout may break on narrow screens
+    - Modal CSS files: width: 90% but no max-width or mobile padding adjustments
+  acceptance_criteria:
+    - All page layouts have mobile breakpoints (max-width: 768px and 480px)
+    - App header collapses gracefully on mobile (hamburger or stacked layout)
+    - Project list switches to card-based layout on mobile
+    - Data tables show horizontal scroll indicator on mobile
+    - AgentHistoryPage table has sticky header row
+    - Table sort columns show direction indicator (↑/↓)
+    - AddProjectForm shows inline validation feedback as user types
+    - Required fields are visually marked
+    - Modals have max-width and mobile-appropriate padding
+  out_of_scope: |
+    - Full mobile-first redesign
+    - Touch gesture support
+    - PWA/offline support
+  technical_notes: |
+    Add responsive breakpoints as CSS custom properties for consistency. Use
+    @media (max-width: 768px) for tablet and (max-width: 480px) for phone.
+    For table sticky headers, use position: sticky; top: 0; z-index: 1 on
+    thead th elements. For sort indicators, add a SortIcon component toggled
+    by current sort state. For form validation, add onBlur validation to
+    AddProjectForm input with inline error message below the field.
+plan:
+  - phase: "Foundation — Breakpoints and utilities"
+    tasks:
+      - text: "Add responsive breakpoint CSS variables to index.css and create a shared responsive mixin pattern"
+        done: false
+      - text: "Add mobile breakpoints to App.module.css header (collapse nav items, stack on mobile)"
+        done: false
+  - phase: "Core — Responsive layouts"
+    tasks:
+      - text: "Add mobile breakpoints to OverviewPage.module.css (stack project columns, reduce padding)"
+        done: false
+      - text: "Add mobile breakpoints to AgentHistoryPage.module.css (horizontal scroll indicator, responsive font sizes)"
+        done: false
+      - text: "Add mobile breakpoints to all modal/dialog CSS (max-width, mobile padding, full-width on phone)"
+        done: false
+      - text: "Add mobile breakpoints to MetricsPanel, TrackList, and remaining page CSS modules"
+        done: false
+  - phase: "Table and form polish"
+    tasks:
+      - text: "Add sticky header to AgentHistoryPage table (position: sticky on thead th)"
+        done: false
+      - text: "Add sort direction indicator (↑/↓ icons) to sortable table columns"
+        done: false
+      - text: "Add inline validation to AddProjectForm — validate URL format onBlur with field-level error message"
+        done: false
+      - text: "Add required field indicator (*) to AddProjectForm labels"
+        done: false
+      - text: "Improve table row hover states with cursor: pointer and more visible background change"
+        done: false
+extra: {}

@@ -1,0 +1,74 @@
+id: ui-loading-states-fe_20260310123911Z
+title: "Loading skeletons, empty states, and transition animations"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: "Replace generic 'Loading...' text with skeleton loaders, add consistent empty state design, and add modal/page transition animations."
+  context: |
+    The Command Deck dashboard currently shows plain text placeholders during loading
+    (e.g., "Loading agents...", "Loading projects...") and has no transition animations
+    for modals or page changes. Empty states are inconsistent — some have helpful
+    instructions while others are bare text.
+  codebase_analysis: |
+    - OverviewPage.tsx lines 218-219, 248-249: text-only loading states for agents and projects
+    - AgentHistoryPage.tsx line 51-52: generic loading text for table
+    - AgentGrid uses no skeleton placeholder — cards appear suddenly
+    - MetricsPanel has no skeleton — numbers pop in
+    - TrackList line 23: simple "No tracks" text
+    - ReliabilityPage lines 25-34: good empty state pattern (icon + title + description) — use as template
+    - Toast.module.css lines 25-37: has slide-in animation (good) but no exit animation
+    - All modal CSS files: no open/close animations — instant appear/disappear
+    - App.module.css: no CSS variables for animation timing
+  acceptance_criteria:
+    - Agent grid shows skeleton card placeholders during loading (matching card dimensions)
+    - MetricsPanel shows skeleton number placeholders during loading
+    - Project list shows skeleton row placeholders during loading
+    - AgentHistoryPage table shows skeleton rows during loading
+    - All empty states use consistent design pattern (icon, title, description, optional CTA)
+    - Modals/dialogs fade in on open and fade out on close
+    - Toast notifications have exit animation (fade/slide out)
+    - CSS animation timing uses shared variables for consistency
+  out_of_scope: |
+    - Page-to-page route transitions (would require react-transition-group or similar)
+    - Skeleton loaders for deeply nested components (just top-level containers)
+    - Changes to data fetching logic or caching
+  technical_notes: |
+    Create a reusable Skeleton component (CSS module with shimmer animation via
+    linear-gradient + @keyframes). Apply to AgentGrid, MetricsPanel, ProjectList,
+    and AgentHistoryPage table. For empty states, create a shared EmptyState component
+    modeled after ReliabilityPage's pattern. For modals, add @keyframes fadeIn/fadeOut
+    to a shared animations.css and apply to overlay/dialog classes.
+plan:
+  - phase: "Foundation — Skeleton and EmptyState components"
+    tasks:
+      - text: "Create Skeleton.tsx and Skeleton.module.css with shimmer animation and configurable dimensions"
+        done: false
+      - text: "Create EmptyState.tsx and EmptyState.module.css with icon, title, description, and optional action button"
+        done: false
+      - text: "Add shared CSS animation variables (--animation-fade, --animation-slide) to index.css"
+        done: false
+  - phase: "Core — Apply skeletons and empty states"
+    tasks:
+      - text: "Add skeleton loading state to AgentGrid (show 3-4 placeholder cards matching card dimensions)"
+        done: false
+      - text: "Add skeleton loading state to MetricsPanel (placeholder number blocks)"
+        done: false
+      - text: "Add skeleton loading state to OverviewPage project list (placeholder rows)"
+        done: false
+      - text: "Add skeleton loading state to AgentHistoryPage table (placeholder rows)"
+        done: false
+      - text: "Replace all inconsistent empty states with EmptyState component (TrackList, AgentGrid, project list)"
+        done: false
+  - phase: "Animations — Modal and toast transitions"
+    tasks:
+      - text: "Add fadeIn/fadeOut @keyframes to modal overlay and dialog CSS modules (RemoveProjectDialog, ConsentDialog, AgentLauncher, SkillsInstallDialog, AdvisorHub dialog)"
+        done: false
+      - text: "Add exit animation to Toast component (fade-out before removal)"
+        done: false
+      - text: "Add subtle fade-in to panel sections on OverviewPage mount"
+        done: false
+      - text: "Verify all animations respect prefers-reduced-motion media query"
+        done: false
+extra: {}

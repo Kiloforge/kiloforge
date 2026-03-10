@@ -1,0 +1,70 @@
+id: ui-accessibility-fe_20260310123912Z
+title: "Accessibility polish — focus traps, ARIA labels, keyboard nav"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: "Add focus traps to all modals, replace window.confirm() with styled dialogs, add ARIA labels to interactive elements, and ensure consistent keyboard navigation."
+  context: |
+    The Command Deck has several accessibility gaps: modals don't trap focus (Tab
+    can leave the dialog), AgentCard uses window.confirm() for delete confirmation,
+    action buttons lack aria-labels for screen readers, and there are no visible
+    focus indicators for keyboard navigation.
+  codebase_analysis: |
+    - AgentCard.tsx line 104-112: uses window.confirm() for delete — jarring, doesn't match UI
+    - RemoveProjectDialog.tsx: backdrop click works but no focus trap
+    - ConsentDialog.tsx, AgentLauncher.tsx, SkillsInstallDialog.tsx, AdvisorHub.tsx: same issue
+    - StatusBadge.tsx line 4: no semantic role or aria-label
+    - AgentHistoryPage table action buttons: no individual aria-labels ("Delete agent X")
+    - No global :focus-visible styles in index.css
+    - ShortcutHelp.tsx handles Escape, but not all dialogs do consistently
+    - LogViewer close button (×) has no aria-label
+    - Disabled buttons use opacity: 0.5 — may fail WCAG contrast
+  acceptance_criteria:
+    - All modals/dialogs trap focus (Tab cycles within dialog, not behind it)
+    - All modals close on Escape key press consistently
+    - window.confirm() replaced with styled ConfirmDialog component
+    - All action buttons have descriptive aria-labels (e.g., "Stop agent bright-fox")
+    - StatusBadge has aria-label describing the status
+    - Visible :focus-visible ring on all interactive elements
+    - Close buttons (×) have aria-label="Close"
+    - Disabled button contrast meets WCAG AA (4.5:1 minimum)
+  out_of_scope: |
+    - Full WCAG AAA compliance audit
+    - Screen reader testing (manual testing is out of scope for this track)
+    - Color contrast changes beyond disabled buttons
+  technical_notes: |
+    Create a useFocusTrap hook that accepts a ref and traps Tab/Shift+Tab within
+    the element. Apply to all dialog/overlay components. Create a ConfirmDialog
+    component similar to RemoveProjectDialog but generic (title, message, confirm/cancel).
+    Replace window.confirm() in AgentCard with ConfirmDialog. Add :focus-visible
+    styles to index.css globally.
+plan:
+  - phase: "Foundation — Focus trap and ConfirmDialog"
+    tasks:
+      - text: "Create useFocusTrap hook that traps Tab/Shift+Tab within a container ref"
+        done: false
+      - text: "Create ConfirmDialog.tsx and ConfirmDialog.module.css — generic confirmation dialog with title, message, danger/normal variants"
+        done: false
+      - text: "Add global :focus-visible outline styles to index.css for buttons, links, and inputs"
+        done: false
+  - phase: "Core — Apply accessibility improvements"
+    tasks:
+      - text: "Apply useFocusTrap to all modal/dialog components (RemoveProjectDialog, ConsentDialog, AgentLauncher, SkillsInstallDialog, AdvisorHub dialog, ShortcutHelp, LogViewer)"
+        done: false
+      - text: "Replace window.confirm() in AgentCard delete with ConfirmDialog"
+        done: false
+      - text: "Add aria-labels to all action buttons in AgentCard (Stop/Resume/Delete with agent name)"
+        done: false
+      - text: "Add aria-labels to StatusBadge, LogViewer close button, and other unlabeled interactive elements"
+        done: false
+      - text: "Ensure all dialogs handle Escape key consistently (close on Escape)"
+        done: false
+  - phase: "Contrast and verification"
+    tasks:
+      - text: "Increase disabled button opacity from 0.5 to 0.6 and verify contrast ratio meets WCAG AA"
+        done: false
+      - text: "Verify keyboard Tab order through all major flows (overview, agent detail, project detail)"
+        done: false
+extra: {}

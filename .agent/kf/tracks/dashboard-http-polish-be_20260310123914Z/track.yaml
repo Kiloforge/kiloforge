@@ -1,0 +1,66 @@
+id: dashboard-http-polish-be_20260310123914Z
+title: "Dashboard HTTP polish — cache headers, gzip, security headers"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: "Add Cache-Control headers for hashed static assets, gzip compression middleware, security headers, and improved startup/shutdown logging."
+  context: |
+    The dashboard server serves static assets without cache headers, has no response
+    compression, and is missing security headers. Startup messages don't indicate
+    whether the dashboard is enabled, and shutdown logs go to a file instead of stderr.
+  codebase_analysis: |
+    - dashboard/server.go line 113 and embed.go lines 17-37: spaFileServer delegates to
+      http.FileServer with no Cache-Control headers. Hashed assets (index-D-OSlWep.js)
+      should be immutable-cached.
+    - dashboard/embed.go lines 26-32: SPA fallback returns index.html for all 404s including
+      /api/typo — no logging of fallback
+    - No gzip middleware anywhere in the HTTP stack. Dashboard bundles are 558KB uncompressed.
+    - No Content-Security-Policy, X-Content-Type-Options, or X-Frame-Options headers
+    - serve.go line 155: startup message doesn't indicate dashboard state
+    - server.go lines 202-327: shutdown logs go to s.logger (file), not console
+    - SSE handler (sse.go line 81): events don't include updated_at timestamp
+  acceptance_criteria:
+    - Hashed static assets (*.js, *.css with hash in filename) get Cache-Control immutable, max-age=31536000
+    - index.html gets Cache-Control no-cache (always revalidate)
+    - All HTTP responses are gzip-compressed when client accepts it
+    - Security headers set on all responses (X-Content-Type-Options nosniff, X-Frame-Options SAMEORIGIN)
+    - Startup log includes dashboard enabled/disabled state
+    - Graceful shutdown logs to stderr (not just log file)
+    - SPA fallback logs a debug message when serving index.html for unknown paths
+  out_of_scope: |
+    - Full CSP policy (would require auditing all inline scripts/styles)
+    - CORS headers (not needed while frontend is embedded)
+    - API error response format changes (separate track)
+    - Rate limit headers
+  technical_notes: |
+    For cache headers, wrap the SPA file server with middleware that checks the
+    URL path — if it matches /assets/* with a hash pattern, set immutable cache.
+    Otherwise set no-cache. For gzip, use a lightweight middleware (compress/gzip
+    from stdlib). For security headers, add a middleware that sets headers on all
+    responses. Keep it simple — no external dependencies.
+plan:
+  - phase: "Cache and compression"
+    tasks:
+      - text: "Add cache header middleware to dashboard: immutable for hashed assets, no-cache for index.html"
+        done: false
+      - text: "Add gzip compression middleware wrapping the dashboard HTTP handler"
+        done: false
+      - text: "Add test for cache header middleware (verify correct headers for different asset types)"
+        done: false
+  - phase: "Security headers and logging"
+    tasks:
+      - text: "Add security headers middleware (X-Content-Type-Options, X-Frame-Options) to all responses"
+        done: false
+      - text: "Add debug logging to SPA fallback when serving index.html for non-asset paths"
+        done: false
+      - text: "Update startup log message to include dashboard enabled/disabled state"
+        done: false
+  - phase: "Shutdown and observability"
+    tasks:
+      - text: "Log graceful shutdown progress to stderr in addition to log file"
+        done: false
+      - text: "Add updated_at timestamp to SSE agent_update events"
+        done: false
+extra: {}

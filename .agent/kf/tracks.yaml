@@ -46,6 +46,7 @@ consent-dialog-copy_20260310060000Z: {"title":"Update consent dialog to referenc
 cortex-rebrand-be_20260311100001Z: {"title":"Rebrand orchestrator to Cortex — CLI, API docs, config, and backend strings","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 create-project-be_20260310150000Z: {"title":"Support creating projects without a remote URL","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 create-project-fe_20260310150001Z: {"title":"Add create-from-scratch mode to Add Project UI","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+dashboard-http-polish-be_20260310123914Z: {"title":"Dashboard HTTP polish — cache headers, gzip, security headers","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and Kiloforge Rebrand Defaults (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kiloforge.dev design guide","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -254,6 +255,9 @@ track-gen-auto-approve_20260309220000Z: {"title":"Track Generator Auto-Approve f
 track-lifecycle-tracing_20260309062329Z: {"title":"Track Lifecycle Tracing with OTel","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-relations-fe_20260311010001Z: {"title":"Track relationship visualization — animated SVG connectors for deps and conflicts on Kanban board","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 track-tooltip-be_20260311010000Z: {"title":"Track deps/conflicts API — extend track endpoints with dependency and conflict data","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+ui-accessibility-fe_20260310123912Z: {"title":"Accessibility polish — focus traps, ARIA labels, keyboard nav","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+ui-loading-states-fe_20260310123911Z: {"title":"Loading skeletons, empty states, and transition animations","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
+ui-responsive-forms-fe_20260310123913Z: {"title":"Responsive design, form validation UX, and table polish","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 work-queue-be_20260311010002Z: {"title":"Work queue — backend service with semaphore, dependency-aware scheduling, and auto-spawn","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and status UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
