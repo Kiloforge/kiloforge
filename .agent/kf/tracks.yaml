@@ -181,6 +181,7 @@ test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with 
 testing-audit-e2e_20260308201000Z: {"title":"Testing Audit — Integration, E2E, and Smoke Tests","status":"completed","type":"chore","created":"2026-03-08","updated":"2026-03-08"}
 tour-inmemory-state_20260310120000Z: {"title":"Tour In-Memory State — Controlled Demo Data for Guided Tour","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tour-settings-menu_20260310041000Z: {"title":"Tour UX — Settings Menu with Take Tour Option and Auto-Dismiss Banner","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+tour-spotlight-cutout_20260310090000Z: {"title":"Add true spotlight cutout to tour overlay","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 tour-ux-improvements_20260309235000Z: {"title":"Tour UX Improvements — State Transitions, Demo Data, and Example URL","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 tour-visual-contrast_20260310050000Z: {"title":"Tour Visual Contrast — Stronger Backdrop, Opaque Tooltip, Spotlight Glow","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tracing-always-on-be_20260309231000Z: {"title":"Remove Optional Tracing — Always-On (Backend)","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
