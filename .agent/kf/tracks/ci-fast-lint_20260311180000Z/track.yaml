@@ -72,11 +72,11 @@ plan:
   - phase: CI pipeline update
     tasks:
       - text: Replace golangci-lint-action step in ci.yml with direct go install + run steps for staticcheck, goimports, go vet, gofmt
-        done: false
+        done: true
       - text: Ensure CI lint step still requires frontend build (for Go embed)
-        done: false
+        done: true
       - text: Verify CI workflow syntax is valid (act or manual review)
-        done: false
+        done: true
   - phase: Documentation and verification
     tasks:
       - text: Update .agent/kf/workflow.md verification commands to reference make lint (fast) and note make lint-full for thorough checks
