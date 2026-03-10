@@ -75,57 +75,50 @@ make build
 ## Quick Start
 
 ```bash
-# Build
-make build
-
-# Initialize the Cortex
-kf init
+# Start the Cortex (first run performs setup automatically)
+kf up
 
 # Register your project
 kf add /path/to/my-project
 
 # List registered projects
 kf projects
+
+# Spawn a developer agent for a track
+kf implement <track-id>
+
+# Monitor your Swarm
+kf agents
 ```
 
 This will:
 1. Create the data directory (`~/.kiloforge/`)
 2. Save the global configuration
 3. Start the Cortex control plane on `localhost:4001`
-4. Register your project for agent orchestration
+4. Open the Command Deck in your browser
+5. Register your project for agent orchestration
 
 ## Commands
 
-### `kf init`
+### Cortex Lifecycle
 
-One-time setup: initialize the Cortex control plane.
+#### `kf up`
 
-```bash
-kf init [flags]
-
-Flags:
-  --data-dir string   Persistent data directory (default ~/.kiloforge)
-```
-
-**Idempotent:** Running again when the Cortex is already running prints the status and exits.
-
-### `kf up`
-
-Start the Cortex (daily use). Returns immediately after it is running.
+Start the Cortex control plane. On first run, this performs one-time setup (creates data directory, saves configuration). Returns immediately once the Cortex is running.
 
 ```bash
-kf up
+kf up [--host string] [--port int]
 ```
 
-### `kf down`
+#### `kf down`
 
-Stop the Cortex without removing data (daily use).
+Stop the Cortex. Active agents are gracefully suspended and can be resumed on the next `kf up`.
 
 ```bash
 kf down
 ```
 
-### `kf status`
+#### `kf status`
 
 Show Cortex status, quota usage, and agent costs.
 
@@ -139,18 +132,35 @@ Server:      http://localhost:4001
 Dashboard:   http://localhost:4001/-/
 ```
 
-### `kf add`
+#### `kf destroy`
 
-Register a project with the Cortex.
+Permanently destroy all Kiloforge data (requires confirmation).
+
+```bash
+kf destroy          # prompts for confirmation
+kf destroy --force  # skip confirmation
+```
+
+### Project Management
+
+#### `kf add`
+
+Register a project with the Cortex. Clones the repository to a managed location and sets up worktree pooling.
 
 ```bash
 kf add /path/to/project              # local path
 kf add /path/to/project --name x     # override slug
 ```
 
-Registers the project for agent orchestration, quota tracking, and worktree management.
+#### `kf create`
 
-### `kf projects`
+Create a new project from scratch.
+
+```bash
+kf create myproject
+```
+
+#### `kf projects`
 
 List registered projects.
 
@@ -158,19 +168,32 @@ List registered projects.
 kf projects
 ```
 
-### `kf implement`
+#### `kf push`
 
-Approve a conductor track and spawn a developer agent in a pooled worktree.
+Push changes from the internal clone to the origin remote.
+
+```bash
+kf push [slug]              # push current branch
+kf push slug --branch name  # push specific branch
+kf push --all               # push all projects
+```
+
+### Agent Management
+
+#### `kf implement`
+
+Spawn a developer agent in a pooled worktree for a specific track.
 
 ```bash
 kf implement <track-id>            # spawn developer for track
 kf implement --list                # list available tracks
 kf implement --project myapp <id>  # specify project explicitly
+kf implement --dry-run <id>        # preview without spawning
 ```
 
 The command acquires a worktree from the pool, prepares it (reset to main, create implementation branch), and spawns a Claude Code agent running `/kf-developer <track-id>`. Agent state is recorded for monitoring with `kf agents`, `kf logs`, `kf stop`, and `kf attach`.
 
-### `kf agents`
+#### `kf agents`
 
 List active and recent agents.
 
@@ -179,7 +202,7 @@ kf agents          # table output
 kf agents --json   # JSON output
 ```
 
-### `kf logs <agent-id>`
+#### `kf logs <agent-id>`
 
 View logs for an agent. Supports prefix matching on the agent ID.
 
@@ -188,57 +211,96 @@ kf logs abc12345
 kf logs abc12345 -f   # follow mode
 ```
 
-### `kf stop <agent-id>`
+#### `kf stop <agent-id>`
 
 Send SIGINT to stop a running agent. The session is preserved for later resume.
 
-### `kf attach <agent-id>`
+#### `kf attach <agent-id>`
 
 Print the command to resume an agent's Claude session interactively. If the agent is running, it is halted first.
 
-### `kf pool`
+#### `kf cost`
 
-Show worktree pool status. Displays idle and in-use worktrees for developer agents.
+Show token usage and estimated cost per agent.
 
 ```bash
-kf pool
+kf cost
 ```
 
-### `kf escalated`
+#### `kf escalated`
 
-Show tracks that hit the review cycle limit and require human intervention.
+Show tracks that hit the review cycle limit and require the Kiloforger's intervention.
 
 ```bash
 kf escalated
 ```
 
-### `kf destroy`
+### Swarm & Worktrees
 
-Permanently destroy all kiloforge data (requires confirmation).
+#### `kf pool`
+
+Show worktree pool status. Displays idle and in-use worktrees for the Swarm.
 
 ```bash
-kf destroy          # prompts for confirmation
-kf destroy --force  # skip confirmation
+kf pool
+```
+
+### Skills
+
+#### `kf skills`
+
+Manage Kiloforge skills — the slash commands that agents use for structured workflows.
+
+```bash
+kf skills list     # list installed skills
+kf skills update   # update to latest version
+```
+
+### Dashboard
+
+#### `kf dashboard`
+
+Start the Command Deck standalone (without the full Cortex).
+
+```bash
+kf dashboard
+```
+
+### Sync
+
+#### `kf sync`
+
+Sync Kiloforge tracks to the native board representation.
+
+```bash
+kf sync
 ```
 
 ## Architecture
 
 ```
-kf init / kf up
+kf up
     │
     ├─ Cortex (localhost:4001)
     │   ├─ Agent lifecycle: spawn, suspend, resume
     │   ├─ Quota tracking and budget enforcement
     │   ├─ Scoped lock API (merge serialization)
+    │   ├─ Notification bus (agent-needs-attention alerts)
+    │   ├─ Skills management and validation
     │   └─ Track and worktree coordination
     │
     ├─ Command Deck (localhost:4001/-/)
     │   ├─ Real-time agent status via SSE
+    │   ├─ Interactive agent terminals (WebSocket)
+    │   ├─ Kanban track board
+    │   ├─ Trace viewer (OpenTelemetry)
     │   ├─ Quota/cost monitoring
-    │   └─ Log streaming
+    │   ├─ Notification center
+    │   └─ Swarm capacity panel
     │
     └─ Claude Code Swarm
         ├─ Autonomous agents in pooled worktrees
+        ├─ Structured skills (architect → developer → reviewer)
         └─ Implement, verify, and merge directly
 ```
 
@@ -308,7 +370,7 @@ Kiloforge collects anonymous usage data via [PostHog](https://posthog.com) to he
 
 There are three ways to disable analytics:
 
-1. **During init** — Answer "n" to the analytics prompt:
+1. **During first run** — Answer "n" to the analytics prompt:
    ```
    Help improve kiloforge by sending anonymous usage data? (Y/n) n
    ```
@@ -358,7 +420,7 @@ make lint
 make clean
 ```
 
-The `make dev` target starts the Go backend on port 3001 and the Vite dev server on port 5173. The Vite dev server proxies API calls to the backend, so you can develop the frontend with hot reload while hitting real backend endpoints.
+The `make dev` target starts the Go backend on port 3001 and the Vite dev server on port 5173. The Vite dev server proxies API calls to the backend, so the Kiloforger can develop the frontend with hot reload while hitting real backend endpoints.
 
 ## Releasing
 
@@ -384,8 +446,10 @@ make release-local   # goreleaser --snapshot --clean
 ## Documentation
 
 - [Why I Built This](docs/why-i-built-this.md) — The story behind Kiloforge
-- [Getting Started](docs/getting-started.md) — Installation and first agent
+- [Getting Started](docs/getting-started.md) — Installation, first agent, and Command Deck walkthrough
 - [Architecture Overview](docs/architecture.md) — How the pieces fit together
+- [Skills Guide](docs/skills.md) — The full skills catalog and workflow pipeline
+- [Agents & Swarms](docs/agents-and-swarms.md) — Agent lifecycle, notifications, and Swarm coordination
 
 ## Contributing
 
