@@ -52,5 +52,16 @@ func (a *EnvAdapter) Load() (*Config, error) {
 		cfg.PostHogAPIKey = v
 	}
 
+	if v := os.Getenv("KF_ANALYTICS_ENABLED"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err == nil {
+			cfg.AnalyticsEnabled = &b
+		}
+	}
+
+	if v := os.Getenv("KF_POSTHOG_API_KEY"); v != "" {
+		cfg.PostHogAPIKey = v
+	}
+
 	return cfg, nil
 }

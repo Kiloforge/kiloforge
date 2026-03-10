@@ -162,6 +162,34 @@ func TestGetAgentMaxDuration_InvalidFallsBackToDefault(t *testing.T) {
 	}
 }
 
+
+func TestEnvAdapter_AnalyticsEnabled(t *testing.T) {
+	t.Setenv("KF_ANALYTICS_ENABLED", "false")
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.AnalyticsEnabled == nil {
+		t.Fatal("AnalyticsEnabled: want non-nil")
+	}
+	if *cfg.AnalyticsEnabled != false {
+		t.Errorf("AnalyticsEnabled: want false, got %v", *cfg.AnalyticsEnabled)
+	}
+}
+
+func TestEnvAdapter_PostHogAPIKey(t *testing.T) {
+	t.Setenv("KF_POSTHOG_API_KEY", "phc_test123")
+	adapter := &EnvAdapter{}
+	cfg, err := adapter.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.PostHogAPIKey != "phc_test123" {
+		t.Errorf("PostHogAPIKey: want %q, got %q", "phc_test123", cfg.PostHogAPIKey)
+	}
+}
+
 func TestEnvAdapter_InvalidPort_Ignored(t *testing.T) {
 	t.Setenv("KF_GITEA_PORT", "notanumber")
 

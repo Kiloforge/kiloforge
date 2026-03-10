@@ -75,6 +75,28 @@ func TestConfig_IsDashboardEnabled(t *testing.T) {
 	}
 }
 
+
+func TestConfig_IsAnalyticsEnabled(t *testing.T) {
+	t.Parallel()
+
+	cfg := &Config{}
+	if !cfg.IsAnalyticsEnabled() {
+		t.Error("nil AnalyticsEnabled should return true")
+	}
+
+	tr := true
+	cfg.AnalyticsEnabled = &tr
+	if !cfg.IsAnalyticsEnabled() {
+		t.Error("true AnalyticsEnabled should return true")
+	}
+
+	f := false
+	cfg.AnalyticsEnabled = &f
+	if cfg.IsAnalyticsEnabled() {
+		t.Error("false AnalyticsEnabled should return false")
+	}
+}
+
 func TestConfig_NoProjectFields(t *testing.T) {
 	t.Parallel()
 

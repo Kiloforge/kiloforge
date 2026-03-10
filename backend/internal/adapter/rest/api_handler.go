@@ -220,8 +220,10 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 	if h.cfg == nil {
 		return gen.GetConfig200JSONResponse{}, nil
 	}
+	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
 	return gen.GetConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
+		AnalyticsEnabled: &analyticsEnabled,
 	}, nil
 }
 
@@ -239,12 +241,19 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		h.cfg.DashboardEnabled = &v
 	}
 
+	if req.Body.AnalyticsEnabled != nil {
+		v := *req.Body.AnalyticsEnabled
+		h.cfg.AnalyticsEnabled = &v
+	}
+
 	if err := h.cfg.Save(); err != nil {
 		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
 	}
 
+	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
 	return gen.UpdateConfig200JSONResponse{
 		DashboardEnabled: h.cfg.IsDashboardEnabled(),
+		AnalyticsEnabled: &analyticsEnabled,
 	}, nil
 }
 

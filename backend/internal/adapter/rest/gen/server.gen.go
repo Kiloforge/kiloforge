@@ -233,6 +233,7 @@ type BranchInfo struct {
 type ConfigResponse struct {
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). Empty or "0s" disables timeout.
 	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
+	AnalyticsEnabled *bool   `json:"analytics_enabled,omitempty"`
 	DashboardEnabled bool    `json:"dashboard_enabled"`
 }
 
@@ -779,6 +780,7 @@ type TrackSummary struct {
 type UpdateConfigRequest struct {
 	// AgentMaxDuration Max duration for non-interactive agents (Go duration string, e.g. "2h", "30m"). "0s" disables timeout.
 	AgentMaxDuration *string `json:"agent_max_duration,omitempty"`
+	AnalyticsEnabled *bool   `json:"analytics_enabled,omitempty"`
 	DashboardEnabled *bool   `json:"dashboard_enabled,omitempty"`
 }
 

@@ -2,8 +2,9 @@ package analytics
 
 import "context"
 
-// NoopTracker is a no-op analytics tracker used when analytics is disabled.
-type NoopTracker struct{}
+// Noop is an analytics tracker that does nothing.
+type Noop struct{}
 
-func (*NoopTracker) Track(_ context.Context, _ string, _ map[string]any) {}
-func (*NoopTracker) Shutdown(_ context.Context) error                    { return nil }
+func (n *Noop) Track(_ context.Context, _ string, _ map[string]any) {}
+
+func (n *Noop) Shutdown(_ context.Context) error { return nil }
