@@ -45,7 +45,7 @@ export function TourOverlay() {
     return (
       <div className={styles.overlay}>
         <div className={styles.welcomeDialog}>
-          <h2 className={styles.welcomeTitle}>Welcome to Kiloforge!</h2>
+          <h2 className={styles.welcomeTitle}>Welcome, Kiloforger!</h2>
           <p className={styles.welcomeText}>
             Take a quick guided tour to learn how to set up projects, generate implementation tracks,
             and manage your AI development agents.

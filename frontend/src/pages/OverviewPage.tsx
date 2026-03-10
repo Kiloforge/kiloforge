@@ -219,7 +219,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
           <p className={appStyles.empty}>Loading projects...</p>
         ) : projects.length === 0 ? (
           <p className={appStyles.empty}>
-            No projects registered yet. Use the form above or run <code>kf add &lt;remote&gt;</code>
+            No projects registered yet, Kiloforger. Use the form above or run <code>kf add &lt;remote&gt;</code>
           </p>
         ) : (
           <div className={styles.projectList}>

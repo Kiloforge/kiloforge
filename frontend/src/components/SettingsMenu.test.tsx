@@ -53,7 +53,7 @@ describe("SettingsMenu", () => {
     renderWithQuery(<SettingsMenu />);
     fireEvent.click(screen.getByTitle("Settings"));
     expect(screen.getByText("Anonymous usage data")).toBeInTheDocument();
-    expect(screen.getByText("Help improve kiloforge")).toBeInTheDocument();
+    expect(screen.getByText("Help improve Kiloforge")).toBeInTheDocument();
     expect(screen.getByRole("switch")).toBeInTheDocument();
   });
 

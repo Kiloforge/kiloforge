@@ -23,9 +23,9 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
     target: "body",
-    title: "Welcome to Kiloforge!",
+    title: "Welcome, Kiloforger!",
     content:
-      "Let's walk through how to set up your first project and start automating development with AI agents.",
+      "Let's walk through how to set up your first project and start forging code with AI agents.",
     demoState: DEMO_STATES["welcome"],
   },
   {
@@ -59,7 +59,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="generate-tracks"]',
     title: "Generate Tracks",
     content:
-      'Describe what you want to build and Kiloforge generates implementation tracks. We\'ve prefilled an example prompt \u2014 click "Generate" to see how it works.',
+      'Describe what you want to build and Kiloforge generates implementation tracks for you, Kiloforger. We\'ve prefilled an example prompt \u2014 click "Generate" to see how it works.',
     action: "simulate-generate",
     placement: "bottom",
     demoState: DEMO_STATES["generate-tracks"],

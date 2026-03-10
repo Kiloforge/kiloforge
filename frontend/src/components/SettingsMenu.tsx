@@ -58,7 +58,7 @@ export function SettingsMenu() {
           <label className={styles.toggleItem}>
             <span className={styles.toggleLabel}>
               <span className={styles.toggleTitle}>Anonymous usage data</span>
-              <span className={styles.toggleDesc}>Help improve kiloforge</span>
+              <span className={styles.toggleDesc}>Help improve Kiloforge</span>
             </span>
             <button
               role="switch"
