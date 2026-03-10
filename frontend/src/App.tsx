@@ -21,6 +21,7 @@ import { AgentTerminal } from "./components/AgentTerminal";
 import { TerminalDock } from "./components/TerminalDock";
 import { useWindowManager } from "./hooks/useWindowManager";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { usePlatform } from "./hooks/usePlatform";
 import { ShortcutHelp } from "./components/ShortcutHelp";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ModelWarningBanner } from "./components/ModelWarningBanner";
@@ -58,6 +59,7 @@ export default function App() {
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
+  const { mod, shift } = usePlatform();
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const queryClient = useQueryClient();
@@ -218,7 +220,7 @@ export default function App() {
           <button
             className={styles.link}
             onClick={() => setShowFullScreen(true)}
-            title="Full-screen command mode (⌘⇧F)"
+            title={`Full-screen command mode (${mod}${shift}F)`}
             data-tour="fullscreen-toggle"
             style={{ background: "none", border: "none", cursor: "pointer" }}
           >
