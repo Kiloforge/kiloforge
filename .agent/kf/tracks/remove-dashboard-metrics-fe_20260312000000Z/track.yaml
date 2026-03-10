@@ -50,23 +50,23 @@ plan:
   - phase: "Remove usage"
     tasks:
       - text: "Remove MetricsPanel and GettingStartedChecklist JSX from OverviewPage.tsx"
-        done: false
+        done: true
       - text: "Remove MetricsPanel and GettingStartedChecklist imports from OverviewPage.tsx"
-        done: false
+        done: true
       - text: "Remove quota prop from OverviewPageProps interface and any callers (App.tsx)"
-        done: false
+        done: true
       - text: "Clean up unused type imports (QuotaResponse if no longer needed)"
-        done: false
+        done: true
   - phase: "Delete files"
     tasks:
       - text: "Delete MetricsPanel.tsx, MetricsPanel.module.css"
-        done: false
+        done: true
       - text: "Delete GaugeCard.tsx, GaugeCard.module.css, GaugeCard.test.tsx"
-        done: false
+        done: true
       - text: "Delete GettingStartedChecklist.tsx, GettingStartedChecklist.module.css, GettingStartedChecklist.test.tsx"
-        done: false
+        done: true
   - phase: "Verification"
     tasks:
       - text: "Run make build and make test — all pass with no dead code warnings"
-        done: false
+        done: true
 extra: {}
