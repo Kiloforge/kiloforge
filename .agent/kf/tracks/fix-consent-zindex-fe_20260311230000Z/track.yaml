@@ -52,7 +52,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify ConsentDialog stacks above SetupRequiredDialog and SkillsInstallDialog when rendered simultaneously
-        done: false
+        done: true
       - text: Run frontend test suite
-        done: false
+        done: true
 extra: {}
