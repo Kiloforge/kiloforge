@@ -68,7 +68,8 @@ func TestHandleBackwardMove_HaltsDeveloper(t *testing.T) {
 			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
 		},
 	}
-	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, nil)
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
 	svc.HandleBackwardMove(context.Background(), "track-1", "in_progress", "approved", nil)
 	agent, _ := store.FindAgent("dev-1")
 	if agent.Status != "halted" {
@@ -85,7 +86,8 @@ func TestHandleBackwardMove_HaltsBothAgents(t *testing.T) {
 		},
 	}
 	prTracking := &domain.PRTracking{TrackID: "track-1", ReviewerAgentID: "rev-1"}
-	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, nil)
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
 	svc.HandleBackwardMove(context.Background(), "track-1", "in_review", "approved", prTracking)
 	dev, _ := store.FindAgent("dev-1")
 	if dev.Status != "halted" {
@@ -104,7 +106,8 @@ func TestHandleBackwardMove_AlreadyHalted(t *testing.T) {
 			{ID: "dev-1", Ref: "track-1", Status: "halted", StartedAt: time.Now()},
 		},
 	}
-	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, nil)
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
 	svc.HandleBackwardMove(context.Background(), "track-1", "in_progress", "approved", nil)
 	agent, _ := store.FindAgent("dev-1")
 	if agent.Status != "halted" {
@@ -115,7 +118,8 @@ func TestHandleBackwardMove_AlreadyHalted(t *testing.T) {
 func TestHandleBackwardMove_NoAgent(t *testing.T) {
 	t.Parallel()
 	store := &testutil.MockAgentStore{}
-	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, nil)
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
 	svc.HandleBackwardMove(context.Background(), "track-nonexistent", "in_progress", "approved", nil)
 }
 
@@ -252,5 +256,64 @@ func TestHandleRejection_AlreadyCompleted(t *testing.T) {
 	agent, _ := store.FindAgent("dev-1")
 	if agent.Status != "completed" {
 		t.Errorf("status should remain completed, got %q", agent.Status)
+	}
+}
+
+func TestHandleBackwardMove_StashesBeforeHalt(t *testing.T) {
+	t.Parallel()
+	store := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
+	svc.HandleBackwardMove(context.Background(), "track-1", "in_progress", "approved", nil)
+
+	// Verify stash was called.
+	if len(pool.StashCalls) != 1 || pool.StashCalls[0] != "track-1" {
+		t.Errorf("stash calls = %v, want [track-1]", pool.StashCalls)
+	}
+	// Agent should still be halted.
+	agent, _ := store.FindAgent("dev-1")
+	if agent.Status != "halted" {
+		t.Errorf("status = %q, want halted", agent.Status)
+	}
+}
+
+func TestHandleBackwardMove_StashNilPool(t *testing.T) {
+	t.Parallel()
+	store := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	// Nil pool interface — should not panic.
+	svc := NewLifecycleService(store, &testutil.MockAgentSpawner{}, nil, &testutil.MockLogger{})
+	svc.HandleBackwardMove(context.Background(), "track-1", "in_progress", "approved", nil)
+	agent, _ := store.FindAgent("dev-1")
+	if agent.Status != "halted" {
+		t.Errorf("status = %q, want halted", agent.Status)
+	}
+}
+
+func TestHandleRejection_DoesNotStash(t *testing.T) {
+	t.Parallel()
+	store := &testutil.MockAgentStore{
+		AgentData: []domain.AgentInfo{
+			{ID: "dev-1", Ref: "track-1", Status: "running", StartedAt: time.Now()},
+		},
+	}
+	pool := &testutil.MockPoolReturner{}
+	svc := newTestLifecycleService(store, &testutil.MockAgentSpawner{}, pool)
+	svc.HandleRejection(context.Background(), "track-1", nil)
+
+	// Verify stash was NOT called (rejection discards work).
+	if len(pool.StashCalls) != 0 {
+		t.Errorf("expected no stash calls on rejection, got %v", pool.StashCalls)
+	}
+	// But return was called.
+	if len(pool.Calls) != 1 || pool.Calls[0] != "track-1" {
+		t.Errorf("return calls = %v, want [track-1]", pool.Calls)
 	}
 }

@@ -223,6 +223,16 @@ func (p *Pool) CleanupStash(trackID string) error {
 	return g.DeleteBranches(stashes)
 }
 
+// StashByTrackID finds the worktree for the given track and stashes its work.
+func (p *Pool) StashByTrackID(trackID string) error {
+	w := p.FindByTrackID(trackID)
+	if w == nil {
+		return fmt.Errorf("no worktree found for track %s", trackID)
+	}
+	_, err := p.Stash(w)
+	return err
+}
+
 // FindByTrackID returns the worktree assigned to the given track.
 func (p *Pool) FindByTrackID(trackID string) *Worktree {
 	for _, w := range p.Worktrees {

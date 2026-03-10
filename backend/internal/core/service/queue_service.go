@@ -29,6 +29,7 @@ type QueueWorktreePool interface {
 	Acquire() (*ImplementWorktree, error)
 	Prepare(wt *ImplementWorktree, trackID string) error
 	ReturnByTrackID(trackID string) error
+	CleanupStash(trackID string) error
 	Save(dataDir string) error
 }
 
@@ -390,6 +391,13 @@ func (q *QueueService) OnAgentComplete(ctx context.Context, trackID, status stri
 	if status == "completed" {
 		if err := q.store.Complete(trackID); err != nil {
 			q.logger.Printf("[queue] complete %s: %v", trackID, err)
+		}
+
+		// Clean up stash branches for completed track.
+		if q.pool != nil {
+			if err := q.pool.CleanupStash(trackID); err != nil {
+				q.logger.Printf("[queue] cleanup stash %s: %v", trackID, err)
+			}
 		}
 
 		// Move board card to done.

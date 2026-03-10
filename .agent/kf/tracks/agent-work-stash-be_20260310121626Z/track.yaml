@@ -110,13 +110,13 @@ plan:
   - phase: Service Integration
     tasks:
       - text: Update LifecycleService.HandleBackwardMove to call pool.Stash before halting the agent
-        done: false
+        done: true
       - text: Update QueueService.OnAgentComplete to call pool.CleanupStash on successful completion
-        done: false
+        done: true
       - text: Update mock implementations (testutil/mocks.go, queue_service_test.go) for new pool interface methods
-        done: false
+        done: true
       - text: Write service-level tests for stash-on-backward-move and cleanup-on-complete
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build && make test to verify all tests pass and no regressions

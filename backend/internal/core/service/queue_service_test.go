@@ -175,9 +175,10 @@ func (m *mockSpawner) getSpawned() []string {
 }
 
 type mockPool struct {
-	mu        sync.Mutex
-	available int
-	returned  []string
+	mu           sync.Mutex
+	available    int
+	returned     []string
+	cleanedStash []string
 }
 
 func newMockPool(n int) *mockPool {
@@ -201,6 +202,13 @@ func (m *mockPool) ReturnByTrackID(trackID string) error {
 	defer m.mu.Unlock()
 	m.available++
 	m.returned = append(m.returned, trackID)
+	return nil
+}
+
+func (m *mockPool) CleanupStash(trackID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.cleanedStash = append(m.cleanedStash, trackID)
 	return nil
 }
 
@@ -441,6 +449,86 @@ func TestQueueService_SetMaxWorkers(t *testing.T) {
 	svc.SetMaxWorkers(5)
 	if svc.MaxWorkers() != 5 {
 		t.Fatalf("updated max_workers = %d, want 5", svc.MaxWorkers())
+	}
+}
+
+func TestQueueService_OnAgentComplete_CleansStash(t *testing.T) {
+	t.Parallel()
+
+	store := newMockQueueStore()
+	spawner := newMockSpawner()
+	pool := newMockPool(5)
+	trackReader := &mockTrackReader{
+		tracks: []port.TrackEntry{
+			{ID: "t1", Status: StatusPending},
+		},
+	}
+
+	svc := NewQueueService(QueueServiceOpts{
+		MaxWorkers:  1,
+		ProjectDir:  "/tmp/test",
+		DataDir:     "/tmp/data",
+		Store:       store,
+		TrackReader: trackReader,
+		Spawner:     spawner,
+		Pool:        pool,
+	})
+
+	if err := svc.Start(context.Background(), "proj"); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	// Complete the track.
+	svc.OnAgentComplete(context.Background(), "t1", "completed")
+
+	// Verify stash cleanup was called.
+	pool.mu.Lock()
+	cleaned := make([]string, len(pool.cleanedStash))
+	copy(cleaned, pool.cleanedStash)
+	pool.mu.Unlock()
+
+	if len(cleaned) != 1 || cleaned[0] != "t1" {
+		t.Errorf("cleanedStash = %v, want [t1]", cleaned)
+	}
+}
+
+func TestQueueService_OnAgentFail_NoCleanStash(t *testing.T) {
+	t.Parallel()
+
+	store := newMockQueueStore()
+	spawner := newMockSpawner()
+	pool := newMockPool(5)
+	trackReader := &mockTrackReader{
+		tracks: []port.TrackEntry{
+			{ID: "t1", Status: StatusPending},
+		},
+	}
+
+	svc := NewQueueService(QueueServiceOpts{
+		MaxWorkers:  1,
+		ProjectDir:  "/tmp/test",
+		DataDir:     "/tmp/data",
+		Store:       store,
+		TrackReader: trackReader,
+		Spawner:     spawner,
+		Pool:        pool,
+	})
+
+	if err := svc.Start(context.Background(), "proj"); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	// Fail the track (not complete).
+	svc.OnAgentComplete(context.Background(), "t1", "failed")
+
+	// Verify stash cleanup was NOT called on failure.
+	pool.mu.Lock()
+	cleaned := make([]string, len(pool.cleanedStash))
+	copy(cleaned, pool.cleanedStash)
+	pool.mu.Unlock()
+
+	if len(cleaned) != 0 {
+		t.Errorf("cleanedStash should be empty on failure, got %v", cleaned)
 	}
 }
 

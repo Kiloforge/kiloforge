@@ -199,10 +199,14 @@ func (m *MockAgentSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir
 
 // MockPoolReturner records pool return calls.
 type MockPoolReturner struct {
-	mu    sync.Mutex
-	Calls []string
+	mu          sync.Mutex
+	Calls       []string
+	StashCalls  []string
+	CleanCalls  []string
 
-	ReturnErr error
+	ReturnErr  error
+	StashErr   error
+	CleanErr   error
 }
 
 func (m *MockPoolReturner) ReturnByTrackID(trackID string) error {
@@ -210,6 +214,20 @@ func (m *MockPoolReturner) ReturnByTrackID(trackID string) error {
 	defer m.mu.Unlock()
 	m.Calls = append(m.Calls, trackID)
 	return m.ReturnErr
+}
+
+func (m *MockPoolReturner) StashByTrackID(trackID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.StashCalls = append(m.StashCalls, trackID)
+	return m.StashErr
+}
+
+func (m *MockPoolReturner) CleanupStash(trackID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.CleanCalls = append(m.CleanCalls, trackID)
+	return m.CleanErr
 }
 
 // MockLogger discards log output (silent logger for tests).

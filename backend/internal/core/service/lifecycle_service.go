@@ -32,7 +32,15 @@ func NewLifecycleService(agents port.AgentStore, spawner port.AgentSpawner, pool
 }
 
 // HandleBackwardMove processes a backward column transition for a track.
+// Stashes agent WIP before halting so it can be restored on re-promotion.
 func (s *LifecycleService) HandleBackwardMove(ctx context.Context, trackID, fromCol, toCol string, prTracking *domain.PRTracking) {
+	// Stash agent work before halting.
+	if s.pool != nil {
+		if err := s.pool.StashByTrackID(trackID); err != nil {
+			s.logger.Printf("stash for %s: %v", trackID, err)
+		}
+	}
+
 	agent := s.agents.FindByRef(trackID)
 
 	if agent != nil {
