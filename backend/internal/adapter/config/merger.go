@@ -68,6 +68,9 @@ func overlay(dst, src *Config) {
 	if src.Model != "" {
 		dst.Model = src.Model
 	}
+	if src.MaxSwarmSize != 0 {
+		dst.MaxSwarmSize = src.MaxSwarmSize
+	}
 	if src.MaxWorkers != 0 {
 		dst.MaxWorkers = src.MaxWorkers
 	}

@@ -2293,7 +2293,7 @@ func (h *APIHandler) GetQueue(_ context.Context, _ gen.GetQueueRequestObject) (g
 	if h.queueSvc == nil {
 		return gen.GetQueue200JSONResponse{
 			Running:       false,
-			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			MaxWorkers:    h.cfg.GetMaxSwarmSize(),
 			ActiveWorkers: 0,
 			Items:         []gen.QueueItem{},
 		}, nil
@@ -2303,7 +2303,7 @@ func (h *APIHandler) GetQueue(_ context.Context, _ gen.GetQueueRequestObject) (g
 	if err != nil {
 		return gen.GetQueue200JSONResponse{
 			Running:       false,
-			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			MaxWorkers:    h.cfg.GetMaxSwarmSize(),
 			ActiveWorkers: 0,
 			Items:         []gen.QueueItem{},
 		}, nil
@@ -2326,7 +2326,7 @@ func (h *APIHandler) UpdateQueueSettings(_ context.Context, req gen.UpdateQueueS
 	if h.queueSvc == nil {
 		return gen.UpdateQueueSettings200JSONResponse{
 			Running:       false,
-			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			MaxWorkers:    h.cfg.GetMaxSwarmSize(),
 			ActiveWorkers: 0,
 			Items:         []gen.QueueItem{},
 		}, nil
@@ -2336,7 +2336,7 @@ func (h *APIHandler) UpdateQueueSettings(_ context.Context, req gen.UpdateQueueS
 	if err != nil {
 		return gen.UpdateQueueSettings200JSONResponse{
 			Running:       false,
-			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			MaxWorkers:    h.cfg.GetMaxSwarmSize(),
 			ActiveWorkers: 0,
 			Items:         []gen.QueueItem{},
 		}, nil

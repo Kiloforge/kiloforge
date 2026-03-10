@@ -31,19 +31,29 @@ type Config struct {
 	AutoUpdateSkills  *bool   `json:"auto_update_skills,omitempty"`
 	SkillsDir         string  `json:"skills_dir,omitempty"`
 	Model             string  `json:"model,omitempty"`
-	MaxWorkers        int     `json:"max_workers,omitempty"`
+	MaxSwarmSize      int     `json:"max_swarm_size,omitempty"`
+	MaxWorkers        int     `json:"max_workers,omitempty"` // Deprecated: use MaxSwarmSize. Kept for backwards compat on load.
 	QueueEnabled      *bool   `json:"queue_enabled,omitempty"`
 	AgentMaxDuration  string  `json:"agent_max_duration,omitempty"`
 	AnalyticsEnabled  *bool   `json:"analytics_enabled,omitempty"`
 	PostHogAPIKey     string  `json:"posthog_api_key,omitempty"`
 }
 
-// GetMaxWorkers returns the configured max workers, defaulting to 3.
-func (c *Config) GetMaxWorkers() int {
-	if c.MaxWorkers <= 0 {
-		return 3
+// GetMaxSwarmSize returns the configured max swarm size, defaulting to 3.
+// Falls back to the deprecated MaxWorkers field for backwards compatibility.
+func (c *Config) GetMaxSwarmSize() int {
+	if c.MaxSwarmSize > 0 {
+		return c.MaxSwarmSize
 	}
-	return c.MaxWorkers
+	if c.MaxWorkers > 0 {
+		return c.MaxWorkers
+	}
+	return 3
+}
+
+// GetMaxWorkers is deprecated — use GetMaxSwarmSize.
+func (c *Config) GetMaxWorkers() int {
+	return c.GetMaxSwarmSize()
 }
 
 // GetAgentMaxDuration returns the configured agent max duration, defaulting to 2 hours.
