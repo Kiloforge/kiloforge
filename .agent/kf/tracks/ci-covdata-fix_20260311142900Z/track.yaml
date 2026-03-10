@@ -3,7 +3,7 @@ title: Fix CI test failure — missing covdata tool in coverage step
 type: bug
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     The Go test coverage step in CI fails with "go: no such tool covdata" because
@@ -13,11 +13,11 @@ spec:
     packages for coverage, including packages without test files. For such packages,
     Go needs the `covdata` tool to merge coverage data, but this tool is missing
     from the CI Go 1.24 installation on ubuntu-latest.
-
+    
     The failing line in CI logs:
       # kiloforge/internal/core/testutil
       go: no such tool "covdata"
-
+    
     This causes the entire test job to fail with exit code 1, which also skips
     the frontend tests and build binary steps.
   codebase_analysis: |
@@ -26,10 +26,10 @@ spec:
         cd backend && go test -race -coverprofile=coverage.out ./...
         go tool cover -func=coverage.out | grep '^total:'
     - backend/internal/core/testutil/mocks.go — package with no test files
-
+    
     The testutil package is a shared mock library imported by other test packages.
     It has no *_test.go files of its own, which triggers the covdata issue.
-
+    
     Two viable fixes:
     1. Change CI command to exclude testutil: use `-coverpkg` to be explicit,
        or filter packages via `go list` to only test packages that have tests
@@ -50,13 +50,13 @@ plan:
   - phase: Fix
     tasks:
       - text: Add backend/internal/core/testutil/package_test.go with a placeholder test
-        done: false
+        done: true
       - text: Alternatively or additionally, update .github/workflows/ci.yml to handle no-test packages gracefully
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run go test -race -coverprofile=coverage.out ./... locally to confirm no covdata error
-        done: false
+        done: true
       - text: Run make build to confirm clean compilation
-        done: false
+        done: true
 extra: {}
