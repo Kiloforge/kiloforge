@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os/exec"
 	"time"
@@ -295,9 +296,12 @@ func (s *Server) Run(ctx context.Context) error {
 		s.dashboard.StartWatcher(ctx)
 	}
 
+	// Wrap mux with request logging middleware.
+	handler := RequestLogger(slog.Default())(mux)
+
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.port),
-		Handler: mux,
+		Handler: handler,
 	}
 
 	go func() {
