@@ -1,7 +1,11 @@
 package dashboard
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 	"time"
 
 	"kiloforge/internal/core/domain"
@@ -127,7 +131,68 @@ func (s *Server) checkAndBroadcast(prev watcherState) watcherState {
 		}
 	}
 
+	// Notification detection for agents.
+	if s.notifChecker != nil {
+		for _, a := range agents {
+			name := a.Name
+			if name == "" {
+				name = a.ID[:min(8, len(a.ID))]
+			}
+			title := fmt.Sprintf("%s needs your attention", name)
+
+			if a.IsTerminal() {
+				// Clean notifications for terminal agents.
+				_ = s.notifChecker.CleanForAgent(a.ID)
+			} else if domain.IsWorkerRole(a.Role) && a.IsActive() {
+				// For worker agents without bridges, scan log for turn_end.
+				hasBridge := false
+				if s.bridgeChecker != nil {
+					_, hasBridge = s.bridgeChecker.GetBridge(a.ID)
+				}
+				if !hasBridge && a.LogFile != "" && lastLogMessageType(a.LogFile) == "turn_end" {
+					_ = s.notifChecker.Create(a.ID, title, "waiting for input")
+				}
+			}
+		}
+	}
+
 	return cur
+}
+
+// lastLogMessageType reads the last few lines of a log file and returns the
+// type of the last structured JSON message (e.g. "turn_end", "turn_start").
+func lastLogMessageType(logFile string) string {
+	f, err := os.Open(logFile)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	// Read last 8KB (enough for several JSON messages).
+	info, err := f.Stat()
+	if err != nil {
+		return ""
+	}
+	offset := info.Size() - 8192
+	if offset < 0 {
+		offset = 0
+	}
+	if _, err := f.Seek(offset, 0); err != nil {
+		return ""
+	}
+
+	var lastType string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		var envelope struct {
+			Type string `json:"type"`
+		}
+		if json.Unmarshal(line, &envelope) == nil && envelope.Type != "" {
+			lastType = envelope.Type
+		}
+	}
+	return lastType
 }
 
 func agentToJSON(a domain.AgentInfo) map[string]any {

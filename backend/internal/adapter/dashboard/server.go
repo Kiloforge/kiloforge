@@ -34,18 +34,32 @@ type ProjectLister interface {
 	List() []domain.Project
 }
 
+// NotificationChecker creates and dismisses agent attention notifications.
+type NotificationChecker interface {
+	Create(agentID, title, body string) error
+	DismissForAgent(agentID string) error
+	CleanForAgent(agentID string) error
+}
+
+// BridgeChecker checks whether an agent has a WebSocket bridge.
+type BridgeChecker interface {
+	GetBridge(agentID string) (any, bool)
+}
+
 // Server serves the web dashboard on a dedicated HTTP port.
 type Server struct {
-	port        int
-	agents      AgentLister
-	quota       QuotaReader
-	projects    ProjectLister
-	hub         *SSEHub
-	eventBus    port.EventBus
-	traceStore  tracing.TraceReader
-	trackReader port.TrackReader
-	budgetUSD   float64
-	mux         *http.ServeMux
+	port           int
+	agents         AgentLister
+	quota          QuotaReader
+	projects       ProjectLister
+	hub            *SSEHub
+	eventBus       port.EventBus
+	traceStore     tracing.TraceReader
+	trackReader    port.TrackReader
+	budgetUSD      float64
+	mux            *http.ServeMux
+	notifChecker   NotificationChecker
+	bridgeChecker  BridgeChecker
 }
 
 // New creates a dashboard server. If eventBus is nil, a new SSEHub is created
@@ -141,6 +155,16 @@ func (s *Server) SetTrackReader(reader port.TrackReader) {
 // SetBudgetUSD sets the budget limit for quota gauge display.
 func (s *Server) SetBudgetUSD(budget float64) {
 	s.budgetUSD = budget
+}
+
+// SetNotificationChecker sets the notification checker for the watcher.
+func (s *Server) SetNotificationChecker(nc NotificationChecker) {
+	s.notifChecker = nc
+}
+
+// SetBridgeChecker sets the bridge checker for detecting bridgeless agents.
+func (s *Server) SetBridgeChecker(bc BridgeChecker) {
+	s.bridgeChecker = bc
 }
 
 func (s *Server) routes() {

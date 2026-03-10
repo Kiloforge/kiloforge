@@ -2,6 +2,7 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"strings"
 	"sync"
@@ -20,6 +21,10 @@ type Session struct {
 // ConnectionCallback is called when an agent's WebSocket connection count changes.
 type ConnectionCallback func(agentID string)
 
+// RelayCallback is called when a structured relay message is observed.
+// Parameters: agentID, messageType (e.g., "turn_end", "turn_start").
+type RelayCallback func(agentID, messageType string)
+
 // SessionManager tracks active WebSocket sessions per agent.
 // It supports multiple observers per agent (first is read-write, rest are read-only).
 type SessionManager struct {
@@ -28,6 +33,7 @@ type SessionManager struct {
 	bridges      map[string]*Bridge    // agentID → bridge (agent IO)
 	onDisconnect ConnectionCallback    // called when agent sessions drop to zero
 	onReconnect  ConnectionCallback    // called when agent sessions go from zero to non-zero
+	onRelayMsg   RelayCallback         // called on structured relay messages (turn_start, turn_end)
 }
 
 // NewSessionManager creates a new session manager.
@@ -46,6 +52,11 @@ func (sm *SessionManager) SetOnDisconnect(fn ConnectionCallback) {
 // SetOnReconnect sets the callback fired when an agent gains its first session.
 func (sm *SessionManager) SetOnReconnect(fn ConnectionCallback) {
 	sm.onReconnect = fn
+}
+
+// SetOnRelayMessage sets a callback fired on structured relay messages (turn_start, turn_end).
+func (sm *SessionManager) SetOnRelayMessage(fn RelayCallback) {
+	sm.onRelayMsg = fn
 }
 
 // RegisterBridge registers an agent's IO bridge so WebSocket sessions can connect.
@@ -288,6 +299,7 @@ func (sm *SessionManager) StartOutputRelay(ctx context.Context, agentID string, 
 // and broadcasts them to WebSocket clients. Used by SDK-based agents that
 // produce structured messages (turn_start, text, tool_use, etc.).
 // The relay stops when ctx is cancelled or the messages channel is closed.
+// If a relay callback is set, it is called for turn_start and turn_end messages.
 func (sm *SessionManager) StartStructuredRelay(ctx context.Context, agentID string, messages <-chan []byte) {
 	bridge, ok := sm.GetBridge(agentID)
 	if !ok {
@@ -303,6 +315,24 @@ func (sm *SessionManager) StartStructuredRelay(ctx context.Context, agentID stri
 			}
 			bridge.Buffer.Write(msg)
 			sm.BroadcastToAgent(agentID, msg)
+
+			// Notify relay hook for turn_start/turn_end.
+			if sm.onRelayMsg != nil {
+				if msgType := extractMessageType(msg); msgType == MsgTurnStart || msgType == MsgTurnEnd {
+					sm.onRelayMsg(agentID, msgType)
+				}
+			}
 		}
 	}
+}
+
+// extractMessageType quickly extracts the "type" field from a JSON message.
+func extractMessageType(msg []byte) string {
+	var envelope struct {
+		Type string `json:"type"`
+	}
+	if json.Unmarshal(msg, &envelope) == nil {
+		return envelope.Type
+	}
+	return ""
 }
