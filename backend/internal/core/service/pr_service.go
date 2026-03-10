@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
@@ -10,14 +9,13 @@ import (
 
 // PRService handles PR lifecycle operations.
 type PRService struct {
-	merger  port.Merger
 	spawner port.AgentSpawner
 	logger  port.Logger
 }
 
 // NewPRService creates a PRService with the given dependencies.
-func NewPRService(merger port.Merger, spawner port.AgentSpawner, logger port.Logger) *PRService {
-	return &PRService{merger: merger, spawner: spawner, logger: logger}
+func NewPRService(spawner port.AgentSpawner, logger port.Logger) *PRService {
+	return &PRService{spawner: spawner, logger: logger}
 }
 
 // CreateTracking builds a PRTracking record for a newly opened PR.
@@ -59,18 +57,4 @@ func (s *PRService) HandleChangesRequested(tracking *domain.PRTracking) (resumeD
 	}
 	tracking.Status = "changes-requested"
 	return true
-}
-
-// Escalate marks a PR as escalated and performs escalation actions via the Gitea API.
-func (s *PRService) Escalate(ctx context.Context, tracking *domain.PRTracking, giteaClient port.GiteaClient) {
-	if err := giteaClient.AddLabel(ctx, tracking.ProjectSlug, tracking.PRNumber, "needs-human-review"); err != nil {
-		s.logger.Printf("[%s] Error adding label: %v", tracking.ProjectSlug, err)
-	}
-
-	comment := fmt.Sprintf("Review cycle limit reached (%d). Human review required.", tracking.MaxReviewCycles)
-	if err := giteaClient.CommentOnPR(ctx, tracking.ProjectSlug, tracking.PRNumber, comment); err != nil {
-		s.logger.Printf("[%s] Error posting escalation comment: %v", tracking.ProjectSlug, err)
-	}
-
-	tracking.Status = "escalated"
 }

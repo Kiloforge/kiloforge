@@ -9,38 +9,6 @@ import (
 	"kiloforge/internal/core/domain"
 )
 
-// mockGiteaClient is a mock Gitea client for testing ProjectService.
-type mockGiteaClient struct {
-	createRepoErr   error
-	deleteRepoErr   error
-	deleteHooksErr  error
-	createHookErr   error
-	deletedRepo     string
-	deletedHooksFor string
-}
-
-func (m *mockGiteaClient) CreateRepo(_ context.Context, name string) error {
-	return m.createRepoErr
-}
-
-func (m *mockGiteaClient) CreateWebhook(_ context.Context, _ string, _ int) error {
-	return m.createHookErr
-}
-
-func (m *mockGiteaClient) DeleteRepo(_ context.Context, repoName string) error {
-	m.deletedRepo = repoName
-	return m.deleteRepoErr
-}
-
-func (m *mockGiteaClient) DeleteAllWebhooks(_ context.Context, repoName string) error {
-	m.deletedHooksFor = repoName
-	return m.deleteHooksErr
-}
-
-func (m *mockGiteaClient) BaseURL() string {
-	return "http://localhost:3000"
-}
-
 // mockProjectStore is an in-memory project store for testing.
 type mockProjectStore struct {
 	projects map[string]domain.Project
@@ -116,7 +84,7 @@ func TestProjectService_ListProjects(t *testing.T) {
 	store.projects["app1"] = domain.Project{Slug: "app1"}
 	store.projects["app2"] = domain.Project{Slug: "app2"}
 
-	svc := NewProjectService(store, nil, ProjectServiceConfig{})
+	svc := NewProjectService(store, ProjectServiceConfig{})
 	projects := svc.ListProjects()
 
 	if len(projects) != 2 {
@@ -130,7 +98,7 @@ func TestProjectService_GetProject(t *testing.T) {
 	store := newMockProjectStore()
 	store.projects["myapp"] = domain.Project{Slug: "myapp", RepoName: "myapp"}
 
-	svc := NewProjectService(store, nil, ProjectServiceConfig{})
+	svc := NewProjectService(store, ProjectServiceConfig{})
 
 	t.Run("found", func(t *testing.T) {
 		p, err := svc.GetProject("myapp")
@@ -158,9 +126,8 @@ func TestProjectService_RemoveProject(t *testing.T) {
 
 	store := newMockProjectStore()
 	store.projects["myapp"] = domain.Project{Slug: "myapp", RepoName: "myapp"}
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+	svc := NewProjectService(store, ProjectServiceConfig{
 		DataDir: t.TempDir(),
 	})
 
@@ -178,9 +145,8 @@ func TestProjectService_RemoveProject_NotFound(t *testing.T) {
 	t.Parallel()
 
 	store := newMockProjectStore()
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+	svc := NewProjectService(store, ProjectServiceConfig{
 		DataDir: t.TempDir(),
 	})
 
@@ -199,9 +165,8 @@ func TestProjectService_RemoveProject_WithCleanup(t *testing.T) {
 
 	store := newMockProjectStore()
 	store.projects["myapp"] = domain.Project{Slug: "myapp", RepoName: "myapp"}
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+	svc := NewProjectService(store, ProjectServiceConfig{
 		DataDir: t.TempDir(),
 	})
 
@@ -210,11 +175,8 @@ func TestProjectService_RemoveProject_WithCleanup(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if gitea.deletedRepo != "myapp" {
-		t.Errorf("expected Gitea repo deletion for 'myapp', got %q", gitea.deletedRepo)
-	}
-	if gitea.deletedHooksFor != "myapp" {
-		t.Errorf("expected webhook deletion for 'myapp', got %q", gitea.deletedHooksFor)
+	if _, err := store.Get("myapp"); err == nil {
+		t.Error("project should have been removed from store")
 	}
 }
 
@@ -223,9 +185,8 @@ func TestProjectService_AddProject_DuplicateSlug(t *testing.T) {
 
 	store := newMockProjectStore()
 	store.projects["myapp"] = domain.Project{Slug: "myapp", RepoName: "myapp"}
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+	svc := NewProjectService(store, ProjectServiceConfig{
 		DataDir: t.TempDir(),
 	})
 
@@ -243,9 +204,8 @@ func TestProjectService_AddProject_InvalidURL(t *testing.T) {
 	t.Parallel()
 
 	store := newMockProjectStore()
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+	svc := NewProjectService(store, ProjectServiceConfig{
 		DataDir: t.TempDir(),
 	})
 
@@ -259,14 +219,11 @@ func TestProjectService_CreateProject_Success(t *testing.T) {
 	t.Parallel()
 
 	store := newMockProjectStore()
-	gitea := &mockGiteaClient{}
 	dataDir := t.TempDir()
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{
+	svc := NewProjectService(store, ProjectServiceConfig{
 		DataDir:          dataDir,
 		OrchestratorPort: 4001,
-		GiteaAdminUser:   "kf-admin",
-		APIToken:         "test-token",
 	})
 
 	result, err := svc.CreateProject(context.Background(), "my-new-project")
@@ -300,9 +257,8 @@ func TestProjectService_CreateProject_EmptyName(t *testing.T) {
 	t.Parallel()
 
 	store := newMockProjectStore()
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{DataDir: t.TempDir()})
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: t.TempDir()})
 
 	_, err := svc.CreateProject(context.Background(), "")
 	if err == nil {
@@ -315,9 +271,8 @@ func TestProjectService_CreateProject_DuplicateSlug(t *testing.T) {
 
 	store := newMockProjectStore()
 	store.projects["existing"] = domain.Project{Slug: "existing", RepoName: "existing"}
-	gitea := &mockGiteaClient{}
 
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{DataDir: t.TempDir()})
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: t.TempDir()})
 
 	_, err := svc.CreateProject(context.Background(), "existing")
 	if err == nil {
@@ -325,25 +280,6 @@ func TestProjectService_CreateProject_DuplicateSlug(t *testing.T) {
 	}
 	if !errors.Is(err, domain.ErrProjectExists) {
 		t.Errorf("expected ErrProjectExists, got: %v", err)
-	}
-}
-
-func TestProjectService_CreateProject_RollbackOnGiteaFailure(t *testing.T) {
-	t.Parallel()
-
-	store := newMockProjectStore()
-	gitea := &mockGiteaClient{createRepoErr: fmt.Errorf("gitea down")}
-	dataDir := t.TempDir()
-
-	svc := NewProjectService(store, gitea, ProjectServiceConfig{DataDir: dataDir})
-
-	_, err := svc.CreateProject(context.Background(), "fail-project")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
-	if _, err := store.Get("fail-project"); err == nil {
-		t.Error("project should not be in store after rollback")
 	}
 }
 

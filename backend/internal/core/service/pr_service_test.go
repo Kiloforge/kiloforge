@@ -12,7 +12,7 @@ import (
 func TestCreateTracking_FindsDeveloperAgent(t *testing.T) {
 	t.Parallel()
 
-	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, &testutil.MockLogger{})
+	svc := service.NewPRService(&testutil.MockAgentSpawner{}, &testutil.MockLogger{})
 
 	agents := []domain.AgentInfo{
 		{ID: "dev-1", Role: "developer", Ref: "feature/auth", SessionID: "sess-1", WorktreeDir: "/wt/dev-1"},
@@ -44,7 +44,7 @@ func TestCreateTracking_FindsDeveloperAgent(t *testing.T) {
 func TestCreateTracking_NoDeveloperAgent(t *testing.T) {
 	t.Parallel()
 
-	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, &testutil.MockLogger{})
+	svc := service.NewPRService(&testutil.MockAgentSpawner{}, &testutil.MockLogger{})
 
 	tracking := svc.CreateTracking(5, "feature/auth", "myapp", nil, 3)
 
@@ -56,7 +56,7 @@ func TestCreateTracking_NoDeveloperAgent(t *testing.T) {
 func TestHandleApproval_SetsApprovedStatus(t *testing.T) {
 	t.Parallel()
 
-	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, &testutil.MockLogger{})
+	svc := service.NewPRService(&testutil.MockAgentSpawner{}, &testutil.MockLogger{})
 	tracking := &domain.PRTracking{PRNumber: 5, Status: "in-review"}
 
 	err := svc.HandleApproval(context.Background(), tracking)
@@ -72,7 +72,7 @@ func TestHandleApproval_SetsApprovedStatus(t *testing.T) {
 func TestHandleChangesRequested_IncrementsCycle(t *testing.T) {
 	t.Parallel()
 
-	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, &testutil.MockLogger{})
+	svc := service.NewPRService(&testutil.MockAgentSpawner{}, &testutil.MockLogger{})
 
 	tests := []struct {
 		name       string
@@ -104,67 +104,5 @@ func TestHandleChangesRequested_IncrementsCycle(t *testing.T) {
 				t.Errorf("Status = %q, want %q", tracking.Status, tt.wantStatus)
 			}
 		})
-	}
-}
-
-func TestEscalate_AddsLabelAndComment(t *testing.T) {
-	t.Parallel()
-
-	client := &testutil.MockGiteaClient{}
-	logger := &testutil.MockLogger{}
-	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, logger)
-
-	tracking := &domain.PRTracking{
-		PRNumber:        5,
-		ProjectSlug:     "myapp",
-		MaxReviewCycles: 3,
-		Status:          "in-review",
-	}
-
-	svc.Escalate(context.Background(), tracking, client)
-
-	if tracking.Status != "escalated" {
-		t.Errorf("Status = %q, want %q", tracking.Status, "escalated")
-	}
-
-	// Check that AddLabel and CommentOnPR were called.
-	var hasLabel, hasComment bool
-	for _, call := range client.Calls {
-		if call.Method == "AddLabel" {
-			hasLabel = true
-		}
-		if call.Method == "CommentOnPR" {
-			hasComment = true
-		}
-	}
-	if !hasLabel {
-		t.Error("expected AddLabel call")
-	}
-	if !hasComment {
-		t.Error("expected CommentOnPR call")
-	}
-}
-
-func TestEscalate_HandlesLabelError(t *testing.T) {
-	t.Parallel()
-
-	client := &testutil.MockGiteaClient{LabelErr: domain.ErrGiteaUnreachable}
-	logger := &testutil.MockLogger{}
-	svc := service.NewPRService(&testutil.MockMerger{}, &testutil.MockAgentSpawner{}, logger)
-
-	tracking := &domain.PRTracking{
-		PRNumber:        5,
-		ProjectSlug:     "myapp",
-		MaxReviewCycles: 3,
-	}
-
-	// Should not panic — errors are logged, not returned.
-	svc.Escalate(context.Background(), tracking, client)
-
-	if tracking.Status != "escalated" {
-		t.Errorf("Status = %q, want %q", tracking.Status, "escalated")
-	}
-	if len(logger.Messages) == 0 {
-		t.Error("expected error to be logged")
 	}
 }

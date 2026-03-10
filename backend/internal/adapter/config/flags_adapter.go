@@ -3,16 +3,10 @@ package config
 // FlagOption sets a field on the flags adapter config.
 type FlagOption func(*Config)
 
-func WithGiteaPort(v int) FlagOption          { return func(c *Config) { c.GiteaPort = v } }
 func WithOrchestratorPort(v int) FlagOption   { return func(c *Config) { c.OrchestratorPort = v } }
 func WithDataDir(v string) FlagOption         { return func(c *Config) { c.DataDir = v } }
-func WithAPIToken(v string) FlagOption        { return func(c *Config) { c.APIToken = v } }
 func WithComposeFile(v string) FlagOption     { return func(c *Config) { c.ComposeFile = v } }
 func WithContainerName(v string) FlagOption   { return func(c *Config) { c.ContainerName = v } }
-func WithGiteaImage(v string) FlagOption      { return func(c *Config) { c.GiteaImage = v } }
-func WithGiteaAdminUser(v string) FlagOption  { return func(c *Config) { c.GiteaAdminUser = v } }
-func WithGiteaAdminPass(v string) FlagOption  { return func(c *Config) { c.GiteaAdminPass = v } }
-func WithGiteaAdminEmail(v string) FlagOption { return func(c *Config) { c.GiteaAdminEmail = v } }
 func WithDashboardEnabled(v bool) FlagOption  { return func(c *Config) { c.DashboardEnabled = &v } }
 
 // FlagsAdapter provides config values from explicitly set CLI flags.

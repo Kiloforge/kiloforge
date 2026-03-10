@@ -19,7 +19,7 @@ func TestSentinelErrors_AreDistinct(t *testing.T) {
 		{"ErrAgentNotFound", domain.ErrAgentNotFound},
 		{"ErrPRTrackingNotFound", domain.ErrPRTrackingNotFound},
 		{"ErrPoolExhausted", domain.ErrPoolExhausted},
-		{"ErrGiteaUnreachable", domain.ErrGiteaUnreachable},
+
 		{"ErrForbidden", domain.ErrForbidden},
 	}
 
@@ -44,7 +44,7 @@ func TestSentinelErrors_MatchWithErrorsIs(t *testing.T) {
 		{"ErrAgentNotFound", domain.ErrAgentNotFound},
 		{"ErrPRTrackingNotFound", domain.ErrPRTrackingNotFound},
 		{"ErrPoolExhausted", domain.ErrPoolExhausted},
-		{"ErrGiteaUnreachable", domain.ErrGiteaUnreachable},
+
 		{"ErrForbidden", domain.ErrForbidden},
 	}
 

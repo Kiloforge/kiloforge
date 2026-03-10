@@ -13,8 +13,6 @@ import (
 var (
 	_ port.AgentStore   = (*MockAgentStore)(nil)
 	_ port.AgentSpawner = (*MockAgentSpawner)(nil)
-	_ port.GiteaClient  = (*MockGiteaClient)(nil)
-	_ port.Merger       = (*MockMerger)(nil)
 	_ port.PoolReturner = (*MockPoolReturner)(nil)
 	_ port.Logger       = (*MockLogger)(nil)
 	_ port.GitRunner    = (*MockGitRunner)(nil)
@@ -198,110 +196,6 @@ func (m *MockAgentSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir
 	}
 	m.ResumeCalls = append(m.ResumeCalls, ResumeCall{SessionID: sessionID, WorkDir: workDir})
 	return nil
-}
-
-// MockGiteaClient records Gitea API calls.
-type MockGiteaClient struct {
-	mu    sync.Mutex
-	Calls []GiteaCall
-
-	MergeErr      error
-	CommentErr    error
-	DeleteErr     error
-	LabelErr      error
-	GetPRErr      error
-	GetReviewsErr error
-
-	PRData      map[string]any
-	ReviewsData []map[string]any
-}
-
-type GiteaCall struct {
-	Method string
-	Repo   string
-	Args   []any
-}
-
-func (m *MockGiteaClient) MergePR(_ context.Context, repo string, prNum int, method string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "MergePR", Repo: repo, Args: []any{prNum, method}})
-	return m.MergeErr
-}
-
-func (m *MockGiteaClient) CommentOnPR(_ context.Context, repo string, prNum int, body string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "CommentOnPR", Repo: repo, Args: []any{prNum, body}})
-	return m.CommentErr
-}
-
-func (m *MockGiteaClient) DeleteBranch(_ context.Context, repo, branch string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "DeleteBranch", Repo: repo, Args: []any{branch}})
-	return m.DeleteErr
-}
-
-func (m *MockGiteaClient) AddLabel(_ context.Context, repo string, prNum int, label string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "AddLabel", Repo: repo, Args: []any{prNum, label}})
-	return m.LabelErr
-}
-
-func (m *MockGiteaClient) GetPR(_ context.Context, repo string, prNum int) (map[string]any, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "GetPR", Repo: repo, Args: []any{prNum}})
-	if m.GetPRErr != nil {
-		return nil, m.GetPRErr
-	}
-	if m.PRData != nil {
-		return m.PRData, nil
-	}
-	return map[string]any{"number": prNum}, nil
-}
-
-func (m *MockGiteaClient) GetPRReviews(_ context.Context, repo string, prNum int) ([]map[string]any, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "GetPRReviews", Repo: repo, Args: []any{prNum}})
-	if m.GetReviewsErr != nil {
-		return nil, m.GetReviewsErr
-	}
-	return m.ReviewsData, nil
-}
-
-// MockMerger records merge operations.
-type MockMerger struct {
-	mu    sync.Mutex
-	Calls []GiteaCall
-
-	MergeErr   error
-	CommentErr error
-	DeleteErr  error
-}
-
-func (m *MockMerger) MergePR(_ context.Context, repo string, prNum int, method string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "MergePR", Repo: repo, Args: []any{prNum, method}})
-	return m.MergeErr
-}
-
-func (m *MockMerger) CommentOnPR(_ context.Context, repo string, prNum int, body string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "CommentOnPR", Repo: repo, Args: []any{prNum, body}})
-	return m.CommentErr
-}
-
-func (m *MockMerger) DeleteBranch(_ context.Context, repo, branch string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, GiteaCall{Method: "DeleteBranch", Repo: repo, Args: []any{branch}})
-	return m.DeleteErr
 }
 
 // MockPoolReturner records pool return calls.

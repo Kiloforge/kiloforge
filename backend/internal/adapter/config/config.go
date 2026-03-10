@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,16 +11,10 @@ const (
 )
 
 type Config struct {
-	GiteaPort        int    `json:"gitea_port"`
 	OrchestratorPort int    `json:"orchestrator_port"`
 	DataDir          string `json:"data_dir"`
-	APIToken         string `json:"api_token,omitempty"`
 	ComposeFile      string `json:"compose_file,omitempty"`
 	ContainerName    string `json:"container_name,omitempty"`
-	GiteaImage       string `json:"gitea_image,omitempty"`
-	GiteaAdminUser   string `json:"gitea_admin_user,omitempty"`
-	GiteaAdminPass   string `json:"gitea_admin_pass,omitempty"`
-	GiteaAdminEmail  string `json:"gitea_admin_email,omitempty"`
 	// Deprecated: MaxSessionCostUSD is no longer enforced. Subscription rate
 	// limits are the primary constraint. Retained for backward compatibility.
 	MaxSessionCostUSD float64 `json:"max_session_cost_usd,omitempty"`
@@ -102,10 +95,6 @@ func (c *Config) GetSkillsDir() string {
 	}
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".claude", "skills")
-}
-
-func (c *Config) GiteaURL() string {
-	return fmt.Sprintf("http://localhost:%d", c.GiteaPort)
 }
 
 func (c *Config) Save() error {

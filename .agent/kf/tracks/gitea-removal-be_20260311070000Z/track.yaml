@@ -17,7 +17,7 @@ spec:
     (worktree-based branch → implement → merge lock → rebase → ff-merge) is entirely
     Gitea-independent. The custom git diff system, merge lock (HTTP + mkdir dual-mode),
     and kf-developer/kf-reviewer skills all operate without Gitea.
-
+    
     Reviews are no longer providing sufficient value to justify the Gitea infrastructure.
     The existing diff endpoint (/api/projects/{slug}/diff) provides structured diff output
     via native git, which is sufficient for code review needs.
@@ -34,7 +34,7 @@ spec:
     - backend/internal/core/port/gitea_client.go (23 lines)
     - backend/internal/core/port/merger.go (11 lines)
     - backend/internal/core/port/project_gitea_client.go (13 lines)
-
+    
     Files to MODIFY (10+ files, ~2,100 LOC to remove):
     - backend/internal/adapter/rest/server.go — remove gitea.Client field, WithGiteaProxy
       option, webhook handlers (handleWebhook + all event handlers ~200 lines), proxy mount
@@ -50,7 +50,7 @@ spec:
     - backend/internal/adapter/config/config.go — remove GiteaPort, GiteaAdminUser,
       GiteaAdminPass, GiteaAdminEmail, APIToken fields, GiteaURL() method
     - backend/internal/adapter/compose/template.go — remove gitea service from template
-
+    
     No external Gitea SDK in go.mod — custom HTTP client only. No go.mod changes needed.
     No frontend changes needed — frontend has no direct Gitea imports.
   acceptance_criteria:
@@ -80,43 +80,43 @@ spec:
     5. Clean config (remove fields)
     6. Clean docker compose template
     7. Verify build + tests
-
+    
     The PR service may be gutted entirely or reduced to a minimal tracking struct
     depending on whether any PR tracking is still useful without Gitea webhooks.
     The cleanup service's merge logic (MergePR via API) should be removed — merges
     already happen locally via git ff-only in the developer workflow.
-
+    
     Project service's AddProject should be simplified to just clone + register locally
     without creating a Gitea repo or registering webhooks.
 plan:
-  - phase: "Phase 1: Delete Gitea adapter and port layers"
+  - phase: Phase 1: Delete Gitea adapter and port layers
     tasks:
-      - text: "Delete entire backend/internal/adapter/gitea/ directory (6 files: client.go, client_test.go, issues.go, issues_test.go, manager.go, manager_test.go)"
-        done: false
-      - text: "Delete backend/internal/adapter/proxy/gitea.go and gitea_test.go"
-        done: false
-      - text: "Delete backend/internal/core/port/gitea_client.go, merger.go, and project_gitea_client.go"
-        done: false
-  - phase: "Phase 2: Fix services and config"
+      - text: Delete entire backend/internal/adapter/gitea/ directory (6 files: client.go, client_test.go, issues.go, issues_test.go, manager.go, manager_test.go)
+        done: true
+      - text: Delete backend/internal/adapter/proxy/gitea.go and gitea_test.go
+        done: true
+      - text: Delete backend/internal/core/port/gitea_client.go, merger.go, and project_gitea_client.go
+        done: true
+  - phase: Phase 2: Fix services and config
     tasks:
-      - text: "Update pr_service.go — remove Merger/GiteaClient dependencies, simplify or remove Escalate method. Remove cleanup_service.go's MergePR/CommentOnPR/DeleteBranch calls (replace with no-op or remove entirely)"
+      - text: Update pr_service.go — remove Merger/GiteaClient dependencies, simplify or remove Escalate method. Remove cleanup_service.go's MergePR/CommentOnPR/DeleteBranch calls (replace with no-op or remove entirely)
         done: false
-      - text: "Update project_service.go — remove ProjectGiteaClient dependency, remove Gitea repo creation and webhook registration from AddProject/RemoveProject"
+      - text: Update project_service.go — remove ProjectGiteaClient dependency, remove Gitea repo creation and webhook registration from AddProject/RemoveProject
         done: false
-      - text: "Update config.go — remove GiteaPort, GiteaAdminUser, GiteaAdminPass, GiteaAdminEmail, APIToken fields and GiteaURL() method"
+      - text: Update config.go — remove GiteaPort, GiteaAdminUser, GiteaAdminPass, GiteaAdminEmail, APIToken fields and GiteaURL() method
         done: false
-  - phase: "Phase 3: Fix CLI and REST server"
+  - phase: Phase 3: Fix CLI and REST server
     tasks:
-      - text: "Update CLI init.go — remove Gitea startup logic, admin user setup, token creation, SSH key registration. Keep orchestrator startup and other non-Gitea init steps"
+      - text: Update CLI init.go — remove Gitea startup logic, admin user setup, token creation, SSH key registration. Keep orchestrator startup and other non-Gitea init steps
         done: false
-      - text: "Update CLI up.go, down.go, serve.go — remove Gitea check/start/stop calls and WithGiteaProxy option"
+      - text: Update CLI up.go, down.go, serve.go — remove Gitea check/start/stop calls and WithGiteaProxy option
         done: false
-      - text: "Update REST server.go — remove gitea.Client field, WithGiteaProxy option, handleWebhook and all event handlers (~200 lines), proxy route mount. Keep all non-Gitea endpoints"
+      - text: Update REST server.go — remove gitea.Client field, WithGiteaProxy option, handleWebhook and all event handlers (~200 lines), proxy route mount. Keep all non-Gitea endpoints
         done: false
-      - text: "Update docker compose template.go — remove gitea service definition from embedded template"
+      - text: Update docker compose template.go — remove gitea service definition from embedded template
         done: false
-  - phase: "Phase 4: Verification"
+  - phase: Phase 4: Verification
     tasks:
-      - text: "Run 'make build' — verify clean compilation with no Gitea references remaining. Run 'make test' — verify all tests pass (Gitea-specific tests removed, remaining tests unaffected)"
+      - text: Run 'make build' — verify clean compilation with no Gitea references remaining. Run 'make test' — verify all tests pass (Gitea-specific tests removed, remaining tests unaffected)
         done: false
 extra: {}
