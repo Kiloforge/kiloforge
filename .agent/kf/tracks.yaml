@@ -122,6 +122,7 @@ interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via W
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling and arrangement","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 kf-repair-skill_20260311060000Z: {"title":"System repair agent skill — KF health auditing, diagnostics, and auto-repair","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -202,6 +203,8 @@ sse-event-bus_20260309091500Z: {"title":"SSE Event Bus Infrastructure","status":
 ssh-key-selection-ui_20260309120001Z: {"title":"SSH Key Selection in Project Add UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 ssh-key-selection_20260309100000Z: {"title":"Interactive SSH Key Selection for Add Command","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 status-enrich_20260311000000Z: {"title":"Enrich kf-track status with deps, conflicts, and claimed/available info","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+swarm-capacity-be_20260311000000Z: {"title":"Global agent swarm capacity — unified concurrency limit and API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+swarm-capacity-fe_20260311000001Z: {"title":"Agent swarm UI — rename queue panel, capacity gating, and waiting state","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
