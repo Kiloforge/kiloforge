@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"kiloforge/internal/adapter/agent"
+	"kiloforge/internal/adapter/analytics"
 	"kiloforge/internal/adapter/compose"
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/gitea"
@@ -18,6 +19,7 @@ import (
 	"kiloforge/internal/adapter/rest"
 	"kiloforge/internal/adapter/skills"
 	"kiloforge/internal/adapter/tracing"
+	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
 
 	"github.com/spf13/cobra"
@@ -96,6 +98,21 @@ func runServe(cmd *cobra.Command, args []string) error {
 	quotaTracker := agent.NewQuotaTracker(cfg.DataDir)
 	_ = quotaTracker.Load()
 
+	// Initialize analytics tracker.
+	var tracker port.AnalyticsTracker
+	if cfg.IsAnalyticsEnabled() {
+		apiKey := cfg.PostHogAPIKey
+		if apiKey == "" {
+			apiKey = analytics.DefaultPostHogAPIKey
+		}
+		tracker = analytics.NewPostHog(apiKey, analytics.AnonymousID(cfg.DataDir))
+		log.Printf("[analytics] PostHog analytics enabled")
+	} else {
+		tracker = &analytics.Noop{}
+		log.Printf("[analytics] Analytics disabled")
+	}
+	defer func() { _ = tracker.Shutdown(context.Background()) }()
+
 	// Build server options.
 	opts := []rest.ServerOption{
 		rest.WithGiteaProxy(cfg.GiteaURL(), cfg.GiteaAdminUser),
@@ -120,6 +137,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Wire interactive agent spawner for WebSocket-based agent sessions.
 	spawner := agent.NewSpawner(cfg, agentStore, quotaTracker)
+	spawner.SetAnalyticsTracker(tracker)
 	opts = append(opts, rest.WithInteractiveSpawner(spawner))
 
 	// Start auto-update checker if enabled.

@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 
 	"kiloforge/internal/adapter/auth"
 	"kiloforge/internal/adapter/compose"
@@ -137,6 +139,23 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Step 5b: Register SSH key.
 	registerSSHKey(ctx, client, flagSSHKey)
+
+	// Step 5c: Analytics opt-out prompt.
+	if cfg.AnalyticsEnabled == nil {
+		fmt.Print("==> Help improve kiloforge by sending anonymous usage data? (Y/n) ")
+		scanner := bufio.NewScanner(os.Stdin)
+		enabled := true
+		if scanner.Scan() {
+			answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
+			if answer == "n" || answer == "no" {
+				enabled = false
+				fmt.Println("    Analytics disabled.")
+			} else {
+				fmt.Println("    Analytics enabled — thank you!")
+			}
+		}
+		cfg.AnalyticsEnabled = &enabled
+	}
 
 	// Step 6: Save config.
 	if err := cfg.Save(); err != nil {

@@ -70,6 +70,7 @@ type Spawner struct {
 	store              port.AgentStore
 	tracker            *QuotaTracker
 	tracer             port.Tracer
+	analytics          port.AnalyticsTracker
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
 
@@ -117,6 +118,11 @@ func (s *Spawner) SetTracer(t port.Tracer) {
 	if t != nil {
 		s.tracer = t
 	}
+}
+
+// SetAnalyticsTracker sets the analytics tracker for agent lifecycle events.
+func (s *Spawner) SetAnalyticsTracker(t port.AnalyticsTracker) {
+	s.analytics = t
 }
 
 // SetCompletionCallback sets the function called when an agent process exits.
