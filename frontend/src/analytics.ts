@@ -1,17 +1,14 @@
-import type PostHog from 'posthog-js'
-
-const POSTHOG_API_KEY = 'phc_kiloforge_placeholder'
 const POSTHOG_HOST = 'https://us.i.posthog.com'
 
-let posthogInstance: PostHog | null = null
+let posthogInstance: { capture: (event: string, props?: Record<string, unknown>) => void } | null = null
 
 export function initAnalytics(): void {
   if (posthogInstance) return
 
-  // Skip initialization if key is still placeholder or empty.
-  if (!POSTHOG_API_KEY || POSTHOG_API_KEY === 'phc_kiloforge_placeholder') {
-    return
-  }
+  const apiKey = import.meta.env.VITE_POSTHOG_API_KEY as string | undefined
+
+  // Skip initialization if no API key is configured.
+  if (!apiKey) return
 
   // Skip in non-browser environments (e.g., test runners).
   if (typeof window === 'undefined') return
@@ -19,7 +16,7 @@ export function initAnalytics(): void {
   // Dynamic import avoids posthog-js side effects at module load time,
   // which would fail in test environments where `document` is not defined.
   void import('posthog-js').then(({ default: posthog }) => {
-    posthog.init(POSTHOG_API_KEY, {
+    posthog.init(apiKey, {
       api_host: POSTHOG_HOST,
       autocapture: false,
       capture_pageview: false, // We handle this manually on route changes.

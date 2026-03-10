@@ -97,9 +97,9 @@ plan:
   - phase: Backend — Real API Key
     tasks:
       - text: Get PostHog API key from user (phc_...) and update DefaultPostHogAPIKey in backend/internal/adapter/analytics/defaults.go
-        done: false
+        done: true
       - text: Verify backend analytics wiring — run kf up, confirm 'PostHog analytics enabled' log line and app_started event fires
-        done: false
+        done: true
   - phase: Backend — Agent Lifecycle Events
     tasks:
       - text: Add agent_session_started event to SpawnInteractive in spawner.go (SpawnDeveloper and SpawnReviewer already fire agent_spawned — rename to agent_session_started for consistency, or add alongside)
@@ -129,13 +129,13 @@ plan:
   - phase: Verification
     tasks:
       - text: Run kf up locally, spawn an agent, verify agent_session_started appears in PostHog dashboard
-        done: false
+        done: true
       - text: Resume an agent, verify agent_session_resumed appears in PostHog dashboard
-        done: false
+        done: true
       - text: Navigate the dashboard, verify frontend pageview events appear
-        done: false
+        done: true
       - text: Test opt-out — set KF_ANALYTICS_ENABLED=false, verify no events are sent
-        done: false
+        done: true
 extra:
   created_by:
     role: architect

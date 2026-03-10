@@ -205,6 +205,7 @@ orch-url-inject-be_20260310122108Z: {"title":"Inject KF_ORCH_URL into spawned ag
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-command_20260308220002Z: {"title":"Origin Sync Command","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-ui_20260309143001Z: {"title":"Origin Push/Pull Dashboard UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+posthog-analytics_20260310214100Z: {"title":"Activate PostHog analytics with real API key and frontend SDK","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 prereq-check-init_20260308230000Z: {"title":"Prerequisite Check During Init","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 prod-security-ci_20260311120000Z: {"title":"Harden CI pipeline — add security scanning, block vulnerable deps","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 product-advisor-skill_20260310080000Z: {"title":"Add kf-product-advisor embedded skill","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
