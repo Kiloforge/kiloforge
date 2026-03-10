@@ -3,6 +3,8 @@ import type { AddProjectRequest } from "../types/api";
 import { useSSHKeys } from "../hooks/useProjects";
 import styles from "./AddProjectForm.module.css";
 
+type FormMode = "clone" | "create";
+
 interface AddProjectFormProps {
   adding: boolean;
   error: string | null;
@@ -15,13 +17,15 @@ const SSH_URL_PATTERN = /^(ssh:\/\/.+|[^/]+@[^:]+:.+)$/;
 
 export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjectFormProps) {
   const [expanded, setExpanded] = useState(false);
+  const [mode, setMode] = useState<FormMode>("clone");
   const [remoteUrl, setRemoteUrl] = useState("");
   const [name, setName] = useState("");
   const [sshKey, setSSHKey] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const { keys: sshKeys, loading: keysLoading, fetchKeys } = useSSHKeys();
 
-  const isSSH = SSH_URL_PATTERN.test(remoteUrl.trim());
+  const isSSH = mode === "clone" && SSH_URL_PATTERN.test(remoteUrl.trim());
 
   // Fetch SSH keys when an SSH URL is detected.
   useEffect(() => {
@@ -35,27 +39,41 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
     }
   }, [isSSH, sshKeys, sshKey]);
 
-  const validate = useCallback((url: string): boolean => {
-    if (!url.trim()) {
-      setUrlError("Remote URL is required");
+  const validate = useCallback((): boolean => {
+    if (mode === "clone") {
+      if (!remoteUrl.trim()) {
+        setUrlError("Remote URL is required");
+        return false;
+      }
+      if (!URL_PATTERN.test(remoteUrl.trim())) {
+        setUrlError("Must be a git remote URL (SSH or HTTPS)");
+        return false;
+      }
+      setUrlError(null);
+      return true;
+    }
+    // create mode
+    if (!name.trim()) {
+      setNameError("Project name is required");
       return false;
     }
-    if (!URL_PATTERN.test(url.trim())) {
-      setUrlError("Must be a git remote URL (SSH or HTTPS)");
-      return false;
-    }
-    setUrlError(null);
+    setNameError(null);
     return true;
-  }, []);
+  }, [mode, remoteUrl, name]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!validate(remoteUrl)) return;
+      if (!validate()) return;
 
-      const req: AddProjectRequest = { remote_url: remoteUrl.trim() };
-      if (name.trim()) req.name = name.trim();
-      if (isSSH && sshKey) req.ssh_key = sshKey;
+      let req: AddProjectRequest;
+      if (mode === "clone") {
+        req = { remote_url: remoteUrl.trim() };
+        if (name.trim()) req.name = name.trim();
+        if (isSSH && sshKey) req.ssh_key = sshKey;
+      } else {
+        req = { name: name.trim() };
+      }
 
       const ok = await onAdd(req);
       if (ok) {
@@ -63,10 +81,17 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
         setName("");
         setSSHKey("");
         setExpanded(false);
+        setMode("clone");
       }
     },
-    [remoteUrl, name, sshKey, isSSH, onAdd, validate],
+    [mode, remoteUrl, name, sshKey, isSSH, onAdd, validate],
   );
+
+  const handleModeChange = useCallback((newMode: FormMode) => {
+    setMode(newMode);
+    setUrlError(null);
+    setNameError(null);
+  }, []);
 
   if (!expanded) {
     return (
@@ -78,32 +103,57 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} data-tour="add-project-form">
+      <div className={styles.modeToggle}>
+        <button
+          type="button"
+          className={`${styles.modeBtn} ${mode === "clone" ? styles.modeBtnActive : ""}`}
+          onClick={() => handleModeChange("clone")}
+          disabled={adding}
+        >
+          Clone from remote
+        </button>
+        <button
+          type="button"
+          className={`${styles.modeBtn} ${mode === "create" ? styles.modeBtnActive : ""}`}
+          onClick={() => handleModeChange("create")}
+          disabled={adding}
+        >
+          Create new
+        </button>
+      </div>
+
       <div className={styles.fields}>
+        {mode === "clone" && (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="remote-url">Remote URL</label>
+            <input
+              id="remote-url"
+              className={styles.input}
+              type="text"
+              placeholder="git@github.com:user/repo.git"
+              value={remoteUrl}
+              onChange={(e) => { setRemoteUrl(e.target.value); setUrlError(null); onClearError(); }}
+              autoFocus
+              disabled={adding}
+            />
+            {urlError && <span className={styles.fieldError}>{urlError}</span>}
+          </div>
+        )}
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="remote-url">Remote URL</label>
-          <input
-            id="remote-url"
-            className={styles.input}
-            type="text"
-            placeholder="git@github.com:user/repo.git"
-            value={remoteUrl}
-            onChange={(e) => { setRemoteUrl(e.target.value); setUrlError(null); onClearError(); }}
-            autoFocus
-            disabled={adding}
-          />
-          {urlError && <span className={styles.fieldError}>{urlError}</span>}
-        </div>
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="project-name">Name <span className={styles.optional}>(optional)</span></label>
+          <label className={styles.label} htmlFor="project-name">
+            Name {mode === "clone" && <span className={styles.optional}>(optional)</span>}
+          </label>
           <input
             id="project-name"
             className={styles.input}
             type="text"
-            placeholder="auto-derived from URL"
+            placeholder={mode === "clone" ? "auto-derived from URL" : "my-project"}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setNameError(null); }}
+            autoFocus={mode === "create"}
             disabled={adding}
           />
+          {nameError && <span className={styles.fieldError}>{nameError}</span>}
         </div>
       </div>
       {isSSH && sshKeys.length > 0 && (
@@ -128,12 +178,12 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.actions}>
         <button type="submit" className={styles.submitBtn} disabled={adding}>
-          {adding ? "Adding..." : "Add Project"}
+          {adding ? "Adding..." : mode === "clone" ? "Clone Project" : "Create Project"}
         </button>
         <button
           type="button"
           className={styles.cancelBtn}
-          onClick={() => { setExpanded(false); setUrlError(null); onClearError(); }}
+          onClick={() => { setExpanded(false); setUrlError(null); setNameError(null); onClearError(); }}
           disabled={adding}
         >
           Cancel
