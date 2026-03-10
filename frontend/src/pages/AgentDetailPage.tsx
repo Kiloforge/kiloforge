@@ -10,7 +10,7 @@ import { InlineSpinner } from "../components/InlineSpinner";
 import { formatUSD, formatTokens, formatUptime } from "../utils/format";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../hooks/useAgentWebSocket";
-import { MessageDispatch } from "../components/terminal";
+import { MessageDispatch, MessageErrorBoundary } from "../components/terminal";
 import { DiffView } from "../components/diff/DiffView";
 import { useTracks } from "../hooks/useTracks";
 import { useAgentActions, canStop, canResume, canReplace, canDelete } from "../hooks/useAgentActions";
@@ -375,7 +375,7 @@ function TerminalSection({ agentId }: { agentId: string }) {
         )}
         {messages.map((msg, i) => {
           if (msg.type === "turn_start") turnCounter++;
-          return <MessageDispatch key={i} msg={msg} turnNumber={turnCounter} />;
+          return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
         })}
         <div ref={messagesEndRef} />
       </div>

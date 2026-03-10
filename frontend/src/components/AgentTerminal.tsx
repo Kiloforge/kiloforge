@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAgentWebSocket } from "../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../hooks/useAgentWebSocket";
 import { useFloatingWindow, detectEdge, cursorForEdge } from "../hooks/useFloatingWindow";
-import { MessageDispatch } from "./terminal";
+import { MessageDispatch, MessageErrorBoundary } from "./terminal";
 import styles from "./AgentTerminal.module.css";
 
 interface Props {
@@ -209,7 +209,7 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
         )}
         {messages.map((msg, i) => {
           if (msg.type === "turn_start") turnCounter++;
-          return <MessageDispatch key={i} msg={msg} turnNumber={turnCounter} />;
+          return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
         })}
         <div ref={messagesEndRef} />
       </div>

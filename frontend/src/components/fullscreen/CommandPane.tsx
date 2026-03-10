@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAgentWebSocket } from "../../hooks/useAgentWebSocket";
 import type { WSConnectionState } from "../../hooks/useAgentWebSocket";
 import type { Agent } from "../../types/api";
-import { MessageDispatch } from "../terminal";
+import { MessageDispatch, MessageErrorBoundary } from "../terminal";
 import styles from "./FullScreenCommand.module.css";
 
 interface Props {
@@ -145,7 +145,7 @@ export function CommandPane({
         )}
         {messages.map((msg, i) => {
           if (msg.type === "turn_start") turnCounter++;
-          return <MessageDispatch key={i} msg={msg} turnNumber={turnCounter} />;
+          return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
         })}
         <div ref={messagesEndRef} />
       </div>
