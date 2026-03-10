@@ -267,6 +267,29 @@
   cursor: not-allowed;
 }
 
+.interruptBtn {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.interruptBtn:hover {
+  background: rgba(240, 108, 108, 0.15);
+}
+
+.queueBadge {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
 /* Split container */
 .splitHorizontal {
   display: flex;

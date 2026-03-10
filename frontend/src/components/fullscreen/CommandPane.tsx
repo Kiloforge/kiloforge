@@ -38,8 +38,9 @@ export function CommandPane({
   showCloseBtn,
   onRegisterClear,
 }: Props) {
-  const { messages, sendMessage, clearMessages, status, agentStatus } = useAgentWebSocket(agentId);
+  const { messages, sendMessage, sendInterrupt, clearMessages, status, agentStatus, turnActive } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
+  const [queueDepth, setQueueDepth] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -61,13 +62,19 @@ export function CommandPane({
     return onRegisterClear(paneId, clearMessages);
   }, [paneId, clearMessages, onRegisterClear]);
 
+  // Reset queue depth when turn ends
+  useEffect(() => {
+    if (!turnActive) setQueueDepth(0);
+  }, [turnActive]);
+
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text) return;
     sendMessage(text);
+    if (turnActive) setQueueDepth((d) => d + 1);
     setInput("");
     inputRef.current?.focus();
-  }, [input, sendMessage]);
+  }, [input, sendMessage, turnActive]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -75,13 +82,18 @@ export function CommandPane({
         e.preventDefault();
         handleSend();
       }
+      if (e.key === "Escape" && turnActive) {
+        e.preventDefault();
+        sendInterrupt();
+      }
     },
-    [handleSend],
+    [handleSend, turnActive, sendInterrupt],
   );
 
   const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
   const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
   const canSend = agentId !== null && status === "connected" && !isTerminal;
+  const canInterrupt = canSend && turnActive;
 
   const activeAgents = agents.filter(
     (a) => a.status === "running" || a.status === "interactive" || a.status === "suspended",
@@ -117,6 +129,11 @@ export function CommandPane({
           )}
         </div>
         <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+          {canInterrupt && (
+            <button className={styles.interruptBtn} onClick={sendInterrupt} title="Interrupt (Esc)">
+              &#x25A0; Stop
+            </button>
+          )}
           {messages.length > 0 && (
             <button className={styles.paneClearBtn} onClick={clearMessages} title="Clear messages">
               Clear
@@ -168,7 +185,7 @@ export function CommandPane({
             !agentId
               ? "Select an agent first..."
               : canSend
-                ? "Type a message... (Enter to send)"
+                ? (turnActive ? "Type to queue a message... (Esc to interrupt)" : "Type a message... (Enter to send)")
                 : isTerminal
                   ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited")
                   : "Connecting..."
@@ -176,8 +193,11 @@ export function CommandPane({
           disabled={!canSend}
           rows={1}
         />
+        {queueDepth > 0 && (
+          <span className={styles.queueBadge}>{queueDepth} queued</span>
+        )}
         <button className={styles.sendBtn} onClick={handleSend} disabled={!canSend || !input.trim()}>
-          Send
+          {turnActive ? "Queue" : "Send"}
         </button>
       </div>
     </div>
