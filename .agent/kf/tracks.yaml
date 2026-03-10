@@ -19,6 +19,8 @@ advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename adv
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-fe_20260310014001Z: {"title":"Agent Display TTL and History Page (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+agent-idle-suspend-be_20260312020000Z: {"title":"Auto-suspend interactive agents when all browser connections close","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+agent-idle-suspend-fe_20260312020001Z: {"title":"Frontend awareness of connection-based agent auto-suspension","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-lifecycle-be_20260310030000Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-lifecycle-fe_20260310030001Z: {"title":"Agent Lifecycle Management — Stop, Resume, Delete (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-list-monitoring-ui_20260309180000Z: {"title":"Agent List with Role/Track Links and Monitoring View","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -39,8 +41,6 @@ aws-static-deploy_20260310200000Z: {"title":"Migrate kiloforge.dev from Vercel t
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-board-clamp-forward-moves-be_20260312220000Z: {"title":"Clamp forward column moves — max one step, block beyond approved","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-board-clamp-forward-moves-fe_20260312220001Z: {"title":"Clamp forward column moves in board UI","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 board-link-polish-fe_20260311210000Z: {"title":"Polish board relationship link visuals","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -85,7 +85,6 @@ expand-agent-namegen-be_20260310150455Z: {"title":"Expand agent name generator w
 fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 fix-agent-name-in-api-be_20260312200000Z: {"title":"Fix agent name missing from REST API response","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-agent-resume-be_20260312020000Z: {"title":"Fix interactive agent resume — input accepted but no output returned","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-agent-spawn-context_20260310100000Z: {"title":"Fix agent spawn context cancellation — detach SDK lifecycle from HTTP request","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-board-sync-ux-be_20260310012000Z: {"title":"Fix Board Sync and SSE Events (Backend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-board-sync-ux-fe_20260310012001Z: {"title":"Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -133,7 +132,6 @@ frontend-test-hooks_20260310041006Z: {"title":"Frontend Test Coverage — Critic
 frontend-test-infra_20260309225000Z: {"title":"Frontend Test Infrastructure and Makefile Integration","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 frontend-test-pages_20260310041007Z: {"title":"Frontend Test Coverage — Pages and Components","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fullscreen-cmd-fe_20260310180000Z: {"title":"Full-screen command mode — immersive multi-pane terminal overlay","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-fullscreen-immersive-fe_20260312210000Z: {"title":"Use browser Fullscreen API for immersive command mode","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 getting-started-skill_20260310055656Z: {"title":"Getting Started skill — interactive project bootstrapper with platform-aware defaults","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 gitea-dead-code-be_20260311120001Z: {"title":"Remove remaining giteaURL dead code from API, dashboard, and schema","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 gitea-proxy-authn_20260309123000Z: {"title":"Passwordless Gitea Login via Reverse Proxy Authentication","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
