@@ -20,7 +20,12 @@ interface TrackListProps {
 
 export function TrackList({ tracks, projectSlug }: TrackListProps) {
   if (tracks.length === 0) {
-    return <p className={styles.empty}>No tracks found</p>;
+    return (
+      <div className={styles.empty}>
+        <p>No tracks found</p>
+        <p className={styles.hint}>Tracks are generated when an architect agent analyzes a feature request.</p>
+      </div>
+    );
   }
 
   return (

@@ -30,7 +30,12 @@ function sortAgents(agents: Agent[]): Agent[] {
 
 export function AgentGrid({ agents, onViewLog, onAttach }: Props) {
   if (agents.length === 0) {
-    return <p className={styles.empty}>No agents running</p>;
+    return (
+      <div className={styles.empty}>
+        <p>No agents running</p>
+        <p className={styles.hint}>Launch an agent from a project board or use the "New Agent" button above.</p>
+      </div>
+    );
   }
 
   return (
