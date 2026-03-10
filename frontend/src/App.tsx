@@ -307,6 +307,7 @@ export default function App() {
           onClose={() => wm.close(entry.agentId)}
           onMinimize={() => wm.minimize(entry.agentId)}
           onActivity={() => wm.incrementUnread(entry.agentId)}
+          onNotification={(type) => wm.setNotificationType(entry.agentId, type)}
           registerControls={wm.registerControls}
           unregisterControls={wm.unregisterControls}
         />

@@ -6,6 +6,8 @@ import { MessageDispatch, MessageErrorBoundary } from "./terminal";
 import { AgentDiffPanel } from "./diff/AgentDiffPanel";
 import styles from "./AgentTerminal.module.css";
 
+const TERMINAL_STATUSES = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
+
 interface Props {
   agentId: string;
   name?: string;
@@ -19,6 +21,7 @@ interface Props {
   onFocus?: () => void;
   onMinimize?: () => void;
   onActivity?: () => void;
+  onNotification?: (type: "waiting" | "done" | "unread" | null) => void;
   registerControls?: (agentId: string, controls: { setRect: (x: number, y: number, w: number, h: number) => void; getRect: () => { x: number; y: number; width: number; height: number; zIndex: number }; bringToFront: () => void }) => void;
   unregisterControls?: (agentId: string) => void;
 }
@@ -46,8 +49,8 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, registerControls, unregisterControls }: Props) {
-  const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
+export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, onNotification, registerControls, unregisterControls }: Props) {
+  const { messages, sendMessage, status, agentStatus, turnActive } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const [viewMode, setViewMode] = useState<"chat" | "diff">("chat");
   const hasDiff = !!(slug && branch);
@@ -79,6 +82,18 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, minimized]);
+
+  // Set notification type based on turn state and agent status when minimized
+  useEffect(() => {
+    if (!minimized || !onNotification) return;
+    if (agentStatus && TERMINAL_STATUSES.has(agentStatus)) {
+      onNotification("done");
+    } else if (!turnActive) {
+      onNotification("waiting");
+    } else {
+      onNotification(null);
+    }
+  }, [minimized, turnActive, agentStatus, onNotification]);
 
   // Notify activity when new messages arrive while minimized
   useEffect(() => {
@@ -151,8 +166,7 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
     if (fw.isDragging) fw.onDragEnd();
   }, [fw]);
 
-  const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
-  const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
+  const isTerminal = agentStatus !== null && TERMINAL_STATUSES.has(agentStatus);
   const canSend = status === "connected" && !isTerminal;
 
   // Compute turn numbers for turn_start messages
