@@ -1,5 +1,7 @@
 package dashboard
 
+import "time"
+
 // quotaResponse builds the quota summary map used by the SSE watcher.
 func (s *Server) quotaResponse() map[string]any {
 	if s.quota == nil {
@@ -25,6 +27,27 @@ func (s *Server) quotaResponse() map[string]any {
 	}
 	if s.quota.IsRateLimited() {
 		resp["retry_after_seconds"] = int(s.quota.RetryAfter().Seconds())
+	}
+
+	// Rate metrics.
+	if tokPerMin := s.quota.TokensPerMin(5 * time.Minute); tokPerMin > 0 {
+		resp["rate_tokens_per_min"] = tokPerMin
+	}
+	costPerHour := s.quota.CostPerHour(30 * time.Minute)
+	if costPerHour > 0 {
+		resp["rate_cost_per_hour"] = costPerHour
+	}
+
+	// Budget fields.
+	if s.budgetUSD > 0 {
+		resp["budget_usd"] = s.budgetUSD
+		resp["budget_used_pct"] = (total.TotalCostUSD / s.budgetUSD) * 100
+		if costPerHour > 0 {
+			remaining := s.budgetUSD - total.TotalCostUSD
+			if remaining > 0 {
+				resp["time_to_budget_mins"] = (remaining / costPerHour) * 60
+			}
+		}
 	}
 
 	// Per-agent breakdown.

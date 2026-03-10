@@ -45,6 +45,7 @@ type Server struct {
 	eventBus    port.EventBus
 	traceStore  tracing.TraceReader
 	trackReader port.TrackReader
+	budgetUSD   float64
 	mux         *http.ServeMux
 }
 
@@ -137,6 +138,11 @@ func (s *Server) SetTraceStore(store tracing.TraceReader) {
 // SetTrackReader sets the track reader for track discovery.
 func (s *Server) SetTrackReader(reader port.TrackReader) {
 	s.trackReader = reader
+}
+
+// SetBudgetUSD sets the budget limit for quota gauge display.
+func (s *Server) SetBudgetUSD(budget float64) {
+	s.budgetUSD = budget
 }
 
 func (s *Server) routes() {

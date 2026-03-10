@@ -161,6 +161,9 @@ func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentS
 	for _, opt := range opts {
 		opt(s)
 	}
+	if s.dashboard != nil && cfg != nil {
+		s.dashboard.SetBudgetUSD(cfg.BudgetUSD)
+	}
 	return s
 }
 
