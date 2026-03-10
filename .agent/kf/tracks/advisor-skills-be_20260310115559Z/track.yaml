@@ -1,0 +1,117 @@
+id: advisor-skills-be_20260310115559Z
+title: "Embed missing skills and rename advisors to kf-advisor-* prefix"
+type: chore
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Embed kf-reliability, kf-dispatch, and kf-repair into the Go binary, rename
+    advisor-type skills to use the kf-advisor-* prefix (kf-product-advisor →
+    kf-advisor-product, kf-reliability → kf-advisor-reliability), and update all
+    backend role mapping (domain constants, OpenAPI enum, skill checker, codegen).
+  context: |
+    Three skills (kf-reliability, kf-dispatch, kf-repair) are installed globally
+    in ~/.claude/skills/ but not embedded in the Go binary under
+    backend/internal/adapter/skills/embedded/. This means they won't auto-install
+    for new users via `kf setup --install-skills`.
+
+    Additionally, advisor-type skills use inconsistent naming: kf-product-advisor
+    and kf-reliability don't share a common prefix. Renaming to kf-advisor-product
+    and kf-advisor-reliability creates a discoverable, consistent convention that
+    the frontend can use to identify and group advisor agents.
+  codebase_analysis: |
+    Embedded skills system:
+    - backend/internal/adapter/skills/embedded/ — 17 dirs, each with SKILL.md
+    - //go:embed embedded/* in checker.go compiles them into the binary
+    - ListEmbedded() auto-discovers, InstallAllEmbedded() installs to ~/.claude/skills/
+    - Hash-based freshness check skips reinstall if SKILL.md unchanged
+
+    Role mapping chain:
+    - domain/agent.go: AgentRoleAdvisor = "product-advisor"
+    - checker.go: RequiredSkillsForRole("product-advisor") → kf-product-advisor
+    - checker.go: SkillCommandForRole("product-advisor") → /kf-product-advisor
+    - checker.go: AllRequiredSkills() iterates known roles including "product-advisor"
+    - openapi.yaml: SpawnInteractiveRequest.role enum: [interactive, architect, product-advisor]
+    - server.gen.go: Generated constants SpawnInteractiveRequestRoleProductAdvisor
+    - api_handler.go: role string passed through to skill checker and spawner
+
+    Skills to embed (copy SKILL.md from ~/.claude/skills/):
+    - kf-reliability → rename to kf-advisor-reliability
+    - kf-dispatch (keep name)
+    - kf-repair (keep name)
+
+    Skill to rename (already embedded):
+    - kf-product-advisor → kf-advisor-product (rename dir + SKILL.md frontmatter)
+  acceptance_criteria:
+    - kf-advisor-product embedded dir exists with renamed SKILL.md (name field = kf-advisor-product)
+    - kf-advisor-reliability embedded dir exists with SKILL.md from former kf-reliability
+    - kf-dispatch embedded dir exists with SKILL.md
+    - kf-repair embedded dir exists with SKILL.md
+    - Old kf-product-advisor embedded dir removed
+    - domain/agent.go constants updated for new advisor role names
+    - checker.go RequiredSkillsForRole handles "advisor-product" and "advisor-reliability" roles
+    - checker.go SkillCommandForRole maps new roles to /kf-advisor-product and /kf-advisor-reliability
+    - AllRequiredSkills includes new advisor roles
+    - openapi.yaml SpawnInteractiveRequest role enum updated with new values
+    - Generated server/client code regenerated (make generate)
+    - api_handler.go works with new role strings
+    - All existing tests updated and passing
+    - make build succeeds
+    - make test succeeds
+  out_of_scope: |
+    - Frontend changes (separate track: advisor-hub-fe)
+    - Renaming kf-dispatch or kf-repair (they are not advisors)
+    - Modifying skill content/behavior (only renaming and embedding)
+  technical_notes: |
+    Approach:
+    1. Copy SKILL.md files from ~/.claude/skills/ for missing skills
+    2. Rename embedded dirs and update SKILL.md name frontmatter
+    3. Update role constants and mapping functions in checker.go
+    4. Update OpenAPI spec enum values
+    5. Run make generate to regenerate server.gen.go / client.gen.go
+    6. Update api_handler.go if it has hardcoded role references
+    7. Update all tests in checker_test.go
+
+    The role string flows: OpenAPI enum → api_handler → checker → skill command.
+    The embedded dir name must match the SKILL.md `name` field exactly.
+plan:
+  - phase: "Embed missing skills"
+    tasks:
+      - text: "Copy kf-dispatch SKILL.md from ~/.claude/skills/kf-dispatch/ to backend/internal/adapter/skills/embedded/kf-dispatch/"
+        done: false
+      - text: "Copy kf-repair SKILL.md from ~/.claude/skills/kf-repair/ to backend/internal/adapter/skills/embedded/kf-repair/"
+        done: false
+      - text: "Verify ListEmbedded() picks up new dirs (unit test or manual check)"
+        done: false
+  - phase: "Rename advisor skills"
+    tasks:
+      - text: "Rename embedded dir kf-product-advisor → kf-advisor-product, update SKILL.md name field"
+        done: false
+      - text: "Copy kf-reliability SKILL.md to embedded/kf-advisor-reliability/, update name field to kf-advisor-reliability"
+        done: false
+      - text: "Remove old kf-product-advisor embedded dir"
+        done: false
+  - phase: "Update backend role mapping"
+    tasks:
+      - text: "Update domain/agent.go: rename AgentRoleAdvisor and add new advisor role constants"
+        done: false
+      - text: "Update checker.go RequiredSkillsForRole for advisor-product and advisor-reliability roles"
+        done: false
+      - text: "Update checker.go SkillCommandForRole for new advisor role → /kf-advisor-* mapping"
+        done: false
+      - text: "Update checker.go AllRequiredSkills to iterate new advisor role names"
+        done: false
+      - text: "Update openapi.yaml SpawnInteractiveRequest.role enum: replace product-advisor with advisor-product, add advisor-reliability"
+        done: false
+      - text: "Run make generate to regenerate server.gen.go and client.gen.go"
+        done: false
+  - phase: "Tests and verification"
+    tasks:
+      - text: "Update checker_test.go: TestRequiredSkillsForRole, TestSkillCommandForRole, TestAllRequiredSkills for new role names"
+        done: false
+      - text: "Update any other test files referencing old role names (e2e, api_handler tests)"
+        done: false
+      - text: "Run make build and make test — verify all pass"
+        done: false
+extra: {}
