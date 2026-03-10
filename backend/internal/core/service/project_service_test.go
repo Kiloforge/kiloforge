@@ -101,6 +101,10 @@ func (m *mockProjectStore) FindByDir(dir string) (domain.Project, bool) {
 	return domain.Project{}, false
 }
 
+func (m *mockProjectStore) ListPaginated(_ domain.PageOpts) (domain.Page[domain.Project], error) {
+	return domain.Page[domain.Project]{Items: m.List()}, nil
+}
+
 func (m *mockProjectStore) Save() error {
 	return m.saveErr
 }

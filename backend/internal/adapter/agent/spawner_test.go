@@ -59,6 +59,9 @@ func (s *stubAgentStore) RemoveAgent(id string) error {
 }
 func (s *stubAgentStore) Agents() []domain.AgentInfo                  { return s.agents }
 func (s *stubAgentStore) AgentsByStatus(...string) []domain.AgentInfo { return nil }
+func (s *stubAgentStore) ListAgents(_ domain.PageOpts, _ ...string) (domain.Page[domain.AgentInfo], error) {
+	return domain.Page[domain.AgentInfo]{Items: s.agents, TotalCount: len(s.agents)}, nil
+}
 
 func TestCheckQuota_NilTracker(t *testing.T) {
 	t.Parallel()

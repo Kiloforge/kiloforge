@@ -45,6 +45,9 @@ type stubAgentLister struct {
 
 func (s *stubAgentLister) Agents() []domain.AgentInfo { return s.agents }
 func (s *stubAgentLister) Load() error                { return nil }
+func (s *stubAgentLister) ListAgents(_ domain.PageOpts, _ ...string) (domain.Page[domain.AgentInfo], error) {
+	return domain.Page[domain.AgentInfo]{Items: s.agents, TotalCount: len(s.agents)}, nil
+}
 func (s *stubAgentLister) FindAgent(id string) (*domain.AgentInfo, error) {
 	for i := range s.agents {
 		if s.agents[i].ID == id || len(id) <= len(s.agents[i].ID) && s.agents[i].ID[:len(id)] == id {
@@ -114,8 +117,8 @@ func TestListAgents(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected response type: %T", resp)
 	}
-	if len(r) != 2 {
-		t.Errorf("expected 2 agents, got %d", len(r))
+	if len(r.Items) != 2 {
+		t.Errorf("expected 2 agents, got %d", len(r.Items))
 	}
 }
 
@@ -487,8 +490,8 @@ func TestListTraces_Empty(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected 200, got %T", resp)
 	}
-	if len(r) != 0 {
-		t.Errorf("expected 0 traces, got %d", len(r))
+	if len(r.Items) != 0 {
+		t.Errorf("expected 0 traces, got %d", len(r.Items))
 	}
 }
 
@@ -506,14 +509,14 @@ func TestListTraces_WithSpans(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	r := resp.(gen.ListTraces200JSONResponse)
-	if len(r) != 1 {
-		t.Fatalf("expected 1 trace, got %d", len(r))
+	if len(r.Items) != 1 {
+		t.Fatalf("expected 1 trace, got %d", len(r.Items))
 	}
-	if r[0].SpanCount != 2 {
-		t.Errorf("expected 2 spans, got %d", r[0].SpanCount)
+	if r.Items[0].SpanCount != 2 {
+		t.Errorf("expected 2 spans, got %d", r.Items[0].SpanCount)
 	}
-	if r[0].RootName != "track/abc" {
-		t.Errorf("expected root name 'track/abc', got %q", r[0].RootName)
+	if r.Items[0].RootName != "track/abc" {
+		t.Errorf("expected root name 'track/abc', got %q", r.Items[0].RootName)
 	}
 }
 
@@ -538,10 +541,10 @@ func TestGetTrace_WithSpans(t *testing.T) {
 	// Get the trace ID from list.
 	listResp, _ := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
 	traces := listResp.(gen.ListTraces200JSONResponse)
-	if len(traces) == 0 {
+	if len(traces.Items) == 0 {
 		t.Fatal("expected at least 1 trace")
 	}
-	traceID := traces[0].TraceId
+	traceID := traces.Items[0].TraceId
 
 	resp, err := h.GetTrace(context.Background(), gen.GetTraceRequestObject{TraceId: traceID})
 	if err != nil {
@@ -571,8 +574,8 @@ func TestListTraces_NilStore(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	r := resp.(gen.ListTraces200JSONResponse)
-	if len(r) != 0 {
-		t.Errorf("expected 0 traces, got %d", len(r))
+	if len(r.Items) != 0 {
+		t.Errorf("expected 0 traces, got %d", len(r.Items))
 	}
 }
 

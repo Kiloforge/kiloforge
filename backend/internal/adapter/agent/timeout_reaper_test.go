@@ -37,6 +37,9 @@ func (s *fakeAgentStore) FindAgent(idPrefix string) (*domain.AgentInfo, error) {
 }
 
 func (s *fakeAgentStore) Agents() []domain.AgentInfo { return s.agents }
+func (s *fakeAgentStore) ListAgents(_ domain.PageOpts, _ ...string) (domain.Page[domain.AgentInfo], error) {
+	return domain.Page[domain.AgentInfo]{Items: s.agents, TotalCount: len(s.agents)}, nil
+}
 
 func (s *fakeAgentStore) UpdateStatus(idPrefix, status string) error {
 	s.statusLog[idPrefix] = status
