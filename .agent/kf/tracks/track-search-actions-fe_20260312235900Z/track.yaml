@@ -134,13 +134,13 @@ plan:
   - phase: Track detail actions
     tasks:
       - text: Add approve/reject buttons to TrackDetailPage for backlog tracks
-        done: false
+        done: true
       - text: Wire approve action (move card mutation) with navigation back to project
-        done: false
+        done: true
       - text: Wire reject action (delete mutation) with confirmation dialog and navigation
-        done: false
+        done: true
       - text: Write tests for approve/reject actions on TrackDetailPage
-        done: false
+        done: true
   - phase: Board entry animation
     tasks:
       - text: Track known card IDs in KanbanBoard via useRef and detect new entries

@@ -1,5 +1,6 @@
-import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TrackDetail } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
@@ -8,6 +9,9 @@ import styles from "./TrackDetailPage.module.css";
 
 export function TrackDetailPage() {
   const { slug, trackId } = useParams<{ slug: string; trackId: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [confirmReject, setConfirmReject] = useState(false);
 
   const { data: track, error, isLoading } = useQuery({
     queryKey: queryKeys.trackDetail(trackId ?? "", slug ?? ""),
@@ -17,6 +21,33 @@ export function TrackDetailPage() {
       ),
     enabled: !!trackId && !!slug,
   });
+
+  const approveMutation = useMutation({
+    mutationFn: () =>
+      fetcher<void>(`/api/board/${encodeURIComponent(slug!)}/move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ track_id: trackId, to_column: "approved" }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+      navigate(`/projects/${slug}`);
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: () =>
+      fetcher<void>(
+        `/api/tracks/${encodeURIComponent(trackId!)}?project=${encodeURIComponent(slug!)}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+      navigate(`/projects/${slug}`);
+    },
+  });
+
+  const isBacklog = track?.status === "pending";
 
   if (isLoading) {
     return (
@@ -54,6 +85,43 @@ export function TrackDetailPage() {
           {track.type && <span className={styles.typeBadge}>{track.type}</span>}
         </div>
       </div>
+
+      {isBacklog && (
+        <div className={styles.actions}>
+          {confirmReject ? (
+            <div className={styles.confirmRow}>
+              <span className={styles.confirmText}>Delete this track?</span>
+              <button
+                className={styles.confirmYes}
+                onClick={() => rejectMutation.mutate()}
+                disabled={rejectMutation.isPending}
+              >
+                Yes, delete
+              </button>
+              <button className={styles.confirmNo} onClick={() => setConfirmReject(false)}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                className={styles.approveBtn}
+                onClick={() => approveMutation.mutate()}
+                disabled={approveMutation.isPending}
+              >
+                {approveMutation.isPending ? "Approving..." : "Approve"}
+              </button>
+              <button
+                className={styles.rejectBtn}
+                onClick={() => setConfirmReject(true)}
+                disabled={rejectMutation.isPending}
+              >
+                Reject
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className={styles.metaGrid}>
         <div className={styles.metaItem}>
