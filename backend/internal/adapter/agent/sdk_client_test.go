@@ -233,6 +233,112 @@ func TestSDKSession_RelayResponse_Timeout(t *testing.T) {
 	}
 }
 
+func TestSDKSession_Interrupt_ActiveTurn(t *testing.T) {
+	// Interrupt during an active turn should cancel the relay context,
+	// causing relayResponse to exit and emit turn_end with interrupted=true.
+	mock := &mockSDKClient{
+		connected:  true,
+		responseCh: make(chan types.Message),
+	}
+	s := newTestSDKSessionWithMock(mock)
+
+	// Start a query (sets querying=true, creates queryCancel).
+	err := s.Query(s.ctx, "hello", nil, "", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify querying is true.
+	s.mu.Lock()
+	if !s.querying {
+		t.Fatal("querying should be true after Query()")
+	}
+	s.mu.Unlock()
+
+	// Interrupt the turn.
+	s.Interrupt()
+
+	// Wait for relayResponse to finish (it should exit via ctx.Done()).
+	deadline := time.After(2 * time.Second)
+	for {
+		s.mu.Lock()
+		q := s.querying
+		s.mu.Unlock()
+		if !q {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("querying should be false after interrupt")
+		default:
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+
+	// Check that a turn_end message with interrupted=true was emitted.
+	var foundInterrupted bool
+	for len(s.output) > 0 {
+		msg := <-s.output
+		var parsed map[string]interface{}
+		if err := json.Unmarshal(msg, &parsed); err == nil {
+			if parsed["type"] == "turn_end" {
+				if interrupted, ok := parsed["interrupted"].(bool); ok && interrupted {
+					foundInterrupted = true
+				}
+			}
+		}
+	}
+	if !foundInterrupted {
+		t.Error("expected turn_end message with interrupted=true")
+	}
+}
+
+func TestSDKSession_Interrupt_NoActiveTurn(t *testing.T) {
+	// Interrupt when no turn is active should be a no-op (no panic).
+	s := newTestSDKSession()
+	s.Interrupt() // should not panic
+}
+
+func TestSDKSession_Interrupt_SessionStillUsable(t *testing.T) {
+	// After interrupt, a new query should succeed.
+	mock := &mockSDKClient{
+		connected:  true,
+		responseCh: make(chan types.Message),
+	}
+	s := newTestSDKSessionWithMock(mock)
+
+	// Start and interrupt a query.
+	err := s.Query(s.ctx, "hello", nil, "", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	s.Interrupt()
+
+	// Wait for relayResponse to finish.
+	deadline := time.After(2 * time.Second)
+	for {
+		s.mu.Lock()
+		q := s.querying
+		s.mu.Unlock()
+		if !q {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("querying should be false after interrupt")
+		default:
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+
+	// New query should be accepted (need fresh response channel).
+	mock.responseCh = make(chan types.Message)
+	err = s.Query(s.ctx, "world", nil, "", nil)
+	if err != nil {
+		t.Errorf("expected new query to succeed after interrupt, got: %v", err)
+	}
+}
+
 func TestSDKSession_Query_Disconnected(t *testing.T) {
 	// Query should return an error immediately if the client is disconnected.
 	mock := &mockSDKClient{

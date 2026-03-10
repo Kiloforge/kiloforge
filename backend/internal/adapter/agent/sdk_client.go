@@ -44,9 +44,10 @@ type SDKSession struct {
 
 	responseTimeout time.Duration // timeout for waiting on response messages; 0 = default
 
-	mu        sync.Mutex
-	querying  bool // prevents concurrent turns
-	closeOnce sync.Once
+	mu          sync.Mutex
+	querying    bool               // prevents concurrent turns
+	queryCancel context.CancelFunc // cancels the current turn's relay context
+	closeOnce   sync.Once
 }
 
 // NewSDKSession creates an SDK client configured for an interactive agent.
@@ -142,12 +143,17 @@ func (s *SDKSession) Query(ctx context.Context, prompt string, tracker *QuotaTra
 		return fmt.Errorf("turn already in progress")
 	}
 	s.querying = true
+	// Create per-query context so Interrupt() can cancel just this turn.
+	queryCtx, queryCancel := context.WithCancel(s.ctx)
+	s.queryCancel = queryCancel
 	s.mu.Unlock()
 
 	// Check client is still connected before attempting the query.
 	if s.client == nil || !s.client.IsConnected() {
 		s.mu.Lock()
 		s.querying = false
+		s.queryCancel = nil
+		queryCancel()
 		s.mu.Unlock()
 		return fmt.Errorf("client disconnected")
 	}
@@ -155,12 +161,24 @@ func (s *SDKSession) Query(ctx context.Context, prompt string, tracker *QuotaTra
 	if err := s.client.Query(ctx, prompt); err != nil {
 		s.mu.Lock()
 		s.querying = false
+		s.queryCancel = nil
+		queryCancel()
 		s.mu.Unlock()
 		return fmt.Errorf("send query: %w", err)
 	}
 
-	go s.relayResponse(ctx, tracker, agentID, span)
+	go s.relayResponse(queryCtx, tracker, agentID, span)
 	return nil
+}
+
+// Interrupt cancels the current turn's relay context if a turn is in progress.
+// If no turn is active, this is a no-op.
+func (s *SDKSession) Interrupt() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.querying && s.queryCancel != nil {
+		s.queryCancel()
+	}
 }
 
 // relayResponse reads SDK messages and forwards them as structured WS messages.
@@ -172,6 +190,7 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 	defer func() {
 		s.mu.Lock()
 		s.querying = false
+		s.queryCancel = nil
 		s.mu.Unlock()
 	}()
 
@@ -224,6 +243,7 @@ func (s *SDKSession) relayResponse(ctx context.Context, tracker *QuotaTracker, a
 			return
 
 		case <-ctx.Done():
+			s.emit(ws.TurnEndInterruptedMsg(turnID))
 			return
 		}
 	}

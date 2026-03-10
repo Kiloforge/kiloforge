@@ -9,6 +9,8 @@ const (
 	MsgStatus = "status" // server → client: agent status change
 	MsgError  = "error"  // server → client: error message
 
+	MsgInterrupt = "interrupt" // client → server: interrupt current turn
+
 	// Enriched message types for SDK-based agents.
 	MsgTurnStart  = "turn_start"  // server → client: new turn begins
 	MsgText       = "text"        // server → client: text content block
@@ -76,10 +78,11 @@ type ThinkingMessage struct {
 
 // TurnEndMessage is sent when a turn completes.
 type TurnEndMessage struct {
-	Type    string     `json:"type"`
-	TurnID  string     `json:"turn_id"`
-	CostUSD float64    `json:"cost_usd,omitempty"`
-	Usage   *UsageInfo `json:"usage,omitempty"`
+	Type        string     `json:"type"`
+	TurnID      string     `json:"turn_id"`
+	CostUSD     float64    `json:"cost_usd,omitempty"`
+	Usage       *UsageInfo `json:"usage,omitempty"`
+	Interrupted bool       `json:"interrupted,omitempty"`
 }
 
 // SystemNotification is sent for system events.
@@ -156,6 +159,16 @@ func TurnEndMsg(turnID string, costUSD float64, usage *UsageInfo) []byte {
 		TurnID:  turnID,
 		CostUSD: costUSD,
 		Usage:   usage,
+	})
+	return b
+}
+
+// TurnEndInterruptedMsg creates a turn_end message indicating the turn was interrupted.
+func TurnEndInterruptedMsg(turnID string) []byte {
+	b, _ := json.Marshal(TurnEndMessage{
+		Type:        MsgTurnEnd,
+		TurnID:      turnID,
+		Interrupted: true,
 	})
 	return b
 }
