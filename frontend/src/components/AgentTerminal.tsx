@@ -16,6 +16,8 @@ interface Props {
   onFocus?: () => void;
   onMinimize?: () => void;
   onActivity?: () => void;
+  registerControls?: (agentId: string, controls: { setRect: (x: number, y: number, w: number, h: number) => void; getRect: () => { x: number; y: number; width: number; height: number; zIndex: number }; bringToFront: () => void }) => void;
+  unregisterControls?: (agentId: string) => void;
 }
 
 function ConnectionDot({ status }: { status: WSConnectionState }) {
@@ -41,7 +43,7 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, name, role, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity }: Props) {
+export function AgentTerminal({ agentId, name, role, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, registerControls, unregisterControls }: Props) {
   const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -49,6 +51,20 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
   const panelRef = useRef<HTMLDivElement>(null);
 
   const fw = useFloatingWindow({ defaultWidth: 720, defaultHeight: 500, minWidth: 400, minHeight: 300, initialX, initialY });
+
+  // Register floating window controls with the window manager
+  useEffect(() => {
+    if (registerControls) {
+      registerControls(agentId, {
+        setRect: fw.setRect,
+        getRect: fw.getRect,
+        bringToFront: fw.bringToFront,
+      });
+    }
+    return () => {
+      if (unregisterControls) unregisterControls(agentId);
+    };
+  }, [agentId, fw.setRect, fw.getRect, fw.bringToFront, registerControls, unregisterControls]);
 
   const prevMsgCountRef = useRef(0);
 
@@ -172,12 +188,13 @@ export function AgentTerminal({ agentId, name, role, initialX, initialY, minimiz
           <ConnectionDot status={status} />
         </div>
         <div className={styles.headerActions}>
+          <span className={styles.shortcutHint} title="Keyboard shortcuts: ⌘?">?</span>
           {onMinimize && (
-            <button className={styles.minimizeBtn} onClick={onMinimize} title="Minimize">
+            <button className={styles.minimizeBtn} onClick={onMinimize} title="Minimize (⌘⇧M)">
               &#x2013;
             </button>
           )}
-          <button className={styles.closeBtn} onClick={onClose}>
+          <button className={styles.closeBtn} onClick={onClose} title="Close (⌘⇧W)">
             &times;
           </button>
         </div>

@@ -264,6 +264,20 @@ export function useFloatingWindow(options: UseFloatingWindowOptions = {}) {
     setState({ ...pos, ...size, zIndex: ++globalZIndex });
   }, [defaultWidth, defaultHeight, minWidth, minHeight]);
 
+  const setRect = useCallback(
+    (x: number, y: number, width: number, height: number) => {
+      const size = clampSize(width, height, minWidth, minHeight);
+      const pos = clampPosition(x, y, size.width, size.height);
+      setState((prev) => ({ ...prev, ...pos, ...size }));
+    },
+    [minWidth, minHeight],
+  );
+
+  const getRect = useCallback(
+    () => ({ x: state.x, y: state.y, width: state.width, height: state.height, zIndex: state.zIndex }),
+    [state.x, state.y, state.width, state.height, state.zIndex],
+  );
+
   return {
     // State
     x: state.x,
@@ -290,5 +304,9 @@ export function useFloatingWindow(options: UseFloatingWindowOptions = {}) {
     onResizeStart,
     onResizeMove,
     onResizeEnd,
+
+    // External control (for tiling / snapping)
+    setRect,
+    getRect,
   };
 }

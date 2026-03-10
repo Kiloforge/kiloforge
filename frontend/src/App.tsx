@@ -20,6 +20,8 @@ import { LogViewer } from "./components/LogViewer";
 import { AgentTerminal } from "./components/AgentTerminal";
 import { TerminalDock } from "./components/TerminalDock";
 import { useWindowManager } from "./hooks/useWindowManager";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { ShortcutHelp } from "./components/ShortcutHelp";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ModelWarningBanner } from "./components/ModelWarningBanner";
 import { ConsentDialog } from "./components/ConsentDialog";
@@ -53,9 +55,27 @@ export default function App() {
   const [showLauncher, setShowLauncher] = useState(false);
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [waitingCapacity, setWaitingCapacity] = useState<SwarmCapacity | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const queryClient = useQueryClient();
+
+  const shortcutActions = useMemo(
+    () => ({
+      tileAll: () => wm.tileAll(),
+      cycleFocusNext: () => wm.cycleFocus(1),
+      cycleFocusPrev: () => wm.cycleFocus(-1),
+      toggleMinimize: () => wm.toggleMinimizeFocused(),
+      toggleMaximize: () => wm.toggleMaximizeFocused(),
+      closeFocused: () => wm.closeFocused(),
+      snapLeft: () => wm.snapFocused("left"),
+      snapRight: () => wm.snapFocused("right"),
+      showHelp: () => setShowShortcuts((v) => !v),
+    }),
+    [wm],
+  );
+
+  useKeyboardShortcuts(shortcutActions);
 
   const handleBoardUpdate = useCallback(
     () => {
@@ -255,8 +275,11 @@ export default function App() {
           onClose={() => wm.close(entry.agentId)}
           onMinimize={() => wm.minimize(entry.agentId)}
           onActivity={() => wm.incrementUnread(entry.agentId)}
+          registerControls={wm.registerControls}
+          unregisterControls={wm.unregisterControls}
         />
       ))}
+      {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
       <TerminalDock
         windows={wm.getMinimizedWindows()}
         onRestore={(id) => wm.restore(id)}
