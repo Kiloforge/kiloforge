@@ -186,9 +186,9 @@ plan:
   - phase: Testing and verification
     tasks:
       - text: Unit tests for QueueService — enqueue, next, semaphore enforcement, dependency re-evaluation
-        done: false
+        done: true
       - text: Unit tests for topological sort with cycles detection, diamond deps, and independent tracks
-        done: false
+        done: true
       - text: Integration test: simulate agent completion → queue auto-spawns next → verify semaphore not exceeded
-        done: false
+        done: true
 extra: {}

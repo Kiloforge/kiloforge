@@ -349,7 +349,11 @@ func (q *QueueService) spawnForTrack(ctx context.Context, item *domain.QueueItem
 		"agent_id": info.ID,
 	})
 
-	q.logger.Printf("[queue] spawned agent %s for track %s", info.ID[:8], item.TrackID)
+	agentShort := info.ID
+	if len(agentShort) > 8 {
+		agentShort = agentShort[:8]
+	}
+	q.logger.Printf("[queue] spawned agent %s for track %s", agentShort, item.TrackID)
 	return nil
 }
 
