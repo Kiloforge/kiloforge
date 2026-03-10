@@ -39,6 +39,7 @@ advisor-hub-fe_20260310115600Z:
 advisor-project-create-be_20260311230000Z: []
 
 advisor-skills-be_20260310115559Z: []
+
 board-clamp-forward-moves-fe_20260312220001Z:
   - board-clamp-forward-moves-be_20260312220000Z
 
@@ -52,6 +53,8 @@ fix-disabled-btn-styles-fe_20260312020000Z: []
 
 fix-merge-protocol-be_20260311160000Z: []
 
+fix-tour-step9-progression-fe_20260311230000Z: []
+
 gitea-removal-be_20260311070000Z: []
 
 github-repo-migration_20260311080001Z:
@@ -63,6 +66,7 @@ notification-center-fe_20260313060001Z:
   - notification-center-be_20260313060000Z
 
 onboarding-ux-fe_20260310073721Z: []
+
 quota-gauges-be_20260310092417Z: []
 
 replace-tracing-be_20260310144200Z: []
