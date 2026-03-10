@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/prereq"
 	"kiloforge/internal/adapter/skills"
@@ -65,12 +67,16 @@ type CompletionCallback func(agentID, ref, status string)
 type SessionEndCallback func(agentID string)
 
 // Spawner manages Claude agent lifecycle.
+// ErrAtCapacity is returned when the agent swarm is at maximum capacity.
+var ErrAtCapacity = errors.New("agent swarm at capacity")
+
 type Spawner struct {
 	cfg                *config.Config
 	store              port.AgentStore
 	tracker            *QuotaTracker
 	tracer             port.Tracer
 	analytics          port.AnalyticsTracker
+	eventBus           port.EventBus
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
 
@@ -130,10 +136,49 @@ func (s *Spawner) SetCompletionCallback(fn CompletionCallback) {
 	s.completionCallback = fn
 }
 
+// SetEventBus sets the event bus for publishing capacity change events.
+func (s *Spawner) SetEventBus(eb port.EventBus) {
+	s.eventBus = eb
+}
+
 // SetSessionEndCallback sets the function called when an interactive session ends.
 // Typically used to call SessionManager.UnregisterBridge.
 func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
 	s.sessionEndCallback = fn
+}
+
+// ActiveCount returns the number of currently active agents.
+func (s *Spawner) ActiveCount() int {
+	s.activeMu.RLock()
+	defer s.activeMu.RUnlock()
+	return len(s.activeAgents)
+}
+
+// CanSpawn returns true if there is capacity to spawn another agent.
+func (s *Spawner) CanSpawn() bool {
+	return s.ActiveCount() < s.cfg.GetMaxSwarmSize()
+}
+
+// Capacity returns the current swarm capacity status.
+func (s *Spawner) Capacity() domain.SwarmCapacity {
+	active := s.ActiveCount()
+	max := s.cfg.GetMaxSwarmSize()
+	available := max - active
+	if available < 0 {
+		available = 0
+	}
+	return domain.SwarmCapacity{
+		Max:       max,
+		Active:    active,
+		Available: available,
+	}
+}
+
+// publishCapacityChanged publishes a capacity_changed event if an event bus is set.
+func (s *Spawner) publishCapacityChanged() {
+	if s.eventBus != nil {
+		s.eventBus.Publish(domain.NewCapacityChangedEvent(s.Capacity()))
+	}
 }
 
 // onCompletion invokes the completion callback if set.
@@ -381,7 +426,11 @@ func (ia *InteractiveAgent) CancelRelay() {
 }
 
 // SpawnInteractive launches a Claude agent in interactive mode using the SDK Client.
+// Returns ErrAtCapacity if the swarm is at maximum capacity.
 func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpts) (*InteractiveAgent, error) {
+	if !s.CanSpawn() {
+		return nil, ErrAtCapacity
+	}
 	if err := s.checkAuth(ctx); err != nil {
 		return nil, err
 	}
@@ -495,6 +544,8 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	s.activeAgents[agentID] = ia
 	s.activeMu.Unlock()
 
+	s.publishCapacityChanged()
+
 	// Monitor session lifecycle in background.
 	go s.monitorSDKSession(agentID, ref, session, span)
 
@@ -513,6 +564,8 @@ func (s *Spawner) StopAgent(id string) error {
 	if !ok {
 		return fmt.Errorf("agent not running: %s", id)
 	}
+
+	s.publishCapacityChanged()
 
 	// Cancel relay goroutine and close SDK session.
 	ia.CancelRelay()
@@ -640,6 +693,8 @@ func (s *Spawner) monitorSDKSession(agentID, ref string, session *SDKSession, sp
 	s.activeMu.Lock()
 	delete(s.activeAgents, agentID)
 	s.activeMu.Unlock()
+
+	s.publishCapacityChanged()
 
 	// Clean up WS bridge.
 	if s.sessionEndCallback != nil {

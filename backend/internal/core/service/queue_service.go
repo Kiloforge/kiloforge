@@ -18,6 +18,12 @@ type QueueSpawner interface {
 	SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*domain.AgentInfo, error)
 }
 
+// SwarmCapacityChecker checks global swarm capacity across all agent types.
+// When set, the queue service defers to this instead of its own internal semaphore.
+type SwarmCapacityChecker interface {
+	CanSpawn() bool
+}
+
 // QueueWorktreePool manages worktree acquisition for queued tracks.
 type QueueWorktreePool interface {
 	Acquire() (*ImplementWorktree, error)
@@ -36,28 +42,30 @@ type QueueService struct {
 	projectDir  string
 	dataDir     string
 
-	store       port.QueueStore
-	trackReader port.TrackReader
-	eventBus    port.EventBus
-	spawner     QueueSpawner
-	pool        QueueWorktreePool
-	implSvc     *ImplementService
-	logger      *log.Logger
+	store            port.QueueStore
+	trackReader      port.TrackReader
+	eventBus         port.EventBus
+	spawner          QueueSpawner
+	pool             QueueWorktreePool
+	implSvc          *ImplementService
+	capacityChecker  SwarmCapacityChecker
+	logger           *log.Logger
 }
 
 // QueueServiceOpts configures the QueueService.
 type QueueServiceOpts struct {
-	MaxWorkers  int
-	ProjectSlug string
-	ProjectDir  string
-	DataDir     string
-	Store       port.QueueStore
-	TrackReader port.TrackReader
-	EventBus    port.EventBus
-	Spawner     QueueSpawner
-	Pool        QueueWorktreePool
-	ImplSvc     *ImplementService
-	Logger      *log.Logger
+	MaxWorkers       int
+	ProjectSlug      string
+	ProjectDir       string
+	DataDir          string
+	Store            port.QueueStore
+	TrackReader      port.TrackReader
+	EventBus         port.EventBus
+	Spawner          QueueSpawner
+	Pool             QueueWorktreePool
+	ImplSvc          *ImplementService
+	CapacityChecker  SwarmCapacityChecker
+	Logger           *log.Logger
 }
 
 // NewQueueService creates a new QueueService.
@@ -69,17 +77,18 @@ func NewQueueService(opts QueueServiceOpts) *QueueService {
 		opts.Logger = log.Default()
 	}
 	return &QueueService{
-		maxWorkers:  opts.MaxWorkers,
-		projectSlug: opts.ProjectSlug,
-		projectDir:  opts.ProjectDir,
-		dataDir:     opts.DataDir,
-		store:       opts.Store,
-		trackReader: opts.TrackReader,
-		eventBus:    opts.EventBus,
-		spawner:     opts.Spawner,
-		pool:        opts.Pool,
-		implSvc:     opts.ImplSvc,
-		logger:      opts.Logger,
+		maxWorkers:      opts.MaxWorkers,
+		projectSlug:     opts.ProjectSlug,
+		projectDir:      opts.ProjectDir,
+		dataDir:         opts.DataDir,
+		store:           opts.Store,
+		trackReader:     opts.TrackReader,
+		eventBus:        opts.EventBus,
+		spawner:         opts.Spawner,
+		pool:            opts.Pool,
+		implSvc:         opts.ImplSvc,
+		capacityChecker: opts.CapacityChecker,
+		logger:          opts.Logger,
 	}
 }
 
@@ -281,9 +290,18 @@ func (q *QueueService) availableSlots() int {
 	return max - q.ActiveWorkers()
 }
 
+// canSpawnMore returns true if the queue can spawn another agent.
+// When a global capacity checker is set, it takes precedence.
+func (q *QueueService) canSpawnMore() bool {
+	if q.capacityChecker != nil {
+		return q.capacityChecker.CanSpawn()
+	}
+	return q.availableSlots() > 0
+}
+
 // SpawnUpToLimit spawns developer agents for queued tracks up to the semaphore limit.
 func (q *QueueService) SpawnUpToLimit(ctx context.Context) {
-	for q.availableSlots() > 0 {
+	for q.canSpawnMore() {
 		item, err := q.Next()
 		if err != nil {
 			q.logger.Printf("[queue] next: %v", err)
