@@ -125,11 +125,11 @@ const (
 
 // AddProjectRequest defines model for AddProjectRequest.
 type AddProjectRequest struct {
-	// Name Override project slug (defaults to repo name from URL)
+	// Name Project slug. Required when remote_url is omitted; defaults to repo name from URL otherwise.
 	Name *string `json:"name,omitempty"`
 
-	// RemoteUrl Git remote URL (SSH or HTTPS)
-	RemoteUrl string `json:"remote_url"`
+	// RemoteUrl Git remote URL (SSH or HTTPS). If omitted, a fresh local repo is created (name becomes required).
+	RemoteUrl *string `json:"remote_url,omitempty"`
 
 	// SshKey Path to SSH private key to use for cloning
 	SshKey *string `json:"ssh_key,omitempty"`
@@ -959,7 +959,7 @@ type ServerInterface interface {
 	// List registered projects
 	// (GET /api/projects)
 	ListProjects(w http.ResponseWriter, r *http.Request)
-	// Register a new project from a remote URL
+	// Register a new project from a remote URL or create one from scratch
 	// (POST /api/projects)
 	AddProject(w http.ResponseWriter, r *http.Request)
 	// Remove a registered project
@@ -3991,7 +3991,7 @@ type StrictServerInterface interface {
 	// List registered projects
 	// (GET /api/projects)
 	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
-	// Register a new project from a remote URL
+	// Register a new project from a remote URL or create one from scratch
 	// (POST /api/projects)
 	AddProject(ctx context.Context, request AddProjectRequestObject) (AddProjectResponseObject, error)
 	// Remove a registered project

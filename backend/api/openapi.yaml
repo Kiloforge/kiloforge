@@ -307,7 +307,7 @@ paths:
                   $ref: "#/components/schemas/Project"
     post:
       operationId: addProject
-      summary: Register a new project from a remote URL
+      summary: Register a new project from a remote URL or create one from scratch
       tags: [Projects]
       requestBody:
         required: true
@@ -1818,14 +1818,13 @@ components:
 
     AddProjectRequest:
       type: object
-      required: [remote_url]
       properties:
         remote_url:
           type: string
-          description: Git remote URL (SSH or HTTPS)
+          description: Git remote URL (SSH or HTTPS). If omitted, a fresh local repo is created (name becomes required).
         name:
           type: string
-          description: Override project slug (defaults to repo name from URL)
+          description: Project slug. Required when remote_url is omitted; defaults to repo name from URL otherwise.
         ssh_key:
           type: string
           description: Path to SSH private key to use for cloning
