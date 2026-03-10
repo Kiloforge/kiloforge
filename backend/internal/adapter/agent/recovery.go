@@ -52,18 +52,31 @@ func (rm *RecoveryManager) SetReliabilityRecorder(r port.ReliabilityRecorder) {
 	rm.reliability = r
 }
 
+// DetectStale finds agents marked running/waiting/suspending whose process is
+// dead and marks them suspended. It does NOT attempt to resume them. Returns
+// the number of agents marked stale.
+func (rm *RecoveryManager) DetectStale() int {
+	running := rm.store.AgentsByStatus("running", "waiting", "suspending")
+	count := 0
+	for _, a := range running {
+		if a.PID > 0 && !ProcessAlive(a.PID) {
+			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
+			count++
+		}
+	}
+	if count > 0 {
+		_ = rm.store.Save()
+	}
+	return count
+}
+
 // RecoverAll attempts to resume all suspended agents. Also detects stale
 // "running" agents whose process is dead and marks them suspended first.
 func (rm *RecoveryManager) RecoverAll(ctx context.Context) RecoveryResult {
 	var result RecoveryResult
 
 	// Detect stale agents: marked running but process is dead.
-	running := rm.store.AgentsByStatus("running", "waiting", "suspending")
-	for _, a := range running {
-		if a.PID > 0 && !ProcessAlive(a.PID) {
-			_ = rm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
-		}
-	}
+	rm.DetectStale()
 
 	suspended := rm.store.AgentsByStatus("suspended")
 	if len(suspended) == 0 {
