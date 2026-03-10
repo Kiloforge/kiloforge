@@ -4,12 +4,19 @@ import { MarkdownContent } from "./MarkdownContent";
 import { formatTokens, formatUSD } from "../../utils/format";
 import styles from "./TerminalBubbles.module.css";
 
+/** Coerce a value to string (defensive against unexpected server payloads). */
+function asString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  return String(value);
+}
+
 /** Renders a user input message. */
 function InputBubble({ msg }: { msg: WSMessage }) {
   return (
     <div className={`${styles.message} ${styles.userMessage}`}>
       <span className={styles.messageIcon}>you</span>
-      <div className={styles.messageContent}>{msg.text}</div>
+      <div className={styles.messageContent}>{asString(msg.text)}</div>
     </div>
   );
 }
@@ -20,7 +27,7 @@ function TextBubble({ msg }: { msg: WSMessage }) {
     <div className={`${styles.message} ${styles.agentMessage}`}>
       <span className={styles.messageIcon}>kf</span>
       <div className={styles.messageContent}>
-        <MarkdownContent text={msg.text} />
+        <MarkdownContent text={asString(msg.text)} />
       </div>
     </div>
   );
@@ -60,7 +67,7 @@ function ToolUseBubble({ msg }: { msg: WSMessage }) {
 /** Renders a thinking block with collapsible content. */
 function ThinkingBubble({ msg }: { msg: WSMessage }) {
   const [expanded, setExpanded] = useState(false);
-  const text = msg.thinking ?? "";
+  const text = asString(msg.thinking);
   const isLong = text.length > 120;
 
   return (
@@ -145,7 +152,7 @@ function SystemBubble({ msg }: { msg: WSMessage }) {
 function StatusBubble({ msg }: { msg: WSMessage }) {
   return (
     <div className={`${styles.message} ${styles.statusMessage}`}>
-      <span className={styles.statusText}>{msg.text}</span>
+      <span className={styles.statusText}>{asString(msg.text)}</span>
     </div>
   );
 }
@@ -155,7 +162,7 @@ function ErrorBubble({ msg }: { msg: WSMessage }) {
   return (
     <div className={`${styles.message} ${styles.errorMessage}`}>
       <span className={styles.messageIcon}>err</span>
-      <div className={styles.messageContent}>{msg.text}</div>
+      <div className={styles.messageContent}>{asString(msg.text)}</div>
     </div>
   );
 }

@@ -75,16 +75,19 @@ export function useAgentWebSocket(agentId: string | null) {
       try {
         const msg = JSON.parse(event.data as string) as ServerMessage;
         const now = new Date();
+        // Defensive: coerce text fields to string in case server sends unexpected types
+        const safeText = typeof msg.text === "string" ? msg.text : String(msg.text ?? "");
+        const safeThinking = typeof msg.thinking === "string" ? msg.thinking : String(msg.thinking ?? "");
 
         switch (msg.type) {
           case "output":
             // Backward compat: treat legacy output as text
-            setMessages((prev) => [...prev, { type: "text", text: msg.text ?? "", timestamp: now }]);
+            setMessages((prev) => [...prev, { type: "text", text: safeText, timestamp: now }]);
             break;
           case "text":
             setMessages((prev) => [...prev, {
               type: "text",
-              text: msg.text ?? "",
+              text: safeText,
               turnId: msg.turn_id,
               timestamp: now,
             }]);
@@ -122,7 +125,7 @@ export function useAgentWebSocket(agentId: string | null) {
             setMessages((prev) => [...prev, {
               type: "thinking",
               text: "",
-              thinking: msg.thinking,
+              thinking: safeThinking,
               turnId: msg.turn_id,
               timestamp: now,
             }]);

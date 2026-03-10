@@ -1,10 +1,24 @@
-import { useState, useCallback } from "react";
+import { Children, isValidElement, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import styles from "./MarkdownContent.module.css";
 
 interface Props {
   text: string;
+}
+
+/** Extract plain text from React children for the copy button. */
+function extractText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (isValidElement(node)) {
+    return extractText((node.props as { children?: React.ReactNode }).children);
+  }
+  if (Array.isArray(node)) {
+    return Children.toArray(node).map(extractText).join("");
+  }
+  return "";
 }
 
 function CopyButton({ code }: { code: string }) {
@@ -26,16 +40,7 @@ function CopyButton({ code }: { code: string }) {
 
 const components: Components = {
   pre({ children }) {
-    // Extract code text for copy button
-    let codeText = "";
-    if (
-      children &&
-      typeof children === "object" &&
-      "props" in (children as React.ReactElement)
-    ) {
-      const el = children as React.ReactElement<{ children?: React.ReactNode }>;
-      codeText = typeof el.props.children === "string" ? el.props.children : "";
-    }
+    const codeText = extractText(children);
     return (
       <div className={styles.codeBlockWrapper}>
         <CopyButton code={codeText} />
@@ -44,11 +49,9 @@ const components: Components = {
     );
   },
   code({ children, className }) {
-    // If className starts with "language-", it's a fenced code block (rendered inside <pre>)
     if (className) {
       return <code className={styles.codeBlockCode}>{children}</code>;
     }
-    // Inline code
     return <code className={styles.inlineCode}>{children}</code>;
   },
   a({ href, children }) {
@@ -61,9 +64,10 @@ const components: Components = {
 };
 
 export function MarkdownContent({ text }: Props) {
+  const safeText = typeof text === "string" ? text : String(text ?? "");
   return (
     <div className={styles.markdown}>
-      <ReactMarkdown components={components}>{text}</ReactMarkdown>
+      <ReactMarkdown components={components}>{safeText}</ReactMarkdown>
     </div>
   );
 }
