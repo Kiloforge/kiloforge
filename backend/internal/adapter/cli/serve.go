@@ -109,7 +109,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		rest.WithTracer(tracing.NewOTelTracer()),
 	}
 	if cfg.IsDashboardEnabled() {
-		opts = append(opts, rest.WithDashboard(agentStore, quotaTracker, reg))
+		opts = append(opts, rest.WithDashboard(agentStore, quotaTracker, "/", reg))
 	}
 
 	// Enable native board service.

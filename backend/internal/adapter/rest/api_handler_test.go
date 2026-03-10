@@ -70,6 +70,8 @@ func (s *stubQuotaReader) RetryAfter() time.Duration       { return 0 }
 func (s *stubQuotaReader) GetAgentUsage(id string) *agent.AgentUsage {
 	return s.agentUsage[id]
 }
+func (s *stubQuotaReader) TokensPerMin(_ time.Duration) float64 { return 0 }
+func (s *stubQuotaReader) CostPerHour(_ time.Duration) float64  { return 0 }
 
 func newTestHandler(agents []domain.AgentInfo) *APIHandler {
 	return NewAPIHandler(APIHandlerOpts{

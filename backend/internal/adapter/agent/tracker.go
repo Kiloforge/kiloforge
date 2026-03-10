@@ -143,6 +143,12 @@ func (t *QuotaTracker) RetryAfter() time.Duration {
 	return remaining
 }
 
+// TokensPerMin returns the token rate over the given window. Stub implementation.
+func (t *QuotaTracker) TokensPerMin(_ time.Duration) float64 { return 0 }
+
+// CostPerHour returns the cost rate over the given window. Stub implementation.
+func (t *QuotaTracker) CostPerHour(_ time.Duration) float64 { return 0 }
+
 // Save writes the current usage state to disk. No-op if dataDir is empty.
 func (t *QuotaTracker) Save() error {
 	if t.dataDir == "" {
