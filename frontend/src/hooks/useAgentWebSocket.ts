@@ -4,7 +4,7 @@ export type WSConnectionState = "connecting" | "connected" | "disconnected" | "r
 
 export type WSMessageType =
   | "output" | "input" | "status" | "error"
-  | "turn_start" | "text" | "tool_use" | "thinking" | "turn_end" | "system";
+  | "turn_start" | "text" | "tool_use" | "tool_result" | "thinking" | "turn_end" | "system";
 
 export interface WSUsageInfo {
   input_tokens: number;
@@ -21,6 +21,9 @@ export interface WSMessage {
   toolName?: string;
   toolId?: string;
   toolInput?: Record<string, unknown>;
+  toolUseId?: string;
+  toolResult?: string;
+  isToolError?: boolean;
   thinking?: string;
   costUsd?: number;
   usage?: WSUsageInfo;
@@ -37,7 +40,10 @@ interface ServerMessage {
   turn_id?: string;
   tool_name?: string;
   tool_id?: string;
+  tool_use_id?: string;
   input?: Record<string, unknown>;
+  content?: string;
+  is_error?: boolean;
   thinking?: string;
   cost_usd?: number;
   usage?: WSUsageInfo;
@@ -129,6 +135,17 @@ export function useAgentWebSocket(agentId: string | null) {
               toolName: msg.tool_name,
               toolId: msg.tool_id,
               toolInput: msg.input,
+              timestamp: now,
+            }]);
+            break;
+          case "tool_result":
+            setMessages((prev) => [...prev, {
+              type: "tool_result",
+              text: typeof msg.content === "string" ? msg.content : "",
+              turnId: msg.turn_id,
+              toolUseId: msg.tool_use_id,
+              toolResult: typeof msg.content === "string" ? msg.content : "",
+              isToolError: msg.is_error ?? false,
               timestamp: now,
             }]);
             break;

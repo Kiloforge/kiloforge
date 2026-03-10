@@ -64,6 +64,42 @@ function ToolUseBubble({ msg }: { msg: WSMessage }) {
   );
 }
 
+/** Maximum lines to show before truncating tool result output. */
+const TOOL_RESULT_LINE_LIMIT = 50;
+
+/** Renders a tool execution result with collapsible content. */
+function ToolResultBubble({ msg }: { msg: WSMessage }) {
+  const [expanded, setExpanded] = useState(false);
+  const content = msg.toolResult ?? asString(msg.text);
+  const lines = content.split("\n");
+  const isLong = lines.length > TOOL_RESULT_LINE_LIMIT;
+  const isError = msg.isToolError ?? false;
+  const isEmpty = content.length === 0;
+
+  if (isEmpty) return null;
+
+  const displayContent = expanded || !isLong
+    ? content
+    : lines.slice(0, TOOL_RESULT_LINE_LIMIT).join("\n");
+
+  return (
+    <div className={`${styles.message} ${styles.toolResultMessage} ${isError ? styles.toolResultError : ""}`}>
+      <span className={styles.messageIcon}>{isError ? "err" : "result"}</span>
+      <div className={styles.messageContent}>
+        <pre className={styles.toolResultContent}>{displayContent}</pre>
+        {isLong && (
+          <button
+            className={styles.toggleBtn}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? "Show less" : `Show all ${lines.length} lines`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Renders a thinking block with collapsible content. */
 function ThinkingBubble({ msg }: { msg: WSMessage }) {
   const [expanded, setExpanded] = useState(false);
@@ -185,6 +221,8 @@ export function MessageDispatch({ msg, turnNumber }: MessageDispatchProps) {
       return <TextBubble msg={msg} />;
     case "tool_use":
       return <ToolUseBubble msg={msg} />;
+    case "tool_result":
+      return <ToolResultBubble msg={msg} />;
     case "thinking":
       return <ThinkingBubble msg={msg} />;
     case "turn_start":

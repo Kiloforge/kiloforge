@@ -96,6 +96,38 @@
   opacity: 0.8;
 }
 
+/* Tool result */
+.toolResultMessage .messageIcon {
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--green, #34d399);
+}
+
+.toolResultContent {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.toolResultError .messageIcon {
+  background: rgba(240, 108, 108, 0.15);
+  color: var(--red);
+}
+
+.toolResultError .toolResultContent {
+  border-color: rgba(240, 108, 108, 0.3);
+  color: var(--red);
+}
+
 /* Thinking */
 .thinkingMessage .messageIcon {
   background: rgba(160, 160, 180, 0.15);
