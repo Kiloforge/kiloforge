@@ -42,6 +42,14 @@
   background-clip: text;
 }
 
+.subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
 .headerDivider {
   width: 1px;
   height: 16px;

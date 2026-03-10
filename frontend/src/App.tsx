@@ -198,6 +198,7 @@ export default function App() {
           <Link to="/" className={styles.homeLink}>
             <img src="/kf_logo.webp" alt="kiloforge" className={styles.logo} />
             <h1 className={styles.title}>kiloforge</h1>
+            <span className={styles.subtitle}>Command Deck</span>
           </Link>
           <ConnectionStatus state={connectionState} />
           <span className={styles.headerDivider} />
