@@ -18,13 +18,24 @@ describe("AgentLauncher", () => {
     renderLauncher();
     expect(screen.getByText("New Agent")).toBeInTheDocument();
     expect(screen.getByText("Architect")).toBeInTheDocument();
-    expect(screen.getByText("Product Advisor")).toBeInTheDocument();
     expect(screen.getByRole("textbox")).toBeInTheDocument();
+  });
+
+  it("hides advisor roles when no projectSlug", () => {
+    renderLauncher();
+    expect(screen.queryByText("Product Advisor")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reliability Advisor")).not.toBeInTheDocument();
+  });
+
+  it("shows advisor roles when projectSlug is provided", () => {
+    renderLauncher({ projectSlug: "my-project" });
+    expect(screen.getByText("Product Advisor")).toBeInTheDocument();
+    expect(screen.getByText("Reliability Advisor")).toBeInTheDocument();
   });
 
   it("calls onLaunch with selected role and prompt", async () => {
     const user = userEvent.setup();
-    const { props } = renderLauncher();
+    const { props } = renderLauncher({ projectSlug: "my-project" });
 
     await user.click(screen.getByText("Product Advisor"));
     await user.type(screen.getByRole("textbox"), "Help me design a logo");
@@ -67,7 +78,7 @@ describe("AgentLauncher", () => {
 
   it("changes placeholder text based on selected role", async () => {
     const user = userEvent.setup();
-    renderLauncher();
+    renderLauncher({ projectSlug: "my-project" });
 
     const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
     expect(textarea.placeholder).toContain("plan");

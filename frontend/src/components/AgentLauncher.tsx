@@ -43,10 +43,12 @@ interface AgentLauncherProps {
 }
 
 export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waitingForCapacity, waitingCapacity, onCancelWaiting }: AgentLauncherProps) {
-  const [role, setRole] = useState<AgentRole>(projectSlug ? "architect" : "architect");
+  // Advisor roles are only available within a project context.
+  const availableRoles = projectSlug ? ROLES : ROLES.filter((r) => !r.value.startsWith("advisor-"));
+  const [role, setRole] = useState<AgentRole>("architect");
   const [prompt, setPrompt] = useState("");
 
-  const selectedRole = ROLES.find((r) => r.value === role) ?? ROLES[0];
+  const selectedRole = availableRoles.find((r) => r.value === role) ?? availableRoles[0];
 
   const handleSubmit = useCallback(() => {
     onLaunch(role, prompt.trim());
@@ -87,7 +89,7 @@ export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waiti
         <p className={styles.subtitle}>Choose an agent type and optionally provide a prompt.</p>
 
         <div className={styles.roleList}>
-          {ROLES.map((r) => (
+          {availableRoles.map((r) => (
             <button
               key={r.value}
               className={`${styles.roleCard} ${role === r.value ? styles.roleCardActive : ""}`}
