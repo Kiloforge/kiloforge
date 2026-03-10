@@ -14,6 +14,7 @@ const (
 	EventLockUpdate     = "lock_update"
 	EventLockReleased   = "lock_released"
 	EventQueueUpdate           = "queue_update"
+	EventCapacityChanged       = "capacity_changed"
 	EventProjectSettingsUpdate = "project_settings_update"
 )
 
@@ -75,6 +76,11 @@ func NewLockReleasedEvent(scope string) Event {
 // NewQueueUpdateEvent creates a queue_update event.
 func NewQueueUpdateEvent(action string, data any) Event {
 	return Event{Type: EventQueueUpdate, Data: map[string]any{"action": action, "data": data}}
+}
+
+// NewCapacityChangedEvent creates a capacity_changed event.
+func NewCapacityChangedEvent(capacity SwarmCapacity) Event {
+	return Event{Type: EventCapacityChanged, Data: capacity}
 }
 
 // NewProjectSettingsUpdateEvent creates a project_settings_update event.
