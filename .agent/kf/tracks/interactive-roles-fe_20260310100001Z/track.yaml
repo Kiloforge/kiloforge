@@ -1,0 +1,106 @@
+id: interactive-roles-fe_20260310100001Z
+title: "Add conversational agent launcher UI"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Add a UI for selecting an interactive agent type and entering a prompt,
+    replacing the bare spawn button with a role-aware launcher.
+  context: |
+    With the backend now supporting role-based interactive agent spawning,
+    the frontend needs a way for users to:
+    1. Choose which agent type to start (architect, product-advisor)
+    2. Optionally enter a prompt describing what they want
+    3. Launch into the AgentTerminal for conversation
+
+    The current spawn flow is a single button that spawns a generic agent
+    with no prompt. The track generation flow on ProjectPage has a separate
+    prompt input. These should be unified into a launcher that works from
+    both the overview and project pages.
+  codebase_analysis: |
+    Key files to modify:
+
+    1. frontend/src/App.tsx (lines 98-119)
+       - Current spawnMutation sends empty body to /api/agents/interactive
+       - Needs to accept role + prompt and pass them in the request body
+       - handleSpawnInteractive needs role parameter
+
+    2. frontend/src/pages/OverviewPage.tsx
+       - Has the spawn button that triggers handleSpawnInteractive
+       - Replace with a launcher component that shows role selection + prompt
+
+    3. frontend/src/pages/ProjectPage.tsx (lines 94-119)
+       - Has separate track generation flow (POST /api/tracks/generate)
+       - Can be refactored to use the same launcher with role="architect"
+         and project context pre-filled
+
+    4. New component: AgentLauncher.tsx (or SpawnAgentDialog.tsx)
+       - Role selector (architect, product-advisor)
+       - Optional prompt text area
+       - Submit → spawns agent → opens AgentTerminal
+       - Shows role descriptions so user knows what each does
+
+    5. frontend/src/hooks/useAgents.ts
+       - spawnInteractive mutation may need to accept role + prompt params
+
+    Existing patterns:
+    - ConsentDialog, SetupRequiredDialog use modal overlay pattern
+    - AgentTerminal connects via useAgentWebSocket hook
+    - Project context available via useProjects hook
+  acceptance_criteria:
+    - User can select between architect and product-advisor roles
+    - User can optionally enter a prompt before launching
+    - Launching opens AgentTerminal with the conversational agent
+    - Role descriptions clearly explain what each agent does
+    - Works from overview page (no project context) and project page (with project)
+    - Existing consent/skills/setup prerequisite dialogs still fire correctly
+    - Track generation from project page uses the same launcher
+    - E2E tests cover the launcher flow
+  out_of_scope: |
+    - Backend API changes (separate track)
+    - Creating skill content (separate track)
+    - Changes to AgentTerminal component itself
+    - Changes to WebSocket protocol
+  technical_notes: |
+    Suggested UX flow:
+    1. User clicks "New Agent" (replaces current spawn button)
+    2. Dropdown or dialog appears with role options:
+       - "Architect" — Research codebase and generate implementation tracks
+       - "Product Advisor" — Product design, branding, and competitive analysis
+    3. Below role selection: optional prompt textarea
+       - Placeholder text changes based on selected role
+    4. "Start" button spawns agent with selected role + prompt
+    5. AgentTerminal opens for conversation
+
+    The launcher component should be reusable — ProjectPage can embed it
+    with role pre-set to "architect" and project slug pre-filled.
+plan:
+  - phase: "Launcher component"
+    tasks:
+      - text: "Create AgentLauncher component with role selector, prompt input, and start button"
+        done: false
+      - text: "Add role descriptions and dynamic placeholder text per role"
+        done: false
+      - text: "Style launcher using existing CSS module patterns (ConsentDialog style)"
+        done: false
+  - phase: "Integration"
+    tasks:
+      - text: "Update App.tsx spawnMutation to accept role and prompt parameters"
+        done: false
+      - text: "Replace spawn button in OverviewPage with AgentLauncher trigger"
+        done: false
+      - text: "Refactor ProjectPage track generation to use AgentLauncher with role=architect"
+        done: false
+      - text: "Wire consent/skills/setup prerequisite checks for new roles"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build-frontend to verify no build errors"
+        done: false
+      - text: "Add E2E tests for launcher flow (role selection, prompt entry, agent spawn)"
+        done: false
+      - text: "Run make test-e2e to verify all tests pass"
+        done: false
+extra: {}

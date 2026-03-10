@@ -38,6 +38,11 @@ e2e-merge-lock_20260309194838Z:
 
 header-title-link_20260310070000Z: []
 
+interactive-roles-be_20260310100000Z: []
+
+interactive-roles-fe_20260310100001Z:
+  - interactive-roles-be_20260310100000Z
+
 product-advisor-skill_20260310080000Z: []
 work-queue-be_20260311010002Z: []
 
