@@ -1,0 +1,70 @@
+id: fullscreen-immersive-fe_20260312210000Z
+title: Use browser Fullscreen API for immersive command mode
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-10
+spec:
+  summary: |
+    Use the browser Fullscreen API (requestFullscreen/exitFullscreen) when
+    entering command mode so the browser chrome disappears and the user gets
+    a fully immersive experience.
+  context: |
+    The "Command Mode" (Cmd+Shift+F) currently renders as a CSS overlay
+    (position: fixed; inset: 0; z-index: 200) that covers the viewport but
+    does not hide the browser address bar, tabs, or other chrome. The user
+    wants true browser fullscreen so they are "fully immersed."
+  codebase_analysis: |
+    Current implementation:
+    - FullScreenCommand.tsx renders a fixed overlay with z-index 200
+    - App.tsx toggles showFullScreen state, renders component conditionally
+    - Escape key exits command mode (handled in FullScreenCommand)
+    - Keyboard shortcut: Cmd+Shift+F toggles via useKeyboardShortcuts
+    
+    Changes needed in FullScreenCommand.tsx:
+    - On mount: call document.documentElement.requestFullscreen()
+    - On unmount/exit: call document.exitFullscreen()
+    - Listen for fullscreenchange event to sync state (user may press
+      browser Escape which exits fullscreen without our handler)
+    - The existing CSS overlay approach still works within fullscreen —
+      no need to change the layout fundamentally
+    
+    Browser API notes:
+    - requestFullscreen() returns a Promise (may reject if not user-gesture)
+    - The Cmd+Shift+F shortcut counts as a user gesture
+    - document.exitFullscreen() also returns a Promise
+    - fullscreenchange event fires on document when state changes
+    - Escape key in fullscreen exits fullscreen AND should exit command mode
+  acceptance_criteria:
+    - Entering command mode triggers browser fullscreen (chrome disappears)
+    - Exiting command mode exits browser fullscreen
+    - Pressing browser Escape exits both fullscreen and command mode
+    - The "Command" nav button and Cmd+Shift+F shortcut both work
+    - Graceful fallback if fullscreen is not supported or denied
+    - make build and make test pass
+  out_of_scope: |
+    - Changing the command pane layout or split functionality
+    - Adding new keyboard shortcuts
+    - Backend changes
+  technical_notes: |
+    Add requestFullscreen() in a useEffect on mount. Add a fullscreenchange
+    listener that calls onExit when the user exits fullscreen via browser
+    controls. Wrap in try/catch for browsers that block fullscreen.
+    The existing overlay CSS (position: fixed; inset: 0) works correctly
+    inside fullscreen — no layout changes needed.
+plan:
+  - phase: Core Implementation
+    tasks:
+      - text: In FullScreenCommand.tsx, add useEffect that calls requestFullscreen() on mount and exitFullscreen() on unmount
+        done: true
+      - text: Add fullscreenchange event listener that calls onExit when browser exits fullscreen (e.g. user presses Escape)
+        done: true
+      - text: Wrap requestFullscreen/exitFullscreen in try/catch for graceful fallback
+        done: true
+  - phase: Verification
+    tasks:
+      - text: Run make build — no TypeScript errors
+        done: true
+      - text: Run make test — all tests pass
+        done: true
+extra: {}
