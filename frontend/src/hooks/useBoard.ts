@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import type { BoardState, SSEEventData } from "../types/api";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
+import { clampForwardMove } from "../utils/board";
 
 interface UseBoardResult {
   board: BoardState | null;
@@ -66,11 +67,13 @@ export function useBoard(project?: string): UseBoardResult {
         if (!prev) return prev;
         const card = prev.cards[trackId];
         if (!card || card.column === toColumn) return prev;
+        const effective = clampForwardMove(card.column, toColumn, prev.columns);
+        if (effective === card.column) return prev;
         return {
           ...prev,
           cards: {
             ...prev.cards,
-            [trackId]: { ...card, column: toColumn },
+            [trackId]: { ...card, column: effective },
           },
         };
       });

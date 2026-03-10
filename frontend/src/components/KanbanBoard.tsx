@@ -1,10 +1,11 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { BoardState, BoardCard, TrackDependency, TrackConflict } from "../types/api";
 import { useTourContextSafe } from "./tour/TourProvider";
 import { TOUR_STEPS } from "./tour/tourSteps";
 import { RelationshipOverlay } from "./RelationshipOverlay";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { clampForwardMove } from "../utils/board";
 import styles from "./KanbanBoard.module.css";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -37,7 +38,15 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
   const [confirmReject, setConfirmReject] = useState<string | null>(null);
   const [showRelations, setShowRelations] = useState(true);
   const [activeColumn, setActiveColumn] = useState(board.columns[0] ?? "backlog");
+  const [clampedCardId, setClampedCardId] = useState<string | null>(null);
   const isMobile = useMediaQuery("(max-width: 767px)");
+
+  // Clear clamped animation after it plays
+  useEffect(() => {
+    if (!clampedCardId) return;
+    const timer = setTimeout(() => setClampedCardId(null), 600);
+    return () => clearTimeout(timer);
+  }, [clampedCardId]);
 
   const boardRef = useRef<HTMLDivElement>(null);
   const cardRefsMap = useRef(new Map<string, HTMLElement>());
@@ -76,13 +85,22 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
 
   const handleDrop = (e: React.DragEvent, col: string) => {
     e.preventDefault();
-    if (dragTrackId && board.cards[dragTrackId]?.column !== col) {
-      onMoveCard(dragTrackId, col);
-      // Tour: detect drag to approved during move-card step
-      if (tour?.isActive && col === "approved") {
-        const step = TOUR_STEPS[tour.currentStep];
-        if (step?.id === "move-card") {
-          tour.completeTour();
+    if (dragTrackId) {
+      const fromCol = board.cards[dragTrackId]?.column;
+      if (fromCol) {
+        const effective = clampForwardMove(fromCol, col, board.columns);
+        if (effective !== fromCol) {
+          onMoveCard(dragTrackId, effective);
+          if (effective !== col) {
+            setClampedCardId(dragTrackId);
+          }
+        }
+        // Tour: detect drag to approved during move-card step
+        if (tour?.isActive && effective === "approved") {
+          const step = TOUR_STEPS[tour.currentStep];
+          if (step?.id === "move-card") {
+            tour.completeTour();
+          }
         }
       }
     }
@@ -93,8 +111,16 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
   const emptyMap = emptyMapRef.current;
 
   const handleMobileMove = useCallback((trackId: string, toColumn: string) => {
-    onMoveCard(trackId, toColumn);
-  }, [onMoveCard]);
+    const fromCol = board.cards[trackId]?.column;
+    if (!fromCol) return;
+    const effective = clampForwardMove(fromCol, toColumn, board.columns);
+    if (effective !== fromCol) {
+      onMoveCard(trackId, effective);
+      if (effective !== toColumn) {
+        setClampedCardId(trackId);
+      }
+    }
+  }, [board, onMoveCard]);
 
   return (
     <div className={styles.boardWrapper} style={{ position: "relative" }}>
@@ -154,6 +180,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     card={card}
                     projectSlug={projectSlug}
                     isDragging={dragTrackId === card.track_id}
+                    isClamped={clampedCardId === card.track_id}
                     isBacklog={col === "backlog"}
                     dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
                     confirmingReject={confirmReject === card.track_id}
@@ -189,6 +216,7 @@ interface CardItemProps {
   card: BoardCard;
   projectSlug?: string;
   isDragging: boolean;
+  isClamped?: boolean;
   isBacklog: boolean;
   confirmingReject: boolean;
   dataTour?: string;
@@ -205,10 +233,10 @@ interface CardItemProps {
   onMobileMove?: (trackId: string, toColumn: string) => void;
 }
 
-function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isClamped, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
   return (
     <div
-      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isBacklog ? styles.cardBacklog : ""}`}
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isBacklog ? styles.cardBacklog : ""}`}
       draggable={!isMobile}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -274,7 +302,11 @@ function CardItem({ card, projectSlug, isDragging, isBacklog, confirmingReject, 
           }}
         >
           <option value="">Move to...</option>
-          {columns.filter((c) => c !== currentColumn).map((c) => (
+          {columns.filter((c) => {
+            if (c === currentColumn) return false;
+            // Exclude forward columns that would clamp to a no-op
+            return clampForwardMove(currentColumn, c, columns) !== currentColumn;
+          }).map((c) => (
             <option key={c} value={c}>{COLUMN_LABELS[c] || c}</option>
           ))}
         </select>

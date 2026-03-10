@@ -90,6 +90,16 @@
   opacity: 0.4;
 }
 
+.cardClamped {
+  animation: clampPulse 0.5s ease-out;
+}
+
+@keyframes clampPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow) 40%, transparent); }
+  30% { transform: scale(1.03); box-shadow: 0 0 0 4px color-mix(in srgb, var(--yellow) 40%, transparent); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow) 40%, transparent); }
+}
+
 .cardHeader {
   display: flex;
   gap: 6px;
