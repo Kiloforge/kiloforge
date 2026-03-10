@@ -91,7 +91,7 @@ func TestNewServer_WithDashboard(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 3001, WithDashboard(nil, nil, "/", &stubProjectLister{}))
+	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 3001, WithDashboard(nil, nil, &stubProjectLister{}))
 
 	if srv.dashboard == nil {
 		t.Fatal("expected dashboard to be set")

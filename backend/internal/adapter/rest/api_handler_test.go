@@ -81,7 +81,7 @@ func newTestHandler(agents []domain.AgentInfo) *APIHandler {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		Projects:   &stubProjectLister{projects: []domain.Project{{Slug: "proj-1"}, {Slug: "proj-2"}}},
-		GiteaURL:   "http://localhost:3000",
+
 		SSEClients: func() int { return 0 },
 	})
 }
@@ -295,7 +295,7 @@ func TestGetQuota(t *testing.T) {
 		h := NewAPIHandler(APIHandlerOpts{
 			Agents:   &stubAgentLister{},
 			LockMgr:  lock.New(""),
-			GiteaURL: "http://localhost:3000",
+
 		})
 		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
 		if err != nil {
@@ -335,7 +335,7 @@ func TestGetQuota(t *testing.T) {
 			Agents:   &stubAgentLister{agents: []domain.AgentInfo{{ID: "a1"}}},
 			Quota:    quota,
 			LockMgr:  lock.New(""),
-			GiteaURL: "http://localhost:3000",
+
 		})
 		resp, err := h.GetQuota(context.Background(), gen.GetQuotaRequestObject{})
 		if err != nil {
@@ -514,7 +514,7 @@ func TestGetSkillsStatus_WithSkills(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		Projects:   &stubProjectLister{},
-		GiteaURL:   "http://localhost:3000",
+
 		SSEClients: func() int { return 0 },
 		Cfg:        cfg,
 	})
@@ -561,7 +561,7 @@ func newTestHandlerWithTraces() (*APIHandler, *tracing.Store) {
 		LockMgr:    lock.New(""),
 		Projects:   &stubProjectLister{},
 		TraceStore: store,
-		GiteaURL:   "http://localhost:3000",
+
 		SSEClients: func() int { return 0 },
 	})
 	return h, store
@@ -654,7 +654,7 @@ func TestListTraces_NilStore(t *testing.T) {
 		Agents:   &stubAgentLister{},
 		Quota:    &stubQuotaReader{},
 		LockMgr:  lock.New(""),
-		GiteaURL: "http://localhost:3000",
+
 	})
 	resp, err := h.ListTraces(context.Background(), gen.ListTracesRequestObject{})
 	if err != nil {
@@ -716,7 +716,7 @@ func TestAddProject_Success(t *testing.T) {
 		LockMgr:    lock.New(""),
 		Projects:   &stubProjectLister{},
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -750,7 +750,7 @@ func TestAddProject_Duplicate(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -777,7 +777,7 @@ func TestAddProject_BadURL(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -801,7 +801,7 @@ func TestAddProject_MissingURL(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: &stubProjectManager{},
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -824,7 +824,7 @@ func TestRemoveProject_Success(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
@@ -851,7 +851,7 @@ func TestRemoveProject_WithCleanup(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	cleanup := true
@@ -881,7 +881,7 @@ func TestRemoveProject_NotFound(t *testing.T) {
 		Quota:      &stubQuotaReader{},
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	resp, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
@@ -934,7 +934,7 @@ func TestGetBoard_AutoSyncOnEmpty(t *testing.T) {
 		Projects: &stubProjectLister{projects: []domain.Project{
 			{Slug: "proj", ProjectDir: projectDir},
 		}},
-		GiteaURL: "http://localhost:3000",
+
 	})
 
 	// First call: board is empty, should auto-sync.
@@ -991,7 +991,7 @@ func TestMoveCard_EmitsBoardUpdate(t *testing.T) {
 		LockMgr:  lock.New(""),
 		BoardSvc: boardSvc,
 		EventBus: spy,
-		GiteaURL: "http://localhost:3000",
+
 	})
 
 	_, err := h.MoveCard(context.Background(), gen.MoveCardRequestObject{
@@ -1017,7 +1017,7 @@ func TestLockAcquireRelease_EmitsEvents(t *testing.T) {
 		Quota:    &stubQuotaReader{},
 		LockMgr:  lock.New(""),
 		EventBus: spy,
-		GiteaURL: "http://localhost:3000",
+
 	})
 
 	ttl := 60
@@ -1055,7 +1055,7 @@ func TestAddProject_EmitsProjectUpdate(t *testing.T) {
 		LockMgr:    lock.New(""),
 		ProjectMgr: mgr,
 		EventBus:   spy,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	_, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -1081,7 +1081,7 @@ func TestRemoveProject_EmitsProjectRemoved(t *testing.T) {
 		LockMgr:    lock.New(""),
 		ProjectMgr: &stubProjectManager{},
 		EventBus:   spy,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	_, err := h.RemoveProject(context.Background(), gen.RemoveProjectRequestObject{
@@ -1106,7 +1106,7 @@ func TestAddProject_NilManager(t *testing.T) {
 		Agents:   &stubAgentLister{},
 		Quota:    &stubQuotaReader{},
 		LockMgr:  lock.New(""),
-		GiteaURL: "http://localhost:3000",
+
 	})
 
 	resp, err := h.AddProject(context.Background(), gen.AddProjectRequestObject{
@@ -1141,7 +1141,7 @@ func TestAddProject_WithSSHKey(t *testing.T) {
 		Agents:     &stubAgentLister{},
 		LockMgr:    lock.New(t.TempDir()),
 		ProjectMgr: mgr,
-		GiteaURL:   "http://localhost:3000",
+
 	})
 
 	sshKeyPath := "/home/user/.ssh/id_ed25519"

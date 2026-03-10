@@ -83,7 +83,6 @@ func startE2EServer(t *testing.T) *e2eServer {
 		LockMgr:    lockMgr,
 		Projects:   reg,
 		ProjectMgr: projectMgr,
-		GiteaURL:   "",
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
@@ -179,7 +178,6 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 		LockMgr:      lockMgr,
 		Projects:     reg,
 		ProjectMgr:   projectMgr,
-		GiteaURL:     "",
 		AgentRemover: store, // Wire up remover for delete tests.
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
@@ -274,7 +272,6 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 		LockMgr:     lockMgr,
 		Projects:    reg,
 		ProjectMgr:  projectMgr,
-		GiteaURL:    "",
 		BoardSvc:    boardSvc,
 		TrackReader: e2eTrackReader{},
 	})

@@ -33,10 +33,10 @@ var defaultTracer port.Tracer = port.NoopTracer{}
 type ServerOption func(*Server)
 
 // WithDashboard enables dashboard routes on the unified server.
-func WithDashboard(agents dashboard.AgentLister, quota QuotaReader, giteaURL string, projects dashboard.ProjectLister) ServerOption {
+func WithDashboard(agents dashboard.AgentLister, quota QuotaReader, projects dashboard.ProjectLister) ServerOption {
 	return func(s *Server) {
 		hub := dashboard.NewSSEHub()
-		d := dashboard.New(0, agents, quota, giteaURL, projects, hub)
+		d := dashboard.New(0, agents, quota, projects, hub)
 		d.SetTrackReader(service.NewTrackReader())
 		s.dashboard = d
 		s.quotaReader = quota

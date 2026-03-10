@@ -796,7 +796,6 @@ type StatusInfo struct {
 
 	// EstimatedCostUsd Informational — API-equivalent cost estimate
 	EstimatedCostUsd *float64 `json:"estimated_cost_usd,omitempty"`
-	GiteaUrl         string   `json:"gitea_url"`
 	RateLimited      *bool    `json:"rate_limited,omitempty"`
 	SseClients       int      `json:"sse_clients"`
 

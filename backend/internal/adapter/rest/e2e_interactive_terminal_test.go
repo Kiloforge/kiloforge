@@ -74,7 +74,7 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 		LockMgr:    lockMgr,
 		Projects:   reg,
 		ProjectMgr: projectMgr,
-		GiteaURL:   "",
+
 		WSSessions: wsSessions,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)

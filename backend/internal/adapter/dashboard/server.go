@@ -39,7 +39,6 @@ type Server struct {
 	port        int
 	agents      AgentLister
 	quota       QuotaReader
-	giteaURL    string
 	projects    ProjectLister
 	hub         *SSEHub
 	eventBus    port.EventBus
@@ -53,7 +52,7 @@ type Server struct {
 // and used as both the SSE transport and the event bus. If eventBus is provided
 // (and is an *SSEHub), it is used directly so the bus can be shared with other
 // components like the REST API handler.
-func New(port int, agents AgentLister, quota QuotaReader, giteaURL string, projects ProjectLister, eventBus port.EventBus) *Server {
+func New(port int, agents AgentLister, quota QuotaReader, projects ProjectLister, eventBus port.EventBus) *Server {
 	var hub *SSEHub
 	if eventBus == nil {
 		hub = NewSSEHub()
@@ -69,7 +68,6 @@ func New(port int, agents AgentLister, quota QuotaReader, giteaURL string, proje
 		port:     port,
 		agents:   agents,
 		quota:    quota,
-		giteaURL: giteaURL,
 		projects: projects,
 		hub:      hub,
 		eventBus: eventBus,

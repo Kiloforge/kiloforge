@@ -103,7 +103,6 @@ type APIHandler struct {
 	boardSvc     port.BoardService
 	trackReader  port.TrackReader
 	eventBus     port.EventBus
-	giteaURL     string
 	sseClients   func() int
 	cfg          *config.Config
 	interSpawner InteractiveSpawner
@@ -131,7 +130,6 @@ type APIHandlerOpts struct {
 	BoardSvc     port.BoardService
 	TrackReader  port.TrackReader
 	EventBus     port.EventBus
-	GiteaURL     string
 	SSEClients   func() int
 	Cfg          *config.Config
 	InterSpawner InteractiveSpawner
@@ -157,7 +155,6 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		boardSvc:     opts.BoardSvc,
 		trackReader:  opts.TrackReader,
 		eventBus:     opts.EventBus,
-		giteaURL:     opts.GiteaURL,
 		sseClients:   opts.SSEClients,
 		cfg:          opts.Cfg,
 		interSpawner: opts.InterSpawner,
@@ -926,7 +923,6 @@ func (h *APIHandler) GetStatus(_ context.Context, _ gen.GetStatusRequestObject) 
 	}
 
 	resp := gen.StatusInfo{
-		GiteaUrl:     h.giteaURL,
 		AgentCounts:  counts,
 		ActiveAgents: activeCount,
 		TotalAgents:  len(agents),

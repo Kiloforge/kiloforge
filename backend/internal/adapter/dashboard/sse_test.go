@@ -196,7 +196,7 @@ func TestSSEHub_TypedEventConstructors(t *testing.T) {
 
 func TestSSEHandler_Integration(t *testing.T) {
 	t.Parallel()
-	srv := New(0, &testAgentLister{}, nil, "http://localhost:3000", &testProjectLister{}, nil)
+	srv := New(0, &testAgentLister{}, nil, &testProjectLister{}, nil)
 
 	// Use a cancellable context to cleanly stop the handler.
 	ctx, cancel := context.WithCancel(context.Background())

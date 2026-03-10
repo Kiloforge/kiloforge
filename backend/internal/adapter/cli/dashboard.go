@@ -56,7 +56,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	boardSvc := service.NewNativeBoardService(boardStore)
 	consentStore := sqlite.NewConsentStore(db)
 
-	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, "/", reg, nil)
+	srv := dashboard.New(cfg.OrchestratorPort, store, tracker, reg, nil)
 	srv.SetTraceStore(traceStore)
 	srv.SetTrackReader(service.NewTrackReader())
 	srv.SetBudgetUSD(cfg.BudgetUSD)

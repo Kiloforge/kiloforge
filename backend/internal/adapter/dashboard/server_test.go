@@ -69,7 +69,7 @@ func TestSSEHub_Unsubscribe(t *testing.T) {
 
 func TestRegisterNonAPIRoutes_MountsOnExternalMux(t *testing.T) {
 	t.Parallel()
-	s := New(0, &testAgentLister{}, nil, "http://localhost:3000", &testProjectLister{}, nil)
+	s := New(0, &testAgentLister{}, nil, &testProjectLister{}, nil)
 
 	externalMux := http.NewServeMux()
 	s.RegisterNonAPIRoutes(externalMux)

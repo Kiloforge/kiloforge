@@ -2236,10 +2236,8 @@ components:
 
     StatusInfo:
       type: object
-      required: [gitea_url, agent_counts, total_agents, active_agents, sse_clients]
+      required: [agent_counts, total_agents, active_agents, sse_clients]
       properties:
-        gitea_url:
-          type: string
         agent_counts:
           type: object
           additionalProperties:

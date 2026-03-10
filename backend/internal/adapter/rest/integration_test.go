@@ -61,7 +61,7 @@ func startTestServer(t *testing.T) *testServer {
 		Agents:   store,
 		LockMgr:  lockMgr,
 		Projects: reg,
-		GiteaURL: "",
+
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

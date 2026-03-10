@@ -110,7 +110,7 @@ func TestRouteRegistrationWithDashboard(t *testing.T) {
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
 	srv := NewServer(cfg, reg, store, sqlite.NewPRTrackingStore(db), 0)
-	dash := dashboard.New(0, &stubAgentLister{}, nil, "/", &stubProjectLister{}, nil)
+	dash := dashboard.New(0, &stubAgentLister{}, nil, &stubProjectLister{}, nil)
 
 	mux := buildMux(t, srv, dash)
 
