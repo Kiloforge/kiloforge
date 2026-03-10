@@ -120,5 +120,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Run make build && make test to verify all tests pass and no regressions
-        done: false
+        done: true
 extra: {}
