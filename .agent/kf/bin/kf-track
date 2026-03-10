@@ -91,6 +91,72 @@ normalize_json() {
   fi
 }
 
+# --- Claim detection ---
+# Scan git branches for implementation branches and return claimed track IDs.
+# Output: one line per claimed track — "trackId workerName" (tab-separated).
+# workerName is extracted from worktree folder name if identifiable.
+branch_scan_claimed() {
+  local branches
+  branches=$(git branch --list 'feature/*' 'bug/*' 'chore/*' 'refactor/*' 2>/dev/null | sed 's/^[* ]*//' || true)
+  [[ -z "$branches" ]] && return
+  local worktree_map=""
+  worktree_map=$(git worktree list 2>/dev/null | awk '{print $3, $1}' | sed 's/\[//;s/\]//' || true)
+  while IFS= read -r branch; do
+    # Extract track ID: strip type prefix (feature/, chore/, etc.)
+    local track_id
+    track_id=$(echo "$branch" | sed 's|^[^/]*/||')
+    # Find which worktree (if any) has this branch checked out
+    local worker=""
+    if [[ -n "$worktree_map" ]]; then
+      local wt_path
+      wt_path=$(echo "$worktree_map" | awk -v b="$branch" '$1 == b {print $2}')
+      if [[ -n "$wt_path" ]]; then
+        worker=$(basename "$wt_path")
+      fi
+    fi
+    printf "%s\t%s\n" "$track_id" "$worker"
+  done <<< "$branches"
+}
+
+# Query orchestrator claim API for claimed tracks.
+# Falls back to empty output if server is unreachable.
+server_query_claims() {
+  local orch_url="${KF_ORCH_URL:-http://localhost:4001}"
+  local response
+  response=$(curl -sf --max-time 1 "${orch_url}/api/tracks/claims" 2>/dev/null) || return 0
+  # Expected JSON: [{"track_id":"...","worker":"..."},...]
+  if command -v jq &>/dev/null; then
+    echo "$response" | jq -r '.[] | "\(.track_id)\t\(.worker // "")"' 2>/dev/null || true
+  fi
+}
+
+# Get claimed tracks: try server first, fall back to branch scan.
+# Output: one line per claimed track — "trackId\tworkerName"
+get_claimed_tracks() {
+  local claims
+  claims=$(server_query_claims)
+  if [[ -z "$claims" ]]; then
+    claims=$(branch_scan_claimed)
+  fi
+  echo "$claims"
+}
+
+# Check if a specific track is claimed. Returns 0 if claimed, 1 if not.
+# Sets CLAIMED_BY variable with worker name if claimed.
+is_track_claimed() {
+  local track_id="$1"
+  local claims
+  claims=$(get_claimed_tracks)
+  [[ -z "$claims" ]] && return 1
+  local match
+  match=$(echo "$claims" | awk -F'\t' -v id="$track_id" '$1 == id {print $2; exit}')
+  if [[ -n "$match" || $(echo "$claims" | awk -F'\t' -v id="$track_id" '$1 == id {found=1} END{print found+0}') -eq 1 ]]; then
+    CLAIMED_BY="$match"
+    return 0
+  fi
+  return 1
+}
+
 # Sort tracks.yaml lines by track ID (alphabetical) while preserving header comments.
 sort_tracks_file() {
   if [[ ! -f "$TRACKS_FILE" ]]; then return; fi
