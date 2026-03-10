@@ -13,6 +13,8 @@ import (
 var (
 	flagNoBrowser bool
 	flagDataDir   string
+	flagHost      string
+	flagPort      int
 )
 
 var rootCmd = &cobra.Command{

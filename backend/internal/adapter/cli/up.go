@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -28,6 +29,11 @@ Use 'kf down' to stop the Cortex.`,
 	RunE: runUp,
 }
 
+func init() {
+	upCmd.Flags().StringVar(&flagHost, "host", "", "Host address to bind (default 127.0.0.1)")
+	upCmd.Flags().IntVar(&flagPort, "port", 0, "Port to listen on (default 4001)")
+}
+
 // isFirstRun returns true if no config file exists in the data directory.
 func isFirstRun(dataDir string) bool {
 	_, err := os.Stat(filepath.Join(dataDir, config.ConfigFileName))
@@ -35,10 +41,16 @@ func isFirstRun(dataDir string) bool {
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
-	// Build config with optional --data-dir flag.
+	// Build config with optional CLI flags.
 	var flagOpts []config.FlagOption
 	if cmd.Flags().Changed("data-dir") {
 		flagOpts = append(flagOpts, config.WithDataDir(flagDataDir))
+	}
+	if cmd.Flags().Changed("host") {
+		flagOpts = append(flagOpts, config.WithOrchestratorHost(flagHost))
+	}
+	if cmd.Flags().Changed("port") {
+		flagOpts = append(flagOpts, config.WithOrchestratorPort(flagPort))
 	}
 
 	cfg, err := config.Resolve(config.NewFlagsAdapter(flagOpts...))
@@ -93,12 +105,24 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 		fmt.Println()
 		fmt.Println("You're ready, Kiloforger!")
-		fmt.Printf("  Dashboard:  http://localhost:%d/\n", cfg.OrchestratorPort)
+		fmt.Printf("  Dashboard:  %s\n", dashboardURL(cfg))
 		fmt.Printf("  Data:       %s\n", cfg.DataDir)
 		fmt.Println()
 		fmt.Println("Register your first project with 'kf add <path>'.")
 		fmt.Println()
 	}
+
+	// Port conflict pre-check before starting the daemon.
+	addr := fmt.Sprintf("%s:%d", cfg.OrchestratorHost, cfg.OrchestratorPort)
+	ln, listenErr := net.Listen("tcp", addr)
+	if listenErr != nil {
+		return fmt.Errorf("port %d is already in use on %s\n\n"+
+			"  Try: kf up --port %d\n"+
+			"  Or:  KF_ORCH_PORT=%d kf up",
+			cfg.OrchestratorPort, cfg.OrchestratorHost,
+			cfg.OrchestratorPort+1, cfg.OrchestratorPort+1)
+	}
+	ln.Close()
 
 	// Start Cortex daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
@@ -120,7 +144,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	if !firstRun {
 		fmt.Println()
-		fmt.Printf("Dashboard:   http://localhost:%d/\n", cfg.OrchestratorPort)
+		fmt.Printf("Dashboard:   %s\n", dashboardURL(cfg))
 	}
 
 	fmt.Println()
@@ -133,11 +157,20 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	if !flagNoBrowser {
-		dashURL := fmt.Sprintf("http://localhost:%d/", cfg.OrchestratorPort)
+		dashURL := dashboardURL(cfg)
 		if err := browser.Open(dashURL); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
 		}
 	}
 
 	return nil
+}
+
+// dashboardURL returns the dashboard URL using the configured host and port.
+func dashboardURL(cfg *config.Config) string {
+	host := cfg.OrchestratorHost
+	if host == "0.0.0.0" {
+		host = "localhost"
+	}
+	return fmt.Sprintf("http://%s:%d/", host, cfg.OrchestratorPort)
 }
