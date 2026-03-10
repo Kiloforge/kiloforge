@@ -80,7 +80,7 @@ plan:
   - phase: Documentation and verification
     tasks:
       - text: Update .agent/kf/workflow.md verification commands to reference make lint (fast) and note make lint-full for thorough checks
-        done: false
+        done: true
       - text: Update .agent/kf/tech-stack.md tooling section to reflect staticcheck + go vet as primary CI linters
-        done: false
+        done: true
 extra: {}
