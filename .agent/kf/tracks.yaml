@@ -187,6 +187,6 @@ track-relations-fe_20260311010001Z: {"title":"Track relationship visualization �
 track-tooltip-be_20260311010000Z: {"title":"Track deps/conflicts API — extend track endpoints with dependency and conflict data","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (Frontend)","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 work-queue-be_20260311010002Z: {"title":"Work queue — backend service with semaphore, dependency-aware scheduling, and auto-spawn","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-10"}
-work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and status UI","status":"pending","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
+work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and status UI","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-10"}
 worktree-env-helper_20260310224653Z: {"title":"Add kf-worktree-env shell helper and inform agents via CLAUDE.md","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 worktree-pool_20260307125000Z: {"title":"Worktree Pool Management","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
