@@ -6,44 +6,53 @@
   height: 100%;
   pointer-events: none;
   z-index: 10;
+  overflow: visible;
 }
 
 .depLine {
   fill: none;
-  stroke-width: 1.5;
+  stroke-width: 2.5;
   stroke-linecap: round;
-  stroke-dasharray: 8 4;
-  animation: flowDash 1.5s linear infinite;
+  stroke-dasharray: 12 6;
+  animation: flowDash 3s linear infinite;
 }
 
 .depLineSatisfied {
   stroke: var(--accent);
-  opacity: 0.5;
+  opacity: 0.55;
+  filter: url(#glow-green);
 }
 
 .depLinePending {
   stroke: var(--text-dim);
-  opacity: 0.35;
+  opacity: 0.4;
+  filter: url(#glow-gray);
 }
 
 .conflictLine {
   fill: none;
-  stroke-width: 1.5;
+  stroke-width: 3;
   stroke-linecap: round;
-  stroke-dasharray: 4 6;
-  animation: pulseLine 2s ease-in-out infinite;
+  stroke-dasharray: 6 8;
+  animation: flowDash 2.5s linear infinite, pulseGlow 2s ease-in-out infinite;
 }
 
 .conflictHigh {
   stroke: var(--red);
+  opacity: 0.6;
+  filter: url(#glow-red);
 }
 
 .conflictMedium {
   stroke: var(--orange);
+  opacity: 0.55;
+  filter: url(#glow-orange);
 }
 
 .conflictLow {
   stroke: var(--yellow);
+  opacity: 0.5;
+  filter: url(#glow-yellow);
 }
 
 .toggle {
@@ -76,15 +85,15 @@
 
 @keyframes flowDash {
   to {
-    stroke-dashoffset: -12;
+    stroke-dashoffset: -18;
   }
 }
 
-@keyframes pulseLine {
+@keyframes pulseGlow {
   0%, 100% {
-    opacity: 0.3;
+    opacity: 0.4;
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.7;
   }
 }
