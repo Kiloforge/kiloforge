@@ -1,9 +1,9 @@
 id: advisor-project-create-fe_20260311230001Z
-title: "Advisor Hub: add project name input to launch dialog"
+title: Advisor Hub: add project name input to launch dialog
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Add a required "Project Name" text field to the Advisor Hub launch dialog
@@ -25,13 +25,13 @@ spec:
     - frontend/src/App.tsx:174 — handleLaunch creates SpawnInteractiveRequest
       with {role, prompt}. Need to also set `project` field.
     - frontend/src/components/AgentLauncher.tsx:5 — AgentRole type.
-
+    
     The onLaunch callback chain:
       AdvisorHub.onLaunch(role, prompt)
         → OverviewPage.onAdvisorLaunch(role, prompt)
           → App.handleLaunch(role, prompt)
             → POST /api/agents/interactive {role, prompt}
-
+    
     Need to thread `project` through this chain.
   acceptance_criteria:
     - Advisor launch dialog has a "Project Name" text input (required)
@@ -57,22 +57,22 @@ spec:
 plan:
   - phase: Component changes
     tasks:
-      - text: "Add projectName state and text input to AdvisorHub launch dialog"
-        done: false
-      - text: "Add client-side validation: required, slug-safe (lowercase alphanumeric + hyphens)"
-        done: false
-      - text: "Extend onLaunch callback signature to include project name"
-        done: false
+      - text: Add projectName state and text input to AdvisorHub launch dialog
+        done: true
+      - text: Add client-side validation: required, slug-safe (lowercase alphanumeric + hyphens)
+        done: true
+      - text: Extend onLaunch callback signature to include project name
+        done: true
   - phase: Wiring
     tasks:
-      - text: "Thread project name through OverviewPage.onAdvisorLaunch to App.handleLaunch"
-        done: false
-      - text: "In handleLaunch, include project in SpawnInteractiveRequest when provided"
-        done: false
+      - text: Thread project name through OverviewPage.onAdvisorLaunch to App.handleLaunch
+        done: true
+      - text: In handleLaunch, include project in SpawnInteractiveRequest when provided
+        done: true
   - phase: Verification
     tasks:
-      - text: "Update AdvisorHub tests for new project name input"
-        done: false
-      - text: "Run make test and make lint — all pass"
-        done: false
+      - text: Update AdvisorHub tests for new project name input
+        done: true
+      - text: Run make test and make lint — all pass
+        done: true
 extra: {}
