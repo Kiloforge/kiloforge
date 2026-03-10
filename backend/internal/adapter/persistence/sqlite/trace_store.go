@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -216,6 +217,7 @@ func (s *TraceStore) ListTraces() []tracing.TraceSummary {
 		var startStr, endStr string
 		var rootName *string
 		if err := rows.Scan(&t.TraceID, &rootName, &t.SpanCount, &startStr, &endStr); err != nil {
+			log.Printf("warn: scan trace summary row: %v", err)
 			continue
 		}
 		if rootName != nil {
@@ -224,6 +226,9 @@ func (s *TraceStore) ListTraces() []tracing.TraceSummary {
 		t.StartTime, _ = time.Parse(time.RFC3339Nano, startStr)
 		t.EndTime, _ = time.Parse(time.RFC3339Nano, endStr)
 		result = append(result, t)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("warn: list traces iteration: %v", err)
 	}
 	return result
 }
@@ -238,7 +243,11 @@ func (s *TraceStore) GetTrace(traceID string) []tracing.SpanSummary {
 		return nil
 	}
 	defer rows.Close()
-	return scanSpans(rows)
+	spans, err := scanSpans(rows)
+	if err != nil {
+		log.Printf("warn: get trace %s: %v", traceID, err)
+	}
+	return spans
 }
 
 // FindByTrackID returns trace summaries for a given track ID.
@@ -250,7 +259,11 @@ func (s *TraceStore) FindByTrackID(trackID string) []tracing.TraceSummary {
 		return nil
 	}
 	defer rows.Close()
-	return scanTraceSummaries(rows)
+	traces, err := scanTraceSummaries(rows)
+	if err != nil {
+		log.Printf("warn: find by track %s: %v", trackID, err)
+	}
+	return traces
 }
 
 // FindBySessionID returns trace summaries for a given session ID.
@@ -262,7 +275,11 @@ func (s *TraceStore) FindBySessionID(sessionID string) []tracing.TraceSummary {
 		return nil
 	}
 	defer rows.Close()
-	return scanTraceSummaries(rows)
+	traces, err := scanTraceSummaries(rows)
+	if err != nil {
+		log.Printf("warn: find by session %s: %v", sessionID, err)
+	}
+	return traces
 }
 
 // ListTracesPaginated returns paginated trace summaries with optional filters.
@@ -321,7 +338,10 @@ func (s *TraceStore) ListTracesPaginated(opts domain.PageOpts, trackID, sessionI
 	}
 	defer rows.Close()
 
-	traces := scanTraceSummaries(rows)
+	traces, err := scanTraceSummaries(rows)
+	if err != nil {
+		return domain.Page[tracing.TraceSummary]{}, err
+	}
 	var nextCursor string
 	if len(traces) > opts.Limit {
 		last := traces[opts.Limit-1]
@@ -336,13 +356,14 @@ func (s *TraceStore) ListTracesPaginated(opts domain.PageOpts, trackID, sessionI
 	}, nil
 }
 
-func scanTraceSummaries(rows *sql.Rows) []tracing.TraceSummary {
+func scanTraceSummaries(rows *sql.Rows) ([]tracing.TraceSummary, error) {
 	var result []tracing.TraceSummary
 	for rows.Next() {
 		var t tracing.TraceSummary
 		var startStr, endStr string
 		var rootName *string
 		if err := rows.Scan(&t.TraceID, &rootName, &t.SpanCount, &startStr, &endStr); err != nil {
+			log.Printf("warn: scan trace summary row: %v", err)
 			continue
 		}
 		if rootName != nil {
@@ -352,10 +373,13 @@ func scanTraceSummaries(rows *sql.Rows) []tracing.TraceSummary {
 		t.EndTime, _ = time.Parse(time.RFC3339Nano, endStr)
 		result = append(result, t)
 	}
-	return result
+	if err := rows.Err(); err != nil {
+		return result, fmt.Errorf("iterate trace summary rows: %w", err)
+	}
+	return result, nil
 }
 
-func scanSpans(rows *sql.Rows) []tracing.SpanSummary {
+func scanSpans(rows *sql.Rows) ([]tracing.SpanSummary, error) {
 	var result []tracing.SpanSummary
 	for rows.Next() {
 		var sp tracing.SpanSummary
@@ -366,6 +390,7 @@ func scanSpans(rows *sql.Rows) []tracing.SpanSummary {
 			&startStr, &endStr, &sp.DurationMs, &sp.Status,
 			&attrsJSON, &eventsJSON,
 		); err != nil {
+			log.Printf("warn: scan span row: %v", err)
 			continue
 		}
 		sp.StartTime, _ = time.Parse(time.RFC3339Nano, startStr)
@@ -378,5 +403,8 @@ func scanSpans(rows *sql.Rows) []tracing.SpanSummary {
 		}
 		result = append(result, sp)
 	}
-	return result
+	if err := rows.Err(); err != nil {
+		return result, fmt.Errorf("iterate span rows: %w", err)
+	}
+	return result, nil
 }
