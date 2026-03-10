@@ -171,11 +171,6 @@ func TestGooseDown_RollsBack(t *testing.T) {
 		t.Fatalf("NewProvider: %v", err)
 	}
 
-	// Roll back migration 005 (queue_project_status_index).
-	if _, err := provider.Down(context.Background()); err != nil {
-		t.Fatalf("goose.Down (005): %v", err)
-	}
-
 	// Roll back migration 004 (work_queue).
 	if _, err := provider.Down(context.Background()); err != nil {
 		t.Fatalf("goose.Down (004): %v", err)

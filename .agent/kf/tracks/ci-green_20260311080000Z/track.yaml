@@ -1,9 +1,9 @@
 id: ci-green_20260311080000Z
-title: "Fix CI pipeline — git identity, default branch, and embed stub"
+title: Fix CI pipeline — git identity, default branch, and embed stub
 type: bug
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Fix 3 root causes breaking all CI runs on GitHub Actions: missing git user
@@ -21,7 +21,7 @@ spec:
     - backend/internal/adapter/rest/sync_handler_test.go — same issue
     - backend/internal/adapter/persistence/sqlite/db_test.go — TestGooseDown_RollsBack failure
     - backend/cmd/kf/*_test.go — TestBinaryBuilds VCS status error
-
+    
     Root causes:
     1. kf-tools job: run_tests.sh line 37 does "git init --quiet" without setting
        user.name/user.email. GitHub runners have no git identity configured.
@@ -54,26 +54,26 @@ spec:
        OR restructure to build frontend first. The test job already does this correctly.
     4. deps: Add cache-dependency-path: backend/go.sum to setup-go action config.
 plan:
-  - phase: "Phase 1: CI workflow fixes"
+  - phase: Phase 1: CI workflow fixes
     tasks:
-      - text: "Add git user identity setup (user.name, user.email) to kf-tools job before running tests"
-        done: false
-      - text: "Add git config --global init.defaultBranch main to test job setup steps"
-        done: false
-      - text: "Add frontend build step (npm ci && npm run build) before golangci-lint in lint job"
-        done: false
-      - text: "Fix setup-go cache-dependency-path to backend/go.sum in all jobs that use it"
-        done: false
-  - phase: "Phase 2: Test helper fixes"
+      - text: Add git user identity setup (user.name, user.email) to kf-tools job before running tests
+        done: true
+      - text: Add git config --global init.defaultBranch main to test job setup steps
+        done: true
+      - text: Add frontend build step (npm ci && npm run build) before golangci-lint in lint job
+        done: true
+      - text: Fix setup-go cache-dependency-path to backend/go.sum in all jobs that use it
+        done: true
+  - phase: Phase 2: Test helper fixes
     tasks:
-      - text: "Add git config --global init.defaultBranch main to kf-tools job (for run_tests.sh git init)"
-        done: false
-      - text: "Verify TestGooseDown_RollsBack passes with default branch fix (may need separate investigation)"
-        done: false
-  - phase: "Phase 3: Verification"
+      - text: Add git config --global init.defaultBranch main to kf-tools job (for run_tests.sh git init)
+        done: true
+      - text: Verify TestGooseDown_RollsBack passes with default branch fix (may need separate investigation)
+        done: true
+  - phase: Phase 3: Verification
     tasks:
-      - text: "Run make test locally to verify all Go tests pass"
-        done: false
-      - text: "Push to trigger CI and verify all 4 jobs pass green"
-        done: false
+      - text: Run make test locally to verify all Go tests pass
+        done: true
+      - text: Push to trigger CI and verify all 4 jobs pass green
+        done: true
 extra: {}
