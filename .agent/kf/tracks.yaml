@@ -36,7 +36,7 @@ board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Co
 branch-diff-view-be_20260310050000Z: {"title":"Branch Diff View API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 branch-diff-view-fe_20260310050001Z: {"title":"Branch Diff View with Agent Discuss Button (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 build-embed-guidance_20260308210001Z: {"title":"Build and Embed Pattern Guidance","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-ci-covdata-fix_20260311142900Z: {"title":"Fix CI test failure — missing covdata tool in coverage step","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+ci-covdata-fix_20260311142900Z: {"title":"Fix CI test failure — missing covdata tool in coverage step","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 ci-lint-enforcement_20260310092158Z: {"title":"Fix CI lint failures — gofmt violations, local lint enforcement, VCS fix","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening — golangci-lint config, coverage thresholds, and dependency auditing","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
