@@ -1,0 +1,76 @@
+id: cortex-rebrand-be_20260311100001Z
+title: "Rebrand orchestrator to Cortex — CLI, API docs, config, and backend strings"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Rename all user-facing references to "orchestrator" in the backend to "Cortex".
+    Update CLI help text, OpenAPI spec, config descriptions, log messages, and
+    any user-facing strings to use the new branding.
+  context: |
+    The orchestrator is being rebranded to "Cortex" — a sci-fi-inspired name for
+    the local control plane. This track handles the backend (Go CLI + REST API).
+    The frontend rename is handled separately in command-deck-fe.
+    This track should run AFTER gitea-removal-be to avoid merge conflicts on the
+    same files (both touch CLI commands and REST handlers).
+  codebase_analysis: |
+    User-facing "orchestrator" references found in:
+    - backend/internal/adapter/cli/root.go — CLI long description
+    - backend/api/openapi.yaml — API title and description
+    - backend/internal/adapter/cli/serve.go — help text
+    - .agent/kf/product.md — product description
+    - .agent/kf/product-guidelines.md — design principles
+    - README.md — project documentation
+    Internal references (variable names, package names) should NOT be renamed
+    unless they appear in user-facing output. This is a branding change, not a
+    code refactor.
+  acceptance_criteria:
+    - CLI help text references "Cortex" instead of "orchestrator" in all user-facing strings
+    - OpenAPI spec title and description reference "Cortex"
+    - Product docs (.agent/kf/product.md, product-guidelines.md) updated
+    - README.md updated with Cortex branding
+    - No changes to internal variable/function/package names (branding only)
+    - All tests pass after changes
+  out_of_scope: |
+    - Frontend changes (separate command-deck-fe track)
+    - Internal code refactoring (package/function renames)
+    - Kiloforge_site changes (separate site-rebrand track)
+    - API endpoint paths (no URL changes)
+  technical_notes: |
+    This is a string replacement task, not a structural refactor. Only change
+    user-facing output: CLI help text, API documentation, product docs, README.
+    Do NOT rename Go packages, functions, variables, or file paths.
+    Naming convention: "Cortex" (capitalized) or "the Cortex" in prose.
+    Example: "Kiloforge Cortex — the local control plane for your AI agent swarm"
+plan:
+  - phase: "CLI Branding"
+    tasks:
+      - text: "Update root.go CLI description: replace 'orchestration forge' with Cortex branding, update Long description"
+        done: false
+      - text: "Update serve.go help text to reference 'Cortex' instead of 'orchestrator'"
+        done: false
+      - text: "Search all CLI command files for user-facing 'orchestrat' strings and update"
+        done: false
+  - phase: "API & Config"
+    tasks:
+      - text: "Update openapi.yaml title and description to reference Cortex"
+        done: false
+      - text: "Update any config file descriptions or comments that reference orchestrator in user-facing context"
+        done: false
+  - phase: "Documentation"
+    tasks:
+      - text: "Update .agent/kf/product.md with Cortex and Command Deck terminology"
+        done: false
+      - text: "Update .agent/kf/product-guidelines.md with Cortex references"
+        done: false
+      - text: "Update README.md with Cortex branding"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Grep backend/ for remaining user-facing 'orchestrat' references (exclude internal code)"
+        done: false
+      - text: "Run make test to verify no breakage"
+        done: false
+extra: {}

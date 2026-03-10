@@ -1,0 +1,106 @@
+id: site-rebrand_20260311100000Z
+title: "Kiloforge site overhaul — rebrand to Cortex/Command Deck, strip Gitea, update messaging"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Overhaul kiloforge.dev marketing site to reflect the post-Gitea architecture,
+    rebrand orchestrator to "Cortex" and dashboard to "Command Deck", remove all
+    review+merge workflow references, and update tagline to "transforming pure
+    intent into meaningful action".
+  context: |
+    The kiloforge_site project (at ../../kiloforge_site) is a Next.js 16 marketing
+    site deployed to kiloforge.dev via Vercel + CloudFront. It currently contains
+    outdated information:
+    - References Gitea as a core component (being stripped in gitea-removal-be)
+    - Describes a "review + merge" PR workflow that has been abandoned
+    - Uses generic names: "Orchestrator" and "Dashboard UI"
+    - Architecture diagram shows Gitea Backend as a component
+    - How It Works step 3 describes agents creating PRs and responding to reviews
+    The site has 3 content files: page.tsx (main), layout.tsx (meta), license/page.tsx.
+  codebase_analysis: |
+    All user-facing content lives in:
+    - src/app/page.tsx — hero, features, how-it-works, architecture, CTA
+    - src/app/layout.tsx — SEO metadata, title, description, keywords
+    - src/app/license/page.tsx — licensing acknowledgements
+    Tech stack: Next.js 16, React 19, Tailwind CSS 4, Framer Motion, Lucide icons.
+    Dark theme with emerald/cyan accents, glass-panel styling.
+  acceptance_criteria:
+    - Zero references to Gitea anywhere on the site
+    - Zero references to PR review, code review cycles, or review+merge workflow
+    - Orchestrator renamed to "Cortex" (or "The Cortex") throughout
+    - Dashboard renamed to "Command Deck" throughout
+    - Tagline incorporates "transforming pure intent into meaningful action"
+    - Architecture section updated to reflect post-Gitea system (Cortex + Command Deck + Claude Code Swarm)
+    - How It Works updated to reflect direct implement-and-merge workflow
+    - SEO metadata updated (title, description, keywords)
+    - Feature cards updated to reflect current capabilities accurately
+    - Site builds and deploys without errors
+  out_of_scope: |
+    - New pages or sections (docs, blog, pricing)
+    - Logo or visual asset changes
+    - Deployment infrastructure changes
+    - Backend (crelay-wt) code changes (separate tracks)
+  technical_notes: |
+    Target project: ../../kiloforge_site (separate git repo)
+    The developer should cd to that project for implementation.
+    All changes are content/copy — no structural refactoring needed.
+    Key naming conventions:
+    - "Cortex" — the local control plane / orchestrator binary
+    - "Command Deck" — the real-time monitoring dashboard UI
+    - "Kiloforger" — the human user/developer
+    - "Swarm" — the pool of Claude Code agents
+    - Tagline direction: "Transforming pure intent into meaningful action"
+    - No references to PRs, code review, review cycles, Gitea, git forge
+    Updated How It Works:
+    1. Local Setup — kf init starts the Cortex on your machine
+    2. Spawn Swarms — create tracks and spawn agent swarms into worktrees
+    3. Ship — agents implement, verify, and merge directly (no review cycle)
+    Updated Architecture:
+    - The Kiloforger (Human Director)
+    - Command Deck (Real-Time Observability)
+    - Cortex (Local Control Plane)
+    - Claude Code Swarm (Autonomous Agents)
+    - No Gitea component
+plan:
+  - phase: "Content Audit & Naming"
+    tasks:
+      - text: "Read all 3 content files in kiloforge_site (page.tsx, layout.tsx, license/page.tsx) and catalog every string that references Gitea, review/merge, orchestrator, or dashboard"
+        done: false
+      - text: "Create a naming reference mapping: Orchestrator→Cortex, Dashboard→Command Deck, Gitea Backend→(removed), review+merge→implement-and-merge"
+        done: false
+  - phase: "Hero & Meta Updates"
+    tasks:
+      - text: "Update layout.tsx SEO: title to 'Kiloforge | Transforming Pure Intent into Meaningful Action', update meta description and keywords to reference Cortex and Command Deck"
+        done: false
+      - text: "Update hero section: new subheading incorporating 'transforming pure intent into meaningful action', update description to reference Cortex instead of orchestrator"
+        done: false
+  - phase: "Feature Cards & How It Works"
+    tasks:
+      - text: "Update 'Private Infrastructure' card — remove git forge reference, describe Cortex as the local control plane"
+        done: false
+      - text: "Update 'Autonomous Cloud Agents' card — remove 'review, and merge', describe direct implementation workflow"
+        done: false
+      - text: "Update 'Real-Time Dashboard' card — rename to 'Command Deck', update description"
+        done: false
+      - text: "Update 'Human + AI Collaboration' card — remove Gitea/PR references, describe Kiloforger + Swarm collaboration model"
+        done: false
+      - text: "Update 'Cradle-to-Grave Tracing' card — remove 'PR review' from the trace path"
+        done: false
+      - text: "Update How It Works step 1 — remove Gitea, describe Cortex initialization"
+        done: false
+      - text: "Update How It Works step 3 — replace 'Review & Merge' with direct merge workflow, no PR/review language"
+        done: false
+  - phase: "Architecture & Polish"
+    tasks:
+      - text: "Rewrite architecture section: rename components (Cortex, Command Deck), remove Gitea Backend entirely, update descriptions for each component"
+        done: false
+      - text: "Update CTA section copy to align with new messaging"
+        done: false
+      - text: "Update license page if any references to Gitea or outdated terminology exist"
+        done: false
+      - text: "Final review: grep entire site for any remaining references to gitea, git forge, review, PR, orchestrator, dashboard (case-insensitive)"
+        done: false
+extra: {}
