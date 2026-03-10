@@ -1,0 +1,77 @@
+id: docs-branding-cleanup_20260311194000Z
+title: Docs branding cleanup — Cortex/Command Deck terminology and remove SECURITY.md
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Update docs/ files to use "Cortex" and "Command Deck" branding consistently,
+    and remove SECURITY.md (references an email address that isn't configured).
+  context: |
+    The product uses branded names: "Cortex" for the backend orchestrator/control plane
+    and "Command Deck" for the web dashboard. The root README.md already uses these
+    terms correctly, but the docs/ subdirectory still uses generic terms like
+    "orchestrator server" and "web dashboard".
+
+    Additionally, SECURITY.md references security@kiloforge.dev which is not set up.
+    The user wants it removed for now.
+  codebase_analysis: |
+    Files that need branding updates:
+    - docs/architecture.md — uses "orchestrator server" (should be "Cortex"),
+      "web dashboard" (should be "Command Deck") throughout. The system diagram,
+      section headers, and prose all use generic terms.
+    - docs/getting-started.md — says "Start the Orchestrator" (should reference Cortex),
+      refers to "Dashboard" without "Command Deck" branding.
+    - docs/README.md — says "orchestrator server" and "web dashboard" in the
+      contents descriptions.
+
+    Files that are fine (no changes needed):
+    - docs/why-i-built-this.md — personal story, no component references
+    - docs/kiloforge-data-formats.md — technical spec, no component references
+    - README.md (root) — already uses "Cortex" and "Command Deck" correctly
+
+    File to remove:
+    - SECURITY.md (root) — references security@kiloforge.dev which isn't configured.
+      The prod-security-ci track created this, but the email isn't live.
+  acceptance_criteria:
+    - SECURITY.md is deleted from the repository root
+    - docs/architecture.md uses "Cortex" for the orchestrator and "Command Deck" for the dashboard
+    - docs/getting-started.md uses "Cortex" and "Command Deck" branding
+    - docs/README.md uses branded component names
+    - Terminology is consistent with root README.md usage patterns
+  out_of_scope: |
+    - Updating CLI command references (kf init → kf up) — covered by merge-init-into-up track
+    - Creating a new SECURITY.md with a working email
+    - Changes to source code, only documentation files
+    - Changes to root README.md (already correct)
+  technical_notes: |
+    Straightforward find-and-replace plus one file deletion. Key substitutions:
+    - "orchestrator server" / "orchestrator" → "Cortex" (when referring to the backend server)
+    - "web dashboard" / "dashboard" → "Command Deck" (when referring to the UI)
+    - Keep lowercase "orchestrator" when used generically (e.g., "orchestration platform")
+    - Match the style used in root README.md for consistency
+
+    The architecture.md system diagram ASCII art references "Orchestrator" in the box —
+    update to "Cortex" there too. The "Dashboard" box in the diagram should say
+    "Command Deck" or "Cmd Deck" if space is tight.
+plan:
+  - phase: Cleanup
+    tasks:
+      - text: Delete SECURITY.md from the repository root
+        done: false
+  - phase: Branding Updates
+    tasks:
+      - text: Update docs/architecture.md — replace "orchestrator server"/"Orchestrator" with "Cortex" and "web dashboard"/"Dashboard" with "Command Deck" throughout (headings, diagram, prose)
+        done: false
+      - text: Update docs/getting-started.md — replace "Orchestrator" with "Cortex" and "Dashboard" with "Command Deck" in section headers and prose
+        done: false
+      - text: Update docs/README.md — update component descriptions to use "Cortex" and "Command Deck"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Review all docs/ files for any remaining generic terminology that should use branded names
+        done: false
+      - text: Verify SECURITY.md is gone and no broken links reference it
+        done: false
+extra: {}
