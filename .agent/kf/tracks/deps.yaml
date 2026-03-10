@@ -45,6 +45,8 @@ gitea-removal-be_20260311070000Z: []
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
+fix-merge-protocol-be_20260311160000Z: []
+
 local-skills-install-be_20260311160000Z: []
 
 onboarding-ux-fe_20260310073721Z: []
