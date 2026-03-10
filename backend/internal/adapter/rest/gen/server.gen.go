@@ -25,9 +25,9 @@ const (
 
 // Defines values for AgentRole.
 const (
-	Developer   AgentRole = "developer"
-	Interactive AgentRole = "interactive"
-	Reviewer    AgentRole = "reviewer"
+	AgentRoleDeveloper   AgentRole = "developer"
+	AgentRoleInteractive AgentRole = "interactive"
+	AgentRoleReviewer    AgentRole = "reviewer"
 )
 
 // Defines values for AgentStatus.
@@ -84,6 +84,13 @@ const (
 	QueueItemStatusCompleted QueueItemStatus = "completed"
 	QueueItemStatusFailed    QueueItemStatus = "failed"
 	QueueItemStatusQueued    QueueItemStatus = "queued"
+)
+
+// Defines values for SpawnInteractiveRequestRole.
+const (
+	SpawnInteractiveRequestRoleArchitect      SpawnInteractiveRequestRole = "architect"
+	SpawnInteractiveRequestRoleInteractive    SpawnInteractiveRequestRole = "interactive"
+	SpawnInteractiveRequestRoleProductAdvisor SpawnInteractiveRequestRole = "product-advisor"
 )
 
 // Defines values for SyncStatusResponseStatus.
@@ -615,9 +622,18 @@ type SpawnInteractiveRequest struct {
 	// Project Project slug (optional — used for setup prerequisite check)
 	Project *string `json:"project,omitempty"`
 
+	// Prompt Optional initial prompt sent to the agent after skill invocation
+	Prompt *string `json:"prompt,omitempty"`
+
+	// Role Agent role — determines which skill is invoked. Defaults to "interactive" for backwards compatibility.
+	Role *SpawnInteractiveRequestRole `json:"role,omitempty"`
+
 	// WorkDir Working directory for the agent (defaults to cwd)
 	WorkDir *string `json:"work_dir,omitempty"`
 }
+
+// SpawnInteractiveRequestRole Agent role — determines which skill is invoked. Defaults to "interactive" for backwards compatibility.
+type SpawnInteractiveRequestRole string
 
 // StatusInfo defines model for StatusInfo.
 type StatusInfo struct {
