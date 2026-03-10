@@ -393,7 +393,7 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 	defer span.End()
 
 	startTime := time.Now()
-	finalStatus, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span, envVars)
+	finalStatus, _, err := QueryOneShot(ctx, prompt, workDir, model, logFile, s.tracker, agentID, span, envVars)
 	if err != nil {
 		finalStatus = "failed"
 		if uerr := s.store.UpdateStatus(agentID, finalStatus); uerr != nil {

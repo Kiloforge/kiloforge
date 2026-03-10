@@ -470,9 +470,10 @@ func resultToStreamEvent(m *types.ResultMessage) StreamEvent {
 }
 
 // QueryOneShot executes a one-shot SDK query (for non-interactive agents)
-// and processes messages until completion. Returns the final status.
+// and processes messages until completion. Returns the final status and the
+// real Claude SDK session ID (from the ResultMessage).
 func QueryOneShot(ctx context.Context, prompt, workDir, model, logFilePath string,
-	tracker *QuotaTracker, agentID string, span port.SpanEnder, envVars map[string]string) (string, error) {
+	tracker *QuotaTracker, agentID string, span port.SpanEnder, envVars map[string]string) (string, string, error) {
 
 	opts := types.NewClaudeAgentOptions().
 		WithCWD(workDir).
@@ -494,8 +495,10 @@ func QueryOneShot(ctx context.Context, prompt, workDir, model, logFilePath strin
 
 	messages, err := claude.Query(ctx, prompt, opts)
 	if err != nil {
-		return "failed", fmt.Errorf("SDK query: %w", err)
+		return "failed", "", fmt.Errorf("SDK query: %w", err)
 	}
+
+	var realSessionID string
 
 	var lf *os.File
 	if logFilePath != "" {
@@ -522,6 +525,10 @@ func QueryOneShot(ctx context.Context, prompt, workDir, model, logFilePath strin
 			}
 
 		case *types.ResultMessage:
+			if m.SessionID != "" {
+				realSessionID = m.SessionID
+			}
+
 			if tracker != nil {
 				ev := resultToStreamEvent(m)
 				tracker.RecordEvent(agentID, ev)
@@ -559,5 +566,5 @@ func QueryOneShot(ctx context.Context, prompt, workDir, model, logFilePath strin
 		}
 	}
 
-	return "completed", nil
+	return "completed", realSessionID, nil
 }
