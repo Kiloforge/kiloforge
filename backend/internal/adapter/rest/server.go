@@ -108,6 +108,13 @@ func WithTourStore(store *sqlite.TourStore) ServerOption {
 	}
 }
 
+// WithQueueService enables the work queue API endpoints.
+func WithQueueService(svc QueueServicer) ServerOption {
+	return func(s *Server) {
+		s.queueSvc = svc
+	}
+}
+
 // WithTracer sets the distributed tracer for webhook trace continuation.
 func WithTracer(t port.Tracer) ServerOption {
 	return func(s *Server) {
@@ -137,6 +144,7 @@ type Server struct {
 	wsSessions    *wsAdapter.SessionManager
 	consent       ConsentChecker
 	tourStore     *sqlite.TourStore
+	queueSvc      QueueServicer
 }
 
 // NewServer creates an orchestrator server with multi-project routing via the registry.
@@ -266,6 +274,7 @@ func (s *Server) Run(ctx context.Context) error {
 		WSSessions:   s.wsSessions,
 		Consent:      s.consent,
 		AgentRemover: s.store,
+		QueueSvc:     s.queueSvc,
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)

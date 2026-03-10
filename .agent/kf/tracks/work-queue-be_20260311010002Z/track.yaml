@@ -3,7 +3,7 @@ title: Work queue — backend service with semaphore, dependency-aware schedulin
 type: feature
 status: pending
 created: 2026-03-10
-updated: 2026-03-09
+updated: 2026-03-10
 spec:
   summary: Queue service that manages max concurrent developers via a counting semaphore, topologically sorts ready tracks, and auto-spawns the next developer agent when a slot opens. Includes SQLite store, REST API, and configuration.
   context: |
@@ -178,11 +178,11 @@ plan:
   - phase: REST API and SSE
     tasks:
       - text: Implement queue API handlers — start, stop, status, settings update
-        done: false
+        done: true
       - text: Add SSE event types for queue state changes: queue-started, queue-stopped, track-assigned, track-completed, worker-freed
-        done: false
+        done: true
       - text: Wire queue service into server startup (rest/server.go) with config-gated initialization
-        done: false
+        done: true
   - phase: Testing and verification
     tasks:
       - text: Unit tests for QueueService — enqueue, next, semaphore enforcement, dependency re-evaluation

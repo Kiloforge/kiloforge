@@ -24,6 +24,7 @@ import (
 	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
+	"kiloforge/internal/core/service"
 )
 
 // AgentLister provides read access to agent state.
@@ -65,6 +66,17 @@ type AgentRemover interface {
 	RemoveAgent(id string) error
 }
 
+// QueueServicer provides queue operations for API handlers.
+type QueueServicer interface {
+	IsRunning() bool
+	MaxWorkers() int
+	SetMaxWorkers(n int)
+	ActiveWorkers() int
+	Start(ctx context.Context, projectSlug string) error
+	Stop() error
+	Status() (*service.QueueStatus, error)
+}
+
 // ConsentChecker provides consent state access.
 type ConsentChecker interface {
 	HasAgentPermissionsConsent() bool
@@ -92,6 +104,7 @@ type APIHandler struct {
 	wsSessions    *wsAdapter.SessionManager
 	consent       ConsentChecker
 	agentRemover  AgentRemover
+	queueSvc      QueueServicer
 
 	adminMu          sync.Mutex
 	runningAdminAgent string // agent ID of currently running admin op, empty if none
@@ -117,6 +130,7 @@ type APIHandlerOpts struct {
 	WSSessions    *wsAdapter.SessionManager
 	Consent       ConsentChecker
 	AgentRemover  AgentRemover
+	QueueSvc      QueueServicer
 }
 
 // NewAPIHandler creates a new handler implementing StrictServerInterface.
@@ -140,6 +154,7 @@ func NewAPIHandler(opts APIHandlerOpts) *APIHandler {
 		wsSessions:   opts.WSSessions,
 		consent:      opts.Consent,
 		agentRemover: opts.AgentRemover,
+		queueSvc:     opts.QueueSvc,
 	}
 }
 
@@ -2085,12 +2100,26 @@ func (h *APIHandler) StartProjectSetup(ctx context.Context, req gen.StartProject
 
 // GetQueue implements gen.StrictServerInterface.
 func (h *APIHandler) GetQueue(_ context.Context, _ gen.GetQueueRequestObject) (gen.GetQueueResponseObject, error) {
-	return gen.GetQueue200JSONResponse{
-		Running:       false,
-		MaxWorkers:    h.cfg.GetMaxWorkers(),
-		ActiveWorkers: 0,
-		Items:         []gen.QueueItem{},
-	}, nil
+	if h.queueSvc == nil {
+		return gen.GetQueue200JSONResponse{
+			Running:       false,
+			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			ActiveWorkers: 0,
+			Items:         []gen.QueueItem{},
+		}, nil
+	}
+
+	status, err := h.queueSvc.Status()
+	if err != nil {
+		return gen.GetQueue200JSONResponse{
+			Running:       false,
+			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			ActiveWorkers: 0,
+			Items:         []gen.QueueItem{},
+		}, nil
+	}
+
+	return gen.GetQueue200JSONResponse(h.toGenQueueStatus(status)), nil
 }
 
 // UpdateQueueSettings implements gen.StrictServerInterface.
@@ -2099,23 +2128,93 @@ func (h *APIHandler) UpdateQueueSettings(_ context.Context, req gen.UpdateQueueS
 		if *req.Body.MaxWorkers < 1 {
 			return gen.UpdateQueueSettings400JSONResponse{Error: "max_workers must be >= 1"}, nil
 		}
+		if h.queueSvc != nil {
+			h.queueSvc.SetMaxWorkers(*req.Body.MaxWorkers)
+		}
 	}
-	return gen.UpdateQueueSettings200JSONResponse{
-		Running:       false,
-		MaxWorkers:    h.cfg.GetMaxWorkers(),
-		ActiveWorkers: 0,
-		Items:         []gen.QueueItem{},
-	}, nil
+
+	if h.queueSvc == nil {
+		return gen.UpdateQueueSettings200JSONResponse{
+			Running:       false,
+			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			ActiveWorkers: 0,
+			Items:         []gen.QueueItem{},
+		}, nil
+	}
+
+	status, err := h.queueSvc.Status()
+	if err != nil {
+		return gen.UpdateQueueSettings200JSONResponse{
+			Running:       false,
+			MaxWorkers:    h.cfg.GetMaxWorkers(),
+			ActiveWorkers: 0,
+			Items:         []gen.QueueItem{},
+		}, nil
+	}
+	return gen.UpdateQueueSettings200JSONResponse(h.toGenQueueStatus(status)), nil
 }
 
 // StartQueue implements gen.StrictServerInterface.
-func (h *APIHandler) StartQueue(_ context.Context, _ gen.StartQueueRequestObject) (gen.StartQueueResponseObject, error) {
-	return gen.StartQueue500JSONResponse{Error: "queue service not configured"}, nil
+func (h *APIHandler) StartQueue(ctx context.Context, req gen.StartQueueRequestObject) (gen.StartQueueResponseObject, error) {
+	if h.queueSvc == nil {
+		return gen.StartQueue500JSONResponse{Error: "queue service not configured"}, nil
+	}
+
+	project := ""
+	if req.Body != nil && req.Body.Project != nil {
+		project = *req.Body.Project
+	}
+
+	if err := h.queueSvc.Start(ctx, project); err != nil {
+		return gen.StartQueue409JSONResponse{Error: err.Error()}, nil
+	}
+
+	status, err := h.queueSvc.Status()
+	if err != nil {
+		return gen.StartQueue500JSONResponse{Error: err.Error()}, nil
+	}
+	return gen.StartQueue200JSONResponse(h.toGenQueueStatus(status)), nil
 }
 
 // StopQueue implements gen.StrictServerInterface.
 func (h *APIHandler) StopQueue(_ context.Context, _ gen.StopQueueRequestObject) (gen.StopQueueResponseObject, error) {
-	return gen.StopQueue409JSONResponse{Error: "queue is not running"}, nil
+	if h.queueSvc == nil {
+		return gen.StopQueue409JSONResponse{Error: "queue service not configured"}, nil
+	}
+
+	if err := h.queueSvc.Stop(); err != nil {
+		return gen.StopQueue409JSONResponse{Error: err.Error()}, nil
+	}
+
+	status, err := h.queueSvc.Status()
+	if err != nil {
+		return gen.StopQueue409JSONResponse{Error: err.Error()}, nil
+	}
+	return gen.StopQueue200JSONResponse(h.toGenQueueStatus(status)), nil
+}
+
+// toGenQueueStatus converts service.QueueStatus to gen.QueueStatus.
+func (h *APIHandler) toGenQueueStatus(s *service.QueueStatus) gen.QueueStatus {
+	items := make([]gen.QueueItem, len(s.Items))
+	for i, item := range s.Items {
+		items[i] = gen.QueueItem{
+			TrackId:     item.TrackID,
+			ProjectSlug: item.ProjectSlug,
+			Status:      gen.QueueItemStatus(item.Status),
+			EnqueuedAt:  item.EnqueuedAt,
+			AssignedAt:  item.AssignedAt,
+			CompletedAt: item.CompletedAt,
+		}
+		if item.AgentID != "" {
+			items[i].AgentId = &item.AgentID
+		}
+	}
+	return gen.QueueStatus{
+		Running:       s.Running,
+		MaxWorkers:    s.MaxWorkers,
+		ActiveWorkers: s.ActiveWorkers,
+		Items:         items,
+	}
 }
 
 func intPtr(v int) *int       { return &v }

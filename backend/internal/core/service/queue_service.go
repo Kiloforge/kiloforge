@@ -457,9 +457,9 @@ type QueueStatus struct {
 	Items         []domain.QueueItem
 }
 
-func (q *QueueService) publishEvent(eventType string, data any) {
+func (q *QueueService) publishEvent(action string, data any) {
 	if q.eventBus == nil {
 		return
 	}
-	q.eventBus.Publish(domain.Event{Type: eventType, Data: data})
+	q.eventBus.Publish(domain.NewQueueUpdateEvent(action, data))
 }
