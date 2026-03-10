@@ -74,6 +74,6 @@ func NewTrack(id, title, trackType, summary string) *Track {
 		Spec: Spec{
 			Summary: summary,
 		},
-		Extra: make(map[string]interface{}),
+		Extra: make(map[string]string),
 	}
 }
