@@ -1,0 +1,129 @@
+.miniCard {
+  position: fixed;
+  width: 200px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  cursor: grab;
+  user-select: none;
+  z-index: 91;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  transition: box-shadow 0.15s;
+  touch-action: none;
+}
+
+.miniCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.miniCardDragging {
+  cursor: grabbing;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.roleIndicator {
+  width: 4px;
+  height: 32px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: var(--text-dim);
+}
+
+.roleDeveloper {
+  background: var(--accent);
+}
+
+.roleReviewer {
+  background: var(--orange);
+}
+
+.roleInteractive {
+  background: var(--green);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  font-size: 10px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.badgeWaiting {
+  background: var(--yellow);
+  color: var(--bg);
+  animation: waitPulse 1.5s ease-in-out infinite;
+}
+
+.badgeDone {
+  background: var(--green);
+  color: var(--bg);
+}
+
+.badgeUnread {
+  background: var(--red);
+  color: #fff;
+}
+
+@keyframes waitPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  color: var(--red);
+  background: rgba(255, 255, 255, 0.05);
+}
