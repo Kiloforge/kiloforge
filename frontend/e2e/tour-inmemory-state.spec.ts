@@ -70,12 +70,31 @@ test.describe("Tour — In-Memory Demo State", () => {
     await page.locator("text=Next").click();
     await expect(page.locator("text=Track Lifecycle")).toBeVisible();
 
-    // Advance to step 8 (move-card) — wait-for-drag with "Skip and finish tour"
+    // Advance to step 8 (move-card) — wait-for-drag with Next + Skip step
     await page.locator("text=Next").click();
     await expect(page.locator("text=Try It: Move a Card")).toBeVisible();
     await expect(page.locator('[data-tour="board-card-first"]')).toBeVisible();
-    // Use skip to advance past the drag step
-    await page.locator("text=Skip and finish tour").click();
+
+    // Advance to step 9 (deps-conflicts)
+    await page.locator("button:has-text('Next')").click();
+    await expect(page.locator("text=Dependencies & Conflicts")).toBeVisible();
+
+    // Advance to step 10 (agent-types)
+    await page.locator("text=Next").click();
+    await expect(page.locator("text=Agent Types")).toBeVisible();
+
+    // Advance to step 11 (notification-center)
+    await page.locator("text=Next").click();
+    await expect(page.locator("text=Notification Center")).toBeVisible();
+
+    // Advance to step 12 (traces)
+    await page.locator("text=Next").click();
+    await expect(page.locator("text=Traces & Observability")).toBeVisible();
+
+    // Advance to step 13 (finish)
+    await page.locator("text=Next").click();
+    await expect(page.locator("text=You're Ready to Forge!")).toBeVisible();
+    await page.locator("text=Finish").click();
 
     // Tour should be complete — toast notification visible
     await expect(page.locator("text=Tour complete")).toBeVisible({ timeout: 5_000 });
