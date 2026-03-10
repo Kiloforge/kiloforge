@@ -261,7 +261,9 @@
 }
 
 .sendBtn:disabled {
-  opacity: 0.4;
+  background: var(--border);
+  color: var(--text-dim);
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
