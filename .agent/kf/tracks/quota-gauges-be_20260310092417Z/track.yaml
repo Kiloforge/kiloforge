@@ -1,0 +1,93 @@
+id: quota-gauges-be_20260310092417Z
+title: "Quota gauges backend — budget config, rate tracking, and time-windowed metrics"
+type: feature
+status: pending
+created: "2026-03-10"
+updated: "2026-03-10"
+spec:
+  summary: >
+    Add configurable spend budget, compute token/cost consumption rate over
+    sliding time windows, and expose new fields via the existing /api/quota
+    endpoint and SSE events.
+  context: |
+    The current quota system tracks cumulative tokens and cost but lacks:
+    - A configurable budget/spend limit to compare against
+    - Rate-of-consumption metrics (tokens/min, cost/hour)
+    - Projected time-to-budget-exhaustion
+
+    The user wants gauge-style visualizations on the frontend, which require
+    the backend to provide budget limits and rate data. This track adds the
+    backend plumbing; the frontend track (quota-gauges-fe) consumes it.
+  codebase_analysis: |
+    Existing infrastructure to build on:
+    - **QuotaTracker** (adapter/agent/tracker.go): Thread-safe in-memory
+      aggregator with RecordEvent(), GetTotalUsage(), GetAgentUsage().
+      Currently stores only cumulative totals — needs a time-windowed
+      ring buffer for rate computation.
+    - **Config system** (adapter/config/): Resolve() loads config with
+      defaults > JSON > env > flags. Already has ConfigResponse with
+      analytics_enabled. Budget field can follow same pattern.
+    - **/api/config** (PUT/GET): Already supports updating config. Add
+      budget_usd field.
+    - **/api/quota** (GET): Returns QuotaInfo with token counts, cost,
+      rate_limited. Needs new fields for budget and rate data.
+    - **SSE quota_update** (dashboard/watcher.go): Polls every 2s, detects
+      changes, broadcasts. Needs to include new rate/budget fields.
+    - **OpenAPI schema** (api/openapi.yaml): QuotaInfo schema at line ~1931.
+    - **quota_usage table** (SQLite): Stores per-agent cumulative usage.
+      No schema change needed — rate computation is in-memory only.
+  acceptance_criteria:
+    - Budget USD configurable via /api/config PUT (budget_usd field)
+    - Budget persisted in config JSON (same file as analytics_enabled)
+    - /api/quota returns budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins
+    - Rate metrics computed over sliding 5-minute window for tokens, 30-minute for cost projection
+    - SSE quota_update events include the new fields
+    - budget_used_pct is null/omitted when budget is 0 (unlimited)
+    - time_to_budget_mins is null/omitted when budget is 0 or rate is 0
+    - All existing quota tests continue to pass
+    - New rate tracking and budget logic have unit tests
+  out_of_scope: |
+    - Frontend gauge visualization (quota-gauges-fe track)
+    - Per-agent budget limits (only global budget)
+    - Hard enforcement of budget (informational only, like current cost)
+    - Historical metrics storage or charting data (only current window)
+    - CLI budget commands (config via API only for now)
+  technical_notes: |
+    Implementation approach:
+    1. Add RateTracker to QuotaTracker — ring buffer of {timestamp, cost,
+       input_tokens, output_tokens} snapshots, appended on each RecordEvent.
+       Keep last 60 entries (1 per minute, ~1 hour of data).
+    2. Rate computation: filter snapshots within window (5m for tokens, 30m
+       for cost), compute delta / elapsed_minutes.
+    3. Budget config: add budget_usd float64 to config.Config. Default 0.0
+       (unlimited). Expose via existing ConfigResponse in /api/config.
+    4. Extend QuotaInfo in OpenAPI with optional fields. Regenerate with
+       oapi-codegen. Update api_handler.go GetQuota to populate new fields.
+    5. Update watcher.go to detect rate/budget changes and broadcast.
+    6. time_to_budget = (budget - spent) / rate_cost_per_hour * 60 minutes.
+plan:
+  - phase: "Rate Tracking Core"
+    tasks:
+      - text: "Add RateSnapshot type and ring buffer to QuotaTracker with append-on-RecordEvent"
+        done: false
+      - text: "Implement rate computation methods: TokensPerMin(window) and CostPerHour(window)"
+        done: false
+      - text: "Write unit tests for ring buffer append, window filtering, and rate math"
+        done: false
+  - phase: "Budget Config & API"
+    tasks:
+      - text: "Add budget_usd field to config.Config with default 0, wire through Resolve()"
+        done: false
+      - text: "Extend OpenAPI QuotaInfo schema with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins and regenerate"
+        done: false
+      - text: "Update GetQuota handler to populate new fields from QuotaTracker and config"
+        done: false
+      - text: "Write integration tests for /api/quota with and without budget set"
+        done: false
+  - phase: "SSE & Verification"
+    tasks:
+      - text: "Update watcher.go quotaResponse() and change detection to include rate and budget fields"
+        done: false
+      - text: "Run make test and make build to verify all tests pass and no regressions"
+        done: false
+extra: {}
