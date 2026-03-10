@@ -14,7 +14,7 @@ advisor-hub-fe_20260310115600Z: {"title":"Advisor Hub — dedicated UI section f
 advisor-project-create-be_20260311230000Z: {"title":"Advisor launch creates a fresh project repo and runs against it","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-project-create-fe_20260311230001Z: {"title":"Advisor Hub: add project name input to launch dialog","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-project-scoped-be_20260310192600Z: {"title":"Scope advisors to existing projects (backend)","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
-advisor-project-scoped-fe_20260310192601Z: {"title":"Scope advisors to project context (frontend)","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+advisor-project-scoped-fe_20260310192601Z: {"title":"Scope advisors to project context (frontend)","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename advisors to kf-advisor-* prefix","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -82,7 +82,8 @@ error-toast-notifications_20260309223001Z: {"title":"Error Toast Notifications i
 expand-agent-namegen-be_20260310150455Z: {"title":"Expand agent name generator with large word lists and hyphen separator","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-fix-agent-name-in-api-be_20260312200000Z: {"title":"Fix agent name missing from REST API response","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-agent-name-in-api-be_20260312200000Z: {"title":"Fix agent name missing from REST API response","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-agent-resume-be_20260312020000Z: {"title":"Fix interactive agent resume — input accepted but no output returned","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-agent-spawn-context_20260310100000Z: {"title":"Fix agent spawn context cancellation — detach SDK lifecycle from HTTP request","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-board-sync-ux-be_20260310012000Z: {"title":"Fix Board Sync and SSE Events (Backend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-board-sync-ux-fe_20260310012001Z: {"title":"Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -199,7 +200,7 @@ project-manage-api_20260309084650Z: {"title":"Project Add/Remove REST API","stat
 project-manage-ui_20260309084651Z: {"title":"Project Add/Remove Dashboard UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 project-metadata-be_20260310070000Z: {"title":"Project Metadata API — Serve Product, Guidelines, Tech Stack, and Style Guides","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 project-metadata-fe_20260310070001Z: {"title":"Project Metadata UI — Browse Product, Guidelines, Tech Stack, and Style Guides","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-project-mirror-egress-be_20260312192305Z: {"title":"Project mirror — create user-facing clone and auto-sync on main updates","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+project-mirror-egress-be_20260312192305Z: {"title":"Project mirror — create user-facing clone and auto-sync on main updates","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 project-scoped-dashboard_20260308220001Z: {"title":"Project-Scoped Dashboard Tracks","status":"archived","type":"bug","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 project-settings-be_20260311030001Z: {"title":"Project settings REST API — read and update kf config.yaml via HTTP","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 project-settings-fe_20260311030002Z: {"title":"Project settings UI — settings panel in dashboard with live sync","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -272,7 +273,7 @@ swarm-capacity-fe_20260311000001Z: {"title":"Agent swarm UI — rename queue pan
 swarm-dispatch-skill_20260311110000Z: {"title":"Add kf-dispatch skill — AI swarm dispatcher for worker assignment","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 tanstack-query-migration_20260309193000Z: {"title":"Migrate Frontend Data Fetching to TanStack Query","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 terminal-markdown-style_20260310033002Z: {"title":"Agent Terminal Markdown Rendering and Terminal-Style Design","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-terminal-tool-display-fe_20260312030000Z: {"title":"Human-readable tool call display in agent terminal","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+terminal-tool-display-fe_20260312030000Z: {"title":"Human-readable tool call display in agent terminal","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 test-coverage-alignment_20260307140002Z: {"title":"Test Coverage Alignment with Style Guide","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 test-coverage-be_20260311120004Z: {"title":"Increase backend test coverage — CLI, REST, persistence layers","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 test-coverage-fe_20260311120005Z: {"title":"Increase frontend test coverage — untested components and e2e gaps","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}

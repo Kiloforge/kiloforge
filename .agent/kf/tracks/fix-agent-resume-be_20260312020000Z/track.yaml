@@ -1,0 +1,129 @@
+id: fix-agent-resume-be_20260312020000Z
+title: "Fix interactive agent resume — input accepted but no output returned"
+type: bug
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    After resuming a stopped/completed interactive agent, the user can send
+    messages but receives no output. The SDK session resumes, the query is
+    accepted, but the response never reaches the WebSocket client.
+  context: |
+    Users report: close agent terminal → click Resume → terminal reopens →
+    send a message → "nothing ever happens." The agent appears connected
+    (status shows "running") and input is accepted without error, but no
+    agent output arrives. The underlying Claude CLI process may not be
+    responding to queries in the resumed session.
+  codebase_analysis: |
+    **Traced the full resume path and identified multiple failure points:**
+
+    **1. monitorSDKSession blocks forever on natural completion**
+    `spawner.go:779` — `<-session.ctx.Done()` waits for `session.Close()`
+    to call `s.cancel()`. But for naturally-completed agents, nobody calls
+    `Close()`. The `relayResponse()` goroutine finishes when
+    `ReceiveResponse()` channel closes (CLI process exits), but it doesn't
+    trigger `session.Close()`. This means `monitorSDKSession` never fires,
+    the agent stays "running" in the store forever, and the bridge/relay
+    are never cleaned up.
+
+    **Fix**: After `relayResponse()` returns and the CLI process has exited,
+    detect that no more queries can be processed and call `session.Close()`
+    to unblock the monitor.
+
+    **2. relayResponse has no timeout for stuck queries**
+    `sdk_client.go:153` — `for msg := range s.client.ReceiveResponse(ctx)`
+    blocks until messages arrive. If the resumed CLI process accepts the
+    query (write to stdin succeeds) but never produces output, this blocks
+    forever. The `querying` flag stays `true`, and all subsequent user
+    messages fail with "turn already in progress."
+
+    **Fix**: Add a timeout to the response wait. If no messages arrive
+    within a reasonable time (e.g., 60s), emit an error message and reset
+    the querying flag.
+
+    **3. Query errors not visible to user**
+    `ws/handler.go:167-170` — When `bridge.WriteInput()` returns an error,
+    the handler sends `ErrorMsg("failed to send input to agent")`. But if
+    `session.Query()` succeeds (stdin write works) and the problem is in
+    the response phase, no error is sent. The user sees "nothing happens."
+
+    **Fix**: Add a "query acknowledged" system message after Query()
+    returns nil, and an error message if relayResponse detects no output.
+
+    **4. SDK Client thread-safety concern**
+    The SDK docs say "Client is not thread-safe." Our code calls
+    `client.Query()` from the WS readLoop goroutine and
+    `client.ReceiveResponse()` from the relayResponse goroutine. The SDK
+    does use internal locking, but the thread-safety warning suggests
+    this pattern may not be fully supported.
+
+    **5. No health check after resume Connect()**
+    `spawner.go:734` — `session.Connect(context.Background())` returns
+    success, but there's no verification that the resumed CLI process
+    actually works. A quick health probe (e.g., send a no-op query or
+    check process liveness) would catch dead-on-arrival resumes.
+
+    **Key files:**
+    - `backend/internal/adapter/agent/sdk_client.go` — SDKSession, Query, relayResponse
+    - `backend/internal/adapter/agent/spawner.go` — ResumeAgent, monitorSDKSession
+    - `backend/internal/adapter/rest/api_handler.go` — ResumeAgent REST handler
+    - `backend/internal/adapter/ws/handler.go` — WS readLoop, error propagation
+  acceptance_criteria:
+    - After resume, sending a message produces visible agent output in the terminal
+    - If the resumed CLI process fails to respond, user sees an error within 60s
+    - Natural agent completion properly marks the agent as "completed" (unblocks monitorSDKSession)
+    - The querying flag does not get permanently stuck — subsequent messages can be sent
+    - Agent log file captures resume-specific events for debugging
+  out_of_scope: |
+    - Frontend changes (previous FE track already handles reconnect resilience)
+    - Upgrading the Claude Agent SDK
+    - Changing the WebSocket protocol
+  technical_notes: |
+    **Fix 1 — Close session on natural completion:**
+    In `relayResponse()`, after the `for msg := range` loop exits (CLI
+    process finished its turn), check if the client is still connected.
+    If the transport has exited (subprocess gone), call `session.Close()`
+    to unblock `monitorSDKSession`. Alternatively, have
+    `monitorSDKSession` also watch `session.done` or use a separate
+    "process exited" signal from the SDK.
+
+    **Fix 2 — Add response timeout to relayResponse:**
+    Wrap the `ReceiveResponse()` iteration in a select with a timeout
+    (e.g., 2 minutes). If no message arrives within the timeout, emit
+    an error via `s.emit(ws.ErrorMsg("agent not responding"))`, reset
+    `s.querying = false`, and close the session.
+
+    **Fix 3 — Reset querying flag on SDK client disconnect:**
+    Add a check in `Query()` — before setting `querying = true`, verify
+    `s.client.IsConnected()`. If not connected, return an error
+    immediately instead of attempting the query.
+
+    **Fix 4 — Log resume lifecycle events:**
+    Add structured logging in ResumeAgent: session created, CLI connected,
+    first query sent, first response received, session ended. This enables
+    debugging future issues without code changes.
+plan:
+  - phase: "Fix session lifecycle"
+    tasks:
+      - text: "In relayResponse, after response loop exits, check if SDK client is still connected — if transport exited, call session.Close() to unblock monitorSDKSession"
+        done: false
+      - text: "Add response timeout (2 min) around ReceiveResponse iteration — on timeout, emit error message, reset querying flag, and close session"
+        done: false
+      - text: "In Query(), check s.client.IsConnected() before sending — return error if disconnected"
+        done: false
+  - phase: "Improve error visibility"
+    tasks:
+      - text: "When bridge.WriteInput returns error in readLoop, include the actual error message (not generic 'failed to send input')"
+        done: false
+      - text: "Add structured logging for resume lifecycle: session created, connected, first query, first response, session end"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Add unit test for relayResponse timeout behavior — verify error is emitted and querying flag is reset"
+        done: false
+      - text: "Add unit test for Query() when client is disconnected — verify error returned"
+        done: false
+      - text: "Run make test and make build to verify no regressions"
+        done: false
+extra: {}
