@@ -20,6 +20,7 @@ type Project struct {
 	Slug         string    `json:"slug"`
 	RepoName     string    `json:"repo_name"`
 	ProjectDir   string    `json:"project_dir"`
+	MirrorDir    string    `json:"mirror_dir,omitempty"`
 	OriginRemote string    `json:"origin_remote,omitempty"`
 	SSHKeyPath   string    `json:"ssh_key_path,omitempty"`
 	RegisteredAt time.Time `json:"registered_at"`

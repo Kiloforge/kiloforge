@@ -222,6 +222,33 @@ func (gs *GitSync) revListCounts(ctx context.Context, projectDir, local, remote 
 	return ahead, behind, nil
 }
 
+// CreateMirrorClone creates a local clone of sourceDir at mirrorDir using file:// protocol.
+// It configures receive.denyCurrentBranch=updateInstead so that force pushes
+// automatically update the mirror's working tree.
+func (gs *GitSync) CreateMirrorClone(ctx context.Context, sourceDir, mirrorDir string) error {
+	url := "file://" + sourceDir
+	cmd := gs.gitCmd(ctx, ".", "", "clone", url, mirrorDir)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("mirror clone: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+	// Allow force-push into checked-out branch and auto-update working tree.
+	cfg := gs.gitCmd(ctx, mirrorDir, "", "config", "receive.denyCurrentBranch", "updateInstead")
+	if out, err := cfg.CombinedOutput(); err != nil {
+		return fmt.Errorf("mirror config: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+	return nil
+}
+
+// ForcePushToMirror force-pushes main from projectDir to mirrorDir.
+func (gs *GitSync) ForcePushToMirror(ctx context.Context, projectDir, mirrorDir string) error {
+	url := "file://" + mirrorDir
+	cmd := gs.gitCmd(ctx, projectDir, "", "push", "--force", url, "main:main")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("force push to mirror: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+	return nil
+}
+
 // gitCmd creates a git command for the given directory with optional SSH key env.
 // It clears GIT_DIR and GIT_WORK_TREE from the environment so that -C works
 // correctly even when the parent process runs in a git worktree.

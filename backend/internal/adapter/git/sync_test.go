@@ -501,6 +501,87 @@ func TestIsErrSyncConflict_Nil(t *testing.T) {
 	}
 }
 
+func TestCreateMirrorClone(t *testing.T) {
+	t.Parallel()
+	_, cloneDir := initBareAndClone(t)
+
+	mirrorDir := filepath.Join(t.TempDir(), "mirror")
+
+	gs := New()
+	err := gs.CreateMirrorClone(context.Background(), cloneDir, mirrorDir)
+	if err != nil {
+		t.Fatalf("CreateMirrorClone: %v", err)
+	}
+
+	// Verify the mirror has the same HEAD as source.
+	srcHead, _ := cleanGitCmd("git", "-C", cloneDir, "rev-parse", "HEAD").Output()
+	mirrorHead, _ := cleanGitCmd("git", "-C", mirrorDir, "rev-parse", "HEAD").Output()
+	if strings.TrimSpace(string(srcHead)) != strings.TrimSpace(string(mirrorHead)) {
+		t.Errorf("mirror HEAD %q != source HEAD %q", string(mirrorHead), string(srcHead))
+	}
+}
+
+func TestForcePushToMirror(t *testing.T) {
+	t.Parallel()
+	_, cloneDir := initBareAndClone(t)
+
+	mirrorDir := filepath.Join(t.TempDir(), "mirror")
+
+	gs := New()
+	// Create mirror first.
+	if err := gs.CreateMirrorClone(context.Background(), cloneDir, mirrorDir); err != nil {
+		t.Fatalf("CreateMirrorClone: %v", err)
+	}
+
+	// Make a new commit in the source.
+	f, _ := os.Create(filepath.Join(cloneDir, "new.txt"))
+	f.WriteString("new content")
+	f.Close()
+	cleanGitCmd("git", "-C", cloneDir, "add", ".").Run()
+	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "new commit").Run()
+
+	// Force push to mirror.
+	if err := gs.ForcePushToMirror(context.Background(), cloneDir, mirrorDir); err != nil {
+		t.Fatalf("ForcePushToMirror: %v", err)
+	}
+
+	// Verify mirror now has the new commit.
+	srcHead, _ := cleanGitCmd("git", "-C", cloneDir, "rev-parse", "HEAD").Output()
+	mirrorHead, _ := cleanGitCmd("git", "-C", mirrorDir, "rev-parse", "HEAD").Output()
+	if strings.TrimSpace(string(srcHead)) != strings.TrimSpace(string(mirrorHead)) {
+		t.Errorf("mirror HEAD %q != source HEAD %q after force push", string(mirrorHead), string(srcHead))
+	}
+}
+
+func TestForcePushToMirror_MirrorNotExist(t *testing.T) {
+	t.Parallel()
+	_, cloneDir := initBareAndClone(t)
+
+	gs := New()
+	err := gs.ForcePushToMirror(context.Background(), cloneDir, "/nonexistent/mirror")
+	if err == nil {
+		t.Fatal("expected error when mirror does not exist")
+	}
+}
+
+func TestForcePushToMirror_EmptyRepo(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	sourceDir := filepath.Join(dir, "source")
+	mirrorDir := filepath.Join(dir, "mirror")
+
+	// Create an empty repo (no commits).
+	cleanGitCmd("git", "init", sourceDir).Run()
+	cleanGitCmd("git", "clone", "file://"+sourceDir, mirrorDir).Run()
+
+	gs := New()
+	err := gs.ForcePushToMirror(context.Background(), sourceDir, mirrorDir)
+	// Should fail — there's no main branch to push.
+	if err == nil {
+		t.Fatal("expected error for empty repo force push")
+	}
+}
+
 func TestFetchOrigin(t *testing.T) {
 	t.Parallel()
 	_, cloneDir := initBareAndClone(t)
