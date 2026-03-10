@@ -37,7 +37,7 @@ export function TracePage() {
   return (
     <div style={{ padding: "16px 24px" }}>
       <div style={{ marginBottom: 16 }}>
-        <Link to="/" style={{ color: "#888" }}>&larr; Dashboard</Link>
+        <Link to="/" style={{ color: "#888" }}>&larr; Command Deck</Link>
       </div>
 
       <h2 style={{ margin: "0 0 4px" }}>
