@@ -19,6 +19,18 @@ Coordinating multiple AI agents across multiple projects demands infrastructure 
 
 ## Installation
 
+### Quick Install (macOS/Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Goblinlordx/crelay/main/install.sh | sh
+```
+
+To install to a custom directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Goblinlordx/crelay/main/install.sh | INSTALL_DIR=~/.local/bin sh
+```
+
 ### Homebrew (macOS/Linux)
 
 ```bash
