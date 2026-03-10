@@ -12,6 +12,3 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-list-pagination-fe_20260310200001Z/queue-project-scope-fe_20260310050001Z: {"risk":"medium","note":"Both modify useQueue hook and query key structure","added":"2026-03-10"}
-list-pagination-fe_20260310200001Z/swarm-capacity-fe_20260311000001Z: {"risk":"medium","note":"Both modify useQueue hook","added":"2026-03-10"}
-queue-project-scope-fe_20260310050001Z/swarm-capacity-fe_20260311000001Z: {"risk":"high","note":"Both modify useQueue hook and QueuePanel component","added":"2026-03-10"}

@@ -1,0 +1,71 @@
+id: model-warning-banner_20260310072515Z
+title: "One-time model compatibility warning banner on first dashboard load"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Show a one-time warning banner on the first dashboard load informing users
+    that Kiloforge requires Claude Code and has only been thoroughly tested with
+    Claude Opus 4.6. Dismiss state persisted in localStorage so it appears only once.
+  context: |
+    Kiloforge orchestrates Claude Code agents. While the product is model-agnostic
+    in theory, it has only been thoroughly validated with Claude Opus 4.6. Users
+    running other models may experience higher rates of agent hallucination or
+    unexpected behavior. A prominent first-load warning sets expectations and
+    reduces support burden.
+  codebase_analysis: |
+    Existing patterns for one-time UI elements:
+    - **TourProvider/TourOverlay** — uses backend SQLite persistence via /api/tour.
+      Overkill for a simple warning (multi-step flow, server state).
+    - **SkillsBanner** — persistent dismissable banner with warn/info variants,
+      uses localStorage for dismiss state. Closest match for this feature.
+    - **ConsentDialog** — conditional dialog triggered by API 403. Different pattern.
+    - **ToastContainer** — auto-dismiss toasts. Too transient for this use case.
+
+    The SkillsBanner pattern is the best fit: a top-level banner component that
+    checks localStorage on mount, renders if not dismissed, and writes to
+    localStorage on dismiss. It lives in App.tsx above the header.
+
+    Component placement in App.tsx: SkillsBanner renders after TourOverlay and
+    before the header. The new warning banner should render in the same area.
+  acceptance_criteria:
+    - Warning banner appears on first dashboard load when localStorage key is absent
+    - Banner displays message about Claude Code requirement and Opus 4.6 recommendation
+    - Banner includes a dismiss/acknowledge button
+    - After dismissal, banner never appears again (localStorage persisted)
+    - Banner is visually prominent (warning/amber style) but not blocking (not a modal)
+    - Banner renders above the header, consistent with SkillsBanner placement
+  out_of_scope: |
+    - Backend persistence (localStorage is sufficient for a client-side warning)
+    - Model detection or auto-checking which model is in use
+    - Blocking modal dialogs — this is an informational warning, not a gate
+    - i18n / localization of the warning text
+  technical_notes: |
+    Implementation approach:
+    1. Create a ModelWarningBanner component following SkillsBanner patterns
+    2. Use localStorage key `kf_model_warning_dismissed` to track dismiss state
+    3. On mount: check localStorage — if key exists, render nothing
+    4. Render an amber/warning-styled banner with the message and a dismiss button
+    5. On dismiss: set localStorage key and hide the banner
+    6. Add to App.tsx alongside SkillsBanner (before header)
+    7. Use CSS modules consistent with existing component styling
+plan:
+  - phase: "Component Implementation"
+    tasks:
+      - text: "Create ModelWarningBanner component with localStorage check, warning message, and dismiss button"
+        done: false
+      - text: "Create ModelWarningBanner.module.css with amber/warning styling consistent with SkillsBanner"
+        done: false
+  - phase: "Integration"
+    tasks:
+      - text: "Import and render ModelWarningBanner in App.tsx alongside SkillsBanner"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify banner appears on first load (clear localStorage), dismisses on click, and stays dismissed on reload"
+        done: false
+      - text: "Run frontend type-check (npx tsc --noEmit) and lint to confirm no errors"
+        done: false
+extra: {}
