@@ -18,14 +18,14 @@ var escalatedCmd = &cobra.Command{
 func runEscalated(cmd *cobra.Command, args []string) error {
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 
 	escalated := rt.Agents.GetEscalated()
 
 	if len(escalated) == 0 {
-		fmt.Println("No escalated PRs.")
+		fmt.Println(emptyState("escalated PRs", "PRs appear here when they exceed the review cycle limit."))
 		return nil
 	}
 

@@ -24,7 +24,7 @@ func init() {
 func runAgents(cmd *cobra.Command, args []string) error {
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 
@@ -37,7 +37,7 @@ func runAgents(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(agents) == 0 {
-		fmt.Println("No agents tracked.")
+		fmt.Println(emptyState("agents tracked", "Spawn one with: kf implement <track-id>"))
 		return nil
 	}
 

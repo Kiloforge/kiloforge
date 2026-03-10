@@ -51,7 +51,7 @@ func runPush(cmd *cobra.Command, args []string) error {
 
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 
@@ -71,7 +71,7 @@ func runPush(cmd *cobra.Command, args []string) error {
 
 func pushAll(ctx context.Context, projects []domain.Project, syncSvc *service.GitSyncService) error {
 	if len(projects) == 0 {
-		fmt.Println("No projects registered.")
+		fmt.Println(emptyState("projects registered", "Register a project with: kf add <remote-url>"))
 		return nil
 	}
 

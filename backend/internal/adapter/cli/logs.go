@@ -27,7 +27,7 @@ func init() {
 func runLogs(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("%s", configLoadError(err))
 	}
 
 	agentID := args[0]

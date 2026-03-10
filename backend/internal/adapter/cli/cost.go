@@ -27,7 +27,7 @@ func init() {
 func runCost(cmd *cobra.Command, args []string) error {
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 
@@ -79,7 +79,7 @@ func printCostTable(tracker *agent.QuotaTracker, agentSvc *service.AgentService,
 	total := tracker.GetTotalUsage()
 
 	if total.AgentCount == 0 {
-		fmt.Println("No cost data available.")
+		fmt.Println(emptyState("cost data available", "Cost data appears after agents run. Try: kf implement <track-id>"))
 		return nil
 	}
 

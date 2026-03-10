@@ -35,7 +35,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 
 	// Open SQLite database for all stores.

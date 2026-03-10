@@ -21,7 +21,7 @@ var statusCmd = &cobra.Command{
 func runStatus(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("load config: %w (have you run 'kf init'?)", err)
+		return fmt.Errorf("%s", configLoadError(err))
 	}
 
 	// Check orchestrator daemon.

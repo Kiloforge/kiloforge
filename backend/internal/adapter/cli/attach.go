@@ -21,7 +21,7 @@ manual guidance.`,
 func runAttach(cmd *cobra.Command, args []string) error {
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 

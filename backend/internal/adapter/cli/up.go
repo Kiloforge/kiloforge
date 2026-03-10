@@ -24,7 +24,7 @@ Use 'kf down' to stop the orchestrator.`,
 func runUp(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 
 	// Start orchestrator daemon.

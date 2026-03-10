@@ -51,7 +51,7 @@ func runSkillsConfig(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 
 	svc := newSkillsService(cfg)
@@ -80,7 +80,7 @@ func runSkillsConfig(cmd *cobra.Command, args []string) error {
 func runSkillsUpdate(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 
 	svc := newSkillsService(cfg)
@@ -167,7 +167,7 @@ func installEmbeddedSkills(cfg *config.Config) {
 func runSkillsList(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 
 	svc := newSkillsService(cfg)

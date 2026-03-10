@@ -21,7 +21,7 @@ var poolCmd = &cobra.Command{
 func runPool(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Resolve()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 
 	p, err := pool.Load(cfg.DataDir)

@@ -34,7 +34,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 
@@ -51,7 +51,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(tracks) == 0 {
-		fmt.Println("No tracks found.")
+		fmt.Println(emptyState("tracks found", "Create tracks in .agent/kf/tracks.yaml or use the architect workflow."))
 		return nil
 	}
 

@@ -17,7 +17,7 @@ var projectsCmd = &cobra.Command{
 func runProjects(cmd *cobra.Command, args []string) error {
 	rt, err := NewCLIRuntime()
 	if err != nil {
-		return fmt.Errorf("not initialized — run 'kf init' first")
+		return fmt.Errorf("%s", notInitializedError())
 	}
 	defer func() { _ = rt.Close() }()
 
