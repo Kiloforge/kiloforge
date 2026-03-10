@@ -99,13 +99,13 @@ plan:
   - phase: Page and Components
     tasks:
       - text: Create components/reliability/ReliabilitySummaryCards.tsx showing event counts by type with severity color coding
-        done: false
+        done: true
       - text: Create components/reliability/ReliabilityChart.tsx showing time-series event frequency with configurable time windows
-        done: false
+        done: true
       - text: Create components/reliability/ReliabilityEventTable.tsx with paginated, filterable event log
-        done: false
+        done: true
       - text: Create pages/ReliabilityPage.tsx composing summary cards, chart, and event table
-        done: false
+        done: true
   - phase: Navigation and Integration
     tasks:
       - text: Add /reliability route to App.tsx router configuration

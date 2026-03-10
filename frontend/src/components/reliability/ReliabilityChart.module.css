@@ -1,0 +1,88 @@
+.container {
+  position: relative;
+}
+
+.timeControls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.timeBtn {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.timeBtn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.timeBtnActive {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  padding: 0 4px;
+}
+
+.barGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.bar {
+  width: 100%;
+  min-height: 0;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.2s;
+}
+
+.barWarn {
+  background: var(--status-warning);
+}
+
+.barError {
+  background: var(--status-error);
+}
+
+.barCritical {
+  background: #e53e3e;
+}
+
+.barLabel {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+
+.emptyChart {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}
