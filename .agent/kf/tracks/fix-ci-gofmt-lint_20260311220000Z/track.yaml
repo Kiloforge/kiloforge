@@ -3,7 +3,7 @@ title: Fix CI lint failure — gofmt formatting in pkg/kf/types.go
 type: bug
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Fix gofmt formatting misalignment in backend/pkg/kf/types.go Track struct
@@ -18,7 +18,7 @@ spec:
     (string, Spec, []Phase). This causes gofmt to want different tab alignment
     for the YAML struct tags across all fields. The diff is purely whitespace —
     no logic changes.
-
+    
     The misalignment was introduced when the `Extra` field was added to the
     Track struct. Running `gofmt -w` on the file fixes the alignment.
   acceptance_criteria:
@@ -34,8 +34,8 @@ spec:
 plan:
   - phase: Fix formatting
     tasks:
-      - text: "Run gofmt -w on backend/pkg/kf/types.go to fix struct tag alignment in the Track struct"
-        done: false
-      - text: "Verify make lint passes cleanly"
-        done: false
+      - text: Run gofmt -w on backend/pkg/kf/types.go to fix struct tag alignment in the Track struct
+        done: true
+      - text: Verify make lint passes cleanly
+        done: true
 extra: {}
