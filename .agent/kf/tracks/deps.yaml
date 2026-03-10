@@ -40,11 +40,6 @@ advisor-project-create-be_20260311230000Z: []
 
 advisor-skills-be_20260310115559Z: []
 
-agent-diff-panel-fe_20260312210900Z: []
-
-agent-idle-suspend-fe_20260312020001Z:
-  - agent-idle-suspend-be_20260312020000Z
-
 cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
