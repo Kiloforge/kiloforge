@@ -1,14 +1,11 @@
 id: cli-error-ux-be_20260310073722Z
-title: "CLI error UX — actionable messages and prerequisite guidance"
+title: CLI error UX — actionable messages and prerequisite guidance
 type: feature
 status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Improve CLI error messages across all commands with actionable guidance,
-    prerequisite checks with clear resolution steps, and consistent formatting.
-    Make the CLI forgiving and helpful rather than terse.
+  summary: ">"
   context: |
     Research identified that 15+ CLI commands return the same terse error
     "not initialized — run 'kf init' first" without additional context about
@@ -19,7 +16,7 @@ spec:
     - Missing prerequisite checks give confusing downstream errors
     - Empty state outputs are minimal ("No agents tracked.")
     - Error messages don't explain WHY something failed or WHAT to do next
-
+    
     The goal: every error message should answer three questions:
     1. What happened?
     2. Why did it happen?
@@ -33,12 +30,12 @@ spec:
     - Track validation → helpful with --list suggestion
     - Remote URL validation → helpful with example
     - Project already registered → helpful with path/URL info
-
+    
     Key files:
     - backend/internal/adapter/cli/*.go (all command files)
     - backend/internal/adapter/prereq/ (prerequisite checking system)
     - backend/internal/adapter/config/resolve.go (config resolution)
-
+    
     The prereq package already has Docker, Git, and Claude CLI checks.
     These run during init but aren't surfaced by other commands when
     relevant (e.g., "docker not found" when running kf up).
@@ -66,30 +63,30 @@ spec:
     5. Add prerequisite context to kf up errors (e.g., "Docker not found")
     6. Keep messages concise but helpful — 2-3 lines max per error
 plan:
-  - phase: "Error Formatting Foundation"
+  - phase: Error Formatting Foundation
     tasks:
-      - text: "Create cli/errhelp.go with helper functions for consistent What/Why/Next error formatting"
-        done: false
-      - text: "Add distinct error messages for 'never initialized' vs 'Gitea not running' states"
-        done: false
-  - phase: "Command Error Improvements"
+      - text: Create cli/errhelp.go with helper functions for consistent What/Why/Next error formatting
+        done: true
+      - text: Add distinct error messages for 'never initialized' vs 'Gitea not running' states
+        done: true
+  - phase: Command Error Improvements
     tasks:
-      - text: "Update up.go, down.go, status.go with enriched initialization error messages"
-        done: false
-      - text: "Update add.go, create.go, projects.go with actionable error context"
-        done: false
-      - text: "Update agents.go, cost.go, logs.go, stop.go, attach.go with improved empty states and errors"
-        done: false
-      - text: "Update implement.go, pool.go, escalated.go, push.go, sync.go with enriched errors"
-        done: false
-  - phase: "Prerequisite Checks"
+      - text: Update up.go, down.go, status.go with enriched initialization error messages
+        done: true
+      - text: Update add.go, create.go, projects.go with actionable error context
+        done: true
+      - text: Update agents.go, cost.go, logs.go, stop.go, attach.go with improved empty states and errors
+        done: true
+      - text: Update implement.go, pool.go, escalated.go, push.go, sync.go with enriched errors
+        done: true
+  - phase: Prerequisite Checks
     tasks:
-      - text: "Surface Docker/Git/Claude CLI availability in kf up when relevant prerequisites fail"
-        done: false
-  - phase: "Verification"
+      - text: Surface Docker/Git/Claude CLI availability in kf up when relevant prerequisites fail
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test to verify no regressions"
-        done: false
-      - text: "Manually verify error output for kf status (without init) and kf agents (with no agents)"
-        done: false
+      - text: Run make test to verify no regressions
+        done: true
+      - text: Manually verify error output for kf status (without init) and kf agents (with no agents)
+        done: true
 extra: {}
