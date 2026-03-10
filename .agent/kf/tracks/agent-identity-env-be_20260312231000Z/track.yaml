@@ -1,0 +1,83 @@
+id: agent-identity-env-be_20260312231000Z
+title: Pass agent identity (ID, role, session ID) as environment variables to spawned agents
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Modify the spawner to pass KF_AGENT_ID, KF_SESSION_ID, and KF_AGENT_ROLE
+    as environment variables to all spawned agent processes. This makes agents
+    self-aware — they can read their own identity without needing the
+    orchestrator, enabling the claim-register tooling and future integrations.
+  context: |
+    Currently, agentEnv() only passes KF_ORCH_URL. The agent ID and session ID
+    are generated server-side and never communicated to the agent process. This
+    means agents cannot self-identify, which blocks the track claim register
+    feature (track-claim-register_20260312230000Z) from recording agent IDs.
+  codebase_analysis: |
+    **agentEnv() in spawner.go:158-163** — returns map[string]string with only
+    KF_ORCH_URL. Called from SpawnDeveloper (line 381), SpawnReviewer (line 296),
+    SpawnInteractive (line 527), and ResumeAgent (line 758).
+
+    **SDK env var injection** — NewSDKSession and QueryOneShot both call
+    opts.WithEnvVar(k, v) for each entry in the env map. The SDK passes these
+    to the subprocess environment. Agents can read them via os.Getenv().
+
+    **Change surface:**
+    - Modify agentEnv() signature to accept agentID, sessionID, role
+    - Update 4 callsites: SpawnDeveloper, SpawnReviewer, SpawnInteractive, ResumeAgent
+    - ResumeDeveloper uses execClaudeResume() which uses exec.Command directly —
+      needs env vars added to cmd.Env
+
+    **Key files:**
+    - backend/internal/adapter/agent/spawner.go
+    - backend/internal/adapter/agent/sdk_client.go (NewSDKSession, NewSDKSessionWithResume)
+  acceptance_criteria:
+    - KF_AGENT_ID is set in all spawned agent processes (developer, reviewer, interactive)
+    - KF_SESSION_ID is set in all spawned agent processes
+    - KF_AGENT_ROLE is set in all spawned agent processes
+    - Resumed agents also receive the env vars
+    - Existing tests continue to pass
+    - No behavior change for agents that don't read the vars
+  out_of_scope: |
+    - Consuming these env vars in skills (that's the tooling track)
+    - Frontend changes
+    - New API endpoints
+  technical_notes: |
+    The change is minimal and non-breaking:
+    ```go
+    func (s *Spawner) agentEnv(agentID, sessionID, role string) map[string]string {
+        return map[string]string{
+            "KF_ORCH_URL":    fmt.Sprintf("http://localhost:%d", s.cfg.OrchestratorPort),
+            "KF_AGENT_ID":    agentID,
+            "KF_SESSION_ID":  sessionID,
+            "KF_AGENT_ROLE":  role,
+        }
+    }
+    ```
+    For ResumeDeveloper (exec.Command path), append to cmd.Env.
+plan:
+  - phase: Implementation
+    tasks:
+      - text: Modify agentEnv() to accept agentID, sessionID, role params and include KF_AGENT_ID, KF_SESSION_ID, KF_AGENT_ROLE
+        done: false
+      - text: Update SpawnDeveloper callsite to pass agent identity to agentEnv()
+        done: false
+      - text: Update SpawnReviewer callsite to pass agent identity to agentEnv()
+        done: false
+      - text: Update SpawnInteractive callsite to pass agent identity to agentEnv()
+        done: false
+      - text: Update ResumeAgent callsite to pass agent identity to agentEnv()
+        done: false
+      - text: Update ResumeDeveloper (execClaudeResume path) to include env vars in cmd.Env
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Update existing spawner tests to match new agentEnv() signature
+        done: false
+      - text: Add test verifying env map contains all three identity vars
+        done: false
+      - text: Run make test and make build to verify no regressions
+        done: false
+extra: {}

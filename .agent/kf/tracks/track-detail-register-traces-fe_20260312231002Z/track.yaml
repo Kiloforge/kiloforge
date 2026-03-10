@@ -1,0 +1,109 @@
+id: track-detail-register-traces-fe_20260312231002Z
+title: Display agent register and traces in track detail view
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Update the TrackDetailPage to display the agent register (created_by,
+    claimed_by with session IDs for resume) and a list of associated traces.
+    The track detail view becomes the primary place to see agent history
+    and execution traces for a track.
+  context: |
+    The TrackDetailPage currently shows: title, status, type, phases/tasks
+    progress, spec markdown, and plan markdown. After the BE track adds
+    agent_register and traces to the TrackDetail API response, the frontend
+    needs to render them.
+
+    Traces are currently only visible on the separate /traces overview page.
+    The user wants traces accessible primarily through the track detail view.
+  codebase_analysis: |
+    **TrackDetailPage (frontend/src/pages/TrackDetailPage.tsx)** — Simple
+    page with metadata grid, progress bar, spec section, and plan section.
+    Uses useQuery with queryKeys.trackDetail(). Type: TrackDetail from
+    types/api.ts.
+
+    **TraceTimeline component exists** — frontend/src/components/TraceTimeline.tsx
+    renders a hierarchical span visualization. Could be reused or we can
+    use a simpler trace list.
+
+    **TraceList component exists** — frontend/src/components/TraceList.tsx
+    renders a table of traces. Can be embedded directly.
+
+    **Types** — frontend/src/types/api.ts defines TrackDetail. Needs
+    agent_register and traces fields added.
+
+    **Key files:**
+    - frontend/src/pages/TrackDetailPage.tsx
+    - frontend/src/pages/TrackDetailPage.module.css
+    - frontend/src/types/api.ts
+    - frontend/src/components/TraceList.tsx (reusable)
+    - frontend/src/components/TraceTimeline.tsx (reusable)
+  acceptance_criteria:
+    - TrackDetailPage shows an "Agent Register" section when created_by or claimed_by data exists
+    - created_by displays role, agent ID (truncated), and timestamp
+    - claimed_by displays role, agent ID, worktree, branch, and session ID with a copy button
+    - Session ID is copyable for use with claude --resume
+    - TrackDetailPage shows a "Traces" section with recent traces for this track
+    - Each trace links to the full trace detail page (/traces/{traceId})
+    - Empty register/traces sections are hidden (not shown as empty)
+    - Responsive layout works on mobile
+  out_of_scope: |
+    - Backend API changes (separate BE track)
+    - Writing register data (tooling track)
+    - Full trace timeline in track view (link to /traces/{traceId} for that)
+  technical_notes: |
+    **Agent Register section layout:**
+    ```
+    Agent Register
+    ┌─────────────────────────────────────┐
+    │ Created by   architect  2026-03-12  │
+    │              session: abc123  [copy] │
+    │                                     │
+    │ Claimed by   developer  worker-3    │
+    │              session: def456  [copy] │
+    │              branch: feature/...    │
+    └─────────────────────────────────────┘
+    ```
+
+    **Traces section:** Reuse TraceList component with the traces array
+    from TrackDetail. Each row shows root span name, span count, duration,
+    and links to /traces/{traceId}.
+
+    **Resume workflow:** The session_id with the copy button is the key UX —
+    user copies it and runs `claude --resume <session_id>` to restore.
+plan:
+  - phase: Types & Data
+    tasks:
+      - text: Add AgentRegister, AgentIdentity, and TraceSummary types to frontend/src/types/api.ts
+        done: false
+      - text: Extend TrackDetail type with agent_register and traces fields
+        done: false
+  - phase: Agent Register UI
+    tasks:
+      - text: Create AgentRegister component showing created_by and claimed_by with session ID copy buttons
+        done: false
+      - text: Add AgentRegister section to TrackDetailPage (hidden when no data)
+        done: false
+      - text: Style the register section in TrackDetailPage.module.css
+        done: false
+  - phase: Traces UI
+    tasks:
+      - text: Add Traces section to TrackDetailPage using embedded trace list
+        done: false
+      - text: Each trace row links to /traces/{traceId} detail page
+        done: false
+      - text: Style the traces section in TrackDetailPage.module.css
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Add test for TrackDetailPage rendering agent register when data present
+        done: false
+      - text: Add test for TrackDetailPage hiding register when data absent
+        done: false
+      - text: Add test for traces section rendering and linking
+        done: false
+      - text: Run npm test and npm run build
+        done: false
+extra: {}
