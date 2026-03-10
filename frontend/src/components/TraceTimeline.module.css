@@ -75,3 +75,15 @@
   text-align: center;
   color: var(--text-dimmed);
 }
+
+@media (max-width: 639px) {
+  .nameCol {
+    flex: 0 0 120px;
+  }
+
+  .durationCol {
+    flex: 0 0 56px;
+    padding-right: 6px;
+    font-size: 11px;
+  }
+}

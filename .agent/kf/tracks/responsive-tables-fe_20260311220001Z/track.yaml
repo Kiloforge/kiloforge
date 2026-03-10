@@ -47,9 +47,9 @@ plan:
   - phase: Misc Fixed Widths
     tasks:
       - text: Add @media (max-width: 639px) to TraceTimeline — shrink columns, add ellipsis
-        done: false
+        done: true
       - text: Replace fixed width with max-width + width:100% on inputs
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Verify tables at 375px, 640px, 1200px
