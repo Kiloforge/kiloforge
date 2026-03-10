@@ -77,6 +77,7 @@ fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --
 fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-stale-frontend-build_20260309210000Z: {"title":"Fix Stale Frontend Build — Rebuild dist with Correct Base Path","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 fix-test-ci-pr-tracking_20260309173000Z: {"title":"Fix CI Test Failure — PR Tracking Store References","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
+fix-test-failures_20260310140000Z: {"title":"Fix TestBinaryBuilds and TestGooseDown_RollsBack test failures","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-tour-api-mismatch_20260309223000Z: {"title":"Fix Tour API Request Body Mismatch","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}
 fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Errors in TraceTimeline","status":"completed","type":"bug","created":"2026-03-08","updated":"2026-03-08"}
 fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"completed","type":"bug","created":"2026-03-09","updated":"2026-03-09"}

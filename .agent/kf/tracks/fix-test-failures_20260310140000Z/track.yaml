@@ -1,0 +1,51 @@
+id: fix-test-failures_20260310140000Z
+title: "Fix TestBinaryBuilds and TestGooseDown_RollsBack test failures"
+type: bug
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: "Fix relative GIT_DIR in kf-worktree-env causing TestBinaryBuilds failure, and off-by-one migration rollback in TestGooseDown_RollsBack after migration 004 was added."
+  context: |
+    Two tests fail when running `make test` from the repo root after sourcing kf-worktree-env:
+    1. TestBinaryBuilds — git rev-parse fails because GIT_DIR=.git (relative) breaks after cd backend
+    2. TestGooseDown_RollsBack — test written for 3 migrations but 004_work_queue.sql was added, causing off-by-one in Down() calls
+  codebase_analysis: |
+    Bug 1: .agent/kf/bin/kf-worktree-env line 91 exports GIT_DIR="$git_common_dir" where
+    git_common_dir comes from `git rev-parse --git-common-dir`. In the main worktree this
+    returns ".git" (relative). The Makefile GO_CMD does `cd backend && go test`, so the test
+    process inherits GIT_DIR=.git which resolves to backend/.git — non-existent.
+
+    Bug 2: backend/internal/adapter/persistence/sqlite/db_test.go TestGooseDown_RollsBack
+    does 3 Down() calls (for migrations 003, 002, 001). Migration 004_work_queue.sql was
+    added, so with 4 migrations applied, 3 Down() calls only roll back 004→003→002.
+    The test then checks agents.name is gone (expects 002 rolled back) and agents table
+    is gone (expects 001 rolled back) — both fail because they're one version behind.
+  acceptance_criteria:
+    - "`make test` passes with no failures when run from repo root after sourcing kf-worktree-env"
+    - "TestBinaryBuilds succeeds — kf-worktree-env exports absolute GIT_DIR path"
+    - "TestGooseDown_RollsBack succeeds — test accounts for all 4 migrations with 4 Down() calls"
+  out_of_scope: |
+    Making TestGooseDown_RollsBack dynamically adapt to future migration count.
+    Refactoring kf-worktree-env beyond the GIT_DIR fix.
+  technical_notes: |
+    Fix 1: In kf-worktree-env, convert git_common_dir to absolute path. Use
+    $(cd "$(dirname "$git_common_dir")" && pwd)/$(basename "$git_common_dir")
+    or similar to resolve relative ".git" to absolute "/path/to/.git".
+
+    Fix 2: Add a 4th Down() call at the start of the rollback sequence for
+    migration 004 (queue_items), and update comments to reflect the 4-migration sequence.
+plan:
+  - phase: "Fix kf-worktree-env relative GIT_DIR"
+    tasks:
+      - text: "Convert git_common_dir to absolute path in kf-worktree-env before export"
+        done: false
+      - text: "Verify TestBinaryBuilds passes"
+        done: false
+  - phase: "Fix migration rollback test"
+    tasks:
+      - text: "Add Down() call for migration 004 in TestGooseDown_RollsBack and update comments"
+        done: false
+      - text: "Verify TestGooseDown_RollsBack passes and full make test is green"
+        done: false
+extra: {}
