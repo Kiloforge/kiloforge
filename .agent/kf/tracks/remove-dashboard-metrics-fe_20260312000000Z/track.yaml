@@ -1,0 +1,72 @@
+id: remove-dashboard-metrics-fe_20260312000000Z
+title: "Remove MetricsPanel and GettingStartedChecklist from dashboard"
+type: refactor
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Remove the MetricsPanel (4 gauge cards) and GettingStartedChecklist from the
+    top of OverviewPage. Delete the now-unused components and clean up the quota
+    prop chain.
+  context: |
+    The dashboard top section shows 4 gauge cards (Budget, Token Rate, Cost Rate,
+    Agents count) and an onboarding checklist. The user has determined these are
+    not useful — the metrics are too limited to be actionable and the checklist
+    is unnecessary for experienced users.
+  codebase_analysis: |
+    Components to remove:
+    - frontend/src/components/MetricsPanel.tsx + MetricsPanel.module.css
+    - frontend/src/components/GaugeCard.tsx + GaugeCard.module.css + GaugeCard.test.tsx
+    - frontend/src/components/GettingStartedChecklist.tsx + GettingStartedChecklist.module.css + GettingStartedChecklist.test.tsx
+
+    Usage (all in OverviewPage.tsx only):
+    - Line 8: import { MetricsPanel }
+    - Line 17: import { GettingStartedChecklist }
+    - Line 168: <MetricsPanel agentCount={agents.length} quota={quota} />
+    - Line 170: <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />
+
+    Prop cleanup:
+    - OverviewPageProps.quota (line 32) — only used by MetricsPanel, can be removed
+    - QuotaResponse import (line 4) — check if still needed after quota prop removal
+    - App.tsx passes quota to OverviewPage — remove that prop pass-through
+
+    No other files import MetricsPanel, GaugeCard, or GettingStartedChecklist.
+  acceptance_criteria:
+    - MetricsPanel and GettingStartedChecklist no longer render on dashboard
+    - MetricsPanel.tsx, GaugeCard.tsx, GettingStartedChecklist.tsx files deleted
+    - Associated CSS modules and test files deleted
+    - quota prop removed from OverviewPageProps and callers
+    - make build and make test pass
+    - No dead imports or unused variables
+  out_of_scope: |
+    - Removing the /api/quota endpoint (still used elsewhere potentially)
+    - Changing the Agents section (AgentGrid stays)
+    - Redesigning the dashboard layout
+  technical_notes: |
+    Pure deletion refactor — remove components, imports, props, and files.
+    Work backwards: remove JSX usage, then imports, then props, then delete files.
+plan:
+  - phase: "Remove usage"
+    tasks:
+      - text: "Remove MetricsPanel and GettingStartedChecklist JSX from OverviewPage.tsx"
+        done: false
+      - text: "Remove MetricsPanel and GettingStartedChecklist imports from OverviewPage.tsx"
+        done: false
+      - text: "Remove quota prop from OverviewPageProps interface and any callers (App.tsx)"
+        done: false
+      - text: "Clean up unused type imports (QuotaResponse if no longer needed)"
+        done: false
+  - phase: "Delete files"
+    tasks:
+      - text: "Delete MetricsPanel.tsx, MetricsPanel.module.css"
+        done: false
+      - text: "Delete GaugeCard.tsx, GaugeCard.module.css, GaugeCard.test.tsx"
+        done: false
+      - text: "Delete GettingStartedChecklist.tsx, GettingStartedChecklist.module.css, GettingStartedChecklist.test.tsx"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build and make test — all pass with no dead code warnings"
+        done: false
+extra: {}
