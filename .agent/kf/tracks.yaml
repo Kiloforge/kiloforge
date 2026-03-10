@@ -24,6 +24,7 @@ analytics-be_20260310060644Z: {"title":"PostHog product analytics — backend in
 analytics-fe_20260310060645Z: {"title":"Analytics opt-out toggle in dashboard settings","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 arch-review_20260310040000Z: {"title":"Research: Architectural Review and Alignment Audit","status":"archived","type":"research","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 auto-open-dashboard_20260310230000Z: {"title":"Auto-open browser to dashboard on init and up","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+aws-static-deploy_20260310200000Z: {"title":"Migrate kiloforge.dev from Vercel to AWS S3 + CloudFront","status":"pending","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 backend-kf-sdk-adoption_20260310223000Z: {"title":"Migrate Go backend to use pkg/kf SDK for all kf data access","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 backend-resilience-be_20260311120003Z: {"title":"Backend resilience — config validation, DB safety, log hardening","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 board-agent-lifecycle_20260308180000Z: {"title":"Board-Driven Agent Lifecycle Control","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -189,7 +190,7 @@ relay-daemon_20260308200000Z: {"title":"Relay Server Daemon Mode","status":"arch
 relay-event-handling_20260307124000Z: {"title":"Relay Event Handling for Issues and PRs with Multi-Project Routing","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitHub Actions, and Homebrew","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 reliability-advisor-skill_20260310001315Z: {"title":"Reliability advisor skill — automated testing, linting, and static analysis guidance agent","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-reliability-metrics-be_20260310093038Z: {"title":"Agent reliability metrics — backend collection, storage, and API","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+reliability-metrics-be_20260310093038Z: {"title":"Agent reliability metrics — backend collection, storage, and API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 reliability-metrics-fe_20260310093039Z: {"title":"Agent reliability metrics — frontend dashboard and historical visualization","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
