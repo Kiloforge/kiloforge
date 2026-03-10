@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 
+export type NotificationType = "waiting" | "done" | "unread" | null;
+
 export interface WindowEntry {
   agentId: string;
   name?: string;
@@ -10,6 +12,7 @@ export interface WindowEntry {
   initialY: number;
   minimized: boolean;
   unreadCount: number;
+  notificationType: NotificationType;
 }
 
 export interface WindowControls {
@@ -52,6 +55,7 @@ export function useWindowManager() {
         agentId, name, role, slug, branch,
         initialX: pos.x, initialY: pos.y,
         minimized: false, unreadCount: 0,
+        notificationType: null,
       });
       return next;
     });
@@ -84,7 +88,7 @@ export function useWindowManager() {
       const entry = prev.get(agentId);
       if (!entry || !entry.minimized) return prev;
       const next = new Map(prev);
-      next.set(agentId, { ...entry, minimized: false, unreadCount: 0 });
+      next.set(agentId, { ...entry, minimized: false, unreadCount: 0, notificationType: null });
       return next;
     });
   }, []);
@@ -95,6 +99,16 @@ export function useWindowManager() {
       if (!entry || !entry.minimized) return prev;
       const next = new Map(prev);
       next.set(agentId, { ...entry, unreadCount: entry.unreadCount + 1 });
+      return next;
+    });
+  }, []);
+
+  const setNotificationType = useCallback((agentId: string, type: NotificationType) => {
+    setWindows((prev) => {
+      const entry = prev.get(agentId);
+      if (!entry || entry.notificationType === type) return prev;
+      const next = new Map(prev);
+      next.set(agentId, { ...entry, notificationType: type });
       return next;
     });
   }, []);
@@ -305,6 +319,7 @@ export function useWindowManager() {
     minimize,
     restore,
     incrementUnread,
+    setNotificationType,
     has,
     getWindows,
     getMinimizedWindows,
