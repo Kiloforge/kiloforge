@@ -1,0 +1,32 @@
+id: add-developer-notes_20260312030000Z
+title: Add developer notes section to product.md
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Add a "Developer Notes" section to .agent/kf/product.md capturing the
+    project's origin story, philosophy, and intended workflow.
+  context: |
+    The user wants to document that Kiloforge started on 2026-03-07 at 17:03
+    KST, was built using its own skills (/kf-setup, /kf-architect,
+    /kf-developer), and exists to solve the challenges of manually
+    orchestrating 6-8 AI agents simultaneously.
+  codebase_analysis: |
+    product.md currently has: Project Name, Description, Problem Statement,
+    Target Users, Key Goals. A "Developer Notes" section appended at the end
+    fits naturally.
+  acceptance_criteria:
+    - product.md contains a "Developer Notes" section with the author's message
+    - No other files are modified
+  out_of_scope: |
+    Changing any existing sections of product.md
+  technical_notes: |
+    Append a new ## Developer Notes section to the end of product.md.
+plan:
+  - phase: Add notes
+    tasks:
+      - text: Append "Developer Notes" section to .agent/kf/product.md
+        done: false
+extra: {}
