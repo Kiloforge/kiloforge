@@ -1,11 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, QuotaResponse, Track, Project, SyncStatus, SwarmStatus, SwarmSettings } from "../types/api";
+import type { Agent, Track, Project, SyncStatus, SwarmStatus, SwarmSettings } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
-import { MetricsPanel } from "../components/MetricsPanel";
 import { AgentGrid } from "../components/AgentGrid";
 import { TrackList } from "../components/TrackList";
 import { TraceList } from "../components/TraceList";
@@ -14,7 +13,6 @@ import { RemoveProjectDialog } from "../components/RemoveProjectDialog";
 import { SwarmPanel } from "../components/SwarmPanel";
 import { PaginatedList } from "../components/PaginatedList";
 import { InlineSpinner } from "../components/InlineSpinner";
-import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
 import { HelpTooltip } from "../components/HelpTooltip";
 import { AdvisorHub } from "../components/AdvisorHub";
 import type { AgentRole } from "../components/AgentLauncher";
@@ -29,7 +27,6 @@ interface OverviewPageProps {
   agentHasNextPage?: boolean;
   agentFetchingNextPage?: boolean;
   onAgentLoadMore?: () => void;
-  quota: QuotaResponse | null;
   tracks: Track[];
   onViewLog: (agentId: string) => void;
   onAttach?: (agentId: string) => void;
@@ -127,7 +124,7 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, quota, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore, onAdvisorLaunch, advisorLaunching }: OverviewPageProps) {
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore, onAdvisorLaunch, advisorLaunching }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -165,10 +162,6 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
 
   return (
     <>
-      <MetricsPanel agentCount={agents.length} quota={quota} />
-
-      <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />
-
       <section className={appStyles.panel}>
         <div className={styles.sectionHeader}>
           <h2 className={appStyles.panelTitle}>

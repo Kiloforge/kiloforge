@@ -262,7 +262,6 @@ export default function App() {
                 agentHasNextPage={agentHasNextPage}
                 agentFetchingNextPage={agentFetchingNextPage}
                 onAgentLoadMore={agentFetchNextPage}
-                quota={quota}
                 tracks={tracks}
                 onViewLog={handleViewLog}
                 onAttach={handleAttach}
