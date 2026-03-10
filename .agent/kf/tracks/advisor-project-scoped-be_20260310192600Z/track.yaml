@@ -1,0 +1,73 @@
+id: advisor-project-scoped-be_20260310192600Z
+title: "Scope advisors to existing projects (backend)"
+type: refactor
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Remove advisor project creation logic so advisors use existing project directories and require KF initialization, like architect/interactive roles."
+  context: |
+    Currently, advisor roles (advisor-product, advisor-reliability) have a special code path
+    in the backend spawn handler: `setupAdvisorProject` creates a brand-new Git repo, installs
+    embedded skills, and uses that as the agent's working directory. This means advisors operate
+    in isolation from any existing project.
+
+    The user wants advisors to only be available inside an existing project, reducing complexity.
+    Advisors should work within the project's existing directory (same as architect/interactive
+    roles) and require that KF is initialized (product.md, tracks.yaml exist).
+  codebase_analysis: |
+    Key files:
+    - `backend/internal/adapter/rest/api_handler.go` lines 442-577:
+      - Line 469-478: Setup check explicitly skips advisor roles with comment
+        "skip for advisor roles which create a new project rather than using an existing one"
+      - Lines 507-515: Special advisor branch calls `setupAdvisorProject()`
+      - Lines 555-577: `setupAdvisorProject` function creates new repo + installs skills
+    - `backend/internal/core/domain/agent.go`: `IsAdvisorRole()` helper
+    - `backend/internal/adapter/skills/embedded/kf-advisor-product/SKILL.md`:
+      Pre-flight does `git reset --hard main` (assumes fresh repo)
+    - `backend/internal/adapter/skills/embedded/kf-advisor-reliability/SKILL.md`:
+      Pre-flight checks local files (works fine in existing project)
+    - `backend/internal/adapter/skills/checker.go`: skill requirements per role
+  acceptance_criteria:
+    - Advisor roles use the existing project directory as WorkDir (same path as architect/interactive)
+    - Advisor roles require KF initialization (setup check no longer skipped)
+    - setupAdvisorProject function is removed
+    - kf-advisor-product SKILL.md no longer does git reset --hard main in pre-flight
+    - kf-advisor-reliability SKILL.md pre-flight updated to match (no fresh-repo assumptions)
+    - Existing tests pass; new/updated tests cover the changed spawn path
+    - Spawning an advisor without a project returns appropriate error
+  out_of_scope: |
+    - Frontend changes (separate track)
+    - Adding new advisor roles
+    - Changing advisor report output locations
+  technical_notes: |
+    The change is straightforward: remove the `if domain.IsAdvisorRole(role)` special cases
+    in SpawnInteractiveAgent handler so advisors flow through the same project lookup path
+    as other roles. Delete `setupAdvisorProject`. Update the two embedded SKILL.md files
+    to remove fresh-repo assumptions (git reset, etc.).
+plan:
+  - phase: "Remove advisor project creation"
+    tasks:
+      - text: "Remove the advisor exception from the setup check (line ~469-478 in api_handler.go) — advisors should go through checkSetup like other roles"
+        done: false
+      - text: "Remove the setupAdvisorProject call block (lines ~507-515 in api_handler.go) — advisors now use the same project directory resolution as other roles"
+        done: false
+      - text: "Delete the setupAdvisorProject function (lines ~555-577 in api_handler.go)"
+        done: false
+      - text: "Verify that advisors with a project param now flow through the existing project directory lookup (same as architect/interactive)"
+        done: false
+  - phase: "Update embedded advisor skills"
+    tasks:
+      - text: "Update kf-advisor-product SKILL.md: remove `git reset --hard main` from pre-flight, update context to reflect running in an existing initialized project"
+        done: false
+      - text: "Update kf-advisor-reliability SKILL.md: remove any fresh-repo assumptions in pre-flight, clarify it runs within an existing project"
+        done: false
+      - text: "Verify skill hash checksums are regenerated on next build (skills are embedded via go:embed)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build to verify compilation"
+        done: false
+      - text: "Run make test to verify all tests pass (update or add tests for advisor spawn path changes)"
+        done: false
+extra: {}

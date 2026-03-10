@@ -1,0 +1,78 @@
+id: advisor-project-scoped-fe_20260310192601Z
+title: "Scope advisors to project context (frontend)"
+type: refactor
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Filter advisor roles from AgentLauncher when no project context; remove project name input from advisor flow; clean up unused AdvisorHub component."
+  context: |
+    With advisors now scoped to existing projects (backend track), the frontend needs to:
+    1. Only show advisor roles in AgentLauncher when inside a project (projectSlug is set)
+    2. Remove the project name input from the advisor launch flow (project is implicit)
+    3. Clean up the AdvisorHub component which is already hidden and no longer needed
+  codebase_analysis: |
+    Key files:
+    - `frontend/src/components/AgentLauncher.tsx`: Shows all roles including advisor-product
+      and advisor-reliability. Receives optional `projectSlug` prop. When projectSlug is set
+      (ProjectPage context), it's passed to onLaunch. Advisor roles should be filtered out
+      when projectSlug is absent.
+    - `frontend/src/components/AdvisorHub.tsx`: Full advisor UI with project name input,
+      validation, role cards. Currently hidden from OverviewPage (removed in recent commit).
+      Can be deleted entirely since advisors will be launched via AgentLauncher within projects.
+    - `frontend/src/components/AdvisorHub.module.css`: Styles for AdvisorHub — delete with component.
+    - `frontend/src/components/AdvisorHub.test.tsx`: Tests for AdvisorHub — delete with component.
+    - `frontend/src/pages/OverviewPage.tsx`: Has advisor filter chip and onAdvisorLaunch callback
+      remnants. Clean up advisor-specific code.
+    - `frontend/src/pages/ProjectPage.tsx`: Already passes projectSlug to AgentLauncher.
+      No changes needed here — advisors will naturally appear in the launcher.
+    - `frontend/src/App.tsx`: handleLaunch accepts optional project param. The 3-arg signature
+      (role, prompt, project?) was added for AdvisorHub. Can simplify back to 2-arg since
+      project is always implicit from ProjectPage context.
+    - `frontend/src/types/api.ts`: SpawnInteractiveRequest.project field stays (used by
+      ProjectPage for all roles).
+  acceptance_criteria:
+    - Advisor roles (advisor-product, advisor-reliability) only appear in AgentLauncher when projectSlug is provided
+    - AdvisorHub component, its CSS module, and its test file are deleted
+    - OverviewPage no longer has advisor-specific launch callbacks or UI remnants
+    - App.tsx handleLaunch simplified (project comes from ProjectPage context, not advisor-specific input)
+    - AgentLauncher works correctly for advisor roles within a project (sends project slug in request)
+    - Existing tests pass; tests updated for removed component and changed role filtering
+  out_of_scope: |
+    - Backend changes (separate track)
+    - Adding new advisor types
+    - Changing advisor report viewing UI
+  technical_notes: |
+    The AgentLauncher already receives projectSlug as a prop. Filter the roles array:
+    if no projectSlug, exclude roles starting with "advisor-". The AdvisorHub component
+    is already hidden — delete it entirely along with its CSS and test files. Clean up
+    the 3-arg onLaunch callback in App.tsx back to 2-arg (project comes from ProjectPage
+    handleLaunch which already includes slug).
+plan:
+  - phase: "Filter advisor roles in AgentLauncher"
+    tasks:
+      - text: "In AgentLauncher.tsx, filter out advisor roles from the role list when projectSlug is not provided"
+        done: false
+      - text: "Write/update test: verify advisor roles hidden when no projectSlug, shown when projectSlug is set"
+        done: false
+      - text: "Verify AgentLauncher sends correct request with project slug when launching advisor from ProjectPage"
+        done: false
+  - phase: "Clean up AdvisorHub and related code"
+    tasks:
+      - text: "Delete frontend/src/components/AdvisorHub.tsx"
+        done: false
+      - text: "Delete frontend/src/components/AdvisorHub.module.css"
+        done: false
+      - text: "Delete frontend/src/components/AdvisorHub.test.tsx"
+        done: false
+      - text: "Remove AdvisorHub import and any advisor-specific callbacks from OverviewPage.tsx"
+        done: false
+      - text: "Simplify App.tsx handleLaunch: remove the 3rd project? parameter added for AdvisorHub (ProjectPage already handles project param internally)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build to verify compilation and no import errors from deleted files"
+        done: false
+      - text: "Run make test to verify all tests pass"
+        done: false
+extra: {}

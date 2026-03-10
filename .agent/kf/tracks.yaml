@@ -13,6 +13,8 @@ admin-operations-ui_20260309173001Z: {"title":"Admin Operations UI — Bulk Arch
 advisor-hub-fe_20260310115600Z: {"title":"Advisor Hub — dedicated UI section for launching and viewing advisor agents","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-project-create-be_20260311230000Z: {"title":"Advisor launch creates a fresh project repo and runs against it","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 advisor-project-create-fe_20260311230001Z: {"title":"Advisor Hub: add project name input to launch dialog","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+advisor-project-scoped-be_20260310192600Z: {"title":"Scope advisors to existing projects (backend)","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+advisor-project-scoped-fe_20260310192601Z: {"title":"Scope advisors to project context (frontend)","status":"pending","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 advisor-skills-be_20260310115559Z: {"title":"Embed missing skills and rename advisors to kf-advisor-* prefix","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 agent-completion-callback_20260309112000Z: {"title":"Agent Completion Callback and Dry-Run Mode","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-display-ttl-be_20260310014000Z: {"title":"Agent Display TTL and History API (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
