@@ -5,17 +5,14 @@ status: pending
 created: 2026-03-10
 updated: 2026-03-10
 spec:
-  summary: >
-    Add a reliability_events table, service layer, and REST API to capture,
-    persist, and query agent lifecycle failures, merge lock contention,
-    and operational anomalies.
+  summary: ">"
   context: |
     Kiloforge orchestrates multiple Claude Code agents across worktrees.
     While agents are generally reliable, failures do occur: merge lock
     contention (two workers racing for the lock), agent timeouts (force-killed
     by the timeout reaper), resume failures (session corruption, missing
     worktrees), spawn failures, and merge rebase conflicts.
-
+    
     Today these events are logged to per-agent log files and partially
     tracked in agent status fields (shutdown_reason, resume_error), but
     there is no unified, queryable record of reliability events over time.
@@ -24,52 +21,52 @@ spec:
     - What percentage of agents complete successfully vs fail?
     - Are failures increasing over time?
     - Which failure modes are most common?
-
+    
     The goal is a lightweight event capture system that records reliability
     events as they happen, stores them in SQLite, and exposes them via
     REST API for the frontend dashboard to visualize.
   codebase_analysis: |
     Key integration points:
-
+    
     1. Agent spawner (backend/internal/adapter/agent/spawner.go):
        - Already emits analytics events (agent_spawned, agent_completed)
        - Completion callback tracks status, duration
        - Capacity tracking via publishCapacityChanged()
        - Rate limit detection via checkQuota()
-
+    
     2. Lock manager (backend/internal/adapter/lock/manager.go):
        - Acquire returns conflict info (current holder)
        - No event emission on contention — only 409 HTTP response
        - TTL-based expiration with background reaper
-
+    
     3. Recovery manager (backend/internal/adapter/agent/recovery.go):
        - Tracks RecoveryFailure{AgentID, Reason}
        - Reasons: "no session ID", "worktree missing", "resume failed"
        - Currently only logged, not persisted as events
-
+    
     4. Timeout reaper (backend/internal/adapter/agent/timeout_reaper.go):
        - Sets status=force-killed, shutdown_reason with duration
        - Publishes capacity_changed event
-
+    
     5. Existing analytics (backend/internal/adapter/analytics/):
        - PostHog-based tracker with Track(event, props) interface
        - Could be extended, but analytics is for product telemetry
        - Reliability events need local persistence, not remote
-
+    
     6. SQLite migrations (backend/internal/adapter/persistence/sqlite/):
        - 4 existing migrations (001-004)
        - Goose-based migration system
        - Standard pattern: CREATE TABLE with indices
-
+    
     7. OpenAPI spec (backend/api/openapi.yaml):
        - Schema-first API design — endpoints defined before code
        - oapi-codegen generates server interfaces and types
        - Must add new paths + schemas for reliability metrics
-
+    
     8. Event bus (domain/events.go):
        - Existing event types for SSE streaming
        - Can add EventReliabilityEvent for real-time dashboard updates
-
+    
     9. REST handler pattern (backend/internal/adapter/rest/):
        - api_handler.go implements generated interfaces
        - Pagination via PageOpts/Page[T]
@@ -94,10 +91,10 @@ spec:
     - Modifying existing agent status fields or analytics events
   technical_notes: |
     Implementation approach:
-
+    
     1. Schema-first: Add OpenAPI paths/schemas for reliability endpoints
        before writing any Go code. Run make gen-api to generate interfaces.
-
+    
     2. Migration 005: CREATE TABLE reliability_events with:
        - id (TEXT PK, UUID)
        - event_type (TEXT NOT NULL) — enum: lock_contention, lock_timeout,
@@ -109,28 +106,28 @@ spec:
        - detail (TEXT) — JSON blob with event-specific data
        - created_at (DATETIME DEFAULT CURRENT_TIMESTAMP)
        - INDEX on (event_type, created_at), (agent_id), (created_at)
-
+    
     3. Domain: core/domain/reliability.go — ReliabilityEvent struct,
        EventType constants, Severity constants
-
+    
     4. Port: core/port/reliability_store.go — ReliabilityStore interface
        with Insert(), List(filters, pagination), Summary(timeRange)
-
+    
     5. Service: core/service/reliability.go — ReliabilityService wraps
        store, validates events, provides RecordEvent() for adapters
-
+    
     6. SQLite adapter: persistence/sqlite/reliability_store.go
-
+    
     7. Wire into existing subsystems via service injection:
        - Lock handler: on 409 conflict → svc.RecordEvent(lock_contention)
        - Agent spawner: on spawn error → svc.RecordEvent(agent_spawn_failure)
        - Recovery manager: on resume failure → svc.RecordEvent(agent_resume_failure)
        - Timeout reaper: on force-kill → svc.RecordEvent(agent_timeout)
        - Quota tracker: on rate limit → svc.RecordEvent(quota_exceeded)
-
+    
     8. REST handler: api_handler.go implements generated GetReliabilityEvents
        and GetReliabilitySummary methods
-
+    
     9. SSE: Add EventReliabilityEvent to domain/events.go, publish from
        service on RecordEvent()
 plan:
@@ -177,7 +174,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Write integration test covering event emission from lock contention and agent failure paths
-        done: false
+        done: true
       - text: Run make test and make build to verify no regressions
-        done: false
+        done: true
 extra: {}
