@@ -115,3 +115,154 @@
   text-align: center;
   padding: 20px;
 }
+
+/* Hamburger button — hidden on desktop */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.hamburger:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+/* Mobile drawer overlay */
+.drawerBackdrop {
+  display: none;
+}
+
+.drawer {
+  display: none;
+}
+
+/* ── Mobile breakpoint ── */
+@media (max-width: 767px) {
+  .header {
+    padding: 10px 16px;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .headerDivider,
+  .headerLabel {
+    display: none;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .hamburger {
+    display: flex;
+    align-items: center;
+  }
+
+  .main {
+    padding: 16px;
+  }
+
+  /* Drawer backdrop */
+  .drawerBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  /* Drawer panel */
+  .drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 260px;
+    max-width: 80vw;
+    background: var(--bg);
+    border-left: 1px solid var(--border);
+    z-index: 100;
+    padding: 16px;
+    overflow-y: auto;
+    animation: slideIn 0.2s ease-out;
+  }
+
+  .drawerHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .drawerClose {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+  }
+
+  .drawerClose:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text);
+  }
+
+  .drawerSection {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .drawerSectionLabel {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dimmed);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .drawerLink {
+    display: block;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .drawerLink:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
