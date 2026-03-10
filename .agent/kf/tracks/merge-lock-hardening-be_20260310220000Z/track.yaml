@@ -58,33 +58,33 @@ plan:
   - phase: "Backend lock persistence fixes"
     tasks:
       - text: "Add save() call in Heartbeat() after updating ExpiresAt"
-        done: false
+        done: true
       - text: "Add save() call in reap() after deleting expired locks (only when deletions occurred)"
-        done: false
+        done: true
       - text: "Write test: heartbeat persistence survives manager restart"
-        done: false
+        done: true
       - text: "Write test: reap persists lock removal"
-        done: false
+        done: true
   - phase: "kf-merge-lock helper script"
     tasks:
       - text: "Create .agent/kf/bin/kf-merge-lock with subcommands: acquire, release, heartbeat, status"
-        done: false
+        done: true
       - text: "Implement HTTP mode: acquire with configurable timeout, heartbeat loop, release, status via curl"
-        done: false
+        done: true
       - text: "Implement mkdir fallback: PID+timestamp in info file, stale PID detection via kill -0, auto-cleanup"
-        done: false
+        done: true
       - text: "Implement status subcommand: show holder, mode, TTL remaining, PID liveness"
-        done: false
+        done: true
   - phase: "mkdir stale detection"
     tasks:
       - text: "On mkdir acquire failure, read info file, parse PID, check kill -0 $PID — if dead, remove stale lock and retry"
-        done: false
+        done: true
       - text: "Add safety: only auto-clean if lock is older than 2x TTL (240s) AND PID is dead"
-        done: false
+        done: true
   - phase: "Verification"
     tasks:
       - text: "Run make test to verify all lock manager tests pass"
-        done: false
+        done: true
       - text: "Manual test: kf-merge-lock acquire/status/release cycle in both HTTP and mkdir modes"
-        done: false
+        done: true
 extra: {}
