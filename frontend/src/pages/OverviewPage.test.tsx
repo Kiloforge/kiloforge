@@ -141,7 +141,7 @@ describe("OverviewPage", () => {
 
   it("renders spawn interactive button", () => {
     renderPage();
-    expect(screen.getByText("Start Interactive Agent")).toBeInTheDocument();
+    expect(screen.getByText("New Agent")).toBeInTheDocument();
   });
 
   it("disables spawn button when spawning", () => {

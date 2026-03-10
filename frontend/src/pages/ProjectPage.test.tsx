@@ -211,17 +211,18 @@ describe("ProjectPage", () => {
     expect(screen.getByText("Origin Sync")).toBeInTheDocument();
   });
 
-  it("renders generate tracks button", () => {
+  it("renders new agent button", () => {
     renderPage();
-    expect(screen.getByText("Generate Tracks")).toBeInTheDocument();
+    expect(screen.getByText("New Agent")).toBeInTheDocument();
   });
 
-  it("shows prompt form when generate tracks is clicked", async () => {
+  it("opens launcher when new agent is clicked", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("Generate Tracks"));
-    expect(screen.getByPlaceholderText(/Describe the features/)).toBeInTheDocument();
-    expect(screen.getByText("Generate")).toBeInTheDocument();
+    await user.click(screen.getByText("New Agent"));
+    expect(screen.getByText("Architect")).toBeInTheDocument();
+    expect(screen.getByText("Product Advisor")).toBeInTheDocument();
+    expect(screen.getByText("Start")).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeInTheDocument();
   });
 
