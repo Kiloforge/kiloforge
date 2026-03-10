@@ -15,3 +15,4 @@
 <<<<<<< Updated upstream
 =======
 >>>>>>> Stashed changes
+list-pagination-fe_20260310200001Z/queue-project-scope-fe_20260310050001Z: {"risk":"medium","note":"Both modify useQueue hook and query key structure","added":"2026-03-10"}

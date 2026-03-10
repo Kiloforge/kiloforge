@@ -39,7 +39,6 @@ dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kil
 dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-draggable-resizable-windows_20260310062703Z: {"title":"Draggable and resizable agent terminal windows","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 e2e-agent-lifecycle_20260309194834Z: {"title":"E2E Tests: Agent Lifecycle — Spawn, Monitor, Stop, Resume, Delete","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 e2e-distributed-tracing_20260309194839Z: {"title":"E2E Tests: Distributed Tracing — Trace List, Detail, and Timeline","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 e2e-git-origin-sync_20260309194840Z: {"title":"E2E Tests: Git Origin Sync — Push, Pull, Status, and Error Handling","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -119,16 +118,16 @@ interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via W
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-keyboard-tiling_20260310062705Z: {"title":"Keyboard shortcuts for window tiling and arrangement","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+list-pagination-be_20260310200000Z: {"title":"Cursor pagination and filtering for all list API endpoints","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+list-pagination-fe_20260310200001Z: {"title":"Paginated lists with +N overflow in dashboard","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 live-status-badges_20260308190000Z: {"title":"Universal Live Agent Status Badges","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 merge-cleanup_20260307125003Z: {"title":"PR Merge, Worktree Cleanup, and Agent Teardown","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 merge-conflict-guidance_20260311020000Z: {"title":"Simplify merge conflict resolution in kf-architect and kf-developer skills","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opus Default","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
-multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 openapi-codegen_20260308200001Z: {"title":"OpenAPI Code Generation for Relay API","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 origin-sync-api_20260309143000Z: {"title":"Origin Push/Pull REST API with Remote Branch Targeting","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

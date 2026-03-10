@@ -1,0 +1,149 @@
+id: list-pagination-fe_20260310200001Z
+title: "Paginated lists with +N overflow in dashboard"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Consume cursor pagination via TanStack Query useInfiniteQuery. Show limited
+    items with "+N completed" or "+N more" indicator that loads more on interaction.
+    Apply to all list views across the dashboard.
+  context: |
+    The backend (list-pagination-be) adds cursor pagination with total_count to all
+    list endpoints. The frontend currently fetches all items via useQuery and renders
+    with simple .map(). As data grows, this becomes slow and cluttered — especially
+    completed/historical items that push active items out of view.
+
+    User expectation: see active/pending items first with a compact "+N completed"
+    indicator at the bottom. Clicking or scrolling loads more completed items
+    via cursor pagination.
+  codebase_analysis: |
+    Current frontend list components (all use simple .map() with no pagination):
+    - TrackList.tsx — maps all tracks, no limit
+    - TraceList.tsx — HTML table, maps all traces
+    - QueuePanel.tsx — splits Active/Queued sections, maps all items
+    - AgentGrid.tsx — sorted card grid, no limit
+    - AgentHistoryPage.tsx — full table with client-side role/status filters
+    - ProjectMetadataView.tsx — maps quick_links
+
+    Hooks (all full-fetch, no pagination params):
+    - useAgents.ts: useQuery fetching Agent[] from /api/agents
+    - useTracks.ts: useQuery fetching Track[] from /api/tracks
+    - useProjects.ts: useQuery fetching Project[] from /api/projects
+    - useTraces.ts: useQuery fetching TraceSummary[] from /api/traces
+    - useQueue.ts: useQuery fetching QueueStatus from /api/queue
+
+    All follow the same pattern:
+    ```typescript
+    const { data: items = [], isLoading } = useQuery({
+      queryKey: qk,
+      queryFn: () => fetcher<ItemType[]>(url).then((d) => d || []),
+    });
+    ```
+
+    SSE integration: App.tsx handles real-time events that update TanStack Query
+    cache via setQueryData. With useInfiniteQuery, the cache structure changes to
+    { pages: [...], pageParams: [...] } — SSE handlers must be updated.
+
+    TanStack Query v5 is already installed — useInfiniteQuery is available.
+    VirtualList.tsx has a "scroll to bottom" button with count badge — similar UX
+    pattern to the "+N" indicator needed here.
+  acceptance_criteria:
+    - All list views show a default limited number of items (matching backend defaults)
+    - Completed/historical items show "+N completed" (or "+N more") indicator when truncated
+    - total_count from API response drives the "+N" count accurately
+    - Clicking "+N" or scrolling loads the next page via cursor pagination
+    - Active/pending items always shown first (not paginated away)
+    - SSE events correctly update paginated cache (new items prepend to first page)
+    - Loading and empty states handled for pagination
+    - OverviewPage works with first-page data (single page sufficient for overview)
+    - AgentHistoryPage supports full infinite scroll / load-more for large datasets
+    - No regression in existing list functionality
+    - E2E tests for pagination interaction (load more, scroll, "+N" indicator)
+  out_of_scope: |
+    - Backend pagination implementation (separate track)
+    - Board/kanban pagination (columns are bounded)
+    - Advanced filtering UI (search bars, filter dropdowns)
+    - Virtual scrolling / windowed lists
+    - Sort controls in table headers
+  technical_notes: |
+    TanStack Query useInfiniteQuery pattern:
+    ```typescript
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+      queryKey: ['agents'],
+      queryFn: ({ pageParam }) => fetcher<PaginatedResponse<Agent>>(
+        `/api/agents?limit=50${pageParam ? `&cursor=${pageParam}` : ''}`
+      ),
+      getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
+      initialPageParam: '',
+    });
+    const agents = data?.pages.flatMap(p => p.items) ?? [];
+    ```
+
+    Implementation approach:
+    1. Add PaginatedResponse<T> type to api.ts (items, next_cursor, total_count)
+    2. Create a generic usePaginatedList hook wrapping useInfiniteQuery
+    3. Create a PaginatedList wrapper component with "+N" footer
+    4. Migrate each list component to use the new hook/wrapper
+    5. Update SSE handlers to work with infinite query cache
+
+    The "+N" indicator pattern:
+    - Show first page of items
+    - If next_cursor is non-empty, show footer: "+{total_count - shown} more"
+    - On click: fetchNextPage() from useInfiniteQuery
+    - Animate expansion with CSS transition
+
+    SSE cache strategy:
+    - On item_update: if item is in any cached page, update in place
+    - On item_added: invalidate query to refetch first page
+    - On item_removed: remove from cached pages, adjust counts
+
+    Coordinate with queue-project-scope-fe track which also modifies useQueue
+    hook — ensure query key structure is compatible.
+plan:
+  - phase: "Types and foundation"
+    tasks:
+      - text: "Add PaginatedResponse<T> type to frontend/src/types/api.ts (items, next_cursor, total_count)"
+        done: false
+      - text: "Create usePaginatedList generic hook wrapping useInfiniteQuery with cursor support"
+        done: false
+      - text: "Create PaginatedList wrapper component with +N footer and load-more behavior"
+        done: false
+      - text: "Style PaginatedList footer with CSS module (subtle, consistent with existing design)"
+        done: false
+      - text: "Update query keys to include pagination params where needed"
+        done: false
+  - phase: "Hook and component migration"
+    tasks:
+      - text: "Convert useAgents hook to usePaginatedList and update AgentGrid"
+        done: false
+      - text: "Update AgentHistoryPage with full infinite scroll / load-more pagination"
+        done: false
+      - text: "Convert useTracks hook to usePaginatedList and update TrackList"
+        done: false
+      - text: "Convert useQueue hook to usePaginatedList and update QueuePanel"
+        done: false
+      - text: "Convert useTraces hook to usePaginatedList and update TraceList"
+        done: false
+      - text: "Verify OverviewPage works with first-page data"
+        done: false
+  - phase: "SSE and real-time integration"
+    tasks:
+      - text: "Update SSE agent event handlers to work with infinite query cache structure"
+        done: false
+      - text: "Update SSE track event handlers for paginated cache"
+        done: false
+      - text: "Update SSE queue event handlers for paginated cache"
+        done: false
+  - phase: "Testing and verification"
+    tasks:
+      - text: "Write E2E test: paginated agent list with +N indicator and load-more"
+        done: false
+      - text: "Write E2E test: paginated queue with project scoping"
+        done: false
+      - text: "Write E2E test: paginated track list expansion"
+        done: false
+      - text: "Update existing component tests that mock list responses"
+        done: false
+extra: {}
