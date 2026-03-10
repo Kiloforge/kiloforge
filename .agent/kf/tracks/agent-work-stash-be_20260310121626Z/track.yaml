@@ -98,15 +98,15 @@ plan:
   - phase: Pool Integration
     tasks:
       - text: Add Pool.Stash(w *Worktree) method — auto-commit WIP, create stash branch, return stash branch name
-        done: false
+        done: true
       - text: Modify Pool.Return() to call Stash() before cleanup when impl branch has commits ahead of main
-        done: false
+        done: true
       - text: Modify Pool.Prepare() to check for stash branches and merge if found after creating impl branch
-        done: false
+        done: true
       - text: Add Pool.CleanupStash(trackId string) — delete all stash/{trackId}/* branches
-        done: false
+        done: true
       - text: Write pool tests for stash, restore, and cleanup flows
-        done: false
+        done: true
   - phase: Service Integration
     tasks:
       - text: Update LifecycleService.HandleBackwardMove to call pool.Stash before halting the agent

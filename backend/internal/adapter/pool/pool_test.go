@@ -338,6 +338,254 @@ func TestStatus(t *testing.T) {
 	}
 }
 
+func TestStash_CreatesStashBranch(t *testing.T) {
+	runner := &fakeGitRunner{hasAhead: true}
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:    "worker-1",
+				Path:    "/tmp/project/worker-1",
+				Branch:  "worker-1",
+				Status:  StatusInUse,
+				TrackID: "auth_20260307",
+			},
+		},
+		gitRunner: runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	stashBranch, err := p.Stash(w)
+	if err != nil {
+		t.Fatalf("Stash: %v", err)
+	}
+	if stashBranch != "stash/auth_20260307/worker-1" {
+		t.Errorf("stashBranch = %q, want %q", stashBranch, "stash/auth_20260307/worker-1")
+	}
+
+	// Verify git calls: add -A, commit wip, hasCommitsAhead, branch stash
+	hasAdd := false
+	hasCommit := false
+	hasBranch := false
+	for _, c := range runner.calls {
+		if c[0] == "add" {
+			hasAdd = true
+		}
+		if c[0] == "commit" {
+			hasCommit = true
+		}
+		if c[0] == "branch" && len(c) > 1 && c[1] == "stash/auth_20260307/worker-1" {
+			hasBranch = true
+		}
+	}
+	if !hasAdd {
+		t.Error("expected AddAll call")
+	}
+	if !hasCommit {
+		t.Error("expected CommitWIP call")
+	}
+	if !hasBranch {
+		t.Error("expected CreateStashBranch call")
+	}
+}
+
+func TestStash_NoCommitsAhead(t *testing.T) {
+	runner := &fakeGitRunner{hasAhead: false}
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:    "worker-1",
+				Path:    "/tmp/project/worker-1",
+				Branch:  "worker-1",
+				Status:  StatusInUse,
+				TrackID: "auth_20260307",
+			},
+		},
+		gitRunner: runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	stashBranch, err := p.Stash(w)
+	if err != nil {
+		t.Fatalf("Stash: %v", err)
+	}
+	if stashBranch != "" {
+		t.Errorf("expected empty stash branch when nothing ahead, got %q", stashBranch)
+	}
+}
+
+func TestStash_NoTrackID(t *testing.T) {
+	p := &Pool{
+		Worktrees: map[string]*Worktree{
+			"worker-1": {Name: "worker-1", Path: "/tmp/w1", Branch: "worker-1", Status: StatusInUse},
+		},
+		gitRunner: &fakeGitRunner{},
+	}
+	w := p.Worktrees["worker-1"]
+	stashBranch, err := p.Stash(w)
+	if err != nil {
+		t.Fatalf("Stash: %v", err)
+	}
+	if stashBranch != "" {
+		t.Errorf("expected empty stash for no trackID, got %q", stashBranch)
+	}
+}
+
+func TestReturn_StashesBeforeCleanup(t *testing.T) {
+	runner := &fakeGitRunner{hasAhead: true}
+	now := time.Now()
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:       "worker-1",
+				Path:       "/tmp/project/worker-1",
+				Branch:     "worker-1",
+				Status:     StatusInUse,
+				TrackID:    "auth_20260307",
+				AgentID:    "uuid-123",
+				AcquiredAt: &now,
+			},
+		},
+		gitRunner: runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	if err := p.Return(w); err != nil {
+		t.Fatalf("Return: %v", err)
+	}
+
+	// Verify stash branch was created before cleanup.
+	hasStashCreate := false
+	for _, c := range runner.calls {
+		if c[0] == "branch" && len(c) > 1 && c[1] == "stash/auth_20260307/worker-1" {
+			hasStashCreate = true
+		}
+	}
+	if !hasStashCreate {
+		t.Error("expected stash branch creation during Return")
+	}
+
+	// Verify worktree is idle after return.
+	if w.Status != StatusIdle {
+		t.Errorf("status = %q, want %q", w.Status, StatusIdle)
+	}
+}
+
+func TestPrepare_MergesStash(t *testing.T) {
+	runner := &fakeGitRunner{
+		listStash: []string{"stash/auth_20260307/worker-2"},
+	}
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:   "worker-1",
+				Path:   "/tmp/project/worker-1",
+				Branch: "worker-1",
+				Status: StatusInUse,
+			},
+		},
+		gitRunner: runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	if err := p.Prepare(w, "auth_20260307"); err != nil {
+		t.Fatalf("Prepare: %v", err)
+	}
+
+	// Verify merge was called.
+	hasMerge := false
+	hasDeleteBranches := false
+	for _, c := range runner.calls {
+		if c[0] == "merge" && c[1] == "stash/auth_20260307/worker-2" {
+			hasMerge = true
+		}
+		if c[0] == "branch" && c[1] == "-D" {
+			hasDeleteBranches = true
+		}
+	}
+	if !hasMerge {
+		t.Error("expected merge of stash branch during Prepare")
+	}
+	if !hasDeleteBranches {
+		t.Error("expected deletion of stash branches after merge")
+	}
+	if w.TrackID != "auth_20260307" {
+		t.Errorf("TrackID = %q, want %q", w.TrackID, "auth_20260307")
+	}
+}
+
+func TestPrepare_NoStash(t *testing.T) {
+	runner := &fakeGitRunner{}
+	p := &Pool{
+		MaxSize: 3,
+		Worktrees: map[string]*Worktree{
+			"worker-1": {
+				Name:   "worker-1",
+				Path:   "/tmp/project/worker-1",
+				Branch: "worker-1",
+				Status: StatusInUse,
+			},
+		},
+		gitRunner: runner,
+	}
+
+	w := p.Worktrees["worker-1"]
+	if err := p.Prepare(w, "auth_20260307"); err != nil {
+		t.Fatalf("Prepare: %v", err)
+	}
+
+	// Verify no merge was called.
+	for _, c := range runner.calls {
+		if c[0] == "merge" {
+			t.Error("unexpected merge call when no stash exists")
+		}
+	}
+}
+
+func TestCleanupStash(t *testing.T) {
+	runner := &fakeGitRunner{
+		listStash: []string{"stash/auth_20260307/worker-1", "stash/auth_20260307/worker-2"},
+	}
+	p := &Pool{gitRunner: runner}
+
+	if err := p.CleanupStash("auth_20260307"); err != nil {
+		t.Fatalf("CleanupStash: %v", err)
+	}
+
+	// Verify delete was called with both branches.
+	hasDelete := false
+	for _, c := range runner.calls {
+		if c[0] == "branch" && c[1] == "-D" {
+			hasDelete = true
+			if len(c) != 4 {
+				t.Errorf("expected 4 args in delete call, got %d: %v", len(c), c)
+			}
+		}
+	}
+	if !hasDelete {
+		t.Error("expected DeleteBranches call")
+	}
+}
+
+func TestCleanupStash_NoBranches(t *testing.T) {
+	runner := &fakeGitRunner{}
+	p := &Pool{gitRunner: runner}
+
+	if err := p.CleanupStash("nonexistent_track"); err != nil {
+		t.Fatalf("CleanupStash: %v", err)
+	}
+
+	// Verify no delete was called.
+	for _, c := range runner.calls {
+		if c[0] == "branch" && len(c) > 1 && c[1] == "-D" {
+			t.Error("unexpected DeleteBranches call when no stash exists")
+		}
+	}
+}
+
 func timePtr(t time.Time) *time.Time {
 	return &t
 }

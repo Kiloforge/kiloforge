@@ -107,6 +107,7 @@ func (p *Pool) Acquire() (*Worktree, error) {
 }
 
 // Prepare resets a worktree to main and creates an implementation branch for the given track.
+// If stash branches exist for the track, they are merged into the new impl branch.
 func (p *Pool) Prepare(w *Worktree, trackID string) error {
 	g := p.git()
 
@@ -125,15 +126,67 @@ func (p *Pool) Prepare(w *Worktree, trackID string) error {
 		return fmt.Errorf("create branch %s: %w", trackID, err)
 	}
 
+	// Check for stash branches and merge if found.
+	stashes, err := g.ListStashBranches(trackID)
+	if err == nil && len(stashes) > 0 {
+		for _, stash := range stashes {
+			if mergeErr := g.MergeBranch(w.Path, stash); mergeErr != nil {
+				// Stash merge failure is not fatal — leave the stash for manual recovery.
+				continue
+			}
+		}
+		// Delete merged stash branches.
+		_ = g.DeleteBranches(stashes)
+	}
+
 	w.TrackID = trackID
 	return nil
 }
 
-// Return resets a worktree to idle state, cleaning up the implementation branch.
+// Stash auto-commits uncommitted changes and creates a stash branch
+// for the worktree's current track. Returns the stash branch name if one
+// was created, or empty string if there was nothing to stash.
+func (p *Pool) Stash(w *Worktree) (string, error) {
+	if w.TrackID == "" {
+		return "", nil
+	}
+	g := p.git()
+
+	// Auto-commit any uncommitted changes (best effort — nothing to commit is fine).
+	_ = g.AddAll(w.Path)
+	_ = g.CommitWIP(w.Path)
+
+	// Check if impl branch has commits ahead of main.
+	ahead, err := g.HasCommitsAhead(w.Path, "main")
+	if err != nil {
+		return "", fmt.Errorf("check commits ahead: %w", err)
+	}
+	if !ahead {
+		return "", nil
+	}
+
+	// Create stash branch at HEAD.
+	stashBranch := fmt.Sprintf("stash/%s/%s", w.TrackID, w.Name)
+	if err := g.CreateStashBranch(w.Path, stashBranch); err != nil {
+		return "", fmt.Errorf("create stash branch %s: %w", stashBranch, err)
+	}
+
+	return stashBranch, nil
+}
+
+// Return resets a worktree to idle state, stashing work and cleaning up the implementation branch.
 func (p *Pool) Return(w *Worktree) error {
 	g := p.git()
 
 	trackID := w.TrackID
+
+	// Stash work before cleanup if there's an active track.
+	if trackID != "" {
+		if _, err := p.Stash(w); err != nil {
+			// Log but don't fail return — stash is best-effort.
+			_ = err
+		}
+	}
 
 	// Checkout the pool branch.
 	if err := g.CheckoutBranch(w.Path, w.Branch); err != nil {
@@ -155,6 +208,19 @@ func (p *Pool) Return(w *Worktree) error {
 	w.AgentID = ""
 	w.AcquiredAt = nil
 	return nil
+}
+
+// CleanupStash deletes all stash branches for the given track.
+func (p *Pool) CleanupStash(trackID string) error {
+	g := p.git()
+	stashes, err := g.ListStashBranches(trackID)
+	if err != nil {
+		return fmt.Errorf("list stash branches for %s: %w", trackID, err)
+	}
+	if len(stashes) == 0 {
+		return nil
+	}
+	return g.DeleteBranches(stashes)
 }
 
 // FindByTrackID returns the worktree assigned to the given track.
