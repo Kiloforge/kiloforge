@@ -75,5 +75,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Run npm test and make build
-        done: false
+        done: true
 extra: {}
