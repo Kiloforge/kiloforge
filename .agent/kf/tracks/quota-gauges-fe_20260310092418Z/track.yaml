@@ -79,13 +79,13 @@ plan:
   - phase: MetricsPanel Integration
     tasks:
       - text: Update QuotaResponse type in types/api.ts with budget_usd, budget_used_pct, rate_tokens_per_min, rate_cost_per_hour, time_to_budget_mins
-        done: false
+        done: true
       - text: Create MetricsPanel component with 4 gauge cards (budget, token rate, cost rate, agents)
-        done: false
+        done: true
       - text: Create MetricsPanel.module.css with grid layout matching current StatCards spacing
-        done: false
+        done: true
       - text: Replace StatCards with MetricsPanel in OverviewPage.tsx and update props
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run frontend type-check and build, update or replace StatCards tests, verify all tests pass

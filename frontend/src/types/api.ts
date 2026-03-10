@@ -47,6 +47,11 @@ export interface QuotaResponse {
   agent_count: number;
   rate_limited: boolean;
   retry_after_seconds?: number;
+  budget_usd?: number;
+  budget_used_pct?: number;
+  rate_tokens_per_min?: number;
+  rate_cost_per_hour?: number;
+  time_to_budget_mins?: number;
   agents?: QuotaAgent[];
 }
 

@@ -5,7 +5,7 @@ import type { Agent, QuotaResponse, Track, Project, SyncStatus, SwarmStatus, Swa
 import { useProjects } from "../hooks/useProjects";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
-import { StatCards } from "../components/StatCards";
+import { MetricsPanel } from "../components/MetricsPanel";
 import { AgentGrid } from "../components/AgentGrid";
 import { TrackList } from "../components/TrackList";
 import { TraceList } from "../components/TraceList";
@@ -154,7 +154,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
 
   return (
     <>
-      <StatCards agentCount={agents.length} quota={quota} />
+      <MetricsPanel agentCount={agents.length} quota={quota} />
 
       <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />
 
