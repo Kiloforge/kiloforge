@@ -21,6 +21,8 @@ import { useConsent } from "../hooks/useConsent";
 import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
 import { useProjectMetadata } from "../hooks/useProjectMetadata";
+import { useProjectSettings } from "../hooks/useProjectSettings";
+import { ProjectSettingsPanel } from "../components/ProjectSettingsPanel";
 import { useTourContextSafe } from "../components/tour/TourProvider";
 import { TOUR_STEPS } from "../components/tour/tourSteps";
 import appStyles from "../App.module.css";
@@ -70,7 +72,8 @@ export function ProjectPage() {
     ? "Run kiloforge setup first"
     : undefined;
 
-  const [pageTab, setPageTab] = useState<"board" | "info">("board");
+  const [pageTab, setPageTab] = useState<"board" | "info" | "settings">("board");
+  const { settings: projectSettings, loading: settingsLoading, updating: settingsUpdating, updateSettings } = useProjectSettings(slug);
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -206,6 +209,12 @@ export function ProjectPage() {
         >
           Project Info
         </button>
+        <button
+          className={`${styles.pageTab} ${pageTab === "settings" ? styles.pageTabActive : ""}`}
+          onClick={() => setPageTab("settings")}
+        >
+          Settings
+        </button>
       </div>
 
       {pageTab === "info" && (
@@ -221,6 +230,18 @@ export function ProjectPage() {
             </p>
           )}
           {metadata && <ProjectMetadataView metadata={metadata} />}
+        </section>
+      )}
+
+      {pageTab === "settings" && (
+        <section className={appStyles.panel}>
+          <h2 className={appStyles.panelTitle}>Project Settings</h2>
+          <ProjectSettingsPanel
+            settings={projectSettings}
+            loading={settingsLoading}
+            updating={settingsUpdating}
+            onUpdate={updateSettings}
+          />
         </section>
       )}
 

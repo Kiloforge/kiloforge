@@ -53,6 +53,13 @@ export default function App() {
     [queryClient],
   );
 
+  const handleProjectSettingsUpdate = useCallback(
+    () => {
+      queryClient.invalidateQueries({ queryKey: ["projectSettings"] });
+    },
+    [queryClient],
+  );
+
   const sseHandlers = useMemo(
     () => ({
       agent_update: handleAgentUpdate,
@@ -64,8 +71,9 @@ export default function App() {
       project_removed: handleProjectRemoved,
       board_update: handleBoardUpdate,
       queue_update: handleQueueUpdate,
+      project_settings_update: handleProjectSettingsUpdate,
     }),
-    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleQueueUpdate],
+    [handleAgentUpdate, handleAgentRemoved, handleQuotaUpdate, handleTrackUpdate, handleTrackRemoved, handleProjectUpdate, handleProjectRemoved, handleBoardUpdate, handleQueueUpdate, handleProjectSettingsUpdate],
   );
 
   const connectionState = useSSE("/events", sseHandlers);
