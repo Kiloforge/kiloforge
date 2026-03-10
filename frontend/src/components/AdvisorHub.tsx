@@ -32,9 +32,15 @@ function isAdvisorRole(role: string): boolean {
   return role.startsWith("advisor-");
 }
 
+const PROJECT_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function isValidProjectName(name: string): boolean {
+  return PROJECT_NAME_RE.test(name);
+}
+
 interface AdvisorHubProps {
   agents: Agent[];
-  onLaunch: (role: AgentRole, prompt: string) => void;
+  onLaunch: (role: AgentRole, prompt: string, project?: string) => void;
   launching?: boolean;
   onViewLog: (agentId: string) => void;
   onAttach?: (agentId: string) => void;
@@ -48,19 +54,26 @@ export { isAdvisorRole };
 export function AdvisorHub({ agents, onLaunch, launching, onViewLog, onAttach, waitingForCapacity, waitingCapacity, onCancelWaiting }: AdvisorHubProps) {
   const [activeAdvisor, setActiveAdvisor] = useState<AdvisorType | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [projectName, setProjectName] = useState("");
 
   const advisorAgents = agents.filter((a) => isAdvisorRole(a.role));
 
+  const projectNameValid = projectName.length > 0 && isValidProjectName(projectName);
+  const projectNameTouched = projectName.length > 0;
+  const projectNameError = projectNameTouched && !projectNameValid;
+
   const handleLaunch = useCallback(() => {
-    if (!activeAdvisor) return;
-    onLaunch(activeAdvisor.role, prompt.trim());
+    if (!activeAdvisor || !projectNameValid) return;
+    onLaunch(activeAdvisor.role, prompt.trim(), projectName);
     setPrompt("");
+    setProjectName("");
     setActiveAdvisor(null);
-  }, [activeAdvisor, prompt, onLaunch]);
+  }, [activeAdvisor, prompt, projectName, projectNameValid, onLaunch]);
 
   const handleClose = useCallback(() => {
     setActiveAdvisor(null);
     setPrompt("");
+    setProjectName("");
   }, []);
 
   return (
@@ -100,13 +113,27 @@ export function AdvisorHub({ agents, onLaunch, launching, onViewLog, onAttach, w
             <h3 className={styles.dialogTitle}>{activeAdvisor.label}</h3>
             <p className={styles.dialogDesc}>{activeAdvisor.description}</p>
 
+            <label className={styles.fieldLabel}>Project Name</label>
+            <input
+              className={`${styles.projectInput} ${projectNameError ? styles.projectInputError : ""}`}
+              type="text"
+              placeholder="my-project"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              autoFocus
+            />
+            {projectNameError && (
+              <span className={styles.validationError}>
+                Use lowercase letters, numbers, and hyphens only
+              </span>
+            )}
+
             <textarea
               className={styles.promptInput}
               placeholder={activeAdvisor.placeholder}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
-              autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                   handleLaunch();
@@ -118,7 +145,7 @@ export function AdvisorHub({ agents, onLaunch, launching, onViewLog, onAttach, w
               <button className={styles.cancelBtn} onClick={handleClose} disabled={launching}>
                 Cancel
               </button>
-              <button className={styles.startBtn} onClick={handleLaunch} disabled={launching}>
+              <button className={styles.startBtn} onClick={handleLaunch} disabled={launching || !projectNameValid}>
                 {launching ? "Starting..." : "Start Advisor"}
               </button>
             </div>
