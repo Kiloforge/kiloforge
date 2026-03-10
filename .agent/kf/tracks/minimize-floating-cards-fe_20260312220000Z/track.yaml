@@ -1,9 +1,9 @@
 id: minimize-floating-cards-fe_20260312220000Z
-title: "Minimized agent windows as draggable edge-clamped mini-cards with notifications"
+title: Minimized agent windows as draggable edge-clamped mini-cards with notifications
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-10
 spec:
   summary: |
     Replace the bottom-center dock pills with small floating mini-cards that
@@ -23,22 +23,22 @@ spec:
     - Each pill shows: role dot, name, unread count badge, close button
     - Fixed position: `bottom: 0; left: 50%; transform: translateX(-50%)`
     - Z-index: 90
-
+    
     **useWindowManager** (`frontend/src/hooks/useWindowManager.ts`):
     - `minimize(agentId)` — sets `minimized: true`
     - `restore(agentId)` — sets `minimized: false`, clears `unreadCount`
     - `incrementUnread(agentId)` — increments counter
     - `WindowEntry` has: agentId, name, role, minimized, unreadCount
-
+    
     **useFloatingWindow** (`frontend/src/hooks/useFloatingWindow.ts`):
     - Handles drag, resize, viewport clamping for full-size windows
     - Can be reused or adapted for mini-card drag (without resize)
-
+    
     **WS Message Protocol** (`backend/internal/adapter/ws/message.go`):
     - `turn_start` — emitted when agent begins processing
     - `turn_end` — emitted when agent finishes a turn
     - Frontend currently ignores these for state tracking
-
+    
     **AgentTerminal** (`frontend/src/components/AgentTerminal.tsx`):
     - Calls `onActivity?.()` on new messages → triggers `incrementUnread()`
     - Does not distinguish between "output arrived" and "turn ended"
@@ -61,65 +61,65 @@ spec:
     - Changing full-size window behavior
   technical_notes: |
     **Implementation approach:**
-
+    
     1. **Track turn state in useAgentWebSocket**
        Parse `turn_start` and `turn_end` message types from the WS stream.
        Expose a `turnActive: boolean` state. When `turn_end` arrives and agent
        is not terminal, the agent is "waiting for input".
-
+    
     2. **Extend WindowEntry with notification type**
        Add `notificationType?: "waiting" | "done" | "unread"` to WindowEntry.
        - "waiting" — turn_end received, agent idle, interactive role
        - "done" — agent status is completed/failed (worker roles)
        - "unread" — new messages but not specifically waiting
-
+    
     3. **Replace TerminalDock with MiniCardDock**
        New component that renders mini-cards instead of pills. Each card:
        - Small floating div with role-colored left border
        - Shows name and notification badge
        - Draggable via pointer events (reuse drag logic from useFloatingWindow)
        - Position clamped to nearest viewport edge
-
+    
     4. **Edge-clamping logic**
        Mini-cards snap to the nearest edge (bottom, left, right). When dragged,
        they slide along that edge. Releasing near a different edge snaps to it.
        Implementation: track which edge the card is on, constrain movement to
        that axis. On drag end, snap to nearest edge if moved away.
-
+    
     5. **Stacking**
        Multiple mini-cards on the same edge stack with a small gap (e.g., 8px).
        Use the same edge-aware layout as dock pills but vertically for side edges.
 plan:
-  - phase: "Turn state tracking"
+  - phase: Turn state tracking
     tasks:
-      - text: "Add turnActive boolean state to useAgentWebSocket by parsing turn_start/turn_end messages"
-        done: false
-      - text: "Add notificationType field to WindowEntry (waiting | done | unread)"
-        done: false
-      - text: "In AgentTerminal, set notificationType based on turnActive and agent status when minimized"
-        done: false
-  - phase: "Mini-card component"
+      - text: Add turnActive boolean state to useAgentWebSocket by parsing turn_start/turn_end messages
+        done: true
+      - text: Add notificationType field to WindowEntry (waiting | done | unread)
+        done: true
+      - text: In AgentTerminal, set notificationType based on turnActive and agent status when minimized
+        done: true
+  - phase: Mini-card component
     tasks:
-      - text: "Create MiniCard component — compact card with role indicator, name, notification badge, close button"
-        done: false
-      - text: "Add drag support to MiniCard using pointer events (adapt from useFloatingWindow drag logic)"
-        done: false
-      - text: "Implement edge-clamping logic — snap to nearest viewport edge, slide along it"
-        done: false
-      - text: "Style notification badges — pulsing for 'waiting', checkmark for 'done', count for 'unread'"
-        done: false
-  - phase: "Integration"
+      - text: Create MiniCard component — compact card with role indicator, name, notification badge, close button
+        done: true
+      - text: Add drag support to MiniCard using pointer events (adapt from useFloatingWindow drag logic)
+        done: true
+      - text: Implement edge-clamping logic — snap to nearest viewport edge, slide along it
+        done: true
+      - text: Style notification badges — pulsing for 'waiting', checkmark for 'done', count for 'unread'
+        done: true
+  - phase: Integration
     tasks:
-      - text: "Replace TerminalDock with MiniCardDock — render MiniCard for each minimized window"
-        done: false
-      - text: "Implement edge stacking — multiple mini-cards on same edge stack with gap"
-        done: false
-      - text: "Wire onRestore and onClose callbacks, keyboard shortcut compatibility"
-        done: false
-  - phase: "Verification"
+      - text: Replace TerminalDock with MiniCardDock — render MiniCard for each minimized window
+        done: true
+      - text: Implement edge stacking — multiple mini-cards on same edge stack with gap
+        done: true
+      - text: Wire onRestore and onClose callbacks, keyboard shortcut compatibility
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make build-frontend — no TypeScript errors"
-        done: false
-      - text: "Verify minimize/restore cycle works, notification badges display correctly"
-        done: false
+      - text: Run make build-frontend — no TypeScript errors
+        done: true
+      - text: Verify minimize/restore cycle works, notification badges display correctly
+        done: true
 extra: {}
