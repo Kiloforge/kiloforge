@@ -15,7 +15,7 @@ import (
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show orchestrator status, quota usage, and agent costs",
+	Short: "Show Cortex status, quota usage, and agent costs",
 	RunE:  runStatus,
 }
 
@@ -25,7 +25,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", configLoadError(err))
 	}
 
-	// Check orchestrator daemon.
+	// Check Cortex daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	orchRunning, orchPID, _ := pidMgr.IsRunning()
 
@@ -33,9 +33,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Println("================================")
 
 	if orchRunning {
-		fmt.Printf("Orchestrator: running (PID %d) on :%d\n", orchPID, cfg.OrchestratorPort)
+		fmt.Printf("Cortex:      running (PID %d) on :%d\n", orchPID, cfg.OrchestratorPort)
 	} else {
-		fmt.Println("Orchestrator: stopped")
+		fmt.Println("Cortex:      stopped")
 	}
 
 	fmt.Printf("Data:        %s\n", cfg.DataDir)

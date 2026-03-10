@@ -12,7 +12,7 @@ func notInitializedError() string {
 	return `Kiloforge is not initialized.
 
   'kf init' performs first-time setup: creates the data directory,
-  starts Gitea and the orchestrator, and saves your configuration.
+  starts the Cortex, and saves your configuration.
 
   Run 'kf init' to get started.`
 }
@@ -25,7 +25,7 @@ func giteaNotRunningError() string {
   The Kiloforge data directory exists, but the Gitea server isn't
   responding. It may have been stopped or failed to start.
 
-  Run 'kf up' to start the Gitea server and orchestrator.`
+  Run 'kf up' to start the Cortex.`
 }
 
 // configLoadError returns an error message for when config resolution fails,

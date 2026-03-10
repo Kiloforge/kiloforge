@@ -13,11 +13,11 @@ import (
 
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "Start the orchestrator",
-	Long: `Starts the orchestrator as a background daemon. Returns immediately
+	Short: "Start the Cortex",
+	Long: `Starts the Cortex as a background daemon. Returns immediately
 after it is running.
 
-Use 'kf down' to stop the orchestrator.`,
+Use 'kf down' to stop the Cortex.`,
 	RunE: runUp,
 }
 
@@ -27,17 +27,17 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", notInitializedError())
 	}
 
-	// Start orchestrator daemon.
+	// Start Cortex daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	if running, pid, _ := pidMgr.IsRunning(); running {
-		fmt.Printf("Orchestrator already running (PID %d)\n", pid)
+		fmt.Printf("Cortex already running (PID %d)\n", pid)
 	} else {
-		fmt.Println("==> Starting orchestrator...")
+		fmt.Println("==> Starting Cortex...")
 		pid, err := startDaemon(cfg.DataDir)
 		if err != nil {
-			return fmt.Errorf("start orchestrator: %w", err)
+			return fmt.Errorf("start Cortex: %w", err)
 		}
-		fmt.Printf("    Orchestrator started (PID %d)\n", pid)
+		fmt.Printf("    Cortex started (PID %d)\n", pid)
 	}
 
 	fmt.Println()

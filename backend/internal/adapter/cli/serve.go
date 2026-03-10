@@ -26,7 +26,7 @@ import (
 
 var serveCmd = &cobra.Command{
 	Use:    "serve",
-	Short:  "Run the orchestrator in the foreground (internal)",
+	Short:  "Run the Cortex in the foreground (internal)",
 	Hidden: true,
 	RunE:   runServe,
 }
@@ -146,7 +146,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		"arch":       runtime.GOARCH,
 	})
 
-	log.Printf("Orchestrator starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
+	log.Printf("Cortex starting on :%d (PID %d)", cfg.OrchestratorPort, os.Getpid())
 
 	srv := rest.NewServer(cfg, reg, agentStore, prTracker, cfg.OrchestratorPort, opts...)
 	if err := srv.Run(ctx); err != nil {
@@ -154,6 +154,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log.Printf("Orchestrator stopped")
+	log.Printf("Cortex stopped")
 	return nil
 }

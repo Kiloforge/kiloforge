@@ -23,8 +23,8 @@ import (
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start the web dashboard (standalone)",
-	Long: `Starts the web dashboard server without starting the orchestrator.
-Useful when the orchestrator is already running via 'kf up' and you want
+	Long: `Starts the web dashboard server without starting the Cortex.
+Useful when the Cortex is already running via 'kf up' and you want
 to view the dashboard separately.`,
 	RunE: runDashboard,
 }

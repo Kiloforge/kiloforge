@@ -14,13 +14,13 @@ var flagNoBrowser bool
 
 var rootCmd = &cobra.Command{
 	Use:   "kf",
-	Short: "Development orchestration forge with Claude Code agents",
+	Short: "Kiloforge Cortex — local control plane for Claude Code agent swarms",
 	Long: `Kiloforge — the development forge for the Kiloforger.
 
-Manages a local Gitea instance for conductor-based development and automated
-code review with Claude Code agents.
+Runs the Cortex control plane, Command Deck, and Claude Code swarms
+directly on your machine. Transforming pure intent into meaningful action.
 
-Initialize with 'kf init' to start the global Gitea server.`,
+Initialize with 'kf init' to start the Cortex.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Fire-and-forget CLI command tracking.
 		// Only tracks if kf is initialized and analytics is enabled.

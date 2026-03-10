@@ -18,9 +18,9 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize the kiloforge orchestrator",
+	Short: "Initialize the Kiloforge Cortex",
 	Long: `Sets up the kiloforge data directory, saves the global configuration,
-and starts the orchestrator daemon.
+and starts the Cortex daemon.
 
 Use 'kf down' to stop and 'kf up' to restart.
 Project registration is handled by 'kf add'.`,
@@ -59,7 +59,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("resolve config: %w", err)
 	}
 
-	// Check idempotency: if orchestrator is already running, report and exit.
+	// Check idempotency: if Cortex is already running, report and exit.
 	pidMgr := pidfile.New(cfg.DataDir)
 	if running, _, _ := pidMgr.IsRunning(); running {
 		fmt.Println("Kiloforge is already initialized, Kiloforger.")
@@ -109,16 +109,16 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("Register your first project with 'kf add <path>'.")
 	fmt.Println()
 
-	// Start orchestrator daemon.
+	// Start Cortex daemon.
 	if running, pid, _ := pidMgr.IsRunning(); running {
-		fmt.Printf("Orchestrator already running (PID %d)\n", pid)
+		fmt.Printf("Cortex already running (PID %d)\n", pid)
 	} else {
-		fmt.Println("==> Starting orchestrator...")
+		fmt.Println("==> Starting Cortex...")
 		pid, err := startDaemon(cfg.DataDir)
 		if err != nil {
-			fmt.Printf("    Warning: start orchestrator: %v\n", err)
+			fmt.Printf("    Warning: start Cortex: %v\n", err)
 		} else {
-			fmt.Printf("    Orchestrator started (PID %d)\n", pid)
+			fmt.Printf("    Cortex started (PID %d)\n", pid)
 		}
 	}
 

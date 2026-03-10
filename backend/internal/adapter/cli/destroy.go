@@ -14,7 +14,7 @@ import (
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Permanently destroy all kiloforge data",
-	Long: `Removes the orchestrator, all project registrations, and the entire data directory.
+	Long: `Removes the Cortex, all project registrations, and the entire data directory.
 
 This action cannot be undone. You will be prompted to confirm unless --force is used.`,
 	RunE: runDestroy,
@@ -51,10 +51,10 @@ func runDestroy(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Stop orchestrator daemon first.
-	fmt.Println("==> Stopping orchestrator...")
+	// Stop Cortex daemon first.
+	fmt.Println("==> Stopping Cortex...")
 	if err := stopDaemon(cfg.DataDir); err != nil {
-		fmt.Printf("    Warning: stop orchestrator: %v\n", err)
+		fmt.Printf("    Warning: stop Cortex: %v\n", err)
 	}
 
 	fmt.Printf("==> Removing data directory %s...\n", cfg.DataDir)

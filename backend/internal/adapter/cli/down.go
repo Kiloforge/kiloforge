@@ -11,8 +11,8 @@ import (
 
 var downCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Stop the orchestrator",
-	Long:  `Stops the orchestrator daemon.`,
+	Short: "Stop the Cortex",
+	Long:  `Stops the Cortex daemon.`,
 	RunE:  runDown,
 }
 
@@ -22,17 +22,17 @@ func runDown(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", notInitializedError())
 	}
 
-	// Stop orchestrator daemon.
+	// Stop Cortex daemon.
 	pidMgr := pidfile.New(cfg.DataDir)
 	if running, pid, _ := pidMgr.IsRunning(); running {
-		fmt.Printf("==> Stopping orchestrator (PID %d)...\n", pid)
+		fmt.Printf("==> Stopping Cortex (PID %d)...\n", pid)
 		if err := stopDaemon(cfg.DataDir); err != nil {
-			fmt.Printf("    Warning: stop orchestrator: %v\n", err)
+			fmt.Printf("    Warning: stop Cortex: %v\n", err)
 		} else {
-			fmt.Println("    Orchestrator stopped.")
+			fmt.Println("    Cortex stopped.")
 		}
 	} else {
-		fmt.Println("Orchestrator is not running.")
+		fmt.Println("Cortex is not running.")
 	}
 
 	fmt.Println()
