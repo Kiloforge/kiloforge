@@ -1,0 +1,77 @@
+id: analytics-fe_20260310060645Z
+title: "Analytics opt-out toggle in dashboard settings"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Add an analytics toggle to the dashboard settings menu so users can enable/disable
+    PostHog telemetry from the UI without needing CLI access.
+  context: |
+    The backend analytics track adds PostHog telemetry with opt-out during init.
+    Users also need a way to toggle analytics from the dashboard UI. The existing
+    SettingsMenu component (gear icon dropdown) is the natural place for this.
+  codebase_analysis: |
+    Settings menu (frontend/src/components/SettingsMenu.tsx):
+    - Simple dropdown with gear icon trigger (lines 28-46)
+    - Currently only has "Take Tour" option (line 49-51)
+    - Uses Radix UI DropdownMenu primitives
+
+    Config API (already extended by BE track):
+    - GET /api/config returns { dashboardEnabled, analyticsEnabled }
+    - PUT /api/config accepts { analyticsEnabled: boolean }
+
+    Existing patterns:
+    - useQuery/useMutation hooks with TanStack Query (App.tsx:42-45)
+    - fetcher utility at frontend/src/api/fetcher.ts
+    - Query keys at frontend/src/api/queryKeys.ts
+
+    App routes (frontend/src/App.tsx:166-195):
+    - No dedicated settings page — settings are in dropdown menu
+    - Could add inline toggle to existing dropdown or expand to a settings panel
+  acceptance_criteria:
+    - SettingsMenu includes an "Analytics" toggle (switch/checkbox)
+    - Toggle reflects current analyticsEnabled state from GET /api/config
+    - Toggling calls PUT /api/config with updated analyticsEnabled value
+    - Optimistic update with rollback on error
+    - Brief explanatory text — "Send anonymous usage data to help improve kiloforge"
+    - Toggle is disabled with tooltip when config is set via env var (KF_ANALYTICS_ENABLED)
+  out_of_scope: |
+    - Detailed analytics dashboard showing what events were sent
+    - Client-side PostHog JS integration
+    - Privacy policy page
+    - First-run consent banner (init handles this)
+  technical_notes: |
+    Implementation approach:
+    - Add useConfig() hook — fetches GET /api/config, exposes mutation for PUT
+    - Extend SettingsMenu.tsx with a toggle item using Radix Switch or checkbox
+    - Use useMutation with optimistic update pattern (similar to existing consent hooks)
+    - The toggle should show current state immediately and update server on change
+
+    Design: Keep it simple — a labeled switch in the existing dropdown menu.
+    No separate settings page needed for a single toggle.
+plan:
+  - phase: "Config Hook"
+    tasks:
+      - text: "Create useConfig() hook — useQuery for GET /api/config, useMutation for PUT /api/config with optimistic update"
+        done: false
+      - text: "Add 'config' to queryKeys registry"
+        done: false
+      - text: "Write unit test for useConfig hook (mock fetch, verify optimistic update and rollback)"
+        done: false
+  - phase: "Settings Toggle"
+    tasks:
+      - text: "Add analytics toggle to SettingsMenu — labeled switch with 'Anonymous usage data' text"
+        done: false
+      - text: "Wire toggle to useConfig mutation — flip analyticsEnabled on change"
+        done: false
+      - text: "Write unit test for SettingsMenu analytics toggle (render, click, verify API call)"
+        done: false
+  - phase: "E2E Verification"
+    tasks:
+      - text: "Write E2E test — open settings menu, verify analytics toggle visible, toggle off/on, verify API calls"
+        done: false
+      - text: "Run make test-e2e — all E2E tests pass including new analytics toggle test"
+        done: false
+extra: {}
