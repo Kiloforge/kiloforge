@@ -24,10 +24,10 @@ type AgentRoleLookup interface {
 // When all browser connections drop, a timer starts. If no reconnection occurs
 // before the grace period expires, the agent is suspended.
 type ConnectionSuspender struct {
-	suspender    AgentSuspender
-	roleLookup   AgentRoleLookup
-	gracePeriod  time.Duration
-	eventBus     port.EventBus
+	suspender   AgentSuspender
+	roleLookup  AgentRoleLookup
+	gracePeriod time.Duration
+	eventBus    port.EventBus
 
 	mu     sync.Mutex
 	timers map[string]*time.Timer // agentID → pending suspension timer

@@ -254,10 +254,12 @@ func (h *APIHandler) GetConfig(_ context.Context, _ gen.GetConfigRequestObject) 
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
+	idleSuspend := h.cfg.GetIdleSuspendSeconds()
 	resp := gen.GetConfig200JSONResponse{
-		DashboardEnabled: h.cfg.IsDashboardEnabled(),
-		AgentMaxDuration: agentMaxDur,
-		AnalyticsEnabled: &analyticsEnabled,
+		DashboardEnabled:        h.cfg.IsDashboardEnabled(),
+		AgentMaxDuration:        agentMaxDur,
+		AnalyticsEnabled:        &analyticsEnabled,
+		AgentIdleSuspendSeconds: &idleSuspend,
 	}
 	if h.cfg.BudgetUSD > 0 {
 		resp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
@@ -288,6 +290,10 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 	if req.Body.BudgetUsd != nil {
 		h.cfg.BudgetUSD = *req.Body.BudgetUsd
 	}
+	if req.Body.AgentIdleSuspendSeconds != nil {
+		v := *req.Body.AgentIdleSuspendSeconds
+		h.cfg.IdleSuspendSeconds = &v
+	}
 
 	if err := h.cfg.Save(); err != nil {
 		return gen.UpdateConfig500JSONResponse{Error: fmt.Sprintf("save config: %v", err)}, nil
@@ -299,10 +305,12 @@ func (h *APIHandler) UpdateConfig(_ context.Context, req gen.UpdateConfigRequest
 		agentMaxDur = &s
 	}
 	analyticsEnabled := h.cfg.IsAnalyticsEnabled()
+	idleSuspend := h.cfg.GetIdleSuspendSeconds()
 	updateResp := gen.UpdateConfig200JSONResponse{
-		DashboardEnabled: h.cfg.IsDashboardEnabled(),
-		AgentMaxDuration: agentMaxDur,
-		AnalyticsEnabled: &analyticsEnabled,
+		DashboardEnabled:        h.cfg.IsDashboardEnabled(),
+		AgentMaxDuration:        agentMaxDur,
+		AnalyticsEnabled:        &analyticsEnabled,
+		AgentIdleSuspendSeconds: &idleSuspend,
 	}
 	if h.cfg.BudgetUSD > 0 {
 		updateResp.BudgetUsd = float64Ptr(h.cfg.BudgetUSD)
@@ -409,7 +417,9 @@ func (h *APIHandler) ListAgents(_ context.Context, req gen.ListAgentsRequestObje
 
 	genAgents := make([]gen.Agent, 0, len(items))
 	for _, a := range items {
-		genAgents = append(genAgents, domainAgentToGen(a, h.quota))
+		g := domainAgentToGen(a, h.quota)
+		h.enrichWithSessionCount(&g)
+		genAgents = append(genAgents, g)
 	}
 
 	var nextCursor *string
@@ -551,7 +561,9 @@ func (h *APIHandler) GetAgent(_ context.Context, req gen.GetAgentRequestObject) 
 	if err != nil {
 		return gen.GetAgent404JSONResponse{Error: "agent not found"}, nil
 	}
-	return gen.GetAgent200JSONResponse(domainAgentToGen(*a, h.quota)), nil
+	g := domainAgentToGen(*a, h.quota)
+	h.enrichWithSessionCount(&g)
+	return gen.GetAgent200JSONResponse(g), nil
 }
 
 // GetAgentLog implements gen.StrictServerInterface.
@@ -1205,6 +1217,14 @@ func (h *APIHandler) ReleaseLock(_ context.Context, req gen.ReleaseLockRequestOb
 	}
 
 	return gen.ReleaseLock200JSONResponse{Released: true}, nil
+}
+
+// enrichWithSessionCount adds the connected_clients count from the SessionManager.
+func (h *APIHandler) enrichWithSessionCount(g *gen.Agent) {
+	if h.wsSessions != nil {
+		n := h.wsSessions.SessionCount(g.Id)
+		g.ConnectedClients = &n
+	}
 }
 
 // domainAgentToGen converts a domain.AgentInfo to the generated Agent model.

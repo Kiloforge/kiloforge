@@ -16,21 +16,21 @@ type Config struct {
 	DataDir          string `json:"data_dir"`
 	// Deprecated: MaxSessionCostUSD is no longer enforced. Subscription rate
 	// limits are the primary constraint. Retained for backward compatibility.
-	MaxSessionCostUSD float64 `json:"max_session_cost_usd,omitempty"`
-	DashboardEnabled  *bool   `json:"dashboard_enabled,omitempty"`
-	SkillsRepo        string  `json:"skills_repo,omitempty"`
-	SkillsVersion     string  `json:"skills_version,omitempty"`
-	AutoUpdateSkills  *bool   `json:"auto_update_skills,omitempty"`
-	SkillsDir         string  `json:"skills_dir,omitempty"`
-	Model             string  `json:"model,omitempty"`
-	MaxSwarmSize      int     `json:"max_swarm_size,omitempty"`
-	MaxWorkers        int     `json:"max_workers,omitempty"` // Deprecated: use MaxSwarmSize. Kept for backwards compat on load.
-	QueueEnabled      *bool   `json:"queue_enabled,omitempty"`
-	AgentMaxDuration  string  `json:"agent_max_duration,omitempty"`
-	AnalyticsEnabled  *bool   `json:"analytics_enabled,omitempty"`
-	PostHogAPIKey     string  `json:"posthog_api_key,omitempty"`
-	BudgetUSD            float64 `json:"budget_usd,omitempty"`
-	IdleSuspendSeconds   *int    `json:"idle_suspend_seconds,omitempty"`
+	MaxSessionCostUSD  float64 `json:"max_session_cost_usd,omitempty"`
+	DashboardEnabled   *bool   `json:"dashboard_enabled,omitempty"`
+	SkillsRepo         string  `json:"skills_repo,omitempty"`
+	SkillsVersion      string  `json:"skills_version,omitempty"`
+	AutoUpdateSkills   *bool   `json:"auto_update_skills,omitempty"`
+	SkillsDir          string  `json:"skills_dir,omitempty"`
+	Model              string  `json:"model,omitempty"`
+	MaxSwarmSize       int     `json:"max_swarm_size,omitempty"`
+	MaxWorkers         int     `json:"max_workers,omitempty"` // Deprecated: use MaxSwarmSize. Kept for backwards compat on load.
+	QueueEnabled       *bool   `json:"queue_enabled,omitempty"`
+	AgentMaxDuration   string  `json:"agent_max_duration,omitempty"`
+	AnalyticsEnabled   *bool   `json:"analytics_enabled,omitempty"`
+	PostHogAPIKey      string  `json:"posthog_api_key,omitempty"`
+	BudgetUSD          float64 `json:"budget_usd,omitempty"`
+	IdleSuspendSeconds *int    `json:"idle_suspend_seconds,omitempty"`
 }
 
 // GetMaxSwarmSize returns the configured max swarm size, defaulting to 3.
