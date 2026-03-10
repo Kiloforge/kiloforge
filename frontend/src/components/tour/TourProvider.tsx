@@ -40,9 +40,9 @@ interface TourProviderProps {
 }
 
 /** Collect all unique query keys referenced by any demo state. */
-function allDemoQueryKeys(): readonly unknown[][] {
+function allDemoQueryKeys(): (readonly unknown[])[] {
   const seen = new Set<string>();
-  const keys: readonly unknown[][] = [];
+  const keys: (readonly unknown[])[] = [];
   for (const state of Object.values(DEMO_STATES)) {
     for (const inj of state.inject) {
       const k = JSON.stringify(inj.queryKey);
