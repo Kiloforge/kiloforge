@@ -1,9 +1,9 @@
 id: site-rebrand_20260311100000Z
-title: "Kiloforge site overhaul — rebrand to Cortex/Command Deck, strip Gitea, update messaging"
+title: Kiloforge site overhaul — rebrand to Cortex/Command Deck, strip Gitea, update messaging
 type: chore
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     Overhaul kiloforge.dev marketing site to reflect the post-Gitea architecture,
@@ -65,42 +65,42 @@ spec:
     - Claude Code Swarm (Autonomous Agents)
     - No Gitea component
 plan:
-  - phase: "Content Audit & Naming"
+  - phase: Content Audit & Naming
     tasks:
-      - text: "Read all 3 content files in kiloforge_site (page.tsx, layout.tsx, license/page.tsx) and catalog every string that references Gitea, review/merge, orchestrator, or dashboard"
-        done: false
-      - text: "Create a naming reference mapping: Orchestrator→Cortex, Dashboard→Command Deck, Gitea Backend→(removed), review+merge→implement-and-merge"
-        done: false
-  - phase: "Hero & Meta Updates"
+      - text: Read all 3 content files in kiloforge_site (page.tsx, layout.tsx, license/page.tsx) and catalog every string that references Gitea, review/merge, orchestrator, or dashboard
+        done: true
+      - text: Create a naming reference mapping: Orchestrator→Cortex, Dashboard→Command Deck, Gitea Backend→(removed), review+merge→implement-and-merge
+        done: true
+  - phase: Hero & Meta Updates
     tasks:
-      - text: "Update layout.tsx SEO: title to 'Kiloforge | Transforming Pure Intent into Meaningful Action', update meta description and keywords to reference Cortex and Command Deck"
-        done: false
-      - text: "Update hero section: new subheading incorporating 'transforming pure intent into meaningful action', update description to reference Cortex instead of orchestrator"
-        done: false
-  - phase: "Feature Cards & How It Works"
+      - text: Update layout.tsx SEO: title to 'Kiloforge | Transforming Pure Intent into Meaningful Action', update meta description and keywords to reference Cortex and Command Deck
+        done: true
+      - text: Update hero section: new subheading incorporating 'transforming pure intent into meaningful action', update description to reference Cortex instead of orchestrator
+        done: true
+  - phase: Feature Cards & How It Works
     tasks:
-      - text: "Update 'Private Infrastructure' card — remove git forge reference, describe Cortex as the local control plane"
-        done: false
-      - text: "Update 'Autonomous Cloud Agents' card — remove 'review, and merge', describe direct implementation workflow"
-        done: false
-      - text: "Update 'Real-Time Dashboard' card — rename to 'Command Deck', update description"
-        done: false
-      - text: "Update 'Human + AI Collaboration' card — remove Gitea/PR references, describe Kiloforger + Swarm collaboration model"
-        done: false
-      - text: "Update 'Cradle-to-Grave Tracing' card — remove 'PR review' from the trace path"
-        done: false
-      - text: "Update How It Works step 1 — remove Gitea, describe Cortex initialization"
-        done: false
-      - text: "Update How It Works step 3 — replace 'Review & Merge' with direct merge workflow, no PR/review language"
-        done: false
-  - phase: "Architecture & Polish"
+      - text: Update 'Private Infrastructure' card — remove git forge reference, describe Cortex as the local control plane
+        done: true
+      - text: Update 'Autonomous Cloud Agents' card — remove 'review, and merge', describe direct implementation workflow
+        done: true
+      - text: Update 'Real-Time Dashboard' card — rename to 'Command Deck', update description
+        done: true
+      - text: Update 'Human + AI Collaboration' card — remove Gitea/PR references, describe Kiloforger + Swarm collaboration model
+        done: true
+      - text: Update 'Cradle-to-Grave Tracing' card — remove 'PR review' from the trace path
+        done: true
+      - text: Update How It Works step 1 — remove Gitea, describe Cortex initialization
+        done: true
+      - text: Update How It Works step 3 — replace 'Review & Merge' with direct merge workflow, no PR/review language
+        done: true
+  - phase: Architecture & Polish
     tasks:
-      - text: "Rewrite architecture section: rename components (Cortex, Command Deck), remove Gitea Backend entirely, update descriptions for each component"
+      - text: Rewrite architecture section: rename components (Cortex, Command Deck), remove Gitea Backend entirely, update descriptions for each component
         done: false
-      - text: "Update CTA section copy to align with new messaging"
+      - text: Update CTA section copy to align with new messaging
         done: false
-      - text: "Update license page if any references to Gitea or outdated terminology exist"
+      - text: Update license page if any references to Gitea or outdated terminology exist
         done: false
-      - text: "Final review: grep entire site for any remaining references to gitea, git forge, review, PR, orchestrator, dashboard (case-insensitive)"
+      - text: Final review: grep entire site for any remaining references to gitea, git forge, review, PR, orchestrator, dashboard (case-insensitive)
         done: false
 extra: {}
