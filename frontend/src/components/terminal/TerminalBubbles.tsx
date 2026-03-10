@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { WSMessage } from "../../hooks/useAgentWebSocket";
 import { MarkdownContent } from "./MarkdownContent";
+import { formatToolSummary } from "./formatToolSummary";
 import { formatTokens, formatUSD } from "../../utils/format";
 import styles from "./TerminalBubbles.module.css";
 
@@ -33,10 +34,11 @@ function TextBubble({ msg }: { msg: WSMessage }) {
   );
 }
 
-/** Renders a tool invocation with collapsible JSON input. */
+/** Renders a tool invocation with human-readable summary and collapsible detail. */
 function ToolUseBubble({ msg }: { msg: WSMessage }) {
   const [expanded, setExpanded] = useState(false);
-  const hasInput = msg.toolInput && Object.keys(msg.toolInput).length > 0;
+  const summary = formatToolSummary(msg.toolName, msg.toolInput);
+  const hasDetail = !!summary.detail;
 
   return (
     <div className={`${styles.message} ${styles.toolMessage}`}>
@@ -44,19 +46,19 @@ function ToolUseBubble({ msg }: { msg: WSMessage }) {
       <div className={styles.messageContent}>
         <div className={styles.toolHeader}>
           <span className={styles.toolName}>{msg.toolName}</span>
-          {msg.toolId && <span className={styles.toolId}>{msg.toolId}</span>}
-          {hasInput && (
+          <span className={styles.toolSummary}>{summary.label}</span>
+          {hasDetail && (
             <button
               className={styles.toggleBtn}
               onClick={() => setExpanded(!expanded)}
             >
-              {expanded ? "Hide" : "Show"} input
+              {expanded ? "Hide" : "Detail"}
             </button>
           )}
         </div>
-        {expanded && hasInput && (
+        {expanded && hasDetail && (
           <pre className={styles.toolInput}>
-            {JSON.stringify(msg.toolInput, null, 2)}
+            {summary.detail}
           </pre>
         )}
       </div>
@@ -163,9 +165,12 @@ function TurnEndSummary({ msg }: { msg: WSMessage }) {
   );
 }
 
-/** Renders a system notification with severity-based styling. */
+/** Renders a system notification with severity-based styling. Hides init/debug noise. */
 function SystemBubble({ msg }: { msg: WSMessage }) {
   const subtype = msg.subtype ?? "info";
+
+  if (subtype === "init" || subtype === "debug") return null;
+
   const severityClass =
     subtype === "error" ? styles.systemError
     : subtype === "warning" ? styles.systemWarning

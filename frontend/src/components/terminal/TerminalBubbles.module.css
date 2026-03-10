@@ -68,6 +68,16 @@
   color: var(--text-dim);
 }
 
+.toolSummary {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60ch;
+}
+
 .toolInput {
   background: var(--bg);
   border: 1px solid var(--border);

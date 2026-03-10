@@ -28,13 +28,34 @@ describe("MessageDispatch", () => {
     expect(screen.getByText("pondering")).toBeTruthy();
   });
 
-  it("renders tool_use message", () => {
+  it("renders tool_use with human-readable summary", () => {
     render(
       <MessageDispatch
-        msg={makeMsg({ type: "tool_use", text: "Read", toolName: "Read", toolId: "t1" })}
+        msg={makeMsg({
+          type: "tool_use",
+          text: "Bash",
+          toolName: "Bash",
+          toolInput: { command: "ls -la", description: "List files" },
+        })}
+      />
+    );
+    expect(screen.getByText("Bash")).toBeTruthy();
+    expect(screen.getByText("List files")).toBeTruthy();
+  });
+
+  it("renders tool_use with file path summary for Read", () => {
+    render(
+      <MessageDispatch
+        msg={makeMsg({
+          type: "tool_use",
+          text: "Read",
+          toolName: "Read",
+          toolInput: { file_path: "/src/main.ts" },
+        })}
       />
     );
     expect(screen.getByText("Read")).toBeTruthy();
+    expect(screen.getByText("/src/main.ts")).toBeTruthy();
   });
 
   it("renders status message", () => {
@@ -70,5 +91,33 @@ describe("MessageDispatch", () => {
     const msg = makeMsg({ type: "thinking", thinking: undefined });
     const { container } = render(<MessageDispatch msg={msg} />);
     expect(container.querySelector(".thinkingMessage")).toBeTruthy();
+  });
+
+  it("hides system init messages", () => {
+    const { container } = render(
+      <MessageDispatch msg={makeMsg({ type: "system", subtype: "init" })} />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("hides system debug messages", () => {
+    const { container } = render(
+      <MessageDispatch msg={makeMsg({ type: "system", subtype: "debug" })} />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("still renders system error messages", () => {
+    render(
+      <MessageDispatch msg={makeMsg({ type: "system", subtype: "error" })} />
+    );
+    expect(screen.getByText("error")).toBeTruthy();
+  });
+
+  it("still renders system warning messages", () => {
+    render(
+      <MessageDispatch msg={makeMsg({ type: "system", subtype: "warning" })} />
+    );
+    expect(screen.getByText("warning")).toBeTruthy();
   });
 });
