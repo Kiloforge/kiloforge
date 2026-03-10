@@ -1433,7 +1433,13 @@ func (h *APIHandler) MoveCard(_ context.Context, req gen.MoveCardRequestObject) 
 	}
 	result, err := h.boardSvc.MoveCard(req.Project, req.Body.TrackId, string(req.Body.ToColumn))
 	if err != nil {
-		return gen.MoveCard400JSONResponse{Error: err.Error()}, nil
+		code, msg := mapServiceError(err)
+		switch {
+		case code >= 500:
+			return gen.MoveCard500JSONResponse{Error: msg}, nil
+		default:
+			return gen.MoveCard400JSONResponse{Error: msg}, nil
+		}
 	}
 	if h.eventBus != nil {
 		h.eventBus.Publish(domain.NewBoardUpdateEvent(map[string]string{
@@ -1467,7 +1473,7 @@ func (h *APIHandler) SyncBoard(_ context.Context, req gen.SyncBoardRequestObject
 		}
 	}
 	if projectDir == "" {
-		return gen.SyncBoard400JSONResponse{Error: fmt.Sprintf("project %q not found", req.Project)}, nil
+		return gen.SyncBoard400JSONResponse{Error: fmt.Sprintf("project %q not found — check the project slug", req.Project)}, nil
 	}
 
 	tracks, err := h.trackReader.DiscoverTracks(projectDir)
