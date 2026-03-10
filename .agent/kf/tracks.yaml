@@ -112,7 +112,7 @@ init-ssh-and-auth_20260307125500Z: {"title":"SSH Key Auto-Registration and Rando
 interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via WebSocket (Backend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"completed","type":"feature","created":"2026-03-09","updated":"2026-03-09"}
 interactive-roles-be_20260310100000Z: {"title":"Add role-based interactive agent spawning API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+interactive-roles-fe_20260310100001Z: {"title":"Add conversational agent launcher UI","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 kf-project-settings_20260311030000Z: {"title":"Project settings system — config.yaml schema, CLI commands, and Go SDK reader","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 kf-skills-source_20260309063859Z: {"title":"Kiloforge-Branded Skill Source Artifacts","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
 licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribution","status":"completed","type":"chore","created":"2026-03-09","updated":"2026-03-09"}
