@@ -48,20 +48,20 @@ spec:
 plan:
   - phase: Domain Logic
     tasks:
-      - text: "Add ClampForwardMove(fromCol, toCol string) string to domain/board.go — returns clamped column"
-        done: false
-      - text: "Write table-driven tests for ClampForwardMove covering all column combinations"
-        done: false
+      - text: Add ClampForwardMove(fromCol, toCol string) string to domain/board.go — returns clamped column
+        done: true
+      - text: Write table-driven tests for ClampForwardMove covering all column combinations
+        done: true
   - phase: Service Integration
     tasks:
-      - text: "Apply ClampForwardMove in NativeBoardService.MoveCard before the column assignment"
-        done: false
-      - text: "Update board_service_test.go with tests: backlog→done clamps to approved, approved→done is no-op, in_progress→done is no-op"
-        done: false
+      - text: Apply ClampForwardMove in NativeBoardService.MoveCard before the column assignment
+        done: true
+      - text: Update board_service_test.go with tests: backlog→done clamps to approved, approved→done is no-op, in_progress→done is no-op
+        done: true
   - phase: Verification
     tasks:
-      - text: "Run make test and make lint — verify no regressions"
-        done: false
-      - text: "Verify existing e2e kanban tests still pass (backward moves, sync)"
-        done: false
+      - text: Run make test and make lint — verify no regressions
+        done: true
+      - text: Verify existing e2e kanban tests still pass (backward moves, sync)
+        done: true
 extra: {}
