@@ -157,7 +157,7 @@ func (s *Spawner) SetSessionEndCallback(fn SessionEndCallback) {
 
 // agentEnv returns environment variables to inject into spawned agent processes.
 // Identity fields (agentID, sessionID, role) enable agents to self-identify
-// without needing the orchestrator, supporting claim-register and session restoration.
+// without needing the Cortex, supporting claim-register and session restoration.
 func (s *Spawner) agentEnv(agentID, sessionID, role string) map[string]string {
 	return map[string]string{
 		"KF_ORCH_URL":   fmt.Sprintf("http://localhost:%d", s.cfg.OrchestratorPort),

@@ -36,8 +36,17 @@ func startDaemon(dataDir string) (int, error) {
 		return 0, fmt.Errorf("find executable: %w", err)
 	}
 
+	// Migrate old log file name if it exists.
+	oldLogPath := filepath.Join(dataDir, "orchestrator.log")
+	newLogPath := filepath.Join(dataDir, "cortex.log")
+	if _, err := os.Stat(oldLogPath); err == nil {
+		if _, err := os.Stat(newLogPath); os.IsNotExist(err) {
+			_ = os.Rename(oldLogPath, newLogPath)
+		}
+	}
+
 	// Open log file for daemon output.
-	logPath := filepath.Join(dataDir, "orchestrator.log")
+	logPath := newLogPath
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
 	if err != nil {
 		return 0, fmt.Errorf("open log file: %w", err)
@@ -69,7 +78,7 @@ func startDaemon(dataDir string) (int, error) {
 	return daemonPID, nil
 }
 
-// stopDaemon sends SIGTERM to the orchestrator daemon and waits for it to exit.
+// stopDaemon sends SIGTERM to the Cortex daemon and waits for it to exit.
 func stopDaemon(dataDir string) error {
 	pidMgr := pidfile.New(dataDir)
 

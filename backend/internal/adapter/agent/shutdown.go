@@ -74,7 +74,7 @@ waitLoop:
 					ag, err := sm.store.FindAgent(a.ID)
 					if err == nil {
 						ag.SuspendedAt = &now
-						ag.ShutdownReason = "orchestrator shutdown"
+						ag.ShutdownReason = "cortex shutdown"
 					}
 					_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
 					result.Suspended = append(result.Suspended, a.ID)

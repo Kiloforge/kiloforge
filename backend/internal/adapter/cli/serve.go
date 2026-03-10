@@ -37,8 +37,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", notInitializedError())
 	}
 
+	// Migrate old log file name if it exists.
+	oldLogPath := filepath.Join(cfg.DataDir, "orchestrator.log")
+	newLogPath := filepath.Join(cfg.DataDir, "cortex.log")
+	if _, err := os.Stat(oldLogPath); err == nil {
+		if _, err := os.Stat(newLogPath); os.IsNotExist(err) {
+			_ = os.Rename(oldLogPath, newLogPath)
+		}
+	}
+
 	// Open log file.
-	logPath := filepath.Join(cfg.DataDir, "cortex.log")
+	logPath := newLogPath
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
 	if err != nil {
 		return fmt.Errorf("open log file: %w", err)

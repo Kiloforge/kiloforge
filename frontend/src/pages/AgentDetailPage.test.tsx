@@ -196,11 +196,11 @@ describe("AgentDetailPage", () => {
       ...mockAgent,
       status: "suspended",
       suspended_at: "2026-03-10T12:00:00Z",
-      shutdown_reason: "orchestrator shutdown",
+      shutdown_reason: "cortex shutdown",
     };
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/orchestrator shutdown/)).toBeInTheDocument();
+      expect(screen.getByText(/cortex shutdown/)).toBeInTheDocument();
     });
     expect(screen.getByText("Suspended At")).toBeInTheDocument();
   });

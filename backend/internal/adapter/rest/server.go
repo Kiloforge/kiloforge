@@ -30,7 +30,7 @@ const ShutdownTimeout = 10 * time.Second
 // defaultTracer is the tracer used when no tracer is configured.
 var defaultTracer port.Tracer = port.NoopTracer{}
 
-// ServerOption configures optional features on the orchestrator server.
+// ServerOption configures optional features on the Cortex server.
 type ServerOption func(*Server)
 
 // WithDashboard enables dashboard routes on the unified server.
@@ -127,7 +127,7 @@ func WithTracer(t port.Tracer) ServerOption {
 	}
 }
 
-// Server handles the orchestrator REST API.
+// Server handles the Cortex REST API.
 type Server struct {
 	cfg            *config.Config
 	registry       port.ProjectStore
@@ -154,9 +154,9 @@ type Server struct {
 	healthPinger   HealthPinger
 }
 
-// NewServer creates an orchestrator server with multi-project routing via the registry.
+// NewServer creates a Cortex server with multi-project routing via the registry.
 func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentStore, prTracker port.PRTrackingStore, host string, port int, opts ...ServerOption) *Server {
-	logger := log.New(log.Writer(), "[orchestrator] ", log.LstdFlags)
+	logger := log.New(log.Writer(), "[cortex] ", log.LstdFlags)
 	s := &Server{
 		cfg:       cfg,
 		registry:  registry,
@@ -342,7 +342,7 @@ func (s *Server) Run(ctx context.Context) error {
 		return err
 	}
 
-	// Graceful agent shutdown on orchestrator stop.
+	// Graceful agent shutdown on Cortex stop.
 	running := s.store.AgentsByStatus("running", "waiting")
 	if len(running) > 0 {
 		s.logger.Printf("Shutting down %d agent(s)...", len(running))

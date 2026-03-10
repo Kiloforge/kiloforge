@@ -10,7 +10,10 @@ import (
 	"syscall"
 )
 
-const FileName = "orchestrator.pid"
+const FileName = "cortex.pid"
+
+// oldFileName is the pre-rebrand PID file name, checked for backward compatibility.
+const oldFileName = "orchestrator.pid"
 
 // Manager implements port.PIDManager using a file on disk.
 type Manager struct {
@@ -18,8 +21,16 @@ type Manager struct {
 }
 
 // New creates a PID file manager for the given data directory.
+// If the old "orchestrator.pid" file exists, it is renamed to "cortex.pid".
 func New(dataDir string) *Manager {
-	return &Manager{path: filepath.Join(dataDir, FileName)}
+	newPath := filepath.Join(dataDir, FileName)
+	oldPath := filepath.Join(dataDir, oldFileName)
+	if _, err := os.Stat(oldPath); err == nil {
+		if _, err := os.Stat(newPath); os.IsNotExist(err) {
+			_ = os.Rename(oldPath, newPath)
+		}
+	}
+	return &Manager{path: newPath}
 }
 
 func (m *Manager) Write(pid int) error {

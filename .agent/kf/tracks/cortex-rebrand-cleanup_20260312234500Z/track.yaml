@@ -147,13 +147,13 @@ plan:
   - phase: Server Internals & File Names
     tasks:
       - text: Update server.go log prefix from [orchestrator] to [cortex] and update code comments
-        done: false
+        done: true
       - text: Update shutdown.go reason from 'orchestrator shutdown' to 'cortex shutdown'; update FE test assertions in AgentDetailPage.test.tsx and AgentCard.test.tsx
-        done: false
+        done: true
       - text: Update pidfile.go constant from 'orchestrator.pid' to 'cortex.pid' with backward-compat migration; update daemon.go and serve.go log file from 'orchestrator.log' to 'cortex.log' with migration
-        done: false
+        done: true
       - text: Update backend/docs/*.md — replace orchestrator references with Cortex in design-agent-orchestration.md, commands.md, architecture.md
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make test, make lint, make build — verify no regressions; grep -ri orchestrator to confirm no user-facing strings remain

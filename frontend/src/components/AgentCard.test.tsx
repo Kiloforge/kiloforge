@@ -177,7 +177,7 @@ describe("AgentCard", () => {
   });
 
   it("shows shutdown reason for suspended agent", () => {
-    renderCard({ status: "suspended", shutdown_reason: "orchestrator shutdown" });
-    expect(screen.getByText(/orchestrator shutdown/)).toBeInTheDocument();
+    renderCard({ status: "suspended", shutdown_reason: "cortex shutdown" });
+    expect(screen.getByText(/cortex shutdown/)).toBeInTheDocument();
   });
 });
