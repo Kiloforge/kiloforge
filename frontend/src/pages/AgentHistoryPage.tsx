@@ -4,6 +4,7 @@ import type { Agent } from "../types/api";
 import { useAgents } from "../hooks/useAgents";
 import { useAgentActions, canStop, canResume, canDelete } from "../hooks/useAgentActions";
 import { StatusBadge } from "../components/StatusBadge";
+import { PaginatedList } from "../components/PaginatedList";
 import { formatUSD, formatUptime } from "../utils/format";
 import styles from "./AgentHistoryPage.module.css";
 import appStyles from "../App.module.css";
@@ -11,7 +12,7 @@ import appStyles from "../App.module.css";
 const STATUS_OPTIONS = ["all", "running", "waiting", "completed", "failed", "stopped", "suspended"] as const;
 
 export function AgentHistoryPage() {
-  const { agents, loading } = useAgents(false);
+  const { agents, loading, remainingCount, hasNextPage, isFetchingNextPage, fetchNextPage } = useAgents(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const filtered = useMemo(() => {
@@ -52,27 +53,34 @@ export function AgentHistoryPage() {
       ) : sorted.length === 0 ? (
         <p className={appStyles.empty}>No agents found</p>
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Name / ID</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Ref</th>
-                <th>Uptime</th>
-                <th>Cost</th>
-                <th>Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((agent) => (
-                <AgentRow key={agent.id} agent={agent} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PaginatedList
+          remainingCount={remainingCount}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={() => fetchNextPage()}
+        >
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Name / ID</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Ref</th>
+                  <th>Uptime</th>
+                  <th>Cost</th>
+                  <th>Updated</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((agent) => (
+                  <AgentRow key={agent.id} agent={agent} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </PaginatedList>
       )}
     </div>
   );
