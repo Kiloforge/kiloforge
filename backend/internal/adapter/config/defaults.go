@@ -15,7 +15,7 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 	}
 
 	return &Config{
-		OrchestratorPort: 4001,
+		OrchestratorPort: 39517,
 		OrchestratorHost: "127.0.0.1",
 		DataDir:          filepath.Join(home, ".kiloforge"),
 		Model:            "opus",

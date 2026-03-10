@@ -48,15 +48,15 @@ plan:
   - phase: Update defaults
     tasks:
       - text: Change OrchestratorPort from 4001 to 39517 in backend/internal/adapter/config/defaults.go
-        done: false
+        done: true
       - text: Update --port flag help text in backend/internal/adapter/cli/up.go to show new default
-        done: false
+        done: true
       - text: Update proxy targets in frontend/vite.config.ts from localhost:4001 to localhost:39517
-        done: false
+        done: true
       - text: Update default URLs in frontend/playwright.config.ts and frontend/e2e/fixtures.ts
-        done: false
+        done: true
       - text: Update KF_ORCH_URL fallback in .agent/kf/bin/kf-merge-lock and .agent/kf/bin/kf-track
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make test to verify all backend tests pass with new default

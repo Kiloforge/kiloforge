@@ -31,7 +31,7 @@ Use 'kf down' to stop the Cortex.`,
 
 func init() {
 	upCmd.Flags().StringVar(&flagHost, "host", "", "Host address to bind (default 127.0.0.1)")
-	upCmd.Flags().IntVar(&flagPort, "port", 0, "Port to listen on (default 4001)")
+	upCmd.Flags().IntVar(&flagPort, "port", 0, "Port to listen on (default 39517)")
 }
 
 // isFirstRun returns true if no config file exists in the data directory.

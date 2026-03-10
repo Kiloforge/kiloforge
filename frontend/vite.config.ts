@@ -30,12 +30,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:4001',
-      '/events': 'http://localhost:4001',
-      '/ws': 'http://localhost:4001',
-      '/webhook': 'http://localhost:4001',
-      '/health': 'http://localhost:4001',
-      '/gitea': 'http://localhost:4001',
+      '/api': 'http://localhost:39517',
+      '/events': 'http://localhost:39517',
+      '/ws': 'http://localhost:39517',
+      '/webhook': 'http://localhost:39517',
+      '/health': 'http://localhost:39517',
+      '/gitea': 'http://localhost:39517',
     },
   },
   test: {

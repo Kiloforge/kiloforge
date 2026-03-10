@@ -121,7 +121,7 @@ branch_scan_claimed() {
 # Query orchestrator claim API for claimed tracks.
 # Falls back to empty output if server is unreachable.
 server_query_claims() {
-  local orch_url="${KF_ORCH_URL:-http://localhost:4001}"
+  local orch_url="${KF_ORCH_URL:-http://localhost:39517}"
   local response
   response=$(curl -sf --max-time 1 "${orch_url}/api/tracks/claims" 2>/dev/null) || return 0
   # Expected JSON: [{"track_id":"...","worker":"..."},...]

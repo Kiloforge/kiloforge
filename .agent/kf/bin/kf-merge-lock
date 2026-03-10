@@ -12,7 +12,7 @@
 #   kf-merge-lock help
 #
 # ENVIRONMENT:
-#   KF_ORCH_URL     Orchestrator URL (default: http://localhost:4001)
+#   KF_ORCH_URL     Orchestrator URL (default: http://localhost:39517)
 #   KF_LOCK_HOLDER  Default holder name (default: basename of $PWD)
 #
 # MERGE PROTOCOL — REBASE CONFLICT RESOLUTION
@@ -38,7 +38,7 @@
 
 set -euo pipefail
 
-ORCH_URL="${KF_ORCH_URL:-http://localhost:4001}"
+ORCH_URL="${KF_ORCH_URL:-http://localhost:39517}"
 DEFAULT_HOLDER="${KF_LOCK_HOLDER:-$(basename "$PWD")}"
 DEFAULT_TTL=120
 DEFAULT_TIMEOUT=0
@@ -401,7 +401,7 @@ MODES:
            older than 240s.
 
 ENVIRONMENT:
-  KF_ORCH_URL      Orchestrator URL (default: http://localhost:4001)
+  KF_ORCH_URL      Orchestrator URL (default: http://localhost:39517)
   KF_LOCK_HOLDER   Default holder name (default: basename of $PWD)
 
 EXAMPLES:

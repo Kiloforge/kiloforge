@@ -13,11 +13,11 @@ export const test = base.extend<{
   };
 }>({
   serverURL: async ({ baseURL }, use) => {
-    await use(baseURL ?? "http://localhost:4001");
+    await use(baseURL ?? "http://localhost:39517");
   },
 
   apiClient: async ({ baseURL }, use) => {
-    const base = baseURL ?? "http://localhost:4001";
+    const base = baseURL ?? "http://localhost:39517";
     const client = {
       get: (path: string) => fetch(`${base}${path}`),
       post: (path: string, body?: unknown) =>
