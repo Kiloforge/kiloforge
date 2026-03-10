@@ -3,7 +3,7 @@ title: Show "ready to work" indicator on backlog cards and track list
 type: feature
 status: pending
 created: 2026-03-13
-updated: 2026-03-13
+updated: 2026-03-10
 spec:
   summary: |
     Add a visual indicator to backlog cards (kanban) and track list items
@@ -16,7 +16,7 @@ spec:
     neither indicates whether a track is actually ready to be claimed — i.e.,
     has no unmet dependencies. Users must mentally cross-reference the
     dependency graph to figure out which pending tracks are available.
-
+    
     The dependency data is already available: Track objects have deps_count
     and deps_met fields, and useTrackRelations provides full dependency maps
     for board cards. The feature just needs to wire this data into visual
@@ -27,12 +27,12 @@ spec:
     - A track is "ready" when `deps_count === 0` or `deps_count === deps_met`
     - Only meaningful for pending/backlog tracks (in-progress and completed
       tracks are already claimed)
-
+    
     **TrackList** (`frontend/src/components/TrackList.tsx`):
     - Renders tracks as links with status icon (✓, ▶, ◯), track ID, and title
     - No existing dependency visualization
     - Receives Track[] — deps_count/deps_met already on each item
-
+    
     **KanbanBoard** (`frontend/src/components/KanbanBoard.tsx`):
     - CardItem renders individual board cards
     - Board receives `dependencies?: Map<string, TrackDependency[]>` from
@@ -40,17 +40,17 @@ spec:
     - Backlog cards have yellow left border (`.cardBacklog`)
     - A card is "ready" when its dependencies map entry is empty or all deps
       have status "completed"
-
+    
     **KanbanBoard.module.css**:
     - Existing animations: `clampPulse` (scale + box-shadow), `cardDragging`
     - Card left border colors distinguish columns (green=done, yellow=backlog)
     - Good pattern to follow for a "ready" indicator
-
+    
     **useTrackRelations** (`frontend/src/hooks/useTrackRelations.ts`):
     - Fetches TrackDetail for all board tracks, builds dependency maps
     - Already passed to KanbanBoard via ProjectPage
     - Can derive "ready" status: deps array empty or all completed
-
+    
     **ProjectPage** (`frontend/src/pages/ProjectPage.tsx`):
     - Wires useTrackRelations → KanbanBoard (dependencies prop)
     - Renders TrackList with tracks from useTracks
@@ -79,7 +79,7 @@ spec:
       return !track.deps_count || track.deps_count === track.deps_met;
     }
     ```
-
+    
     **TrackList green pulsing dot:**
     Add a small dot (8px) before the status icon for pending+ready tracks:
     ```css
@@ -95,7 +95,7 @@ spec:
       50% { opacity: 1; transform: scale(1); }
     }
     ```
-
+    
     **KanbanBoard backlog card indicator:**
     For backlog cards, derive "ready" from the dependencies map:
     ```typescript
@@ -107,7 +107,7 @@ spec:
     Add a small "Ready" text badge or green dot to the card. Consider adding
     a subtle green left border override (replacing the yellow backlog border)
     for ready cards.
-
+    
     **Passing dependency data to CardItem:**
     CardItem currently doesn't receive dependency info. Add an `isReady`
     boolean prop to CardItem computed by the parent from the dependencies map.
@@ -115,9 +115,9 @@ plan:
   - phase: Ready detection
     tasks:
       - text: Add isTrackReady utility function that checks pending status + deps_count/deps_met
-        done: false
+        done: true
       - text: Write tests for isTrackReady — pending with no deps, pending with all deps met, pending with unmet deps, non-pending tracks
-        done: false
+        done: true
   - phase: Track list indicator
     tasks:
       - text: Add green pulsing dot to TrackList items where isTrackReady returns true
