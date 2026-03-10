@@ -1,0 +1,90 @@
+id: cmd-mode-help-fe_20260310121738Z
+title: "Command Mode help panel, clear button & platform-aware shortcuts"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: >
+    Add an inline help panel to full-screen command mode showing all keyboard
+    shortcuts with platform-aware key labels (⌘ on Mac, Ctrl on Win/Linux),
+    a clear-messages button per pane, and a Cmd+K shortcut to clear the active pane.
+  context: |
+    Full-screen command mode currently has split/close/navigate shortcuts but no
+    in-mode help and no way to clear messages. The existing ShortcutHelp component
+    and SHORTCUT_LIST use hardcoded Mac symbols (⌘⇧) with a text hint for Ctrl —
+    this should be replaced with runtime platform detection.
+  codebase_analysis: |
+    Key files:
+    - frontend/src/hooks/useKeyboardShortcuts.ts — SHORTCUT_LIST with hardcoded ⌘ symbols
+    - frontend/src/components/ShortcutHelp.tsx — existing help modal (overlay pattern)
+    - frontend/src/components/fullscreen/FullScreenCommand.tsx — overlay with keyboard handler
+    - frontend/src/components/fullscreen/CommandPane.tsx — per-pane component with messages state
+    - frontend/src/hooks/useAgentWebSocket.ts — provides messages array, needs clearMessages()
+    - frontend/src/components/fullscreen/FullScreenCommand.module.css — existing styles
+
+    Patterns to follow:
+    - ShortcutHelp uses overlay+modal with Escape to close
+    - CommandPane already has paneHeader with close button — clear button goes there
+    - FullScreenCommand.tsx handleKeyDown already handles mod+key combos
+    - CSS module tokens: --bg-surface, --border, --text-dim, --accent, --font-mono
+  acceptance_criteria:
+    - Platform detection utility returns correct modifier symbols (⌘ on Mac, Ctrl on Win/Linux)
+    - SHORTCUT_LIST and ShortcutHelp use platform-aware key labels
+    - Command mode header has a "?" help button that toggles inline help panel
+    - Cmd+? (or Ctrl+?) within command mode toggles the help panel
+    - Each pane header has a "Clear" button that resets the messages array
+    - Cmd+K (or Ctrl+K) clears messages in the active pane
+    - All button titles use platform-aware shortcut labels
+    - Unit tests for platform detection and clear functionality
+    - E2E test for help panel toggle and clear button
+  out_of_scope: |
+    - Resizable pane dividers (drag-to-resize)
+    - Persistent clear state across reconnections
+    - Custom shortcut rebinding
+  technical_notes: |
+    - Create usePlatform() hook: detect Mac via navigator.platform/userAgent,
+      return { isMac, mod: "⌘"|"Ctrl", shift: "⇧"|"Shift" }
+    - Refactor SHORTCUT_LIST to getShortcutList(isMac) returning platform-specific keys
+    - Add CommandModeHelp sub-component inside fullscreen overlay (inline panel, not modal)
+    - Add clearMessages() to useAgentWebSocket hook (resets messages state)
+    - Wire clear button and Cmd+K shortcut in FullScreenCommand.tsx
+    - Add command-mode-specific shortcuts list for the inline help
+plan:
+  - phase: "Platform detection & shortcut refactor"
+    tasks:
+      - text: "Create usePlatform hook with isMac detection and modifier key symbols"
+        done: false
+      - text: "Write unit tests for usePlatform (Mac and non-Mac user agents)"
+        done: false
+      - text: "Refactor SHORTCUT_LIST to getShortcutList(isMac) function"
+        done: false
+      - text: "Update ShortcutHelp component to use platform-aware shortcut list"
+        done: false
+  - phase: "Command mode help panel"
+    tasks:
+      - text: "Create COMMAND_MODE_SHORTCUTS list with platform-aware keys (split, close, navigate, clear, help)"
+        done: false
+      - text: "Create CommandModeHelp inline panel component with shortcut grid"
+        done: false
+      - text: "Add help toggle state and ? button to FullScreenCommand header"
+        done: false
+      - text: "Wire Cmd+? keyboard shortcut to toggle help panel in command mode"
+        done: false
+  - phase: "Clear messages"
+    tasks:
+      - text: "Add clearMessages callback to useAgentWebSocket hook"
+        done: false
+      - text: "Add Clear button to CommandPane header"
+        done: false
+      - text: "Wire Cmd+K shortcut in FullScreenCommand to clear active pane messages"
+        done: false
+      - text: "Update all button titles to use platform-aware modifier labels"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Add E2E test for help panel toggle and clear button"
+        done: false
+      - text: "Run make test, make build, make lint — verify all pass"
+        done: false
+extra: {}
