@@ -1,0 +1,105 @@
+id: api-pagination-fe_20260310160001Z
+title: "API pagination and filtering — frontend"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Update frontend hooks and components to consume paginated API responses with
+    infinite scroll or load-more patterns using TanStack Query's useInfiniteQuery.
+  context: |
+    The backend pagination track adds cursor-based pagination to all list endpoints.
+    The frontend must switch from useQuery (fetching all results) to useInfiniteQuery
+    (fetching pages incrementally) and render load-more or infinite scroll UI.
+  codebase_analysis: |
+    Frontend hooks consuming list endpoints:
+    - useAgents.ts: useQuery fetching Agent[] from /api/agents
+    - useTracks.ts: useQuery fetching Track[] from /api/tracks
+    - useProjects.ts: useQuery fetching Project[] from /api/projects
+    - useTraces.ts: useQuery fetching TraceSummary[] from /api/traces
+
+    All follow the same pattern:
+    ```typescript
+    const { data: items = [], isLoading } = useQuery({
+      queryKey: qk,
+      queryFn: () => fetcher<ItemType[]>(url).then((d) => d || []),
+    });
+    ```
+
+    Query keys defined in frontend/src/api/queryKeys.ts — include filter params but no pagination.
+    SSE handlers patch cached arrays in memory (handleAgentUpdate, etc.).
+
+    TanStack Query v5 is already installed — useInfiniteQuery is available.
+
+    Key pages consuming list data:
+    - OverviewPage: agents grid, project cards, tracks list
+    - AgentHistoryPage: filterable agent table (most likely to need pagination first)
+    - ProjectPage: track list, board
+  acceptance_criteria:
+    - All list hooks updated to use paginated API responses
+    - AgentHistoryPage shows "Load More" button or infinite scroll for large agent lists
+    - OverviewPage handles paginated data gracefully (first page sufficient for overview)
+    - API response types updated to include next_cursor field
+    - SSE event handlers still work correctly with paginated cache
+    - No regression in existing list views when data fits in one page
+    - Loading states shown during page fetches
+  out_of_scope: |
+    - Backend API changes (separate BE track)
+    - Advanced filtering UI (search bars, filter dropdowns)
+    - Virtual scrolling / windowed lists
+    - Sort controls in table headers
+  technical_notes: |
+    TanStack Query useInfiniteQuery pattern:
+    ```typescript
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+      queryKey: ['agents'],
+      queryFn: ({ pageParam }) => fetcher<PaginatedResponse<Agent>>(
+        `/api/agents?limit=50${pageParam ? `&cursor=${pageParam}` : ''}`
+      ),
+      getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
+      initialPageParam: '',
+    });
+    const agents = data?.pages.flatMap(p => p.items) ?? [];
+    ```
+
+    SSE cache patching needs update — currently patches flat arrays. With
+    useInfiniteQuery, the cache structure is { pages: [...], pageParams: [...] }.
+    SSE handlers must update the correct page or append to the first page.
+
+    For OverviewPage, a single page (limit=50) is probably sufficient. Only
+    AgentHistoryPage needs actual infinite scroll / load-more.
+plan:
+  - phase: "Types and API client"
+    tasks:
+      - text: "Add PaginatedResponse<T> type to frontend/src/types/api.ts"
+        done: false
+      - text: "Update query keys to include pagination params where needed"
+        done: false
+  - phase: "Hook updates"
+    tasks:
+      - text: "Convert useAgents hook to handle paginated responses"
+        done: false
+      - text: "Convert useTracks hook to handle paginated responses"
+        done: false
+      - text: "Convert useProjects hook to handle paginated responses"
+        done: false
+      - text: "Convert useTraces hook to handle paginated responses"
+        done: false
+      - text: "Update SSE event handlers to patch paginated cache correctly"
+        done: false
+  - phase: "Component updates"
+    tasks:
+      - text: "Add LoadMore component for paginated lists"
+        done: false
+      - text: "Update AgentHistoryPage with load-more pagination"
+        done: false
+      - text: "Verify OverviewPage works with first-page data"
+        done: false
+  - phase: "Testing"
+    tasks:
+      - text: "Add tests for paginated hook behavior (multi-page, SSE updates)"
+        done: false
+      - text: "Update existing component tests that mock list responses"
+        done: false
+extra: {}

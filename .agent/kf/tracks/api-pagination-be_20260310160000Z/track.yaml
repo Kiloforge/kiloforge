@@ -1,0 +1,131 @@
+id: api-pagination-be_20260310160000Z
+title: "API pagination and filtering — backend"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: |
+    Add cursor-based pagination and server-side filtering to all list endpoints.
+    This is the #1 scale blocker — all list endpoints currently return unbounded results.
+  context: |
+    The product audit identified unbounded list endpoints as the top critical gap.
+    With 172+ completed tracks and growing agent history, list endpoints will cause
+    performance degradation. All 6 list endpoints (agents, projects, tracks, traces,
+    locks, ssh-keys) need cursor-based pagination with filtering.
+  codebase_analysis: |
+    Current state (from codebase research):
+
+    OpenAPI spec (backend/api/openapi.yaml):
+    - 6 list endpoints: GET /api/agents, /api/projects, /api/tracks, /api/traces, /api/locks, /api/ssh-keys
+    - None support pagination params (no limit, cursor, offset)
+    - agents has ?active filter, tracks has ?project filter, traces has ?track_id/?session_id
+
+    Handler layer (backend/internal/adapter/rest/api_handler.go):
+    - All handlers fetch entire dataset and return as-is
+    - ListAgents (line 321): loads all, filters active in memory
+    - ListProjects (line 631): gets all via h.projects.List()
+    - ListTracks (line 739): iterates all projects, discovers from filesystem
+    - ListTraces (line 1158): returns all from store
+
+    Store interfaces (backend/internal/core/port/):
+    - ProjectStore.List() returns []domain.Project (no pagination)
+    - AgentStore.Agents() returns []domain.AgentInfo (no pagination)
+    - TraceStore.ListTraces() returns all traces
+
+    SQLite store (backend/internal/adapter/persistence/sqlite/):
+    - project_store.go: SELECT ... ORDER BY slug (no LIMIT)
+    - Uses goose migrations, schema in migrations/001_initial_schema.sql
+
+    Schema-first workflow:
+    - OpenAPI 3.1 with oapi-codegen v2.5.1 for Go code generation
+    - make gen-api regenerates, make verify-codegen verifies in CI
+  acceptance_criteria:
+    - All list endpoints accept ?limit=N (default 50, max 200) and ?cursor=X params
+    - Response includes next_cursor field (empty string when no more results)
+    - Agents endpoint: ?status= filter (running, completed, failed, etc.)
+    - Tracks endpoint: ?project= filter (existing), ?status= filter
+    - Traces endpoint: existing ?track_id, ?session_id filters preserved
+    - Cursor is opaque to client (base64-encoded sort key)
+    - OpenAPI spec updated with pagination schemas
+    - Generated code regenerated and verified
+    - Store interfaces updated with pagination parameters
+    - SQLite queries use keyset pagination (WHERE id > cursor ORDER BY id LIMIT N)
+    - All existing tests pass with pagination
+    - New tests for pagination edge cases (empty results, last page, invalid cursor)
+  out_of_scope: |
+    - Frontend changes (separate FE track)
+    - Full-text search
+    - Complex sorting (multi-column sort)
+    - Aggregation endpoints
+  technical_notes: |
+    Schema-first approach:
+    1. Define PaginationParams and PaginatedResponse schemas in OpenAPI
+    2. Add query params to each list operation
+    3. Regenerate Go code (make gen-api)
+    4. Update port interfaces to accept pagination options
+    5. Implement in SQLite stores using keyset pagination
+
+    Pagination pattern:
+    - Use keyset pagination (WHERE created_at < ? ORDER BY created_at DESC LIMIT ?)
+    - Cursor = base64(last_item_sort_key) — opaque to client
+    - Default limit: 50, max: 200
+    - Empty cursor = first page
+
+    Reusable pagination types:
+    - domain.PaginationOpts { Cursor string, Limit int }
+    - domain.PaginatedResult[T] { Items []T, NextCursor string }
+plan:
+  - phase: "Schema and code generation"
+    tasks:
+      - text: "Define PaginationParams and PaginatedResponse schemas in OpenAPI spec"
+        done: false
+      - text: "Add ?limit and ?cursor query params to all 6 list endpoints in OpenAPI"
+        done: false
+      - text: "Add ?status filter to agents and tracks endpoints in OpenAPI"
+        done: false
+      - text: "Run make gen-api and verify generated code compiles"
+        done: false
+  - phase: "Domain and port layer"
+    tasks:
+      - text: "Add PaginationOpts and PaginatedResult types to domain package"
+        done: false
+      - text: "Update AgentStore interface to accept PaginationOpts in list methods"
+        done: false
+      - text: "Update ProjectStore.List to accept PaginationOpts"
+        done: false
+      - text: "Update TraceStore.ListTraces to accept PaginationOpts"
+        done: false
+  - phase: "Store implementation"
+    tasks:
+      - text: "Implement paginated queries in SQLite project store"
+        done: false
+      - text: "Implement paginated agent listing in agent store (in-memory with cursor)"
+        done: false
+      - text: "Implement paginated trace listing in trace store"
+        done: false
+      - text: "Implement paginated lock listing in lock manager"
+        done: false
+  - phase: "Handler integration"
+    tasks:
+      - text: "Update ListAgents handler to extract pagination params and return paginated response"
+        done: false
+      - text: "Update ListProjects handler with pagination"
+        done: false
+      - text: "Update ListTracks handler with pagination"
+        done: false
+      - text: "Update ListTraces handler with pagination"
+        done: false
+      - text: "Update ListLocks handler with pagination"
+        done: false
+  - phase: "Testing"
+    tasks:
+      - text: "Add unit tests for pagination in SQLite stores (empty, partial, full page, cursor edge cases)"
+        done: false
+      - text: "Add handler tests for pagination query parameter parsing"
+        done: false
+      - text: "Update existing E2E tests to work with paginated responses"
+        done: false
+      - text: "Run make verify-codegen to ensure schema and generated code are in sync"
+        done: false
+extra: {}
