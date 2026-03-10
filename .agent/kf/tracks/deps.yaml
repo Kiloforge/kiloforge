@@ -45,6 +45,11 @@ interactive-roles-fe_20260310100001Z:
 
 product-advisor-skill_20260310080000Z: []
 
+queue-project-scope-be_20260310050000Z: []
+
+queue-project-scope-fe_20260310050001Z:
+  - queue-project-scope-be_20260310050000Z
+
 work-queue-be_20260311010002Z: []
 
 work-queue-fe_20260311010003Z:

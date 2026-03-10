@@ -1,0 +1,151 @@
+id: queue-project-scope-be_20260310050000Z
+title: "Work queue project scoping — backend filtering, multi-project support, and service wiring"
+type: feature
+status: pending
+created: 2026-03-10
+updated: 2026-03-10
+spec:
+  summary: Add project-scoped queue filtering so the queue supports both global (all projects) and per-project views. Wire QueueService in serve.go (currently unwired). Add optional project query parameter to existing queue API endpoints.
+  context: |
+    The work queue backend (work-queue-be) and frontend (work-queue-fe) tracks are completed, but:
+    1. QueueService is never instantiated in serve.go — the API endpoints return empty/nil responses
+    2. QueueStore.List() returns ALL items with no project filter — effectively global
+    3. QueueService.Status() and ActiveWorkers() count across all projects
+    4. API endpoints are at /api/queue/* with no project scoping option
+
+    The queue was intended to be project-specific, but a global view is also valuable since the
+    worktree pool and worker concurrency are inherently global (one set of worktrees, one semaphore).
+
+    Supporting both is straightforward because QueueItem already stores project_slug.
+  codebase_analysis: |
+    ### QueueStore (port/queue_store.go, persistence/sqlite/queue_store.go)
+    - List(statuses ...string) — no project_slug filter
+    - All other methods (Enqueue, Assign, Complete, Fail) operate by track_id only
+    - SQLite table has project_slug column with index on status only
+    - Need: ListByProject(slug, statuses...) and project_slug index
+
+    ### QueueService (core/service/queue_service.go)
+    - Status() calls store.List() — returns all items globally
+    - ActiveWorkers() calls store.List(assigned) — counts globally
+    - Start() takes projectSlug param, stores it, uses for EnqueueReady
+    - Single instance can only process one project at a time (q.projectSlug field)
+    - Need: StatusForProject(slug), ability to start for multiple projects
+
+    ### API (api/openapi.yaml, rest/api_handler.go)
+    - GET /api/queue — global status, no filter
+    - POST /api/queue/start — optional project in body
+    - Need: optional ?project= query param on GET /api/queue
+
+    ### Wiring (adapter/cli/serve.go)
+    - Lines 100-134: builds server options but NEVER creates QueueService or calls WithQueueService
+    - QueueStore exists (sqlite.NewQueueStore) but is never instantiated here
+    - Need: create QueueStore, QueueService, wire via WithQueueService option
+  acceptance_criteria:
+    - QueueService is instantiated and wired in serve.go (queue actually works end-to-end)
+    - QueueStore.ListByProject(slug, statuses...) filters items by project_slug
+    - QueueService.StatusForProject(slug) returns project-scoped queue status
+    - GET /api/queue accepts optional ?project= query param — returns project-filtered or global status
+    - POST /api/queue/start can start queue for a specific project or all projects
+    - QueueService supports starting queue for multiple projects sequentially
+    - SQLite index on (project_slug, status) for efficient filtering
+    - Existing tests continue to pass; new tests cover project filtering
+    - OpenAPI schema updated with project query parameter before implementation
+  out_of_scope: |
+    - Frontend changes (separate FE track)
+    - Per-project max_workers settings (global semaphore is fine)
+    - Running multiple independent queues simultaneously (one orchestrator, sequential project processing)
+    - Queue CLI commands
+  technical_notes: |
+    ### Store changes
+
+    Add to QueueStore interface:
+    ```go
+    ListByProject(projectSlug string, statuses ...string) ([]domain.QueueItem, error)
+    ```
+
+    SQLite implementation filters with `WHERE project_slug = ?` plus optional status IN clause.
+    Add composite index: `CREATE INDEX idx_queue_items_project_status ON queue_items(project_slug, status)`.
+
+    ### Service changes
+
+    Add StatusForProject method that uses ListByProject:
+    ```go
+    func (q *QueueService) StatusForProject(slug string) (*QueueStatus, error) {
+        items, err := q.store.ListByProject(slug)
+        // ... same as Status() but filtered
+    }
+    ```
+
+    ### API changes
+
+    Update GET /api/queue in OpenAPI to accept optional query param:
+    ```yaml
+    parameters:
+      - name: project
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter queue items by project slug
+    ```
+
+    Handler checks for project param and calls StatusForProject or Status accordingly.
+
+    ### Wiring in serve.go
+
+    ```go
+    queueStore := sqlite.NewQueueStore(db)
+    queueSvc := service.NewQueueService(service.QueueServiceOpts{
+        MaxWorkers:  cfg.GetMaxWorkers(),
+        DataDir:     cfg.DataDir,
+        Store:       queueStore,
+        TrackReader: trackReader,
+        EventBus:    eventBus,
+        Spawner:     spawner,
+        Pool:        pool,
+        ImplSvc:     implSvc,
+    })
+    opts = append(opts, rest.WithQueueService(queueSvc))
+    ```
+
+    The exact wiring depends on which services are already constructed in serve.go.
+    Key dependencies: spawner, worktree pool, event bus, implement service, track reader.
+    Some of these may need to be extracted/created — examine serve.go carefully during implementation.
+plan:
+  - phase: "Schema and store"
+    tasks:
+      - text: "Add composite SQLite index (project_slug, status) via new migration"
+        done: false
+      - text: "Add ListByProject(slug string, statuses ...string) to QueueStore port interface"
+        done: false
+      - text: "Implement ListByProject in sqlite.QueueStore with project_slug WHERE clause"
+        done: false
+      - text: "Unit tests for ListByProject — filter by project, filter by project+status, empty results"
+        done: false
+  - phase: "Service layer"
+    tasks:
+      - text: "Add StatusForProject(slug string) method to QueueService returning project-filtered QueueStatus"
+        done: false
+      - text: "Unit tests for StatusForProject — returns only items for given project, correct active count"
+        done: false
+  - phase: "API and OpenAPI"
+    tasks:
+      - text: "Update openapi.yaml: add optional project query param to GET /api/queue"
+        done: false
+      - text: "Run make gen-api to regenerate server code"
+        done: false
+      - text: "Update GetQueue handler to read project query param and call StatusForProject or Status"
+        done: false
+  - phase: "Service wiring"
+    tasks:
+      - text: "Wire QueueService in serve.go — instantiate QueueStore, QueueService, call WithQueueService"
+        done: false
+      - text: "Identify and wire required dependencies (spawner, pool, event bus, impl service, track reader)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Integration test: enqueue items for 2 projects, verify global status shows all, project status shows filtered"
+        done: false
+      - text: "Verify make test passes with all existing and new tests"
+        done: false
+extra: {}
