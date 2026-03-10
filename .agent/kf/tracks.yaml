@@ -22,7 +22,7 @@ agent-name-display_20260310120000Z: {"title":"Show agent name instead of ID in A
 agent-permissions-consent_20260309190000Z: {"title":"Agent Permissions Flag and User Consent","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-random-names_20260309183000Z: {"title":"Random Human-Friendly Agent Names","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 agent-recovery-be_20260310142300Z: {"title":"Agent startup recovery and replace-agent flow","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-agent-recovery-fe_20260310142301Z: {"title":"Agent recovery UI — resume, replace, and suspended state display","status":"pending","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
+agent-recovery-fe_20260310142301Z: {"title":"Agent recovery UI — resume, replace, and suspended state display","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-timeout_20260310160002Z: {"title":"Agent timeout enforcement with configurable max duration","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-be_20260310121626Z: {"title":"Agent work stash — backend pool/git stash branch operations","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 agent-work-stash-skill_20260310121627Z: {"title":"Agent work stash — kf-developer skill and CLI tooling","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
