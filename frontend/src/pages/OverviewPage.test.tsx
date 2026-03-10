@@ -31,10 +31,6 @@ vi.mock("../hooks/useTraces", () => ({
   useTraces: () => ({ traces: [], loading: false, handleTraceUpdate: vi.fn() }),
 }));
 
-vi.mock("../components/tour/TourProvider", () => ({
-  useTourContextSafe: () => null,
-}));
-
 vi.mock("../api/fetcher", () => ({
   fetcher: vi.fn().mockResolvedValue(null),
   FetchError: class FetchError extends Error {

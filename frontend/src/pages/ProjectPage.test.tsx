@@ -125,10 +125,6 @@ vi.mock("../hooks/useSetupPrompt", () => ({
   }),
 }));
 
-vi.mock("../components/tour/TourProvider", () => ({
-  useTourContextSafe: () => null,
-}));
-
 vi.mock("../hooks/useProjectMetadata", () => ({
   useProjectMetadata: () => ({
     data: undefined,

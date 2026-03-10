@@ -1,8 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import type { AddProjectRequest } from "../types/api";
 import { useSSHKeys } from "../hooks/useProjects";
-import { useTourContextSafe } from "./tour/TourProvider";
-import { TOUR_STEPS } from "./tour/tourSteps";
 import styles from "./AddProjectForm.module.css";
 
 interface AddProjectFormProps {
@@ -16,7 +14,6 @@ const URL_PATTERN = /^(https?:\/\/.+|ssh:\/\/.+|[^/]+@[^:]+:.+)$/;
 const SSH_URL_PATTERN = /^(ssh:\/\/.+|[^/]+@[^:]+:.+)$/;
 
 export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjectFormProps) {
-  const tour = useTourContextSafe();
   const [expanded, setExpanded] = useState(false);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [name, setName] = useState("");
@@ -25,15 +22,6 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
   const { keys: sshKeys, loading: keysLoading, fetchKeys } = useSSHKeys();
 
   const isSSH = SSH_URL_PATTERN.test(remoteUrl.trim());
-
-  // Tour: auto-expand and prefill when on the add-project step
-  const tourStep = tour?.isActive ? TOUR_STEPS[tour.currentStep] : null;
-  useEffect(() => {
-    if (tourStep?.id === "add-project" && !expanded) {
-      setExpanded(true);
-      setRemoteUrl("https://github.com/kiloforge/example-project");
-    }
-  }, [tourStep?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch SSH keys when an SSH URL is detected.
   useEffect(() => {

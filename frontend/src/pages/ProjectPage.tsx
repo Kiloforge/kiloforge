@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTracks } from "../hooks/useTracks";
@@ -23,8 +23,6 @@ import { useSetupPrompt } from "../hooks/useSetupPrompt";
 import { useProjectMetadata } from "../hooks/useProjectMetadata";
 import { useProjectSettings } from "../hooks/useProjectSettings";
 import { ProjectSettingsPanel } from "../components/ProjectSettingsPanel";
-import { useTourContextSafe } from "../components/tour/TourProvider";
-import { TOUR_STEPS } from "../components/tour/tourSteps";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
@@ -78,23 +76,12 @@ export function ProjectPage() {
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const setupPrompt = useSetupPrompt();
-  const tour = useTourContextSafe();
-
   const handleSetupComplete = useCallback(() => {
     if (slug) {
       queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
     }
     setupPrompt.handleSetupComplete();
   }, [slug, queryClient, setupPrompt]);
-
-  // Tour: auto-show prompt and prefill when on generate-tracks step
-  const tourStep = tour?.isActive ? TOUR_STEPS[tour.currentStep] : null;
-  useEffect(() => {
-    if (tourStep?.id === "generate-tracks" && !showPrompt) {
-      setShowPrompt(true);
-      setPrompt("Add user authentication with login, registration, and password reset");
-    }
-  }, [tourStep?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePush = useCallback((remoteBranch: string) => {
     push({ remote_branch: remoteBranch });

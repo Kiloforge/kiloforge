@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
-import type { BoardState } from "../types/api";
 
 export interface TourState {
   status: "pending" | "active" | "dismissed" | "completed";
@@ -68,12 +67,4 @@ export function useTour() {
     isActive: tourState.status === "active",
     isPending: tourState.status === "pending",
   };
-}
-
-export function useDemoBoard() {
-  return useQuery({
-    queryKey: queryKeys.tourDemoBoard,
-    queryFn: () => fetcher<BoardState>("/api/tour/demo-board"),
-    enabled: false,
-  });
 }
