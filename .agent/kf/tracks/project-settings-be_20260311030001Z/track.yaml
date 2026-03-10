@@ -1,9 +1,9 @@
 id: project-settings-be_20260311030001Z
-title: "Project settings REST API — read and update kf config.yaml via HTTP"
+title: Project settings REST API — read and update kf config.yaml via HTTP
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-10
 spec:
   summary: |
     REST API endpoints to read and update project-level settings from .agent/kf/config.yaml.
@@ -13,50 +13,50 @@ spec:
     The kf-project-settings track adds config.yaml schema, CLI commands, and a Go SDK reader
     (pkg/kf/config.go with Client.GetConfig()). This track exposes those settings via REST
     so the dashboard can display and modify them.
-
+    
     Currently, project metadata (product.md, tech-stack.md, etc.) is served read-only via
     GET /api/projects/{slug}/metadata. Settings are different — they need both read and write.
-
+    
     The existing GET/PUT /api/config pattern (for dashboard_enabled) provides the write model.
     This track combines both patterns: project-scoped path + read/write capability.
   codebase_analysis: |
     ### Existing patterns
-
+    
     **Read-only project data:** GET /api/projects/{slug}/metadata
     - Handler in api_handler.go: GetProjectMetadata
     - Uses kf.NewClientFromProject(proj.ProjectDir) to read kf files
     - Returns 404 if kf not initialized
-
+    
     **Read/write system config:** GET/PUT /api/config
     - Handler: GetConfig / UpdateConfig
     - ConfigResponse schema in openapi.yaml
     - PUT accepts partial updates, returns full config
-
+    
     **Code generation:** openapi.yaml → make gen-api → gen.StrictServerInterface
-
+    
     ### New work
-
+    
     **OpenAPI schema additions:**
     - ProjectSettingsResponse: { primary_branch: string, enforce_dep_ordering: bool }
     - UpdateProjectSettingsRequest: { primary_branch?: string, enforce_dep_ordering?: bool }
     - GET /api/projects/{slug}/settings → ProjectSettingsResponse
     - PUT /api/projects/{slug}/settings → UpdateProjectSettingsRequest → ProjectSettingsResponse
-
+    
     **Handler:** Uses Client.GetConfig() (from kf-project-settings track) to read,
     writes back via Client.SaveConfig() (new method, or direct YAML write).
-
+    
     **pkg/kf addition needed:** Client.SaveConfig(*ProjectConfig) to write config.yaml.
     This could be added in either this track or kf-project-settings — placing it here
     since the CLI uses simple bash YAML editing while the Go SDK needs proper marshaling.
   acceptance_criteria:
-    - "OpenAPI schema updated with ProjectSettingsResponse and UpdateProjectSettingsRequest schemas"
-    - "GET /api/projects/{slug}/settings returns current settings with defaults for missing fields"
-    - "PUT /api/projects/{slug}/settings accepts partial updates and returns full updated settings"
-    - "Returns 404 if project not found or kf not initialized"
-    - "pkg/kf Client.SaveConfig(*ProjectConfig) writes config.yaml preserving header comments"
-    - "SSE event emitted on settings change (project-settings-updated) for real-time UI sync"
-    - "make gen-api succeeds and generated code is committed"
-    - "Unit tests for handler: get defaults, get with overrides, partial update, 404 cases"
+    - OpenAPI schema updated with ProjectSettingsResponse and UpdateProjectSettingsRequest schemas
+    - GET /api/projects/{slug}/settings returns current settings with defaults for missing fields
+    - PUT /api/projects/{slug}/settings accepts partial updates and returns full updated settings
+    - Returns 404 if project not found or kf not initialized
+    - pkg/kf Client.SaveConfig(*ProjectConfig) writes config.yaml preserving header comments
+    - SSE event emitted on settings change (project-settings-updated) for real-time UI sync
+    - make gen-api succeeds and generated code is committed
+    - Unit tests for handler: get defaults, get with overrides, partial update, 404 cases
   out_of_scope: |
     - CLI config commands (handled by kf-project-settings track)
     - Frontend UI (handled by project-settings-fe track)
@@ -64,7 +64,7 @@ spec:
     - Validation beyond type checking (e.g., primary_branch must be a valid git branch)
   technical_notes: |
     ### OpenAPI additions
-
+    
     ```yaml
     /api/projects/{slug}/settings:
       get:
@@ -102,7 +102,7 @@ spec:
               application/json:
                 schema:
                   $ref: '#/components/schemas/ErrorResponse'
-
+    
     ProjectSettingsResponse:
       type: object
       required: [primary_branch, enforce_dep_ordering]
@@ -111,7 +111,7 @@ spec:
           type: string
         enforce_dep_ordering:
           type: boolean
-
+    
     UpdateProjectSettingsRequest:
       type: object
       properties:
@@ -120,9 +120,9 @@ spec:
         enforce_dep_ordering:
           type: boolean
     ```
-
+    
     ### Handler implementation
-
+    
     ```go
     func (h *APIHandler) GetProjectSettings(_ context.Context, req gen.GetProjectSettingsRequestObject) (gen.GetProjectSettingsResponseObject, error) {
         proj, ok := h.findProject(req.Slug)
@@ -140,9 +140,9 @@ spec:
         }, nil
     }
     ```
-
+    
     ### SaveConfig
-
+    
     ```go
     func (c *Client) SaveConfig(cfg *ProjectConfig) error {
         data, err := yaml.Marshal(cfg)
@@ -154,32 +154,32 @@ spec:
     }
     ```
 plan:
-  - phase: "OpenAPI schema and code generation"
+  - phase: OpenAPI schema and code generation
     tasks:
-      - text: "Add ProjectSettingsResponse and UpdateProjectSettingsRequest schemas to openapi.yaml"
-        done: false
-      - text: "Add GET and PUT /api/projects/{slug}/settings endpoints to openapi.yaml"
-        done: false
-      - text: "Run make gen-api and verify generated code compiles"
-        done: false
-  - phase: "Go SDK write support"
+      - text: Add ProjectSettingsResponse and UpdateProjectSettingsRequest schemas to openapi.yaml
+        done: true
+      - text: Add GET and PUT /api/projects/{slug}/settings endpoints to openapi.yaml
+        done: true
+      - text: Run make gen-api and verify generated code compiles
+        done: true
+  - phase: Go SDK write support
     tasks:
-      - text: "Add Client.SaveConfig(*ProjectConfig) method to pkg/kf/config.go — marshals YAML with header"
-        done: false
-      - text: "Unit test SaveConfig: round-trip write/read, preserves defaults for unset fields"
-        done: false
-  - phase: "REST handler implementation"
+      - text: Add Client.SaveConfig(*ProjectConfig) method to pkg/kf/config.go — marshals YAML with header
+        done: true
+      - text: Unit test SaveConfig: round-trip write/read, preserves defaults for unset fields
+        done: true
+  - phase: REST handler implementation
     tasks:
-      - text: "Implement GetProjectSettings handler in api_handler.go — read via kfClient.GetConfig()"
-        done: false
-      - text: "Implement UpdateProjectSettings handler — merge partial update into current config, save, emit SSE"
-        done: false
-      - text: "Add project-settings-updated SSE event type to event bus"
-        done: false
-      - text: "Unit tests for both handlers: success, 404, partial update merge"
-        done: false
-  - phase: "Verification"
+      - text: Implement GetProjectSettings handler in api_handler.go — read via kfClient.GetConfig()
+        done: true
+      - text: Implement UpdateProjectSettings handler — merge partial update into current config, save, emit SSE
+        done: true
+      - text: Add project-settings-updated SSE event type to event bus
+        done: true
+      - text: Unit tests for both handlers: success, 404, partial update merge
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make test and make verify-codegen to ensure all passes"
-        done: false
+      - text: Run make test and make verify-codegen to ensure all passes
+        done: true
 extra: {}
