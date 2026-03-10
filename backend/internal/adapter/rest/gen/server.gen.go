@@ -86,6 +86,24 @@ const (
 	QueueItemStatusQueued    QueueItemStatus = "queued"
 )
 
+// Defines values for ReliabilityEventEventType.
+const (
+	AgentResumeFailure ReliabilityEventEventType = "agent_resume_failure"
+	AgentSpawnFailure  ReliabilityEventEventType = "agent_spawn_failure"
+	AgentTimeout       ReliabilityEventEventType = "agent_timeout"
+	LockContention     ReliabilityEventEventType = "lock_contention"
+	LockTimeout        ReliabilityEventEventType = "lock_timeout"
+	MergeConflict      ReliabilityEventEventType = "merge_conflict"
+	QuotaExceeded      ReliabilityEventEventType = "quota_exceeded"
+)
+
+// Defines values for ReliabilityEventSeverity.
+const (
+	Critical ReliabilityEventSeverity = "critical"
+	Error    ReliabilityEventSeverity = "error"
+	Warn     ReliabilityEventSeverity = "warn"
+)
+
 // Defines values for SpawnInteractiveRequestRole.
 const (
 	SpawnInteractiveRequestRoleArchitect      SpawnInteractiveRequestRole = "architect"
@@ -121,6 +139,14 @@ const (
 	TrackDependencyStatusComplete   TrackDependencyStatus = "complete"
 	TrackDependencyStatusInProgress TrackDependencyStatus = "in-progress"
 	TrackDependencyStatusPending    TrackDependencyStatus = "pending"
+)
+
+// Defines values for GetReliabilitySummaryParamsWindow.
+const (
+	N1h  GetReliabilitySummaryParamsWindow = "1h"
+	N24h GetReliabilitySummaryParamsWindow = "24h"
+	N30d GetReliabilitySummaryParamsWindow = "30d"
+	N7d  GetReliabilitySummaryParamsWindow = "7d"
 )
 
 // AddProjectRequest defines model for AddProjectRequest.
@@ -391,6 +417,17 @@ type PaginatedAgents struct {
 	TotalCount int `json:"total_count"`
 }
 
+// PaginatedReliabilityEvents defines model for PaginatedReliabilityEvents.
+type PaginatedReliabilityEvents struct {
+	Items []ReliabilityEvent `json:"items"`
+
+	// NextCursor Opaque cursor for the next page. Empty string means no more pages.
+	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// TotalCount Total number of items matching the current filters.
+	TotalCount int `json:"total_count"`
+}
+
 // PaginatedTraces defines model for PaginatedTraces.
 type PaginatedTraces struct {
 	Items []TraceSummary `json:"items"`
@@ -558,6 +595,59 @@ type QuotaInfo struct {
 	OutputTokens      int     `json:"output_tokens"`
 	RateLimited       bool    `json:"rate_limited"`
 	RetryAfterSeconds *int    `json:"retry_after_seconds,omitempty"`
+}
+
+// ReliabilityBucket defines model for ReliabilityBucket.
+type ReliabilityBucket struct {
+	// Counts Event counts by type within this time bucket
+	Counts map[string]int `json:"counts"`
+	End    time.Time      `json:"end"`
+	Start  time.Time      `json:"start"`
+}
+
+// ReliabilityEvent defines model for ReliabilityEvent.
+type ReliabilityEvent struct {
+	// AgentId Associated agent ID (nullable)
+	AgentId   *string   `json:"agent_id,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Detail Event-specific detail data (JSON)
+	Detail    *map[string]interface{}   `json:"detail,omitempty"`
+	EventType ReliabilityEventEventType `json:"event_type"`
+
+	// Id Unique event identifier (UUID)
+	Id string `json:"id"`
+
+	// Scope Event scope (e.g. "merge" for lock events, track ID for agent events)
+	Scope    *string                  `json:"scope,omitempty"`
+	Severity ReliabilityEventSeverity `json:"severity"`
+}
+
+// ReliabilityEventEventType defines model for ReliabilityEvent.EventType.
+type ReliabilityEventEventType string
+
+// ReliabilityEventSeverity defines model for ReliabilityEvent.Severity.
+type ReliabilityEventSeverity string
+
+// ReliabilitySummaryResponse defines model for ReliabilitySummaryResponse.
+type ReliabilitySummaryResponse struct {
+	// BucketDuration Duration of each bucket (e.g. "1h")
+	BucketDuration *string             `json:"bucket_duration,omitempty"`
+	Buckets        []ReliabilityBucket `json:"buckets"`
+	Totals         ReliabilityTotals   `json:"totals"`
+
+	// Window Time window used for aggregation (e.g. "24h")
+	Window string `json:"window"`
+}
+
+// ReliabilityTotals defines model for ReliabilityTotals.
+type ReliabilityTotals struct {
+	// BySeverity Total counts by severity
+	BySeverity map[string]int `json:"by_severity"`
+
+	// ByType Total counts by event type
+	ByType map[string]int `json:"by_type"`
+	Total  int            `json:"total"`
 }
 
 // SSHKeyInfo defines model for SSHKeyInfo.
@@ -904,6 +994,39 @@ type StartQueueJSONBody struct {
 	Project *string `json:"project,omitempty"`
 }
 
+// GetReliabilityEventsParams defines parameters for GetReliabilityEvents.
+type GetReliabilityEventsParams struct {
+	// EventType Filter by event type. Comma-separated for multiple (e.g. "lock_contention,agent_timeout").
+	EventType *string `form:"event_type,omitempty" json:"event_type,omitempty"`
+
+	// Severity Filter by severity. Comma-separated for multiple (e.g. "error,critical").
+	Severity *string `form:"severity,omitempty" json:"severity,omitempty"`
+
+	// Since Only return events created after this timestamp (RFC3339).
+	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// Until Only return events created before this timestamp (RFC3339).
+	Until *time.Time `form:"until,omitempty" json:"until,omitempty"`
+
+	// Limit Maximum number of items to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for pagination. Omit for first page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// GetReliabilitySummaryParams defines parameters for GetReliabilitySummary.
+type GetReliabilitySummaryParams struct {
+	// Window Time window for aggregation.
+	Window *GetReliabilitySummaryParamsWindow `form:"window,omitempty" json:"window,omitempty"`
+
+	// Buckets Number of time buckets to divide the window into.
+	Buckets *int `form:"buckets,omitempty" json:"buckets,omitempty"`
+}
+
+// GetReliabilitySummaryParamsWindow defines parameters for GetReliabilitySummary.
+type GetReliabilitySummaryParamsWindow string
+
 // UpdateSwarmSettingsJSONBody defines parameters for UpdateSwarmSettings.
 type UpdateSwarmSettingsJSONBody struct {
 	MaxSwarmSize *int `json:"max_swarm_size,omitempty"`
@@ -1115,6 +1238,12 @@ type ServerInterface interface {
 	// Get quota and cost usage
 	// (GET /api/quota)
 	GetQuota(w http.ResponseWriter, r *http.Request)
+	// List reliability events with pagination and filtering
+	// (GET /api/reliability/events)
+	GetReliabilityEvents(w http.ResponseWriter, r *http.Request, params GetReliabilityEventsParams)
+	// Aggregated reliability event counts by type and time bucket
+	// (GET /api/reliability/summary)
+	GetReliabilitySummary(w http.ResponseWriter, r *http.Request, params GetReliabilitySummaryParams)
 	// Get installed skills status
 	// (GET /api/skills)
 	GetSkillsStatus(w http.ResponseWriter, r *http.Request)
@@ -2061,6 +2190,108 @@ func (siw *ServerInterfaceWrapper) GetQuota(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// GetReliabilityEvents operation middleware
+func (siw *ServerInterfaceWrapper) GetReliabilityEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReliabilityEventsParams
+
+	// ------------- Optional query parameter "event_type" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "event_type", r.URL.Query(), &params.EventType)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "event_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "severity" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "severity", r.URL.Query(), &params.Severity)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "severity", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "since" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "since", r.URL.Query(), &params.Since)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "since", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "until" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "until", r.URL.Query(), &params.Until)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "until", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "cursor", r.URL.Query(), &params.Cursor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReliabilityEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReliabilitySummary operation middleware
+func (siw *ServerInterfaceWrapper) GetReliabilitySummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReliabilitySummaryParams
+
+	// ------------- Optional query parameter "window" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "window", r.URL.Query(), &params.Window)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "window", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "buckets" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "buckets", r.URL.Query(), &params.Buckets)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "buckets", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReliabilitySummary(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSkillsStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetSkillsStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -2537,6 +2768,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/api/queue/start", wrapper.StartQueue)
 	m.HandleFunc("POST "+options.BaseURL+"/api/queue/stop", wrapper.StopQueue)
 	m.HandleFunc("GET "+options.BaseURL+"/api/quota", wrapper.GetQuota)
+	m.HandleFunc("GET "+options.BaseURL+"/api/reliability/events", wrapper.GetReliabilityEvents)
+	m.HandleFunc("GET "+options.BaseURL+"/api/reliability/summary", wrapper.GetReliabilitySummary)
 	m.HandleFunc("GET "+options.BaseURL+"/api/skills", wrapper.GetSkillsStatus)
 	m.HandleFunc("POST "+options.BaseURL+"/api/skills/update", wrapper.UpdateSkills)
 	m.HandleFunc("GET "+options.BaseURL+"/api/ssh-keys", wrapper.ListSSHKeys)
@@ -3830,6 +4063,58 @@ func (response GetQuota200JSONResponse) VisitGetQuotaResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetReliabilityEventsRequestObject struct {
+	Params GetReliabilityEventsParams
+}
+
+type GetReliabilityEventsResponseObject interface {
+	VisitGetReliabilityEventsResponse(w http.ResponseWriter) error
+}
+
+type GetReliabilityEvents200JSONResponse PaginatedReliabilityEvents
+
+func (response GetReliabilityEvents200JSONResponse) VisitGetReliabilityEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReliabilityEvents500JSONResponse ErrorResponse
+
+func (response GetReliabilityEvents500JSONResponse) VisitGetReliabilityEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReliabilitySummaryRequestObject struct {
+	Params GetReliabilitySummaryParams
+}
+
+type GetReliabilitySummaryResponseObject interface {
+	VisitGetReliabilitySummaryResponse(w http.ResponseWriter) error
+}
+
+type GetReliabilitySummary200JSONResponse ReliabilitySummaryResponse
+
+func (response GetReliabilitySummary200JSONResponse) VisitGetReliabilitySummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReliabilitySummary500JSONResponse ErrorResponse
+
+func (response GetReliabilitySummary500JSONResponse) VisitGetReliabilitySummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetSkillsStatusRequestObject struct {
 }
 
@@ -4327,6 +4612,12 @@ type StrictServerInterface interface {
 	// Get quota and cost usage
 	// (GET /api/quota)
 	GetQuota(ctx context.Context, request GetQuotaRequestObject) (GetQuotaResponseObject, error)
+	// List reliability events with pagination and filtering
+	// (GET /api/reliability/events)
+	GetReliabilityEvents(ctx context.Context, request GetReliabilityEventsRequestObject) (GetReliabilityEventsResponseObject, error)
+	// Aggregated reliability event counts by type and time bucket
+	// (GET /api/reliability/summary)
+	GetReliabilitySummary(ctx context.Context, request GetReliabilitySummaryRequestObject) (GetReliabilitySummaryResponseObject, error)
 	// Get installed skills status
 	// (GET /api/skills)
 	GetSkillsStatus(ctx context.Context, request GetSkillsStatusRequestObject) (GetSkillsStatusResponseObject, error)
@@ -5444,6 +5735,58 @@ func (sh *strictHandler) GetQuota(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetQuotaResponseObject); ok {
 		if err := validResponse.VisitGetQuotaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReliabilityEvents operation middleware
+func (sh *strictHandler) GetReliabilityEvents(w http.ResponseWriter, r *http.Request, params GetReliabilityEventsParams) {
+	var request GetReliabilityEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReliabilityEvents(ctx, request.(GetReliabilityEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReliabilityEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReliabilityEventsResponseObject); ok {
+		if err := validResponse.VisitGetReliabilityEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReliabilitySummary operation middleware
+func (sh *strictHandler) GetReliabilitySummary(w http.ResponseWriter, r *http.Request, params GetReliabilitySummaryParams) {
+	var request GetReliabilitySummaryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReliabilitySummary(ctx, request.(GetReliabilitySummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReliabilitySummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReliabilitySummaryResponseObject); ok {
+		if err := validResponse.VisitGetReliabilitySummaryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

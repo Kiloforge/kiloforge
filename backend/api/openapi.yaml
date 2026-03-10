@@ -1594,6 +1594,104 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/reliability/events:
+    get:
+      operationId: getReliabilityEvents
+      summary: List reliability events with pagination and filtering
+      tags: [Reliability]
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by event type. Comma-separated for multiple (e.g. "lock_contention,agent_timeout").
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by severity. Comma-separated for multiple (e.g. "error,critical").
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Only return events created after this timestamp (RFC3339).
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Only return events created before this timestamp (RFC3339).
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Maximum number of items to return per page.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor for pagination. Omit for first page.
+      responses:
+        "200":
+          description: Paginated list of reliability events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedReliabilityEvents"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/reliability/summary:
+    get:
+      operationId: getReliabilitySummary
+      summary: Aggregated reliability event counts by type and time bucket
+      tags: [Reliability]
+      parameters:
+        - name: window
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["1h", "24h", "7d", "30d"]
+            default: "24h"
+          description: Time window for aggregation.
+        - name: buckets
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 24
+          description: Number of time buckets to divide the window into.
+      responses:
+        "200":
+          description: Aggregated reliability summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReliabilitySummaryResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/queue/settings:
     patch:
       operationId: updateQueueSettings
@@ -2698,3 +2796,95 @@ components:
         total_count:
           type: integer
           description: Total number of items matching the current filters.
+
+    ReliabilityEvent:
+      type: object
+      required: [id, event_type, severity, created_at]
+      properties:
+        id:
+          type: string
+          description: Unique event identifier (UUID)
+        event_type:
+          type: string
+          enum: [lock_contention, lock_timeout, agent_timeout, agent_spawn_failure, agent_resume_failure, merge_conflict, quota_exceeded]
+        severity:
+          type: string
+          enum: [warn, error, critical]
+        agent_id:
+          type: string
+          description: Associated agent ID (nullable)
+        scope:
+          type: string
+          description: Event scope (e.g. "merge" for lock events, track ID for agent events)
+        detail:
+          type: object
+          additionalProperties: true
+          description: Event-specific detail data (JSON)
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedReliabilityEvents:
+      type: object
+      required: [items, total_count]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReliabilityEvent"
+        next_cursor:
+          type: string
+          description: Opaque cursor for the next page. Empty string means no more pages.
+        total_count:
+          type: integer
+          description: Total number of items matching the current filters.
+
+    ReliabilitySummaryResponse:
+      type: object
+      required: [window, buckets, totals]
+      properties:
+        window:
+          type: string
+          description: Time window used for aggregation (e.g. "24h")
+        bucket_duration:
+          type: string
+          description: Duration of each bucket (e.g. "1h")
+        buckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReliabilityBucket"
+        totals:
+          $ref: "#/components/schemas/ReliabilityTotals"
+
+    ReliabilityBucket:
+      type: object
+      required: [start, end, counts]
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Event counts by type within this time bucket
+
+    ReliabilityTotals:
+      type: object
+      required: [total, by_type, by_severity]
+      properties:
+        total:
+          type: integer
+        by_type:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total counts by event type
+        by_severity:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total counts by severity
