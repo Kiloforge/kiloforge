@@ -32,7 +32,4 @@
 #   - /kf-manage bulk-archive prunes completed entries.
 #
 # UPDATED: 2026-03-11
-
-ci-fast-lint_20260311180000Z: []
-
 local-skills-install-be_20260311160000Z: []
