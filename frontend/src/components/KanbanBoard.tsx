@@ -39,6 +39,8 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
   const [showRelations, setShowRelations] = useState(true);
   const [activeColumn, setActiveColumn] = useState(board.columns[0] ?? "backlog");
   const [clampedCardId, setClampedCardId] = useState<string | null>(null);
+  const [enteringCards, setEnteringCards] = useState<Set<string>>(new Set());
+  const knownCardIds = useRef<Set<string>>(new Set());
   const isMobile = useMediaQuery("(max-width: 767px)");
 
   // Clear clamped animation after it plays
@@ -47,6 +49,23 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
     const timer = setTimeout(() => setClampedCardId(null), 600);
     return () => clearTimeout(timer);
   }, [clampedCardId]);
+
+  // Detect new cards appearing on the board and trigger entry animation
+  useEffect(() => {
+    const currentIds = new Set(Object.keys(board.cards));
+    const newIds = new Set<string>();
+    for (const id of currentIds) {
+      if (!knownCardIds.current.has(id)) {
+        newIds.add(id);
+      }
+    }
+    knownCardIds.current = currentIds;
+    if (newIds.size > 0) {
+      setEnteringCards(newIds);
+      const timer = setTimeout(() => setEnteringCards(new Set()), 450);
+      return () => clearTimeout(timer);
+    }
+  }, [board.cards]);
 
   const boardRef = useRef<HTMLDivElement>(null);
   const cardRefsMap = useRef(new Map<string, HTMLElement>());
@@ -181,6 +200,7 @@ export function KanbanBoard({ board, projectSlug, onMoveCard, onDeleteTrack, dep
                     projectSlug={projectSlug}
                     isDragging={dragTrackId === card.track_id}
                     isClamped={clampedCardId === card.track_id}
+                    isEntering={enteringCards.has(card.track_id)}
                     isBacklog={col === "backlog"}
                     dataTour={col === "backlog" && idx === 0 ? "board-card-first" : undefined}
                     confirmingReject={confirmReject === card.track_id}
@@ -217,6 +237,7 @@ interface CardItemProps {
   projectSlug?: string;
   isDragging: boolean;
   isClamped?: boolean;
+  isEntering?: boolean;
   isBacklog: boolean;
   confirmingReject: boolean;
   dataTour?: string;
@@ -233,10 +254,10 @@ interface CardItemProps {
   onMobileMove?: (trackId: string, toColumn: string) => void;
 }
 
-function CardItem({ card, projectSlug, isDragging, isClamped, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
+function CardItem({ card, projectSlug, isDragging, isClamped, isEntering, isBacklog, confirmingReject, dataTour, cardRef, onDragStart, onDragEnd, onApprove, onReject, onConfirmReject, onCancelReject, isMobile, currentColumn, columns, onMobileMove }: CardItemProps) {
   return (
     <div
-      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isBacklog ? styles.cardBacklog : ""}`}
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${isClamped ? styles.cardClamped : ""} ${isEntering ? styles.cardEntering : ""} ${isBacklog ? styles.cardBacklog : ""}`}
       draggable={!isMobile}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}

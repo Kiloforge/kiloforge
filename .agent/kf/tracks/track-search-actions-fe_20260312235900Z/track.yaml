@@ -144,13 +144,13 @@ plan:
   - phase: Board entry animation
     tasks:
       - text: Track known card IDs in KanbanBoard via useRef and detect new entries
-        done: false
+        done: true
       - text: Add .cardEntering CSS animation (slide-up + fade-in from underneath)
-        done: false
+        done: true
       - text: Apply animation class to new cards and clear after animation completes
-        done: false
+        done: true
       - text: Write tests to verify animation class is applied to new cards only
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build-frontend — no TypeScript errors

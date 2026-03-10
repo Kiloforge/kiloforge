@@ -150,4 +150,53 @@ describe("KanbanBoard", () => {
     const link = screen.getByText("Feature Alpha");
     expect(link.closest("a")).toHaveAttribute("href", "/projects/test-proj/tracks/track-1");
   });
+
+  it("applies entering animation class only to newly added cards", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <KanbanBoard
+          board={mockBoard}
+          projectSlug="test-proj"
+          onMoveCard={vi.fn()}
+          onDeleteTrack={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    // Add a new card to the board
+    const updatedBoard: BoardState = {
+      ...mockBoard,
+      cards: {
+        ...mockBoard.cards,
+        "track-new": {
+          track_id: "track-new",
+          title: "New Card",
+          type: "feature",
+          column: "approved",
+          position: 0,
+          moved_at: "2026-03-11T00:00:00Z",
+          created_at: "2026-03-11T00:00:00Z",
+        },
+      },
+    };
+
+    rerender(
+      <MemoryRouter>
+        <KanbanBoard
+          board={updatedBoard}
+          projectSlug="test-proj"
+          onMoveCard={vi.fn()}
+          onDeleteTrack={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    // The new card should have the entering animation class
+    const newCard = screen.getByText("New Card").closest("[data-track-id]");
+    expect(newCard?.className).toMatch(/cardEntering/);
+
+    // Existing cards should NOT have the entering animation class
+    const existingCard = screen.getByText("Feature Alpha").closest("[data-track-id]");
+    expect(existingCard?.className).not.toMatch(/cardEntering/);
+  });
 });
