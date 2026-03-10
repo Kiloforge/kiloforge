@@ -1,0 +1,72 @@
+id: fix-setup-consent-403_20260311120000Z
+title: "Fix setup dialog 403 — cascade to consent dialog instead of showing raw error"
+type: bug
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    When the user clicks "Run Setup" in SetupRequiredDialog, the POST to
+    /api/projects/{slug}/setup returns 403 if consent hasn't been given.
+    The setup hook treats this as a generic error and shows the raw message
+    instead of cascading to the ConsentDialog.
+  context: |
+    The backend gates all agent-spawning endpoints (including project setup)
+    behind a consent check (checkConsent in api_handler.go). The spawn flow
+    in ProjectPage correctly handles 403 by triggering useConsent.requestConsent(),
+    which shows the ConsentDialog. After the user accepts, it retries the request.
+
+    However, useSetupPrompt.startSetup() has no 403 handling — it catches all
+    errors generically and displays the error.message text in the dialog's error
+    area. This means the user sees "agent_permissions_not_consented: user must
+    consent to agent permissions..." as a raw error string instead of the proper
+    ConsentDialog with the "Dangerously bypass permissions" explanation.
+  codebase_analysis: |
+    Affected files:
+    - frontend/src/hooks/useSetupPrompt.ts — startSetup() needs 403 detection
+    - frontend/src/pages/ProjectPage.tsx — needs to wire consent callback into setup flow
+
+    The fix pattern already exists in ProjectPage.tsx lines 114-122 for spawn:
+      if (err instanceof FetchError && err.status === 403) {
+        consent.requestConsent(() => spawnMutation.mutate(lastSpawnReq));
+      }
+
+    The setup flow should follow the same pattern: detect 403, cascade to consent,
+    and retry startSetup after consent is accepted.
+
+    useSetupPrompt.startSetup() uses raw fetch (not the FetchError class), so the
+    fix needs to check res.status === 403 before throwing.
+  acceptance_criteria:
+    - Clicking "Run Setup" when consent is not given shows the ConsentDialog (not a raw error)
+    - After accepting consent in the dialog, the setup request is automatically retried
+    - The existing spawn-to-consent flow is not broken
+    - No raw "agent_permissions_not_consented" error message is visible to the user
+  out_of_scope: |
+    - Backend changes (the 403 response is correct by design)
+    - Changes to the consent dialog itself
+    - Any other 4xx error handling improvements
+  technical_notes: |
+    Approach: modify useSetupPrompt to accept an onConsentRequired callback.
+    When startSetup detects a 403 response, call this callback with a retry
+    function that re-calls startSetup. ProjectPage wires this to
+    consent.requestConsent(() => setupPrompt.startSetup()).
+
+    Alternative simpler approach: handle 403 directly in startSetup by setting
+    a specific error state that ProjectPage can detect and use to trigger consent.
+    But the callback approach is cleaner and matches the existing pattern.
+plan:
+  - phase: "Fix"
+    tasks:
+      - text: "Add onConsentRequired callback parameter to useSetupPrompt hook — called when startSetup receives 403"
+        done: false
+      - text: "In startSetup, detect res.status === 403 before the generic error throw — call onConsentRequired with a retry function"
+        done: false
+      - text: "In ProjectPage.tsx, wire setupPrompt with consent.requestConsent as the onConsentRequired handler"
+        done: false
+  - phase: "Test & Verify"
+    tasks:
+      - text: "Add test for useSetupPrompt: verify 403 response calls onConsentRequired callback instead of setting error"
+        done: false
+      - text: "Run make test and make build to verify no breakage"
+        done: false
+extra: {}
