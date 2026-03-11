@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/worker-3/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 # kf-preflight — Verify Kiloforge is initialized before running any skill.
 #
 # Checks that required metadata files and CLI tools exist on the primary

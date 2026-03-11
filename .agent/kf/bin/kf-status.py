@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/worker-3/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 """kf-status — Full project status in a single command.
 
 Combines pre-flight, current workers, track status, and dispatch

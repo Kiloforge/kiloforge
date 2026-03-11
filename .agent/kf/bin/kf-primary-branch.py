@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/worker-3/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 # Resolve the Kiloforge primary branch from config.yaml.
 # Tries local file first, then git HEAD, defaults to "main".
 #

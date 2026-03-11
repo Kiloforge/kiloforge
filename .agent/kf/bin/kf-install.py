@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/worker-3/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 """kf-install — Initialize a Kiloforge project or update its CLI tools.
 
 Sets up the full .agent/kf/ directory structure: venv, CLI tools, and

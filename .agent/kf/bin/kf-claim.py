@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/worker-3/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 """kf-claim — Per-worktree track claim management.
 
 Manages claim locks that record which track a worktree is working on.

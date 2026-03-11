@@ -29,6 +29,7 @@ node_modules/
 
 # Python
 __pycache__/
+.agent/kf/.venv/
 
 # OS
 .DS_Store

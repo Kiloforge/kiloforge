@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/worker-3/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 """kf-track -- Track registry management tool for Kiloforge agents.
 
 Operates on tracks.yaml (track registry) and deps.yaml (dependency graph).
