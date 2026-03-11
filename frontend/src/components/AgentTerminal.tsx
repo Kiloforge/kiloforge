@@ -4,6 +4,7 @@ import type { WSConnectionState } from "../hooks/useAgentWebSocket";
 import { useFloatingWindow, detectEdge, cursorForEdge } from "../hooks/useFloatingWindow";
 import { MessageDispatch, MessageErrorBoundary } from "./terminal";
 import { AgentDiffPanel } from "./diff/AgentDiffPanel";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 import styles from "./AgentTerminal.module.css";
 
 const TERMINAL_STATUSES = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
@@ -266,7 +267,7 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
               <p className={styles.emptyState}>Connecting to agent...</p>
             )}
             {messages.length === 0 && status === "connected" && (
-              <p className={styles.emptyState}>Waiting for agent output...</p>
+              <ThinkingIndicator />
             )}
             {messages.length === 0 && status === "disconnected" && isTerminal && (
               <p className={styles.emptyState}>{agentStatus === "suspended" ? "Agent suspended — no active connections" : `Agent ${agentStatus}`}</p>

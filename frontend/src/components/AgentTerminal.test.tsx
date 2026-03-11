@@ -124,9 +124,10 @@ describe("AgentTerminal", () => {
     expect(screen.getByText("Connecting to agent...")).toBeInTheDocument();
   });
 
-  it("shows waiting state when connected with no messages", () => {
+  it("shows thinking indicator when connected with no messages", () => {
     setup({ status: "connected", messages: [] });
-    expect(screen.getByText("Waiting for agent output...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByText("Thinking")).toBeInTheDocument();
   });
 
   it("renders messages via MessageDispatch", () => {
@@ -218,7 +219,7 @@ describe("AgentTerminal", () => {
     setup({}, { slug: "my-proj", branch: "feature/test" });
     await user.click(screen.getByRole("button", { name: "Diff" }));
     // In diff mode the messages area is replaced by the diff panel
-    expect(screen.queryByText("Waiting for agent output...")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("switches back to chat view when Chat button clicked", async () => {
@@ -226,7 +227,7 @@ describe("AgentTerminal", () => {
     setup({ status: "connected", messages: [] }, { slug: "my-proj", branch: "feature/test" });
     await user.click(screen.getByRole("button", { name: "Diff" }));
     await user.click(screen.getByRole("button", { name: "Chat" }));
-    expect(screen.getByText("Waiting for agent output...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("hides panel when minimized", () => {
