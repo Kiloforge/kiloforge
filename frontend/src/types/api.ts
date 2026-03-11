@@ -117,6 +117,7 @@ export interface Project {
   slug: string;
   repo_name: string;
   origin_remote?: string;
+  mirror_dir?: string;
   active: boolean;
 }
 

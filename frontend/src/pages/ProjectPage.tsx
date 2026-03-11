@@ -229,6 +229,12 @@ export function ProjectPage() {
                 <span className={styles.mono}>{project.origin_remote}</span>
               </div>
             )}
+            {project.mirror_dir && (
+              <div className={styles.metaRow}>
+                <span className={styles.metaLabel}>Mirror</span>
+                <span className={styles.mono}>{project.mirror_dir}</span>
+              </div>
+            )}
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>Status</span>
               <span>{project.active ? "Active" : "Inactive"}</span>
