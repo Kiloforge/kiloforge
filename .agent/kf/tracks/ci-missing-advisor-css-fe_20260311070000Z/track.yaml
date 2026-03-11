@@ -22,7 +22,7 @@ spec:
     (untracked in git). It contains 265 lines of CSS covering the advisor grid,
     launch dialog, form inputs, actions, and waiting overlay. The component
     imports it as: import styles from "./AdvisorHub.module.css"
-
+    
     This is a straightforward "forgot to git add" issue. The CSS file is
     complete and working — it just needs to be committed.
   acceptance_criteria:
@@ -33,13 +33,12 @@ spec:
   out_of_scope: |
     - Modifying the CSS content
     - Refactoring AdvisorHub component
-  technical_notes: |
-    Simply git add the existing untracked file and commit. No code changes needed.
+  technical_notes: Simply git add the existing untracked file and commit. No code changes needed.
 plan:
   - phase: Fix missing file
     tasks:
-      - text: "git add frontend/src/components/AdvisorHub.module.css and commit"
-        done: false
-      - text: "Verify frontend builds and tests pass"
-        done: false
+      - text: git add frontend/src/components/AdvisorHub.module.css and commit
+        done: true
+      - text: Verify frontend builds and tests pass
+        done: true
 extra: {}
