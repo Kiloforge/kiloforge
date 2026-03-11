@@ -1,0 +1,99 @@
+id: skills-submodule-align-be_20260311130000Z
+title: "Update skills submodule and remove reviewer role from backend"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Update kiloforge-skills submodule from 3b46f0d to fb1c3a8 (latest) and remove
+    all reviewer role code from the backend. The kf-reviewer skill was deleted upstream;
+    new skills (kf-bin, kf-merge-protocol) are auto-embedded via the existing glob pattern.
+  context: |
+    The kiloforge-skills submodule has 17 new commits since the current pointer. Key changes:
+    - kf-reviewer skill removed (commit 9500927)
+    - kf-bin skill added (CLI tool reference + bundled tools including kf-merge, kf-preflight)
+    - kf-merge-protocol skill added (reference doc for merge flow)
+    - All other skills updated (YAML migration, preflight standardization, primary_branch config)
+    The //go:embed embedded/kf-* pattern auto-picks up new skill directories. The only
+    code-impacting change is the reviewer removal — everything else is content-only.
+  codebase_analysis: |
+    Reviewer role is referenced in ~25 backend files:
+    - Domain: AgentRoleReviewer constant, IsWorkerRole() includes reviewer
+    - Ports: ReviewerOpts struct, SpawnReviewer() interface method in agent_spawner.go
+    - Adapters: SpawnReviewer in agent/spawner.go, rest/server.go defaultSpawner,
+      rest/api_handler.go interSpawner interface + replacement handler logic
+    - Skills: checker.go RequiredSkillsForRole("reviewer"), AllRequiredSkills() role list,
+      SkillCommandForRole has no reviewer entry (returns "")
+    - Specs: OpenAPI agent role enum includes "reviewer", AsyncAPI role enum includes "reviewer"
+    - Tests: checker_test.go, installer_test.go, skills_service_test.go, mocks.go,
+      badge/handler_test.go, e2e_agent_lifecycle_test.go, api_handler_extra_test.go
+    - Docs: docs/skills.md, docs/architecture.md, backend/docs/architecture.md,
+      backend/docs/design-agent-orchestration.md, .agent/kf/reference/conductor-legacy.md
+  acceptance_criteria:
+    - Submodule pointer updated to fb1c3a8 (latest kiloforge-skills main)
+    - AgentRoleReviewer removed from domain/agent.go
+    - IsWorkerRole() no longer includes reviewer
+    - ReviewerOpts and SpawnReviewer removed from port/agent_spawner.go
+    - SpawnReviewer removed from agent/spawner.go and rest/server.go
+    - Reviewer spawning logic removed from api_handler.go
+    - "reviewer" removed from OpenAPI and AsyncAPI role enums
+    - "reviewer" removed from skills/checker.go (RequiredSkillsForRole, AllRequiredSkills)
+    - All test files updated (no references to reviewer role or kf-reviewer skill)
+    - Generated API code regenerated (make gen-api)
+    - Documentation updated (reviewer mentions removed)
+    - make build succeeds
+    - make test passes
+    - make verify-codegen passes
+  out_of_scope: |
+    - Frontend reviewer cleanup (separate track: skills-submodule-align-fe)
+    - kf-bin tool duplication with .agent/kf/bin/ (convergence happens via skill install)
+    - No new roles or skill requirements added for kf-bin or kf-merge-protocol
+  technical_notes: |
+    The agent replacement handler (api_handler.go ~line 774) calls SpawnReviewer when
+    replacing a reviewer agent. After removing SpawnReviewer, this code path should
+    either be removed or return an error for reviewer role. Since the role is being
+    fully removed, the replacement logic for reviewer should be deleted.
+
+    The generated code (*.gen.go files) must be regenerated after OpenAPI changes:
+      make gen-api && make verify-codegen
+plan:
+  - phase: "Update submodule"
+    tasks:
+      - text: "Update submodule pointer: cd backend/internal/adapter/skills/embedded && git fetch origin && git checkout fb1c3a8"
+        done: false
+      - text: "Stage submodule change and verify new skills (kf-bin, kf-merge-protocol) are present"
+        done: false
+  - phase: "Remove reviewer from backend code"
+    tasks:
+      - text: "Remove AgentRoleReviewer from backend/internal/core/domain/agent.go and update IsWorkerRole()"
+        done: false
+      - text: "Remove ReviewerOpts struct and SpawnReviewer method from backend/internal/core/port/agent_spawner.go"
+        done: false
+      - text: "Remove SpawnReviewer from backend/internal/adapter/agent/spawner.go"
+        done: false
+      - text: "Remove SpawnReviewer from defaultSpawner in backend/internal/adapter/rest/server.go"
+        done: false
+      - text: "Remove reviewer spawning logic from backend/internal/adapter/rest/api_handler.go (interSpawner interface + replacement handler)"
+        done: false
+      - text: "Remove reviewer case from backend/internal/adapter/skills/checker.go (RequiredSkillsForRole, AllRequiredSkills)"
+        done: false
+  - phase: "Update specs, regenerate, and fix tests"
+    tasks:
+      - text: "Remove 'reviewer' from role enum in backend/api/openapi.yaml and backend/api/asyncapi.yaml"
+        done: false
+      - text: "Regenerate API code: make gen-api"
+        done: false
+      - text: "Update all test files: checker_test.go, installer_test.go, skills_service_test.go, testutil/mocks.go, badge/handler_test.go, e2e_agent_lifecycle_test.go, api_handler_extra_test.go"
+        done: false
+      - text: "Update documentation: docs/skills.md, docs/architecture.md, backend/docs/architecture.md, backend/docs/design-agent-orchestration.md"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make build to verify clean compilation"
+        done: false
+      - text: "Run make test to verify all tests pass"
+        done: false
+      - text: "Run make verify-codegen to confirm generated code matches spec"
+        done: false
+extra: {}
