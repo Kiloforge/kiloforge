@@ -66,8 +66,9 @@ spec:
     3. **"Become a Kiloforger"** section with mode selectors (THIS TRACK)
        - Mode selector: Single-Threaded | Multi-Threaded | Multi-Processor
        - Content swaps based on selected mode
-       - Single-Threaded includes the existing "How it Works" 4-step workflow
-         PLUS the philosophical guidance content
+       - Single-Threaded includes a visual flow diagram of the process
+         (Setup → Architect → Status (optional) → Develop) PLUS philosophical
+         guidance content
     4. Context callout (skills-only vs full platform)
     5. CTA link to /skills/catalog (from catalog subpage track)
 
@@ -89,7 +90,8 @@ spec:
     - A "Become a Kiloforger" section appears between the install section and the skills catalog CTA
     - Three pill-toggle mode selectors are displayed — "Single-Threaded", "Multi-Threaded", "Multi-Processor"
     - Selecting a mode swaps the displayed content inline (no overlay/modal)
-    - "Single-Threaded" mode shows the existing 4-step workflow ("How it Works") followed by philosophical guidance content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus
+    - "Single-Threaded" mode shows a visual flow diagram (Setup → Architect → Status (optional, dashed/dimmed) → Develop) with a visual shortcut path from Architect directly to Develop, followed by philosophical guidance content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus
+    - The flow makes clear that Status is optional — users can take the architect's track output and go straight to /kf-developer
     - "Multi-Threaded" and "Multi-Processor" modes show placeholder content
     - Content transitions are animated (fade or slide via framer-motion)
     - Mode selector follows existing pill-toggle styling pattern
@@ -112,12 +114,19 @@ spec:
     - Place the "Become a Kiloforger" section after the install block
     - Mode selector row uses the same pill-toggle pattern as platform tabs
     - Content area uses AnimatePresence with key={mode} for animated transitions
-    - The existing workflowSteps data and rendering becomes part of the
-      single-threaded mode content (move it inside the mode content area)
+    - Replace the existing vertical step cards with a horizontal flow diagram
+      showing: Setup → Architect → [Status (optional)] → Develop
+    - The flow should be visual — connected nodes/boxes with arrows
+    - Status node is styled differently (dashed border, dimmed, "(optional)" label)
+    - A bypass arrow/path goes from Architect directly to Develop, skipping Status
+    - This communicates: once the architect produces a track, you can hand it
+      straight to /kf-developer without checking /kf-status first
+    - On mobile, the flow can stack vertically but should still show the
+      optional bypass
     - Remove the standalone "How it Works" section — it's now inside
       single-threaded mode
 
-    Single-threaded content structure (below the workflow steps):
+    Single-threaded content structure (below the flow diagram):
     1. "Building Confidence" — why you start here, what you're learning
     2. "Don't Become the Bottleneck" — cost analysis, implementation drift reality
     3. "Work at the Decision Layer" — where your time creates the most value
@@ -133,7 +142,7 @@ plan:
         done: false
       - text: "Add mode state management and AnimatePresence content area that swaps content based on selected mode with fade/slide transitions"
         done: false
-      - text: "Move the existing 'How it Works' workflow steps (workflowSteps data + rendering) into the single-threaded mode content area as the first part of that mode's content"
+      - text: "Replace the existing vertical workflow step cards with a horizontal flow diagram for single-threaded mode: Setup → Architect → Status (optional, dashed/dimmed) → Develop. Add a visual bypass path (curved arrow or direct connector) from Architect to Develop showing users can skip Status. Each node shows the command name. On mobile, stack vertically but preserve the bypass indicator."
         done: false
   - phase: "Single-threaded guidance content"
     tasks:
