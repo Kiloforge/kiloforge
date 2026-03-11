@@ -1,23 +1,21 @@
 id: fix-tour-scroll-fe_20260311230100Z
-title: "Fix tour overlay misalignment on scroll"
+title: Fix tour overlay misalignment on scroll
 type: bug
 status: pending
 created: 2026-03-11
 updated: 2026-03-11
 spec:
-  summary: >
-    Tour spotlight and tooltip become misaligned with target elements when the user scrolls.
-    The overlay stays fixed in place while page content scrolls away (or vice versa).
+  summary: ">"
   context: |
     The guided tour uses a custom overlay system (no third-party library) with a fixed backdrop,
     an absolute-positioned spotlight cutout, and an absolute-positioned tooltip. When the user
     scrolls during an active tour step, the spotlight and tooltip lose alignment with their
     target elements.
-
+    
     User report: "the overlay stays in place and then the scrolled page moves away."
   codebase_analysis: |
     Root cause is a coordinate system mismatch in TourOverlay.tsx:
-
+    
     1. `.backdrop` uses `position: fixed` (viewport-relative, does not scroll)
     2. `.spotlight` uses `position: absolute` inside the fixed backdrop — effectively
        also viewport-relative, but the code adds `window.scrollY` to `getBoundingClientRect()`
@@ -25,11 +23,11 @@ spec:
     3. `.tooltip` uses `position: absolute` but is a sibling of the backdrop (rendered in a
        React fragment), so it positions relative to the nearest positioned ancestor or document
        root — yet also adds `window.scrollY`
-
+    
     The scroll listener at line 35 re-fires `getBoundingClientRect()` on every scroll event,
     which returns fresh viewport-relative coordinates. Adding `window.scrollY` on top of these
     viewport-relative values creates the offset drift.
-
+    
     Key files:
     - frontend/src/components/tour/TourOverlay.tsx (lines 120-134, 184-217)
     - frontend/src/components/tour/TourOverlay.module.css (lines 13-32, 96-107)
@@ -49,7 +47,7 @@ spec:
     `window.scrollY` additions. Since `getBoundingClientRect()` already returns
     viewport-relative coordinates, and fixed positioning is also viewport-relative,
     the coordinates will stay consistent without manual scroll compensation.
-
+    
     Changes:
     1. TourOverlay.module.css: Change `.spotlight` from `position: absolute` to `position: fixed`
     2. TourOverlay.module.css: Change `.tooltip` from `position: absolute` to `position: fixed`
@@ -59,24 +57,24 @@ spec:
     5. Keep the scroll event listener — it correctly re-fires getBoundingClientRect() to get
        updated viewport-relative positions as elements scroll
 plan:
-  - phase: "Fix coordinate system"
+  - phase: Fix coordinate system
     tasks:
-      - text: "Change `.spotlight` CSS from `position: absolute` to `position: fixed` in TourOverlay.module.css"
-        done: false
-      - text: "Change `.tooltip` CSS from `position: absolute` to `position: fixed` in TourOverlay.module.css"
-        done: false
-      - text: "Remove `+ window.scrollY` from spotlight top calculation in TourOverlay.tsx line 123"
-        done: false
-      - text: "Remove `+ window.scrollY` from all 4 cases in computeTooltipPosition (lines 193, 199, 205, 212)"
-        done: false
-  - phase: "Verification"
+      - text: Change `.spotlight` CSS from `position: absolute` to `position: fixed` in TourOverlay.module.css
+        done: true
+      - text: Change `.tooltip` CSS from `position: absolute` to `position: fixed` in TourOverlay.module.css
+        done: true
+      - text: Remove `+ window.scrollY` from spotlight top calculation in TourOverlay.tsx line 123
+        done: true
+      - text: Remove `+ window.scrollY` from all 4 cases in computeTooltipPosition (lines 193, 199, 205, 212)
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Verify all 14 tour steps render with correct spotlight and tooltip placement"
+      - text: Verify all 14 tour steps render with correct spotlight and tooltip placement
         done: false
-      - text: "Verify scrolling during any spotlight step keeps overlay aligned with target"
+      - text: Verify scrolling during any spotlight step keeps overlay aligned with target
         done: false
-      - text: "Verify welcome and finish dialog steps (centered, no spotlight) are unaffected"
+      - text: Verify welcome and finish dialog steps (centered, no spotlight) are unaffected
         done: false
-      - text: "Run frontend build to confirm no TypeScript or CSS errors"
+      - text: Run frontend build to confirm no TypeScript or CSS errors
         done: false
 extra: {}

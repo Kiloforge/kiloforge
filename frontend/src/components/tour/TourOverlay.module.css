@@ -23,7 +23,7 @@
 }
 
 .spotlight {
-  position: absolute;
+  position: fixed;
   border-radius: var(--radius);
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 12px 2px rgba(52, 211, 153, 0.4);
   border: 1px solid rgba(52, 211, 153, 0.5);
@@ -94,7 +94,7 @@
 
 /* Tooltip */
 .tooltip {
-  position: absolute;
+  position: fixed;
   z-index: 10001;
   background: #1a1b1e;
   border: 1px solid var(--accent);

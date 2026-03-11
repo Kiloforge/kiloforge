@@ -120,7 +120,7 @@ export function TourOverlay() {
   const pad = 8;
   const spotlightStyle = targetRect
     ? {
-        top: targetRect.top - pad + window.scrollY,
+        top: targetRect.top - pad,
         left: targetRect.left - pad,
         width: targetRect.width + pad * 2,
         height: targetRect.height + pad * 2,
@@ -190,26 +190,26 @@ function computeTooltipPosition(
   switch (placement) {
     case "top":
       return {
-        top: rect.top - gap - pad + window.scrollY,
+        top: rect.top - gap - pad,
         left: rect.left + rect.width / 2,
         transform: "translate(-50%, -100%)",
       };
     case "left":
       return {
-        top: rect.top + rect.height / 2 + window.scrollY,
+        top: rect.top + rect.height / 2,
         left: rect.left - gap - pad,
         transform: "translate(-100%, -50%)",
       };
     case "right":
       return {
-        top: rect.top + rect.height / 2 + window.scrollY,
+        top: rect.top + rect.height / 2,
         left: rect.right + gap + pad,
         transform: "translateY(-50%)",
       };
     case "bottom":
     default:
       return {
-        top: rect.bottom + gap + pad + window.scrollY,
+        top: rect.bottom + gap + pad,
         left: rect.left + rect.width / 2,
         transform: "translateX(-50%)",
       };
