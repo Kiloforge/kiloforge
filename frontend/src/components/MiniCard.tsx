@@ -55,7 +55,6 @@ function clampToEdge(x: number, y: number): { x: number; y: number; edge: Edge }
 
 const roleClasses: Record<string, string> = {
   developer: styles.roleDeveloper,
-  reviewer: styles.roleReviewer,
   interactive: styles.roleInteractive,
 };
 

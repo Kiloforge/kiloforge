@@ -115,7 +115,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="swarm-panel"]',
     title: "Agent Types",
     content:
-      "Kiloforge runs two kinds of agents. Autonomous agents (developers, reviewers) work in background worktrees implementing and reviewing tracks. Interactive agents give you a live terminal session for architecture, debugging, or ad-hoc tasks.",
+      "Kiloforge runs two kinds of agents. Autonomous agents (developers) work in background worktrees implementing tracks. Interactive agents give you a live terminal session for architecture, debugging, or ad-hoc tasks.",
     placement: "bottom",
     demoState: DEMO_STATES["agent-types"],
   },

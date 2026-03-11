@@ -165,7 +165,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
         <div className={styles.sectionHeader}>
           <h2 className={appStyles.panelTitle}>
             Agents
-            <HelpTooltip term="Agents" definition="AI workers that implement tracks. Each agent runs in its own worktree and can be a developer, reviewer, or interactive session." />
+            <HelpTooltip term="Agents" definition="AI workers that implement tracks. Each agent runs in its own worktree and can be a developer, advisor, or interactive session." />
           </h2>
           <div className={styles.sectionActions}>
             <Link to="/agents" className={styles.viewAllLink}>View all</Link>
@@ -182,7 +182,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
         </div>
         <div className={styles.filterRow}>
           <div className={styles.filterGroup}>
-            {["developer", "reviewer", "interactive", "advisor"].map((role) => (
+            {["developer", "interactive", "advisor"].map((role) => (
               <button
                 key={role}
                 className={`${styles.chip} ${roleFilter === role ? styles.chipActive : ""}`}
