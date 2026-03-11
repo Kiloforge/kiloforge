@@ -1,0 +1,148 @@
+id: guidance-overlay-site_20260311235900Z
+title: "Skills page guidance overlay with single-threaded mode content"
+type: feature
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: >
+    Add a "Guidance" button above the "How it Works" workflow steps on the
+    kiloforge.dev skills page. Clicking it opens a full-screen overlay with
+    three tabbed "modes" — Single-Threaded (fully written), Multithreaded
+    (placeholder), and Core (placeholder). The single-threaded content presents
+    the philosophy of building agent confidence, avoiding bottleneck behavior,
+    accepting implementation drift, and focusing time at the decision-making
+    layer rather than micromanaging every commit.
+  context: |
+    The skills page currently shows a 4-step workflow (Setup -> Architect ->
+    Status -> Develop) but provides no guidance on the *mindset* users should
+    adopt when working with AI agents at scale. Users need coaching on how to
+    effectively utilize the skills — starting single-threaded to build
+    confidence, then scaling up.
+
+    The user wants three "levels" of guidance presented as overlay tabs:
+    1. Single-Threaded — acclimate to the process, build confidence in agent
+       output reliability, understand that the cost of remediation is lower than
+       the cost of becoming a bottleneck
+    2. Multithreaded — content to be written in a separate conversation
+    3. Core — content to be written in a separate conversation
+
+    Key philosophical points for single-threaded mode:
+    - Goal is acclimation and building confidence that architect specs produce
+      reliable implementations
+    - Free yourself from being the bottleneck — don't double-check every agent's
+      work or demand absolute perfection
+    - Implementation drift happens even on human teams (policy changes,
+      architectural shifts, mistakes) — we call it "legacy" code
+    - The belief: mistakes are sufficiently low that remediation cost < bottleneck
+      cost
+    - At the rate you can instantiate new implementations, ensuring perfect
+      alignment for a fraction of the lifecycle is counterproductive
+    - You should NOT ship every commit to trunk — the rate is potentially far
+      higher than trunk-based review can handle
+    - Your time is too valuable for the large end of the funnel — focus on
+      deciding meaningful changes that deliver customer value
+    - If things drift: make structural changes to reduce interdependency, plan
+      tracks with the architect, add project guidelines, run large-scale audits
+      that produce actionable items for new tracks
+    - Kiloforge is not designed to be the best single-agent chat — use the CLI
+      for that. It is designed to let you set agent work aside and focus on
+      high-level decisions that presumably only you know about
+  codebase_analysis: |
+    Target file: kiloforge_site/src/app/skills/page.tsx (445 lines)
+    Target repo: /Users/benbaldivia/dev-2/kiloforge_site/
+
+    "How it Works" section: lines 273-333
+    - motion.div with whileInView animation
+    - Header "How it Works" + subtitle
+    - workflowSteps.map rendering 4 step cards with icons, descriptions, commands
+
+    Existing overlay patterns:
+    - AnimatePresence + motion.div for mobile nav dropdown (lines 166-225)
+    - CopiedToast uses AnimatePresence with fade in/out (lines 257-269)
+    - No formal modal/dialog components exist
+
+    Design system:
+    - glass-panel utility: rgba(30,30,30,0.4) + blur(12px)
+    - Colors: emerald-400/cyan-400 primary, amber/rose/indigo/purple accents
+    - Pill-toggle pattern for selectors (lines 224-238)
+    - All animations via framer-motion
+    - Icons via lucide-react
+    - Responsive: hidden/flex md:flex breakpoints
+
+    Available dependencies (no new installs needed):
+    - framer-motion (AnimatePresence, motion)
+    - lucide-react (X, BookOpen, etc.)
+    - clsx (conditional classes)
+
+    This is NOT in the kiloforge main repo. The developer must work in the
+    kiloforge_site directory at /Users/benbaldivia/dev-2/kiloforge_site/.
+  acceptance_criteria:
+    - A "Guidance" button appears above or near the "How it Works" section header
+    - Clicking the button opens a full-screen overlay with backdrop blur
+    - Overlay has three tabbed modes — "Single-Threaded", "Multithreaded", "Core"
+    - "Single-Threaded" tab displays the full mindset philosophy content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus
+    - "Multithreaded" and "Core" tabs show placeholder content indicating these are coming
+    - Overlay closes via X button, Escape key, or backdrop click
+    - Responsive layout — full-screen on mobile, centered max-width panel on desktop
+    - Follows existing site design system (glass-panel, emerald/cyan accents, Framer Motion animations, pill-toggle tab pattern)
+    - Content is well-structured with clear section headings and readable prose
+  out_of_scope: |
+    - Multithreaded mode content (separate conversation)
+    - Core mode content (separate conversation)
+    - Changes to the kiloforge main repo
+    - Backend changes
+    - Changes to the install section or skill catalog (handled by multi-agent-skills-site track)
+  technical_notes: |
+    Target repo: /Users/benbaldivia/dev-2/kiloforge_site/
+    Target file: src/app/skills/page.tsx
+
+    Implementation approach:
+    - Create a GuidanceOverlay client component (can be inline in the page file
+      or extracted — follow existing pattern of inline components)
+    - Use AnimatePresence + motion.div with backdrop-blur-xl for the overlay
+    - Tab system: useState for activeTab, pill-toggle styled tabs matching the
+      platform selector pattern
+    - Content organized as React elements within the component, not fetched
+    - Close handlers: onClick backdrop, X button, onKeyDown Escape
+    - Focus management: auto-focus close button on open, trap focus within overlay
+    - Scroll: overlay content scrolls independently (overflow-y-auto)
+    - Z-index: z-[60] to sit above the fixed nav (z-50)
+
+    The "Guidance" button should feel natural near the workflow section —
+    consider a subtle button with a BookOpen or Lightbulb icon that says
+    "Guidance" or "How to think about this".
+
+    Single-threaded content structure:
+    1. "Building Confidence" — why you start here, what you're learning
+    2. "Don't Become the Bottleneck" — cost analysis, implementation drift reality
+    3. "Work at the Decision Layer" — where your time creates the most value
+    4. "When Things Drift" — structural responses, audits, track planning
+plan:
+  - phase: "Overlay component"
+    tasks:
+      - text: "Create GuidanceOverlay component with AnimatePresence entrance/exit animation, backdrop blur (z-[60]), glass-panel inner container, and close button (X icon top-right)"
+        done: false
+      - text: "Add tab system within overlay for three modes ('Single-Threaded', 'Multithreaded', 'Core') using pill-toggle pattern matching existing platform selector styling"
+        done: false
+      - text: "Add open/close state management and 'Guidance' button (BookOpen or Lightbulb icon) positioned above the 'How it Works' section header"
+        done: false
+      - text: "Implement close-on-Escape keydown handler and close-on-backdrop-click"
+        done: false
+  - phase: "Content"
+    tasks:
+      - text: "Write 'Building Confidence' section — acclimate to the process, understand that architect specs produce reliable implementations, learn to trust agent output through experience"
+        done: false
+      - text: "Write 'Don't Become the Bottleneck' section — cost of remediation vs cost of micromanagement, implementation drift happens on all teams (policy changes, architectural shifts, mistakes = 'legacy' code), mistakes are sufficiently low that future remediation < present bottlenecking"
+        done: false
+      - text: "Write 'Work at the Decision Layer' section — at this instantiation rate, shipping every commit to trunk is counterproductive, your time is too valuable for the large end of the funnel, focus on meaningful changes that deliver customer value, Kiloforge is designed to let you set agent work aside and focus on high-level decisions"
+        done: false
+      - text: "Write 'When Things Drift' section — make structural changes to reduce interdependency, plan tracks with the architect to address misalignment, add project guidelines to specifications, run large-scale audits that produce actionable items for new tracks"
+        done: false
+      - text: "Add placeholder content for 'Multithreaded' and 'Core' tabs with 'Coming soon' messaging styled to match the overlay design"
+        done: false
+  - phase: "Polish"
+    tasks:
+      - text: "Ensure responsive layout (mobile: full-screen overlay with scroll, desktop: centered max-w-3xl panel with backdrop), verify animation timing and scroll behavior within overlay"
+        done: false
+extra: {}
