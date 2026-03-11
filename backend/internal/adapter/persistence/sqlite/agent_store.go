@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"syscall"
 	"time"
 
 	"kiloforge/internal/core/domain"
@@ -145,7 +144,7 @@ func (s *AgentStore) HaltAgent(idPrefix string) error {
 	if err != nil {
 		return fmt.Errorf("find process: %w", err)
 	}
-	return proc.Signal(syscall.SIGINT)
+	return proc.Signal(os.Interrupt)
 }
 
 func (s *AgentStore) RemoveAgent(id string) error {

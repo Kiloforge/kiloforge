@@ -61,6 +61,8 @@ func gitHint(platform string) string {
 	switch platform {
 	case "darwin":
 		return "xcode-select --install  (or: brew install git)"
+	case "windows":
+		return "winget install --id Git.Git  (or: https://git-scm.com/download/win)"
 	default:
 		return "sudo apt install git  (or: sudo dnf install git)"
 	}

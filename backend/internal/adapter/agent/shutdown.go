@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"os"
-	"syscall"
 	"time"
 
 	"kiloforge/internal/core/domain"
@@ -49,7 +47,7 @@ func (sm *ShutdownManager) ShutdownAll(timeout time.Duration) ShutdownResult {
 			_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspended))
 			continue
 		}
-		signalProcess(a.PID, syscall.SIGINT)
+		interruptProcess(a.PID)
 		_ = sm.store.UpdateStatus(a.ID, string(domain.AgentStatusSuspending))
 		alive = append(alive, a)
 	}
@@ -93,30 +91,4 @@ waitLoop:
 
 	_ = sm.store.Save()
 	return result
-}
-
-// ProcessAlive checks if a process with the given PID exists.
-func ProcessAlive(pid int) bool {
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return false
-	}
-	err = proc.Signal(syscall.Signal(0))
-	return err == nil
-}
-
-func signalProcess(pid int, sig syscall.Signal) {
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return
-	}
-	_ = proc.Signal(sig)
-}
-
-func killProcess(pid int) {
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return
-	}
-	_ = proc.Signal(syscall.SIGKILL)
 }

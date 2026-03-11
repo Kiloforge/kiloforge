@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"time"
 
 	"kiloforge/internal/adapter/pidfile"
@@ -54,7 +53,7 @@ func startDaemon(dataDir string) (int, error) {
 	defer logFile.Close()
 
 	cmd := exec.Command(executable, "serve")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	setDaemonAttrs(cmd)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 
@@ -100,8 +99,8 @@ func stopDaemon(dataDir string) error {
 		return nil
 	}
 
-	// Send SIGTERM.
-	if err := proc.Signal(syscall.SIGTERM); err != nil {
+	// Send graceful termination signal.
+	if err := terminateProcess(proc); err != nil {
 		_ = pidMgr.Remove()
 		return nil
 	}
@@ -115,7 +114,7 @@ func stopDaemon(dataDir string) error {
 	}
 
 	// Force kill.
-	_ = proc.Signal(syscall.SIGKILL)
+	forceKillProcess(proc)
 	_ = pidMgr.Remove()
 	return nil
 }

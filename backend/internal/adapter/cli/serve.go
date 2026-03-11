@@ -63,7 +63,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	// Set up signal handling for graceful shutdown.
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	// Ensure PID file is removed on exit.

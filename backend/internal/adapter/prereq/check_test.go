@@ -62,6 +62,13 @@ func TestGitHint_Darwin(t *testing.T) {
 	}
 }
 
+func TestGitHint_Windows(t *testing.T) {
+	hint := gitHint("windows")
+	if !strings.Contains(hint, "winget") {
+		t.Errorf("expected winget for windows, got: %s", hint)
+	}
+}
+
 func TestGitHint_Linux(t *testing.T) {
 	hint := gitHint("linux")
 	if !strings.Contains(hint, "apt") {
