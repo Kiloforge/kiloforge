@@ -1,0 +1,45 @@
+id: ci-missing-advisor-css-fe_20260311070000Z
+title: Commit missing AdvisorHub.module.css to fix frontend CI
+type: bug
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    AdvisorHub.tsx was committed to main but its CSS module file
+    (AdvisorHub.module.css) was not included, breaking the frontend build
+    and all frontend tests in CI.
+  context: |
+    The AdvisorHub component was added to main as part of the IME composition
+    fix track (fix-ime-composition-input-fe). The component file and its test
+    were committed, but the CSS module it imports was left as an untracked file
+    in the worker-4 worktree. CI run 22942008887 fails at the "Run frontend
+    tests" step with:
+      Error: Failed to resolve import "./AdvisorHub.module.css" from
+      "src/components/AdvisorHub.tsx". Does the file exist?
+  codebase_analysis: |
+    The file exists locally at frontend/src/components/AdvisorHub.module.css
+    (untracked in git). It contains 265 lines of CSS covering the advisor grid,
+    launch dialog, form inputs, actions, and waiting overlay. The component
+    imports it as: import styles from "./AdvisorHub.module.css"
+
+    This is a straightforward "forgot to git add" issue. The CSS file is
+    complete and working — it just needs to be committed.
+  acceptance_criteria:
+    - AdvisorHub.module.css is committed to main
+    - Frontend builds without errors (make build-frontend)
+    - Frontend tests pass (npm test -- --run)
+    - CI "test" job passes
+  out_of_scope: |
+    - Modifying the CSS content
+    - Refactoring AdvisorHub component
+  technical_notes: |
+    Simply git add the existing untracked file and commit. No code changes needed.
+plan:
+  - phase: Fix missing file
+    tasks:
+      - text: "git add frontend/src/components/AdvisorHub.module.css and commit"
+        done: false
+      - text: "Verify frontend builds and tests pass"
+        done: false
+extra: {}
