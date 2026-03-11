@@ -85,5 +85,5 @@ plan:
 - phase: Verification
   tasks:
   - text: Verify no remaining references to kf-reviewer in docs/skills.md
-    done: false
+    done: true
 extra: {}
