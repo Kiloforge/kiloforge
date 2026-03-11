@@ -125,7 +125,7 @@ fix-setup-git-init-be_20260311230001Z: {"title":"Fix setup 500 on repos without 
 fix-skill-prereq-be_20260310000644Z: {"title":"Fix Skill Prerequisite Chain — Rename and Required List (Backend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-skill-prereq-fe_20260310000645Z: {"title":"Fix Skill Prerequisite Chain — Frontend Proactive Gating","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-skills-412-prompt_20260309233000Z: {"title":"Handle 412 Skills Missing with Install Prompt Instead of Error","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-fix-skills-worktree-be_20260312060000Z: {"title":"Ensure skills are discoverable in agent worktrees","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
+fix-skills-worktree-be_20260312060000Z: {"title":"Ensure skills are discoverable in agent worktrees","status":"completed","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 fix-spa-and-init-output_20260309163000Z: {"title":"Fix SPA Asset MIME Type, Init Output URLs, and Password Display","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --verbose Flag for stream-json","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}

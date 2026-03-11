@@ -86,7 +86,7 @@ plan:
   - phase: Verification
     tasks:
       - text: Run full test suite (make test) to verify no regressions
-        done: false
+        done: true
       - text: Manual verification: spawn an agent in a worktree and confirm skills are loaded by the SDK (check agent logs for skill invocation)
-        done: false
+        done: true
 extra: {}
