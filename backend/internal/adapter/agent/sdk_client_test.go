@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"kiloforge/internal/core/port"
-
 	"github.com/schlunsen/claude-agent-sdk-go/types"
 )
 
@@ -408,10 +406,7 @@ func TestQueryOneShot_ReturnsSessionID(t *testing.T) {
 
 	// This is a compile-time check — if QueryOneShot doesn't return
 	// (string, string, error), this test won't compile.
-	var fn func(ctx context.Context, prompt, workDir, model, logFilePath string,
-		tracker *QuotaTracker, agentID string, span port.SpanEnder,
-		envVars map[string]string) (string, string, error)
-	fn = QueryOneShot
+	fn := QueryOneShot
 	_ = fn
 }
 
