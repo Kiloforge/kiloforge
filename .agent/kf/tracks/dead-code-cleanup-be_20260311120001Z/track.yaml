@@ -1,5 +1,5 @@
 id: dead-code-cleanup-be_20260311120001Z
-title: Remove dead backend services and port interfaces
+title: "Remove dead backend services and port interfaces"
 type: chore
 status: pending
 created: 2026-03-11
@@ -53,30 +53,30 @@ spec:
        dependent on the deleted QueueService type)
     Build verification: make build && make test
 plan:
-  - phase: Delete dead services and stores
+  - phase: "Delete dead services and stores"
     tasks:
-      - text: Delete backend/internal/core/service/queue_service.go
-        done: true
-      - text: Delete backend/internal/adapter/persistence/sqlite/queue_store.go
-        done: true
-      - text: Delete backend/internal/core/service/lifecycle_service.go and lifecycle_service_test.go
-        done: true
-  - phase: Delete dead port interfaces
+      - text: "Delete backend/internal/core/service/queue_service.go"
+        done: false
+      - text: "Delete backend/internal/adapter/persistence/sqlite/queue_store.go"
+        done: false
+      - text: "Delete backend/internal/core/service/lifecycle_service.go and lifecycle_service_test.go"
+        done: false
+  - phase: "Delete dead port interfaces"
     tasks:
-      - text: Delete backend/internal/core/port/queue_store.go
-        done: true
-      - text: Delete backend/internal/core/port/pool_returner.go
-        done: true
-      - text: Delete backend/internal/core/port/pidfile.go
-        done: true
-  - phase: Verification
+      - text: "Delete backend/internal/core/port/queue_store.go"
+        done: false
+      - text: "Delete backend/internal/core/port/pool_returner.go"
+        done: false
+      - text: "Delete backend/internal/core/port/pidfile.go"
+        done: false
+  - phase: "Verification"
     tasks:
-      - text: Run grep to confirm no Go files import the deleted packages or reference deleted types
-        done: true
-      - text: Verify REST QueueServicer interface compiles independently of deleted QueueService
-        done: true
-      - text: Run make build to verify clean compilation
-        done: true
-      - text: Run make test to verify all tests pass
-        done: true
+      - text: "Run grep to confirm no Go files import the deleted packages or reference deleted types"
+        done: false
+      - text: "Verify REST QueueServicer interface compiles independently of deleted QueueService"
+        done: false
+      - text: "Run make build to verify clean compilation"
+        done: false
+      - text: "Run make test to verify all tests pass"
+        done: false
 extra: {}

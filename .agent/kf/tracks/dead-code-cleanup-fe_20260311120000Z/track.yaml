@@ -1,5 +1,5 @@
 id: dead-code-cleanup-fe_20260311120000Z
-title: Remove unused frontend components and hooks
+title: "Remove unused frontend components and hooks"
 type: chore
 status: pending
 created: 2026-03-11
@@ -38,24 +38,24 @@ spec:
     Verify with: grep -r "StatCards\|TerminalDock\|AdvisorHub\|useProjectBranches" frontend/src/
     after deletion to confirm no dangling references.
 plan:
-  - phase: Delete unused components
+  - phase: "Delete unused components"
     tasks:
-      - text: Delete frontend/src/components/StatCards.tsx and frontend/src/components/StatCards.module.css
-        done: true
-      - text: Delete frontend/src/components/TerminalDock.tsx, TerminalDock.test.tsx, and TerminalDock.module.css
-        done: true
-      - text: Delete frontend/src/components/AdvisorHub.tsx, AdvisorHub.test.tsx, and AdvisorHub.module.css
-        done: true
-  - phase: Clean up unused hooks
+      - text: "Delete frontend/src/components/StatCards.tsx and frontend/src/components/StatCards.module.css"
+        done: false
+      - text: "Delete frontend/src/components/TerminalDock.tsx, TerminalDock.test.tsx, and TerminalDock.module.css"
+        done: false
+      - text: "Delete frontend/src/components/AdvisorHub.tsx, AdvisorHub.test.tsx, and AdvisorHub.module.css"
+        done: false
+  - phase: "Clean up unused hooks"
     tasks:
-      - text: Remove useProjectBranches export from frontend/src/hooks/useDiff.ts (keep useProjectDiff intact)
-        done: true
-  - phase: Verification
+      - text: "Remove useProjectBranches export from frontend/src/hooks/useDiff.ts (keep useProjectDiff intact)"
+        done: false
+  - phase: "Verification"
     tasks:
-      - text: Run grep across frontend/src/ to confirm no dangling imports reference deleted modules
-        done: true
-      - text: Run npm run build to verify the frontend compiles cleanly
-        done: true
-      - text: Run npm test to verify existing tests pass
-        done: true
+      - text: "Run grep across frontend/src/ to confirm no dangling imports reference deleted modules"
+        done: false
+      - text: "Run npm run build to verify the frontend compiles cleanly"
+        done: false
+      - text: "Run npm test to verify existing tests pass"
+        done: false
 extra: {}
