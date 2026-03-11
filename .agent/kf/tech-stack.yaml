@@ -1,0 +1,25 @@
+languages:
+  - name: Go
+    version: "1.24"
+    role: Backend (Cobra CLI, REST server, Gitea adapter)
+  - name: TypeScript
+    role: Frontend dashboard (React, Vite, TanStack Query)
+
+frontend:
+  framework: React
+  bundler: Vite
+  state_management: TanStack Query
+  build: make build-frontend
+
+backend:
+  framework: Go standard library + Cobra CLI
+  architecture: Layered Clean Architecture (domain → port → service → adapter → CLI)
+  api: OpenAPI schema-first (generated server stubs and client code)
+
+database:
+  primary: SQLite
+
+infrastructure:
+  deployment: Local / self-hosted
+  containers: Docker Compose (Gitea)
+  build_system: Makefile

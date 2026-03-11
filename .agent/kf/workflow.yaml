@@ -1,0 +1,17 @@
+tdd:
+  strictness: strict
+  description: Tests required before implementation (highly recommended for fully autonomous agents)
+
+commits:
+  strategy: conventional
+  description: Conventional Commits (feat:, fix:, chore:, etc.)
+
+code_review:
+  required: false
+  description: Optional / self-review OK
+
+verification:
+  checkpoints: track_completion
+  description: >
+    Manual verification is required only when an entire track is complete.
+    Individual phases and tasks do not require manual sign-off.

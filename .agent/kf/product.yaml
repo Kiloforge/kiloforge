@@ -1,0 +1,18 @@
+project_name: kiloforge
+description: >
+  A local development forge that runs the Cortex control plane, Command Deck,
+  and Claude Code swarms directly on your machine. Transforms pure intent into
+  meaningful action by coordinating AI agent swarms for parallel development
+  at scale.
+problem_statement: >
+  Coordinating multiple AI agents across multiple projects demands
+  infrastructure that is observable, automated, and under your control.
+  There's no easy way to run parallel Claude Code agents with quota tracking,
+  merge coordination, and real-time observability without building custom
+  infrastructure.
+target_users: >
+  Kiloforgers — developers who use Claude Code agent swarms for parallel
+  development and want full control over their local infrastructure.
+key_goals:
+  - Session management — View logs, halt agents, and resume their Claude sessions interactively via the Command Deck
+  - Easy project onboarding — Register projects and spawn agent swarms with minimal configuration
