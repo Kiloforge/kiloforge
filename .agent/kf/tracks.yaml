@@ -242,7 +242,7 @@ quota-reframe-fe_20260309103001Z: {"title":"Reframe Quota System — Tokens and 
 react-dashboard_20260308180002Z: {"title":"React Dashboard for Real-Time Agent Monitoring","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 readme-prerequisites_20260308210002Z: {"title":"Update README Prerequisites to Docker + Claude Code","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 ready-indicator-fe_20260313070000Z: {"title":"Show ready to work indicator on backlog cards and track list","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
-rebrand-conductor-to-kf-skills_20260311070000Z: {"title":"Rebrand conductor references to kf in embedded skills submodule","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
+rebrand-conductor-to-kf-skills_20260311070000Z: {"title":"Rebrand conductor references to kf in embedded skills submodule","status":"archived","type":"bug","created":"2026-03-11","updated":"2026-03-11","archived_at":"2026-03-11","archive_reason":"User handling manually in kf-skills repo"}
 rebrand-historical-records_20260309063900Z: {"title":"Rebrand Historical Conductor Records","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 rebrand-kiloforge_20260309055250Z: {"title":"Rebrand crelay to Kiloforge (CLI: kf)","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 refactor-clean-arch_20260307140000Z: {"title":"Restructure Packages into Clean Architecture Layout","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
@@ -343,6 +343,6 @@ virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (
 windows-build-support-be_20260311062734Z: {"title":"Add Windows build support and CI verification","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
 work-queue-be_20260311010002Z: {"title":"Work queue — backend service with semaphore, dependency-aware scheduling, and auto-spawn","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and status UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-worktree-autodetect-skills_20260311070001Z: {"title":"Add worktree auto-detection to all embedded skills","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+worktree-autodetect-skills_20260311070001Z: {"title":"Add worktree auto-detection to all embedded skills","status":"archived","type":"chore","created":"2026-03-11","updated":"2026-03-11","archived_at":"2026-03-11","archive_reason":"User handling manually in kf-skills repo"}
 worktree-env-helper_20260310224653Z: {"title":"Add kf-worktree-env shell helper and inform agents via CLAUDE.md","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 worktree-pool_20260307125000Z: {"title":"Worktree Pool Management","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}

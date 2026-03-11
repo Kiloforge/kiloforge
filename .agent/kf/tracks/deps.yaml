@@ -69,7 +69,6 @@ onboarding-ux-fe_20260310073721Z: []
 
 quota-gauges-be_20260310092417Z: []
 
-rebrand-conductor-to-kf-skills_20260311070000Z: []
 
 replace-tracing-be_20260310144200Z: []
 
@@ -85,5 +84,3 @@ ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
 
-worktree-autodetect-skills_20260311070001Z:
-  - rebrand-conductor-to-kf-skills_20260311070000Z
