@@ -13,3 +13,5 @@
 #
 
 guidance-overlay-site_20260311235900Z/multi-agent-skills-site_20260311200001Z: {"risk":"medium","note":"Both modify skills/page.tsx — different sections but same file","added":"2026-03-11"}
+guidance-overlay-site_20260311235900Z/skills-catalog-subpage-site_20260312000000Z: {"risk":"medium","note":"Both reshape skills page layout","added":"2026-03-11"}
+multi-agent-skills-site_20260311200001Z/skills-catalog-subpage-site_20260312000000Z: {"risk":"medium","note":"Both modify skill catalog in skills/page.tsx","added":"2026-03-11"}
