@@ -133,8 +133,6 @@ export function TourOverlay() {
     ? computeTooltipPosition(targetRect, placement, pad)
     : { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
 
-  const isWaitStep = step.action === "wait-for-drag";
-
   return (
     <>
       {/* Backdrop with spotlight cutout */}
@@ -160,22 +158,11 @@ export function TourOverlay() {
         </div>
         <h3 className={styles.tooltipTitle}>{step.title}</h3>
         <p className={styles.tooltipContent}>{step.content}</p>
-        {!isWaitStep ? (
-          <div className={styles.tooltipActions}>
-            <button className={styles.nextBtn} onClick={isLast ? completeTour : nextStep}>
-              {isLast ? "Finish" : "Next"}
-            </button>
-          </div>
-        ) : (
-          <div className={styles.tooltipActions}>
-            <button className={styles.nextBtn} onClick={nextStep}>
-              Next
-            </button>
-            <button className={styles.skipLink} onClick={nextStep}>
-              Skip step
-            </button>
-          </div>
-        )}
+        <div className={styles.tooltipActions}>
+          <button className={styles.nextBtn} onClick={isLast ? completeTour : nextStep}>
+            {isLast ? "Finish" : "Next"}
+          </button>
+        </div>
       </div>
     </>
   );
