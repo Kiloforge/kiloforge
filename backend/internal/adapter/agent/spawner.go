@@ -36,10 +36,11 @@ func (e *ErrSkillsMissing) Error() string {
 }
 
 // ValidateSkills checks that the required skills for a given role are installed.
-// It checks both the global skills directory (from config) and the local
-// .claude/skills/ directory relative to workDir.
+// It checks the global skills directory (from config), the local .claude/skills/
+// directory relative to workDir, and optionally the project directory's
+// .claude/skills/ (for worktree scenarios where workDir != projectDir).
 // Returns ErrSkillsMissing if any required skills are not found.
-func (s *Spawner) ValidateSkills(role, workDir string) error {
+func (s *Spawner) ValidateSkills(role, workDir, projectDir string) error {
 	required := skills.RequiredSkillsForRole(role)
 	if len(required) == 0 {
 		return nil
@@ -52,7 +53,12 @@ func (s *Spawner) ValidateSkills(role, workDir string) error {
 		localDir = filepath.Join(workDir, ".claude", "skills")
 	}
 
-	missing := skills.CheckRequired(required, globalDir, localDir)
+	projSkillsDir := ""
+	if projectDir != "" && projectDir != workDir {
+		projSkillsDir = filepath.Join(projectDir, ".claude", "skills")
+	}
+
+	missing := skills.CheckRequired(required, globalDir, localDir, projSkillsDir)
 	if len(missing) > 0 {
 		return &ErrSkillsMissing{Missing: missing}
 	}

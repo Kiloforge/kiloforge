@@ -27,12 +27,19 @@ type SkillStatus struct {
 }
 
 // CheckRequired verifies that all required skills are installed.
-// Checks both global (~/.claude/skills/) and local (.claude/skills/) directories.
-// Returns list of missing skills (not installed at all).
-func CheckRequired(required []RequiredSkill, globalDir, localDir string) []RequiredSkill {
+// Checks all provided directories (global, local, project, etc.) for each skill.
+// Returns list of missing skills (not installed in any directory).
+func CheckRequired(required []RequiredSkill, dirs ...string) []RequiredSkill {
 	var missing []RequiredSkill
 	for _, r := range required {
-		if !skillExists(r.Name, globalDir) && !skillExists(r.Name, localDir) {
+		found := false
+		for _, dir := range dirs {
+			if skillExists(r.Name, dir) {
+				found = true
+				break
+			}
+		}
+		if !found {
 			missing = append(missing, r)
 		}
 	}
@@ -41,19 +48,26 @@ func CheckRequired(required []RequiredSkill, globalDir, localDir string) []Requi
 
 // CheckStatus returns detailed status for each required skill, including
 // whether it's installed and whether it matches the embedded version.
-func CheckStatus(required []RequiredSkill, globalDir, localDir string) []SkillStatus {
+// Directories are checked in order; the first match determines the location label.
+// The label for each directory is its position: "global" for index 0, "local" for index 1,
+// "project" for index 2, and "dir-N" for subsequent indices.
+func CheckStatus(required []RequiredSkill, dirs ...string) []SkillStatus {
+	labels := []string{"global", "local", "project"}
 	statuses := make([]SkillStatus, len(required))
 	for i, r := range required {
 		statuses[i] = SkillStatus{RequiredSkill: r}
 
-		if skillExists(r.Name, globalDir) {
-			statuses[i].Installed = true
-			statuses[i].Location = "global"
-			statuses[i].Current = hashMatches(r.Name, globalDir)
-		} else if skillExists(r.Name, localDir) {
-			statuses[i].Installed = true
-			statuses[i].Location = "local"
-			statuses[i].Current = hashMatches(r.Name, localDir)
+		for j, dir := range dirs {
+			if skillExists(r.Name, dir) {
+				statuses[i].Installed = true
+				if j < len(labels) {
+					statuses[i].Location = labels[j]
+				} else {
+					statuses[i].Location = fmt.Sprintf("dir-%d", j)
+				}
+				statuses[i].Current = hashMatches(r.Name, dir)
+				break
+			}
 		}
 	}
 	return statuses

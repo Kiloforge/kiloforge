@@ -31,7 +31,7 @@ type ImplementWorktree struct {
 
 // ImplementSkillValidator checks that required agent skills are installed.
 type ImplementSkillValidator interface {
-	ValidateSkills(role, workDir string) error
+	ValidateSkills(role, workDir, projectDir string) error
 }
 
 // ImplementAgentSpawner spawns developer agents.
@@ -39,7 +39,7 @@ type ImplementAgentSpawner interface {
 	SetTracer(t port.Tracer)
 	SetCompletionCallback(fn func(agentID, ref, status string))
 	SpawnDeveloper(ctx context.Context, opts SpawnDeveloperOpts) (*domain.AgentInfo, error)
-	ValidateSkills(role, workDir string) error
+	ValidateSkills(role, workDir, projectDir string) error
 }
 
 // SpawnDeveloperOpts configures a developer agent spawn.

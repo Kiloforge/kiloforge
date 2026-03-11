@@ -3,7 +3,7 @@ title: Ensure skills are discoverable in agent worktrees
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-11
 spec:
   summary: |
     Skills installed to the project's .claude/skills/ directory are not found
@@ -16,7 +16,7 @@ spec:
     running in git worktrees (e.g., /path/to/kiloforge-wt/worker-1) have a
     different CWD than the original project directory. The worktree does not
     contain a .claude/skills/ directory, so the SDK cannot find the skills.
-
+    
     ValidateSkills() in spawner.go checks workDir/.claude/skills/ as the local
     dir, which is the worktree path — not the project's registered directory.
     The global dir (~/.claude/skills/) is also checked, but skills are installed
@@ -32,11 +32,11 @@ spec:
     - backend/internal/adapter/cli/add.go:161 — same for kf add
     - backend/internal/adapter/rest/api_handler.go:1398 — UpdateSkills also
       installs to project dir
-
+    
     The gap: skills are installed to the registered project directory, but
     agents run in worktrees. No mechanism copies or symlinks skills from the
     project dir to worktree dirs.
-
+    
     The spawner creates worktrees via ensureGitRepo() and sets workDir to the
     worktree path. The SDK session is created with WithCWD(workDir), so the
     SDK looks for skills relative to the worktree, not the project root.
@@ -59,34 +59,34 @@ spec:
     (a) Symlink {worktreeDir}/.claude/skills -> {projectDir}/.claude/skills/ at
         worktree creation time, or
     (b) Copy skills into the worktree's .claude/skills/ before spawning.
-
+    
     Option (a) is preferred — it's lightweight, stays in sync automatically, and
     doesn't duplicate files. The symlink should be created in the spawner's
     worktree setup code (ensureGitRepo or the worktree allocation logic).
-
+    
     Also add the project dir as a fallback in ValidateSkills so the 412 check
     doesn't incorrectly report missing skills for worktree agents.
 plan:
   - phase: Diagnosis & Fix ValidateSkills
     tasks:
-      - text: "Add projectDir parameter to ValidateSkills so it checks {projectDir}/.claude/skills/ in addition to workDir and global dir"
-        done: false
-      - text: "Update all ValidateSkills call sites (spawner.go, api_handler.go) to pass the registered project directory"
-        done: false
-      - text: "Write unit tests for ValidateSkills with worktree workDir != projectDir scenarios"
-        done: false
+      - text: Add projectDir parameter to ValidateSkills so it checks {projectDir}/.claude/skills/ in addition to workDir and global dir
+        done: true
+      - text: Update all ValidateSkills call sites (spawner.go, api_handler.go) to pass the registered project directory
+        done: true
+      - text: Write unit tests for ValidateSkills with worktree workDir != projectDir scenarios
+        done: true
   - phase: Ensure SDK Discovery via Symlink
     tasks:
-      - text: "In the worktree setup code (spawner.go or worktree allocator), create a symlink from {worktreeDir}/.claude/skills -> {projectDir}/.claude/skills/ if the project has local skills installed"
+      - text: In the worktree setup code (spawner.go or worktree allocator), create a symlink from {worktreeDir}/.claude/skills -> {projectDir}/.claude/skills/ if the project has local skills installed
         done: false
-      - text: "Handle edge cases: symlink already exists, target missing, Windows compatibility (copy fallback)"
+      - text: Handle edge cases: symlink already exists, target missing, Windows compatibility (copy fallback)
         done: false
-      - text: "Write tests for symlink creation and fallback behavior"
+      - text: Write tests for symlink creation and fallback behavior
         done: false
   - phase: Verification
     tasks:
-      - text: "Run full test suite (make test) to verify no regressions"
+      - text: Run full test suite (make test) to verify no regressions
         done: false
-      - text: "Manual verification: spawn an agent in a worktree and confirm skills are loaded by the SDK (check agent logs for skill invocation)"
+      - text: Manual verification: spawn an agent in a worktree and confirm skills are loaded by the SDK (check agent logs for skill invocation)
         done: false
 extra: {}

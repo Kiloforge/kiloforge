@@ -200,7 +200,7 @@ func TestValidateSkills_Developer(t *testing.T) {
 	cfg := &config.Config{SkillsDir: globalDir}
 	s := NewSpawner(cfg, nil, nil)
 
-	err := s.ValidateSkills("developer", "")
+	err := s.ValidateSkills("developer", "", "")
 	if err == nil {
 		t.Fatal("expected error when skills are missing")
 	}
@@ -216,7 +216,7 @@ func TestValidateSkills_Developer(t *testing.T) {
 	os.MkdirAll(devDir, 0o755)
 	os.WriteFile(filepath.Join(devDir, "SKILL.md"), []byte("# Dev"), 0o644)
 
-	if err := s.ValidateSkills("developer", ""); err != nil {
+	if err := s.ValidateSkills("developer", "", ""); err != nil {
 		t.Errorf("expected no error after install, got: %v", err)
 	}
 }
@@ -228,7 +228,7 @@ func TestValidateSkills_Reviewer(t *testing.T) {
 	cfg := &config.Config{SkillsDir: globalDir}
 	s := NewSpawner(cfg, nil, nil)
 
-	err := s.ValidateSkills("reviewer", "")
+	err := s.ValidateSkills("reviewer", "", "")
 	if err == nil {
 		t.Fatal("expected error when reviewer skill is missing")
 	}
@@ -238,8 +238,53 @@ func TestValidateSkills_Reviewer(t *testing.T) {
 	os.MkdirAll(localDir, 0o755)
 	os.WriteFile(filepath.Join(localDir, "SKILL.md"), []byte("# Rev"), 0o644)
 
-	if err := s.ValidateSkills("reviewer", workDir); err != nil {
+	if err := s.ValidateSkills("reviewer", workDir, ""); err != nil {
 		t.Errorf("expected no error after local install, got: %v", err)
+	}
+}
+
+func TestValidateSkills_WorktreeProjectDir(t *testing.T) {
+	t.Parallel()
+
+	globalDir := t.TempDir()
+	cfg := &config.Config{SkillsDir: globalDir}
+	s := NewSpawner(cfg, nil, nil)
+
+	// workDir (worktree) has no skills, projectDir has the skill installed.
+	workDir := t.TempDir()
+	projectDir := t.TempDir()
+
+	// Skill not in workDir, not in globalDir, not in projectDir — should fail.
+	err := s.ValidateSkills("developer", workDir, projectDir)
+	if err == nil {
+		t.Fatal("expected error when skills are missing from all directories")
+	}
+
+	// Install skill in projectDir — should pass.
+	projSkillDir := filepath.Join(projectDir, ".claude", "skills", "kf-developer")
+	os.MkdirAll(projSkillDir, 0o755)
+	os.WriteFile(filepath.Join(projSkillDir, "SKILL.md"), []byte("# Dev"), 0o644)
+
+	if err := s.ValidateSkills("developer", workDir, projectDir); err != nil {
+		t.Errorf("expected no error when skill exists in projectDir, got: %v", err)
+	}
+}
+
+func TestValidateSkills_ProjectDirSameAsWorkDir(t *testing.T) {
+	t.Parallel()
+
+	globalDir := t.TempDir()
+	cfg := &config.Config{SkillsDir: globalDir}
+	s := NewSpawner(cfg, nil, nil)
+
+	// When projectDir == workDir, should not duplicate the check.
+	workDir := t.TempDir()
+	skillDir := filepath.Join(workDir, ".claude", "skills", "kf-developer")
+	os.MkdirAll(skillDir, 0o755)
+	os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Dev"), 0o644)
+
+	if err := s.ValidateSkills("developer", workDir, workDir); err != nil {
+		t.Errorf("expected no error when projectDir == workDir, got: %v", err)
 	}
 }
 
@@ -249,7 +294,7 @@ func TestValidateSkills_UnknownRole(t *testing.T) {
 	cfg := &config.Config{SkillsDir: t.TempDir()}
 	s := NewSpawner(cfg, nil, nil)
 
-	if err := s.ValidateSkills("unknown", ""); err != nil {
+	if err := s.ValidateSkills("unknown", "", ""); err != nil {
 		t.Errorf("unexpected error for unknown role: %v", err)
 	}
 }

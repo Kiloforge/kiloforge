@@ -161,13 +161,13 @@ func runImplement(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("claude auth check failed: %w\n\nRun 'claude' in a terminal to authenticate, then retry.", err)
 	}
 
-	if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
+	if err := spawner.ValidateSkills("developer", proj.ProjectDir, proj.ProjectDir); err != nil {
 		var errMissing *agent.ErrSkillsMissing
 		if errors.As(err, &errMissing) {
 			if installErr := promptSkillInstall(ctx, cfg, errMissing.Missing, proj.ProjectDir); installErr != nil {
 				return installErr
 			}
-			if err := spawner.ValidateSkills("developer", proj.ProjectDir); err != nil {
+			if err := spawner.ValidateSkills("developer", proj.ProjectDir, proj.ProjectDir); err != nil {
 				return fmt.Errorf("skills still missing after install: %w", err)
 			}
 		} else {
