@@ -345,7 +345,7 @@ components:
           description: Unique agent identifier.
         role:
           type: string
-          enum: [developer, reviewer]
+          enum: [developer]
           description: Agent role.
         ref:
           type: string

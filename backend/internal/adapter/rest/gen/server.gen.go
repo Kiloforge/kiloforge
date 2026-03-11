@@ -27,7 +27,6 @@ const (
 const (
 	AgentRoleDeveloper   AgentRole = "developer"
 	AgentRoleInteractive AgentRole = "interactive"
-	AgentRoleReviewer    AgentRole = "reviewer"
 )
 
 // Defines values for AgentStatus.

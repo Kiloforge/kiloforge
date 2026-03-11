@@ -2184,7 +2184,7 @@ components:
           description: Random human-friendly display name
         role:
           type: string
-          enum: [developer, reviewer, interactive]
+          enum: [developer, interactive]
         ref:
           type: string
         status:
