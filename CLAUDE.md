@@ -7,10 +7,10 @@ This repo uses git worktrees. Go's VCS stamping fails in worktrees because `.git
 Before running `go build`, `go test`, or any `go` command that touches VCS metadata, source the worktree env helper:
 
 ```bash
-. .agent/kf/bin/kf-worktree-env
+eval "$(.agent/kf/bin/kf-worktree-env.py)"
 ```
 
-This exports `GIT_DIR` and `GIT_WORK_TREE` automatically. Use `KF_QUIET=1` to suppress output. Run `kf-worktree-env --help` for details.
+This exports `GIT_DIR` and `GIT_WORK_TREE` automatically. Use `KF_QUIET=1` to suppress output. Run `kf-worktree-env.py --help` for details.
 
 `make build` and `make test` already handle this — prefer Makefile targets when available.
 

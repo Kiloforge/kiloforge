@@ -98,7 +98,7 @@ Skills are structured slash commands that agents use for specific workflows. The
 
 | Category | Skills | Purpose |
 |----------|--------|---------|
-| Core Workflow | kf-architect, kf-developer, kf-implement, kf-dispatch | The main development pipeline |
+| Core Workflow | kf-architect, kf-developer, kf-implement, kf-status | The main development pipeline |
 | Management | kf-manage, kf-bulk-archive, kf-compact-archive, kf-revert | Track lifecycle operations |
 | Review & Advisory | kf-advisor-product, kf-advisor-reliability | Strategic analysis and recommendations |
 | Setup & Onboarding | kf-setup, kf-getting-started, kf-interactive, kf-new-track | Project initialization |

@@ -214,7 +214,7 @@ See the [Architecture Overview](architecture.md) for more on the merge lock.
 
 ### Dispatch
 
-The `/kf-dispatch` skill analyzes project state and produces worker assignments:
+The `/kf-status` command includes dispatch recommendations that analyze project state and produce worker assignments:
 
 - Identifies idle worktrees in the pool
 - Scans the track registry for pending tracks with satisfied dependencies

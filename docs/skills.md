@@ -178,10 +178,11 @@ kf implement <track-id>
 claude -p "/kf-developer <track-id>"
 ```
 
-### 3. Dispatch (`/kf-dispatch`)
+### 3. Status & Dispatch (`/kf-status`)
 
-The dispatcher analyzes project state and produces worker assignments for idle developer agents. It:
+The status command displays project progress and includes dispatch recommendations for idle developer agents. It:
 
+- Shows overall progress, active tracks, and blocked dependencies
 - Scans the track registry for available tracks
 - Checks dependency satisfaction
 - Produces prescriptive assignments for idle worktrees
@@ -196,7 +197,7 @@ The dispatcher analyzes project state and produces worker assignments for idle d
 | `kf-architect` | Research codebase, design tracks with specs and plans |
 | `kf-developer` | Claim and implement a track in a worktree |
 | `kf-implement` | Execute tasks from a track plan (single-branch workflow) |
-| `kf-dispatch` | Analyze state and assign work to idle agents |
+| `kf-status` | Display project status and dispatch recommendations |
 
 ### Management
 
