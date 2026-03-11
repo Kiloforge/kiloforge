@@ -1,0 +1,93 @@
+id: multi-agent-skills-docs_20260311200000Z
+title: "Document multi-agent skill installation in project docs"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: >
+    Update docs/skills.md with comprehensive multi-agent installation guidance.
+    Cover five agent tools that support the SKILL.md format: Claude Code, OpenCode,
+    Amp (Sourcegraph), Codex (OpenAI), and Antigravity (Google). Document both
+    global and project-scoped installation paths for each. Remove stale reviewer
+    references from the pipeline description and skill catalog.
+  context: |
+    Kiloforge skills are distributed as SKILL.md files in per-skill directories
+    (e.g., kf-developer/SKILL.md). Multiple AI coding agent tools now support
+    this format, each with its own directory convention. Users need clear guidance
+    on where to install skills for their chosen tool.
+
+    The kf-reviewer skill was removed upstream but docs/skills.md still references
+    it in the pipeline description and skill catalog.
+  codebase_analysis: |
+    docs/skills.md (159 lines) — current skills documentation.
+
+    Stale references to remove:
+    - Line 18: "architect -> developer -> reviewer" pipeline description
+    - Lines 30-33: kf-reviewer in pipeline diagram
+    - Lines 76-89: Section "3. Reviewer" describing the reviewer skill
+    - Line 109: kf-reviewer in skill catalog table
+    - Line 129: kf-reviewer in "Review & Quality" catalog reference
+
+    Sections to add:
+    - "Supported Agent Tools" section with per-agent global/project paths
+    - Updated install commands that wipe kf-* prefix before copying (cleanup orphans)
+    - Table of global vs project-scoped skill directories per agent
+
+    Agent tool skill directory research:
+
+    Global install paths:
+      Claude Code:   ~/.claude/skills/
+      OpenCode:      ~/.config/opencode/skills/  (fallback: ~/.claude/skills/)
+      Amp:           ~/.config/amp/skills/        (fallback: ~/.claude/skills/)
+      Codex:         ~/.agents/skills/
+      Antigravity:   ~/.gemini/antigravity/skills/
+
+    Project-scoped paths:
+      Claude Code:   .claude/skills/
+      OpenCode:      .opencode/skills/
+      Amp:           .agents/skills/
+      Codex:         .agents/skills/
+      Antigravity:   .agent/skills/
+
+    Note: OpenCode and Amp fall back to reading ~/.claude/skills/, so installing
+    for Claude Code implicitly works for those tools. Document this.
+  acceptance_criteria:
+    - docs/skills.md contains a "Supported Agent Tools" section listing all five tools with their global and project-scoped skill directories
+    - Install command examples include a cleanup step that removes existing kf-* directories before copying new ones
+    - Both global and project-scoped installation are documented with per-agent commands
+    - All references to kf-reviewer are removed from the pipeline description and skill catalog
+    - The pipeline diagram shows "architect -> developer" without reviewer
+  out_of_scope: |
+    - Website/landing page changes (separate track: multi-agent-skills-site)
+    - Backend code changes (skills checker, spawner, etc.)
+    - Frontend changes
+  technical_notes: |
+    This is a documentation-only change modifying docs/skills.md. The install
+    commands should use a consistent pattern:
+
+    Unix: SKILLS_DIR=<path> && rm -rf "$SKILLS_DIR"/kf-* && git clone --depth 1 <repo> /tmp/kf-skills && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" && rm -rf /tmp/kf-skills
+
+    Windows (PowerShell): $d="<path>"; Remove-Item "$d\kf-*" -Recurse -Force -EA 0; git clone --depth 1 <repo> $env:TEMP\kf-skills; Copy-Item $env:TEMP\kf-skills\kf-* $d\ -Recurse; Remove-Item $env:TEMP\kf-skills -Recurse -Force
+plan:
+  - phase: "Remove stale reviewer references"
+    tasks:
+      - text: "Remove kf-reviewer from pipeline diagram (lines 18, 30-33) — change to 'architect -> developer' flow"
+        done: false
+      - text: "Remove Section 3 'Reviewer' (lines 76-89) and renumber Section 4 'Dispatch' to Section 3"
+        done: false
+      - text: "Remove kf-reviewer from skill catalog table (line 109) and 'Review & Quality' category reference (line 129)"
+        done: false
+  - phase: "Add multi-agent installation guidance"
+    tasks:
+      - text: "Add 'Supported Agent Tools' section after 'How Skills Work' — table of 5 tools with global and project-scoped paths, noting OpenCode/Amp fallback to ~/.claude/skills/"
+        done: false
+      - text: "Add per-agent install command examples (global) for Unix and Windows, including kf-* cleanup step"
+        done: false
+      - text: "Add 'Project-Scoped Installation' subsection explaining how to install skills within a repo for team sharing"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify no remaining references to kf-reviewer in docs/skills.md"
+        done: false
+extra: {}
