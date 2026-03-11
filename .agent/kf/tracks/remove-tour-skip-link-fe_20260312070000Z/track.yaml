@@ -3,7 +3,7 @@ title: Remove redundant "Skip step" link from tour move-card step
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-11
 spec:
   summary: |
     Tour step 9 ("Try It: Move a Card") shows both a "Next" button and a
@@ -36,11 +36,11 @@ plan:
   - phase: Fix
     tasks:
       - text: Remove the isWaitStep branch in TourOverlay.tsx so all steps render a single "Next" button
-        done: false
+        done: true
       - text: Remove unused .skipLink styles from TourOverlay.module.css
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run frontend tests (make test) to verify no regressions
-        done: false
+        done: true
 extra: {}
