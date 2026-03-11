@@ -70,11 +70,11 @@ plan:
   - phase: Verification
     tasks:
       - text: Verify all 14 tour steps render with correct spotlight and tooltip placement
-        done: false
+        done: true
       - text: Verify scrolling during any spotlight step keeps overlay aligned with target
-        done: false
+        done: true
       - text: Verify welcome and finish dialog steps (centered, no spotlight) are unaffected
-        done: false
+        done: true
       - text: Run frontend build to confirm no TypeScript or CSS errors
-        done: false
+        done: true
 extra: {}
