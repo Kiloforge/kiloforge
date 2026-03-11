@@ -20,6 +20,7 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
   const [mode, setMode] = useState<FormMode>("clone");
   const [remoteUrl, setRemoteUrl] = useState("");
   const [name, setName] = useState("");
+  const [outputDir, setOutputDir] = useState("");
   const [sshKey, setSSHKey] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -74,17 +75,19 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
       } else {
         req = { name: name.trim() };
       }
+      if (outputDir.trim()) req.output_dir = outputDir.trim();
 
       const ok = await onAdd(req);
       if (ok) {
         setRemoteUrl("");
         setName("");
+        setOutputDir("");
         setSSHKey("");
         setExpanded(false);
         setMode("clone");
       }
     },
-    [mode, remoteUrl, name, sshKey, isSSH, onAdd, validate],
+    [mode, remoteUrl, name, outputDir, sshKey, isSSH, onAdd, validate],
   );
 
   const handleModeChange = useCallback((newMode: FormMode) => {
@@ -155,6 +158,20 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
           />
           {nameError && <span className={styles.fieldError}>{nameError}</span>}
         </div>
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor="output-dir">
+          Output directory <span className={styles.optional}>(optional)</span>
+        </label>
+        <input
+          id="output-dir"
+          className={styles.input}
+          type="text"
+          placeholder="default: internal mirror"
+          value={outputDir}
+          onChange={(e) => setOutputDir(e.target.value)}
+          disabled={adding}
+        />
       </div>
       {isSSH && sshKeys.length > 0 && (
         <div className={styles.sshKeyField}>

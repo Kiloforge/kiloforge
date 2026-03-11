@@ -125,6 +125,7 @@ export interface AddProjectRequest {
   remote_url?: string;
   name?: string;
   ssh_key?: string;
+  output_dir?: string;
 }
 
 export interface SSHKeyInfo {
