@@ -1,31 +1,31 @@
 id: guidance-overlay-site_20260311235900Z
-title: "Skills page guidance overlay with single-threaded mode content"
+title: "Become a Kiloforger — inline mode selector with single-threaded content"
 type: feature
 status: pending
 created: 2026-03-11
 updated: 2026-03-11
 spec:
   summary: >
-    Add a "Guidance" button above the "How it Works" workflow steps on the
-    kiloforge.dev skills page. Clicking it opens a full-screen overlay with
-    three tabbed "modes" — Single-Threaded (fully written), Multithreaded
-    (placeholder), and Core (placeholder). The single-threaded content presents
-    the philosophy of building agent confidence, avoiding bottleneck behavior,
-    accepting implementation drift, and focusing time at the decision-making
-    layer rather than micromanaging every commit.
+    Add a "Become a Kiloforger" section to the skills page between the install
+    section and the skills catalog link. It features three inline mode selectors
+    — Single-Threaded, Multi-Threaded, Multi-Processor — that swap the displayed
+    content. Single-Threaded is fully written with philosophy on building agent
+    confidence, avoiding bottleneck behavior, and working at the decision layer.
+    Multi-Threaded and Multi-Processor show placeholder content.
   context: |
-    The skills page currently shows a 4-step workflow (Setup -> Architect ->
-    Status -> Develop) but provides no guidance on the *mindset* users should
-    adopt when working with AI agents at scale. Users need coaching on how to
-    effectively utilize the skills — starting single-threaded to build
-    confidence, then scaling up.
+    The skills page is the entry point for new users. After installing, users
+    need guidance on the *mindset* required to effectively work with AI agents
+    at scale. This is presented as a progression:
 
-    The user wants three "levels" of guidance presented as overlay tabs:
     1. Single-Threaded — acclimate to the process, build confidence in agent
        output reliability, understand that the cost of remediation is lower than
        the cost of becoming a bottleneck
-    2. Multithreaded — content to be written in a separate conversation
-    3. Core — content to be written in a separate conversation
+    2. Multi-Threaded — content to be written in a separate conversation
+    3. Multi-Processor — content to be written in a separate conversation
+
+    The section is NOT an overlay/modal. It is inline content on the page with
+    pill-toggle mode selectors that swap which content is displayed. The page
+    title for this section is "Become a Kiloforger".
 
     Key philosophical points for single-threaded mode:
     - Goal is acclimation and building confidence that architect specs produce
@@ -52,84 +52,90 @@ spec:
     Target file: kiloforge_site/src/app/skills/page.tsx (445 lines)
     Target repo: /Users/benbaldivia/dev-2/kiloforge_site/
 
-    "How it Works" section: lines 273-333
-    - motion.div with whileInView animation
-    - Header "How it Works" + subtitle
-    - workflowSteps.map rendering 4 step cards with icons, descriptions, commands
+    Page layout (top to bottom):
+    1. Header — "Kiloforge Skills" title + subtitle (lines 192-205)
+    2. Install section — platform tabs + command (lines 207-271)
+    3. "How it Works" — 4 workflow steps (lines 273-333)
+    4. Context callout — skills-only vs full platform (lines 335-356)
+    5. All Skills — 6 category cards (lines 358-391) — being moved to subpage
+    6. Update & Uninstall (lines 393-416) — being moved to subpage
 
-    Existing overlay patterns:
-    - AnimatePresence + motion.div for mobile nav dropdown (lines 166-225)
-    - CopiedToast uses AnimatePresence with fade in/out (lines 257-269)
-    - No formal modal/dialog components exist
+    New page layout after both tracks:
+    1. Header
+    2. Install section
+    3. **"Become a Kiloforger"** section with mode selectors (THIS TRACK)
+       - Mode selector: Single-Threaded | Multi-Threaded | Multi-Processor
+       - Content swaps based on selected mode
+       - Single-Threaded includes the existing "How it Works" 4-step workflow
+         PLUS the philosophical guidance content
+    4. Context callout (skills-only vs full platform)
+    5. CTA link to /skills/catalog (from catalog subpage track)
+
+    Existing pill-toggle pattern for selectors (lines 224-238):
+    - Flex container with p-1 rounded-xl bg-white/5 border
+    - Active: bg-white/10 text-white border-white/15
+    - Inactive: text-neutral-400 hover:text-neutral-200
 
     Design system:
-    - glass-panel utility: rgba(30,30,30,0.4) + blur(12px)
-    - Colors: emerald-400/cyan-400 primary, amber/rose/indigo/purple accents
-    - Pill-toggle pattern for selectors (lines 224-238)
-    - All animations via framer-motion
-    - Icons via lucide-react
-    - Responsive: hidden/flex md:flex breakpoints
-
-    Available dependencies (no new installs needed):
-    - framer-motion (AnimatePresence, motion)
-    - lucide-react (X, BookOpen, etc.)
-    - clsx (conditional classes)
+    - glass-panel utility for cards
+    - emerald-400/cyan-400 primary accents
+    - fadeIn/stagger animation variants
+    - framer-motion for all animations
+    - lucide-react for icons
 
     This is NOT in the kiloforge main repo. The developer must work in the
     kiloforge_site directory at /Users/benbaldivia/dev-2/kiloforge_site/.
   acceptance_criteria:
-    - A "Guidance" button appears above or near the "How it Works" section header
-    - Clicking the button opens a full-screen overlay with backdrop blur
-    - Overlay has three tabbed modes — "Single-Threaded", "Multithreaded", "Core"
-    - "Single-Threaded" tab displays the full mindset philosophy content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus
-    - "Multithreaded" and "Core" tabs show placeholder content indicating these are coming
-    - Overlay closes via X button, Escape key, or backdrop click
-    - Responsive layout — full-screen on mobile, centered max-width panel on desktop
-    - Follows existing site design system (glass-panel, emerald/cyan accents, Framer Motion animations, pill-toggle tab pattern)
+    - A "Become a Kiloforger" section appears between the install section and the skills catalog CTA
+    - Three pill-toggle mode selectors are displayed — "Single-Threaded", "Multi-Threaded", "Multi-Processor"
+    - Selecting a mode swaps the displayed content inline (no overlay/modal)
+    - "Single-Threaded" mode shows the existing 4-step workflow ("How it Works") followed by philosophical guidance content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus
+    - "Multi-Threaded" and "Multi-Processor" modes show placeholder content
+    - Content transitions are animated (fade or slide via framer-motion)
+    - Mode selector follows existing pill-toggle styling pattern
+    - Responsive on mobile and desktop
+    - Follows existing site design system (glass-panel, emerald/cyan accents, Framer Motion animations)
     - Content is well-structured with clear section headings and readable prose
   out_of_scope: |
-    - Multithreaded mode content (separate conversation)
-    - Core mode content (separate conversation)
+    - Multi-Threaded mode content (separate conversation)
+    - Multi-Processor mode content (separate conversation)
     - Changes to the kiloforge main repo
     - Backend changes
-    - Changes to the install section or skill catalog (handled by multi-agent-skills-site track)
+    - Changes to the install section (handled by multi-agent-skills-site track)
+    - Moving the skills catalog to a subpage (handled by skills-catalog-subpage-site track)
   technical_notes: |
     Target repo: /Users/benbaldivia/dev-2/kiloforge_site/
     Target file: src/app/skills/page.tsx
 
     Implementation approach:
-    - Create a GuidanceOverlay client component (can be inline in the page file
-      or extracted — follow existing pattern of inline components)
-    - Use AnimatePresence + motion.div with backdrop-blur-xl for the overlay
-    - Tab system: useState for activeTab, pill-toggle styled tabs matching the
-      platform selector pattern
-    - Content organized as React elements within the component, not fetched
-    - Close handlers: onClick backdrop, X button, onKeyDown Escape
-    - Focus management: auto-focus close button on open, trap focus within overlay
-    - Scroll: overlay content scrolls independently (overflow-y-auto)
-    - Z-index: z-[60] to sit above the fixed nav (z-50)
+    - Add a mode state: useState<"single" | "multi" | "processor">("single")
+    - Place the "Become a Kiloforger" section after the install block
+    - Mode selector row uses the same pill-toggle pattern as platform tabs
+    - Content area uses AnimatePresence with key={mode} for animated transitions
+    - The existing workflowSteps data and rendering becomes part of the
+      single-threaded mode content (move it inside the mode content area)
+    - Remove the standalone "How it Works" section — it's now inside
+      single-threaded mode
 
-    The "Guidance" button should feel natural near the workflow section —
-    consider a subtle button with a BookOpen or Lightbulb icon that says
-    "Guidance" or "How to think about this".
-
-    Single-threaded content structure:
+    Single-threaded content structure (below the workflow steps):
     1. "Building Confidence" — why you start here, what you're learning
     2. "Don't Become the Bottleneck" — cost analysis, implementation drift reality
     3. "Work at the Decision Layer" — where your time creates the most value
     4. "When Things Drift" — structural responses, audits, track planning
+
+    Each content section should be a glass-panel card with a heading and
+    1-2 paragraphs of well-crafted prose. Keep the writing direct and
+    practical — this is guidance, not marketing copy.
 plan:
-  - phase: "Overlay component"
+  - phase: "Mode selector and section structure"
     tasks:
-      - text: "Create GuidanceOverlay component with AnimatePresence entrance/exit animation, backdrop blur (z-[60]), glass-panel inner container, and close button (X icon top-right)"
+      - text: "Add 'Become a Kiloforger' section after the install block with gradient heading, brief intro text, and three-option pill-toggle mode selector (Single-Threaded, Multi-Threaded, Multi-Processor)"
         done: false
-      - text: "Add tab system within overlay for three modes ('Single-Threaded', 'Multithreaded', 'Core') using pill-toggle pattern matching existing platform selector styling"
+      - text: "Add mode state management and AnimatePresence content area that swaps content based on selected mode with fade/slide transitions"
         done: false
-      - text: "Add open/close state management and 'Guidance' button (BookOpen or Lightbulb icon) positioned above the 'How it Works' section header"
+      - text: "Move the existing 'How it Works' workflow steps (workflowSteps data + rendering) into the single-threaded mode content area as the first part of that mode's content"
         done: false
-      - text: "Implement close-on-Escape keydown handler and close-on-backdrop-click"
-        done: false
-  - phase: "Content"
+  - phase: "Single-threaded guidance content"
     tasks:
       - text: "Write 'Building Confidence' section — acclimate to the process, understand that architect specs produce reliable implementations, learn to trust agent output through experience"
         done: false
@@ -139,10 +145,10 @@ plan:
         done: false
       - text: "Write 'When Things Drift' section — make structural changes to reduce interdependency, plan tracks with the architect to address misalignment, add project guidelines to specifications, run large-scale audits that produce actionable items for new tracks"
         done: false
-      - text: "Add placeholder content for 'Multithreaded' and 'Core' tabs with 'Coming soon' messaging styled to match the overlay design"
+      - text: "Add placeholder content for Multi-Threaded and Multi-Processor modes with styled 'Coming soon' messaging"
         done: false
   - phase: "Polish"
     tasks:
-      - text: "Ensure responsive layout (mobile: full-screen overlay with scroll, desktop: centered max-w-3xl panel with backdrop), verify animation timing and scroll behavior within overlay"
+      - text: "Ensure responsive layout across all modes, verify animation transitions between modes are smooth, test that the section flows naturally between install above and catalog CTA / footer below"
         done: false
 extra: {}
