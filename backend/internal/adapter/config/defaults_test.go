@@ -35,6 +35,9 @@ func TestDefaultsAdapter_Load(t *testing.T) {
 	if cfg.OrchestratorHost != "127.0.0.1" {
 		t.Errorf("OrchestratorHost: want %q, got %q", "127.0.0.1", cfg.OrchestratorHost)
 	}
+	if cfg.SkillsRepo != "kiloforge/kiloforge-skills" {
+		t.Errorf("SkillsRepo: want %q, got %q", "kiloforge/kiloforge-skills", cfg.SkillsRepo)
+	}
 }
 
 func TestDefaultsAdapter_ImplementsConfigProvider(t *testing.T) {

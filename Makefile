@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint lint-full gen-api verify-codegen verify-deps release-local
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint lint-full gen-api verify-codegen verify-deps release-local ensure-submodules
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
@@ -35,7 +35,10 @@ build:
 build-frontend:
 	cd frontend && npm ci && npm run build
 
-build-backend: ensure-dist
+ensure-submodules:
+	@git submodule update --init --recursive
+
+build-backend: ensure-dist ensure-submodules
 	@mkdir -p $(BIN_DIR)
 	$(eval GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev"))
 	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none"))

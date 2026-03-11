@@ -19,5 +19,6 @@ func (d *DefaultsAdapter) Load() (*Config, error) {
 		OrchestratorHost: "127.0.0.1",
 		DataDir:          filepath.Join(home, ".kiloforge"),
 		Model:            "opus",
+		SkillsRepo:       "kiloforge/kiloforge-skills",
 	}, nil
 }
