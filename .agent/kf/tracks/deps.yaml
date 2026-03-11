@@ -44,9 +44,6 @@ board-clamp-forward-moves-fe_20260312220001Z:
   - board-clamp-forward-moves-be_20260312220000Z
 
 ci-windows-submodule-be_20260311070001Z: []
-
-cleanup-obsolete-kf-md_20260312090000Z: []
-
 cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
