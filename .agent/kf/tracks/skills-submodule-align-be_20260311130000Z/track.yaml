@@ -1,5 +1,5 @@
 id: skills-submodule-align-be_20260311130000Z
-title: "Update skills submodule and remove reviewer role from backend"
+title: Update skills submodule and remove reviewer role from backend
 type: chore
 status: pending
 created: 2026-03-11
@@ -54,46 +54,46 @@ spec:
     replacing a reviewer agent. After removing SpawnReviewer, this code path should
     either be removed or return an error for reviewer role. Since the role is being
     fully removed, the replacement logic for reviewer should be deleted.
-
+    
     The generated code (*.gen.go files) must be regenerated after OpenAPI changes:
       make gen-api && make verify-codegen
 plan:
-  - phase: "Update submodule"
+  - phase: Update submodule
     tasks:
-      - text: "Update submodule pointer: cd backend/internal/adapter/skills/embedded && git fetch origin && git checkout fb1c3a8"
-        done: false
-      - text: "Stage submodule change and verify new skills (kf-bin, kf-merge-protocol) are present"
-        done: false
-  - phase: "Remove reviewer from backend code"
+      - text: Update submodule pointer: cd backend/internal/adapter/skills/embedded && git fetch origin && git checkout fb1c3a8
+        done: true
+      - text: Stage submodule change and verify new skills (kf-bin, kf-merge-protocol) are present
+        done: true
+  - phase: Remove reviewer from backend code
     tasks:
-      - text: "Remove AgentRoleReviewer from backend/internal/core/domain/agent.go and update IsWorkerRole()"
-        done: false
-      - text: "Remove ReviewerOpts struct and SpawnReviewer method from backend/internal/core/port/agent_spawner.go"
-        done: false
-      - text: "Remove SpawnReviewer from backend/internal/adapter/agent/spawner.go"
-        done: false
-      - text: "Remove SpawnReviewer from defaultSpawner in backend/internal/adapter/rest/server.go"
-        done: false
-      - text: "Remove reviewer spawning logic from backend/internal/adapter/rest/api_handler.go (interSpawner interface + replacement handler)"
-        done: false
-      - text: "Remove reviewer case from backend/internal/adapter/skills/checker.go (RequiredSkillsForRole, AllRequiredSkills)"
-        done: false
-  - phase: "Update specs, regenerate, and fix tests"
+      - text: Remove AgentRoleReviewer from backend/internal/core/domain/agent.go and update IsWorkerRole()
+        done: true
+      - text: Remove ReviewerOpts struct and SpawnReviewer method from backend/internal/core/port/agent_spawner.go
+        done: true
+      - text: Remove SpawnReviewer from backend/internal/adapter/agent/spawner.go
+        done: true
+      - text: Remove SpawnReviewer from defaultSpawner in backend/internal/adapter/rest/server.go
+        done: true
+      - text: Remove reviewer spawning logic from backend/internal/adapter/rest/api_handler.go (interSpawner interface + replacement handler)
+        done: true
+      - text: Remove reviewer case from backend/internal/adapter/skills/checker.go (RequiredSkillsForRole, AllRequiredSkills)
+        done: true
+  - phase: Update specs, regenerate, and fix tests
     tasks:
-      - text: "Remove 'reviewer' from role enum in backend/api/openapi.yaml and backend/api/asyncapi.yaml"
-        done: false
-      - text: "Regenerate API code: make gen-api"
-        done: false
-      - text: "Update all test files: checker_test.go, installer_test.go, skills_service_test.go, testutil/mocks.go, badge/handler_test.go, e2e_agent_lifecycle_test.go, api_handler_extra_test.go"
-        done: false
-      - text: "Update documentation: docs/skills.md, docs/architecture.md, backend/docs/architecture.md, backend/docs/design-agent-orchestration.md"
-        done: false
-  - phase: "Verification"
+      - text: Remove 'reviewer' from role enum in backend/api/openapi.yaml and backend/api/asyncapi.yaml
+        done: true
+      - text: Regenerate API code: make gen-api
+        done: true
+      - text: Update all test files: checker_test.go, installer_test.go, skills_service_test.go, testutil/mocks.go, badge/handler_test.go, e2e_agent_lifecycle_test.go, api_handler_extra_test.go
+        done: true
+      - text: Update documentation: docs/skills.md, docs/architecture.md, backend/docs/architecture.md, backend/docs/design-agent-orchestration.md
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run make build to verify clean compilation"
+      - text: Run make build to verify clean compilation
         done: false
-      - text: "Run make test to verify all tests pass"
+      - text: Run make test to verify all tests pass
         done: false
-      - text: "Run make verify-codegen to confirm generated code matches spec"
+      - text: Run make verify-codegen to confirm generated code matches spec
         done: false
 extra: {}
