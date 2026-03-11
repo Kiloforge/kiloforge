@@ -302,13 +302,12 @@ All persistent data lives in `~/.kiloforge/` (configurable via `--data-dir`):
 ```
 ~/.kiloforge/
 ├── config.json           # Global configuration
-├── projects.json         # Project registry
+├── kiloforge.db          # SQLite database (agents, projects, quota, traces)
 ├── pool.json             # Worktree pool state
-├── state.json            # Agent state (running/completed agents)
 ├── projects/             # Per-project data
 │   └── <slug>/
 │       └── logs/             # Agent log files
-└── orchestrator.log      # Cortex daemon log
+└── cortex.log            # Cortex daemon log
 ```
 
 ## Tracing

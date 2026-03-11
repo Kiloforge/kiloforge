@@ -65,9 +65,9 @@ plan:
   - phase: Fix data directory and log references
     tasks:
       - text: Update README.md data directory structure — add kiloforge.db, rename orchestrator.log to cortex.log, note JSON files are legacy
-        done: false
+        done: true
       - text: Update README.md status output example — fix port and Dashboard label to match actual code
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Grep all docs for remaining 4001 references — fix any found
