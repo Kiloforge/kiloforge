@@ -1,0 +1,25 @@
+id: cleanup-obsolete-kf-md_20260312090000Z
+title: Remove obsolete pre-YAML markdown files from .agent/kf
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: Delete tracks-legacy.md and archive-compactions.md which were superseded by the YAML migration (tracks.yaml, compactions.yaml). Neither file is referenced by any skill, CLI tool, or running code.
+  context: The kf system migrated from markdown-based track and compaction tracking to YAML. Two .md files remain as legacy artifacts: tracks-legacy.md (a read-only snapshot from the conductor→kf migration) and archive-compactions.md (a markdown table replaced by compactions.yaml). Five other .md files (product.md, tech-stack.md, product-guidelines.md, workflow.md, quick-links.md) are intentionally markdown — rich narrative docs referenced by 8-10+ skills.
+  codebase_analysis: null
+  acceptance_criteria:
+    - tracks-legacy.md is deleted
+    - archive-compactions.md is deleted
+    - No references to these files remain in kf bin scripts or skills
+    - product.md, tech-stack.md, product-guidelines.md, workflow.md, quick-links.md are preserved
+  out_of_scope: Converting product.md, tech-stack.md, product-guidelines.md, workflow.md, or quick-links.md to YAML — these are intentionally markdown.
+  technical_notes: null
+plan:
+  - phase: Cleanup
+    tasks:
+      - text: Delete .agent/kf/tracks-legacy.md
+        done: false
+      - text: Delete .agent/kf/archive-compactions.md
+        done: false
+extra: {}
