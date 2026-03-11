@@ -111,7 +111,7 @@ describe("OverviewPage", () => {
 
   it("renders stat cards section", () => {
     renderPage();
-    // StatCards renders agent count; section header says "Agents"
+    // Section header says "Agents"
     expect(screen.getAllByText("Agents").length).toBeGreaterThanOrEqual(1);
   });
 
