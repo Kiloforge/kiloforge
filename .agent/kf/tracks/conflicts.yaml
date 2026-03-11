@@ -15,3 +15,4 @@
 agent-diff-panel-fe_20260312210900Z/agent-idle-suspend-fe_20260312020001Z: {"risk":"medium","note":"Both modify AgentTerminal.tsx","added":"2026-03-10"}
 agent-diff-panel-fe_20260312210900Z/agent-interrupt-fe_20260312220002Z: {"risk":"medium","note":"Both touch AgentTerminal.tsx","added":"2026-03-10"}
 agent-idle-suspend-fe_20260312020001Z/fix-terminal-render-crash-fe_20260311235900Z: {"risk":"medium","note":"Both touch AgentTerminal.tsx — rendering bugs vs status handling","added":"2026-03-10"}
+fix-ime-composition-input-fe_20260311000000Z/send-pause-toggle-fe_20260311060100Z: {"risk":"low","note":"Both modify CommandPane.tsx but different sections — IME guards vs button logic","added":"2026-03-11"}

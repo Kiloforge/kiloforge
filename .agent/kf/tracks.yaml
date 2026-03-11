@@ -280,6 +280,7 @@ review-cycle-relay_20260307125002Z: {"title":"Developer-Reviewer Relay Cycle","s
 schema-first-guidance_20260308200002Z: {"title":"Schema-First API Development Guidance and Standards","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 sdk-agent-migration-be_20260310014147Z: {"title":"Migrate Agent Spawner to Claude Agent SDK (Backend)","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 sdk-agent-migration-fe_20260310014148Z: {"title":"Structured Agent Terminal Display (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+send-pause-toggle-fe_20260311060100Z: {"title":"Replace interrupt button with send/pause toggle","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
 server-host-port-config_20260312230100Z: {"title":"Add --host/--port flags to kf up and detect port conflicts","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 setup-gate-be_20260310234710Z: {"title":"Gate All Agent Endpoints Behind Setup Check (Backend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 setup-gate-fe_20260310234711Z: {"title":"Disable Agent Actions Until Setup Complete (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
