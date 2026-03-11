@@ -1,5 +1,5 @@
 id: skills-submodule-align-fe_20260311130001Z
-title: "Remove reviewer role from frontend UI and tests"
+title: Remove reviewer role from frontend UI and tests
 type: chore
 status: pending
 created: 2026-03-11
@@ -41,24 +41,24 @@ spec:
     remaining roles should be: ["developer", "interactive", "advisor"]. The architect
     role is not shown as a filter chip (it's covered by the developer/worker category).
 plan:
-  - phase: "Remove reviewer from components"
+  - phase: Remove reviewer from components
     tasks:
-      - text: "Remove 'reviewer' from role filter array and update help tooltip in frontend/src/pages/OverviewPage.tsx"
-        done: false
-      - text: "Remove reviewer CSS class mapping from frontend/src/components/MiniCard.tsx"
-        done: false
-      - text: "Remove .roleReviewer rule from frontend/src/components/MiniCard.module.css"
-        done: false
-      - text: "Update tour step text in frontend/src/components/tour/tourSteps.ts (remove reviewer mention)"
-        done: false
-  - phase: "Update tests"
+      - text: Remove 'reviewer' from role filter array and update help tooltip in frontend/src/pages/OverviewPage.tsx
+        done: true
+      - text: Remove reviewer CSS class mapping from frontend/src/components/MiniCard.tsx
+        done: true
+      - text: Remove .roleReviewer rule from frontend/src/components/MiniCard.module.css
+        done: true
+      - text: Update tour step text in frontend/src/components/tour/tourSteps.ts (remove reviewer mention)
+        done: true
+  - phase: Update tests
     tasks:
-      - text: "Update frontend/src/pages/OverviewPage.test.tsx — remove reviewer agent fixtures and assertions"
-        done: false
-      - text: "Update frontend/src/hooks/useAgentActions.test.ts — remove or change reviewer test case"
-        done: false
-  - phase: "Verification"
+      - text: Update frontend/src/pages/OverviewPage.test.tsx — remove reviewer agent fixtures and assertions
+        done: true
+      - text: Update frontend/src/hooks/useAgentActions.test.ts — remove or change reviewer test case
+        done: true
+  - phase: Verification
     tasks:
-      - text: "Run npm run build to verify clean compilation"
-        done: false
+      - text: Run npm run build to verify clean compilation
+        done: true
 extra: {}
