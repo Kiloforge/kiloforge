@@ -242,14 +242,6 @@ When a PR exceeds the maximum review cycle count (default 3), the orchestrator l
 
 ---
 
-## Review Cycle
+## Implementation Cycle
 
-The orchestrator manages the developer-reviewer cycle automatically:
-
-1. **PR opened** → reviewer agent spawned
-2. **Review approved** → developer resumed for merge
-3. **Changes requested** → developer resumed for revisions (cycle count incremented)
-4. **Developer pushes** → new reviewer spawned for re-review
-5. **Cycle limit reached** → PR escalated, agents stopped
-
-The default max review cycles is 3.
+Developer agents implement tracks autonomously: they create branches, implement tasks following the plan, verify with tests and builds, acquire the merge lock, and merge directly to main. The reviewer role has been removed.

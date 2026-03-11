@@ -19,15 +19,6 @@ func TestCheckRequired(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Install "kf-reviewer" locally.
-	revDir := filepath.Join(localDir, "kf-reviewer")
-	if err := os.MkdirAll(revDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(revDir, "SKILL.md"), []byte("# Rev"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
 	// Create a directory without SKILL.md.
 	os.MkdirAll(filepath.Join(globalDir, "empty-skill"), 0o755)
 
@@ -42,13 +33,6 @@ func TestCheckRequired(t *testing.T) {
 		{
 			name:      "found globally",
 			required:  []RequiredSkill{{Name: "kf-developer", Reason: "dev"}},
-			globalDir: globalDir,
-			localDir:  localDir,
-			wantCount: 0,
-		},
-		{
-			name:      "found locally",
-			required:  []RequiredSkill{{Name: "kf-reviewer", Reason: "rev"}},
 			globalDir: globalDir,
 			localDir:  localDir,
 			wantCount: 0,
@@ -140,14 +124,14 @@ func TestCheckStatus(t *testing.T) {
 	}
 	os.WriteFile(filepath.Join(devDir, "SKILL.md"), embeddedData, 0o644)
 
-	// Install kf-reviewer with different content (outdated).
-	revDir := filepath.Join(globalDir, "kf-reviewer")
-	os.MkdirAll(revDir, 0o755)
-	os.WriteFile(filepath.Join(revDir, "SKILL.md"), []byte("# Old content"), 0o644)
+	// Install kf-interactive with different content (outdated).
+	intDir := filepath.Join(globalDir, "kf-interactive")
+	os.MkdirAll(intDir, 0o755)
+	os.WriteFile(filepath.Join(intDir, "SKILL.md"), []byte("# Old content"), 0o644)
 
 	required := []RequiredSkill{
 		{Name: "kf-developer", Reason: "dev"},
-		{Name: "kf-reviewer", Reason: "rev"},
+		{Name: "kf-interactive", Reason: "interactive"},
 		{Name: "kf-architect", Reason: "gen"},
 	}
 
@@ -157,9 +141,9 @@ func TestCheckStatus(t *testing.T) {
 	if !statuses[0].Installed || !statuses[0].Current {
 		t.Errorf("kf-developer: installed=%v current=%v, want true/true", statuses[0].Installed, statuses[0].Current)
 	}
-	// kf-reviewer: installed but outdated.
+	// kf-interactive: installed but outdated.
 	if !statuses[1].Installed || statuses[1].Current {
-		t.Errorf("kf-reviewer: installed=%v current=%v, want true/false", statuses[1].Installed, statuses[1].Current)
+		t.Errorf("kf-interactive: installed=%v current=%v, want true/false", statuses[1].Installed, statuses[1].Current)
 	}
 	// kf-architect: not installed.
 	if statuses[2].Installed {
@@ -230,7 +214,7 @@ func TestListEmbedded(t *testing.T) {
 	for _, n := range names {
 		nameSet[n] = true
 	}
-	for _, expected := range []string{"kf-developer", "kf-reviewer", "kf-architect", "kf-advisor-product", "kf-advisor-reliability", "kf-repair"} {
+	for _, expected := range []string{"kf-developer", "kf-architect", "kf-advisor-product", "kf-advisor-reliability", "kf-repair"} {
 		if !nameSet[expected] {
 			t.Errorf("expected %q in embedded skills", expected)
 		}
@@ -243,7 +227,6 @@ func TestRequiredSkillsForRole(t *testing.T) {
 		wantName string
 	}{
 		{"developer", "kf-developer"},
-		{"reviewer", "kf-reviewer"},
 		{"interactive", "kf-interactive"},
 		{"architect", "kf-architect"},
 		{"advisor-product", "kf-advisor-product"},
@@ -278,7 +261,6 @@ func TestSkillCommandForRole(t *testing.T) {
 		{"advisor-reliability", "/kf-advisor-reliability"},
 		{"interactive", "/kf-interactive"},
 		{"developer", ""},
-		{"reviewer", ""},
 		{"unknown", ""},
 	}
 	for _, tt := range tests {

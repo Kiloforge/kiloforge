@@ -123,7 +123,7 @@ func TestTimeoutReaper_DisabledWhenZero(t *testing.T) {
 func TestTimeoutReaper_ReapsMultipleRoles(t *testing.T) {
 	t.Parallel()
 	store := newFakeStore(
-		domain.AgentInfo{ID: "r-1", Role: "reviewer", Status: "running", StartedAt: time.Now().Add(-3 * time.Hour)},
+		domain.AgentInfo{ID: "r-1", Role: "developer", Status: "running", StartedAt: time.Now().Add(-3 * time.Hour)},
 		domain.AgentInfo{ID: "a-1", Role: "architect", Status: "waiting", StartedAt: time.Now().Add(-3 * time.Hour)},
 	)
 	reaper := NewTimeoutReaper(store, &config.Config{AgentMaxDuration: "2h"}, &fakeEventBus{})

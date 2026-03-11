@@ -212,7 +212,7 @@ func TestDetectStale_ChecksWaitingAndSuspending(t *testing.T) {
 func TestRecoverAll_DevelopersFirst(t *testing.T) {
 	store := &testutil.MockAgentStore{
 		AgentData: []domain.AgentInfo{
-			{ID: "rev-1", Status: "suspended", SessionID: "s1", WorktreeDir: os.TempDir(), Role: "reviewer"},
+			{ID: "rev-1", Status: "suspended", SessionID: "s1", WorktreeDir: os.TempDir(), Role: "interactive"},
 			{ID: "dev-1", Status: "suspended", SessionID: "s2", WorktreeDir: os.TempDir(), Role: "developer"},
 		},
 	}
@@ -227,6 +227,6 @@ func TestRecoverAll_DevelopersFirst(t *testing.T) {
 		t.Errorf("expected developer (s2) first, got %s", starter.calls[0].sessionID)
 	}
 	if starter.calls[1].sessionID != "s1" {
-		t.Errorf("expected reviewer (s1) second, got %s", starter.calls[1].sessionID)
+		t.Errorf("expected interactive (s1) second, got %s", starter.calls[1].sessionID)
 	}
 }

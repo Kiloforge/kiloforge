@@ -16,7 +16,7 @@ func TestCreateTracking_FindsDeveloperAgent(t *testing.T) {
 
 	agents := []domain.AgentInfo{
 		{ID: "dev-1", Role: "developer", Ref: "feature/auth", SessionID: "sess-1", WorktreeDir: "/wt/dev-1"},
-		{ID: "rev-1", Role: "reviewer", Ref: "PR #1", SessionID: "sess-2"},
+		{ID: "dev-2", Role: "developer", Ref: "track-pr-001", SessionID: "sess-2"},
 	}
 
 	tracking := svc.CreateTracking(5, "feature/auth", "myapp", agents, 3)

@@ -88,7 +88,7 @@ func TestConnectionSuspender_WorkerRolesIgnored(t *testing.T) {
 	suspender := &mockSuspender{}
 	lookup := &mockRoleLookup{agents: map[string]string{
 		"dev-1": "developer",
-		"rev-1": "reviewer",
+		"rev-1": "developer",
 	}}
 	cs := NewConnectionSuspender(suspender, lookup, 50*time.Millisecond)
 	defer cs.Stop()

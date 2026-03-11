@@ -15,7 +15,7 @@ Skills are distributed as part of the Kiloforge release. They are embedded in th
 
 ## The Core Pipeline
 
-The primary development workflow follows the **architect → developer → reviewer** pipeline:
+The primary development workflow follows the **architect → developer** pipeline:
 
 ```
 Kiloforger's intent
@@ -25,9 +25,6 @@ Kiloforger's intent
        │
        ▼
   /kf-developer          ← Claims track, implements in worktree, merges
-       │
-       ▼
-  /kf-reviewer           ← Reviews PR against spec (optional)
        │
        ▼
   Merged to main
@@ -73,22 +70,7 @@ kf implement <track-id>
 claude -p "/kf-developer <track-id>"
 ```
 
-### 3. Reviewer (`/kf-reviewer`)
-
-The reviewer validates a developer's work against the track spec. It:
-
-- Fetches the PR diff
-- Reviews against the track specification and project standards
-- Checks for missing acceptance criteria, code quality issues, and style violations
-- Approves or requests changes with specific feedback
-- Supports multiple review rounds (up to 5 iterations)
-
-**Usage:**
-```bash
-claude -p "/kf-reviewer <pr-url>"
-```
-
-### 4. Dispatch (`/kf-dispatch`)
+### 3. Dispatch (`/kf-dispatch`)
 
 The dispatcher analyzes project state and produces worker assignments for idle developer agents. It:
 
@@ -106,7 +88,6 @@ The dispatcher analyzes project state and produces worker assignments for idle d
 | `kf-architect` | Research codebase, design tracks with specs and plans |
 | `kf-developer` | Claim and implement a track in a worktree |
 | `kf-implement` | Execute tasks from a track plan (single-branch workflow) |
-| `kf-reviewer` | Review a PR against track spec and standards |
 | `kf-dispatch` | Analyze state and assign work to idle agents |
 
 ### Management

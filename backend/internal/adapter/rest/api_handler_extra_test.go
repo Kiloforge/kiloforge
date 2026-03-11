@@ -27,8 +27,6 @@ type stubInteractiveSpawner struct {
 	resumeErr       error
 	spawnDevResult  *domain.AgentInfo
 	spawnDevErr     error
-	spawnRevResult  *domain.AgentInfo
-	spawnRevErr     error
 }
 
 func (s *stubInteractiveSpawner) SpawnInteractive(_ context.Context, _ agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error) {
@@ -39,12 +37,6 @@ func (s *stubInteractiveSpawner) SpawnDeveloper(_ context.Context, _ agent.Spawn
 		return nil, s.spawnDevErr
 	}
 	return s.spawnDevResult, nil
-}
-func (s *stubInteractiveSpawner) SpawnReviewer(_ context.Context, _ int, _ string) (*domain.AgentInfo, error) {
-	if s.spawnRevErr != nil {
-		return nil, s.spawnRevErr
-	}
-	return s.spawnRevResult, nil
 }
 func (s *stubInteractiveSpawner) StopAgent(_ string) error { return nil }
 func (s *stubInteractiveSpawner) ResumeAgent(_ context.Context, _ string) (*agent.InteractiveAgent, error) {

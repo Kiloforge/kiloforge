@@ -105,7 +105,7 @@ func TestAgentService_ListAgents(t *testing.T) {
 	store := &stubAgentStore{
 		agents: []domain.AgentInfo{
 			{ID: "a1", Role: "developer"},
-			{ID: "a2", Role: "reviewer"},
+			{ID: "a2", Role: "developer"},
 		},
 	}
 	svc := NewAgentService(store, nil, nil)

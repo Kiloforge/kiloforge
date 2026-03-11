@@ -42,7 +42,7 @@ func TestInstall_ExtractsSkills(t *testing.T) {
 	t.Parallel()
 	tarball := createTestTarball(t, map[string]string{
 		"kf-developer/SKILL.md": "# Developer Skill",
-		"kf-reviewer/SKILL.md":  "# Reviewer Skill",
+		"kf-interactive/SKILL.md": "# Interactive Skill",
 		"README.md":             "# Not a skill",
 	})
 

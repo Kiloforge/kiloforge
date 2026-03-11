@@ -56,7 +56,6 @@ Global configuration stored at `~/.kiloforge/config.json`:
 
 Manages Claude Code process lifecycle (currently used by orchestrator, disabled in CLI):
 
-- **SpawnReviewer**: Launches `claude -p "/kf-reviewer <pr-url>"`
 - **SpawnDeveloper**: Launches `claude -p "/kf-developer <track> <flags>"`
 
 ### 7. State Store (`internal/state/state.go`)

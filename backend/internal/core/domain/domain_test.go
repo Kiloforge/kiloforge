@@ -75,9 +75,6 @@ func TestAgentRole_Constants(t *testing.T) {
 	if domain.AgentRoleDeveloper != "developer" {
 		t.Errorf("AgentRoleDeveloper = %q, want %q", domain.AgentRoleDeveloper, "developer")
 	}
-	if domain.AgentRoleReviewer != "reviewer" {
-		t.Errorf("AgentRoleReviewer = %q, want %q", domain.AgentRoleReviewer, "reviewer")
-	}
 }
 
 func TestIsAdvisorRole(t *testing.T) {
@@ -108,7 +105,7 @@ func TestIsWorkerRole(t *testing.T) {
 		want bool
 	}{
 		{"developer", true},
-		{"reviewer", true},
+		{"reviewer", false},
 		{"interactive", false},
 		{"architect", false},
 		{"advisor-product", false},

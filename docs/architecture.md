@@ -17,7 +17,7 @@ Kiloforge is a local orchestration platform with three main components: a **CLI*
      │  up, down, add  │   │                 │   │                 │
      │  implement      │──►│  REST API       │   │  developer-1    │
      │  agents, logs   │   │  SSE events     │   │  developer-2    │
-     │  stop, attach   │   │  WebSocket      │   │  reviewer-1     │
+     │  stop, attach   │   │  WebSocket      │   │  developer-3    │
      │  cost, skills   │   │  Agent spawner  │   │  architect      │
      └─────────────────┘   │  Quota tracker  │   │  interactive    │
                            │  Lock service   │   └─────────────────┘
@@ -98,7 +98,7 @@ Skills are structured slash commands that agents use for specific workflows. The
 
 | Category | Skills | Purpose |
 |----------|--------|---------|
-| Core Workflow | kf-architect, kf-developer, kf-implement, kf-reviewer, kf-dispatch | The main development pipeline |
+| Core Workflow | kf-architect, kf-developer, kf-implement, kf-dispatch | The main development pipeline |
 | Management | kf-manage, kf-bulk-archive, kf-compact-archive, kf-revert | Track lifecycle operations |
 | Review & Advisory | kf-advisor-product, kf-advisor-reliability | Strategic analysis and recommendations |
 | Setup & Onboarding | kf-setup, kf-getting-started, kf-interactive, kf-new-track | Project initialization |
@@ -110,7 +110,6 @@ The core development workflow follows a structured pipeline:
 
 1. **Architect** (`/kf-architect`) — Researches the codebase, designs implementation, creates tracks with specs and plans
 2. **Developer** (`/kf-developer`) — Claims a track, creates a branch, implements all tasks following the plan, merges to main
-3. **Reviewer** (`/kf-reviewer`) — Reviews a developer's PR against the track spec and project standards (optional, via `--with-review`)
 
 Skills are validated before agent spawn — the Cortex checks that all required skills are installed and up to date.
 
@@ -123,7 +122,7 @@ The notification system alerts the Kiloforger when agents need attention:
 ### Triggers
 
 - **Interactive agent waiting** — When an interactive or advisor agent finishes its turn and waits for input, a notification is created
-- **Worker agent waiting** — The dashboard watcher scans worker agent (developer/reviewer) logs every 2 seconds; if it detects a `turn_end` event, it creates a notification
+- **Worker agent waiting** — The dashboard watcher scans worker agent (developer) logs every 2 seconds; if it detects a `turn_end` event, it creates a notification
 - **Auto-dismiss** — When an agent starts a new turn (`turn_start`), the notification is automatically dismissed
 - **Cleanup** — When an agent reaches a terminal status (completed, failed, stopped), all its notifications are cleaned up
 
@@ -166,7 +165,7 @@ The queue service handles dependency-aware track scheduling:
 
 The Cortex manages agent suspension to conserve resources:
 
-- **Worker roles** (developer, reviewer) — never auto-suspend. They run autonomously without a browser connection.
+- **Worker roles** (developer) — never auto-suspend. They run autonomously without a browser connection.
 - **Interactive roles** (architect, advisor, interactive) — auto-suspend after a configurable grace period (default: 30 seconds) when the Kiloforger disconnects from the WebSocket session.
 - **Resume** — Suspended agents can be resumed with `kf attach` or via the Command Deck. Full session continuity is preserved.
 - **Shutdown** — `kf down` gracefully suspends all running agents. On restart, they can be resumed.
@@ -223,12 +222,12 @@ A **track** is the unit of work in the Kiloforge track system. Each track has:
 - A **plan** — how to build it (phased tasks)
 - **Metadata** — status, type, timestamps, dependencies
 
-Tracks are created by the architect skill, implemented by developer agents, and optionally reviewed by reviewer agents. The system handles dependency ordering, conflict detection, and merge serialization.
+Tracks are created by the architect skill and implemented by developer agents. The system handles dependency ordering, conflict detection, and merge serialization.
 
 ### Agents
 
 An **agent** is a Claude Code CLI process managed by the Cortex. Agents have:
-- A **role** — developer, reviewer, architect, advisor-product, advisor-reliability, or interactive
+- A **role** — developer, architect, advisor-product, advisor-reliability, or interactive
 - A **status** — running, waiting, halted, suspended, completed, failed, stopped, force-killed, resume-failed, or replaced
 - A **session** — the Claude Code session ID, resumable after stop or suspension
 - **Quota** — token counts and estimated cost

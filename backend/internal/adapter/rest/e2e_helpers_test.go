@@ -364,8 +364,8 @@ func seedTestData(t *testing.T, srv *e2eServer) {
 		{
 			ID:        "agent-completed-1",
 			Name:      "calm-otter",
-			Role:      "reviewer",
-			Ref:       "PR #1",
+			Role:      "developer",
+			Ref:       "track-completed-001",
 			Status:    "completed",
 			StartedAt: time.Now().Add(-30 * time.Minute),
 			UpdatedAt: time.Now().Add(-5 * time.Minute),

@@ -235,7 +235,7 @@ func TestSkillsService_ListInstalledSkills(t *testing.T) {
 	manifest := &stubManifestManager{
 		installed: []InstalledSkillDetail{
 			{Name: "kf-developer", Modified: false},
-			{Name: "kf-reviewer", Modified: true},
+			{Name: "kf-interactive", Modified: true},
 		},
 	}
 	svc := NewSkillsService(cfg, nil, nil, manifest, nil)

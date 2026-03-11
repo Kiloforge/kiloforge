@@ -165,33 +165,15 @@ func (m *MockAgentStore) AgentsByStatus(statuses ...string) []domain.AgentInfo {
 
 // MockAgentSpawner records spawn/resume calls.
 type MockAgentSpawner struct {
-	mu            sync.Mutex
-	ReviewerCalls []port.ReviewerOpts
-	ResumeCalls   []ResumeCall
+	mu          sync.Mutex
+	ResumeCalls []ResumeCall
 
-	SpawnErr  error
 	ResumeErr error
 }
 
 type ResumeCall struct {
 	SessionID string
 	WorkDir   string
-}
-
-func (m *MockAgentSpawner) SpawnReviewer(_ context.Context, opts port.ReviewerOpts) (*domain.AgentInfo, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.SpawnErr != nil {
-		return nil, m.SpawnErr
-	}
-	m.ReviewerCalls = append(m.ReviewerCalls, opts)
-	return &domain.AgentInfo{
-		ID:        fmt.Sprintf("reviewer-%d", opts.PRNumber),
-		Role:      "reviewer",
-		Ref:       fmt.Sprintf("PR #%d", opts.PRNumber),
-		Status:    "running",
-		SessionID: "mock-session",
-	}, nil
 }
 
 func (m *MockAgentSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir string) error {

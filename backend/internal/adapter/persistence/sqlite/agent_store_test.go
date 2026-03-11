@@ -90,7 +90,7 @@ func TestAgentStore_AgentsByStatus(t *testing.T) {
 
 	_ = store.AddAgent(domain.AgentInfo{ID: "a1", Role: "developer", Ref: "t1", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
 	_ = store.AddAgent(domain.AgentInfo{ID: "a2", Role: "developer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
-	_ = store.AddAgent(domain.AgentInfo{ID: "a3", Role: "reviewer", Ref: "t3", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a3", Role: "developer", Ref: "t3", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
 
 	running := store.AgentsByStatus("running")
 	if len(running) != 2 {
@@ -121,7 +121,7 @@ func TestAgentStore_Agents(t *testing.T) {
 	store := NewAgentStore(db)
 
 	_ = store.AddAgent(domain.AgentInfo{ID: "a1", Role: "developer", Ref: "t1", Status: "running", StartedAt: time.Now(), UpdatedAt: time.Now()})
-	_ = store.AddAgent(domain.AgentInfo{ID: "a2", Role: "reviewer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
+	_ = store.AddAgent(domain.AgentInfo{ID: "a2", Role: "developer", Ref: "t2", Status: "halted", StartedAt: time.Now(), UpdatedAt: time.Now()})
 
 	all := store.Agents()
 	if len(all) != 2 {

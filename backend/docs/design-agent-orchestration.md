@@ -7,7 +7,9 @@
 
 ## Overview
 
-This document describes the full lifecycle of how kiloforge orchestrates Claude Code agents for track implementation and code review. The system coordinates two agent roles — **developer** and **reviewer** — through a structured cycle of implementation, PR review, revision, and merge, all mediated through the local Gitea instance and webhook orchestrator.
+This document describes the full lifecycle of how kiloforge orchestrates Claude Code agents for track implementation. The system coordinates developer agents through implementation and merge, mediated through the local Gitea instance and webhook orchestrator.
+
+> **Note:** The reviewer agent role described in earlier versions of this document has been removed. The kf-reviewer skill was deleted upstream. Developer agents now implement and merge directly without a separate review cycle.
 
 ---
 
@@ -159,48 +161,7 @@ The orchestrator:
 1. Resolves project from `repository.name`
 2. Extracts PR number, branch name (track ID)
 3. Records PR metadata: developer session ID from PR body/labels
-4. Spawns reviewer agent
-
-### Reviewer Agent
-
-```
-1. kf spawns Claude Code reviewer agent:
-   - Working directory: can use a separate worktree or review in-place
-   - Prompt: /kf-reviewer <pr-url>
-   - Session ID: generated UUID
-   - Output: stream-json to log file
-2. Agent state recorded:
-   - agent_id, session_id, track_id, pr_number, role=reviewer, status=running
-3. PR updated with reviewer session ID (comment or label)
-```
-
-The reviewer:
-1. Fetches the PR diff
-2. Reviews against track spec and project standards
-3. Posts review via Gitea API:
-   - **Approve**: PR is approved
-   - **Request Changes**: Comments with specific feedback
-
-### After Review
-
-**If approved:**
-```
-1. Reviewer agent exits
-2. Reviewer state updated: status=completed
-3. Webhook fires: pull_request_review, state=approved
-4. Orchestrator resumes developer agent (see Section 5)
-5. Developer merges PR (see Section 6)
-```
-
-**If changes requested:**
-```
-1. Reviewer agent exits
-2. Reviewer state updated: status=completed
-3. Webhook fires: pull_request_review, state=changes_requested
-4. Orchestrator checks review cycle count
-5. If cycles < max (default 3): resume developer for revisions
-6. If cycles >= max: escalate to human intervention
-```
+4. Developer proceeds to merge (reviewer role has been removed)
 
 ---
 
@@ -230,9 +191,7 @@ The reviewer:
 1. Orchestrator receives pull_request.synchronize webhook
 2. Developer agent signals it has pushed revisions (exits or is halted)
 3. Developer state: status=waiting-review
-4. Orchestrator spawns new reviewer agent (or resumes existing one)
-5. Reviewer reviews updated PR
-6. Cycle repeats (approve or request changes)
+4. Developer proceeds to merge
 ```
 
 ### Cycle Limit
@@ -306,11 +265,6 @@ spawned → running → waiting-review → running (revise) ┘
                     merging → cleanup → completed
 ```
 
-### Reviewer Agent States
-```
-spawned → running → completed (approved or changes-requested)
-```
-
 ### PR States (kiloforge tracking)
 ```
 created → in-review → changes-requested → in-review → ... → approved → merged
@@ -329,7 +283,7 @@ created → in-review → changes-requested → in-review → ... → approved �
 ```go
 type AgentInfo struct {
     ID            string    `json:"id"`
-    Role          string    `json:"role"`          // "developer" | "reviewer"
+    Role          string    `json:"role"`          // "developer"
     TrackID       string    `json:"track_id"`
     ProjectSlug   string    `json:"project_slug"`
     PRNumber      int       `json:"pr_number,omitempty"`
@@ -371,7 +325,7 @@ type PRTracking struct {
 kf implement <track-id>     # Approve track and start developer agent
 kf implement --list         # Show tracks available for implementation
 
-kf agents                   # List all agents (dev + reviewer)
+kf agents                   # List all agents
 kf agents --project <slug>  # Filter by project
 
 kf logs <agent-id>          # View agent log
@@ -445,11 +399,7 @@ Human          kf CLI           Relay          Gitea          Developer CC     R
 
 ## 11. Open Questions
 
-1. **Developer self-review vs separate reviewer** — Should the developer agent also do a self-review pass before creating the PR? This could reduce review cycles.
-
-2. **Reviewer worktree** — Does the reviewer need its own worktree, or can it review from the PR diff alone? The kf-reviewer skill currently works from the diff.
-
-3. **Concurrent tracks** — How many tracks can be implemented simultaneously? Limited by worktree pool size and system resources.
+1. **Concurrent tracks** — How many tracks can be implemented simultaneously? Limited by worktree pool size and system resources.
 
 4. **Session resume mechanics** — Claude Code `--resume` resumes a session. How do we inject new context ("you have review comments")? Via prompt flag? Via a file the agent reads?
 

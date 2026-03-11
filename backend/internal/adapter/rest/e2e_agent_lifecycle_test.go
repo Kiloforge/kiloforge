@@ -35,12 +35,12 @@ func seedAgentLifecycleData(t *testing.T, srv *e2eServer) {
 			UpdatedAt: now,
 		},
 		{
-			ID:        "agent-rev-running",
+			ID:        "agent-dev-running-2",
 			Name:      "keen-owl",
-			Role:      "reviewer",
-			Ref:       "PR #42",
+			Role:      "developer",
+			Ref:       "track-lifecycle-005",
 			Status:    "running",
-			SessionID: "session-rev-001",
+			SessionID: "session-dev-002",
 			PID:       12346,
 			StartedAt: now.Add(-5 * time.Minute),
 			UpdatedAt: now,
@@ -156,11 +156,8 @@ func TestE2E_AgentLifecycle_ListAgentsAfterSeed(t *testing.T) {
 			roles[r]++
 		}
 	}
-	if roles["developer"] != 4 {
-		t.Errorf("expected 4 developer agents, got %d", roles["developer"])
-	}
-	if roles["reviewer"] != 1 {
-		t.Errorf("expected 1 reviewer agent, got %d", roles["reviewer"])
+	if roles["developer"] != 5 {
+		t.Errorf("expected 5 developer agents, got %d", roles["developer"])
 	}
 	if roles["interactive"] != 1 {
 		t.Errorf("expected 1 interactive agent, got %d", roles["interactive"])
@@ -556,35 +553,28 @@ func TestE2E_AgentLifecycle_AgentsByRoleInHistory(t *testing.T) {
 	defer resp.Body.Close()
 
 	devAgents := 0
-	revAgents := 0
 	for _, a := range agents {
-		switch a["role"] {
-		case "developer":
+		if a["role"] == "developer" {
 			devAgents++
-		case "reviewer":
-			revAgents++
 		}
 	}
 	if devAgents < 1 {
 		t.Error("expected at least 1 developer agent in history")
 	}
-	if revAgents < 1 {
-		t.Error("expected at least 1 reviewer agent in history")
-	}
 }
 
-func TestE2E_AgentLifecycle_ReviewerAgentHasCorrectRef(t *testing.T) {
+func TestE2E_AgentLifecycle_DeveloperAgentHasCorrectRef(t *testing.T) {
 	srv := startE2EServer(t)
 	seedAgentLifecycleData(t, srv)
 
 	var agent map[string]any
-	resp := e2eGetJSON(t, srv.URL+"/api/agents/agent-rev-running", &agent)
+	resp := e2eGetJSON(t, srv.URL+"/api/agents/agent-dev-running-2", &agent)
 	defer resp.Body.Close()
 
-	if agent["role"] != "reviewer" {
-		t.Errorf("expected reviewer, got %v", agent["role"])
+	if agent["role"] != "developer" {
+		t.Errorf("expected developer, got %v", agent["role"])
 	}
-	if agent["ref"] != "PR #42" {
-		t.Errorf("expected ref 'PR #42', got %v", agent["ref"])
+	if agent["ref"] != "track-lifecycle-005" {
+		t.Errorf("expected ref 'track-lifecycle-005', got %v", agent["ref"])
 	}
 }

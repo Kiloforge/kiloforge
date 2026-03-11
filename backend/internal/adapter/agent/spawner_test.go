@@ -221,28 +221,6 @@ func TestValidateSkills_Developer(t *testing.T) {
 	}
 }
 
-func TestValidateSkills_Reviewer(t *testing.T) {
-	t.Parallel()
-
-	globalDir := t.TempDir()
-	cfg := &config.Config{SkillsDir: globalDir}
-	s := NewSpawner(cfg, nil, nil)
-
-	err := s.ValidateSkills("reviewer", "", "")
-	if err == nil {
-		t.Fatal("expected error when reviewer skill is missing")
-	}
-
-	workDir := t.TempDir()
-	localDir := filepath.Join(workDir, ".claude", "skills", "kf-reviewer")
-	os.MkdirAll(localDir, 0o755)
-	os.WriteFile(filepath.Join(localDir, "SKILL.md"), []byte("# Rev"), 0o644)
-
-	if err := s.ValidateSkills("reviewer", workDir, ""); err != nil {
-		t.Errorf("expected no error after local install, got: %v", err)
-	}
-}
-
 func TestValidateSkills_WorktreeProjectDir(t *testing.T) {
 	t.Parallel()
 
@@ -305,11 +283,11 @@ func TestErrSkillsMissing_Error(t *testing.T) {
 	err := &ErrSkillsMissing{
 		Missing: []skills.RequiredSkill{
 			{Name: "kf-developer", Reason: "dev"},
-			{Name: "kf-reviewer", Reason: "rev"},
+			{Name: "kf-architect", Reason: "arch"},
 		},
 	}
 	msg := err.Error()
-	if msg != "required skills not installed: kf-developer, kf-reviewer" {
+	if msg != "required skills not installed: kf-developer, kf-architect" {
 		t.Errorf("unexpected error message: %q", msg)
 	}
 }

@@ -133,7 +133,7 @@ func TestGetHealth_DatabaseDown(t *testing.T) {
 func TestListAgents(t *testing.T) {
 	agents := []domain.AgentInfo{
 		{ID: "agent-1", Role: "developer", Status: "running", StartedAt: time.Now()},
-		{ID: "agent-2", Role: "reviewer", Status: "completed", StartedAt: time.Now()},
+		{ID: "agent-2", Role: "developer", Status: "completed", StartedAt: time.Now()},
 	}
 	h := newTestHandler(agents)
 	showAll := false

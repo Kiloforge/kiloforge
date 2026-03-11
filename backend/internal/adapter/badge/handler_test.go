@@ -90,7 +90,7 @@ func TestPRBadge_BothAgents(t *testing.T) {
 	}
 	_, mux := setupBadgeHandler([]domain.AgentInfo{
 		{ID: "dev-1", Role: "developer", Status: "running"},
-		{ID: "rev-1", Role: "reviewer", Status: "waiting"},
+		{ID: "rev-1", Role: "developer", Status: "waiting"},
 	}, loader)
 
 	req := httptest.NewRequest("GET", "/api/badges/pr/myproj/5", nil)
@@ -120,7 +120,7 @@ func TestPRBadge_NoTracking(t *testing.T) {
 
 func TestAgentBadge_Found(t *testing.T) {
 	_, mux := setupBadgeHandler([]domain.AgentInfo{
-		{ID: "agent-abc", Role: "reviewer", Status: "completed"},
+		{ID: "agent-abc", Role: "developer", Status: "completed"},
 	}, nil)
 
 	req := httptest.NewRequest("GET", "/api/badges/agent/agent-abc", nil)
@@ -128,7 +128,7 @@ func TestAgentBadge_Found(t *testing.T) {
 	mux.ServeHTTP(w, req)
 
 	body := w.Body.String()
-	if !strings.Contains(body, "reviewer") {
+	if !strings.Contains(body, "developer") {
 		t.Error("badge should show agent role")
 	}
 	if !strings.Contains(body, "completed") {
