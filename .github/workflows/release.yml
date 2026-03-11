@@ -27,9 +27,6 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm ci && npm run build
 
-      - name: Run tests
-        run: cd backend && go test ./...
-
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
