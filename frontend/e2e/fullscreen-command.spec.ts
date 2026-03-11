@@ -79,6 +79,21 @@ test.describe("Full-screen command mode", () => {
     await expect(page.getByRole("button", { name: "Clear" })).toHaveCount(0);
   });
 
+  test("send button shows Send by default and no separate Stop button", async ({ page, serverURL }) => {
+    await page.goto(serverURL);
+    await page.waitForLoadState("networkidle");
+
+    await page.keyboard.press("Meta+Shift+KeyF");
+    await expect(page.locator("[data-tour='fullscreen-command']")).toBeVisible();
+
+    // Send button should show "Send" when no turn is active
+    const sendBtn = page.locator("[data-tour='fullscreen-command'] button", { hasText: "Send" });
+    await expect(sendBtn).toBeVisible();
+
+    // No separate Stop button should exist in the header
+    await expect(page.locator("[data-tour='fullscreen-command'] button", { hasText: "Stop" })).toHaveCount(0);
+  });
+
   test("split pane buttons create additional panes", async ({ page, serverURL }) => {
     await page.goto(serverURL);
     await page.waitForLoadState("networkidle");

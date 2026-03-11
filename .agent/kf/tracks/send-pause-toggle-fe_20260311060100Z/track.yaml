@@ -89,5 +89,5 @@ plan:
   - phase: Verification
     tasks:
       - text: Add E2E test: verify button shows 'Send' initially, transitions to 'Pause' during turn, back to 'Send' after turn ends or pause
-        done: false
+        done: true
 extra: {}
