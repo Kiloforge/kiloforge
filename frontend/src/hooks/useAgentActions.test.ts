@@ -38,8 +38,8 @@ describe("canResume", () => {
   it("returns true for suspended interactive", () => {
     expect(canResume(agent({ status: "suspended", role: "interactive" }))).toBe(true);
   });
-  it("returns true for suspended reviewer", () => {
-    expect(canResume(agent({ status: "suspended", role: "reviewer" }))).toBe(true);
+  it("returns true for suspended advisor", () => {
+    expect(canResume(agent({ status: "suspended", role: "advisor-product" }))).toBe(true);
   });
   it("returns true for force-killed agent", () => {
     expect(canResume(agent({ status: "force-killed" }))).toBe(true);

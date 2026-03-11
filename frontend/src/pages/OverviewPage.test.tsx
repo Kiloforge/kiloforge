@@ -79,7 +79,7 @@ function renderPage(props?: Partial<Parameters<typeof OverviewPage>[0]>) {
     defaultOptions: { queries: { retry: false } },
   });
   const defaultProps = {
-    agents: [makeAgent(), makeAgent({ id: "agent-2", role: "reviewer", status: "completed" })],
+    agents: [makeAgent(), makeAgent({ id: "agent-2", role: "interactive", status: "completed" })],
     agentsLoading: false,
     quota: mockQuota,
     tracks: [
@@ -155,7 +155,6 @@ describe("OverviewPage", () => {
     const buttons = screen.getAllByRole("button");
     const chipLabels = buttons.map((b) => b.textContent);
     expect(chipLabels).toContain("developer");
-    expect(chipLabels).toContain("reviewer");
     expect(chipLabels).toContain("interactive");
     expect(chipLabels).toContain("Active");
     expect(chipLabels).toContain("Completed");
@@ -174,7 +173,7 @@ describe("OverviewPage", () => {
     // The chip button is the one with role=button
     const chipButton = devChips.find((el) => el.tagName === "BUTTON")!;
     await user.click(chipButton);
-    // agent-1 is developer, agent-2 is reviewer
+    // agent-1 is developer, agent-2 is interactive
     expect(screen.getByText("agent-1")).toBeInTheDocument();
     expect(screen.queryByText("agent-2")).not.toBeInTheDocument();
   });
