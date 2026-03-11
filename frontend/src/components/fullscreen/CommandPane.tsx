@@ -130,11 +130,6 @@ export function CommandPane({
           )}
         </div>
         <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-          {canInterrupt && (
-            <button className={styles.interruptBtn} onClick={sendInterrupt} title="Interrupt (Esc)">
-              &#x25A0; Stop
-            </button>
-          )}
           {messages.length > 0 && (
             <button className={styles.paneClearBtn} onClick={clearMessages} title="Clear messages">
               Clear
@@ -197,8 +192,12 @@ export function CommandPane({
         {queueDepth > 0 && (
           <span className={styles.queueBadge}>{queueDepth} queued</span>
         )}
-        <button className={styles.sendBtn} onClick={handleSend} disabled={!canSend || !input.trim()}>
-          {turnActive ? "Queue" : "Send"}
+        <button
+          className={`${styles.sendBtn} ${turnActive ? styles.sendBtnPause : ""}`}
+          onClick={turnActive ? sendInterrupt : handleSend}
+          disabled={!canSend || (!turnActive && !input.trim())}
+        >
+          {turnActive ? "Pause" : "Send"}
         </button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 id: send-pause-toggle-fe_20260311060100Z
-title: "Replace interrupt button with send/pause toggle"
+title: Replace interrupt button with send/pause toggle
 type: feature
 status: pending
 created: 2026-03-11
@@ -26,15 +26,15 @@ spec:
     - Lines 70-77: `handleSend` sends message, increments queueDepth if turn active
     - Lines 85-88: Esc key triggers `sendInterrupt()` (stays unchanged)
     - Lines 65-68: queueDepth resets when turn ends
-
+    
     WebSocket hook (useAgentWebSocket.ts):
     - Lines 289-292: `sendInterrupt()` sends `{"type": "interrupt"}` via WebSocket
     - Lines 115-134: Turn state tracking via turn_start/turn_end messages
-
+    
     Backend interrupt chain (unchanged by this track):
     - ws/handler.go readLoop receives interrupt message, calls bridge.Interrupt()
     - Bridge calls InterruptHandler → SDKSession.Interrupt() → cancels query context
-
+    
     CSS in FullScreenCommand.module.css:
     - Lines 244-268: .sendBtn styles (accent background)
     - Lines 270-285: .interruptBtn styles (red border, transparent bg)
@@ -59,35 +59,35 @@ spec:
     The send button click handler needs conditional logic:
     - If turnActive: call sendInterrupt() instead of handleSend()
     - If !turnActive: call handleSend() as before
-
+    
     The button should be enabled when either canSend (for sending) or canInterrupt
     (for pausing). When turnActive, the button text changes to "Pause" and applies
     a pause-specific CSS class (e.g., .sendBtnPause) with red/warning styling
     derived from the existing .interruptBtn styles.
-
+    
     The disabled state needs adjustment: during an active turn, the button should
     always be clickable (for pause) regardless of whether input text is present.
     Current disabled logic: `!canSend || !input.trim()` — needs to become
     `!canSend || (!turnActive && !input.trim())`.
 plan:
-  - phase: "Core Implementation"
+  - phase: Core Implementation
     tasks:
-      - text: "Remove the separate Stop button from the header bar (lines 132-136 in CommandPane.tsx)"
-        done: false
-      - text: "Update send button click handler: if turnActive call sendInterrupt(), else call handleSend()"
-        done: false
-      - text: "Change button label from 'Send'/'Queue' to 'Send'/'Pause'"
-        done: false
-      - text: "Fix disabled logic: button enabled for pause even without text input (!canSend || (!turnActive && !input.trim()))"
-        done: false
-  - phase: "Styling"
+      - text: Remove the separate Stop button from the header bar (lines 132-136 in CommandPane.tsx)
+        done: true
+      - text: Update send button click handler: if turnActive call sendInterrupt(), else call handleSend()
+        done: true
+      - text: Change button label from 'Send'/'Queue' to 'Send'/'Pause'
+        done: true
+      - text: Fix disabled logic: button enabled for pause even without text input (!canSend || (!turnActive && !input.trim()))
+        done: true
+  - phase: Styling
     tasks:
-      - text: "Add .sendBtnPause CSS class with red/warning accent (adapt from .interruptBtn styles)"
+      - text: Add .sendBtnPause CSS class with red/warning accent (adapt from .interruptBtn styles)
         done: false
-      - text: "Apply conditional className on send button: sendBtnPause when turnActive, sendBtn otherwise"
+      - text: Apply conditional className on send button: sendBtnPause when turnActive, sendBtn otherwise
         done: false
-  - phase: "Verification"
+  - phase: Verification
     tasks:
-      - text: "Add E2E test: verify button shows 'Send' initially, transitions to 'Pause' during turn, back to 'Send' after turn ends or pause"
+      - text: Add E2E test: verify button shows 'Send' initially, transitions to 'Pause' during turn, back to 'Send' after turn ends or pause
         done: false
 extra: {}
