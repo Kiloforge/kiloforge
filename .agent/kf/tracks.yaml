@@ -263,6 +263,7 @@ remove-dashboard-metrics-fe_20260312000000Z: {"title":"Remove MetricsPanel and G
 remove-inreview-column-be_20260310153823Z: {"title":"Remove in_review kanban column from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 remove-inreview-column-fe_20260310153824Z: {"title":"Remove in_review kanban column from frontend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
+remove-tour-skip-link-fe_20260312070000Z: {"title":"Remove redundant Skip step link from tour move-card step","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 replace-tracing-be_20260310144200Z: {"title":"Add reliability events and trace spans for agent replacement lifecycle","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 report-merge-protocol_20260311190000Z: {"title":"Add serial merge protocol to kf-report skill","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
