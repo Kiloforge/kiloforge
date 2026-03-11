@@ -44,23 +44,9 @@ checksum:
 changelog:
   use: github-native
 
-brews:
-  - name: kf
-    repository:
-      owner: Goblinlordx
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    homepage: "https://github.com/Goblinlordx/crelay"
-    description: "Local AI agent Cortex — Gitea + Claude Code"
-    license: "Apache-2.0"
-    install: |
-      bin.install "kf"
-    test: |
-      system "#{bin}/kf", "version"
-
 release:
   github:
-    owner: Goblinlordx
-    name: crelay
-  prerelease: auto
+    owner: Kiloforge
+    name: kiloforge
+  prerelease: true
   name_template: "v{{.Version}}"
