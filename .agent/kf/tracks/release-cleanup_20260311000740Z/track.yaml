@@ -1,0 +1,124 @@
+id: release-cleanup_20260311000740Z
+title: "Release cleanup — fix refs, remove Homebrew, prepare v0.1.0-alpha.1"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: "Audit and fix all release infrastructure: update GitHub org/repo references from Goblinlordx/crelay to Kiloforge/kiloforge, remove Homebrew tap config, fix Go version in release workflow, update CHANGELOG to v0.1.0-alpha.1, fix install.sh for pre-releases, and set repo to public."
+  context: |
+    The release infrastructure was built under the old track (release-process_20260309153000Z) when the
+    repo lived at Goblinlordx/crelay. It has since moved to Kiloforge/kiloforge. The old track was
+    archived but its artifacts remain in the codebase with stale references. Additionally, the original
+    track included Homebrew tap publishing which is being deferred — not appropriate for an early alpha.
+    This track cleans up everything so a `v0.1.0-alpha.1` tag push produces a correct release.
+  codebase_analysis: |
+    ### Already correct (no changes needed)
+    - `backend/cmd/kf/version.go` — version/commit/date variables with defaults
+    - `backend/internal/adapter/cli/version.go` — version command prints version, commit, date, Go version, OS/arch
+    - `backend/internal/adapter/cli/version_test.go` — tests for SetVersionInfo and versionCmd registration
+    - `backend/cmd/kf/main.go` — calls cli.SetVersionInfo(version, commit, date)
+    - `Makefile` build-backend target — correct ldflags injection
+    - `Makefile` release-local target — `goreleaser release --snapshot --clean`
+    - `LICENSE` and `NOTICE` — exist, referenced by .goreleaser.yaml archives
+    - `.github/workflows/ci.yml` — Go 1.25, correct
+    - `.github/workflows/close-external-prs.yml` — fine as-is
+
+    ### Needs fixing
+    1. `.goreleaser.yaml`
+       - Has `brews` section (lines 47-59) referencing Goblinlordx/homebrew-tap → REMOVE
+       - `release.github.owner` is `Goblinlordx` → `Kiloforge`
+       - `release.github.name` is `crelay` → `kiloforge`
+       - `prerelease: auto` → `prerelease: true`
+       - Homepage URL references Goblinlordx/crelay
+
+    2. `.github/workflows/release.yml`
+       - Go version `1.24` → `1.25` (go.mod requires 1.25.0)
+       - Has `HOMEBREW_TAP_TOKEN` secret in env → REMOVE
+
+    3. `CHANGELOG.md`
+       - Header `## [0.1.0] — Unreleased` → `## [0.1.0-alpha.1] — Unreleased`
+
+    4. `README.md` (many references)
+       - curl install URLs → Kiloforge/kiloforge
+       - Homebrew section (lines 34-39) → REMOVE
+       - GitHub Releases link → Kiloforge/kiloforge
+       - Clone URL → Kiloforge/kiloforge
+       - Releasing section mentions Homebrew tap, HOMEBREW_TAP_TOKEN → REMOVE
+       - Issues URL → Kiloforge/kiloforge
+       - Release tag example `v0.1.0` → `v0.1.0-alpha.1`
+
+    5. `install.sh`
+       - `REPO="Goblinlordx/crelay"` → `REPO="Kiloforge/kiloforge"`
+       - Uses `/releases/latest` API which SKIPS pre-releases — needs fix for alpha
+
+    6. `frontend/package.json`
+       - Version `0.0.0` → `0.1.0-alpha.1`
+  acceptance_criteria:
+    - "`.goreleaser.yaml` has no `brews` section"
+    - "`.goreleaser.yaml` release targets `Kiloforge/kiloforge`"
+    - "`.goreleaser.yaml` sets `prerelease: true`"
+    - "`.github/workflows/release.yml` uses Go 1.25"
+    - "`.github/workflows/release.yml` has no HOMEBREW_TAP_TOKEN reference"
+    - "`CHANGELOG.md` header is `[0.1.0-alpha.1]`"
+    - "`README.md` has no references to `Goblinlordx/crelay`"
+    - "`README.md` has no Homebrew installation section"
+    - "`README.md` releasing section has no Homebrew/HOMEBREW_TAP_TOKEN references"
+    - "`install.sh` REPO is `Kiloforge/kiloforge`"
+    - "`install.sh` works with pre-releases (not just /releases/latest)"
+    - "`frontend/package.json` version is `0.1.0-alpha.1`"
+    - "`make release-local` succeeds (goreleaser snapshot)"
+    - "`make build` succeeds"
+    - "`make test` passes"
+    - "GitHub repo is set to public via `gh repo edit`"
+  out_of_scope: |
+    - Homebrew tap setup (deferred — not for alpha)
+    - Docker image publishing
+    - Signed binaries / notarization
+    - Actually tagging and pushing v0.1.0-alpha.1 (separate manual step)
+    - Updating goimports local prefix (github.com/benbaldivia/crelay) — separate cleanup
+  technical_notes: |
+    ### install.sh pre-release fix
+    The GitHub API `/releases/latest` endpoint excludes pre-releases. For alpha releases,
+    use the `/releases` endpoint and filter for the first non-draft release:
+    ```bash
+    VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases" \
+      | grep '"tag_name"' | head -1 \
+      | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')"
+    ```
+
+    ### Repo visibility
+    Final step: `gh repo edit Kiloforge/kiloforge --visibility public`
+    This requires admin access. The developer should confirm with the user before executing.
+plan:
+  - phase: "Fix release configs"
+    tasks:
+      - text: "Update `.goreleaser.yaml` — remove entire `brews` section, update `release.github` to owner `Kiloforge` / name `kiloforge`, set `prerelease: true`"
+        done: false
+      - text: "Update `.github/workflows/release.yml` — change Go version from 1.24 to 1.25, remove `HOMEBREW_TAP_TOKEN` from env"
+        done: false
+      - text: "Update `CHANGELOG.md` — change header from `[0.1.0] — Unreleased` to `[0.1.0-alpha.1]`"
+        done: false
+      - text: "Update `frontend/package.json` — change version from `0.0.0` to `0.1.0-alpha.1`"
+        done: false
+  - phase: "Fix repository references"
+    tasks:
+      - text: "Update `install.sh` — change REPO to `Kiloforge/kiloforge`, fix `fetch_latest_version` to use `/releases` endpoint (not `/releases/latest`) so pre-releases are found"
+        done: false
+      - text: "Update `README.md` — replace all `Goblinlordx/crelay` with `Kiloforge/kiloforge`, replace `Goblinlordx/tap` with removal, remove Homebrew installation section, update clone URL to `Kiloforge/kiloforge`, update releasing section (remove Homebrew/HOMEBREW_TAP_TOKEN mentions, change example tag to v0.1.0-alpha.1), update issues URL"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run `make build` — verify ldflags injection still works"
+        done: false
+      - text: "Run `make test` — verify all tests pass"
+        done: false
+      - text: "Run `make release-local` — verify goreleaser snapshot produces 6 platform binaries with no Homebrew errors"
+        done: false
+      - text: "Grep entire repo for remaining `Goblinlordx` or `crelay` references (excluding .git, node_modules, .agent/kf/) — fix any found"
+        done: false
+  - phase: "Set repo public"
+    tasks:
+      - text: "Run `gh repo edit Kiloforge/kiloforge --visibility public` to make the repository public (confirm with user before executing)"
+        done: false
+extra: {}
