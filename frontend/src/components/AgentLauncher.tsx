@@ -111,6 +111,7 @@ export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waiti
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return;
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               handleSubmit();
             }

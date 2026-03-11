@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentTerminal } from "./AgentTerminal";
 import type { WSMessage } from "../hooks/useAgentWebSocket";
@@ -163,6 +163,14 @@ describe("AgentTerminal", () => {
     const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
     await user.type(textarea, "hello{Enter}");
     expect(ws.sendMessage).toHaveBeenCalledWith("hello");
+  });
+
+  it("does not send message when isComposing (IME)", () => {
+    const { ws } = setup({ status: "connected", agentStatus: "running" });
+    const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+    fireEvent.change(textarea, { target: { value: "composing text" } });
+    fireEvent.keyDown(textarea, { key: "Enter", isComposing: true });
+    expect(ws.sendMessage).not.toHaveBeenCalled();
   });
 
   it("does not send empty messages", async () => {

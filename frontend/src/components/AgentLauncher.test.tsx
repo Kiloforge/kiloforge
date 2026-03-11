@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentLauncher } from "./AgentLauncher";
 
@@ -76,6 +76,13 @@ describe("AgentLauncher", () => {
     renderLauncher({ launching: true });
     expect(screen.getByText("Starting...")).toBeDisabled();
     expect(screen.getByText("Cancel")).toBeDisabled();
+  });
+
+  it("does not submit when isComposing (IME)", () => {
+    const { props } = renderLauncher();
+    const textarea = screen.getByRole("textbox");
+    fireEvent.keyDown(textarea, { key: "Enter", metaKey: true, isComposing: true });
+    expect(props.onLaunch).not.toHaveBeenCalled();
   });
 
   it("changes placeholder text based on selected role", async () => {

@@ -76,6 +76,7 @@ export function ProjectSettingsPanel({ settings, loading, updating, onUpdate }: 
               setBranchDirty(true);
             }}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
               if (e.key === "Enter") handleSaveBranch();
             }}
             placeholder="main"
