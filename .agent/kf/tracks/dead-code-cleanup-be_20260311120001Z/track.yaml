@@ -1,0 +1,82 @@
+id: dead-code-cleanup-be_20260311120001Z
+title: "Remove dead backend services and port interfaces"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Delete never-wired QueueService/QueueStore, LifecycleService, PoolReturner port,
+    and PIDManager port. REST queue handlers keep their nil-guard stubs. Removes ~400
+    lines of dead service/store code before alpha.
+  context: |
+    Preparing for alpha release. Backend audit identified services and port interfaces
+    that were defined but never instantiated or wired into the application. The queue
+    service has REST handlers that gracefully degrade when nil (returning stub data),
+    so removing the dead service/store layer is safe.
+  codebase_analysis: |
+    - QueueService (core/service/queue_service.go): Never instantiated in serve.go or
+      any CLI command. WithQueueService() server option exists but is never called.
+    - QueueStore (persistence/sqlite/queue_store.go): Implementation of port.QueueStore
+      but never used since QueueService is never created.
+    - port.QueueStore (core/port/queue_store.go): Interface for queue persistence.
+      Only consumer is QueueService which itself is dead.
+    - LifecycleService (core/service/lifecycle_service.go + test): Board-driven agent
+      lifecycle control. Never imported by any adapter (REST, CLI). Has test file.
+    - port.PoolReturner (core/port/pool_returner.go): Interface required by
+      LifecycleService. No implementation exists anywhere in the codebase.
+    - port.PIDManager (core/port/pidfile.go): Interface defined but never used.
+      The pidfile adapter is used directly (pidfile.New()) in serve.go, up.go, etc.
+    - QueueServicer interface in rest/api_handler.go and rest/server.go: Keep these —
+      they enable the nil-guard pattern that lets queue handlers return stubs.
+  acceptance_criteria:
+    - core/service/queue_service.go is deleted
+    - persistence/sqlite/queue_store.go is deleted
+    - core/port/queue_store.go is deleted
+    - core/service/lifecycle_service.go and lifecycle_service_test.go are deleted
+    - core/port/pool_returner.go is deleted
+    - core/port/pidfile.go is deleted
+    - REST queue handlers and QueueServicer interface remain (nil-guard stubs intact)
+    - OpenAPI spec unchanged (queue endpoints still documented)
+    - make build succeeds
+    - make test passes
+  out_of_scope: |
+    - Queue REST handlers and OpenAPI spec stay (frontend SwarmPanel references them)
+    - Frontend queue/swarm UI is not touched
+    - No new services or refactoring beyond deletions
+    - Skills adapter code is not modified (already aligned via submodule embed)
+  technical_notes: |
+    Pure deletion track. The key risk is dangling imports after deletion. Check:
+    1. No Go file imports the deleted packages
+    2. No interface references the deleted types
+    3. The REST QueueServicer interface in api_handler.go is self-contained (not
+       dependent on the deleted QueueService type)
+    Build verification: make build && make test
+plan:
+  - phase: "Delete dead services and stores"
+    tasks:
+      - text: "Delete backend/internal/core/service/queue_service.go"
+        done: false
+      - text: "Delete backend/internal/adapter/persistence/sqlite/queue_store.go"
+        done: false
+      - text: "Delete backend/internal/core/service/lifecycle_service.go and lifecycle_service_test.go"
+        done: false
+  - phase: "Delete dead port interfaces"
+    tasks:
+      - text: "Delete backend/internal/core/port/queue_store.go"
+        done: false
+      - text: "Delete backend/internal/core/port/pool_returner.go"
+        done: false
+      - text: "Delete backend/internal/core/port/pidfile.go"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run grep to confirm no Go files import the deleted packages or reference deleted types"
+        done: false
+      - text: "Verify REST QueueServicer interface compiles independently of deleted QueueService"
+        done: false
+      - text: "Run make build to verify clean compilation"
+        done: false
+      - text: "Run make test to verify all tests pass"
+        done: false
+extra: {}

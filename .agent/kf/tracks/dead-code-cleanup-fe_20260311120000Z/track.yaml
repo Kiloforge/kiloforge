@@ -1,0 +1,61 @@
+id: dead-code-cleanup-fe_20260311120000Z
+title: "Remove unused frontend components and hooks"
+type: chore
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: |
+    Delete StatCards, TerminalDock, and AdvisorHub components (all unused in production)
+    plus the dead useProjectBranches hook. Removes ~600 lines of dead code before alpha.
+  context: |
+    Preparing for alpha release. Codebase audit identified several frontend components
+    that were developed but never integrated into the app's route tree or imported by
+    any production component. These add maintenance burden and confusion without value.
+  codebase_analysis: |
+    - StatCards.tsx + StatCards.module.css: Complete component rendering agent count,
+      token usage, rate limit, and API cost. Never imported anywhere in production code.
+    - TerminalDock.tsx + TerminalDock.test.tsx + TerminalDock.module.css: Renders
+      minimized terminal pills in a dock. Superseded by MiniCardDock. Has tests but
+      no production imports.
+    - AdvisorHub.tsx + AdvisorHub.test.tsx + AdvisorHub.module.css: Advisor launch UI.
+      Fully implemented with tests but never integrated into App.tsx or any page.
+    - useProjectBranches hook in useDiff.ts: Queries /api/projects/{slug}/branches
+      but is never called by any component.
+  acceptance_criteria:
+    - StatCards.tsx and StatCards.module.css are deleted
+    - TerminalDock.tsx, TerminalDock.test.tsx, and TerminalDock.module.css are deleted
+    - AdvisorHub.tsx, AdvisorHub.test.tsx, and AdvisorHub.module.css are deleted
+    - useProjectBranches export is removed from useDiff.ts (keep useProjectDiff)
+    - No remaining imports reference deleted modules (build succeeds)
+    - Existing frontend tests pass (npm test)
+  out_of_scope: |
+    - No new components or replacements are added
+    - SwarmPanel and queue-related frontend code stays (still wired to API)
+    - No changes to backend code
+  technical_notes: |
+    Pure deletion track. Each component is self-contained with no reverse dependencies.
+    Verify with: grep -r "StatCards\|TerminalDock\|AdvisorHub\|useProjectBranches" frontend/src/
+    after deletion to confirm no dangling references.
+plan:
+  - phase: "Delete unused components"
+    tasks:
+      - text: "Delete frontend/src/components/StatCards.tsx and frontend/src/components/StatCards.module.css"
+        done: false
+      - text: "Delete frontend/src/components/TerminalDock.tsx, TerminalDock.test.tsx, and TerminalDock.module.css"
+        done: false
+      - text: "Delete frontend/src/components/AdvisorHub.tsx, AdvisorHub.test.tsx, and AdvisorHub.module.css"
+        done: false
+  - phase: "Clean up unused hooks"
+    tasks:
+      - text: "Remove useProjectBranches export from frontend/src/hooks/useDiff.ts (keep useProjectDiff intact)"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run grep across frontend/src/ to confirm no dangling imports reference deleted modules"
+        done: false
+      - text: "Run npm run build to verify the frontend compiles cleanly"
+        done: false
+      - text: "Run npm test to verify existing tests pass"
+        done: false
+extra: {}
