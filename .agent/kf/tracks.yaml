@@ -125,6 +125,7 @@ fix-setup-git-init-be_20260311230001Z: {"title":"Fix setup 500 on repos without 
 fix-skill-prereq-be_20260310000644Z: {"title":"Fix Skill Prerequisite Chain — Rename and Required List (Backend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-skill-prereq-fe_20260310000645Z: {"title":"Fix Skill Prerequisite Chain — Frontend Proactive Gating","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-skills-412-prompt_20260309233000Z: {"title":"Handle 412 Skills Missing with Install Prompt Instead of Error","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+fix-skills-worktree-be_20260312060000Z: {"title":"Ensure skills are discoverable in agent worktrees","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 fix-spa-and-init-output_20260309163000Z: {"title":"Fix SPA Asset MIME Type, Init Output URLs, and Password Display","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-spawner-verbose-flag_20260310003000Z: {"title":"Fix Agent Spawner — Add --verbose Flag for stream-json","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-sqlite-error-handling_20260310041001Z: {"title":"Fix Unhandled SQLite Write Errors Across All Stores","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -176,6 +177,7 @@ impl-webui-server_20260308140000Z: {"title":"Web UI Server with Real-Time Agent 
 implement-command_20260307125001Z: {"title":"'kf implement' Command — Spawn Developer Agent","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 init-docker-compose_20260307120100Z: {"title":"Implement Init Command with Docker Compose and Global Gitea","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 init-ssh-and-auth_20260307125500Z: {"title":"SSH Key Auto-Registration and Randomized Admin Password","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+init-thinking-indicator-fe_20260312060001Z: {"title":"Show animated thinking indicator during agent initialization","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
 install-script_20260311130000Z: {"title":"Add curl-pipe install script for one-line kf installation","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 interactive-agent-be_20260309150000Z: {"title":"Interactive Agent Sessions via WebSocket (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 interactive-agent-fe_20260309150001Z: {"title":"Interactive Agent Terminal in Dashboard (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
