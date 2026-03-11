@@ -72,11 +72,11 @@ plan:
   - phase: Verification
     tasks:
       - text: Run grep to confirm no Go files import the deleted packages or reference deleted types
-        done: false
+        done: true
       - text: Verify REST QueueServicer interface compiles independently of deleted QueueService
-        done: false
+        done: true
       - text: Run make build to verify clean compilation
-        done: false
+        done: true
       - text: Run make test to verify all tests pass
-        done: false
+        done: true
 extra: {}

@@ -1383,7 +1383,7 @@ func TestToGenQueueStatus(t *testing.T) {
 		SSEClients: func() int { return 0 },
 	})
 
-	s := &service.QueueStatus{
+	s := &QueueStatus{
 		Running:       true,
 		MaxWorkers:    4,
 		ActiveWorkers: 2,

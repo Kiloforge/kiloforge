@@ -15,7 +15,7 @@ const FileName = "cortex.pid"
 // oldFileName is the pre-rebrand PID file name, checked for backward compatibility.
 const oldFileName = "orchestrator.pid"
 
-// Manager implements port.PIDManager using a file on disk.
+// Manager manages a PID file on disk.
 type Manager struct {
 	path string
 }

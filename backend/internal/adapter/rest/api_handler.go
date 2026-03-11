@@ -77,6 +77,14 @@ type AgentRemover interface {
 	RemoveAgent(id string) error
 }
 
+// QueueStatus holds the state returned by QueueServicer.Status.
+type QueueStatus struct {
+	Running       bool
+	MaxWorkers    int
+	ActiveWorkers int
+	Items         []domain.QueueItem
+}
+
 // QueueServicer provides queue operations for API handlers.
 type QueueServicer interface {
 	IsRunning() bool
@@ -85,7 +93,7 @@ type QueueServicer interface {
 	ActiveWorkers() int
 	Start(ctx context.Context, projectSlug string) error
 	Stop() error
-	Status() (*service.QueueStatus, error)
+	Status() (*QueueStatus, error)
 }
 
 // ConsentChecker provides consent state access.
@@ -2807,8 +2815,8 @@ func (h *APIHandler) StopQueue(_ context.Context, _ gen.StopQueueRequestObject) 
 	return gen.StopQueue200JSONResponse(h.toGenQueueStatus(status)), nil
 }
 
-// toGenQueueStatus converts service.QueueStatus to gen.QueueStatus.
-func (h *APIHandler) toGenQueueStatus(s *service.QueueStatus) gen.QueueStatus {
+// toGenQueueStatus converts QueueStatus to gen.QueueStatus.
+func (h *APIHandler) toGenQueueStatus(s *QueueStatus) gen.QueueStatus {
 	items := make([]gen.QueueItem, len(s.Items))
 	for i, item := range s.Items {
 		items[i] = gen.QueueItem{

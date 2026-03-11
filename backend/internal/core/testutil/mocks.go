@@ -13,7 +13,7 @@ import (
 var (
 	_ port.AgentStore       = (*MockAgentStore)(nil)
 	_ port.AgentSpawner     = (*MockAgentSpawner)(nil)
-_ port.Logger           = (*MockLogger)(nil)
+	_ port.Logger           = (*MockLogger)(nil)
 	_ port.GitRunner        = (*MockGitRunner)(nil)
 	_ port.AnalyticsTracker = (*SpyAnalytics)(nil)
 )
