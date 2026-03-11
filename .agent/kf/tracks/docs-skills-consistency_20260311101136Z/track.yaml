@@ -1,5 +1,5 @@
 id: docs-skills-consistency_20260311101136Z
-title: "Update skills docs and site to match current submodule structure"
+title: Update skills docs and site to match current submodule structure
 type: chore
 status: pending
 created: 2026-03-11
@@ -20,14 +20,14 @@ spec:
     Install commands are already correct everywhere — both the site
     (kiloforge_site/src/app/skills/page.tsx:29-32) and submodule README
     use `cp -r kf-*` which naturally copies only skill directories.
-
+    
     Stale references:
     - kiloforge_site/src/app/skills/page.tsx:201 says "22 Claude Code skills"
       but submodule has 21
     - backend/internal/adapter/skills/embedded/README.md lists kf-parallel
       in the skill table but that directory doesn't exist in the submodule
     - kf-merge-protocol is not listed in the submodule README or site catalog
-
+    
     Already correct (no changes needed):
     - docs/skills.md — no bin references, accurate descriptions
     - docs/kiloforge-data-formats.md — bin/ reference is about .agent/kf/bin/
@@ -47,20 +47,20 @@ spec:
     and can be updated via the submodule. The site is at ../../kiloforge_site
     relative to the project root.
 plan:
-  - phase: "Update submodule README"
+  - phase: Update submodule README
     tasks:
-      - text: "Remove kf-parallel from the skill table in embedded/README.md (directory doesn't exist)"
-        done: false
-      - text: "Add kf-merge-protocol to the skill table in embedded/README.md"
-        done: false
-      - text: "Update the skill count if mentioned anywhere in the README"
-        done: false
-  - phase: "Update site skills page"
+      - text: Remove kf-parallel from the skill table in embedded/README.md (directory doesn't exist)
+        done: true
+      - text: Add kf-merge-protocol to the skill table in embedded/README.md
+        done: true
+      - text: Update the skill count if mentioned anywhere in the README
+        done: true
+  - phase: Update site skills page
     tasks:
-      - text: "Fix skill count from '22' to correct number on kiloforge_site/src/app/skills/page.tsx:201"
-        done: false
-      - text: "Add kf-merge-protocol to the appropriate skillCategories section on the site"
-        done: false
-      - text: "Verify site builds successfully (npm run build in kiloforge_site)"
-        done: false
+      - text: Fix skill count from '22' to correct number on kiloforge_site/src/app/skills/page.tsx:201
+        done: true
+      - text: Add kf-merge-protocol to the appropriate skillCategories section on the site
+        done: true
+      - text: Verify site builds successfully (npm run build in kiloforge_site)
+        done: true
 extra: {}
