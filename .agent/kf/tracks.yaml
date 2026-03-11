@@ -72,8 +72,8 @@ dashboard-root-routing-be_20260309130000Z: {"title":"Dashboard Root Routing and 
 dashboard-root-routing-fe_20260309130001Z: {"title":"Dashboard Root Routing (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 dashboard-theme-alignment_20260310225322Z: {"title":"Align dashboard UI with kiloforge.dev design guide","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 dashboard-track-gen_20260309160000Z: {"title":"Dashboard-Driven Track Generation with Interactive Agent","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
-dead-code-cleanup-be_20260311120001Z: {"title":"Remove dead backend services and port interfaces","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
-dead-code-cleanup-fe_20260311120000Z: {"title":"Remove unused frontend components and hooks","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+dead-code-cleanup-be_20260311120001Z: {"title":"Remove dead backend services and port interfaces","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+dead-code-cleanup-fe_20260311120000Z: {"title":"Remove unused frontend components and hooks","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
 design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforge.dev visual language","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 destroy-preserve-repos_20260310223827Z: {"title":"Make kf destroy preserve project repo clones by default","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 docker-gitea-dead-code-be_20260311195000Z: {"title":"Remove Docker/Gitea dead code from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
