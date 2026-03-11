@@ -41,9 +41,9 @@ func createTestTarball(t *testing.T, files map[string]string) []byte {
 func TestInstall_ExtractsSkills(t *testing.T) {
 	t.Parallel()
 	tarball := createTestTarball(t, map[string]string{
-		"kf-developer/SKILL.md": "# Developer Skill",
+		"kf-developer/SKILL.md":   "# Developer Skill",
 		"kf-interactive/SKILL.md": "# Interactive Skill",
-		"README.md":             "# Not a skill",
+		"README.md":               "# Not a skill",
 	})
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
