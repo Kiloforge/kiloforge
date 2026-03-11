@@ -339,7 +339,7 @@ ui-polish-transitions-fe_20260311150001Z: {"title":"UI polish — dialog animati
 user-mirror-be_20260310225404Z: {"title":"Add --output flag for user-specified mirror path, preserve on destroy","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 user-mirror-fe_20260310225405Z: {"title":"Surface mirror directory in Command Deck UI","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-11"}
 virtual-list-fe_20260310050002Z: {"title":"Virtualized Windowed List Component (Frontend)","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-windows-build-support-be_20260311062734Z: {"title":"Add Windows build support and CI verification","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+windows-build-support-be_20260311062734Z: {"title":"Add Windows build support and CI verification","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
 work-queue-be_20260311010002Z: {"title":"Work queue — backend service with semaphore, dependency-aware scheduling, and auto-spawn","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and status UI","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 worktree-env-helper_20260310224653Z: {"title":"Add kf-worktree-env shell helper and inform agents via CLAUDE.md","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

@@ -14,7 +14,7 @@ spec:
     Windows is feasible. However, several files use Unix-only syscall constants
     (SIGKILL, Signal(0)) that won't compile on Windows. The CI pipeline has no
     Windows runner, so compilation issues would go undetected until release time.
-
+    
     The user cannot test Windows builds locally (macOS dev machine). The strategy
     is to fix known issues, push a branch to trigger CI on windows-latest, and
     iterate until green.
@@ -29,15 +29,15 @@ spec:
       SIGINT which IS available on Windows (os.Interrupt maps to it).
     - backend/internal/adapter/cli/serve.go:66 — signal.NotifyContext with
       SIGTERM+SIGINT — these work on Windows via Go's os/signal abstraction.
-
+    
     GoReleaser (.goreleaser.yaml):
     - goos: [darwin, linux] — missing windows
     - archives format: tar.gz for all — Windows conventionally uses .zip
-
+    
     CI (.github/workflows/ci.yml):
     - kf-tools matrix: [ubuntu-latest, macos-latest] — no windows-latest
     - test/lint/deps jobs: ubuntu-only. Need at minimum a build check on Windows.
-
+    
     Prereq hints (prereq/check.go):
     - gitHint() has "darwin" case and default (Linux). No "windows" case —
       falls through to "sudo apt install git" which is wrong for Windows.
@@ -67,35 +67,35 @@ spec:
       os.Process.Kill() (calls TerminateProcess on Windows).
     - daemon.go stop logic: extract into platform-specific helpers or reuse
       the shared process helpers from shutdown.go.
-
+    
     For CI, add a lightweight "build-windows" job that only does:
       GOOS=windows go build ./cmd/kf
     Full test suite on Windows is out of scope (some tests depend on Unix).
-
+    
     For local verification before pushing: run
       cd backend && GOOS=windows GOARCH=amd64 go build ./cmd/kf
     to catch compilation errors.
 plan:
   - phase: Platform-specific signal handling
     tasks:
-      - text: "Extract ProcessAlive, signalProcess, killProcess from shutdown.go into process_unix.go (//go:build !windows) with current Unix implementation"
-        done: false
-      - text: "Create process_windows.go (//go:build windows) with Windows-compatible implementations: ProcessAlive via FindProcess+Signal, killProcess via Process.Kill(), signalProcess via Process.Signal(os.Interrupt) for SIGINT"
-        done: false
-      - text: "Extract daemon.go stop/kill logic into platform helpers or reuse the shared process functions from the agent package"
-        done: false
-      - text: "Add windows case to gitHint() in prereq/check.go returning 'winget install --id Git.Git' (or equivalent)"
-        done: false
+      - text: Extract ProcessAlive, signalProcess, killProcess from shutdown.go into process_unix.go (//go:build !windows) with current Unix implementation
+        done: true
+      - text: Create process_windows.go (//go:build windows) with Windows-compatible implementations: ProcessAlive via FindProcess+Signal, killProcess via Process.Kill(), signalProcess via Process.Signal(os.Interrupt) for SIGINT
+        done: true
+      - text: Extract daemon.go stop/kill logic into platform helpers or reuse the shared process functions from the agent package
+        done: true
+      - text: Add windows case to gitHint() in prereq/check.go returning 'winget install --id Git.Git' (or equivalent)
+        done: true
   - phase: Build and release config
     tasks:
-      - text: "Add windows to .goreleaser.yaml goos list and add format_overrides entry for windows .zip archives"
-        done: false
-      - text: "Add windows-latest to CI kf-tools matrix and add a build-windows job to ci.yml that runs GOOS=windows go build ./cmd/kf"
-        done: false
+      - text: Add windows to .goreleaser.yaml goos list and add format_overrides entry for windows .zip archives
+        done: true
+      - text: Add windows-latest to CI kf-tools matrix and add a build-windows job to ci.yml that runs GOOS=windows go build ./cmd/kf
+        done: true
   - phase: Verification
     tasks:
-      - text: "Run GOOS=windows GOARCH=amd64 go build ./cmd/kf locally to verify cross-compilation succeeds"
-        done: false
-      - text: "Push the implementation branch to origin to trigger CI and verify the windows-latest job passes"
-        done: false
+      - text: Run GOOS=windows GOARCH=amd64 go build ./cmd/kf locally to verify cross-compilation succeeds
+        done: true
+      - text: Push the implementation branch to origin to trigger CI and verify the windows-latest job passes
+        done: true
 extra: {}
