@@ -13,7 +13,7 @@ Kiloforge is a local orchestration platform with three main components: a **CLI*
               │                      │                  │
      ┌────────▼────────┐   ┌────────▼────────┐   ┌─────▼───────────┐
      │   kf CLI        │   │  Cortex         │   │  Claude Code    │
-     │                 │   │  :4001          │   │  Swarm          │
+     │                 │   │  :39517         │   │  Swarm          │
      │  up, down, add  │   │                 │   │                 │
      │  implement      │──►│  REST API       │   │  developer-1    │
      │  agents, logs   │   │  SSE events     │   │  developer-2    │
@@ -26,7 +26,7 @@ Kiloforge is a local orchestration platform with three main components: a **CLI*
                            │                 │
                            │  ┌───────────┐  │
                            │  │ Cmd Deck  │  │
-                           │  │ /-/       │  │
+                           │  │ /         │  │
                            │  │ (React)   │  │
                            │  └───────────┘  │
                            └─────────────────┘
@@ -53,7 +53,7 @@ The CLI is built with [Cobra](https://github.com/spf13/cobra) and compiles to a 
 
 ### Cortex
 
-The Cortex is the control plane — an HTTP server (port 4001) that serves multiple roles:
+The Cortex is the control plane — an HTTP server (port 39517) that serves multiple roles:
 
 - **REST API** — OpenAPI 3.1 schema-first design with generated server interfaces. Handles agent CRUD, project management, quota queries, trace viewing, board state, and swarm capacity.
 - **SSE Event Bus** — Server-sent events for real-time updates. The Command Deck subscribes to agent status changes, quota updates, notifications, and capacity events.
@@ -66,7 +66,7 @@ The Cortex is the control plane — an HTTP server (port 4001) that serves multi
 
 ### Command Deck
 
-A React 19 / TypeScript / Vite application served at `/-/` by the Cortex:
+A React 19 / TypeScript / Vite application served at `/` by the Cortex:
 
 - **Agent monitoring** — Real-time agent cards with status, role, tokens, cost, uptime
 - **Interactive terminal** — WebSocket-based terminal for interactive agents with structured message display (text bubbles, tool use, thinking blocks)

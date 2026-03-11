@@ -1,5 +1,5 @@
 id: docs-consistency-audit_20260311004500Z
-title: "Fix documentation inconsistencies — ports, paths, stale refs"
+title: Fix documentation inconsistencies — ports, paths, stale refs
 type: chore
 status: pending
 created: 2026-03-11
@@ -16,20 +16,20 @@ spec:
     - backend/internal/adapter/config/defaults.go:18 — OrchestratorPort: 39517
     - backend/internal/adapter/cli/up.go:34 — flag help says "default 39517"
     - frontend/vite.config.ts:33 — dev proxy targets localhost:39517
-
+    
     ### Dashboard path
     - backend/internal/adapter/dashboard/server.go:121-128 — RegisterNonAPIRoutes mounts at /
     - backend/api/openapi.yaml — all routes are /api/..., not /-/api/...
     - backend/internal/adapter/dashboard/detail.go:41,44 — stale /-/ hrefs in HTML templates
-
+    
     ### Log file
     - backend/internal/adapter/cli/daemon.go:40-46 — migrates orchestrator.log → cortex.log
     - backend/internal/adapter/cli/serve.go:41-46 — same migration
-
+    
     ### Data storage
     - backend/internal/adapter/persistence/sqlite/db.go:14 — creates kiloforge.db
     - backend/internal/adapter/persistence/sqlite/migrate_json.go — JSON files are legacy migration only
-
+    
     ### Files needing changes
     - README.md — 6 port refs, 5 /-/ refs, dev mode port, data dir structure, log filename
     - docs/getting-started.md — port refs, /-/ paths
@@ -54,28 +54,28 @@ spec:
 plan:
   - phase: Fix port and path references
     tasks:
-      - text: "Update README.md — replace all port 4001 with 39517, replace /-/ paths with /, fix dev mode port from 3001 to 39517"
-        done: false
-      - text: "Update docs/getting-started.md — replace port 4001 with 39517, replace /-/ paths with /"
-        done: false
-      - text: "Update docs/architecture.md — replace port 4001 with 39517, replace /-/ paths with /"
-        done: false
-      - text: "Fix backend/internal/adapter/dashboard/detail.go — replace /-/ hrefs with /"
-        done: false
+      - text: Update README.md — replace all port 4001 with 39517, replace /-/ paths with /, fix dev mode port from 3001 to 39517
+        done: true
+      - text: Update docs/getting-started.md — replace port 4001 with 39517, replace /-/ paths with /
+        done: true
+      - text: Update docs/architecture.md — replace port 4001 with 39517, replace /-/ paths with /
+        done: true
+      - text: Fix backend/internal/adapter/dashboard/detail.go — replace /-/ hrefs with /
+        done: true
   - phase: Fix data directory and log references
     tasks:
-      - text: "Update README.md data directory structure — add kiloforge.db, rename orchestrator.log to cortex.log, note JSON files are legacy"
+      - text: Update README.md data directory structure — add kiloforge.db, rename orchestrator.log to cortex.log, note JSON files are legacy
         done: false
-      - text: "Update README.md status output example — fix port and Dashboard label to match actual code"
+      - text: Update README.md status output example — fix port and Dashboard label to match actual code
         done: false
   - phase: Verification
     tasks:
-      - text: "Grep all docs for remaining 4001 references — fix any found"
+      - text: Grep all docs for remaining 4001 references — fix any found
         done: false
-      - text: "Grep all docs for remaining /-/ references — fix any found"
+      - text: Grep all docs for remaining /-/ references — fix any found
         done: false
-      - text: "Run make build — verify detail.go change compiles"
+      - text: Run make build — verify detail.go change compiles
         done: false
-      - text: "Run make test — verify all tests pass"
+      - text: Run make test — verify all tests pass
         done: false
 extra: {}

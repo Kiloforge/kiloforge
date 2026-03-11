@@ -85,7 +85,7 @@ kf agents
 This will:
 1. Create the data directory (`~/.kiloforge/`)
 2. Save the global configuration
-3. Start the Cortex control plane on `localhost:4001`
+3. Start the Cortex control plane on `localhost:39517`
 4. Open the Command Deck in your browser
 5. Register your project for agent orchestration
 
@@ -117,10 +117,10 @@ Show Cortex status, quota usage, and agent costs.
 $ kf status
 Kiloforge Status — Kiloforger
 ================================
-Cortex:      running (PID 12345) on :4001
+Cortex:      running (PID 12345) on :39517
 Data:        /Users/you/.kiloforge
-Server:      http://localhost:4001
-Dashboard:   http://localhost:4001/-/
+Server:      http://localhost:39517
+Dashboard:   http://localhost:39517/
 ```
 
 #### `kf destroy`
@@ -272,7 +272,7 @@ kf sync
 ```
 kf up
     │
-    ├─ Cortex (localhost:4001)
+    ├─ Cortex (localhost:39517)
     │   ├─ Agent lifecycle: spawn, suspend, resume
     │   ├─ Quota tracking and budget enforcement
     │   ├─ Scoped lock API (merge serialization)
@@ -280,7 +280,7 @@ kf up
     │   ├─ Skills management and validation
     │   └─ Track and worktree coordination
     │
-    ├─ Command Deck (localhost:4001/-/)
+    ├─ Command Deck (localhost:39517/)
     │   ├─ Real-time agent status via SSE
     │   ├─ Interactive agent terminals (WebSocket)
     │   ├─ Kanban track board
@@ -338,11 +338,11 @@ docker run -d --name jaeger \
   jaegertracing/all-in-one:latest
 ```
 
-View traces at `http://localhost:16686` or in the Command Deck at `/-/dashboard/traces/{traceId}`.
+View traces at `http://localhost:16686` or in the Command Deck at `/dashboard/traces/{traceId}`.
 
 The trace API is available at:
-- `GET /-/api/traces` — list trace summaries (filter with `?track_id=X` or `?session_id=Y`)
-- `GET /-/api/traces/{traceId}` — get full trace with span tree
+- `GET /api/traces` — list trace summaries (filter with `?track_id=X` or `?session_id=Y`)
+- `GET /api/traces/{traceId}` — get full trace with span tree
 
 ## Analytics / Telemetry
 
@@ -411,7 +411,7 @@ make lint
 make clean
 ```
 
-The `make dev` target starts the Go backend on port 3001 and the Vite dev server on port 5173. The Vite dev server proxies API calls to the backend, so the Kiloforger can develop the frontend with hot reload while hitting real backend endpoints.
+The `make dev` target starts the Go backend on port 39517 and the Vite dev server on port 5173. The Vite dev server proxies API calls to the backend, so the Kiloforger can develop the frontend with hot reload while hitting real backend endpoints.
 
 ## Releasing
 

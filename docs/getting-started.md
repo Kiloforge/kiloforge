@@ -44,8 +44,8 @@ On first run, this will:
 On subsequent runs, `kf up` simply starts the Cortex if it isn't already running.
 
 This starts:
-- **Cortex** at `http://localhost:4001` — the control plane (API, agent management, quota tracking, notifications)
-- **Command Deck** at `http://localhost:4001/-/` — real-time monitoring dashboard
+- **Cortex** at `http://localhost:39517` — the control plane (API, agent management, quota tracking, notifications)
+- **Command Deck** at `http://localhost:39517/` — real-time monitoring dashboard
 
 Stop everything with `kf down`.
 
@@ -129,14 +129,14 @@ kf implement --list
 
 ### From the Command Deck
 
-1. Open `http://localhost:4001/-/` in your browser
+1. Open `http://localhost:39517/` in your browser
 2. Navigate to the project
 3. View the track board — a kanban board showing tracks by status
 4. Click on a track to spawn an agent directly from the UI
 
 ## The Command Deck
 
-The Command Deck at `http://localhost:4001/-/` is the Kiloforger's control center for the Swarm.
+The Command Deck at `http://localhost:39517/` is the Kiloforger's control center for the Swarm.
 
 ### Agent Cards
 

@@ -38,10 +38,10 @@ const trackDetailHTML = `<!DOCTYPE html>
 <body>
   <header>
     <div class="header-left">
-      <h1><a href="/-/" style="color:inherit;text-decoration:none">kiloforge</a></h1>
+      <h1><a href="/" style="color:inherit;text-decoration:none">kiloforge</a></h1>
       <span class="badge" id="conn-status">connecting</span>
     </div>
-    <nav><a href="/-/">Dashboard</a></nav>
+    <nav><a href="/">Dashboard</a></nav>
   </header>
   <main>
     <section class="panel">
@@ -85,7 +85,7 @@ const trackDetailHTML = `<!DOCTYPE html>
       document.getElementById('log-viewer').textContent = (data.lines||[]).join('\n');
     }
     loadAgents();
-    const es = new EventSource('/-/events');
+    const es = new EventSource('/events');
     es.onopen = () => document.getElementById('conn-status').textContent = 'live';
     es.addEventListener('agent_update', () => loadAgents());
   </script>
@@ -103,10 +103,10 @@ const prDetailHTML = `<!DOCTYPE html>
 <body>
   <header>
     <div class="header-left">
-      <h1><a href="/-/" style="color:inherit;text-decoration:none">kiloforge</a></h1>
+      <h1><a href="/" style="color:inherit;text-decoration:none">kiloforge</a></h1>
       <span class="badge" id="conn-status">connecting</span>
     </div>
-    <nav><a href="/-/">Dashboard</a></nav>
+    <nav><a href="/">Dashboard</a></nav>
   </header>
   <main>
     <section class="panel">
@@ -149,7 +149,7 @@ const prDetailHTML = `<!DOCTYPE html>
       document.getElementById('log-viewer').textContent = (data.lines||[]).join('\n');
     }
     loadAgents();
-    const es = new EventSource('/-/events');
+    const es = new EventSource('/events');
     es.onopen = () => document.getElementById('conn-status').textContent = 'live';
     es.addEventListener('agent_update', () => loadAgents());
   </script>
