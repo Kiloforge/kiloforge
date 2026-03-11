@@ -1,11 +1,11 @@
 id: fix-agent-resume-session-id-be_20260312000000Z
-title: "Fix agent resume — capture real Claude session ID from SDK"
+title: Fix agent resume — capture real Claude session ID from SDK
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-11
 spec:
-  summary: Agent resume is broken because the stored session ID is a self-generated UUID, not the real Claude SDK session ID. Resume attempts fail silently because `claude --resume <our-uuid>` finds no matching session file.
+  summary: "Agent resume is broken because the stored session ID is a self-generated UUID, not the real Claude SDK session ID. Resume attempts fail silently because `claude --resume <our-uuid>` finds no matching session file."
   context: |
     The agent spawner generates its own UUID for each agent's SessionID at spawn time
     (spawner.go lines 257, 326, 501). This UUID is stored in AgentInfo.SessionID and
@@ -13,7 +13,7 @@ spec:
     ID internally. When resume is attempted via `WithResume(sessionID)` or
     `claude --resume <sessionID>`, the CLI looks for a session file matching that ID
     and fails because our UUID doesn't correspond to any real session.
-
+    
     The real session ID is available in ResultMessage.SessionID returned by the SDK
     after each turn, but it is only logged — never captured and stored back to the
     agent record.
@@ -32,7 +32,7 @@ spec:
     - backend/internal/adapter/agent/recovery.go:
       - execClaudeResume (line 157): runs `claude --resume <our-uuid>` — can't find session
       - RecoverAll (line 77): calls starter.Start with our UUID — broken
-
+    
     The fix requires capturing ResultMessage.SessionID and persisting it to the agent store
     so that subsequent resume calls use the correct ID.
   acceptance_criteria:
@@ -47,40 +47,40 @@ spec:
     - Changing the initial UUID generation (still useful as a pre-session identifier)
   technical_notes: |
     Fix approach:
-
+    
     1. Add a session ID update callback to SDKSession. When relayResponse receives a
        ResultMessage with a non-empty SessionID that differs from the stored one, invoke
        the callback to persist the real ID.
-
+    
     2. For QueryOneShot (developer/reviewer one-shot agents), return the real session ID
        alongside the final status so runSDKAgent can update the store.
-
+    
     3. Wire the callback in SpawnInteractive and ResumeAgent so the store is updated
        on the first turn completion.
-
+    
     4. The callback should call store.UpdateSessionID (new method) or do a FindAgent +
        update SessionID + AddAgent upsert pattern already used elsewhere in the spawner.
 plan:
   - phase: Capture real session ID
     tasks:
-      - text: "Add a sessionIDCallback field to SDKSession and a SetSessionIDCallback method. In handleResponseMessage, when a ResultMessage has a non-empty SessionID, invoke the callback with the real ID."
-        done: false
-      - text: "Modify QueryOneShot to capture and return the real session ID from ResultMessage alongside the final status string (change return signature to include sessionID)."
-        done: false
-      - text: "In runSDKAgent (spawner.go), after QueryOneShot returns, update the agent store with the real session ID if one was returned."
-        done: false
+      - text: Add a sessionIDCallback field to SDKSession and a SetSessionIDCallback method. In handleResponseMessage, when a ResultMessage has a non-empty SessionID, invoke the callback with the real ID.
+        done: true
+      - text: Modify QueryOneShot to capture and return the real session ID from ResultMessage alongside the final status string (change return signature to include sessionID).
+        done: true
+      - text: In runSDKAgent (spawner.go), after QueryOneShot returns, update the agent store with the real session ID if one was returned.
+        done: true
   - phase: Wire callback in spawner
     tasks:
-      - text: "In SpawnInteractive, after creating the SDKSession, set a sessionIDCallback that calls store.FindAgent + updates SessionID + store.AddAgent (upsert pattern)."
-        done: false
-      - text: "In ResumeAgent, same — wire the sessionIDCallback so that if the session ID changes on resume, the store is updated."
-        done: false
+      - text: In SpawnInteractive, after creating the SDKSession, set a sessionIDCallback that calls store.FindAgent + updates SessionID + store.AddAgent (upsert pattern).
+        done: true
+      - text: In ResumeAgent, same — wire the sessionIDCallback so that if the session ID changes on resume, the store is updated.
+        done: true
   - phase: Verification
     tasks:
-      - text: "Add a unit test in sdk_client_test.go that verifies the sessionIDCallback is invoked when a ResultMessage with a SessionID is received."
-        done: false
-      - text: "Add a unit test verifying QueryOneShot returns the real session ID."
-        done: false
-      - text: "Run make test, make build, make lint — verify no regressions."
-        done: false
+      - text: Add a unit test in sdk_client_test.go that verifies the sessionIDCallback is invoked when a ResultMessage with a SessionID is received.
+        done: true
+      - text: Add a unit test verifying QueryOneShot returns the real session ID.
+        done: true
+      - text: Run make test, make build, make lint — verify no regressions.
+        done: true
 extra: {}

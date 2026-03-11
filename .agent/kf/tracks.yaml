@@ -95,7 +95,7 @@ fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos
 fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 fix-agent-name-in-api-be_20260312200000Z: {"title":"Fix agent name missing from REST API response","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-agent-resume-be_20260312020000Z: {"title":"Fix interactive agent resume — input accepted but no output returned","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
-fix-agent-resume-session-id-be_20260312000000Z: {"title":"Fix agent resume — capture real Claude session ID from SDK","status":"pending","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
+fix-agent-resume-session-id-be_20260312000000Z: {"title":"Fix agent resume — capture real Claude session ID from SDK","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-11"}
 fix-agent-spawn-context_20260310100000Z: {"title":"Fix agent spawn context cancellation — detach SDK lifecycle from HTTP request","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-board-sync-ux-be_20260310012000Z: {"title":"Fix Board Sync and SSE Events (Backend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-board-sync-ux-fe_20260310012001Z: {"title":"Fix Board UX — SSE Handler, Sync Button, Empty Columns (Frontend)","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
