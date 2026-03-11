@@ -2,7 +2,7 @@
 set -e
 
 REPO="Kiloforge/kiloforge"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 BINARY="kf"
 
 main() {
@@ -11,7 +11,11 @@ main() {
   download_and_install
   echo ""
   echo "kf ${VERSION} installed to ${INSTALL_DIR}/${BINARY}"
-  echo "Run 'kf init' to get started."
+  case ":${PATH}:" in
+    *":${INSTALL_DIR}:"*) ;;
+    *) echo "Add ${INSTALL_DIR} to your PATH:  export PATH=\"${INSTALL_DIR}:\$PATH\"" ;;
+  esac
+  echo "Run 'kf up' to get started."
 }
 
 detect_platform() {
