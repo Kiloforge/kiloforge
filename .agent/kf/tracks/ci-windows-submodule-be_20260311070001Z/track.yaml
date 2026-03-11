@@ -11,7 +11,7 @@ spec:
   context: |
     CI run 22942008887 fails on the build-windows job with:
       pattern embedded/kf-*: no matching files found
-
+    
     The kiloforge-skills submodule at backend/internal/adapter/skills/embedded/
     provides embedded skill files referenced by checker.go's go:embed directive.
     The lint, test, and deps jobs all use `submodules: recursive` in their
@@ -21,9 +21,9 @@ spec:
     include `submodules: recursive` in their checkout step. Two do not:
     - kf-tools (doesn't need submodules — only runs shell script tests)
     - build-windows (NEEDS submodules — builds Go backend with embedded skills)
-
+    
     The fix is adding `submodules: recursive` to the build-windows checkout step.
-
+    
     File: .github/workflows/ci.yml, line ~117 (build-windows checkout)
     Current:
       - uses: actions/checkout@v4
@@ -38,13 +38,12 @@ spec:
     - Modifying the kf-tools job (it doesn't need submodules)
     - Changing the submodule itself
     - Other CI workflow changes
-  technical_notes: |
-    One-line addition to the checkout step in the build-windows job.
+  technical_notes: One-line addition to the checkout step in the build-windows job.
 plan:
   - phase: Fix CI config
     tasks:
-      - text: "Add submodules: recursive to build-windows checkout in ci.yml"
-        done: false
-      - text: "Verify lint and test jobs still have submodules: recursive"
-        done: false
+      - text: Add submodules: recursive to build-windows checkout in ci.yml
+        done: true
+      - text: Verify lint and test jobs still have submodules: recursive
+        done: true
 extra: {}
