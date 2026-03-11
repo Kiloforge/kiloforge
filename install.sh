@@ -54,7 +54,7 @@ fetch_latest_version() {
   # Use /releases endpoint (not /releases/latest) so pre-releases are included
   VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases" \
     | grep '"tag_name"' | head -1 \
-    | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')"
+    | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')"
 
   if [ -z "${VERSION}" ]; then
     echo "Error: Failed to fetch latest version from GitHub." >&2
