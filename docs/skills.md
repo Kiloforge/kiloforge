@@ -13,6 +13,114 @@ kf skills update   # Update to the latest skill release
 
 Skills are distributed as part of the Kiloforge release. They are embedded in the binary and installed to the Kiloforger's machine on first run or update.
 
+## Supported Agent Tools
+
+Kiloforge skills use the `SKILL.md` format supported by multiple AI coding agents. Each tool has its own directory convention for global and project-scoped skill installation.
+
+### Skill Directory Paths
+
+| Agent Tool | Global Path | Project-Scoped Path |
+|------------|-------------|---------------------|
+| **Claude Code** | `~/.claude/skills/` | `.claude/skills/` |
+| **OpenCode** | `~/.config/opencode/skills/` | `.opencode/skills/` |
+| **Amp** (Sourcegraph) | `~/.config/amp/skills/` | `.agents/skills/` |
+| **Codex** (OpenAI) | `~/.agents/skills/` | `.agents/skills/` |
+| **Antigravity** (Google) | `~/.gemini/antigravity/skills/` | `.agent/skills/` |
+
+> **Note:** OpenCode and Amp fall back to reading `~/.claude/skills/`, so installing skills globally for Claude Code also makes them available to those tools.
+
+### Global Installation
+
+Install skills globally so they are available across all projects on your machine.
+
+**Unix (macOS / Linux):**
+
+```bash
+# Claude Code (also works for OpenCode and Amp via fallback)
+SKILLS_DIR=~/.claude/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+
+# Codex
+SKILLS_DIR=~/.agents/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+
+# Antigravity
+SKILLS_DIR=~/.gemini/antigravity/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+```
+
+**Windows (PowerShell):**
+
+```powershell
+# Claude Code (also works for OpenCode and Amp via fallback)
+$d = "$HOME\.claude\skills"
+Remove-Item "$d\kf-*" -Recurse -Force -ErrorAction SilentlyContinue
+git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git $env:TEMP\kf-skills
+Copy-Item "$env:TEMP\kf-skills\kf-*" "$d\" -Recurse
+Remove-Item "$env:TEMP\kf-skills" -Recurse -Force
+
+# Codex
+$d = "$HOME\.agents\skills"
+Remove-Item "$d\kf-*" -Recurse -Force -ErrorAction SilentlyContinue
+git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git $env:TEMP\kf-skills
+Copy-Item "$env:TEMP\kf-skills\kf-*" "$d\" -Recurse
+Remove-Item "$env:TEMP\kf-skills" -Recurse -Force
+
+# Antigravity
+$d = "$HOME\.gemini\antigravity\skills"
+Remove-Item "$d\kf-*" -Recurse -Force -ErrorAction SilentlyContinue
+git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git $env:TEMP\kf-skills
+Copy-Item "$env:TEMP\kf-skills\kf-*" "$d\" -Recurse
+Remove-Item "$env:TEMP\kf-skills" -Recurse -Force
+```
+
+The `rm -rf "$SKILLS_DIR"/kf-*` cleanup step removes stale skill directories before copying, ensuring renamed or deleted skills don't linger.
+
+### Project-Scoped Installation
+
+Install skills within a repository so all team members share the same skill versions. Project-scoped skills take precedence over global skills when both exist.
+
+```bash
+# Claude Code
+SKILLS_DIR=.claude/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+
+# OpenCode
+SKILLS_DIR=.opencode/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+
+# Amp / Codex (shared path)
+SKILLS_DIR=.agents/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+
+# Antigravity
+SKILLS_DIR=.agent/skills \
+  && rm -rf "$SKILLS_DIR"/kf-* \
+  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
+  && rm -rf /tmp/kf-skills
+```
+
+Add the chosen skills directory to your `.gitignore` if you prefer not to commit skills into the repository.
+
 ## The Core Pipeline
 
 The primary development workflow follows the **architect → developer** pipeline:

@@ -77,11 +77,11 @@ plan:
   tasks:
   - text: Add 'Supported Agent Tools' section after 'How Skills Work' — table of 5 tools with global and project-scoped paths,
       noting OpenCode/Amp fallback to ~/.claude/skills/
-    done: false
+    done: true
   - text: Add per-agent install command examples (global) for Unix and Windows, including kf-* cleanup step
-    done: false
+    done: true
   - text: Add 'Project-Scoped Installation' subsection explaining how to install skills within a repo for team sharing
-    done: false
+    done: true
 - phase: Verification
   tasks:
   - text: Verify no remaining references to kf-reviewer in docs/skills.md
