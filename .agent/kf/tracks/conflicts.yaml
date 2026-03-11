@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+guidance-overlay-site_20260311235900Z/multi-agent-skills-site_20260311200001Z: {"risk":"medium","note":"Both modify skills/page.tsx — different sections but same file","added":"2026-03-11"}

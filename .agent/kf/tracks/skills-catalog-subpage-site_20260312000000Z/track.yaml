@@ -1,0 +1,100 @@
+id: skills-catalog-subpage-site_20260312000000Z
+title: "Extract skills catalog to dedicated /skills/catalog subpage"
+type: refactor
+status: pending
+created: 2026-03-11
+updated: 2026-03-11
+spec:
+  summary: >
+    Move the "All Skills" reference section (6 categories, 22 skills) from the
+    skills page into a new /skills/catalog subpage. Replace it on the main skills
+    page with a compact CTA linking to the catalog. This keeps the skills page
+    focused on the workflow process and guidance mindset while preserving the
+    full reference as a discoverable subpage.
+  context: |
+    The skills page currently serves two purposes: teaching the 4-step workflow
+    and acting as a full skill reference catalog. With the addition of guidance
+    overlays (guidance-overlay-site_20260311235900Z), the page needs to stay
+    focused on process and mindset. The detailed 22-skill catalog with 6
+    categories is valuable reference material but clutters the learning flow.
+
+    Moving it to a subpage lets users who want the reference find it easily
+    while keeping the main skills page clean and focused on onboarding.
+  codebase_analysis: |
+    Target repo: /Users/benbaldivia/dev-2/kiloforge_site/
+    Target file: src/app/skills/page.tsx (445 lines)
+
+    "All Skills" section: lines 358-391
+    - skillCategories array (lines 96-155): 6 categories with 22 skills total
+    - Renders as glass-panel cards with category headers and skill rows
+    - Each skill shows /{skill.name} code + description
+
+    "Update & Uninstall" section: lines 393-416
+    - Two glass-panel cards in a grid
+    - Update: re-run install command
+    - Uninstall: rm -rf ~/.claude/skills/kf-*
+
+    Icons imported but only used by skill catalog:
+    - BarChart3, FileText, Rocket, Search, Wrench — used in skillCategories
+    - Some icons shared with workflow steps (Settings, Layers, ListChecks, Play)
+
+    New file needed: src/app/skills/catalog/page.tsx
+    - Next.js App Router auto-routes /skills/catalog from this path
+    - Should follow same page structure pattern as skills/page.tsx (nav, main, footer)
+
+    Design patterns to reuse:
+    - glass-panel utility for cards
+    - fadeIn/stagger animation variants
+    - Category header with icon + title
+    - Skill row with code name + description
+    - Nav bar with back link pattern (ArrowLeft + "Back to Skills")
+  acceptance_criteria:
+    - New /skills/catalog page displays the full 22-skill reference organized by 6 categories
+    - Skills page no longer shows the "All Skills" section inline
+    - Skills page has a CTA card linking to /skills/catalog for the full reference
+    - Update & Uninstall info is accessible (on catalog page or retained as brief note)
+    - Catalog page has navigation back to /skills
+    - Both pages follow existing design system (glass-panel, animations, responsive)
+    - No broken links between pages
+    - Unused imports cleaned up from skills/page.tsx
+  out_of_scope: |
+    - Changes to the kiloforge main repo
+    - Backend changes
+    - Content changes to skill descriptions (preserve as-is)
+    - Changes to the install section (handled by multi-agent-skills-site track)
+  technical_notes: |
+    Target repo: /Users/benbaldivia/dev-2/kiloforge_site/
+    New file: src/app/skills/catalog/page.tsx
+    Modified file: src/app/skills/page.tsx
+
+    The skillCategories data array should be moved to the catalog page. If both
+    pages need to reference it in the future, it could be extracted to a shared
+    data file, but for now just move it since only the catalog uses it.
+
+    The CTA on the skills page should be subtle but discoverable — a glass-panel
+    card with an ArrowRight icon, placed after the workflow section and before
+    the footer. Something like "Browse all 22 skills" with a brief note.
+
+    The catalog page should feel like a natural extension — same nav pattern,
+    same footer, same glass-panel styling. Use "use client" for framer-motion
+    animations.
+plan:
+  - phase: "Create catalog subpage"
+    tasks:
+      - text: "Create src/app/skills/catalog/page.tsx with 'use client', page metadata, nav bar (with ArrowLeft back link to /skills), and footer matching existing site pattern"
+        done: false
+      - text: "Move skillCategories data array and its rendering (category cards with icon headers and skill rows) into the catalog page, preserving glass-panel styling and fadeIn/stagger animations"
+        done: false
+      - text: "Include Update & Uninstall info cards at the bottom of the catalog page"
+        done: false
+  - phase: "Refactor skills page"
+    tasks:
+      - text: "Remove the 'All Skills' section (skillCategories array definition + rendering block, lines 96-155 and 358-391) from skills/page.tsx"
+        done: false
+      - text: "Remove the 'Update & Uninstall' section (lines 393-416) from skills/page.tsx"
+        done: false
+      - text: "Add a compact CTA card after the workflow section linking to /skills/catalog — 'Browse all 22 skills' with ArrowRight icon, glass-panel styling"
+        done: false
+      - text: "Clean up unused imports from skills/page.tsx (BarChart3, FileText, Rocket, Search, Wrench, and any other icons only used by the removed sections)"
+        done: false
+extra: {}
