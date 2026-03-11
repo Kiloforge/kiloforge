@@ -41,8 +41,6 @@ Download the latest release from [GitHub Releases](https://github.com/Kiloforge/
 | macOS | Apple Silicon | `kf_*_darwin_arm64.tar.gz` |
 | Linux | x86_64 | `kf_*_linux_amd64.tar.gz` |
 | Linux | ARM64 | `kf_*_linux_arm64.tar.gz` |
-| Windows | x86_64 | `kf_*_windows_amd64.zip` |
-| Windows | ARM64 | `kf_*_windows_arm64.zip` |
 
 Extract and place `kf` in your `PATH`.
 
