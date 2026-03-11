@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="Goblinlordx/crelay"
+REPO="Kiloforge/kiloforge"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BINARY="kf"
 
@@ -51,8 +51,9 @@ fetch_latest_version() {
     exit 1
   fi
 
-  VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-    | grep '"tag_name"' \
+  # Use /releases endpoint (not /releases/latest) so pre-releases are included
+  VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases" \
+    | grep '"tag_name"' | head -1 \
     | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')"
 
   if [ -z "${VERSION}" ]; then

@@ -22,25 +22,18 @@ Coordinating multiple AI agents across multiple projects demands infrastructure 
 ### Quick Install (macOS/Linux)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Goblinlordx/crelay/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Kiloforge/kiloforge/main/install.sh | sh
 ```
 
 To install to a custom directory:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Goblinlordx/crelay/main/install.sh | INSTALL_DIR=~/.local/bin sh
-```
-
-### Homebrew (macOS/Linux)
-
-```bash
-brew tap Goblinlordx/tap
-brew install kf
+curl -fsSL https://raw.githubusercontent.com/Kiloforge/kiloforge/main/install.sh | INSTALL_DIR=~/.local/bin sh
 ```
 
 ### Binary Download
 
-Download the latest release from [GitHub Releases](https://github.com/Goblinlordx/crelay/releases). Archives are available for:
+Download the latest release from [GitHub Releases](https://github.com/Kiloforge/kiloforge/releases). Archives are available for:
 
 | OS | Arch | Archive |
 |----|------|---------|
@@ -56,8 +49,8 @@ Extract and place `kf` in your `PATH`.
 ### Build from Source
 
 ```bash
-git clone https://github.com/Goblinlordx/crelay.git
-cd crelay
+git clone https://github.com/Kiloforge/kiloforge.git
+cd kiloforge
 make build
 # Binary at .build/kf
 ```
@@ -428,14 +421,11 @@ Releases are automated via GoReleaser and GitHub Actions.
 
 ```bash
 # Tag a release
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.0-alpha.1
+git push origin v0.1.0-alpha.1
 ```
 
-This triggers the release workflow which builds binaries for all platforms, creates a GitHub Release with checksums, and updates the Homebrew tap.
-
-**Required GitHub secrets:**
-- `HOMEBREW_TAP_TOKEN` — PAT with write access to the `Goblinlordx/homebrew-tap` repo
+This triggers the release workflow which builds binaries for all platforms and creates a GitHub Release with checksums.
 
 To test locally:
 
@@ -455,7 +445,7 @@ make release-local   # goreleaser --snapshot --clean
 
 Kiloforge is not currently accepting external pull requests — they are automatically closed by a GitHub Actions workflow. All development is managed by the maintainer using AI agent orchestration.
 
-To contribute, please [open an issue](https://github.com/Goblinlordx/crelay/issues/new/choose):
+To contribute, please [open an issue](https://github.com/Kiloforge/kiloforge/issues/new/choose):
 
 - **Bug reports** — describe the problem, steps to reproduce, and your environment
 - **Feature requests** — describe the problem you're solving and your proposed solution

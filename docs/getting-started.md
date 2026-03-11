@@ -9,17 +9,10 @@ This guide walks the Kiloforger through installing Kiloforge, starting the Corte
 
 ## Install
 
-### Homebrew (macOS/Linux)
-
-```bash
-brew tap Goblinlordx/tap
-brew install kf
-```
-
 ### Quick Install (macOS/Linux)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Goblinlordx/crelay/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Kiloforge/kiloforge/main/install.sh | sh
 ```
 
 ### Build from Source
@@ -27,8 +20,8 @@ curl -fsSL https://raw.githubusercontent.com/Goblinlordx/crelay/main/install.sh 
 Requires Go 1.25+ and Node.js 18+.
 
 ```bash
-git clone https://github.com/Goblinlordx/crelay.git
-cd crelay
+git clone https://github.com/Kiloforge/kiloforge.git
+cd kiloforge
 make build
 # Binary at .build/kf — add to your PATH
 ```
