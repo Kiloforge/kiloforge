@@ -94,7 +94,6 @@ export function CommandPane({
   const terminalStatuses = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
   const isTerminal = agentStatus !== null && terminalStatuses.has(agentStatus);
   const canSend = agentId !== null && status === "connected" && !isTerminal;
-  const canInterrupt = canSend && turnActive;
 
   const activeAgents = agents.filter(
     (a) => a.status === "running" || a.status === "interactive" || a.status === "suspended",
