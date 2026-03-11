@@ -12,4 +12,3 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
-multi-agent-skills-site_20260311200001Z/skills-catalog-subpage-site_20260312000000Z: {"risk":"medium","note":"Both modify skill catalog in skills/page.tsx","added":"2026-03-11"}
