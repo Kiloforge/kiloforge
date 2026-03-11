@@ -1,9 +1,9 @@
 id: skills-submodule-be_20260312080000Z
-title: "Extract embedded skills to git submodule"
+title: Extract embedded skills to git submodule
 type: refactor
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-11
 spec:
   summary: |
     Replace the in-tree backend/internal/adapter/skills/embedded/ directory
@@ -26,11 +26,11 @@ spec:
     - backend/internal/adapter/cli/skills.go — CLI update command and GitHub fetcher
     - backend/internal/adapter/skills/installer.go — GitHub tarball installer
     - backend/internal/adapter/skills/github.go — GitHub release API client
-
+    
     The go:embed directive reads from the local filesystem at compile time.
     A git submodule at the same path (embedded/) will populate the directory
     identically, so no Go code changes are needed for the embed itself.
-
+    
     The existing GitHub release updater (kf skills update) can be pointed at
     the new skills repo by default, unifying the source.
   acceptance_criteria:
@@ -56,41 +56,41 @@ spec:
     6. Update CI to use actions/checkout with submodules: true
     7. Set default SkillsRepo in config to the new repo
     8. Update developer docs
-
+    
     Risk: Developers who forget to init submodules will get empty embedded/
     and a build that installs zero skills. Mitigate with Makefile auto-init
     and clear error messages.
 plan:
-  - phase: "Repository Setup"
+  - phase: Repository Setup
     tasks:
-      - text: "Create kiloforge-skills repository with all 21 skill directories from embedded/"
-        done: false
-      - text: "Verify skills repo structure matches expected layout (each dir has SKILL.md)"
-        done: false
-  - phase: "Submodule Integration"
+      - text: Create kiloforge-skills repository with all 21 skill directories from embedded/
+        done: true
+      - text: Verify skills repo structure matches expected layout (each dir has SKILL.md)
+        done: true
+  - phase: Submodule Integration
     tasks:
-      - text: "Remove backend/internal/adapter/skills/embedded/ from main repo git tracking"
-        done: false
-      - text: "Add git submodule at backend/internal/adapter/skills/embedded/ pointing to skills repo"
-        done: false
-      - text: "Verify go:embed directive still picks up all skill files after submodule checkout"
-        done: false
-  - phase: "Build & CI Updates"
+      - text: Remove backend/internal/adapter/skills/embedded/ from main repo git tracking
+        done: true
+      - text: Add git submodule at backend/internal/adapter/skills/embedded/ pointing to skills repo
+        done: true
+      - text: Verify go:embed directive still picks up all skill files after submodule checkout
+        done: true
+  - phase: Build & CI Updates
     tasks:
-      - text: "Add 'git submodule update --init' to Makefile before build-backend target"
-        done: false
-      - text: "Update CI workflow to checkout with submodules (actions/checkout submodules: recursive)"
-        done: false
-      - text: "Set default SkillsRepo config to the new kiloforge-skills repo"
-        done: false
-  - phase: "Verification & Docs"
+      - text: Add 'git submodule update --init' to Makefile before build-backend target
+        done: true
+      - text: Update CI workflow to checkout with submodules (actions/checkout submodules: recursive)
+        done: true
+      - text: Set default SkillsRepo config to the new kiloforge-skills repo
+        done: true
+  - phase: Verification & Docs
     tasks:
-      - text: "Test fresh clone + make build succeeds with submodule auto-init"
-        done: false
-      - text: "Test kf skills update pulls from the new repo"
-        done: false
-      - text: "Update developer docs/README with submodule workflow notes"
-        done: false
-      - text: "Verify worktree skill symlink still works (fix-skills-worktree-be compatibility)"
-        done: false
+      - text: Test fresh clone + make build succeeds with submodule auto-init
+        done: true
+      - text: Test kf skills update pulls from the new repo
+        done: true
+      - text: Update developer docs/README with submodule workflow notes
+        done: true
+      - text: Verify worktree skill symlink still works (fix-skills-worktree-be compatibility)
+        done: true
 extra: {}

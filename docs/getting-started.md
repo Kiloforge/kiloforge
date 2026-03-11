@@ -20,11 +20,13 @@ curl -fsSL https://raw.githubusercontent.com/Kiloforge/kiloforge/main/install.sh
 Requires Go 1.25+ and Node.js 18+.
 
 ```bash
-git clone https://github.com/Kiloforge/kiloforge.git
+git clone --recurse-submodules https://github.com/Kiloforge/kiloforge.git
 cd kiloforge
 make build
 # Binary at .build/kf — add to your PATH
 ```
+
+If you already cloned without `--recurse-submodules`, run `git submodule update --init --recursive` before building. The Makefile does this automatically for `make build-backend`.
 
 ## Start the Cortex
 
