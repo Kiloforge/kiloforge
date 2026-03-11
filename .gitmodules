@@ -1,0 +1,3 @@
+[submodule "backend/internal/adapter/skills/embedded"]
+	path = backend/internal/adapter/skills/embedded
+	url = https://github.com/kiloforge/kiloforge-skills.git

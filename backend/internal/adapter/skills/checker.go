@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-//go:embed embedded/*
+//go:embed embedded/kf-*
 var embeddedSkills embed.FS
 
 // RequiredSkill describes a skill needed for a specific operation.
