@@ -250,65 +250,6 @@ func (s *Spawner) checkQuota() error {
 	return nil
 }
 
-// SpawnReviewer launches a Claude agent to review a PR using the SDK Query function.
-func (s *Spawner) SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error) {
-	if err := s.checkAuth(ctx); err != nil {
-		return nil, err
-	}
-	if err := s.checkQuota(); err != nil {
-		return nil, fmt.Errorf("spawn blocked: %w", err)
-	}
-
-	agentID := uuid.New().String()
-	sessionID := uuid.New().String()
-	logDir := filepath.Join(s.cfg.DataDir, "logs")
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
-		return nil, fmt.Errorf("create log dir: %w", err)
-	}
-
-	logFile := filepath.Join(logDir, agentID+".log")
-
-	prompt := fmt.Sprintf("/kf-reviewer %s", prURL)
-
-	projectDir, _ := os.Getwd()
-	model := s.cfg.Model
-
-	info := domain.AgentInfo{
-		ID:          agentID,
-		Name:        GenerateName(),
-		Role:        "reviewer",
-		Ref:         fmt.Sprintf("PR #%d", prNumber),
-		Status:      "running",
-		SessionID:   sessionID,
-		WorktreeDir: projectDir,
-		LogFile:     logFile,
-		StartedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Model:       model,
-	}
-
-	if err := s.store.AddAgent(info); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: add agent: %v\n", err)
-	}
-	if err := s.store.Save(); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: save state: %v\n", err)
-	}
-
-	_, span := s.tracer.StartSpan(ctx, "agent/reviewer",
-		port.StringAttr("agent.id", agentID),
-		port.StringAttr("agent.name", info.Name),
-		port.StringAttr("agent.role", "reviewer"),
-		port.StringAttr("agent.ref", info.Ref),
-		port.StringAttr("session.id", sessionID),
-	)
-	span.AddEvent("agent.spawned")
-	s.trackEvent("agent_session_started", map[string]any{"role": "reviewer", "model": model})
-
-	go s.runSDKAgent(context.Background(), agentID, info.Ref, prompt, projectDir, model, logFile, span, s.agentEnv(agentID, sessionID, "reviewer"))
-
-	return &info, nil
-}
-
 // SpawnDeveloperOpts configures a developer agent spawn.
 type SpawnDeveloperOpts struct {
 	TrackID         string // conductor track ID
@@ -443,9 +384,6 @@ func (s *Spawner) runSDKAgent(ctx context.Context, agentID, ref, prompt, workDir
 
 	// Determine role from ref for analytics.
 	role := "developer"
-	if strings.HasPrefix(ref, "PR #") {
-		role = "reviewer"
-	}
 	s.trackEvent("agent_completed", map[string]any{
 		"role":             role,
 		"status":           finalStatus,
@@ -715,7 +653,7 @@ func (s *Spawner) SuspendAgent(id string) error {
 	return nil
 }
 
-// ResumeDeveloper resumes a suspended developer/reviewer agent as a one-shot
+// ResumeDeveloper resumes a suspended developer agent as a one-shot
 // process (no WS bridge). Returns the updated AgentInfo.
 func (s *Spawner) ResumeDeveloper(ctx context.Context, id string) (*domain.AgentInfo, error) {
 	agent, err := s.store.FindAgent(id)

@@ -63,7 +63,6 @@ type ProjectManager interface {
 type InteractiveSpawner interface {
 	SpawnInteractive(ctx context.Context, opts agent.SpawnInteractiveOpts) (*agent.InteractiveAgent, error)
 	SpawnDeveloper(ctx context.Context, opts agent.SpawnDeveloperOpts) (*domain.AgentInfo, error)
-	SpawnReviewer(ctx context.Context, prNumber int, prURL string) (*domain.AgentInfo, error)
 	StopAgent(id string) error
 	ResumeAgent(ctx context.Context, id string) (*agent.InteractiveAgent, error)
 	ResumeDeveloper(ctx context.Context, id string) (*domain.AgentInfo, error)
@@ -659,9 +658,9 @@ func (h *APIHandler) ResumeAgent(ctx context.Context, req gen.ResumeAgentRequest
 		return gen.ResumeAgent404JSONResponse{Error: "agent not found"}, nil
 	}
 
-	// Developer and reviewer agents use one-shot resume (no WS bridge).
+	// Developer agents use one-shot resume (no WS bridge).
 	switch a.Role {
-	case "developer", "reviewer":
+	case "developer":
 		info, err := h.interSpawner.ResumeDeveloper(ctx, req.Id)
 		if err != nil {
 			if strings.Contains(err.Error(), "already active") {
@@ -773,13 +772,6 @@ func (h *APIHandler) ReplaceAgent(ctx context.Context, req gen.ReplaceAgentReque
 			Model:           model,
 			ReplacesAgentID: old.ID,
 		})
-	case "reviewer":
-		// Extract PR number from ref (format: "PR #123").
-		prNum := 0
-		if _, scanErr := fmt.Sscanf(old.Ref, "PR #%d", &prNum); scanErr != nil {
-			return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("cannot parse PR number from ref: %s", old.Ref)}, nil
-		}
-		newAgent, err = h.interSpawner.SpawnReviewer(ctx, prNum, old.Ref)
 	default:
 		return gen.ReplaceAgent409JSONResponse{Error: fmt.Sprintf("role %q does not support replacement", old.Role)}, nil
 	}

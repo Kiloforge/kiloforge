@@ -189,27 +189,6 @@ func NewServer(cfg *config.Config, registry port.ProjectStore, store port.AgentS
 // defaultSpawner implements port.AgentSpawner using real claude commands.
 type defaultSpawner struct{}
 
-func (d *defaultSpawner) SpawnReviewer(ctx context.Context, opts port.ReviewerOpts) (*domain.AgentInfo, error) {
-	args := []string{"-p", fmt.Sprintf("/kf-reviewer %s", opts.PRURL), "--output-format", "stream-json", "--verbose"}
-	if opts.Model != "" {
-		args = append([]string{"--model", opts.Model}, args...)
-	}
-	cmd := exec.CommandContext(ctx, "claude", args...)
-	cmd.Dir = opts.WorkDir
-	cmd.Env = agent.CleanClaudeEnv()
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("start reviewer: %w", err)
-	}
-	return &domain.AgentInfo{
-		ID:     fmt.Sprintf("reviewer-%d", cmd.Process.Pid),
-		Role:   "reviewer",
-		Ref:    fmt.Sprintf("PR #%d", opts.PRNumber),
-		Status: "running",
-		PID:    cmd.Process.Pid,
-		Model:  opts.Model,
-	}, nil
-}
-
 func (d *defaultSpawner) ResumeDeveloper(ctx context.Context, sessionID, workDir string) error {
 	cmd := exec.CommandContext(ctx, "claude", "--resume", sessionID)
 	cmd.Dir = workDir

@@ -10,7 +10,6 @@ type AgentRole string
 
 const (
 	AgentRoleDeveloper          AgentRole = "developer"
-	AgentRoleReviewer           AgentRole = "reviewer"
 	AgentRoleArchitect          AgentRole = "architect"
 	AgentRoleAdvisorProduct     AgentRole = "advisor-product"
 	AgentRoleInteractive        AgentRole = "interactive"
@@ -40,9 +39,9 @@ func IsAdvisorRole(role string) bool {
 }
 
 // IsWorkerRole returns true if the role runs autonomously without a browser connection.
-// Worker roles (developer, reviewer) should never be auto-suspended on disconnect.
+// Worker roles (developer) should never be auto-suspended on disconnect.
 func IsWorkerRole(role string) bool {
-	return role == string(AgentRoleDeveloper) || role == string(AgentRoleReviewer)
+	return role == string(AgentRoleDeveloper)
 }
 
 // AgentInfo tracks a spawned Claude agent.
