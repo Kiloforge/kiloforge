@@ -3,7 +3,7 @@ title: Show animated thinking indicator during agent initialization
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-11
 spec:
   summary: |
     Replace the static "Waiting for agent output..." text in the AgentTerminal
@@ -15,7 +15,7 @@ spec:
     - "Connecting to agent..." shown while WebSocket connects
     - "Waiting for agent output..." shown once connected but no messages yet
     - System messages with subtype "init" are completely hidden (return null)
-
+    
     This gives no feedback that the agent is actually working. The user should
     see an animated "thinking..." indicator that conveys the agent is processing.
   codebase_analysis: |
@@ -28,7 +28,7 @@ spec:
       with label support and accessibility
     - frontend/src/hooks/useAgentWebSocket.ts:166-174 — system init messages
       are stored in messages array but rendered as null
-
+    
     The InlineSpinner component already exists and provides an animated spinner
     with optional label text. It can be reused or adapted for the thinking
     indicator.
@@ -61,32 +61,32 @@ spec:
        since init messages ARE added to the messages array — but they render as
        null. Instead, check for "visible messages" count or detect when the
        first content message arrives.
-
+    
     CSS animation options:
     - Pulsing opacity on "Thinking..." text
     - Animated ellipsis (three dots appearing sequentially)
     - Reuse the InlineSpinner's existing keyframes with a "Thinking..." label
-
+    
     Keep it minimal — a single component with CSS animation, no JS timers.
 plan:
   - phase: Component & Styling
     tasks:
-      - text: "Create ThinkingIndicator component with animated ellipsis or pulsing dot CSS animation and 'Thinking...' label"
-        done: false
-      - text: "Add CSS module styles for the animation (keyframes, opacity pulse or sequential dots)"
-        done: false
-      - text: "Add aria-live='polite' and role='status' for screen reader accessibility"
-        done: false
+      - text: Create ThinkingIndicator component with animated ellipsis or pulsing dot CSS animation and 'Thinking...' label
+        done: true
+      - text: Add CSS module styles for the animation (keyframes, opacity pulse or sequential dots)
+        done: true
+      - text: Add aria-live='polite' and role='status' for screen reader accessibility
+        done: true
   - phase: Integration
     tasks:
-      - text: "In AgentTerminal.tsx, replace static 'Waiting for agent output...' with ThinkingIndicator when connected with no visible content"
-        done: false
-      - text: "In TerminalBubbles.tsx SystemBubble, keep returning null for init (the ThinkingIndicator in AgentTerminal handles this state)"
-        done: false
-      - text: "Ensure the indicator disappears once the first text/tool_use/thinking message arrives"
-        done: false
+      - text: In AgentTerminal.tsx, replace static 'Waiting for agent output...' with ThinkingIndicator when connected with no visible content
+        done: true
+      - text: In TerminalBubbles.tsx SystemBubble, keep returning null for init (the ThinkingIndicator in AgentTerminal handles this state)
+        done: true
+      - text: Ensure the indicator disappears once the first text/tool_use/thinking message arrives
+        done: true
   - phase: Testing
     tasks:
-      - text: "Update AgentTerminal.test.tsx and TerminalBubbles.test.tsx to verify the thinking indicator renders and hides correctly"
-        done: false
+      - text: Update AgentTerminal.test.tsx and TerminalBubbles.test.tsx to verify the thinking indicator renders and hides correctly
+        done: true
 extra: {}
