@@ -82,6 +82,11 @@ responsive-kanban-fe_20260311220002Z:
 
 server-host-port-config_20260312230100Z: []
 
+skills-submodule-align-be_20260311130000Z: []
+
+skills-submodule-align-fe_20260311130001Z:
+  - skills-submodule-align-be_20260311130000Z
+
 track-detail-register-traces-fe_20260312231002Z:
   - track-detail-register-traces-be_20260312231001Z
 
@@ -89,6 +94,7 @@ ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
 
-dead-code-cleanup-be_20260311120001Z: []
+skills-submodule-align-be_20260311130000Z: []
 
-dead-code-cleanup-fe_20260311120000Z: []
+skills-submodule-align-fe_20260311130001Z:
+  - skills-submodule-align-be_20260311130000Z

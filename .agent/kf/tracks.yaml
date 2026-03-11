@@ -300,6 +300,8 @@ skill-install-update_20260308231000Z: {"title":"Conductor Skill Installation and
 skill-preflight-check_20260309170000Z: {"title":"Pre-flight Skill Validation Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 skill-ref-migration_20260309173002Z: {"title":"Migrate All Skill References from conductor-* to kf-*","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 skills-cli-migration_20260310222955Z: {"title":"Migrate kf skills to use CLI tools exclusively and fix branch cleanup bug","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+skills-submodule-align-be_20260311130000Z: {"title":"Update skills submodule and remove reviewer role from backend","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+skills-submodule-align-fe_20260311130001Z: {"title":"Remove reviewer role from frontend UI and tests","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
 skills-submodule-be_20260312080000Z: {"title":"Extract embedded skills to git submodule","status":"completed","type":"refactor","created":"2026-03-11","updated":"2026-03-11"}
 sqlite-storage-core_20260309140000Z: {"title":"SQLite Storage Layer — Core Schema and Migration","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 sse-entity-subscriptions_20260309091501Z: {"title":"SSE Entity Subscriptions","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
