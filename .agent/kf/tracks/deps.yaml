@@ -46,6 +46,7 @@ board-clamp-forward-moves-fe_20260312220001Z:
 ci-windows-submodule-be_20260311070001Z: []
 
 cmd-mode-help-fe_20260310121738Z: []
+
 dead-code-cleanup-fe_20260311120000Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
@@ -64,6 +65,11 @@ github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
 hide-advisor-hub-fe_20260312000100Z: []
+
+multi-agent-skills-docs_20260311200000Z: []
+
+multi-agent-skills-site_20260311200001Z:
+  - multi-agent-skills-docs_20260311200000Z
 
 notification-center-fe_20260313060001Z:
   - notification-center-be_20260313060000Z
