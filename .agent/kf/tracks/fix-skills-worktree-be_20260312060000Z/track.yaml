@@ -78,11 +78,11 @@ plan:
   - phase: Ensure SDK Discovery via Symlink
     tasks:
       - text: In the worktree setup code (spawner.go or worktree allocator), create a symlink from {worktreeDir}/.claude/skills -> {projectDir}/.claude/skills/ if the project has local skills installed
-        done: false
+        done: true
       - text: Handle edge cases: symlink already exists, target missing, Windows compatibility (copy fallback)
-        done: false
+        done: true
       - text: Write tests for symlink creation and fallback behavior
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run full test suite (make test) to verify no regressions

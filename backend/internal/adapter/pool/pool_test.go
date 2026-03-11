@@ -586,6 +586,147 @@ func TestCleanupStash_NoBranches(t *testing.T) {
 	}
 }
 
+func TestEnsureSkillsSymlink_CreatesSymlink(t *testing.T) {
+	t.Parallel()
+
+	projectDir := t.TempDir()
+	worktreeDir := t.TempDir()
+
+	// Create skills in project dir.
+	srcSkills := filepath.Join(projectDir, ".claude", "skills")
+	os.MkdirAll(filepath.Join(srcSkills, "kf-developer"), 0o755)
+	os.WriteFile(filepath.Join(srcSkills, "kf-developer", "SKILL.md"), []byte("# Dev"), 0o644)
+
+	if err := EnsureSkillsSymlink(worktreeDir, projectDir); err != nil {
+		t.Fatalf("EnsureSkillsSymlink: %v", err)
+	}
+
+	destSkills := filepath.Join(worktreeDir, ".claude", "skills")
+	target, err := os.Readlink(destSkills)
+	if err != nil {
+		t.Fatalf("expected symlink, got: %v", err)
+	}
+	if target != srcSkills {
+		t.Errorf("symlink target = %q, want %q", target, srcSkills)
+	}
+
+	// Verify skill is accessible via symlink.
+	if _, err := os.Stat(filepath.Join(destSkills, "kf-developer", "SKILL.md")); err != nil {
+		t.Errorf("skill not accessible via symlink: %v", err)
+	}
+}
+
+func TestEnsureSkillsSymlink_NoOpWhenSameDir(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	srcSkills := filepath.Join(dir, ".claude", "skills")
+	os.MkdirAll(srcSkills, 0o755)
+
+	if err := EnsureSkillsSymlink(dir, dir); err != nil {
+		t.Fatalf("EnsureSkillsSymlink: %v", err)
+	}
+
+	// Should not create a symlink to itself.
+	if _, err := os.Readlink(srcSkills); err == nil {
+		t.Error("should not create symlink when dirs are the same")
+	}
+}
+
+func TestEnsureSkillsSymlink_NoOpWhenNoProjectSkills(t *testing.T) {
+	t.Parallel()
+
+	projectDir := t.TempDir()
+	worktreeDir := t.TempDir()
+
+	// Project has no .claude/skills/ — should be a no-op.
+	if err := EnsureSkillsSymlink(worktreeDir, projectDir); err != nil {
+		t.Fatalf("EnsureSkillsSymlink: %v", err)
+	}
+
+	destSkills := filepath.Join(worktreeDir, ".claude", "skills")
+	if _, err := os.Stat(destSkills); !os.IsNotExist(err) {
+		t.Error("should not create anything when project has no skills")
+	}
+}
+
+func TestEnsureSkillsSymlink_IdempotentCorrectTarget(t *testing.T) {
+	t.Parallel()
+
+	projectDir := t.TempDir()
+	worktreeDir := t.TempDir()
+
+	srcSkills := filepath.Join(projectDir, ".claude", "skills")
+	os.MkdirAll(srcSkills, 0o755)
+
+	// Create symlink twice — second call should be a no-op.
+	if err := EnsureSkillsSymlink(worktreeDir, projectDir); err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if err := EnsureSkillsSymlink(worktreeDir, projectDir); err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+
+	target, err := os.Readlink(filepath.Join(worktreeDir, ".claude", "skills"))
+	if err != nil {
+		t.Fatalf("expected symlink: %v", err)
+	}
+	if target != srcSkills {
+		t.Errorf("target = %q, want %q", target, srcSkills)
+	}
+}
+
+func TestEnsureSkillsSymlink_SkipsRealDirectory(t *testing.T) {
+	t.Parallel()
+
+	projectDir := t.TempDir()
+	worktreeDir := t.TempDir()
+
+	srcSkills := filepath.Join(projectDir, ".claude", "skills")
+	os.MkdirAll(srcSkills, 0o755)
+
+	// Create a real skills directory in the worktree.
+	destSkills := filepath.Join(worktreeDir, ".claude", "skills")
+	os.MkdirAll(destSkills, 0o755)
+
+	if err := EnsureSkillsSymlink(worktreeDir, projectDir); err != nil {
+		t.Fatalf("EnsureSkillsSymlink: %v", err)
+	}
+
+	// Should not replace the real directory with a symlink.
+	if _, err := os.Readlink(destSkills); err == nil {
+		t.Error("should not replace real directory with symlink")
+	}
+}
+
+func TestEnsureSkillsSymlink_FixesWrongTarget(t *testing.T) {
+	t.Parallel()
+
+	projectDir := t.TempDir()
+	worktreeDir := t.TempDir()
+	otherDir := t.TempDir()
+
+	srcSkills := filepath.Join(projectDir, ".claude", "skills")
+	os.MkdirAll(srcSkills, 0o755)
+
+	// Create symlink to wrong target.
+	destClaudeDir := filepath.Join(worktreeDir, ".claude")
+	os.MkdirAll(destClaudeDir, 0o755)
+	os.Symlink(filepath.Join(otherDir, "skills"), filepath.Join(destClaudeDir, "skills"))
+
+	if err := EnsureSkillsSymlink(worktreeDir, projectDir); err != nil {
+		t.Fatalf("EnsureSkillsSymlink: %v", err)
+	}
+
+	target, err := os.Readlink(filepath.Join(destClaudeDir, "skills"))
+	if err != nil {
+		t.Fatalf("expected symlink: %v", err)
+	}
+	if target != srcSkills {
+		t.Errorf("target = %q, want %q", target, srcSkills)
+	}
+}
+
 func timePtr(t time.Time) *time.Time {
 	return &t
 }

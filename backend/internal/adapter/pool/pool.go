@@ -139,6 +139,11 @@ func (p *Pool) Prepare(w *Worktree, trackID string) error {
 		_ = g.DeleteBranches(stashes)
 	}
 
+	// Ensure skills are discoverable from the worktree.
+	if p.ProjectRoot != "" {
+		_ = EnsureSkillsSymlink(w.Path, p.ProjectRoot)
+	}
+
 	w.TrackID = trackID
 	return nil
 }
@@ -269,6 +274,47 @@ func (p *Pool) Save(dataDir string) error {
 	}
 	path := filepath.Join(dataDir, poolFileName)
 	return os.WriteFile(path, append(data, '\n'), 0o644)
+}
+
+// EnsureSkillsSymlink creates a symlink at {worktreeDir}/.claude/skills pointing
+// to {projectDir}/.claude/skills/ so that the Claude SDK can discover skills
+// installed in the project directory when running from a worktree.
+// Returns nil if the symlink already exists and points to the correct target,
+// if the project has no skills directory, or if the worktree is the project dir.
+func EnsureSkillsSymlink(worktreeDir, projectDir string) error {
+	if worktreeDir == projectDir {
+		return nil
+	}
+
+	srcSkills := filepath.Join(projectDir, ".claude", "skills")
+	if _, err := os.Stat(srcSkills); os.IsNotExist(err) {
+		return nil // no skills to link
+	}
+
+	destClaudeDir := filepath.Join(worktreeDir, ".claude")
+	destSkills := filepath.Join(destClaudeDir, "skills")
+
+	// Check if symlink already exists and points to the right place.
+	if target, err := os.Readlink(destSkills); err == nil {
+		if target == srcSkills {
+			return nil // already correct
+		}
+		// Points to wrong target — remove and recreate.
+		os.Remove(destSkills)
+	} else if fi, err := os.Stat(destSkills); err == nil {
+		if fi.IsDir() {
+			// Real directory exists — don't overwrite, skills may have been
+			// installed directly into the worktree.
+			return nil
+		}
+		os.Remove(destSkills)
+	}
+
+	if err := os.MkdirAll(destClaudeDir, 0o755); err != nil {
+		return fmt.Errorf("create .claude dir in worktree: %w", err)
+	}
+
+	return os.Symlink(srcSkills, destSkills)
 }
 
 func sortedKeys(m map[string]*Worktree) []string {
