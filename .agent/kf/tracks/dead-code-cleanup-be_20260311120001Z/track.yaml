@@ -64,11 +64,11 @@ plan:
   - phase: Delete dead port interfaces
     tasks:
       - text: Delete backend/internal/core/port/queue_store.go
-        done: false
+        done: true
       - text: Delete backend/internal/core/port/pool_returner.go
-        done: false
+        done: true
       - text: Delete backend/internal/core/port/pidfile.go
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run grep to confirm no Go files import the deleted packages or reference deleted types

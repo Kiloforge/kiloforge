@@ -13,8 +13,7 @@ import (
 var (
 	_ port.AgentStore       = (*MockAgentStore)(nil)
 	_ port.AgentSpawner     = (*MockAgentSpawner)(nil)
-	_ port.PoolReturner     = (*MockPoolReturner)(nil)
-	_ port.Logger           = (*MockLogger)(nil)
+_ port.Logger           = (*MockLogger)(nil)
 	_ port.GitRunner        = (*MockGitRunner)(nil)
 	_ port.AnalyticsTracker = (*SpyAnalytics)(nil)
 )
@@ -203,39 +202,6 @@ func (m *MockAgentSpawner) ResumeDeveloper(_ context.Context, sessionID, workDir
 	}
 	m.ResumeCalls = append(m.ResumeCalls, ResumeCall{SessionID: sessionID, WorkDir: workDir})
 	return nil
-}
-
-// MockPoolReturner records pool return calls.
-type MockPoolReturner struct {
-	mu         sync.Mutex
-	Calls      []string
-	StashCalls []string
-	CleanCalls []string
-
-	ReturnErr error
-	StashErr  error
-	CleanErr  error
-}
-
-func (m *MockPoolReturner) ReturnByTrackID(trackID string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Calls = append(m.Calls, trackID)
-	return m.ReturnErr
-}
-
-func (m *MockPoolReturner) StashByTrackID(trackID string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.StashCalls = append(m.StashCalls, trackID)
-	return m.StashErr
-}
-
-func (m *MockPoolReturner) CleanupStash(trackID string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.CleanCalls = append(m.CleanCalls, trackID)
-	return m.CleanErr
 }
 
 // MockLogger discards log output (silent logger for tests).
