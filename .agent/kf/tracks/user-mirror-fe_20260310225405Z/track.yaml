@@ -3,7 +3,7 @@ title: Surface mirror directory in Command Deck UI
 type: feature
 status: pending
 created: 2026-03-11
-updated: 2026-03-10
+updated: 2026-03-11
 spec:
   summary: |
     Display each project's mirror directory in the Command Deck frontend —
@@ -80,23 +80,23 @@ plan:
   - phase: Types and project display
     tasks:
       - text: Add mirror_dir to Project TypeScript interface
-        done: false
+        done: true
       - text: Display mirror path in ProjectPage metadata panel (conditional on non-empty)
-        done: false
+        done: true
   - phase: Add Project form
     tasks:
       - text: Add output_dir to AddProjectRequest type or form state
-        done: false
+        done: true
       - text: Add optional "Output directory" input field to AddProjectForm
-        done: false
+        done: true
       - text: Include output_dir in POST /api/projects request body
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run make build — frontend compiles without TS errors
-        done: false
+        done: true
       - text: Verify project detail page renders mirror path correctly
-        done: false
+        done: true
 extra:
   created_by:
     role: architect
