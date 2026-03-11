@@ -1,11 +1,6 @@
 version: 2
 project_name: kf
 
-before:
-  hooks:
-    - cd frontend && npm ci && npm run build
-    - cd backend && go mod tidy
-
 builds:
   - id: kf
     dir: backend
