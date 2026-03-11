@@ -133,6 +133,7 @@ fix-terminal-render-crash-fe_20260311235900Z: {"title":"Fix React error #310 cra
 fix-test-ci-pr-tracking_20260309173000Z: {"title":"Fix CI Test Failure — PR Tracking Store References","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-test-failures_20260310140000Z: {"title":"Fix TestBinaryBuilds and TestGooseDown_RollsBack test failures","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-tour-api-mismatch_20260309223000Z: {"title":"Fix Tour API Request Body Mismatch","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+fix-tour-scroll-fe_20260311230100Z: {"title":"Fix tour overlay misalignment on scroll","status":"pending","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 fix-tour-step9-progression-fe_20260311230000Z: {"title":"Fix tour step 9 blocks progression — no Next button","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
 fix-trace-timeline-unused-vars_20260308220100Z: {"title":"Fix Unused Variable Errors in TraceTimeline","status":"archived","type":"bug","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-track-gen-project-init_20260309235500Z: {"title":"Auto-Initialize Conductor Artifacts Before Track Generation","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
