@@ -19,7 +19,7 @@ plan:
   - phase: Cleanup
     tasks:
       - text: Delete .agent/kf/tracks-legacy.md
-        done: false
+        done: true
       - text: Delete .agent/kf/archive-compactions.md
-        done: false
+        done: true
 extra: {}
