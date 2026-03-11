@@ -71,11 +71,11 @@ plan:
   - phase: Verification
     tasks:
       - text: Grep all docs for remaining 4001 references — fix any found
-        done: false
+        done: true
       - text: Grep all docs for remaining /-/ references — fix any found
-        done: false
+        done: true
       - text: Run make build — verify detail.go change compiles
-        done: false
+        done: true
       - text: Run make test — verify all tests pass
-        done: false
+        done: true
 extra: {}

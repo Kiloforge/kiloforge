@@ -73,7 +73,7 @@ design-guide_20260310225321Z: {"title":"Create UI design guide based on kiloforg
 destroy-preserve-repos_20260310223827Z: {"title":"Make kf destroy preserve project repo clones by default","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 docker-gitea-dead-code-be_20260311195000Z: {"title":"Remove Docker/Gitea dead code from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 docs-branding-cleanup_20260311194000Z: {"title":"Docs branding cleanup — Cortex/Command Deck terminology and remove SECURITY.md","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
-docs-consistency-audit_20260311004500Z: {"title":"Fix documentation inconsistencies — ports, paths, stale refs","status":"pending","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+docs-consistency-audit_20260311004500Z: {"title":"Fix documentation inconsistencies — ports, paths, stale refs","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
 docs-overhaul_20260311210000Z: {"title":"Major documentation overhaul with Kiloforger branding and full feature coverage","status":"completed","type":"chore","created":"2026-03-10","updated":"2026-03-10"}
 down-destroy-commands_20260307123000Z: {"title":"Add 'up', 'down' Commands and Refactor 'destroy'","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 draggable-resizable-windows_20260310062703Z: {"title":"Draggable and resizable agent terminal windows","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
