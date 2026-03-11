@@ -83,9 +83,9 @@ plan:
   - phase: Styling
     tasks:
       - text: Add .sendBtnPause CSS class with red/warning accent (adapt from .interruptBtn styles)
-        done: false
+        done: true
       - text: Apply conditional className on send button: sendBtnPause when turnActive, sendBtn otherwise
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Add E2E test: verify button shows 'Send' initially, transitions to 'Pause' during turn, back to 'Send' after turn ends or pause
