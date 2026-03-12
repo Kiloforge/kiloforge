@@ -260,7 +260,62 @@ function ProjectsSection({ projects, projectsLoading, tracks, adding, error, onA
 
 const noOp = () => {};
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm = null, swarmLoading = false, swarmStarting = false, swarmStopping = false, swarmUpdatingSettings = false, onSwarmStart = noOp, onSwarmStop = noOp, onSwarmUpdateSettings = noOp, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
+function SwarmSection({ swarm = null, loading = false, starting = false, stopping = false, updatingSettings = false, onStart = noOp, onStop = noOp, onUpdateSettings = noOp }: {
+  swarm?: SwarmStatus | null;
+  loading?: boolean;
+  starting?: boolean;
+  stopping?: boolean;
+  updatingSettings?: boolean;
+  onStart?: () => void;
+  onStop?: () => void;
+  onUpdateSettings?: (settings: SwarmSettings) => void;
+}) {
+  return (
+    <section className={appStyles.panel}>
+      <h2 className={appStyles.panelTitle}>
+        AI Agent Swarm
+        <HelpTooltip term="Swarm" definition="A managed pool of AI agents that automatically pick up and implement tracks. Start the swarm to parallelize development work." />
+      </h2>
+      <SwarmPanel
+        swarm={swarm}
+        loading={loading}
+        starting={starting}
+        stopping={stopping}
+        updatingSettings={updatingSettings}
+        onStart={onStart}
+        onStop={onStop}
+        onUpdateSettings={onUpdateSettings}
+      />
+    </section>
+  );
+}
+
+function AllTracksSection({ tracks, remainingCount = 0, hasNextPage = false, isFetchingNextPage = false, onLoadMore }: {
+  tracks: Track[];
+  remainingCount?: number;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
+}) {
+  return (
+    <section className={appStyles.panel}>
+      <h2 className={appStyles.panelTitle}>
+        All Tracks
+        <HelpTooltip term="Tracks" definition="Units of work generated from feature requests. Each track has a spec, implementation plan, and phases that agents execute sequentially." />
+      </h2>
+      <PaginatedList
+        remainingCount={remainingCount}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={onLoadMore ?? noOp}
+      >
+        <TrackList tracks={tracks} />
+      </PaginatedList>
+    </section>
+  );
+}
+
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount, trackHasNextPage, trackFetchingNextPage, onTrackLoadMore }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
@@ -302,37 +357,24 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
         onRemove={setRemoveSlug}
       />
 
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>
-          AI Agent Swarm
-          <HelpTooltip term="Swarm" definition="A managed pool of AI agents that automatically pick up and implement tracks. Start the swarm to parallelize development work." />
-        </h2>
-        <SwarmPanel
-          swarm={swarm}
-          loading={swarmLoading}
-          starting={swarmStarting}
-          stopping={swarmStopping}
-          updatingSettings={swarmUpdatingSettings}
-          onStart={onSwarmStart}
-          onStop={onSwarmStop}
-          onUpdateSettings={onSwarmUpdateSettings}
-        />
-      </section>
+      <SwarmSection
+        swarm={swarm}
+        loading={swarmLoading}
+        starting={swarmStarting}
+        stopping={swarmStopping}
+        updatingSettings={swarmUpdatingSettings}
+        onStart={onSwarmStart}
+        onStop={onSwarmStop}
+        onUpdateSettings={onSwarmUpdateSettings}
+      />
 
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>
-          All Tracks
-          <HelpTooltip term="Tracks" definition="Units of work generated from feature requests. Each track has a spec, implementation plan, and phases that agents execute sequentially." />
-        </h2>
-        <PaginatedList
-          remainingCount={trackRemainingCount}
-          hasNextPage={trackHasNextPage}
-          isFetchingNextPage={trackFetchingNextPage}
-          onLoadMore={onTrackLoadMore ?? noOp}
-        >
-          <TrackList tracks={tracks} />
-        </PaginatedList>
-      </section>
+      <AllTracksSection
+        tracks={tracks}
+        remainingCount={trackRemainingCount}
+        hasNextPage={trackHasNextPage}
+        isFetchingNextPage={trackFetchingNextPage}
+        onLoadMore={onTrackLoadMore}
+      />
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Traces</h2>

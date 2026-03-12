@@ -367,6 +367,30 @@ function ProjectDialogs({ showLauncher, onLaunch, onCloseLauncher, launchPending
   );
 }
 
+type PageTab = "board" | "info" | "settings";
+
+const PAGE_TABS: { key: PageTab; label: string }[] = [
+  { key: "board", label: "Board" },
+  { key: "info", label: "Project Info" },
+  { key: "settings", label: "Settings" },
+];
+
+function PageTabBar({ activeTab, onTabChange }: { activeTab: PageTab; onTabChange: (tab: PageTab) => void }) {
+  return (
+    <div className={styles.pageTabs}>
+      {PAGE_TABS.map(({ key, label }) => (
+        <button
+          key={key}
+          className={`${styles.pageTab} ${activeTab === key ? styles.pageTabActive : ""}`}
+          onClick={() => onTabChange(key)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading, remainingCount: trackRemaining, hasNextPage: trackHasNext, isFetchingNextPage: trackFetching, fetchNextPage: trackLoadMore } = useTracks(slug);
@@ -408,7 +432,7 @@ export function ProjectPage() {
   const actionsDisabled = skillsMissing || setupIncomplete;
   const disabledReason = getDisabledReason(skillsMissing, setupIncomplete);
 
-  const [pageTab, setPageTab] = useState<"board" | "info" | "settings">("board");
+  const [pageTab, setPageTab] = useState<PageTab>("board");
   const { settings: projectSettings, loading: settingsLoading, updating: settingsUpdating, updateSettings } = useProjectSettings(slug);
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
@@ -553,27 +577,7 @@ export function ProjectPage() {
 
       {project && <ProjectMetaSection project={project} />}
 
-      {/* Page-level tabs */}
-      <div className={styles.pageTabs}>
-        <button
-          className={`${styles.pageTab} ${pageTab === "board" ? styles.pageTabActive : ""}`}
-          onClick={() => setPageTab("board")}
-        >
-          Board
-        </button>
-        <button
-          className={`${styles.pageTab} ${pageTab === "info" ? styles.pageTabActive : ""}`}
-          onClick={() => setPageTab("info")}
-        >
-          Project Info
-        </button>
-        <button
-          className={`${styles.pageTab} ${pageTab === "settings" ? styles.pageTabActive : ""}`}
-          onClick={() => setPageTab("settings")}
-        >
-          Settings
-        </button>
-      </div>
+      <PageTabBar activeTab={pageTab} onTabChange={setPageTab} />
 
       {pageTab === "info" && <InfoTabContent metadata={metadata} metadataLoading={metadataLoading} metadataError={metadataError} />}
 

@@ -122,29 +122,27 @@ interface LogSectionProps {
 }
 
 function LogSection({ id }: LogSectionProps) {
-  const [logLines, setLogLines] = useState<string[]>([]);
-  const [logLoading, setLogLoading] = useState(true);
+  const [logData, setLogData] = useState<{ forId: string; lines: string[] } | null>(null);
   const [following, setFollowing] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const logLoading = !logData || logData.forId !== id;
+  const logLines = logData?.lines ?? [];
 
   useEffect(() => {
     let cancelled = false;
-    setLogLoading(true);
     fetch(`/api/agents/${encodeURIComponent(id)}/log?lines=200`)
       .then((r) => r.json())
       .then((data: LogResponse) => {
         if (cancelled) return;
-        setLogLines(data.lines || []);
-        setLogLoading(false);
+        setLogData({ forId: id, lines: data.lines || [] });
         requestAnimationFrame(() => {
           if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
         });
       })
       .catch(() => {
         if (cancelled) return;
-        setLogLines(["Failed to load log."]);
-        setLogLoading(false);
+        setLogData({ forId: id, lines: ["Failed to load log."] });
       });
     return () => { cancelled = true; };
   }, [id]);
@@ -158,7 +156,7 @@ function LogSection({ id }: LogSectionProps) {
     const es = new EventSource(`/api/agents/${encodeURIComponent(id)}/log?lines=200&follow=true`);
     eventSourceRef.current = es;
     es.onmessage = (e) => {
-      setLogLines((prev) => [...prev, e.data as string]);
+      setLogData((prev) => prev ? { ...prev, lines: [...prev.lines, e.data as string] } : null);
       requestAnimationFrame(() => {
         if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
       });

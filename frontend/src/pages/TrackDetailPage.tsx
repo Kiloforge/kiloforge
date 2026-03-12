@@ -9,6 +9,193 @@ import { AgentRegister } from "../components/AgentRegister";
 import { TraceList } from "../components/TraceList";
 import styles from "./TrackDetailPage.module.css";
 
+interface TrackActionsProps {
+  confirmReject: boolean;
+  approvePending: boolean;
+  rejectPending: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+  onConfirmReject: () => void;
+  onCancelReject: () => void;
+}
+
+function TrackActions({ confirmReject, approvePending, rejectPending, onApprove, onReject, onConfirmReject, onCancelReject }: TrackActionsProps) {
+  if (confirmReject) {
+    return (
+      <div className={styles.actions}>
+        <div className={styles.confirmRow}>
+          <span className={styles.confirmText}>Delete this track?</span>
+          <button className={styles.confirmYes} onClick={onReject} disabled={rejectPending}>
+            Yes, delete
+          </button>
+          <button className={styles.confirmNo} onClick={onCancelReject}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.actions}>
+      <button className={styles.approveBtn} onClick={onApprove} disabled={approvePending}>
+        {approvePending ? "Approving..." : "Approve"}
+      </button>
+      <button className={styles.rejectBtn} onClick={onConfirmReject} disabled={rejectPending}>
+        Reject
+      </button>
+    </div>
+  );
+}
+
+function TrackMetaGrid({ track }: { track: TrackDetail }) {
+  const phasesTotal = track.phases_total ?? 0;
+  const phasesCompleted = track.phases_completed ?? 0;
+  const tasksTotal = track.tasks_total ?? 0;
+  const tasksCompleted = track.tasks_completed ?? 0;
+  return (
+    <div className={styles.metaGrid}>
+      <div className={styles.metaItem}>
+        <span className={styles.metaLabel}>Track ID</span>
+        <span className={styles.mono}>{track.id}</span>
+      </div>
+      {phasesTotal > 0 && (
+        <div className={styles.metaItem}>
+          <span className={styles.metaLabel}>Phases</span>
+          <span>{phasesCompleted} / {phasesTotal}</span>
+        </div>
+      )}
+      {tasksTotal > 0 && (
+        <div className={styles.metaItem}>
+          <span className={styles.metaLabel}>Tasks</span>
+          <span>{tasksCompleted} / {tasksTotal}</span>
+        </div>
+      )}
+      {track.created_at && (
+        <div className={styles.metaItem}>
+          <span className={styles.metaLabel}>Created</span>
+          <span>{new Date(track.created_at).toLocaleString()}</span>
+        </div>
+      )}
+      {track.updated_at && (
+        <div className={styles.metaItem}>
+          <span className={styles.metaLabel}>Updated</span>
+          <span>{new Date(track.updated_at).toLocaleString()}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TrackProgress({ tasksTotal, tasksCompleted }: { tasksTotal: number; tasksCompleted: number }) {
+  return (
+    <div className={styles.progressSection}>
+      {tasksTotal > 0 && (
+        <div className={styles.progressBar}>
+          <div
+            className={styles.progressFill}
+            style={{ width: `${(tasksCompleted / tasksTotal) * 100}%` }}
+          />
+        </div>
+      )}
+      <span className={styles.progressLabel}>
+        {tasksCompleted}/{tasksTotal} tasks complete
+      </span>
+    </div>
+  );
+}
+
+function TrackContentSections({ track }: { track: TrackDetail }) {
+  const hasRegister = track.agent_register &&
+    (track.agent_register.created_by || track.agent_register.claimed_by);
+  const hasTraces = track.traces && track.traces.length > 0;
+
+  return (
+    <>
+      {hasRegister && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Agent Register</h3>
+          <AgentRegister register={track.agent_register!} />
+        </section>
+      )}
+
+      {hasTraces && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>
+            Traces
+            <span className={styles.sectionCount}>{track.traces!.length}</span>
+          </h3>
+          <div className={styles.tracesWrapper}>
+            <TraceList traces={track.traces!} />
+          </div>
+        </section>
+      )}
+
+      {track.spec && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Specification</h3>
+          <pre className={styles.markdown}>{track.spec}</pre>
+        </section>
+      )}
+
+      {track.plan && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Implementation Plan</h3>
+          <pre className={styles.markdown}>{track.plan}</pre>
+        </section>
+      )}
+    </>
+  );
+}
+
+function TrackDetailContent({ track, slug, confirmReject, approveMutation, rejectMutation, onConfirmReject, onCancelReject }: {
+  track: TrackDetail;
+  slug: string | undefined;
+  confirmReject: boolean;
+  approveMutation: { isPending: boolean; mutate: () => void };
+  rejectMutation: { isPending: boolean; mutate: () => void };
+  onConfirmReject: () => void;
+  onCancelReject: () => void;
+}) {
+  const phasesTotal = track.phases_total ?? 0;
+  const tasksTotal = track.tasks_total ?? 0;
+  const isBacklog = track.status === "pending";
+  const hasProgress = phasesTotal > 0 || tasksTotal > 0;
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.topBar}>
+        <Link to={`/projects/${slug}`} className={styles.back}>&larr; Back to project</Link>
+      </div>
+
+      <div className={styles.header}>
+        <h2 className={styles.title}>{track.title}</h2>
+        <div className={styles.badges}>
+          <StatusBadge status={track.status} />
+          {track.type && <span className={styles.typeBadge}>{track.type}</span>}
+        </div>
+      </div>
+
+      {isBacklog && (
+        <TrackActions
+          confirmReject={confirmReject}
+          approvePending={approveMutation.isPending}
+          rejectPending={rejectMutation.isPending}
+          onApprove={() => approveMutation.mutate()}
+          onReject={() => rejectMutation.mutate()}
+          onConfirmReject={onConfirmReject}
+          onCancelReject={onCancelReject}
+        />
+      )}
+
+      <TrackMetaGrid track={track} />
+
+      {hasProgress && <TrackProgress tasksTotal={tasksTotal} tasksCompleted={track.tasks_completed ?? 0} />}
+
+      <TrackContentSections track={track} />
+    </div>
+  );
+}
+
 export function TrackDetailPage() {
   const { slug, trackId } = useParams<{ slug: string; trackId: string }>();
   const navigate = useNavigate();
@@ -16,7 +203,7 @@ export function TrackDetailPage() {
   const [confirmReject, setConfirmReject] = useState(false);
 
   const { data: track, error, isLoading } = useQuery({
-    queryKey: queryKeys.trackDetail(trackId ?? "", slug ?? ""),
+    queryKey: queryKeys.trackDetail(trackId!, slug!),
     queryFn: () =>
       fetcher<TrackDetail>(
         `/api/tracks/${encodeURIComponent(trackId!)}?project=${encodeURIComponent(slug!)}`,
@@ -32,7 +219,7 @@ export function TrackDetailPage() {
         body: JSON.stringify({ track_id: trackId, to_column: "approved" }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug!) });
       navigate(`/projects/${slug}`);
     },
   });
@@ -44,12 +231,10 @@ export function TrackDetailPage() {
         { method: "DELETE" },
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
+      queryClient.invalidateQueries({ queryKey: queryKeys.board(slug!) });
       navigate(`/projects/${slug}`);
     },
   });
-
-  const isBacklog = track?.status === "pending";
 
   if (isLoading) {
     return (
@@ -69,142 +254,15 @@ export function TrackDetailPage() {
     );
   }
 
-  const phasesTotal = track.phases_total ?? 0;
-  const phasesCompleted = track.phases_completed ?? 0;
-  const tasksTotal = track.tasks_total ?? 0;
-  const tasksCompleted = track.tasks_completed ?? 0;
-
   return (
-    <div className={styles.page}>
-      <div className={styles.topBar}>
-        <Link to={`/projects/${slug}`} className={styles.back}>&larr; Back to project</Link>
-      </div>
-
-      <div className={styles.header}>
-        <h2 className={styles.title}>{track.title}</h2>
-        <div className={styles.badges}>
-          <StatusBadge status={track.status} />
-          {track.type && <span className={styles.typeBadge}>{track.type}</span>}
-        </div>
-      </div>
-
-      {isBacklog && (
-        <div className={styles.actions}>
-          {confirmReject ? (
-            <div className={styles.confirmRow}>
-              <span className={styles.confirmText}>Delete this track?</span>
-              <button
-                className={styles.confirmYes}
-                onClick={() => rejectMutation.mutate()}
-                disabled={rejectMutation.isPending}
-              >
-                Yes, delete
-              </button>
-              <button className={styles.confirmNo} onClick={() => setConfirmReject(false)}>
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                className={styles.approveBtn}
-                onClick={() => approveMutation.mutate()}
-                disabled={approveMutation.isPending}
-              >
-                {approveMutation.isPending ? "Approving..." : "Approve"}
-              </button>
-              <button
-                className={styles.rejectBtn}
-                onClick={() => setConfirmReject(true)}
-                disabled={rejectMutation.isPending}
-              >
-                Reject
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      <div className={styles.metaGrid}>
-        <div className={styles.metaItem}>
-          <span className={styles.metaLabel}>Track ID</span>
-          <span className={styles.mono}>{track.id}</span>
-        </div>
-        {phasesTotal > 0 && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Phases</span>
-            <span>{phasesCompleted} / {phasesTotal}</span>
-          </div>
-        )}
-        {tasksTotal > 0 && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Tasks</span>
-            <span>{tasksCompleted} / {tasksTotal}</span>
-          </div>
-        )}
-        {track.created_at && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Created</span>
-            <span>{new Date(track.created_at).toLocaleString()}</span>
-          </div>
-        )}
-        {track.updated_at && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Updated</span>
-            <span>{new Date(track.updated_at).toLocaleString()}</span>
-          </div>
-        )}
-      </div>
-
-      {(phasesTotal > 0 || tasksTotal > 0) && (
-        <div className={styles.progressSection}>
-          {tasksTotal > 0 && (
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${(tasksCompleted / tasksTotal) * 100}%` }}
-              />
-            </div>
-          )}
-          <span className={styles.progressLabel}>
-            {tasksCompleted}/{tasksTotal} tasks complete
-          </span>
-        </div>
-      )}
-
-      {track.agent_register &&
-        (track.agent_register.created_by || track.agent_register.claimed_by) && (
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Agent Register</h3>
-          <AgentRegister register={track.agent_register} />
-        </section>
-      )}
-
-      {track.traces && track.traces.length > 0 && (
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>
-            Traces
-            <span className={styles.sectionCount}>{track.traces.length}</span>
-          </h3>
-          <div className={styles.tracesWrapper}>
-            <TraceList traces={track.traces} />
-          </div>
-        </section>
-      )}
-
-      {track.spec && (
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Specification</h3>
-          <pre className={styles.markdown}>{track.spec}</pre>
-        </section>
-      )}
-
-      {track.plan && (
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Implementation Plan</h3>
-          <pre className={styles.markdown}>{track.plan}</pre>
-        </section>
-      )}
-    </div>
+    <TrackDetailContent
+      track={track}
+      slug={slug}
+      confirmReject={confirmReject}
+      approveMutation={approveMutation}
+      rejectMutation={rejectMutation}
+      onConfirmReject={() => setConfirmReject(true)}
+      onCancelReject={() => setConfirmReject(false)}
+    />
   );
 }
