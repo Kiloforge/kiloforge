@@ -59,6 +59,7 @@ ci-reliability-hardening_20260310001316Z: {"title":"CI reliability hardening —
 ci-windows-submodule-be_20260311070001Z: {"title":"Add submodules checkout to Windows CI job","status":"completed","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 claude-auth-check_20260309200000Z: {"title":"Claude CLI Authentication Check Before Agent Spawning","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 cleanup-obsolete-kf-md_20260312090000Z: {"title":"Remove obsolete pre-YAML markdown files from .agent/kf","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
+cli-default-port-be_20260312180000Z: {"title":"Set proper Cobra flag defaults for --port and --host on kf up","status":"pending","type":"bug","approved":false,"created":"2026-03-12","updated":"2026-03-12"}
 cli-error-ux-be_20260310073722Z: {"title":"CLI error UX — actionable messages and prerequisite guidance","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 cli-remove-project-be_20260312073321Z: {"title":"Add kf remove CLI command for project removal","status":"completed","type":"feature","created":"2026-03-12","updated":"2026-03-12"}
 cli-sqlite-migration_20260310005000Z: {"title":"Migrate CLI Commands from JSON Files to SQLite","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
