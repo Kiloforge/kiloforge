@@ -16,6 +16,13 @@
 #   KF_ORCH_URL     Orchestrator URL (default: http://localhost:39517)
 #   KF_LOCK_HOLDER  Default holder name (default: basename of $PWD)
 #
+# IDEMPOTENT ACQUIRE
+#
+#   If the same holder already holds the lock, acquire succeeds (re-entry).
+#   This supports the conflict resolution flow: kf-merge exits with code 3
+#   keeping the lock held, the agent resolves conflicts, then re-runs kf-merge
+#   which re-acquires the same lock.
+#
 # MERGE PROTOCOL — REBASE CONFLICT RESOLUTION
 #
 #   During `git rebase`, --ours and --theirs have REVERSED semantics:

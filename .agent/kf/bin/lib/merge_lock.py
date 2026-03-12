@@ -195,6 +195,12 @@ def _mkdir_try_acquire(lock_dir: Path, holder: str, pid: int) -> tuple[int, str]
     try:
         lock_dir.mkdir(parents=False, exist_ok=False)
     except FileExistsError:
+        # Re-entry: if same holder already holds the lock, succeed (idempotent)
+        info = _parse_lock_info(lock_dir)
+        if info is not None and info[2] == holder:
+            # Refresh timestamp
+            (lock_dir / "info").write_text(f"{pid} {_utcnow_iso()} {holder}\n")
+            return _ACQUIRED, ""
         if _mkdir_check_stale(lock_dir):
             try:
                 lock_dir.mkdir(parents=False, exist_ok=False)
@@ -202,7 +208,6 @@ def _mkdir_try_acquire(lock_dir: Path, holder: str, pid: int) -> tuple[int, str]
                 info = _parse_lock_info(lock_dir)
                 return _HELD, info[2] if info else "unknown"
         else:
-            info = _parse_lock_info(lock_dir)
             return _HELD, info[2] if info else "unknown"
 
     (lock_dir / "info").write_text(f"{pid} {_utcnow_iso()} {holder}\n")

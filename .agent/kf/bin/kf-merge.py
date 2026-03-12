@@ -25,6 +25,7 @@ EXIT CODES:
   0  Merge succeeded
   1  Merge failed (lock released, safe to retry)
   2  Lock held by another worker (not acquired)
+  3  Unresolved conflicts — lock STILL HELD, agent must resolve and retry
 
 FLOWS:
   Metadata merge (architect — commit track content first, registry under lock):
@@ -174,6 +175,10 @@ def main():
     result = run(["git", "branch", "--show-current"], capture=True)
     current_branch = result.stdout.strip()
 
+    if current_branch == primary_branch:
+        die(f"Cannot merge: you are already on the primary branch ({primary_branch}). "
+            f"Agents must work on their own branch, not the primary branch directly.")
+
     print(f"Merge: {current_branch} -> {primary_branch} (holder: {args.holder})")
 
     # ── Step 2: Locate primary branch worktree ───────────────────────────────
@@ -215,24 +220,44 @@ def main():
     if rebase_result.returncode != 0:
         print("Rebase conflict detected — resolving track state files...")
 
+        # During rebase, git reverses --ours/--theirs semantics:
+        #   --ours  = branch being rebased ONTO (primary branch — latest state)
+        #   --theirs = commit being REPLAYED (worker's old commit — stale)
+        # To accept primary branch's version of state files, use --ours.
+
         if args.conflict_strategy == "theirs":
+            # "theirs" strategy = accept primary branch version = git --ours during rebase
             for f in STATE_FILES:
-                r = run_quiet(["git", "checkout", "--theirs", f])
+                r = run_quiet(["git", "checkout", "--ours", f])
                 if r.returncode == 0:
                     run_quiet(["git", "add", f])
 
         elif args.conflict_strategy == "ours":
-            r = run_quiet(["git", "checkout", "--ours", REPORT_FILES])
+            # "ours" strategy = keep worker's report files, but still accept primary for state
+            r = run_quiet(["git", "checkout", "--theirs", REPORT_FILES])
             if r.returncode == 0:
                 run_quiet(["git", "add", REPORT_FILES])
             for f in STATE_FILES:
-                r = run_quiet(["git", "checkout", "--theirs", f])
+                r = run_quiet(["git", "checkout", "--ours", f])
                 if r.returncode == 0:
                     run_quiet(["git", "add", f])
 
         continue_result = run_quiet(["git", "rebase", "--continue"])
         if continue_result.returncode != 0:
-            die("Rebase failed after conflict resolution — non-state file conflict. Manual intervention required.")
+            # Non-state file conflicts remain. DO NOT release lock.
+            # The agent must resolve these conflicts, then re-run kf-merge.
+            # Lock stays held so no other worker can merge in between.
+            print("ERROR: Rebase has unresolved non-state file conflicts.", file=sys.stderr)
+            print("", file=sys.stderr)
+            print("The merge lock is STILL HELD. Resolve the conflicts, then:", file=sys.stderr)
+            print("  1. git add <resolved files>", file=sys.stderr)
+            print("  2. git rebase --continue", file=sys.stderr)
+            print("  3. Re-run kf-merge (it will skip lock acquire since you hold it)", file=sys.stderr)
+            print("", file=sys.stderr)
+            print("Or abort: git rebase --abort && kf-merge-lock release", file=sys.stderr)
+            # Prevent atexit from releasing the lock
+            lock_acquired = False
+            sys.exit(3)
 
         # Re-apply track state changes after accepting theirs (developer flow)
         if args.reapply_cmd:

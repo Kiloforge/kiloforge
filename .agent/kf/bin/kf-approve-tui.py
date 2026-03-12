@@ -208,12 +208,21 @@ def manager_control(action):
     return False, f"Unknown action: {action}"
 
 
+def _venv_activate_prefix():
+    """Return a shell prefix that activates the kf venv, or empty string."""
+    venv_activate = os.path.join(SCRIPT_DIR, "..", ".venv", "bin", "activate")
+    venv_activate = os.path.normpath(venv_activate)
+    if os.path.exists(venv_activate):
+        return f"source {venv_activate} && "
+    return ""
+
+
 def _start_manager():
     """Start the conductor manager in a new tmux window."""
     conductor = os.path.join(SCRIPT_DIR, "kf-conductor.py")
+    cmd = f"{_venv_activate_prefix()}python3 {conductor} start --timeout 30"
     result = subprocess.run(
-        ["tmux", "new-window", "-n", "kf-manager", "-d",
-         f"{sys.executable} {conductor} start --timeout 30"],
+        ["tmux", "new-window", "-n", "kf-manager", "-d", cmd],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -274,7 +283,8 @@ def spawn_architect(prompt=None):
         idx += 1
     window_name = f"architect-{idx}"
 
-    cmd = f"cd {wt_path} && claude --dangerously-skip-permissions"
+    activate = _venv_activate_prefix()
+    cmd = f"cd {wt_path} && {activate}claude --dangerously-skip-permissions"
     result = subprocess.run(
         ["tmux", "new-window", "-n", window_name, "-d", cmd],
         capture_output=True, text=True,

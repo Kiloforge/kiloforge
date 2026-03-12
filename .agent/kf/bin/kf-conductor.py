@@ -657,6 +657,15 @@ def ensure_primary_worktree():
     return None
 
 
+def _venv_activate_prefix():
+    """Return a shell prefix that activates the kf venv, or empty string."""
+    venv_activate = os.path.join(BIN_DIR, "..", ".venv", "bin", "activate")
+    venv_activate = os.path.normpath(venv_activate)
+    if os.path.exists(venv_activate):
+        return f"source {venv_activate} && "
+    return ""
+
+
 def _launch_approval_tui():
     """Launch the approval TUI in its own tmux window (if not already open)."""
     tui_script = os.path.join(BIN_DIR, "kf-approve-tui.py")
@@ -671,9 +680,9 @@ def _launch_approval_tui():
     if window_name in result.stdout.split("\n"):
         return  # Already open
 
+    cmd = f"{_venv_activate_prefix()}python3 {tui_script}"
     subprocess.run(
-        ["tmux", "new-window", "-n", window_name, "-d",
-         f"{sys.executable} {tui_script}"],
+        ["tmux", "new-window", "-n", window_name, "-d", cmd],
         capture_output=True, text=True,
     )
     print(f"  Approval TUI opened in tmux window: {window_name}")
@@ -1042,8 +1051,9 @@ def cmd_approve(args):
         return 0
 
     # Create new window with the TUI
+    cmd = f"{_venv_activate_prefix()}python3 {tui_script}"
     subprocess.run(
-        ["tmux", "new-window", "-n", window_name, f"{sys.executable} {tui_script}"],
+        ["tmux", "new-window", "-n", window_name, cmd],
         capture_output=True, text=True,
     )
     print(f"Opened approval TUI in tmux window: {window_name}")
@@ -1223,6 +1233,26 @@ def bare_clone(repo_url: str, target_dir: str) -> int:
         ["git", "-C", str(target), "fetch", "origin"],
         capture_output=True,
     )
+
+    # Detach HEAD so worktrees can checkout the primary branch.
+    # A bare clone's HEAD points to the default branch, which blocks
+    # `git worktree add <branch>` with "already used by worktree".
+    head_ref = subprocess.run(
+        ["git", "-C", str(target), "symbolic-ref", "HEAD"],
+        capture_output=True, text=True,
+    )
+    if head_ref.returncode == 0:
+        branch_ref = head_ref.stdout.strip()
+        commit = subprocess.run(
+            ["git", "-C", str(target), "rev-parse", branch_ref],
+            capture_output=True, text=True,
+        )
+        if commit.returncode == 0:
+            subprocess.run(
+                ["git", "-C", str(target), "update-ref", "--no-deref",
+                 "HEAD", commit.stdout.strip()],
+                capture_output=True,
+            )
 
     print(f"Bare repo created at {bare_path}")
     return 0
