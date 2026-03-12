@@ -5,94 +5,73 @@ status: pending
 created: '2026-03-12'
 updated: '2026-03-12'
 spec:
-  summary: >
-    After stop+resume, the useAgentWebSocket hook stays disconnected because agentId hasn't
-    changed. Need a reconnect() function to re-initiate WS connection after resume API call
-    succeeds. This is the primary fix for the "thinking forever after resume" user report.
-  context: |
-    User report: "After stopping, running again just fails. Sits thinking forever but just
-    seems like no output or maybe it terminated."
+  summary: 'After stop+resume, the useAgentWebSocket hook stays disconnected because agentId hasn''t changed. Need a reconnect()
+    function to re-initiate WS connection after resume API call succeeds. This is the primary fix for the "thinking forever
+    after resume" user report.
 
-    The stop → resume → reconnect lifecycle:
-    1. Agent running → WS connected, hook state: status="connected", agentStatus="running"
-    2. User stops agent → bridge.Done fires → WS receives terminal status → hook sets
-       agentStatus to terminal value → onclose fires → TERMINAL_STATUSES check passes →
-       setStatus("disconnected"), no reconnect scheduled
-    3. User clicks Resume → API call succeeds → agent status is "running" on server
-    4. BUG: The useAgentWebSocket hook's useEffect only triggers on agentId changes.
-       Since agentId is the same, the hook stays in disconnected state with stale agentStatus.
-       The terminal shows empty/thinking state because the WS never reconnects.
-  codebase_analysis: |
-    Hook: frontend/src/hooks/useAgentWebSocket.ts
-    - useEffect on lines 275-291 only re-runs when agentId or connect changes
-    - connect is a useCallback with [agentId] dependency — stable reference for same agentId
-    - After terminal status is received, agentStatusRef.current is set to a TERMINAL_STATUSES
-      value, and the onclose handler stops reconnection
-    - No external API to force reconnection
-
-    Resume action: triggered from AgentDetailPage via useAgentActions mutation
-    - After resume success, React Query invalidates the agent query (status → "running")
-    - But nothing triggers the WS hook to reconnect
-
-    Terminal component: frontend/src/components/AgentTerminal.tsx
-    - Receives agentId prop and calls useAgentWebSocket(agentId)
-    - Shows "Thinking" indicator when connected with no messages
-    - Shows "Agent has exited" placeholder when agentStatus is terminal
-
-    AgentDetailPage: frontend/src/pages/AgentDetailPage.tsx
-    - TerminalSection renders AgentTerminal when the terminal is open
-    - Resume button calls mutation; on success the agent card updates but terminal stays stale
+    '
+  context: "User report: \"After stopping, running again just fails. Sits thinking forever but just\nseems like no output\
+    \ or maybe it terminated.\"\n\nThe stop → resume → reconnect lifecycle:\n1. Agent running → WS connected, hook state:\
+    \ status=\"connected\", agentStatus=\"running\"\n2. User stops agent → bridge.Done fires → WS receives terminal status\
+    \ → hook sets\n   agentStatus to terminal value → onclose fires → TERMINAL_STATUSES check passes →\n   setStatus(\"disconnected\"\
+    ), no reconnect scheduled\n3. User clicks Resume → API call succeeds → agent status is \"running\" on server\n4. BUG:\
+    \ The useAgentWebSocket hook's useEffect only triggers on agentId changes.\n   Since agentId is the same, the hook stays\
+    \ in disconnected state with stale agentStatus.\n   The terminal shows empty/thinking state because the WS never reconnects.\n"
+  codebase_analysis: "Hook: frontend/src/hooks/useAgentWebSocket.ts\n- useEffect on lines 275-291 only re-runs when agentId\
+    \ or connect changes\n- connect is a useCallback with [agentId] dependency — stable reference for same agentId\n- After\
+    \ terminal status is received, agentStatusRef.current is set to a TERMINAL_STATUSES\n  value, and the onclose handler\
+    \ stops reconnection\n- No external API to force reconnection\n\nResume action: triggered from AgentDetailPage via useAgentActions\
+    \ mutation\n- After resume success, React Query invalidates the agent query (status → \"running\")\n- But nothing triggers\
+    \ the WS hook to reconnect\n\nTerminal component: frontend/src/components/AgentTerminal.tsx\n- Receives agentId prop and\
+    \ calls useAgentWebSocket(agentId)\n- Shows \"Thinking\" indicator when connected with no messages\n- Shows \"Agent has\
+    \ exited\" placeholder when agentStatus is terminal\n\nAgentDetailPage: frontend/src/pages/AgentDetailPage.tsx\n- TerminalSection\
+    \ renders AgentTerminal when the terminal is open\n- Resume button calls mutation; on success the agent card updates but\
+    \ terminal stays stale\n"
   acceptance_criteria:
-    - After stop + resume, the WS connection is automatically re-established
-    - The terminal shows live agent output after resume (not stuck on "thinking")
-    - User can send messages to the resumed agent via the terminal
-    - The reconnect clears stale messages and agentStatus from the previous session
-    - Existing auto-reconnect behavior (for transient disconnections) is preserved
-    - Tests cover the reconnect function behavior
-  out_of_scope: |
-    Backend status message accuracy (separate track fix-resume-status-msg-be).
+  - After stop + resume, the WS connection is automatically re-established
+  - The terminal shows live agent output after resume (not stuck on "thinking")
+  - User can send messages to the resumed agent via the terminal
+  - The reconnect clears stale messages and agentStatus from the previous session
+  - Existing auto-reconnect behavior (for transient disconnections) is preserved
+  - Tests cover the reconnect function behavior
+  out_of_scope: 'Backend status message accuracy (separate track fix-resume-status-msg-be).
+
     The isPrimary race condition on readLoop (separate track fix-ws-reattach-input-be).
+
     Changes to the auto-reconnect retry logic or backoff strategy.
-  technical_notes: |
-    Approach: Add a `reconnect()` callback to the useAgentWebSocket return value.
 
-    Implementation:
-    1. In useAgentWebSocket, create a reconnect callback that:
-       - Clears any pending retry timeout
-       - Closes existing WS connection if any
-       - Resets internal state (messages, agentStatus, turnActive, retryCount, hasConnected)
-       - Calls connect() to re-initiate the WS connection
-
-    2. Wire the reconnect into the resume flow. Two options:
-       a. AgentTerminal accepts an optional reconnect trigger (e.g., a counter prop that
-          increments after resume) and calls reconnect() when it changes
-       b. AgentDetailPage's TerminalSection passes a key prop that changes on resume,
-          forcing AgentTerminal to remount (which triggers fresh useEffect)
-
-    Option (b) is simpler: when the agent's status transitions from a terminal state to
-    "running", use a React key that includes a resume counter or the agent's updated_at
-    timestamp. This forces the entire AgentTerminal to remount, which triggers fresh WS
-    connection via the existing useEffect.
-
-    Preferred: Option (a) with explicit reconnect(). It's more targeted — doesn't lose
-    any component state unnecessarily and is testable in isolation.
+    '
+  technical_notes: "Approach: Add a `reconnect()` callback to the useAgentWebSocket return value.\n\nImplementation:\n1. In\
+    \ useAgentWebSocket, create a reconnect callback that:\n   - Clears any pending retry timeout\n   - Closes existing WS\
+    \ connection if any\n   - Resets internal state (messages, agentStatus, turnActive, retryCount, hasConnected)\n   - Calls\
+    \ connect() to re-initiate the WS connection\n\n2. Wire the reconnect into the resume flow. Two options:\n   a. AgentTerminal\
+    \ accepts an optional reconnect trigger (e.g., a counter prop that\n      increments after resume) and calls reconnect()\
+    \ when it changes\n   b. AgentDetailPage's TerminalSection passes a key prop that changes on resume,\n      forcing AgentTerminal\
+    \ to remount (which triggers fresh useEffect)\n\nOption (b) is simpler: when the agent's status transitions from a terminal\
+    \ state to\n\"running\", use a React key that includes a resume counter or the agent's updated_at\ntimestamp. This forces\
+    \ the entire AgentTerminal to remount, which triggers fresh WS\nconnection via the existing useEffect.\n\nPreferred: Option\
+    \ (a) with explicit reconnect(). It's more targeted — doesn't lose\nany component state unnecessarily and is testable\
+    \ in isolation.\n"
 plan:
-  - phase: Hook Enhancement
-    tasks:
-      - text: "Add reconnect() callback to useAgentWebSocket that clears retryRef timeout, closes wsRef, resets all state (messages, agentStatus, turnActive, retryCount, retryDelay, hasConnected), and calls connect(). Return it from the hook."
-        done: false
-      - text: "Add unit test: calling reconnect() after terminal status resets state and initiates new connection."
-        done: false
-  - phase: Wire Resume Flow
-    tasks:
-      - text: "In AgentTerminal, accept and forward the reconnect function. In AgentDetailPage's TerminalSection, call ws.reconnect() after the resume mutation succeeds. Pass reconnect through props or use a useEffect that watches agent status transitions from terminal → running."
-        done: false
-      - text: "Add test: verify AgentTerminal triggers reconnect when agent transitions from stopped to running after resume."
-        done: false
-  - phase: Verification
-    tasks:
-      - text: "Run npm test to verify all frontend tests pass."
-        done: false
-      - text: "Run npm run build to verify no TypeScript/build errors."
-        done: false
+- phase: Hook Enhancement
+  tasks:
+  - text: Add reconnect() callback to useAgentWebSocket that clears retryRef timeout, closes wsRef, resets all state (messages,
+      agentStatus, turnActive, retryCount, retryDelay, hasConnected), and calls connect(). Return it from the hook.
+    done: true
+  - text: 'Add unit test: calling reconnect() after terminal status resets state and initiates new connection.'
+    done: true
+- phase: Wire Resume Flow
+  tasks:
+  - text: In AgentTerminal, accept and forward the reconnect function. In AgentDetailPage's TerminalSection, call ws.reconnect()
+      after the resume mutation succeeds. Pass reconnect through props or use a useEffect that watches agent status transitions
+      from terminal → running.
+    done: true
+  - text: 'Add test: verify AgentTerminal triggers reconnect when agent transitions from stopped to running after resume.'
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run npm test to verify all frontend tests pass.
+    done: true
+  - text: Run npm run build to verify no TypeScript/build errors.
+    done: true
 extra: {}
