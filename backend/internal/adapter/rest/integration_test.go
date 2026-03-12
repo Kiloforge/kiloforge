@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/badge"
-	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
@@ -30,9 +29,6 @@ func startTestServer(t *testing.T) *testServer {
 	t.Helper()
 
 	dir := t.TempDir()
-	cfg := &config.Config{
-		DataDir: dir,
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
@@ -40,7 +36,6 @@ func startTestServer(t *testing.T) *testServer {
 	t.Cleanup(func() { db.Close() })
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	prTracker := sqlite.NewPRTrackingStore(db)
 
 	// Find a random available port.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -64,10 +59,6 @@ func startTestServer(t *testing.T) *testServer {
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
-
-	// Webhook route.
-	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
-	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	// Badge routes.
 	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }

@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
@@ -39,9 +38,6 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 	t.Helper()
 
 	dir := t.TempDir()
-	cfg := &config.Config{
-		DataDir: dir,
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
@@ -50,8 +46,6 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	prTracker := sqlite.NewPRTrackingStore(db)
-
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("listen: %v", err)
@@ -83,10 +77,6 @@ func startE2EServerWithWS(t *testing.T) *e2eWSServer {
 	// Register WebSocket routes.
 	wsHandler := wsAdapter.NewHandler(wsSessions, store, nil)
 	wsHandler.RegisterRoutes(mux)
-
-	// Webhook route.
-	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
-	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	httpSrv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),

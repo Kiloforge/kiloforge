@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"kiloforge/internal/adapter/badge"
-	"kiloforge/internal/adapter/config"
 	"kiloforge/internal/adapter/lock"
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
@@ -48,9 +47,6 @@ func startE2EServer(t *testing.T) *e2eServer {
 	mockBin := buildMockAgentBinary(t)
 
 	dir := t.TempDir()
-	cfg := &config.Config{
-		DataDir: dir,
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
@@ -59,8 +55,6 @@ func startE2EServer(t *testing.T) *e2eServer {
 
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	prTracker := sqlite.NewPRTrackingStore(db)
-
 	// Find a random available port.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -86,10 +80,6 @@ func startE2EServer(t *testing.T) *e2eServer {
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
-
-	// Webhook route.
-	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
-	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	// Badge routes.
 	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }
@@ -144,9 +134,6 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 
 	mockBin := buildMockAgentBinary(t)
 	dir := t.TempDir()
-	cfg := &config.Config{
-		DataDir: dir,
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
@@ -155,7 +142,6 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	prTracker := sqlite.NewPRTrackingStore(db)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -182,9 +168,6 @@ func startE2EServerWithAgentRemover(t *testing.T) *e2eServer {
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
-
-	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
-	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }
 	badgeHandler := badge.NewHandler(store, prLoader)
@@ -236,9 +219,6 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 
 	mockBin := buildMockAgentBinary(t)
 	dir := t.TempDir()
-	cfg := &config.Config{
-		DataDir: dir,
-	}
 	db, err := sqlite.Open(dir)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
@@ -247,7 +227,6 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 
 	reg := sqlite.NewProjectStore(db)
 	store := sqlite.NewAgentStore(db)
-	prTracker := sqlite.NewPRTrackingStore(db)
 	boardStore := sqlite.NewBoardStore(db)
 	boardSvc := service.NewNativeBoardService(boardStore)
 
@@ -277,9 +256,6 @@ func startE2EServerWithBoard(t *testing.T) *e2eServer {
 	})
 	strictHandler := gen.NewStrictHandler(apiHandler, nil)
 	gen.HandlerFromMux(strictHandler, mux)
-
-	srv := NewServer(cfg, reg, store, prTracker, "127.0.0.1", port)
-	mux.HandleFunc("/webhook", srv.handleWebhook)
 
 	prLoader := func(slug string) (*domain.PRTracking, error) { return nil, nil }
 	badgeHandler := badge.NewHandler(store, prLoader)
@@ -519,8 +495,45 @@ func (m *e2eProjectManager) RemoveProject(_ context.Context, slug string, _ bool
 }
 
 func (m *e2eProjectManager) AddLocalProject(_ context.Context, localPath, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
-	// Reuse AddProject logic for e2e tests — local path is treated as remote URL.
-	return m.AddProject(context.Background(), localPath, name, opts...)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Validate path exists and is a directory.
+	info, err := os.Stat(localPath)
+	if err != nil {
+		return nil, fmt.Errorf("path does not exist: %s", localPath)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("path is not a directory: %s", localPath)
+	}
+	// Verify it's a git repository.
+	if _, err := os.Stat(filepath.Join(localPath, ".git")); err != nil {
+		return nil, fmt.Errorf("not a git repository: %s", localPath)
+	}
+
+	slug := name
+	if slug == "" {
+		slug = filepath.Base(localPath)
+	}
+	if slug == "" {
+		return nil, fmt.Errorf("cannot derive project name from path")
+	}
+
+	if _, ok := m.store.FindByRepoName(slug); ok {
+		return nil, domain.ErrProjectExists
+	}
+
+	p := domain.Project{
+		Slug:         slug,
+		RepoName:     slug,
+		ProjectDir:   localPath,
+		Active:       true,
+		RegisteredAt: time.Now(),
+	}
+	if err := m.store.Add(p); err != nil {
+		return nil, err
+	}
+	return &domain.AddProjectResult{Project: p}, nil
 }
 
 func (m *e2eProjectManager) SyncMirror(_ context.Context, _ string) error {

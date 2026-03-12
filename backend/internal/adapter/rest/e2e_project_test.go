@@ -176,7 +176,10 @@ func TestE2E_RemoveProject(t *testing.T) {
 	}
 
 	// Verify project no longer in list.
-	listResp, _ := http.Get(srv.URL + "/api/projects")
+	listResp, err := http.Get(srv.URL + "/api/projects")
+	if err != nil {
+		t.Fatalf("GET /api/projects: %v", err)
+	}
 	defer listResp.Body.Close()
 	var projects []map[string]any
 	json.NewDecoder(listResp.Body).Decode(&projects)
