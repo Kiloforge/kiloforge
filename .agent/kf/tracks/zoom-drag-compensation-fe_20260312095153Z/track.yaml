@@ -1,7 +1,7 @@
 id: zoom-drag-compensation-fe_20260312095153Z
 title: Fix window drag and resize movement at non-100% CSS zoom
 type: bug
-status: pending
+status: completed
 created: 2026-03-12
 updated: 2026-03-12
 spec:
@@ -73,23 +73,23 @@ plan:
   - phase: Implementation
     tasks:
       - text: Add getZoom() helper function to useFloatingWindow.ts that reads current CSS zoom from document.documentElement.style.zoom
-        done: false
+        done: true
       - text: Apply zoom compensation to drag deltas — divide (clientX - dragStart.x) and (clientY - dragStart.y) by zoom factor in the drag pointer-move handler
-        done: false
+        done: true
       - text: Apply zoom compensation to resize deltas — divide resize clientX/clientY differences by zoom factor in the resize pointer-move handler
-        done: false
+        done: true
       - text: Compensate edge detection threshold (EDGE_ZONE) for zoom so resize grab zones feel consistent at all scales
-        done: false
+        done: true
   - phase: Testing
     tasks:
       - text: "Write test: drag delta is divided by zoom factor when document.documentElement.style.zoom is set"
-        done: false
+        done: true
       - text: "Write test: resize delta is divided by zoom factor when CSS zoom is active"
-        done: false
+        done: true
       - text: "Write test: no behavior change when zoom is 1.0 or unset"
-        done: false
+        done: true
   - phase: Verification
     tasks:
       - text: Run full frontend test suite and verify no regressions
-        done: false
+        done: true
 extra: {}
