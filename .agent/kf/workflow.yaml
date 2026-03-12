@@ -12,6 +12,9 @@ code_review:
 
 verification:
   checkpoints: track_completion
+  commands: "make verify"
+  pre_commands: "cd backend && gofmt -w . && goimports -w -local github.com/benbaldivia/crelay ."
   description: >
-    Manual verification is required only when an entire track is complete.
-    Individual phases and tasks do not require manual sign-off.
+    All builds, tests, and lints must pass before merging. Run pre_commands
+    first to autoformat, then commands to verify. Nothing merges to main
+    unless 'make verify' passes (runs test + build + lint).

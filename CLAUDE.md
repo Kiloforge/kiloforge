@@ -24,6 +24,22 @@ This exports `GIT_DIR` and `GIT_WORK_TREE` automatically. Use `KF_QUIET=1` to su
 - `frontend/` — React dashboard (Vite, TanStack Query)
 - `.agent/kf/` — Kiloforge project management artifacts
 
+## Verification — Quality Gate (MANDATORY)
+
+**Nothing merges to main unless `make verify` passes.** This runs all tests, builds, and linters:
+
+```bash
+make verify   # runs: make test && make build && make lint
+```
+
+Before verification, run autoformatters so formatting fixes are captured in commits:
+
+```bash
+cd backend && gofmt -w . && goimports -w -local github.com/benbaldivia/crelay .
+```
+
+If any step fails, fix the issue before merging. Do not skip or use partial verification (e.g., running only one package's tests). The full suite must pass.
+
 ## Guidelines
 
 - See `.agent/kf/code_styleguides/` for Go and build conventions
