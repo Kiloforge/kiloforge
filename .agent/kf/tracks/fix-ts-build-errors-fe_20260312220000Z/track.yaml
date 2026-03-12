@@ -53,7 +53,7 @@ plan:
 - phase: Verification
   tasks:
   - text: Run `npm run build` and confirm zero TS errors
-    done: false
+    done: true
   - text: Run `npx vitest run` and confirm all tests pass
-    done: false
+    done: true
 extra: {}
