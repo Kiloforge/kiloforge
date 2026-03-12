@@ -46,7 +46,7 @@ export function AgentDetailPage() {
 
   // Log viewer state
   const [logLines, setLogLines] = useState<string[]>([]);
-  const [logLoading, setLogLoading] = useState(true);
+  const [logLoading, setLogLoading] = useState(!!id);
   const [following, setFollowing] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -60,10 +60,7 @@ export function AgentDetailPage() {
 
   // Fetch log data (keep as raw fetch — streaming log is not cache-friendly)
   useEffect(() => {
-    if (!id) {
-      setLogLoading(false);
-      return;
-    }
+    if (!id) return;
     let cancelled = false;
     setLogLoading(true);
     fetch(`/api/agents/${encodeURIComponent(id)}/log?lines=200`)
