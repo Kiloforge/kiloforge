@@ -27,9 +27,9 @@ func (s *ProjectStore) Get(slug string) (domain.Project, error) {
 	var regAt string
 	var active int
 	err := s.db.QueryRow(
-		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, registered_at, active
+		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, primary_branch, registered_at, active
 		 FROM projects WHERE slug = ?`, slug,
-	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active)
+	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &p.PrimaryBranch, &regAt, &active)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Project{}, fmt.Errorf("project %s: %w", slug, domain.ErrProjectNotFound)
@@ -43,7 +43,7 @@ func (s *ProjectStore) Get(slug string) (domain.Project, error) {
 
 func (s *ProjectStore) List() []domain.Project {
 	rows, err := s.db.Query(
-		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, registered_at, active
+		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, primary_branch, registered_at, active
 		 FROM projects ORDER BY slug`)
 	if err != nil {
 		return nil
@@ -55,7 +55,7 @@ func (s *ProjectStore) List() []domain.Project {
 		var p domain.Project
 		var regAt string
 		var active int
-		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active); err != nil {
+		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &p.PrimaryBranch, &regAt, &active); err != nil {
 			log.Printf("warn: scan project row: %v", err)
 			continue
 		}
@@ -71,9 +71,9 @@ func (s *ProjectStore) List() []domain.Project {
 
 func (s *ProjectStore) Add(p domain.Project) error {
 	_, err := s.db.Exec(
-		`INSERT INTO projects (slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, registered_at, active)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.RepoName, p.ProjectDir, p.MirrorDir, p.OriginRemote, p.SSHKeyPath,
+		`INSERT INTO projects (slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, primary_branch, registered_at, active)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.Slug, p.RepoName, p.ProjectDir, p.MirrorDir, p.OriginRemote, p.SSHKeyPath, p.PrimaryBranch,
 		p.RegisteredAt.Format(time.RFC3339), boolToInt(p.Active),
 	)
 	if err != nil {
@@ -99,9 +99,9 @@ func (s *ProjectStore) FindByRepoName(name string) (domain.Project, bool) {
 	var regAt string
 	var active int
 	err := s.db.QueryRow(
-		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, registered_at, active
+		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, primary_branch, registered_at, active
 		 FROM projects WHERE repo_name = ?`, name,
-	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active)
+	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &p.PrimaryBranch, &regAt, &active)
 	if err != nil {
 		return domain.Project{}, false
 	}
@@ -115,9 +115,9 @@ func (s *ProjectStore) FindByDir(dir string) (domain.Project, bool) {
 	var regAt string
 	var active int
 	err := s.db.QueryRow(
-		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, registered_at, active
+		`SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, primary_branch, registered_at, active
 		 FROM projects WHERE project_dir = ?`, dir,
-	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active)
+	).Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &p.PrimaryBranch, &regAt, &active)
 	if err != nil {
 		return domain.Project{}, false
 	}
@@ -145,7 +145,7 @@ func (s *ProjectStore) ListPaginated(opts domain.PageOpts) (domain.Page[domain.P
 		}
 	}
 
-	query := `SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, registered_at, active
+	query := `SELECT slug, repo_name, project_dir, mirror_dir, origin_remote, ssh_key_path, primary_branch, registered_at, active
 	          FROM projects` + where + ` ORDER BY slug ASC LIMIT ?`
 	args = append(args, opts.Limit+1)
 
@@ -160,7 +160,7 @@ func (s *ProjectStore) ListPaginated(opts domain.PageOpts) (domain.Page[domain.P
 		var p domain.Project
 		var regAt string
 		var active int
-		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &regAt, &active); err != nil {
+		if err := rows.Scan(&p.Slug, &p.RepoName, &p.ProjectDir, &p.MirrorDir, &p.OriginRemote, &p.SSHKeyPath, &p.PrimaryBranch, &regAt, &active); err != nil {
 			log.Printf("warn: scan project row: %v", err)
 			continue
 		}
