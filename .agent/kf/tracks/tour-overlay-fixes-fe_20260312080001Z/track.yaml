@@ -1,93 +1,92 @@
 id: tour-overlay-fixes-fe_20260312080001Z
-title: "Fix tour spotlight scroll tracking and post-tour navigation"
+title: Fix tour spotlight scroll tracking and post-tour navigation
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: >
-    Fix the tour spotlight cutout so it follows the highlighted element during
-    scroll instead of staying fixed in place. After tour completion, navigate
-    the user back to the dashboard (/) instead of leaving them stranded on
-    the demo project page.
-  context: |
-    Two bugs in the guided tour:
-    1. The spotlight cutout uses position:fixed and a massive box-shadow to
-       create the darkened overlay. When the user scrolls, the spotlight
-       visually stays in place even though getBoundingClientRect updates,
-       because the box-shadow repaint on the fixed-position element doesn't
-       always track smoothly — and more critically, scroll events on nested
-       scrollable containers (not window) are not captured.
-    2. After completing the tour, the user is left on /projects/example-project
-       (the demo project page) with demo data cleared, resulting in a useless
-       empty page. They should be navigated back to "/" (the dashboard).
-  codebase_analysis: |
-    TourOverlay.tsx (frontend/src/components/tour/TourOverlay.tsx):
-    - Lines 33-35: scroll listener is on window with capture=true, but
-      nested scrollable containers may not bubble to window.
-    - Line 26: spotlight uses position:fixed (TourOverlay.module.css:26).
-    - The box-shadow technique (0 0 0 9999px) on a fixed element can cause
-      repaint issues during scroll.
+  summary: 'Fix the tour spotlight cutout so it follows the highlighted element during scroll instead of staying fixed in
+    place. After tour completion, navigate the user back to the dashboard (/) instead of leaving them stranded on the demo
+    project page.
 
-    TourOverlay.module.css:
-    - .spotlight is position:fixed with border-radius and huge box-shadow.
-    - .backdrop is position:fixed inset:0 (purely structural).
-
-    TourProvider.tsx (frontend/src/components/tour/TourProvider.tsx):
-    - Lines 141-150: On completion, shows a toast but does NOT navigate.
-    - Lines 131-138: Route navigation only happens for active steps, not on
-      completion transition.
-
-    tourDemoData.ts:
-    - Line 211: finish step route is /projects/example-project.
-    - After completion, clearDemoData removes all demo query data, leaving
-      the user on an empty project page.
+    '
+  context: "Two bugs in the guided tour:\n1. The spotlight cutout uses position:fixed and a massive box-shadow to\n   create\
+    \ the darkened overlay. When the user scrolls, the spotlight\n   visually stays in place even though getBoundingClientRect\
+    \ updates,\n   because the box-shadow repaint on the fixed-position element doesn't\n   always track smoothly — and more\
+    \ critically, scroll events on nested\n   scrollable containers (not window) are not captured.\n2. After completing the\
+    \ tour, the user is left on /projects/example-project\n   (the demo project page) with demo data cleared, resulting in\
+    \ a useless\n   empty page. They should be navigated back to \"/\" (the dashboard).\n"
+  codebase_analysis: "TourOverlay.tsx (frontend/src/components/tour/TourOverlay.tsx):\n- Lines 33-35: scroll listener is on\
+    \ window with capture=true, but\n  nested scrollable containers may not bubble to window.\n- Line 26: spotlight uses position:fixed\
+    \ (TourOverlay.module.css:26).\n- The box-shadow technique (0 0 0 9999px) on a fixed element can cause\n  repaint issues\
+    \ during scroll.\n\nTourOverlay.module.css:\n- .spotlight is position:fixed with border-radius and huge box-shadow.\n\
+    - .backdrop is position:fixed inset:0 (purely structural).\n\nTourProvider.tsx (frontend/src/components/tour/TourProvider.tsx):\n\
+    - Lines 141-150: On completion, shows a toast but does NOT navigate.\n- Lines 131-138: Route navigation only happens for\
+    \ active steps, not on\n  completion transition.\n\ntourDemoData.ts:\n- Line 211: finish step route is /projects/example-project.\n\
+    - After completion, clearDemoData removes all demo query data, leaving\n  the user on an empty project page.\n"
   acceptance_criteria:
-    - Tour spotlight cutout visually follows the target element when the page
-      is scrolled (both window scroll and nested container scroll)
-    - The spotlight+tooltip reposition smoothly without visual glitches
-    - After clicking "Finish" on the last tour step, the user is navigated
-      to "/" (dashboard overview)
-    - Demo data is cleaned up before or during the navigation to "/"
-  out_of_scope: |
-    - Redesigning the tour overlay rendering approach (e.g., SVG mask)
+  - Tour spotlight cutout visually follows the target element when the page is scrolled (both window scroll and nested container
+    scroll)
+  - The spotlight+tooltip reposition smoothly without visual glitches
+  - After clicking "Finish" on the last tour step, the user is navigated to "/" (dashboard overview)
+  - Demo data is cleaned up before or during the navigation to "/"
+  out_of_scope: '- Redesigning the tour overlay rendering approach (e.g., SVG mask)
+
     - Adding scroll-lock during tour steps
+
     - Tour content or step order changes
-  technical_notes: |
-    Bug 1 fix — Spotlight scroll tracking:
+
+    '
+  technical_notes: 'Bug 1 fix — Spotlight scroll tracking:
+
     Replace position:fixed spotlight with position:absolute inside a
+
     full-document-height container, OR switch to an SVG-based overlay mask.
+
     Simplest approach: keep position:fixed but ensure the getBoundingClientRect
+
     polling interval is reduced (100ms instead of 500ms) and use
+
     requestAnimationFrame for smooth updates. Also add MutationObserver and
-    scroll listeners on the specific target's scroll parents (not just window).
+
+    scroll listeners on the specific target''s scroll parents (not just window).
+
 
     Bug 2 fix — Post-tour navigation:
-    In TourProvider's completion effect (lines 141-150), add
-    navigate("/") after clearDemoData. The finish step's demoState.route
+
+    In TourProvider''s completion effect (lines 141-150), add
+
+    navigate("/") after clearDemoData. The finish step''s demoState.route
+
     should also be changed to "/" so the last step is already on the
+
     dashboard. Alternatively, navigate in the handleComplete callback.
+
+    '
 plan:
-  - phase: "Spotlight Scroll Fix"
-    tasks:
-      - text: "Reduce spotlight polling interval from 500ms to 100ms and wrap position updates in requestAnimationFrame for smoother tracking"
-        done: false
-      - text: "Add scroll listeners on the target element's scrollable ancestors (walk up DOM to find overflow:auto/scroll parents), not just window"
-        done: false
-      - text: "Write test: verify spotlight repositions when scroll event fires (mock getBoundingClientRect returning different values)"
-        done: false
-  - phase: "Post-Tour Navigation"
-    tasks:
-      - text: "Change finish step demoState.route from /projects/example-project to '/' in tourDemoData.ts"
-        done: false
-      - text: "In TourProvider handleComplete callback, add navigate('/') after tour completion to ensure user lands on dashboard"
-        done: false
-      - text: "Write test: verify that completing the tour navigates to '/'"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Manual test: run tour end-to-end, scroll during spotlight steps, verify cutout follows target"
-        done: false
-      - text: "Manual test: complete tour and verify landing on dashboard with live data (not demo project page)"
-        done: false
+- phase: Spotlight Scroll Fix
+  tasks:
+  - text: Reduce spotlight polling interval from 500ms to 100ms and wrap position updates in requestAnimationFrame for smoother
+      tracking
+    done: true
+  - text: Add scroll listeners on the target element's scrollable ancestors (walk up DOM to find overflow:auto/scroll parents),
+      not just window
+    done: true
+  - text: 'Write test: verify spotlight repositions when scroll event fires (mock getBoundingClientRect returning different
+      values)'
+    done: true
+- phase: Post-Tour Navigation
+  tasks:
+  - text: Change finish step demoState.route from /projects/example-project to '/' in tourDemoData.ts
+    done: true
+  - text: In TourProvider handleComplete callback, add navigate('/') after tour completion to ensure user lands on dashboard
+    done: true
+  - text: 'Write test: verify that completing the tour navigates to ''/'''
+    done: true
+- phase: Verification
+  tasks:
+  - text: 'Manual test: run tour end-to-end, scroll during spotlight steps, verify cutout follows target'
+    done: true
+  - text: 'Manual test: complete tour and verify landing on dashboard with live data (not demo project page)'
+    done: true
 extra: {}
