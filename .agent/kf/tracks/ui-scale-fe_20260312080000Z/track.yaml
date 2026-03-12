@@ -1,81 +1,97 @@
 id: ui-scale-fe_20260312080000Z
-title: "Add user-adjustable UI scale for large displays"
+title: Add user-adjustable UI scale for large displays
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: >
-    Add a CSS-variable-based zoom/scale system with a slider in Settings,
-    persisted to localStorage. Remove the 1200px max-width cap on .main and
-    make the layout scale proportionally on 4K displays.
-  context: |
-    The dashboard uses hardcoded px font sizes (11–16px) and a fixed
+  summary: 'Add a CSS-variable-based zoom/scale system with a slider in Settings, persisted to localStorage. Remove the 1200px
+    max-width cap on .main and make the layout scale proportionally on 4K displays.
+
+    '
+  context: 'The dashboard uses hardcoded px font sizes (11–16px) and a fixed
+
     max-width: 1200px on the main content area (App.module.css:90). On a 4K
+
     display everything appears tiny with large empty gutters. Users need a
+
     way to scale the entire UI up without relying on browser zoom, which
+
     affects all tabs.
-  codebase_analysis: |
-    - Global CSS variables live in frontend/src/index.css (:root block).
-    - App.module.css .main sets max-width: 1200px and padding: 24px.
-    - SettingsMenu.tsx already has a toggle pattern and uses useConfig() for
-      persisted settings. However, ui_scale is a purely cosmetic preference —
-      localStorage is appropriate (no backend round-trip needed).
-    - No existing scale/zoom CSS variable exists.
-    - Font sizes throughout CSS modules use hardcoded px values (11–16px
-      range in header, 13–14px in panels, etc.).
+
+    '
+  codebase_analysis: "- Global CSS variables live in frontend/src/index.css (:root block).\n- App.module.css .main sets max-width:\
+    \ 1200px and padding: 24px.\n- SettingsMenu.tsx already has a toggle pattern and uses useConfig() for\n  persisted settings.\
+    \ However, ui_scale is a purely cosmetic preference —\n  localStorage is appropriate (no backend round-trip needed).\n\
+    - No existing scale/zoom CSS variable exists.\n- Font sizes throughout CSS modules use hardcoded px values (11–16px\n\
+    \  range in header, 13–14px in panels, etc.).\n"
   acceptance_criteria:
-    - A CSS custom property (--ui-scale) controls the overall zoom level
-    - The main content area uses a fluid max-width that respects the scale
-    - A "Display Scale" slider appears in the Settings dropdown (range ~80%–150%)
-    - The selected scale persists across page reloads via localStorage
-    - Default scale is 100% (current appearance unchanged)
-    - The setting is applied via CSS zoom or transform scale on the app root
-  out_of_scope: |
-    - Backend API changes (scale is a local UI preference, stored in localStorage)
+  - A CSS custom property (--ui-scale) controls the overall zoom level
+  - The main content area uses a fluid max-width that respects the scale
+  - A "Display Scale" slider appears in the Settings dropdown (range ~80%–150%)
+  - The selected scale persists across page reloads via localStorage
+  - Default scale is 100% (current appearance unchanged)
+  - The setting is applied via CSS zoom or transform scale on the app root
+  out_of_scope: '- Backend API changes (scale is a local UI preference, stored in localStorage)
+
     - Changing individual component font sizes to rem (future track)
+
     - Mobile-specific scaling (mobile breakpoint stays as-is)
-  technical_notes: |
-    Approach: Use CSS `zoom` property on the #root or a wrapper div. CSS zoom
+
+    '
+  technical_notes: 'Approach: Use CSS `zoom` property on the #root or a wrapper div. CSS zoom
+
     is well-supported (Chrome, Edge, Safari, Firefox 126+) and scales the
+
     entire layout uniformly including borders, padding, and text. This avoids
+
     needing to convert all px values to rem.
 
+
     The max-width on .main should change from 1200px to a larger fluid value
+
     (e.g., min(1600px, 95vw)) so the content actually fills wide screens.
 
+
     Store the value in localStorage under key "kf-ui-scale". Create a small
+
     useUIScale() hook that reads/writes it and applies it to document root.
 
+
     Add a slider control to SettingsMenu with preset labels
+
     (Compact / Default / Large / Extra Large) mapping to 85/100/120/140.
+
+    '
 plan:
-  - phase: "Foundation"
-    tasks:
-      - text: "Create useUIScale hook — reads 'kf-ui-scale' from localStorage, returns { scale, setScale }, applies CSS zoom to document.documentElement on mount and change"
-        done: false
-      - text: "Write unit tests for useUIScale — default 100, persistence, applying zoom style"
-        done: false
-  - phase: "Layout & Styling"
-    tasks:
-      - text: "Update App.module.css .main — change max-width from 1200px to min(1600px, 95vw) for fluid width on large screens"
-        done: false
-      - text: "Verify responsive breakpoint (768px) still works correctly with fluid max-width"
-        done: false
-  - phase: "Settings UI & Integration"
-    tasks:
-      - text: "Add Display Scale slider to SettingsMenu — range input with labels (Compact 85% / Default 100% / Large 120% / XL 140%), wired to useUIScale"
-        done: false
-      - text: "Add SettingsMenu.module.css styles for the scale slider row (label, range input, percentage readout)"
-        done: false
-      - text: "Write tests for SettingsMenu scale slider — renders, changes value, persists"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Manual verification: test at 1080p, 1440p, and 4K resolutions — content fills screen, scale slider works"
-        done: false
-      - text: "Verify tour overlay still works at non-100% scale (spotlight positioning)"
-        done: false
-      - text: "Run full frontend test suite and fix any regressions"
-        done: false
+- phase: Foundation
+  tasks:
+  - text: Create useUIScale hook — reads 'kf-ui-scale' from localStorage, returns { scale, setScale }, applies CSS zoom to
+      document.documentElement on mount and change
+    done: true
+  - text: Write unit tests for useUIScale — default 100, persistence, applying zoom style
+    done: true
+- phase: Layout & Styling
+  tasks:
+  - text: Update App.module.css .main — change max-width from 1200px to min(1600px, 95vw) for fluid width on large screens
+    done: true
+  - text: Verify responsive breakpoint (768px) still works correctly with fluid max-width
+    done: true
+- phase: Settings UI & Integration
+  tasks:
+  - text: Add Display Scale slider to SettingsMenu — range input with labels (Compact 85% / Default 100% / Large 120% / XL
+      140%), wired to useUIScale
+    done: true
+  - text: Add SettingsMenu.module.css styles for the scale slider row (label, range input, percentage readout)
+    done: true
+  - text: Write tests for SettingsMenu scale slider — renders, changes value, persists
+    done: true
+- phase: Verification
+  tasks:
+  - text: 'Manual verification: test at 1080p, 1440p, and 4K resolutions — content fills screen, scale slider works'
+    done: true
+  - text: Verify tour overlay still works at non-100% scale (spotlight positioning)
+    done: true
+  - text: Run full frontend test suite and fix any regressions
+    done: true
 extra: {}
