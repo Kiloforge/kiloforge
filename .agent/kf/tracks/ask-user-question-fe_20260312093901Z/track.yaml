@@ -1,0 +1,140 @@
+id: ask-user-question-fe_20260312093901Z
+title: Render AskUserQuestion options as clickable buttons and fix message deduplication
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Detect AskUserQuestion tool calls in the agent chat, render the question
+    with clickable option buttons showing both label and description/subtext,
+    send the selected option as chat input, and fix duplicate messages caused
+    by WebSocket reconnection replay.
+  context: |
+    Claude Code agents use the AskUserQuestion tool to present choices to the
+    user. The tool_use message arrives via WebSocket with tool_name
+    "AskUserQuestion" and input containing a question string and an array of
+    options (each with a label and description). Currently, this renders as a
+    generic tool_use bubble with JSON input — the user has no way to click an
+    option to respond.
+
+    The user should see the question text prominently, followed by clickable
+    option buttons that display both the label (primary text) and the
+    description/subtext (secondary text). Clicking an option sends the label
+    as chat input. The user should still be able to type a free-form response
+    in the normal chat input field.
+
+    Separately, WebSocket reconnection replays up to 500 buffered messages
+    from the backend ring buffer. The frontend appends all replayed messages
+    to the message list without deduplication, causing duplicates. The user
+    specifically noted that AskUserQuestion sometimes "displays more than
+    once" — this is likely caused by the replay.
+  codebase_analysis: |
+    useAgentWebSocket.ts:
+    - Lines 92-197: onmessage handler parses ServerMessage and appends to
+      messages state array via setMessages(prev => [...prev, {...}])
+    - Line 135-144: tool_use case creates WSMessage with toolName, toolId,
+      toolInput fields
+    - No deduplication — all messages blindly appended
+    - Lines 63: messages state is useState<WSMessage[]>([])
+
+    Backend ws/handler.go line 72: On connect, replays bridge.Buffer.Lines()
+    (ring buffer of last 500 messages). No sequence numbers or message IDs.
+
+    TerminalBubbles.tsx:
+    - Lines 38-67: ToolUseBubble renders tool name + formatToolSummary label
+    - Lines 220-246: MessageDispatch routes by msg.type — tool_use goes to
+      ToolUseBubble
+    - No special handling for AskUserQuestion
+
+    formatToolSummary.ts:
+    - Lines 73-79: default case for unknown tools shows toolName + JSON input
+    - No AskUserQuestion case
+
+    AgentTerminal.tsx:
+    - Lines 286-303: Input area with textarea + send button
+    - sendMessage() (from useAgentWebSocket) sends text via WebSocket
+
+    WSMessage type (useAgentWebSocket.ts lines 5-7):
+    - type field is union of string literals
+    - toolInput is Record<string, unknown> | undefined
+
+    AskUserQuestion input format (from Claude Code):
+    {
+      "question": "Which option?",
+      "options": [
+        {"label": "Option A", "description": "Does thing A"},
+        {"label": "Option B", "description": "Does thing B"}
+      ]
+    }
+  acceptance_criteria:
+    - When an AskUserQuestion tool_use arrives, it renders as a distinct question bubble (not generic tool_use)
+    - The question text is displayed prominently above the options
+    - Each option renders as a clickable button showing the label (primary) and description (secondary/subtext) on separate lines
+    - Clicking an option sends the label text as chat input to the agent
+    - The user can still type a free-form response in the chat input field instead of clicking
+    - After clicking an option, the button set is visually disabled/dimmed (question answered)
+    - WebSocket reconnection does not produce duplicate messages in the chat
+    - AskUserQuestion does not display more than once for the same tool call
+  out_of_scope: |
+    - Backend changes (tool_use relay already handles AskUserQuestion generically)
+    - Adding new WebSocket message types
+    - Persisting AskUserQuestion state across page refreshes
+    - Custom styling themes for the question bubble
+  technical_notes: |
+    AskUserQuestion rendering:
+    1. In MessageDispatch, detect tool_use with toolName === "AskUserQuestion"
+       and route to a new AskUserQuestionBubble component
+    2. The component parses toolInput.question (string) and
+       toolInput.options (array of {label, description})
+    3. Render question text in a styled header, then a vertical list of
+       option buttons. Each button shows label as primary text and
+       description as smaller secondary text below it
+    4. On click, call sendMessage(option.label) to send the selection
+    5. Track answered state locally (useState) — once answered, dim the
+       buttons and show which was selected
+
+    Deduplication:
+    1. Add a message sequence number: include a monotonic counter in each
+       WSMessage (assign at append time)
+    2. On reconnect, clear existing messages before replaying — since the
+       ring buffer contains the full recent history, a full replace is
+       simpler than dedup. Set messages to [] before processing replay.
+    3. Alternative: track the last-seen timestamp or turn_id and skip
+       messages older than the last seen. Simplest: add a "replay" flag
+       to the connect flow — when replaying, replace messages instead of
+       appending.
+
+    The simplest dedup approach: clear messages on WebSocket reconnection
+    before replay begins. The ring buffer has the authoritative history.
+    Add a "connected" event that resets messages to [].
+plan:
+  - phase: Message Deduplication
+    tasks:
+      - text: "Write test: verify messages are not duplicated on WebSocket reconnection (simulate disconnect/reconnect with replay)"
+        done: false
+      - text: Clear message list on WebSocket reconnection before replay messages arrive — reset messages to [] in the onopen handler when reconnecting (not on initial connect)
+        done: false
+      - text: Verify dedup works by running existing tests and checking no message loss on initial connect
+        done: false
+  - phase: AskUserQuestion Bubble
+    tasks:
+      - text: "Write test: AskUserQuestionBubble renders question text and option buttons with both label and description"
+        done: false
+      - text: "Write test: clicking an option button calls sendMessage with the option label"
+        done: false
+      - text: "Write test: after answering, buttons are disabled and selected option is highlighted"
+        done: false
+      - text: Create AskUserQuestionBubble component — renders question text, option buttons (label + description subtext), handles click to send response
+        done: false
+      - text: Add AskUserQuestionBubble.module.css — styled card with question header, vertical button list, label+description layout, selected/disabled states
+        done: false
+      - text: Add AskUserQuestion case to MessageDispatch in TerminalBubbles.tsx — detect toolName === "AskUserQuestion" and render AskUserQuestionBubble
+        done: false
+      - text: Thread sendMessage callback from AgentTerminal through MessageDispatch to AskUserQuestionBubble
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run full frontend test suite and verify no regressions
+        done: false
+extra: {}
