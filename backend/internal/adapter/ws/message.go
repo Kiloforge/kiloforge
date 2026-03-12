@@ -9,7 +9,8 @@ const (
 	MsgStatus = "status" // server → client: agent status change
 	MsgError  = "error"  // server → client: error message
 
-	MsgInterrupt = "interrupt" // client → server: interrupt current turn
+	MsgInterrupt  = "interrupt"   // client → server: interrupt current turn
+	MsgInputEcho = "input_echo" // server → client: echo of user input (buffered for replay)
 
 	// Enriched message types for SDK-based agents.
 	MsgTurnStart  = "turn_start"  // server → client: new turn begins
@@ -107,6 +108,13 @@ func StatusMsg(status string, exitCode *int) []byte {
 // ErrorMsg creates an error message.
 func ErrorMsg(msg string) []byte {
 	b, _ := json.Marshal(Message{Type: MsgError, Message: msg})
+	return b
+}
+
+// InputEchoMsg creates an input echo message for broadcasting user input
+// back to WebSocket clients and storing in the ring buffer.
+func InputEchoMsg(text string) []byte {
+	b, _ := json.Marshal(Message{Type: MsgInputEcho, Text: text})
 	return b
 }
 
