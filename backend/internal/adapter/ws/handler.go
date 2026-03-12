@@ -94,9 +94,20 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 	// automatically cancels the session.
 	select {
 	case <-bridge.Done:
-		_ = conn.Write(session.ctx, websocket.MessageText, StatusMsg("completed", intPtr(0)))
+		// Look up actual agent status instead of hardcoding "completed".
+		exitStatus := "completed"
+		var exitCode *int
+		if h.agents != nil {
+			if info, err := h.agents.FindAgent(agentID); err == nil && info != nil {
+				exitStatus = info.Status
+			}
+		}
+		if exitStatus == "completed" {
+			exitCode = intPtr(0)
+		}
+		_ = conn.Write(session.ctx, websocket.MessageText, StatusMsg(exitStatus, exitCode))
 		_ = conn.Close(websocket.StatusNormalClosure, "agent exited")
-		h.logger.Printf("[ws] agent %s exited, closing WebSocket", agentID)
+		h.logger.Printf("[ws] agent %s exited (status=%s), closing WebSocket", agentID, exitStatus)
 	case <-session.ctx.Done():
 		h.logger.Printf("[ws] client disconnected from agent %s", agentID)
 	}
