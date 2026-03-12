@@ -73,23 +73,6 @@ type CompletionCallback func(agentID, ref, status string)
 // Used to clean up resources like WS bridges.
 type SessionEndCallback func(agentID string)
 
-// SessionFactory abstracts SDK session creation so tests can inject mock sessions.
-type SessionFactory interface {
-	NewSession(ctx context.Context, workDir, model, logFilePath string, envVars map[string]string) (*SDKSession, error)
-	NewResumeSession(ctx context.Context, workDir, model, logFilePath, sessionID string, envVars map[string]string) (*SDKSession, error)
-}
-
-// RealSessionFactory creates real SDK sessions that connect to the Claude CLI.
-type RealSessionFactory struct{}
-
-func (RealSessionFactory) NewSession(ctx context.Context, workDir, model, logFilePath string, envVars map[string]string) (*SDKSession, error) {
-	return NewSDKSession(ctx, workDir, model, logFilePath, envVars)
-}
-
-func (RealSessionFactory) NewResumeSession(ctx context.Context, workDir, model, logFilePath, sessionID string, envVars map[string]string) (*SDKSession, error) {
-	return NewSDKSessionWithResume(ctx, workDir, model, logFilePath, sessionID, envVars)
-}
-
 // Spawner manages Claude agent lifecycle.
 // ErrAtCapacity is returned when the agent swarm is at maximum capacity.
 var ErrAtCapacity = errors.New("agent swarm at capacity")
@@ -103,7 +86,6 @@ type Spawner struct {
 	eventBus           port.EventBus
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
-	sessionFactory     SessionFactory
 
 	reliability port.ReliabilityRecorder
 
@@ -130,19 +112,11 @@ func CleanClaudeEnv() []string {
 // NewSpawner creates a spawner. If tracker is nil, stream parsing is disabled.
 func NewSpawner(cfg *config.Config, store port.AgentStore, tracker *QuotaTracker) *Spawner {
 	return &Spawner{
-		cfg:            cfg,
-		store:          store,
-		tracker:        tracker,
-		tracer:         port.NoopTracer{},
-		sessionFactory: RealSessionFactory{},
-		activeAgents:   make(map[string]*InteractiveAgent),
-	}
-}
-
-// SetSessionFactory sets a custom session factory (used in tests).
-func (s *Spawner) SetSessionFactory(f SessionFactory) {
-	if f != nil {
-		s.sessionFactory = f
+		cfg:          cfg,
+		store:        store,
+		tracker:      tracker,
+		tracer:       port.NoopTracer{},
+		activeAgents: make(map[string]*InteractiveAgent),
 	}
 }
 
@@ -522,7 +496,7 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 	// Create SDK session with a detached context so the agent process
 	// outlives the HTTP request that spawned it. The session manages its
 	// own lifecycle via session.Close() / session.cancel.
-	session, err := s.sessionFactory.NewSession(context.Background(), workDir, model, logFile, s.agentEnv(agentID, sessionID, "interactive"))
+	session, err := NewSDKSession(context.Background(), workDir, model, logFile, s.agentEnv(agentID, sessionID, "interactive"))
 	if err != nil {
 		return nil, fmt.Errorf("create SDK session: %w", err)
 	}
@@ -768,7 +742,7 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 	logFile := agent.LogFile
 
 	// Create SDK session with resume — detached from HTTP request context.
-	session, err := s.sessionFactory.NewResumeSession(context.Background(), workDir, model, logFile, agent.SessionID, s.agentEnv(id, agent.SessionID, agent.Role))
+	session, err := NewSDKSessionWithResume(context.Background(), workDir, model, logFile, agent.SessionID, s.agentEnv(id, agent.SessionID, agent.Role))
 	if err != nil {
 		return nil, fmt.Errorf("create resumed SDK session: %w", err)
 	}
