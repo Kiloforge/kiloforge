@@ -1,0 +1,71 @@
+id: fix-ws-reattach-input-be_20260313054500Z
+title: "Fix WebSocket read loop not starting on re-attach (secondary session race)"
+type: bug
+status: pending
+created: 2026-03-13
+updated: 2026-03-13
+spec:
+  summary: "When a client disconnects and quickly reconnects to the same agent, the new session is marked secondary (race with deferred cleanup) and gets no read loop — user input is silently dropped. Fix by starting a read loop for every session."
+  context: |
+    Users report that after closing an agent terminal window and re-opening it
+    (attach), sending messages does nothing. The frontend shows the connection as
+    active and the send button works, but the backend never processes the input.
+  codebase_analysis: |
+    Root cause in backend/internal/adapter/ws/handler.go lines 66-91:
+
+    1. handleAgentWS calls AddSession, which checks len(sm.sessions[agentID])
+    2. If > 0 (old session not yet cleaned up), isPrimary = false
+    3. readLoop is only started for isPrimary sessions (line 89)
+    4. Without a readLoop, user WebSocket messages are never read
+
+    Race window: old connection's `defer RemoveSession` hasn't run when the
+    new connection calls AddSession. The frontend reconnects quickly after
+    component remount, making this race very likely.
+
+    The Bridge.WriteInput is already mutex-protected, so multiple read loops
+    are safe. SDK InputHandler handles concurrent calls via client.Query().
+
+    Files involved:
+    - backend/internal/adapter/ws/handler.go — readLoop gate
+    - backend/internal/adapter/ws/session.go — AddSession isPrimary logic
+  acceptance_criteria:
+    - "A reconnected WebSocket session can send input to the agent"
+    - "Multiple simultaneous sessions on the same agent can all send input"
+    - "Existing WebSocket tests pass without regression"
+    - "make test && make build succeed"
+  out_of_scope: |
+    - Frontend changes (the frontend is already correct)
+    - Changes to the reconnection timing/backoff logic
+    - Multi-window input UI (this fix enables it, but no UI changes needed)
+  technical_notes: |
+    Fix: Remove the isPrimary gate on readLoop in handler.go — always start
+    go h.readLoop(session, bridge, agentID) for every connection.
+
+    Keep the isPrimary bool in AddSession for the onReconnect callback (it
+    still needs to know when sessions go from 0→1). Just stop using it to
+    gate the read loop.
+
+    Tests: Use real Bridge objects backed by io.Pipe() or InputHandler funcs
+    (no Claude CLI needed). Spin up a real httptest server with WebSocket
+    upgrade, connect two clients, verify both can send input. Do NOT mock
+    the Claude CLI — tests must work without it.
+plan:
+  - phase: "Write failing tests"
+    tasks:
+      - text: "Add test: two sessions on same agent — both can send input via WebSocket (uses real Bridge with InputHandler, httptest server, real WS connections)"
+        done: false
+      - text: "Add test: connect → close → reconnect — reconnected session can send input"
+        done: false
+  - phase: "Fix the bug"
+    tasks:
+      - text: "handler.go: Always start go h.readLoop(session, bridge, agentID) — remove the if isPrimary gate"
+        done: false
+      - text: "Update log line to show session count instead of primary/secondary"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run all WebSocket tests (go test ./internal/adapter/ws/...) and verify new tests pass"
+        done: false
+      - text: "Run make test && make build to verify no regressions"
+        done: false
+extra: {}
