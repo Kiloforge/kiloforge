@@ -1,10 +1,47 @@
 import { useState, useCallback } from "react";
-import type { SwarmCapacity } from "../types/api";
-import { SKILL_REGISTRY } from "../skills/registry";
-import type { AgentRole } from "../skills/registry";
+import type { SwarmCapacity, SpawnInteractiveRequest } from "../types/api";
 import styles from "./AgentLauncher.module.css";
 
-export type { AgentRole };
+export type AgentRole = NonNullable<SpawnInteractiveRequest["role"]>;
+
+interface RoleEntry {
+  role: AgentRole;
+  label: string;
+  description: string;
+  requiresProject: boolean;
+  placeholder: string;
+}
+
+const AGENT_ROLES: RoleEntry[] = [
+  {
+    role: "interactive",
+    label: "Interactive",
+    description: "General-purpose kf-aware assistant",
+    requiresProject: false,
+    placeholder: "Ask anything about the project...",
+  },
+  {
+    role: "architect",
+    label: "Architect",
+    description: "Research codebase and generate implementation tracks",
+    requiresProject: true,
+    placeholder: "Describe the feature or change you want to plan...",
+  },
+  {
+    role: "advisor-product",
+    label: "Product Advisor",
+    description: "Product design, branding, and competitive analysis",
+    requiresProject: true,
+    placeholder: "Describe what you need product guidance on...",
+  },
+  {
+    role: "advisor-reliability",
+    label: "Reliability Advisor",
+    description: "Testing coverage, linting, type safety, and CI gate audits",
+    requiresProject: true,
+    placeholder: "Describe what you want audited (e.g., testing gaps, CI coverage)...",
+  },
+];
 
 interface AgentLauncherProps {
   onLaunch: (role: AgentRole, prompt: string) => void;
@@ -17,10 +54,9 @@ interface AgentLauncherProps {
 }
 
 export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waitingForCapacity, waitingCapacity, onCancelWaiting }: AgentLauncherProps) {
-  // Only show roles appropriate for the current context.
   const availableRoles = projectSlug
-    ? SKILL_REGISTRY
-    : SKILL_REGISTRY.filter((r) => !r.requiresProject);
+    ? AGENT_ROLES
+    : AGENT_ROLES.filter((r) => !r.requiresProject);
   const [role, setRole] = useState<AgentRole>("interactive");
   const [prompt, setPrompt] = useState("");
 

@@ -5,8 +5,6 @@ import { useFloatingWindow, detectEdge, cursorForEdge } from "../hooks/useFloati
 import { MessageDispatch, MessageErrorBoundary } from "./terminal";
 import { AgentDiffPanel } from "./diff/AgentDiffPanel";
 import { ThinkingIndicator } from "./ThinkingIndicator";
-import { SlashCommandAutocomplete } from "./SlashCommandAutocomplete";
-import { SKILL_REGISTRY } from "../skills/registry";
 import styles from "./AgentTerminal.module.css";
 
 const TERMINAL_STATUSES = new Set(["completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended"]);
@@ -57,8 +55,6 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
   const [queueDepth, setQueueDepth] = useState(0);
   const [input, setInput] = useState("");
   const [viewMode, setViewMode] = useState<"chat" | "diff">("chat");
-  const [acIndex, setAcIndex] = useState(0);
-  const [acDismissed, setAcDismissed] = useState(false);
   const hasDiff = !!(slug && branch);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -121,63 +117,18 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Autocomplete: compute filtered commands for dropdown visibility check
-  const acActive = input.startsWith("/") && !acDismissed;
-  const acFiltered = acActive
-    ? SKILL_REGISTRY.filter((c) => c.slashCommand.toLowerCase().startsWith(input.toLowerCase()))
-    : [];
-  const acVisible = acFiltered.length > 0;
-
-  const handleAcSelect = useCallback((command: string) => {
-    setInput(command + " ");
-    setAcDismissed(true);
-    setAcIndex(0);
-    inputRef.current?.focus();
-  }, []);
-
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text) return;
     sendMessage(text);
     if (turnActive) setQueueDepth((d) => d + 1);
     setInput("");
-    setAcDismissed(false);
-    setAcIndex(0);
     inputRef.current?.focus();
   }, [input, sendMessage, turnActive]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.nativeEvent.isComposing) return;
-
-      // Autocomplete keyboard handling
-      if (acVisible) {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setAcIndex((i) => (i + 1) % acFiltered.length);
-          return;
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setAcIndex((i) => (i - 1 + acFiltered.length) % acFiltered.length);
-          return;
-        }
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          handleAcSelect(acFiltered[acIndex % acFiltered.length].slashCommand);
-          return;
-        }
-        if (e.key === "Tab") {
-          e.preventDefault();
-          handleAcSelect(acFiltered[acIndex % acFiltered.length].slashCommand);
-          return;
-        }
-        if (e.key === "Escape") {
-          e.preventDefault();
-          setAcDismissed(true);
-          return;
-        }
-      }
 
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -188,7 +139,7 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
         sendInterrupt();
       }
     },
-    [handleSend, turnActive, sendInterrupt, acVisible, acFiltered, acIndex, handleAcSelect],
+    [handleSend, turnActive, sendInterrupt],
   );
 
   const handlePanelPointerDown = useCallback(
@@ -334,23 +285,11 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
           </div>
 
           <div className={styles.inputArea} style={{ position: "relative" }}>
-            {acVisible && !acDismissed && (
-              <SlashCommandAutocomplete
-                input={input}
-                commands={SKILL_REGISTRY}
-                selectedIndex={acIndex}
-                onSelect={handleAcSelect}
-              />
-            )}
             <textarea
               ref={inputRef}
               className={styles.inputField}
               value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                setAcDismissed(false);
-                setAcIndex(0);
-              }}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={canSend ? (turnActive ? "Type to queue a message... (Esc to interrupt)" : "Type a message... (Enter to send)") : isTerminal ? (agentStatus === "suspended" ? "Agent suspended — resume to continue" : "Agent has exited") : "Connecting..."}
               disabled={!canSend}

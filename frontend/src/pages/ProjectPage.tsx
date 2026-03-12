@@ -21,13 +21,11 @@ import { MiniCard } from "../components/MiniCard";
 import { AdminPanel } from "../components/AdminPanel";
 import { ProjectMetadataView } from "../components/ProjectMetadataView";
 import { ConsentDialog } from "../components/ConsentDialog";
-import { SkillsInstallDialog } from "../components/SkillsInstallDialog";
 import { SetupRequiredDialog } from "../components/SetupRequiredDialog";
 import { AgentLauncher } from "../components/AgentLauncher";
 import { PaginatedList } from "../components/PaginatedList";
 import { InlineSpinner } from "../components/InlineSpinner";
 import { useConsent } from "../hooks/useConsent";
-import { useSkillsPrompt } from "../hooks/useSkillsPrompt";
 import { useSetupPrompt } from "../hooks/useSetupPrompt";
 import { useProjectMetadata } from "../hooks/useProjectMetadata";
 import { useProjectSettings } from "../hooks/useProjectSettings";
@@ -35,8 +33,7 @@ import { ProjectSettingsPanel } from "../components/ProjectSettingsPanel";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
-function getDisabledReason(skillsMissing: boolean, setupIncomplete: boolean): string | undefined {
-  if (skillsMissing) return "Install skills first";
+function getDisabledReason(setupIncomplete: boolean): string | undefined {
   if (setupIncomplete) return "Run kiloforge setup first";
   return undefined;
 }
@@ -64,34 +61,16 @@ function TerminalOverlay({ agentId, agents, terminalKey, minimized, onMinimize, 
 }
 
 interface SetupBannersProps {
-  skillsMissing: boolean;
   setupIncomplete: boolean;
   slug: string | undefined;
-  skillsPrompt: ReturnType<typeof useSkillsPrompt>;
   setupPrompt: ReturnType<typeof useSetupPrompt>;
   queryClient: ReturnType<typeof useQueryClient>;
 }
 
-function SetupBanners({ skillsMissing, setupIncomplete, slug, skillsPrompt, setupPrompt, queryClient }: SetupBannersProps) {
+function SetupBanners({ setupIncomplete, slug, setupPrompt, queryClient }: SetupBannersProps) {
   return (
     <>
-      {skillsMissing && (
-        <div className={styles.setupBanner}>
-          <span className={styles.setupBannerText}>
-            Required skills not installed — install skills before running setup or spawning agents.
-          </span>
-          <button
-            className={styles.setupBannerBtn}
-            onClick={() => skillsPrompt.requestInstall(() => {
-              queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
-            })}
-            disabled={skillsPrompt.updating}
-          >
-            Install Skills
-          </button>
-        </div>
-      )}
-      {!skillsMissing && setupIncomplete && slug && (
+      {setupIncomplete && slug && (
         <div className={styles.setupBanner}>
           <span className={styles.setupBannerText}>
             Kiloforge setup required — run setup to configure this project for track management.
@@ -203,7 +182,6 @@ function BoardTabPanels({ project, slug, syncStatus, syncLoading, pushing, pulli
   adminAgentId: string | null;
   onStartAdminOp: (agentId: string) => void;
   onSetupRequired: () => void;
-  onSkillsRequired: () => void;
 }) {
   return (
     <>
@@ -275,7 +253,6 @@ function BoardTabPanels({ project, slug, syncStatus, syncLoading, pushing, pulli
           disabledReason={disabledReason}
           onStartOperation={onStartAdminOp}
           onSetupRequired={onSetupRequired}
-          onSkillsRequired={onSkillsRequired}
         />
       </section>
     </>
@@ -318,14 +295,13 @@ function TrackSearchSection({ tracks, tracksLoading, trackRemaining, trackHasNex
   );
 }
 
-function ProjectDialogs({ showLauncher, onLaunch, onCloseLauncher, launchPending, slug, consent, skillsPrompt, setupPrompt, agents, onSetupComplete }: {
+function ProjectDialogs({ showLauncher, onLaunch, onCloseLauncher, launchPending, slug, consent, setupPrompt, agents, onSetupComplete }: {
   showLauncher: boolean;
   onLaunch: (role: AgentRole, prompt: string) => void;
   onCloseLauncher: () => void;
   launchPending: boolean;
   slug: string | undefined;
   consent: ReturnType<typeof useConsent>;
-  skillsPrompt: ReturnType<typeof useSkillsPrompt>;
   setupPrompt: ReturnType<typeof useSetupPrompt>;
   agents: Agent[];
   onSetupComplete: () => void;
@@ -342,14 +318,6 @@ function ProjectDialogs({ showLauncher, onLaunch, onCloseLauncher, launchPending
         />
       )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
-      {skillsPrompt.showDialog && (
-        <SkillsInstallDialog
-          updating={skillsPrompt.updating}
-          error={skillsPrompt.error}
-          onInstall={skillsPrompt.install}
-          onCancel={skillsPrompt.cancel}
-        />
-      )}
       {setupPrompt.showDialog && (
         <SetupRequiredDialog
           projectSlug={setupPrompt.projectSlug}
@@ -415,28 +383,14 @@ export function ProjectPage() {
       ),
     enabled: !!slug,
   });
-  const { data: preflight } = useQuery({
-    queryKey: queryKeys.preflight,
-    queryFn: () =>
-      fetcher<{
-        claude_authenticated: boolean;
-        skills_ok: boolean;
-        skills_missing?: string[];
-        consent_given: boolean;
-        setup_required: boolean;
-      }>("/api/preflight"),
-  });
-
-  const skillsMissing = preflight !== undefined && !preflight.skills_ok;
-  const setupIncomplete = !skillsMissing && setupStatus !== undefined && !setupStatus.setup_complete;
-  const actionsDisabled = skillsMissing || setupIncomplete;
-  const disabledReason = getDisabledReason(skillsMissing, setupIncomplete);
+  const setupIncomplete = setupStatus !== undefined && !setupStatus.setup_complete;
+  const actionsDisabled = setupIncomplete;
+  const disabledReason = getDisabledReason(setupIncomplete);
 
   const [pageTab, setPageTab] = useState<PageTab>("board");
   const { settings: projectSettings, loading: settingsLoading, updating: settingsUpdating, updateSettings } = useProjectSettings(slug);
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
-  const skillsPrompt = useSkillsPrompt();
   const setupPrompt = useSetupPrompt({
     onConsentRequired: (retry) => consent.requestConsent(retry),
   });
@@ -457,7 +411,6 @@ export function ProjectPage() {
 
   const [resolverAgentId, setResolverAgentId] = useState<string | null>(null);
   const [minimizedTerminals, setMinimizedTerminals] = useState<Set<string>>(new Set());
-  const [lastResolveReq, setLastResolveReq] = useState<ResolveConflictRequest | null>(null);
 
   const resolveConflictMutation = useMutation({
     mutationFn: (req: ResolveConflictRequest) =>
@@ -469,13 +422,6 @@ export function ProjectPage() {
     onSuccess: (agent) => {
       setResolverAgentId(agent.id);
     },
-    onError: (err) => {
-      if (err instanceof FetchError && err.status === 412) {
-        skillsPrompt.requestInstall(() => {
-          if (lastResolveReq) resolveConflictMutation.mutate(lastResolveReq);
-        });
-      }
-    },
   });
 
   const handleResolveConflict = useCallback(() => {
@@ -484,7 +430,6 @@ export function ProjectPage() {
       direction: syncConflict.direction,
       remote_branch: "kf/main",
     };
-    setLastResolveReq(req);
     resolveConflictMutation.mutate(req);
   }, [syncConflict, slug, resolveConflictMutation]);
 
@@ -513,8 +458,6 @@ export function ProjectPage() {
     onError: (err) => {
       if (err instanceof FetchError && err.status === 403) {
         consent.requestConsent(() => spawnMutation.mutate(lastSpawnReq));
-      } else if (err instanceof FetchError && err.status === 412) {
-        skillsPrompt.requestInstall(() => spawnMutation.mutate(lastSpawnReq));
       } else if (err instanceof FetchError && err.status === 428 && slug) {
         setupPrompt.requestSetup(slug, () => spawnMutation.mutate(lastSpawnReq));
       }
@@ -595,10 +538,8 @@ export function ProjectPage() {
 
       {pageTab === "board" && (<>
       <SetupBanners
-        skillsMissing={skillsMissing}
         setupIncomplete={setupIncomplete}
         slug={slug}
-        skillsPrompt={skillsPrompt}
         setupPrompt={setupPrompt}
         queryClient={queryClient}
       />
@@ -643,11 +584,6 @@ export function ProjectPage() {
             queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
           });
         }}
-        onSkillsRequired={() => {
-          skillsPrompt.requestInstall(() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
-          });
-        }}
       />
 
       {resolverAgentId && (
@@ -667,7 +603,6 @@ export function ProjectPage() {
         launchPending={spawnMutation.isPending}
         slug={slug}
         consent={consent}
-        skillsPrompt={skillsPrompt}
         setupPrompt={setupPrompt}
         agents={agents}
         onSetupComplete={handleSetupComplete}

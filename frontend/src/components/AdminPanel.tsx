@@ -14,7 +14,6 @@ interface Props {
   disabledReason?: string;
   onStartOperation: (agentId: string) => void;
   onSetupRequired?: () => void;
-  onSkillsRequired?: () => void;
 }
 
 const operations: { key: AdminOperation; label: string }[] = [
@@ -23,7 +22,7 @@ const operations: { key: AdminOperation; label: string }[] = [
   { key: "report", label: "Generate Report" },
 ];
 
-export function AdminPanel({ projectSlug, running, disabled, disabledReason, onStartOperation, onSetupRequired, onSkillsRequired }: Props) {
+export function AdminPanel({ projectSlug, running, disabled, disabledReason, onStartOperation, onSetupRequired }: Props) {
   const [error, setError] = useState<string | null>(null);
   const consent = useConsent();
 
@@ -43,10 +42,6 @@ export function AdminPanel({ projectSlug, running, disabled, disabledReason, onS
     onError: (err, op) => {
       if (err instanceof FetchError && err.status === 403) {
         consent.requestConsent(() => handleRun(op));
-        return;
-      }
-      if (err instanceof FetchError && err.status === 412 && onSkillsRequired) {
-        onSkillsRequired();
         return;
       }
       if (err instanceof FetchError && err.status === 428 && onSetupRequired) {
