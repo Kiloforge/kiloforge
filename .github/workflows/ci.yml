@@ -123,6 +123,9 @@ jobs:
           cd backend
           go build -ldflags "-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" ./cmd/kf
 
+      - name: Run frontend tests
+        run: cd frontend && npm test -- --run
+
       - name: Run Go tests with race detection
         run: cd backend && go test -race ./...
 
