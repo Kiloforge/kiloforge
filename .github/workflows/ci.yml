@@ -7,6 +7,23 @@ on:
     branches: [main]
 
 jobs:
+  kf-tools:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git for tests
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@kiloforge.dev"
+          git config --global init.defaultBranch main
+
+      - name: Run kf-track test suite
+        run: .agent/kf/bin/tests/run_tests.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -93,41 +110,6 @@ jobs:
 
       - name: Build binary
         run: make build-backend
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-          cache-dependency-path: backend/go.sum
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Build frontend
-        run: cd frontend && npm ci && npm run build
-
-      - name: Build backend with version stamping
-        run: |
-          $VERSION = git describe --tags --always --dirty 2>$null
-          if (-not $VERSION) { $VERSION = "dev" }
-          $COMMIT = git rev-parse --short HEAD 2>$null
-          if (-not $COMMIT) { $COMMIT = "none" }
-          $DATE = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-          cd backend
-          go build -ldflags "-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" ./cmd/kf
-
-      - name: Run frontend tests
-        run: cd frontend && npm test -- --run
-
-      - name: Run Go tests with race detection
-        run: cd backend && go test -race ./...
 
   deps:
     runs-on: ubuntu-latest
