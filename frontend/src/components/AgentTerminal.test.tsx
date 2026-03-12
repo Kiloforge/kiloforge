@@ -63,6 +63,7 @@ function setup(overrides: Partial<ReturnType<typeof useAgentWebSocket>> = {}, pr
     sendMessage: vi.fn(),
     sendInterrupt: vi.fn(),
     clearMessages: vi.fn(),
+    reconnect: vi.fn(),
     status: "connected" as const,
     agentStatus: "running",
     turnActive: false,
