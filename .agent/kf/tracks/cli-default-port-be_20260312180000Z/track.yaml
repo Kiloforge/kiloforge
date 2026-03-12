@@ -1,0 +1,68 @@
+id: cli-default-port-be_20260312180000Z
+title: 'Set proper Cobra flag defaults for --port and --host on kf up'
+type: bug
+status: pending
+created: '2026-03-12'
+updated: '2026-03-12'
+spec:
+  summary: >
+    Set the actual default values (39517 for port, 127.0.0.1 for host) on the
+    Cobra flag definitions instead of zero values. Remove redundant
+    "(default ...)" text from help descriptions since Cobra displays defaults
+    automatically when they are non-zero/non-empty.
+  context: |
+    The `kf up` command defines --port with a programmatic default of 0 and
+    --host with an empty string default. The real defaults (39517 and
+    127.0.0.1) are documented only in the help description text as
+    "(default 39517)" and "(default 127.0.0.1)". While the config resolution
+    chain (DefaultsAdapter) correctly provides these values at runtime, the
+    Cobra flags should reflect the actual defaults for clarity and correctness.
+
+    The code uses `cmd.Flags().Changed("port")` to detect explicit user input,
+    which works correctly regardless of the programmatic default — Cobra's
+    Changed() returns true only when the user explicitly passes the flag.
+  codebase_analysis: |
+    Key files:
+    - backend/internal/adapter/cli/up.go:33-34 — flag definitions
+    - backend/internal/adapter/cli/up.go:49-54 — Changed() checks
+    - backend/internal/adapter/config/defaults.go:17-18 — real defaults (39517, 127.0.0.1)
+
+    Current flag definitions:
+      upCmd.Flags().StringVar(&flagHost, "host", "", "Host address to bind (default 127.0.0.1)")
+      upCmd.Flags().IntVar(&flagPort, "port", 0, "Port to listen on (default 39517)")
+
+    Should become:
+      upCmd.Flags().StringVar(&flagHost, "host", "127.0.0.1", "Host address to bind")
+      upCmd.Flags().IntVar(&flagPort, "port", 39517, "Port to listen on")
+
+    The Changed() guard at lines 49-54 still works correctly — Cobra tracks
+    whether the user explicitly passed the flag, independent of the default.
+  acceptance_criteria:
+    - '`kf up --help` shows `--port int Port to listen on (default 39517)` with Cobra-rendered default'
+    - '`kf up --help` shows `--host string Host address to bind (default 127.0.0.1)` with Cobra-rendered default'
+    - 'Running `kf up` without --port still uses 39517 from config resolution'
+    - 'Running `kf up --port 8080` overrides the default correctly'
+    - 'Existing tests pass'
+  out_of_scope: |
+    - Adding --port/--host as global flags to other commands
+    - Changing the default port value itself
+    - Config resolution chain changes
+  technical_notes: |
+    This is a two-line change in up.go plus removing the redundant "(default ...)"
+    text from the help descriptions. The Changed() guard ensures that
+    explicitly-passed flags override config file/env values, while the Cobra
+    defaults now match the real defaults for accurate help output.
+plan:
+  - phase: "Fix flag defaults"
+    tasks:
+      - text: "Update --port flag default from 0 to 39517 and remove redundant default text from description"
+        done: false
+      - text: "Update --host flag default from empty to 127.0.0.1 and remove redundant default text from description"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run existing up_test.go tests — verify dashboardURL and port conflict detection still work"
+        done: false
+      - text: "Run make test — no regressions"
+        done: false
+extra: {}
