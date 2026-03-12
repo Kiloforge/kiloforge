@@ -307,5 +307,26 @@ export function useAgentWebSocket(agentId: string | null) {
     setMessages([]);
   }, []);
 
-  return { messages, sendMessage, sendInterrupt, clearMessages, status, agentStatus, turnActive };
+  const reconnect = useCallback(() => {
+    if (!agentId) return;
+    // Clear any pending retry.
+    if (retryRef.current) {
+      clearTimeout(retryRef.current);
+      retryRef.current = null;
+    }
+    // Close existing connection.
+    wsRef.current?.close();
+    wsRef.current = null;
+    // Reset all state for a fresh session.
+    setMessages([]);
+    setAgentStatus(null);
+    setTurnActive(false);
+    retryCountRef.current = 0;
+    retryDelayRef.current = 1000;
+    hasConnectedRef.current = false;
+    // Initiate new connection.
+    connect();
+  }, [agentId, connect]);
+
+  return { messages, sendMessage, sendInterrupt, clearMessages, reconnect, status, agentStatus, turnActive };
 }

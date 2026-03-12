@@ -399,4 +399,50 @@ describe("useAgentWebSocket", () => {
     rerender({ id: "agent-2" });
     expect(result.current.messages).toHaveLength(0);
   });
+
+  it("reconnect() resets state and initiates new connection after terminal status", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    // Receive messages and terminal status.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "hello" });
+      MockWebSocket.latest!.simulateMessage({ type: "status", status: "completed", exit_code: 0 });
+    });
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.agentStatus).toBe("completed");
+    expect(result.current.status).toBe("connected");
+
+    // Simulate the WS closing after terminal status.
+    act(() => MockWebSocket.latest!.simulateClose(1000));
+    expect(result.current.status).toBe("disconnected");
+
+    const instancesBefore = MockWebSocket._instances.length;
+
+    // Call reconnect — should reset everything and open a new connection.
+    act(() => result.current.reconnect());
+
+    expect(result.current.messages).toHaveLength(0);
+    expect(result.current.agentStatus).toBeNull();
+    expect(result.current.turnActive).toBe(false);
+    expect(MockWebSocket._instances.length).toBe(instancesBefore + 1);
+
+    // New connection opens successfully.
+    act(() => MockWebSocket.latest!.simulateOpen());
+    expect(result.current.status).toBe("connected");
+
+    // Can receive messages on the new connection.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "resumed!" });
+    });
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0].text).toBe("resumed!");
+  });
+
+  it("reconnect() is a no-op when agentId is null", () => {
+    const { result } = renderHook(() => useAgentWebSocket(null));
+    const instancesBefore = MockWebSocket._instances.length;
+    act(() => result.current.reconnect());
+    expect(MockWebSocket._instances.length).toBe(instancesBefore);
+  });
 });
