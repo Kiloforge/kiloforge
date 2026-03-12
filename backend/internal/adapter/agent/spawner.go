@@ -104,6 +104,7 @@ type Spawner struct {
 	completionCallback CompletionCallback
 	sessionEndCallback SessionEndCallback
 	sessionFactory     SessionFactory
+	authChecker        func(context.Context) error // nil = use default (prereq.CheckClaudeAuthCached)
 
 	reliability port.ReliabilityRecorder
 
@@ -247,8 +248,16 @@ func (s *Spawner) trackEvent(event string, props map[string]any) {
 	}
 }
 
+// SetAuthChecker overrides the default auth check (used in tests to bypass CLI auth).
+func (s *Spawner) SetAuthChecker(fn func(context.Context) error) {
+	s.authChecker = fn
+}
+
 // checkAuth verifies Claude CLI authentication before spawning.
 func (s *Spawner) checkAuth(ctx context.Context) error {
+	if s.authChecker != nil {
+		return s.authChecker(ctx)
+	}
 	if err := prereq.CheckClaudeAuthCached(ctx); err != nil {
 		return fmt.Errorf("claude auth: %w", err)
 	}
