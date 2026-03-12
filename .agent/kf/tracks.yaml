@@ -126,6 +126,7 @@ fix-project-mgr-wiring_20260309120000Z: {"title":"Fix Project Manager Wiring in 
 fix-project-sse-subscription_20260309230001Z: {"title":"Wire Project SSE Events in Dashboard Frontend","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-quota-display_20260310033001Z: {"title":"Fix Token and Cost Display — Bridge QuotaTracker to API","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-relay-goroutine-leak_20260310041000Z: {"title":"Fix Agent Relay Goroutine Leak and Double-Close Panic","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
+fix-remove-project_20260312073310Z: {"title":"Fix remove project: strip Gitea references and fix 204 parse error","status":"pending","type":"bug","created":"2026-03-12","updated":"2026-03-12"}
 fix-route-conflict_20260308200100Z: {"title":"Fix Route Pattern Conflict Panic on Startup","status":"archived","type":"bug","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-serve-interactive-agent_20260309232000Z: {"title":"Fix Interactive Agent Wiring in Serve Command (kf up)","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-setup-consent-403_20260311120000Z: {"title":"Fix setup dialog 403 — cascade to consent dialog instead of showing raw error","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
@@ -205,6 +206,8 @@ licensing_20260309113000Z: {"title":"Add Apache 2.0 License and Upstream Attribu
 list-pagination-be_20260310200000Z: {"title":"Cursor pagination and filtering for all list API endpoints","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 list-pagination-fe_20260310200001Z: {"title":"Paginated lists with +N overflow in dashboard","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 live-status-badges_20260308190000Z: {"title":"Universal Live Agent Status Badges","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
+local-repo-add-be_20260312073311Z: {"title":"Add local repo support to project registration (backend)","status":"pending","type":"feature","created":"2026-03-12","updated":"2026-03-12"}
+local-repo-add-fe_20260312073312Z: {"title":"Add local repo mode to project registration form (frontend)","status":"pending","type":"feature","created":"2026-03-12","updated":"2026-03-12"}
 local-skills-install-be_20260311160000Z: {"title":"Install skills into project repo during kf add — local-first skill distribution","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 merge-cleanup_20260307125003Z: {"title":"PR Merge, Worktree Cleanup, and Agent Teardown","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
 merge-conflict-guidance_20260311020000Z: {"title":"Simplify merge conflict resolution in kf-architect and kf-developer skills","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}

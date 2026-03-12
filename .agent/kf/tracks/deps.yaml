@@ -57,6 +57,8 @@ fix-disabled-btn-styles-fe_20260312020000Z: []
 
 fix-merge-protocol-be_20260311160000Z: []
 
+fix-remove-project_20260312073310Z: []
+
 fix-tour-scroll-fe_20260311230100Z: []
 
 gitea-removal-be_20260311070000Z: []
@@ -65,6 +67,11 @@ github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
 hide-advisor-hub-fe_20260312000100Z: []
+
+local-repo-add-be_20260312073311Z: []
+
+local-repo-add-fe_20260312073312Z:
+  - local-repo-add-be_20260312073311Z
 
 notification-center-fe_20260313060001Z:
   - notification-center-be_20260313060000Z
