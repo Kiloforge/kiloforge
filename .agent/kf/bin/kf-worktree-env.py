@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/benbaldivia/dev-2/kiloforge-wt/kfc-d780f5-worker-1/.agent/kf/.venv/bin/python
 # kf-worktree-env — Detect git worktree context and print env vars.
 #
 # Usage:

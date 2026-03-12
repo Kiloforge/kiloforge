@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/benbaldivia/dev-2/kiloforge-wt/kfc-d780f5-worker-1/.agent/kf/.venv/bin/python
 """kf-dispatch — Compute dispatch assignments for idle developer worktrees.
 
 Scans worktree state, reads the track registry and dependency/conflict graphs,

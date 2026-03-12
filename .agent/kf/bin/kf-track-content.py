@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/benbaldivia/dev-2/kiloforge-wt/kfc-d780f5-worker-1/.agent/kf/.venv/bin/python
 """kf-track-content — Structured track content management for Kiloforge.
 
 Manages per-track track.yaml files that replace spec.md, plan.md, metadata.json, index.md.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/benbaldivia/dev-2/kiloforge-wt/kfc-d780f5-worker-1/.agent/kf/.venv/bin/python
 """kf-conductor — Tmux-based multi-agent orchestration for Kiloforge.
 
 Spawns independent Claude Code worker agents in tmux windows, each operating

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/benbaldivia/dev-2/kiloforge-wt/kfc-d780f5-worker-1/.agent/kf/.venv/bin/python
 # kf-merge-lock — Cross-worktree branch lock helper
 #
 # Provides a lock on the primary branch to coordinate merges across worktrees.
