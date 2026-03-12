@@ -1,0 +1,92 @@
+id: release-alpha2_20260312220000Z
+title: "Release prep — changelog, version bump, tag v0.1.0-alpha.2"
+type: chore
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: >
+    Add a Windows build verification workflow, push to validate, update
+    CHANGELOG.md with categorized alpha.2 entries, bump frontend/package.json
+    version to 0.1.0-alpha.2, and create the v0.1.0-alpha.2 git tag to
+    trigger the release workflow.
+  context: |
+    The project is currently at v0.1.0-alpha.1. Since that release, significant
+    work has landed: Windows build support (GoReleaser + CI), skills submodule
+    extraction, reviewer role removal, dead code cleanup (BE + FE), Python CLI
+    tool migration, and multiple CI fixes. The project is ready for an alpha.2
+    release to capture these changes.
+  codebase_analysis: |
+    Version touchpoints:
+    - frontend/package.json: "version" field (currently 0.1.0-alpha.1)
+    - backend/cmd/kf/version.go: version stamped via ldflags from git tags at build time
+    - CHANGELOG.md: Keep a Changelog format, currently has [0.1.0-alpha.1] section
+    - .goreleaser.yaml: prerelease: true, triggers on v* tags
+    - .github/workflows/release.yml: triggers on v* tag push, runs GoReleaser
+
+    ~80 commits since v0.1.0-alpha.1 tag. Windows build support was added but
+    has not been validated end-to-end in the actual Windows CI environment with
+    a full build.
+  acceptance_criteria:
+    - Windows build verified green via GitHub Actions on implementation branch
+    - CHANGELOG.md has [0.1.0-alpha.2] section with Added, Changed, Fixed categories
+    - frontend/package.json version is 0.1.0-alpha.2
+    - Git tag v0.1.0-alpha.2 exists and git describe reports it correctly
+    - make build stamps correct version via ldflags
+  out_of_scope: |
+    - Pushing the tag to trigger the actual release (developer decides timing)
+    - Homebrew formula updates (not currently maintained)
+    - Any feature work — this is strictly release prep
+  technical_notes: |
+    A temporary GitHub Actions workflow (.github/workflows/windows-build-check.yml)
+    will be created to run a Windows-only build on the implementation branch.
+    This validates the Windows target in the real CI environment before tagging.
+    The workflow can be removed after verification or kept if useful long-term.
+
+    Changelog entries derived from git log v0.1.0-alpha.1..HEAD:
+
+    Added:
+    - Windows build support (GoReleaser + CI cross-compilation)
+    - Skills submodule — extracted embedded skills to git submodule
+    - Multi-agent skills documentation and site guidance
+
+    Changed:
+    - Removed reviewer role from backend, frontend, API specs, and tests
+    - Dead code cleanup — removed unused components, ports, services, hooks
+    - Replaced shell CLI tools with Python equivalents
+    - Removed obsolete pre-YAML markdown files
+
+    Fixed:
+    - CI: Windows submodule checkout, missing CSS module, ldflags stamping
+    - CI: Added frontend tests and race detection to Windows CI job
+    - CI: Removed dead kf-tools CI job
+plan:
+  - phase: "Windows Build Verification"
+    tasks:
+      - text: "Create .github/workflows/windows-build-check.yml — lightweight workflow triggered on the implementation branch that runs only a Windows build (checkout, Go setup, npm ci, make build)"
+        done: false
+      - text: "Push branch to GitHub and monitor the workflow run via gh CLI"
+        done: false
+      - text: "Fix any build failures, re-push, and re-verify until green"
+        done: false
+      - text: "Decide whether to keep or remove the temporary workflow"
+        done: false
+  - phase: "Changelog & Version Bump"
+    tasks:
+      - text: "Update CHANGELOG.md — add [0.1.0-alpha.2] section above [0.1.0-alpha.1] with categorized entries (Added, Changed, Fixed) derived from git log"
+        done: false
+      - text: "Update frontend/package.json version field from 0.1.0-alpha.1 to 0.1.0-alpha.2"
+        done: false
+  - phase: "Commit & Tag"
+    tasks:
+      - text: "Run make build and make test locally as final sanity check"
+        done: false
+      - text: "Commit changelog and version bump changes"
+        done: false
+      - text: "Create annotated git tag v0.1.0-alpha.2"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify git describe --tags shows v0.1.0-alpha.2 and make build stamps correct version via ldflags"
+        done: false
+extra: {}
