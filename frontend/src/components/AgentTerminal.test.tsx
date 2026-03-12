@@ -342,5 +342,23 @@ describe("AgentTerminal", () => {
       await user.keyboard("{Enter}"); // sends message
       expect(ws.sendMessage).toHaveBeenCalledWith("/kf-architect");
     });
+
+    it("works correctly in turn-active (queuing) mode", async () => {
+      const user = userEvent.setup();
+      const { ws } = setup({ status: "connected", agentStatus: "running", turnActive: true });
+      const textarea = screen.getByPlaceholderText("Type to queue a message... (Esc to interrupt)");
+      await user.type(textarea, "/kf-arch");
+      // Enter selects the command, does NOT queue
+      await user.keyboard("{Enter}");
+      expect(textarea).toHaveValue("/kf-architect ");
+      expect(ws.sendMessage).not.toHaveBeenCalled();
+      // Esc in autocomplete dismisses dropdown, does NOT interrupt
+      await user.clear(textarea);
+      await user.type(textarea, "/");
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+      expect(ws.sendInterrupt).not.toHaveBeenCalled();
+    });
   });
 });
