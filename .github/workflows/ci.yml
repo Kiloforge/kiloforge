@@ -113,8 +113,15 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm ci && npm run build
 
-      - name: Build backend
-        run: cd backend && go build ./cmd/kf
+      - name: Build backend with version stamping
+        run: |
+          $VERSION = git describe --tags --always --dirty 2>$null
+          if (-not $VERSION) { $VERSION = "dev" }
+          $COMMIT = git rev-parse --short HEAD 2>$null
+          if (-not $COMMIT) { $COMMIT = "none" }
+          $DATE = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          cd backend
+          go build -ldflags "-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" ./cmd/kf
 
       - name: Run Go tests with race detection
         run: cd backend && go test -race ./...
