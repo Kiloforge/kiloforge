@@ -51,9 +51,6 @@ cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
 
-e2e-project-lifecycle_20260312120000Z:
-  - local-repo-add-be_20260312073311Z
-
 fix-consent-zindex-fe_20260311230000Z: []
 
 fix-disabled-btn-styles-fe_20260312020000Z: []
