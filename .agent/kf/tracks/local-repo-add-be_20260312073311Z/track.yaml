@@ -99,36 +99,36 @@ plan:
   - text: Add PrimaryBranch string field to domain.Project struct
     done: true
   - text: Add DetectDefaultBranch(ctx, repoDir) method to git adapter — reads symbolic-ref or falls back to HEAD branch name
-    done: false
+    done: true
   - text: Update PullFromRemote to accept primaryBranch parameter instead of hardcoding 'main'
-    done: false
+    done: true
   - text: Update ForcePushToMirror to accept primaryBranch parameter instead of hardcoding 'main:main'
-    done: false
+    done: true
   - text: Write unit tests for DetectDefaultBranch with main, master, and custom branch repos
-    done: false
+    done: true
 - phase: Service layer
   tasks:
   - text: Add AddLocalProject(ctx, localPath, name string, opts) method to ProjectService — validates path is a git repo,
       clones via git clone, detects branch
-    done: false
+    done: true
   - text: Update existing AddProject to also detect and store PrimaryBranch (default 'main' for backward compat)
-    done: false
+    done: true
   - text: Update SyncMirror to pass project's PrimaryBranch to ForcePushToMirror
-    done: false
+    done: true
   - text: Write unit tests for AddLocalProject — valid repo, non-repo path, non-existent path
-    done: false
+    done: true
 - phase: CLI and API
   tasks:
   - text: Update kf add CLI to detect local path (not a remote URL, path exists on disk) and route to AddLocalProject
-    done: false
+    done: true
   - text: Add local_path field to AddProjectRequest in openapi.yaml and regenerate stubs
-    done: false
+    done: true
   - text: Update REST AddProject handler to route local_path to AddLocalProject service method
-    done: false
+    done: true
 - phase: Verification
   tasks:
   - text: Run full test suite (make test) — ensure existing remote-URL and create flows are unbroken
-    done: false
+    done: true
   - text: 'Manual verification: kf add /tmp/test-repo with a repo using ''master'' as default branch'
-    done: false
+    done: true
 extra: {}
