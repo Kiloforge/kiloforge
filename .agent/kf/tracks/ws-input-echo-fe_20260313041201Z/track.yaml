@@ -1,0 +1,81 @@
+id: ws-input-echo-fe_20260313041201Z
+title: "Handle server-echoed input messages in terminal"
+type: bug
+status: pending
+created: 2026-03-13
+updated: 2026-03-13
+spec:
+  summary: |
+    Frontend currently adds user input to local state only (useAgentWebSocket.ts:294).
+    On reconnect, messages are cleared (line 94) and only ring buffer replay is shown,
+    so user messages vanish. Switch to consuming server-echoed input_echo messages so
+    user input survives reconnection.
+  context: |
+    After the BE track (ws-input-echo-be) adds input echo to the ring buffer, the
+    frontend needs to:
+    1. Stop adding input messages to local state in sendMessage()
+    2. Handle the new "input_echo" server message type in onmessage handler
+    3. Render input_echo messages the same as local input (using InputBubble)
+
+    This ensures user messages appear in the terminal both during live interaction
+    and after reconnection (via ring buffer replay).
+  codebase_analysis: |
+    Key files:
+    - frontend/src/hooks/useAgentWebSocket.ts
+      - Line 294: sendMessage() adds {type:"input", text, timestamp} to local state
+      - Lines 88-99: onopen clears messages on reconnect (hasConnectedRef check)
+      - Lines 101-200: onmessage switch — no case for "input_echo"
+      - Lines 33-57: ServerMessage type and WSMessage type definitions
+    - frontend/src/components/terminal/TerminalBubbles.tsx
+      - Lines 16-24: InputBubble component renders user messages
+      - Lines 222-251: MessageDispatch routes by msg.type; "input" → InputBubble
+    - frontend/src/hooks/useAgentWebSocket.test.ts
+      - Line 273-284: Tests sendMessage adds to local state
+
+    The WSMessage union type (line 40-57) already has an "input" variant. The new
+    "input_echo" from the server should map to the same rendering.
+  acceptance_criteria:
+    - User messages appear in the terminal during live interaction (no regression)
+    - User messages survive reconnection (appear in replayed history)
+    - No duplicate user messages (local add removed, server echo is the single source)
+    - InputBubble renders for both live and replayed input messages
+    - Existing tests updated to reflect new flow
+    - New test verifies input_echo server message renders as InputBubble
+  out_of_scope: |
+    - Backend changes (covered by ws-input-echo-be track)
+    - Changes to the AgentDetailPage TerminalSection (uses same hook)
+    - Log endpoint changes
+  technical_notes: |
+    Approach:
+    1. Add "input_echo" to the ServerMessage type union in useAgentWebSocket.ts
+    2. Add case "input_echo" in the onmessage switch that appends {type:"input", text}
+       to messages (same shape as current local add, so InputBubble works unchanged)
+    3. Remove the setMessages() call from sendMessage() — the server echo replaces it
+    4. There will be a brief delay between sending and seeing the echo (network round-trip).
+       This is acceptable for correctness; if perceived lag is an issue, an optimistic
+       local add with dedup can be added later.
+
+    Alternative (optimistic): Keep the local add in sendMessage() but tag it with a
+    nonce. When the server echo arrives, replace the local entry. This avoids perceived
+    lag but adds complexity. Start with the simpler approach; optimize only if users
+    notice the delay.
+plan:
+  - phase: "Handle input_echo messages"
+    tasks:
+      - text: "Add 'input_echo' to ServerMessage type and WSMessage union in useAgentWebSocket.ts"
+        done: false
+      - text: "Add case 'input_echo' in onmessage switch that appends {type:'input', text, timestamp} to messages"
+        done: false
+  - phase: "Remove local-only input add"
+    tasks:
+      - text: "Remove setMessages() call from sendMessage() — server echo is now the source of truth"
+        done: false
+      - text: "Update useAgentWebSocket.test.ts: sendMessage no longer adds to local state; add test for input_echo server message"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify MessageDispatch renders input_echo as InputBubble (may need to map type or add case)"
+        done: false
+      - text: "Run full frontend test suite (npx vitest run) and verify no regressions"
+        done: false
+extra: {}
