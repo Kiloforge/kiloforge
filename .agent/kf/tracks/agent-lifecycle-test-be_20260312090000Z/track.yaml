@@ -1,87 +1,105 @@
 id: agent-lifecycle-test-be_20260312090000Z
-title: "Add integration test for agent start/stop/resume/attach lifecycle"
+title: Add integration test for agent start/stop/resume/attach lifecycle
 type: chore
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: >
-    Make SDKSession creation injectable in the Spawner so the full interactive
-    agent lifecycle (spawn with prompt → receive response → stop → resume →
-    attach and send message → receive response) can be tested with mock SDK
-    clients, no real server or Claude CLI needed.
-  context: |
-    The agent spawner (backend/internal/adapter/agent/spawner.go) manages the
+  summary: 'Make SDKSession creation injectable in the Spawner so the full interactive agent lifecycle (spawn with prompt
+    → receive response → stop → resume → attach and send message → receive response) can be tested with mock SDK clients,
+    no real server or Claude CLI needed.
+
+    '
+  context: 'The agent spawner (backend/internal/adapter/agent/spawner.go) manages the
+
     full lifecycle: SpawnInteractive, StopAgent, SuspendAgent, ResumeAgent.
+
     Each method directly constructs SDK sessions via NewSDKSession /
+
     NewSDKSessionWithResume. This tight coupling means we can only test
+
     individual methods in isolation — there is no end-to-end test that
+
     exercises the full start → stop → resume → attach flow.
-  codebase_analysis: |
-    - sdkClientAPI interface in sdk_client.go already supports mocking
-      (Query, ReceiveResponse, IsConnected, Close, Connect).
-    - mockSDKClient in sdk_client_test.go provides the mock pattern with
-      configurable return values and call tracking.
-    - stubAgentStore in spawner_test.go implements port.AgentStore for
-      mock persistence (Save, Get, List, Delete).
-    - SpawnInteractive and ResumeAgent in spawner.go directly call
-      NewSDKSession / NewSDKSessionWithResume — these need to become
-      injectable via a session factory.
-    - Existing tests cover edge cases (stop non-existent agent, resume
-      non-existent) but not the full lifecycle flow.
-    - The WebSocket bridge pattern in e2e_interactive_terminal_test.go
-      shows how terminal I/O is tested but depends on HTTP server setup.
+
+    '
+  codebase_analysis: "- sdkClientAPI interface in sdk_client.go already supports mocking\n  (Query, ReceiveResponse, IsConnected,\
+    \ Close, Connect).\n- mockSDKClient in sdk_client_test.go provides the mock pattern with\n  configurable return values\
+    \ and call tracking.\n- stubAgentStore in spawner_test.go implements port.AgentStore for\n  mock persistence (Save, Get,\
+    \ List, Delete).\n- SpawnInteractive and ResumeAgent in spawner.go directly call\n  NewSDKSession / NewSDKSessionWithResume\
+    \ — these need to become\n  injectable via a session factory.\n- Existing tests cover edge cases (stop non-existent agent,\
+    \ resume\n  non-existent) but not the full lifecycle flow.\n- The WebSocket bridge pattern in e2e_interactive_terminal_test.go\n\
+    \  shows how terminal I/O is tested but depends on HTTP server setup.\n"
   acceptance_criteria:
-    - A session factory interface is defined and used by the Spawner for creating SDK sessions
-    - The default factory preserves current behavior (real SDK sessions)
-    - A mock factory can be injected in tests to return mock SDK clients
-    - An integration test exercises the full lifecycle: spawn → receive response → stop → resume → send message → receive response
-    - The test uses prompt "hello" for the initial spawn
-    - The test sends a second message after resume/attach and verifies a response
-    - No real server, Claude CLI, or network calls are needed
-    - All existing spawner tests continue to pass
-  out_of_scope: |
-    - Changing the WebSocket bridge or REST API layer
+  - A session factory interface is defined and used by the Spawner for creating SDK sessions
+  - The default factory preserves current behavior (real SDK sessions)
+  - A mock factory can be injected in tests to return mock SDK clients
+  - An integration test exercises the full lifecycle: spawn → receive response → stop → resume → send message → receive response
+  - The test uses prompt "hello" for the initial spawn
+  - The test sends a second message after resume/attach and verifies a response
+  - No real server, Claude CLI, or network calls are needed
+  - All existing spawner tests continue to pass
+  out_of_scope: '- Changing the WebSocket bridge or REST API layer
+
     - Modifying the real SDK client implementation
+
     - Adding new CLI commands or API endpoints
+
     - Testing with a real Claude API key
-  technical_notes: |
-    Approach: Extract a SessionFactory interface with methods like
+
+    '
+  technical_notes: 'Approach: Extract a SessionFactory interface with methods like
+
     NewSession(projectID, prompt, opts) and ResumeSession(conversationID, opts)
+
     that return an SDKSession. The Spawner accepts this factory at construction.
+
     Production code passes a RealSessionFactory; tests pass a MockSessionFactory
+
     that returns pre-configured mockSDKClient instances.
 
+
     The integration test flow:
+
     1. Create Spawner with mock factory + stubAgentStore
+
     2. SpawnInteractive("hello") → factory returns mock session A
-    3. Read from session A's output channel → verify response
+
+    3. Read from session A''s output channel → verify response
+
     4. StopAgent → verify session A is closed
+
     5. ResumeAgent → factory returns mock session B (same conversation ID)
+
     6. Send "another message" via session B input
-    7. Read from session B's output channel → verify response
+
+    7. Read from session B''s output channel → verify response
+
     8. Verify agent store was updated at each step
+
+    '
 plan:
-  - phase: "Foundation"
-    tasks:
-      - text: "Define SessionFactory interface in spawner.go with NewSession and ResumeSession methods"
-        done: false
-      - text: "Add SessionFactory field to Spawner struct and update NewSpawner constructor to accept it"
-        done: false
-      - text: "Create RealSessionFactory that wraps current NewSDKSession/NewSDKSessionWithResume calls"
-        done: false
-      - text: "Refactor SpawnInteractive and ResumeAgent to use the factory instead of direct construction"
-        done: false
-  - phase: "Test Infrastructure"
-    tasks:
-      - text: "Create MockSessionFactory in spawner_test.go that returns pre-configured mock SDK sessions"
-        done: false
-      - text: "Update existing spawner tests to use the factory pattern (ensure no regressions)"
-        done: false
-  - phase: "Integration Test"
-    tasks:
-      - text: "Write TestAgentLifecycle_SpawnStopResumeAttach: full lifecycle test — spawn with 'hello', receive response, stop, resume, send second message, receive response"
-        done: false
-      - text: "Verify all existing tests pass alongside the new lifecycle test"
-        done: false
+- phase: Foundation
+  tasks:
+  - text: Define SessionFactory interface in spawner.go with NewSession and ResumeSession methods
+    done: true
+  - text: Add SessionFactory field to Spawner struct and update NewSpawner constructor to accept it
+    done: true
+  - text: Create RealSessionFactory that wraps current NewSDKSession/NewSDKSessionWithResume calls
+    done: true
+  - text: Refactor SpawnInteractive and ResumeAgent to use the factory instead of direct construction
+    done: true
+- phase: Test Infrastructure
+  tasks:
+  - text: Create MockSessionFactory in spawner_test.go that returns pre-configured mock SDK sessions
+    done: true
+  - text: Update existing spawner tests to use the factory pattern (ensure no regressions)
+    done: true
+- phase: Integration Test
+  tasks:
+  - text: 'Write TestAgentLifecycle_SpawnStopResumeAttach: full lifecycle test — spawn with ''hello'', receive response, stop,
+      resume, send second message, receive response'
+    done: true
+  - text: Verify all existing tests pass alongside the new lifecycle test
+    done: true
 extra: {}
