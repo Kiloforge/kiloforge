@@ -1,36 +1,9 @@
 import { useState, useCallback } from "react";
 import type { SwarmCapacity } from "../types/api";
+import { SKILL_REGISTRY } from "../skills/registry";
 import styles from "./AgentLauncher.module.css";
 
-export type AgentRole = "interactive" | "architect" | "advisor-product" | "advisor-reliability";
-
-interface RoleOption {
-  value: AgentRole;
-  label: string;
-  description: string;
-  placeholder: string;
-}
-
-const ROLES: RoleOption[] = [
-  {
-    value: "interactive",
-    label: "Interactive",
-    description: "General-purpose kf-aware assistant",
-    placeholder: "Ask anything about the project...",
-  },
-  {
-    value: "advisor-product",
-    label: "Product Advisor",
-    description: "Product design, branding, and competitive analysis",
-    placeholder: "Describe what you need product guidance on...",
-  },
-  {
-    value: "advisor-reliability",
-    label: "Reliability Advisor",
-    description: "Testing coverage, linting, type safety, and CI gate audits",
-    placeholder: "Describe what you want audited (e.g., testing gaps, CI coverage)...",
-  },
-];
+export type AgentRole = string;
 
 interface AgentLauncherProps {
   onLaunch: (role: AgentRole, prompt: string) => void;
@@ -43,12 +16,14 @@ interface AgentLauncherProps {
 }
 
 export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waitingForCapacity, waitingCapacity, onCancelWaiting }: AgentLauncherProps) {
-  // Advisor roles are only available within a project context.
-  const availableRoles = projectSlug ? ROLES : ROLES.filter((r) => !r.value.startsWith("advisor-"));
+  // Only show roles appropriate for the current context.
+  const availableRoles = projectSlug
+    ? SKILL_REGISTRY
+    : SKILL_REGISTRY.filter((r) => !r.requiresProject);
   const [role, setRole] = useState<AgentRole>("interactive");
   const [prompt, setPrompt] = useState("");
 
-  const selectedRole = availableRoles.find((r) => r.value === role) ?? availableRoles[0];
+  const selectedRole = availableRoles.find((r) => r.role === role) ?? availableRoles[0];
 
   const handleSubmit = useCallback(() => {
     onLaunch(role, prompt.trim());
@@ -92,9 +67,9 @@ export function AgentLauncher({ onLaunch, onClose, launching, projectSlug, waiti
           <div className={styles.roleList}>
             {availableRoles.map((r) => (
               <button
-                key={r.value}
-                className={`${styles.roleCard} ${role === r.value ? styles.roleCardActive : ""}`}
-                onClick={() => setRole(r.value)}
+                key={r.role}
+                className={`${styles.roleCard} ${role === r.role ? styles.roleCardActive : ""}`}
+                onClick={() => setRole(r.role)}
                 type="button"
               >
                 <span className={styles.roleLabel}>{r.label}</span>
