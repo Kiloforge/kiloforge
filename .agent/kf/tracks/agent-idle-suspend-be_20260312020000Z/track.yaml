@@ -30,34 +30,34 @@ spec:
   codebase_analysis: |
     **SessionManager** (`backend/internal/adapter/ws/session.go`):
     - `sessions map[string][]*Session` — per-agent session list
-    - "`AddSession()` — appends to list, returns isPrimary flag"
-    - "`RemoveSession()` — removes from list, deletes map entry when empty"
-    - "Already detects when sessions drop to zero (line 88: `len == 0 → delete`)"
+    - `AddSession()` — appends to list, returns isPrimary flag
+    - `RemoveSession()` — removes from list, deletes map entry when empty
+    - Already detects when sessions drop to zero (line 88: `len == 0 → delete`)
     - No callback mechanism when connections change — needs adding
     
     **Agent spawning** (`backend/internal/adapter/agent/spawner.go`):
-    - "`SpawnInteractive()` — creates SDK session, registers in `activeAgents` map"
-    - "`StopAgent()` — removes from activeAgents, cancels relay, closes SDK session, marks \"stopped\""
-    - "`monitorSDKSession()` — waits for SDK context done, cleans up bridge"
+    - `SpawnInteractive()` — creates SDK session, registers in `activeAgents` map
+    - `StopAgent()` — removes from activeAgents, cancels relay, closes SDK session, marks "stopped"
+    - `monitorSDKSession()` — waits for SDK context done, cleans up bridge
     - Need new `SuspendAgent()` method similar to StopAgent but marks "suspended" instead
     
     **Domain** (`backend/internal/core/domain/agent.go`):
-    - "`AgentStatusSuspended` exists — non-terminal, can be resumed"
+    - `AgentStatusSuspended` exists — non-terminal, can be resumed
     - `IsAdvisorRole()` helper exists for advisor- prefix
     - No `IsWorkerRole()` or `IsInteractiveRole()` helper yet
     - Agent roles defined as constants but no grouping by category
     
     **Config** (`backend/internal/adapter/config/config.go`):
-    - "Resolution chain: defaults → JSON → env → flags"
+    - Resolution chain: defaults → JSON → env → flags
     - Existing pattern for duration config (AgentMaxDuration in timeout track)
     
     **Shutdown/Recovery** (`backend/internal/adapter/agent/shutdown.go`, `recovery.go`):
-    - "ShutdownAll sends SIGINT → wait → SIGKILL, marks \"suspended\""
-    - "Recovery detects stale PIDs on startup, marks \"suspended\""
+    - ShutdownAll sends SIGINT → wait → SIGKILL, marks "suspended"
+    - Recovery detects stale PIDs on startup, marks "suspended"
     - ResumeAgent creates new SDK session for suspended agents
     
     **WS Handler** (`backend/internal/adapter/ws/handler.go`):
-    - "`handleAgentWS` — on session.ctx.Done(), logs \"client disconnected\" and returns"
+    - `handleAgentWS` — on session.ctx.Done(), logs "client disconnected" and returns
     - `defer RemoveSession()` fires on disconnect — this is the trigger point
   acceptance_criteria:
     - Domain helper IsWorkerRole() returns true for developer and reviewer roles
@@ -66,9 +66,9 @@ spec:
     - SessionManager exposes SessionCount(agentID) method
     - New ConnectionSuspender coordinates grace period timers per agent
     - Grace period is configurable via KF_AGENT_IDLE_SUSPEND_SECONDS (default 30)
-    - "When grace period expires with zero connections, interactive agent is suspended (SIGINT + status \"suspended\")"
-    - "Worker agents (developer, reviewer) are never auto-suspended by connection loss"
-    - "If a browser reconnects during the grace period, the suspension timer is cancelled"
+    - When grace period expires with zero connections, interactive agent is suspended (SIGINT + status "suspended")
+    - Worker agents (developer, reviewer) are never auto-suspended by connection loss
+    - If a browser reconnects during the grace period, the suspension timer is cancelled
     - Suspended agents can be resumed via existing POST /api/agents/{id}/resume
     - Agent ShutdownReason set to "idle_disconnect" for connection-based suspension
     - OpenAPI schema includes connected_clients field in Agent response
@@ -98,14 +98,14 @@ spec:
        - `OnAgentDisconnected(agentID)` — starts a timer
        - `OnAgentReconnected(agentID)` — cancels the timer
        - Timer fires → check agent role is not worker → call SuspendAgent
-       - "Thread-safe: mutex protects timer map"
+       - Thread-safe: mutex protects timer map
     
     4. **Spawner: Add SuspendAgent method**
        Similar to StopAgent but marks "suspended" instead of "stopped":
        - Remove from activeAgents map
        - Cancel relay goroutine
        - Close SDK session (sends SIGINT to Claude CLI)
-       - "Set status=\"suspended\", ShutdownReason=\"idle_disconnect\", SuspendedAt=now"
+       - Set status="suspended", ShutdownReason="idle_disconnect", SuspendedAt=now
        - Publish capacity_changed event
     
     5. **Config: Add IdleSuspendSeconds**
@@ -121,11 +121,11 @@ spec:
 plan:
   - phase: Domain and config foundation
     tasks:
-      - text: "Add IsWorkerRole(role string) bool to domain/agent.go — returns true for developer, reviewer"
+      - text: Add IsWorkerRole(role string) bool to domain/agent.go — returns true for developer, reviewer
         done: true
-      - text: "Add IdleSuspendSeconds to config with default 30, env var KF_AGENT_IDLE_SUSPEND_SECONDS"
+      - text: Add IdleSuspendSeconds to config with default 30, env var KF_AGENT_IDLE_SUSPEND_SECONDS
         done: true
-      - text: "Update OpenAPI schema: add connected_clients integer field to Agent, add agentIdleSuspendSeconds to config"
+      - text: Update OpenAPI schema: add connected_clients integer field to Agent, add agentIdleSuspendSeconds to config
         done: true
       - text: Run make gen-api to regenerate server interfaces
         done: true
@@ -139,17 +139,17 @@ plan:
         done: true
       - text: Fire OnReconnect in AddSession when agent sessions go from zero to non-zero
         done: true
-      - text: "Write unit tests for SessionManager callbacks — disconnect on last session, reconnect cancels"
+      - text: Write unit tests for SessionManager callbacks — disconnect on last session, reconnect cancels
         done: true
   - phase: Auto-suspend coordinator
     tasks:
       - text: Create ConnectionSuspender in backend/internal/adapter/agent/suspend.go with grace period timer logic
         done: true
-      - text: "Implement SuspendAgent(id string) error on Spawner — SIGINT, mark suspended, set ShutdownReason"
+      - text: Implement SuspendAgent(id string) error on Spawner — SIGINT, mark suspended, set ShutdownReason
         done: true
       - text: Wire ConnectionSuspender callbacks to SessionManager in server setup
         done: true
-      - text: "Write unit tests: grace period expiry triggers suspend, reconnect within grace cancels, worker roles ignored"
+      - text: Write unit tests: grace period expiry triggers suspend, reconnect within grace cancels, worker roles ignored
         done: true
   - phase: API and verification
     tasks:
@@ -157,7 +157,7 @@ plan:
         done: true
       - text: Add agentIdleSuspendSeconds to config GET/PUT handlers
         done: true
-      - text: "Run make test and make lint — all tests pass, no lint issues"
+      - text: Run make test and make lint — all tests pass, no lint issues
         done: true
       - text: Run make build to verify compilation
         done: true

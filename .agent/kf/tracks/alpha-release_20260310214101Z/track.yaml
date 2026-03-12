@@ -20,27 +20,27 @@ spec:
     Files that reference the old repo and need updating:
     
     .goreleaser.yaml:
-    - "line 49-51: brews section references Goblinlordx/homebrew-tap — REMOVE entirely"
-    - "line 53: homepage references github.com/Goblinlordx/crelay"
-    - "line 54: description says \"Local AI agent Cortex — Gitea + Claude Code\" — update"
-    - "line 62-64: release.github references Goblinlordx/crelay → kiloforge/kiloforge"
+    - line 49-51: brews section references Goblinlordx/homebrew-tap — REMOVE entirely
+    - line 53: homepage references github.com/Goblinlordx/crelay
+    - line 54: description says "Local AI agent Cortex — Gitea + Claude Code" — update
+    - line 62-64: release.github references Goblinlordx/crelay → kiloforge/kiloforge
     
     install.sh:
-    - "line 4: REPO=\"Goblinlordx/crelay\" → \"kiloforge/kiloforge\""
+    - line 4: REPO="Goblinlordx/crelay" → "kiloforge/kiloforge"
     
     .github/workflows/release.yml:
-    - "line 22: Go version 1.24 but go.mod uses 1.25 — update"
-    - "line 38-39: HOMEBREW_TAP_TOKEN secret — remove (no homebrew)"
+    - line 22: Go version 1.24 but go.mod uses 1.25 — update
+    - line 38-39: HOMEBREW_TAP_TOKEN secret — remove (no homebrew)
     
     frontend/package.json:
-    - "line 4: version \"0.0.0\" → \"0.1.0-alpha.1\""
+    - line 4: version "0.0.0" → "0.1.0-alpha.1"
   acceptance_criteria:
-    - "goreleaser.yaml targets kiloforge/kiloforge, no homebrew section"
+    - goreleaser.yaml targets kiloforge/kiloforge, no homebrew section
     - install.sh fetches from kiloforge/kiloforge
-    - "release.yml uses Go 1.25, no HOMEBREW_TAP_TOKEN"
+    - release.yml uses Go 1.25, no HOMEBREW_TAP_TOKEN
     - frontend/package.json version is 0.1.0-alpha.1
     - v0.1.0-alpha.1 tag exists on main
-    - "Tag is pushed to origin, triggering release workflow"
+    - Tag is pushed to origin, triggering release workflow
   out_of_scope: |
     - Homebrew tap publishing (removed for now)
     - Creating the GitHub organization (user handles this)
@@ -57,11 +57,11 @@ spec:
 plan:
   - phase: Update Release Configuration
     tasks:
-      - text: "Update .goreleaser.yaml: change release.github to kiloforge/kiloforge, remove entire brews section, update description"
+      - text: Update .goreleaser.yaml: change release.github to kiloforge/kiloforge, remove entire brews section, update description
         done: false
-      - text: "Update install.sh: change REPO to kiloforge/kiloforge"
+      - text: Update install.sh: change REPO to kiloforge/kiloforge
         done: false
-      - text: "Update .github/workflows/release.yml: Go version 1.24 → 1.25, remove HOMEBREW_TAP_TOKEN from env"
+      - text: Update .github/workflows/release.yml: Go version 1.24 → 1.25, remove HOMEBREW_TAP_TOKEN from env
         done: false
       - text: Update frontend/package.json version from 0.0.0 to 0.1.0-alpha.1
         done: false
@@ -75,9 +75,9 @@ plan:
         done: false
   - phase: Tag and Push
     tasks:
-      - text: "Create annotated tag: git tag -a v0.1.0-alpha.1 -m 'Kiloforge v0.1.0-alpha.1 — early alpha'"
+      - text: Create annotated tag: git tag -a v0.1.0-alpha.1 -m 'Kiloforge v0.1.0-alpha.1 — early alpha'
         done: false
-      - text: "Push tag to origin: git push origin v0.1.0-alpha.1"
+      - text: Push tag to origin: git push origin v0.1.0-alpha.1
         done: false
 extra:
   created_by:

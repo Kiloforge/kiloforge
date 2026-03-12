@@ -15,13 +15,13 @@ spec:
     variant embedded in the terminal window.
   codebase_analysis: |
     Key files and patterns:
-    - "frontend/src/components/AgentTerminal.tsx (242 lines) — floating window with chat, uses useAgentWebSocket"
-    - "frontend/src/hooks/useWindowManager.ts (322 lines) — manages WindowEntry {agentId, name, role, initialX, initialY, minimized, unreadCount}"
-    - "frontend/src/components/diff/DiffView.tsx (70 lines) — existing diff viewer with FileList sidebar + FileDiff content, but renders ALL files"
+    - frontend/src/components/AgentTerminal.tsx (242 lines) — floating window with chat, uses useAgentWebSocket
+    - frontend/src/hooks/useWindowManager.ts (322 lines) — manages WindowEntry {agentId, name, role, initialX, initialY, minimized, unreadCount}
+    - frontend/src/components/diff/DiffView.tsx (70 lines) — existing diff viewer with FileList sidebar + FileDiff content, but renders ALL files
     - frontend/src/components/diff/FileList.tsx (43 lines) — sidebar file list with status badges (A/M/D/R)
     - frontend/src/components/diff/FileDiff.tsx (68 lines) — per-file diff renderer with collapsible hunks
-    - "frontend/src/hooks/useDiff.ts — useProjectDiff(slug, branch) hook, queries GET /api/projects/{slug}/diff?branch={branch}"
-    - "frontend/src/types/api.ts — FileDiff, DiffResponse, DiffStats types already defined"
+    - frontend/src/hooks/useDiff.ts — useProjectDiff(slug, branch) hook, queries GET /api/projects/{slug}/diff?branch={branch}
+    - frontend/src/types/api.ts — FileDiff, DiffResponse, DiffStats types already defined
     - App.tsx handleAttach callback has access to agents array with full agent data including ref (branch)
     - AgentDetailPage already shows DiffView conditionally when agent has worktree + project slug
   acceptance_criteria:
@@ -30,7 +30,7 @@ spec:
     - Selecting a file in the tree shows only that single file's diff in the content area
     - Diff toggle is hidden when the agent has no project slug or branch
     - Diff panel respects window resize/maximize/snap behaviors
-    - "Loading, error, and empty states are handled gracefully"
+    - Loading, error, and empty states are handled gracefully
   out_of_scope: |
     - Backend API changes (existing diff endpoint is sufficient)
     - Split-pane view showing chat and diff simultaneously (full toggle only)
@@ -49,7 +49,7 @@ spec:
 plan:
   - phase: Foundation
     tasks:
-      - text: "Extend WindowEntry in useWindowManager.ts to include slug?: string and branch?: string; update wm.open() signature to accept these fields"
+      - text: Extend WindowEntry in useWindowManager.ts to include slug?: string and branch?: string; update wm.open() signature to accept these fields
         done: true
       - text: Update all wm.open() call sites in App.tsx to pass agent's project slug and branch from agent data
         done: true
@@ -57,30 +57,30 @@ plan:
         done: true
   - phase: Single-File Diff Component
     tasks:
-      - text: "Write tests for AgentDiffPanel: renders file tree, shows single file diff on selection, handles loading/error/empty states"
+      - text: Write tests for AgentDiffPanel: renders file tree, shows single file diff on selection, handles loading/error/empty states
         done: true
       - text: Create AgentDiffPanel.tsx — file tree sidebar using FileList + single-file content area rendering only selected file's FileDiff via useProjectDiff hook
         done: true
-      - text: "Create AgentDiffPanel.module.css — dark theme matching terminal aesthetic, sticky sidebar, scrollable single-file content area"
+      - text: Create AgentDiffPanel.module.css — dark theme matching terminal aesthetic, sticky sidebar, scrollable single-file content area
         done: true
       - text: Verify AgentDiffPanel tests pass in isolation
         done: true
   - phase: Terminal Integration
     tasks:
-      - text: "Write tests for chat/diff toggle in AgentTerminal: toggle renders when slug/branch present, hidden when missing, switches view mode"
+      - text: Write tests for chat/diff toggle in AgentTerminal: toggle renders when slug/branch present, hidden when missing, switches view mode
         done: true
       - text: Add viewMode state ('chat' | 'diff') to AgentTerminal with toggle buttons in header bar next to role badge
         done: true
-      - text: "Conditionally render AgentDiffPanel when viewMode is 'diff', passing slug and branch props"
+      - text: Conditionally render AgentDiffPanel when viewMode is 'diff', passing slug and branch props
         done: true
-      - text: "Style the toggle to match terminal header aesthetic, ensure keyboard-accessible (aria attributes, focus styles)"
+      - text: Style the toggle to match terminal header aesthetic, ensure keyboard-accessible (aria attributes, focus styles)
         done: true
   - phase: Polish & Verification
     tasks:
-      - text: "Handle edge cases: hide diff toggle when slug/branch unavailable, show helpful empty state when diff has no changes"
+      - text: Handle edge cases: hide diff toggle when slug/branch unavailable, show helpful empty state when diff has no changes
         done: true
       - text: Ensure diff panel respects window resize/maximize/snap behaviors from useFloatingWindow
         done: true
-      - text: "Run full frontend test suite (make test-frontend), verify no regressions"
+      - text: Run full frontend test suite (make test-frontend), verify no regressions
         done: true
 extra: {}
