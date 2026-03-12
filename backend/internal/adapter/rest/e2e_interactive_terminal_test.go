@@ -861,3 +861,76 @@ func TestE2E_InteractiveTerminal_ConnectToNonexistentAgent(t *testing.T) {
 		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }
+
+// TestE2E_InteractiveTerminal_InputEchoReplayOnReconnect verifies that user
+// input messages are echoed to the ring buffer and replayed on reconnection.
+func TestE2E_InteractiveTerminal_InputEchoReplayOnReconnect(t *testing.T) {
+	srv := startE2EServerWithWS(t)
+	agentID := "agent-input-echo-replay"
+	seedInteractiveAgent(t, srv, agentID)
+
+	bridge, stdinReader, done := createBridge(agentID)
+	closeDoneOnCleanup(t, done)
+	srv.wsSessions.RegisterBridge(agentID, bridge)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Drain stdin in background so WriteInput doesn't block.
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			if _, err := stdinReader.Read(buf); err != nil {
+				return
+			}
+		}
+	}()
+
+	// First connection.
+	conn1, _, err := websocket.Dial(ctx, wsURL(srv.URL, agentID), nil)
+	if err != nil {
+		t.Fatalf("dial 1: %v", err)
+	}
+	_ = readMsg(t, ctx, conn1) // status
+
+	// Send user input.
+	sendInput(t, ctx, conn1, "hello from user")
+
+	// Should receive input_echo back.
+	echoMsg := readMsg(t, ctx, conn1)
+	if echoMsg.Type != "input_echo" || echoMsg.Text != "hello from user" {
+		t.Errorf("expected input_echo with 'hello from user', got type=%s text=%q", echoMsg.Type, echoMsg.Text)
+	}
+
+	// Also send some agent output to interleave.
+	bridge.Buffer.Write(wsAdapter.OutputMsg("agent response"))
+	srv.wsSessions.BroadcastToAgent(agentID, wsAdapter.OutputMsg("agent response"))
+	_ = readMsg(t, ctx, conn1) // drain the output
+
+	// Disconnect first client.
+	conn1.Close(websocket.StatusNormalClosure, "")
+	time.Sleep(50 * time.Millisecond)
+
+	// Reconnect with a new client.
+	conn2, _, err := websocket.Dial(ctx, wsURL(srv.URL, agentID), nil)
+	if err != nil {
+		t.Fatalf("dial 2: %v", err)
+	}
+	defer conn2.Close(websocket.StatusNormalClosure, "")
+
+	// Ring buffer replay should contain: input_echo, then output, then status.
+	msg1 := readMsg(t, ctx, conn2)
+	if msg1.Type != "input_echo" || msg1.Text != "hello from user" {
+		t.Errorf("replay[0]: expected input_echo 'hello from user', got type=%s text=%q", msg1.Type, msg1.Text)
+	}
+
+	msg2 := readMsg(t, ctx, conn2)
+	if msg2.Type != "output" || msg2.Text != "agent response" {
+		t.Errorf("replay[1]: expected output 'agent response', got type=%s text=%q", msg2.Type, msg2.Text)
+	}
+
+	msg3 := readMsg(t, ctx, conn2)
+	if msg3.Type != "status" || msg3.Status != "running" {
+		t.Errorf("replay[2]: expected status=running, got type=%s status=%s", msg3.Type, msg3.Status)
+	}
+}
