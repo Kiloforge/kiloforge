@@ -485,6 +485,121 @@ func TestHandlerAgentWS_ReconnectCanSendInput(t *testing.T) {
 	}
 }
 
+func TestHandlerAgentWS_BridgeDone_SendsActualStatus(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		agentStatus    string
+		expectedStatus string
+		expectExitCode bool
+	}{
+		{"stopped", string(domain.AgentStatusStopped), "stopped", false},
+		{"completed", string(domain.AgentStatusCompleted), "completed", true},
+		{"failed", string(domain.AgentStatusFailed), "failed", false},
+		{"force-killed", string(domain.AgentStatusForceKilled), "force-killed", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			sm := NewSessionManager()
+			finder := &fakeAgentFinder{agents: map[string]*domain.AgentInfo{
+				"agent-exit": {ID: "agent-exit", Status: tc.agentStatus},
+			}}
+			h := NewHandler(sm, finder, nil)
+			mux := http.NewServeMux()
+			h.RegisterRoutes(mux)
+
+			srv := httptest.NewServer(mux)
+			defer srv.Close()
+
+			done := make(chan struct{})
+			bridge := NewSDKBridge("agent-exit", func(text string) error { return nil }, done)
+			sm.RegisterBridge("agent-exit", bridge)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			conn, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-exit", nil)
+			if err != nil {
+				t.Fatalf("dial: %v", err)
+			}
+			defer conn.CloseNow()
+
+			// Read initial status.
+			_, _, err = conn.Read(ctx)
+			if err != nil {
+				t.Fatalf("read initial status: %v", err)
+			}
+
+			// Close the done channel to simulate agent exit.
+			close(done)
+
+			// Read exit status.
+			_, data, err := conn.Read(ctx)
+			if err != nil {
+				t.Fatalf("read exit status: %v", err)
+			}
+			var msg Message
+			json.Unmarshal(data, &msg)
+			if msg.Type != MsgStatus {
+				t.Errorf("expected type=status, got %s", msg.Type)
+			}
+			if msg.Status != tc.expectedStatus {
+				t.Errorf("expected status=%s, got %s", tc.expectedStatus, msg.Status)
+			}
+			if tc.expectExitCode && msg.ExitCode == nil {
+				t.Error("expected exit_code to be set for completed status")
+			}
+			if !tc.expectExitCode && msg.ExitCode != nil {
+				t.Errorf("expected no exit_code for %s status, got %d", tc.name, *msg.ExitCode)
+			}
+		})
+	}
+}
+
+func TestHandlerAgentWS_BridgeDone_FallsBackToCompleted(t *testing.T) {
+	// When agents finder is nil, should fall back to "completed" with exit code 0.
+	t.Parallel()
+	sm := NewSessionManager()
+	h := NewHandler(sm, nil, nil) // nil agents
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	done := make(chan struct{})
+	bridge := NewSDKBridge("agent-fb", func(text string) error { return nil }, done)
+	sm.RegisterBridge("agent-fb", bridge)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-fb", nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.CloseNow()
+
+	_, _, _ = conn.Read(ctx) // initial status
+	close(done)
+
+	_, data, err := conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var msg Message
+	json.Unmarshal(data, &msg)
+	if msg.Status != "completed" {
+		t.Errorf("expected fallback status=completed, got %s", msg.Status)
+	}
+	if msg.ExitCode == nil || *msg.ExitCode != 0 {
+		t.Errorf("expected exit_code=0, got %v", msg.ExitCode)
+	}
+}
+
 func TestHandlerAgentWS_InitialStatusFromStore(t *testing.T) {
 	t.Parallel()
 	sm := NewSessionManager()
