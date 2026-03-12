@@ -1,0 +1,67 @@
+id: remove-command-mode-fe_20260312095110Z
+title: Remove full-screen command mode from frontend
+type: chore
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Delete the fullscreen command mode feature — the split-pane overlay,
+    pane state hook, keyboard shortcut, header button, and all associated
+    tests. Command mode is unnecessary for the moment.
+  context: |
+    Command mode is a fullscreen split-pane terminal overlay (Cmd+Shift+F)
+    for interacting with multiple agents simultaneously. It is a power-user
+    feature that adds complexity without current value. All agent interaction
+    is available through the floating window manager and inline terminals.
+  codebase_analysis: |
+    The feature is well-isolated in frontend/src/components/fullscreen/
+    (6 files: FullScreenCommand.tsx, CommandPane.tsx, SplitContainer.tsx,
+    CommandModeHelp.tsx, FullScreenCommand.module.css, FullScreenCommand.test.tsx).
+
+    Supporting code:
+    - frontend/src/hooks/useCommandPanes.ts + test — pane tree state management
+    - frontend/e2e/fullscreen-command.spec.ts — e2e tests
+
+    Integration points in 2 files:
+    - App.tsx: import, useState(showFullScreen), shortcutActions.toggleFullScreen,
+      header "Command" button, conditional <FullScreenCommand> render
+    - useKeyboardShortcuts.ts: toggleFullScreen in ShortcutActions interface,
+      Cmd+Shift+F handler, help list entry
+
+    No backend impact — command mode uses the same generic WebSocket/SSE
+    agent connections as floating terminals.
+  acceptance_criteria:
+    - The fullscreen/ component directory is deleted
+    - useCommandPanes hook and its test are deleted
+    - fullscreen-command e2e spec is deleted
+    - App.tsx has no references to FullScreenCommand or showFullScreen state
+    - useKeyboardShortcuts.ts has no toggleFullScreen references
+    - Frontend builds without errors
+    - Existing tests pass
+  out_of_scope: |
+    - Renaming "Command Deck" (that's the dashboard's overall name, not the feature)
+    - Removing floating terminal windows (AgentTerminal)
+    - Backend changes
+  technical_notes: |
+    Straightforward deletion. Remove files first, then clean up the two
+    integration points (App.tsx, useKeyboardShortcuts.ts). Verify build
+    and tests pass.
+plan:
+  - phase: "Remove command mode"
+    tasks:
+      - text: "Delete frontend/src/components/fullscreen/ directory (6 files)"
+        done: false
+      - text: "Delete frontend/src/hooks/useCommandPanes.ts and useCommandPanes.test.ts"
+        done: false
+      - text: "Delete frontend/e2e/fullscreen-command.spec.ts"
+        done: false
+      - text: "Remove FullScreenCommand import, showFullScreen state, toggleFullScreen shortcut action, header Command button, and conditional render from App.tsx"
+        done: false
+      - text: "Remove toggleFullScreen from ShortcutActions interface, Cmd+Shift+F handler, and help list entry in useKeyboardShortcuts.ts"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Verify frontend builds without errors and all tests pass"
+        done: false
+extra: {}
