@@ -63,10 +63,10 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, isPrimary := h.sessions.AddSession(r.Context(), agentID, conn)
+	session, _ := h.sessions.AddSession(r.Context(), agentID, conn)
 	defer h.sessions.RemoveSession(agentID, session)
 
-	h.logger.Printf("[ws] client connected to agent %s (primary=%v)", agentID, isPrimary)
+	h.logger.Printf("[ws] client connected to agent %s (sessions=%d)", agentID, h.sessions.SessionCount(agentID))
 
 	// Replay buffered output.
 	for _, line := range bridge.Buffer.Lines() {
@@ -85,10 +85,9 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = conn.Write(session.ctx, websocket.MessageText, StatusMsg(initialStatus, nil))
 
-	// Start read loop for primary client (writes to agent stdin).
-	if isPrimary {
-		go h.readLoop(session, bridge, agentID)
-	}
+	// Start read loop for every session so input works after reconnection.
+	// Bridge.WriteInput is mutex-protected, so concurrent read loops are safe.
+	go h.readLoop(session, bridge, agentID)
 
 	// Wait for agent exit or client disconnect / server shutdown.
 	// Session context is derived from request context, so server shutdown

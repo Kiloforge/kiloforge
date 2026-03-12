@@ -222,7 +222,7 @@ func TestHandlerAgentWS_InterruptFromPrimary(t *testing.T) {
 	}
 }
 
-func TestHandlerAgentWS_InterruptFromObserver(t *testing.T) {
+func TestHandlerAgentWS_InterruptFromSecondSession(t *testing.T) {
 	t.Parallel()
 	sm := NewSessionManager()
 	h := NewHandler(sm, nil, nil)
@@ -247,23 +247,23 @@ func TestHandlerAgentWS_InterruptFromObserver(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// First connection is primary.
+	// First connection.
 	conn1, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-int2", nil)
 	if err != nil {
-		t.Fatalf("dial primary: %v", err)
+		t.Fatalf("dial conn1: %v", err)
 	}
 	defer conn1.CloseNow()
 	_, _, _ = conn1.Read(ctx) // read status
 
-	// Second connection is observer (read-only).
+	// Second connection.
 	conn2, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-int2", nil)
 	if err != nil {
-		t.Fatalf("dial observer: %v", err)
+		t.Fatalf("dial conn2: %v", err)
 	}
 	defer conn2.CloseNow()
 	_, _, _ = conn2.Read(ctx) // read status
 
-	// Observer sends interrupt — should be ignored (no readLoop for observers).
+	// Second session sends interrupt — should work (all sessions have read loops).
 	intMsg, _ := json.Marshal(Message{Type: MsgInterrupt})
 	if err := conn2.Write(ctx, websocket.MessageText, intMsg); err != nil {
 		t.Fatalf("write interrupt: %v", err)
@@ -271,9 +271,9 @@ func TestHandlerAgentWS_InterruptFromObserver(t *testing.T) {
 
 	select {
 	case <-interruptCh:
-		t.Error("observer should NOT be able to trigger interrupt")
-	case <-time.After(200 * time.Millisecond):
-		// expected — no interrupt
+		// success — any session can interrupt
+	case <-time.After(2 * time.Second):
+		t.Error("expected InterruptHandler to be called from second session")
 	}
 }
 
@@ -338,6 +338,150 @@ func TestHandlerAgentWS_NoBridge_NonTerminalAgent(t *testing.T) {
 	_, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-limbo", nil)
 	if err == nil {
 		t.Fatal("expected error connecting to non-terminal agent without bridge")
+	}
+}
+
+func TestHandlerAgentWS_BothSessionsCanSendInput(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+	h := NewHandler(sm, nil, nil)
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	// SDK bridge that records input.
+	inputCh := make(chan string, 10)
+	done := make(chan struct{})
+	bridge := NewSDKBridge("agent-multi", func(text string) error {
+		inputCh <- text
+		return nil
+	}, done)
+	sm.RegisterBridge("agent-multi", bridge)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// First connection.
+	conn1, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-multi", nil)
+	if err != nil {
+		t.Fatalf("dial conn1: %v", err)
+	}
+	defer conn1.CloseNow()
+	_, _, _ = conn1.Read(ctx) // status
+
+	// Second connection.
+	conn2, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-multi", nil)
+	if err != nil {
+		t.Fatalf("dial conn2: %v", err)
+	}
+	defer conn2.CloseNow()
+	_, _, _ = conn2.Read(ctx) // status
+
+	// Both send input.
+	msg1, _ := json.Marshal(Message{Type: MsgInput, Text: "from-conn1"})
+	msg2, _ := json.Marshal(Message{Type: MsgInput, Text: "from-conn2"})
+
+	if err := conn1.Write(ctx, websocket.MessageText, msg1); err != nil {
+		t.Fatalf("write conn1: %v", err)
+	}
+	if err := conn2.Write(ctx, websocket.MessageText, msg2); err != nil {
+		t.Fatalf("write conn2: %v", err)
+	}
+
+	// Both inputs should arrive.
+	got := make(map[string]bool)
+	for i := 0; i < 2; i++ {
+		select {
+		case text := <-inputCh:
+			got[text] = true
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timed out waiting for input %d; got so far: %v", i, got)
+		}
+	}
+	if !got["from-conn1"] {
+		t.Error("missing input from conn1")
+	}
+	if !got["from-conn2"] {
+		t.Error("missing input from conn2")
+	}
+}
+
+func TestHandlerAgentWS_ReconnectCanSendInput(t *testing.T) {
+	t.Parallel()
+	sm := NewSessionManager()
+	h := NewHandler(sm, nil, nil)
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	// SDK bridge that records input.
+	inputCh := make(chan string, 10)
+	done := make(chan struct{})
+	bridge := NewSDKBridge("agent-recon", func(text string) error {
+		inputCh <- text
+		return nil
+	}, done)
+	sm.RegisterBridge("agent-recon", bridge)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// First connection — send input, then close.
+	conn1, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-recon", nil)
+	if err != nil {
+		t.Fatalf("dial conn1: %v", err)
+	}
+	_, _, _ = conn1.Read(ctx) // status
+	msg1, _ := json.Marshal(Message{Type: MsgInput, Text: "first"})
+	if err := conn1.Write(ctx, websocket.MessageText, msg1); err != nil {
+		t.Fatalf("write conn1: %v", err)
+	}
+	select {
+	case <-inputCh:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for first input")
+	}
+	conn1.Close(websocket.StatusNormalClosure, "bye")
+
+	// Brief pause to let RemoveSession run.
+	time.Sleep(50 * time.Millisecond)
+
+	// Reconnect.
+	conn2, _, err := websocket.Dial(ctx, srv.URL+"/ws/agent/agent-recon", nil)
+	if err != nil {
+		t.Fatalf("dial conn2: %v", err)
+	}
+	defer conn2.CloseNow()
+
+	// Read replayed echo + status.
+	for {
+		_, data, err := conn2.Read(ctx)
+		if err != nil {
+			t.Fatalf("read replay: %v", err)
+		}
+		var m Message
+		json.Unmarshal(data, &m)
+		if m.Type == MsgStatus {
+			break
+		}
+	}
+
+	// Send input on the reconnected session.
+	msg2, _ := json.Marshal(Message{Type: MsgInput, Text: "second"})
+	if err := conn2.Write(ctx, websocket.MessageText, msg2); err != nil {
+		t.Fatalf("write conn2: %v", err)
+	}
+	select {
+	case text := <-inputCh:
+		if text != "second" {
+			t.Errorf("got %q, want %q", text, "second")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for reconnected input")
 	}
 }
 
