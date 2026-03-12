@@ -45,6 +45,8 @@ board-clamp-forward-moves-fe_20260312220001Z:
 
 ci-windows-submodule-be_20260311070001Z: []
 
+cli-remove-project-be_20260312073321Z: []
+
 cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
@@ -84,4 +86,3 @@ track-detail-register-traces-fe_20260312231002Z:
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
-
