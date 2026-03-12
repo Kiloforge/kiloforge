@@ -1,0 +1,44 @@
+# Temporary workflow to verify Windows build on implementation branch.
+# Can be removed after v0.1.0-alpha.2 release is confirmed.
+name: Windows Build Check
+
+on:
+  push:
+    branches:
+      - kf/chore/release-alpha2_*
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        run: cd frontend && npm ci && npm run build
+
+      - name: Build backend with version stamping
+        run: |
+          $VERSION = git describe --tags --always --dirty 2>$null
+          if (-not $VERSION) { $VERSION = "dev" }
+          $COMMIT = git rev-parse --short HEAD 2>$null
+          if (-not $COMMIT) { $COMMIT = "none" }
+          $DATE = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          cd backend
+          go build -ldflags "-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" ./cmd/kf
+
+      - name: Run frontend tests
+        run: cd frontend && npm test -- --run
+
+      - name: Run Go tests with race detection
+        run: cd backend && go test -race ./...
