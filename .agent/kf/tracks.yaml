@@ -375,3 +375,4 @@ work-queue-fe_20260311010003Z: {"title":"Work queue — frontend settings and st
 worktree-autodetect-skills_20260311070001Z: {"title":"Add worktree auto-detection to all embedded skills","status":"archived","type":"chore","created":"2026-03-11","updated":"2026-03-11","archived_at":"2026-03-11","archive_reason":"User handling manually in kf-skills repo"}
 worktree-env-helper_20260310224653Z: {"title":"Add kf-worktree-env shell helper and inform agents via CLAUDE.md","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 worktree-pool_20260307125000Z: {"title":"Worktree Pool Management","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+zoom-drag-compensation-fe_20260312095153Z: {"title":"Fix window drag and resize movement at non-100% CSS zoom","status":"pending","type":"bug","approved":false,"created":"2026-03-12","updated":"2026-03-12"}
