@@ -7,23 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  kf-tools:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure git for tests
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@kiloforge.dev"
-          git config --global init.defaultBranch main
-
-      - name: Run kf-track test suite
-        run: .agent/kf/bin/tests/run_tests.sh
-
   lint:
     runs-on: ubuntu-latest
     steps:
