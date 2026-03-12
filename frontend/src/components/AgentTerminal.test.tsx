@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentTerminal } from "./AgentTerminal";
 import type { WSMessage } from "../hooks/useAgentWebSocket";
@@ -253,5 +253,94 @@ describe("AgentTerminal", () => {
     setup({ status: "connected", agentStatus: "stopped" });
     const textarea = screen.getByPlaceholderText("Agent has exited");
     expect(textarea).toBeDisabled();
+  });
+
+  describe("slash command autocomplete", () => {
+    it("shows autocomplete dropdown when '/' is typed", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/");
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+    });
+
+    it("does not show autocomplete for regular text", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "hello");
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    });
+
+    it("filters commands as user continues typing", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/kf-arch");
+      const listbox = screen.getByRole("listbox");
+      expect(within(listbox).getByText("/kf-architect")).toBeInTheDocument();
+      expect(within(listbox).queryByText("/kf-interactive")).not.toBeInTheDocument();
+    });
+
+    it("selects command with Enter and replaces input", async () => {
+      const user = userEvent.setup();
+      const { ws } = setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/kf-arch");
+      await user.keyboard("{Enter}");
+      // Should have replaced input with the command + trailing space
+      expect(textarea).toHaveValue("/kf-architect ");
+      // Should NOT have sent a message (Enter selects, doesn't send)
+      expect(ws.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it("selects command with Tab and replaces input", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/kf-arch");
+      await user.keyboard("{Tab}");
+      expect(textarea).toHaveValue("/kf-architect ");
+    });
+
+    it("navigates down with ArrowDown", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/");
+      await user.keyboard("{ArrowDown}");
+      const items = screen.getAllByRole("option");
+      expect(items[1]).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("navigates up with ArrowUp and wraps", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/");
+      await user.keyboard("{ArrowUp}");
+      const items = screen.getAllByRole("option");
+      expect(items[items.length - 1]).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("dismisses dropdown with Escape", async () => {
+      const user = userEvent.setup();
+      setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/");
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    });
+
+    it("sends completed command on second Enter after selection", async () => {
+      const user = userEvent.setup();
+      const { ws } = setup({ status: "connected", agentStatus: "running" });
+      const textarea = screen.getByPlaceholderText("Type a message... (Enter to send)");
+      await user.type(textarea, "/kf-arch");
+      await user.keyboard("{Enter}"); // selects command
+      await user.keyboard("{Enter}"); // sends message
+      expect(ws.sendMessage).toHaveBeenCalledWith("/kf-architect");
+    });
   });
 });
