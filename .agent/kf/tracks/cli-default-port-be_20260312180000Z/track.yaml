@@ -69,7 +69,7 @@ plan:
 - phase: Verification
   tasks:
   - text: Run existing up_test.go tests — verify dashboardURL and port conflict detection still work
-    done: false
+    done: true
   - text: Run make test — no regressions
-    done: false
+    done: true
 extra: {}
