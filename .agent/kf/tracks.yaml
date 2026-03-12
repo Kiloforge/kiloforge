@@ -126,7 +126,7 @@ fix-project-mgr-wiring_20260309120000Z: {"title":"Fix Project Manager Wiring in 
 fix-project-sse-subscription_20260309230001Z: {"title":"Wire Project SSE Events in Dashboard Frontend","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-quota-display_20260310033001Z: {"title":"Fix Token and Cost Display — Bridge QuotaTracker to API","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-relay-goroutine-leak_20260310041000Z: {"title":"Fix Agent Relay Goroutine Leak and Double-Close Panic","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
-fix-remove-project_20260312073310Z: {"title":"Fix remove project: strip Gitea references and fix 204 parse error","status":"pending","type":"bug","created":"2026-03-12","updated":"2026-03-12"}
+fix-remove-project_20260312073310Z: {"title":"Fix remove project: strip Gitea references and fix 204 parse error","status":"completed","type":"bug","created":"2026-03-12","updated":"2026-03-12"}
 fix-route-conflict_20260308200100Z: {"title":"Fix Route Pattern Conflict Panic on Startup","status":"archived","type":"bug","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-serve-interactive-agent_20260309232000Z: {"title":"Fix Interactive Agent Wiring in Serve Command (kf up)","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-setup-consent-403_20260311120000Z: {"title":"Fix setup dialog 403 — cascade to consent dialog instead of showing raw error","status":"completed","type":"bug","created":"2026-03-10","updated":"2026-03-10"}
