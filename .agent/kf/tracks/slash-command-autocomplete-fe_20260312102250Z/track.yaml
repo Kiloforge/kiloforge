@@ -1,0 +1,104 @@
+id: slash-command-autocomplete-fe_20260312102250Z
+title: Add slash command autocomplete to AgentTerminal input
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Detect "/" prefix in AgentTerminal chat input and show an autocomplete
+    dropdown with matching skill slash commands. Tab/Enter selects, Esc
+    dismisses. The completed command is sent as a normal text message for
+    Claude CLI to handle natively.
+  context: |
+    When a user types "/kf-architect" or any slash command in an already-
+    running interactive agent terminal, it's sent as plain text via WebSocket.
+    Claude CLI should recognize it if skills are installed, but users have
+    no discoverability — they don't know what commands are available, get no
+    feedback that the "/" prefix is special, and receive no autocomplete.
+
+    This makes slash commands feel broken because there's no visual
+    indication that the system recognized the input as a command.
+  codebase_analysis: |
+    AgentTerminal.tsx (lines 120-142): handleSend() trims and sends input
+    via sendMessage(). handleKeyDown() handles Enter (send) and Escape
+    (interrupt). The autocomplete needs to intercept Tab and arrow keys
+    when the dropdown is visible, and modify Enter behavior (select
+    completion vs send message).
+
+    useAgentWebSocket.ts (line 293): sendMessage() sends
+    { type: "input", text } via WebSocket. Slash commands are sent as
+    regular text — no special handling needed on the send side.
+
+    AgentTerminal input (lines 286-303): textarea with inputRef. The
+    autocomplete dropdown should be positioned relative to this textarea.
+
+    The slash command list is static and small. It can come from the same
+    SKILL_REGISTRY that the skills-palette track creates, or from a
+    standalone constant if that track hasn't been implemented yet. The
+    autocomplete component should accept a commands list prop for
+    testability.
+  acceptance_criteria:
+    - Typing "/" as the first character in the input shows an autocomplete dropdown
+    - The dropdown lists available slash commands (e.g., /kf-architect, /kf-interactive)
+    - Typing further characters filters the list (e.g., "/kf-a" shows /kf-architect and /kf-advisor-*)
+    - Arrow keys navigate the dropdown, Tab or Enter selects the highlighted command
+    - Esc dismisses the dropdown without selecting
+    - Selected command replaces the input text (with a trailing space for the argument)
+    - Pressing Enter when no dropdown is visible sends the message as normal
+    - The dropdown shows command name and a brief description
+    - Works correctly when the terminal is in turn-active (queuing) mode
+  out_of_scope: |
+    - Server-side slash command handling (Claude CLI handles this)
+    - Argument autocomplete (only command name completion)
+    - Custom user-defined slash commands
+    - Slash command history or recent commands
+  technical_notes: |
+    Create a SlashCommandAutocomplete component that renders a dropdown
+    anchored to the textarea. It receives the current input value and a
+    list of commands. When active (input starts with "/"), it filters
+    commands and renders a positioned list.
+
+    The component should be controlled: AgentTerminal manages the
+    selection state and intercepts keyboard events. Use a ref-based
+    approach to avoid re-rendering the entire terminal on each keystroke.
+
+    Key interaction model:
+    1. User types "/" → dropdown appears with all commands
+    2. User continues typing → dropdown filters
+    3. Up/Down arrows → navigate highlighted item
+    4. Tab or Enter → insert highlighted command + space, close dropdown
+    5. Esc or blur → close dropdown
+    6. Enter with no dropdown → normal send behavior (unchanged)
+
+    Position the dropdown above the input (since the input is at the
+    bottom of the terminal) using absolute positioning relative to the
+    input area container.
+plan:
+  - phase: Autocomplete Component
+    tasks:
+      - text: "Write test: verify SlashCommandAutocomplete renders command list when input starts with '/'"
+        done: false
+      - text: "Write test: verify filtering narrows commands as user types more characters"
+        done: false
+      - text: "Write test: verify keyboard navigation (Arrow keys, Tab/Enter select, Esc dismiss)"
+        done: false
+      - text: "Create SlashCommandAutocomplete component with filtered dropdown, keyboard navigation, and selection callback"
+        done: false
+      - text: "Style the dropdown with command name, description, and highlighted state matching the terminal theme"
+        done: false
+  - phase: Terminal Integration
+    tasks:
+      - text: "Write test: verify AgentTerminal shows autocomplete when '/' is typed and sends completed command on Enter"
+        done: false
+      - text: "Integrate SlashCommandAutocomplete into AgentTerminal input area with keyboard event coordination"
+        done: false
+      - text: "Define SLASH_COMMANDS constant (or import from shared registry) with command names and descriptions"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Verify autocomplete works correctly in turn-active (queuing) mode"
+        done: false
+      - text: "Run full frontend test suite and verify no regressions"
+        done: false
+extra: {}
