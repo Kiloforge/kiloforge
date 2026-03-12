@@ -3,93 +3,84 @@ title: Fix window drag and resize movement at non-100% CSS zoom
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: |
-    Compensate for CSS zoom when dragging and resizing floating windows so that
+  summary: 'Compensate for CSS zoom when dragging and resizing floating windows so that
+
     pointer movement matches element movement at all scale levels (75–150%).
-  context: |
-    The useUIScale hook applies CSS zoom via document.documentElement.style.zoom.
+
+    '
+  context: 'The useUIScale hook applies CSS zoom via document.documentElement.style.zoom.
+
     When zoom != 1.0, mouse event coordinates (clientX/clientY) are in screen
+
     (physical) space, but element positioning (left/top/width/height) is in
+
     zoomed (logical) space. This mismatch causes windows to move faster or
+
     slower than the cursor during drag and resize operations.
 
+
     For example, at 150% zoom a 100px mouse movement maps to ~67px of element
+
     movement, so the window lags behind the cursor. At 75% zoom the window
+
     outruns the cursor.
-  codebase_analysis: |
-    useFloatingWindow.ts:
-    - Lines 138-169: Drag handler (onPointerMove) computes delta as
-      (e.clientX - dragStart.x) and (e.clientY - dragStart.y), then applies
-      directly to element position. No zoom compensation.
-    - Lines 171-242: Resize handler detects edge zones (8px threshold) and
-      computes resize deltas from clientX/clientY differences. Same issue —
-      raw screen-space deltas applied to logical-space dimensions.
-    - Lines 26-27: EDGE_ZONE = 8 constant for resize edge detection — this
-      threshold should also be zoom-compensated so the grab zone feels
-      consistent at all scales.
 
-    useUIScale.ts:
-    - The zoom value is applied via document.documentElement.style.zoom.
-    - The current zoom can be read as:
-      parseFloat(document.documentElement.style.zoom || "1")
-    - Alternatively, the useUIScale hook exposes `scale` (75–150 integer).
-
-    The fix: divide all mouse deltas by the current zoom factor before applying
-    to element positions. Read zoom from document.documentElement.style.zoom
-    at the start of each pointer event handler (not cached, so it stays correct
-    if zoom changes mid-drag).
+    '
+  codebase_analysis: "useFloatingWindow.ts:\n- Lines 138-169: Drag handler (onPointerMove) computes delta as\n  (e.clientX\
+    \ - dragStart.x) and (e.clientY - dragStart.y), then applies\n  directly to element position. No zoom compensation.\n\
+    - Lines 171-242: Resize handler detects edge zones (8px threshold) and\n  computes resize deltas from clientX/clientY\
+    \ differences. Same issue —\n  raw screen-space deltas applied to logical-space dimensions.\n- Lines 26-27: EDGE_ZONE\
+    \ = 8 constant for resize edge detection — this\n  threshold should also be zoom-compensated so the grab zone feels\n\
+    \  consistent at all scales.\n\nuseUIScale.ts:\n- The zoom value is applied via document.documentElement.style.zoom.\n\
+    - The current zoom can be read as:\n  parseFloat(document.documentElement.style.zoom || \"1\")\n- Alternatively, the useUIScale\
+    \ hook exposes `scale` (75–150 integer).\n\nThe fix: divide all mouse deltas by the current zoom factor before applying\n\
+    to element positions. Read zoom from document.documentElement.style.zoom\nat the start of each pointer event handler (not\
+    \ cached, so it stays correct\nif zoom changes mid-drag).\n"
   acceptance_criteria:
-    - Dragging a floating window moves it at the same rate as the mouse cursor at all zoom levels (75–150%)
-    - Resizing a floating window tracks the cursor accurately at all zoom levels
-    - Edge detection zones for resize feel consistent regardless of zoom level
-    - No behavior change at 100% zoom (zoom factor is 1.0)
-    - Zoom factor is read dynamically — changing zoom mid-interaction is handled correctly
-  out_of_scope: |
-    - Changing the zoom implementation itself (CSS zoom stays as-is)
+  - Dragging a floating window moves it at the same rate as the mouse cursor at all zoom levels (75–150%)
+  - Resizing a floating window tracks the cursor accurately at all zoom levels
+  - Edge detection zones for resize feel consistent regardless of zoom level
+  - No behavior change at 100% zoom (zoom factor is 1.0)
+  - Zoom factor is read dynamically — changing zoom mid-interaction is handled correctly
+  out_of_scope: '- Changing the zoom implementation itself (CSS zoom stays as-is)
+
     - Touch/gesture input handling
+
     - Window snapping or other drag enhancements
+
     - Changes to useUIScale hook
-  technical_notes: |
-    Add a helper function to read the current zoom factor:
-      function getZoom(): number {
-        return parseFloat(document.documentElement.style.zoom || "1") || 1;
-      }
 
-    In the drag handler (onPointerMove), divide deltas by zoom:
-      const zoom = getZoom();
-      const dx = (e.clientX - dragStart.x) / zoom;
-      const dy = (e.clientY - dragStart.y) / zoom;
-
-    In the resize handler, apply the same division to resize deltas.
-
-    For edge detection (EDGE_ZONE), multiply the threshold by zoom when
-    comparing against clientX/clientY coordinates, so the grab zone stays
-    visually consistent.
-
-    All changes are confined to useFloatingWindow.ts.
+    '
+  technical_notes: "Add a helper function to read the current zoom factor:\n  function getZoom(): number {\n    return parseFloat(document.documentElement.style.zoom\
+    \ || \"1\") || 1;\n  }\n\nIn the drag handler (onPointerMove), divide deltas by zoom:\n  const zoom = getZoom();\n  const\
+    \ dx = (e.clientX - dragStart.x) / zoom;\n  const dy = (e.clientY - dragStart.y) / zoom;\n\nIn the resize handler, apply\
+    \ the same division to resize deltas.\n\nFor edge detection (EDGE_ZONE), multiply the threshold by zoom when\ncomparing\
+    \ against clientX/clientY coordinates, so the grab zone stays\nvisually consistent.\n\nAll changes are confined to useFloatingWindow.ts.\n"
 plan:
-  - phase: Implementation
-    tasks:
-      - text: Add getZoom() helper function to useFloatingWindow.ts that reads current CSS zoom from document.documentElement.style.zoom
-        done: false
-      - text: Apply zoom compensation to drag deltas — divide (clientX - dragStart.x) and (clientY - dragStart.y) by zoom factor in the drag pointer-move handler
-        done: false
-      - text: Apply zoom compensation to resize deltas — divide resize clientX/clientY differences by zoom factor in the resize pointer-move handler
-        done: false
-      - text: Compensate edge detection threshold (EDGE_ZONE) for zoom so resize grab zones feel consistent at all scales
-        done: false
-  - phase: Testing
-    tasks:
-      - text: "Write test: drag delta is divided by zoom factor when document.documentElement.style.zoom is set"
-        done: false
-      - text: "Write test: resize delta is divided by zoom factor when CSS zoom is active"
-        done: false
-      - text: "Write test: no behavior change when zoom is 1.0 or unset"
-        done: false
-  - phase: Verification
-    tasks:
-      - text: Run full frontend test suite and verify no regressions
-        done: false
+- phase: Implementation
+  tasks:
+  - text: Add getZoom() helper function to useFloatingWindow.ts that reads current CSS zoom from document.documentElement.style.zoom
+    done: true
+  - text: Apply zoom compensation to drag deltas — divide (clientX - dragStart.x) and (clientY - dragStart.y) by zoom factor
+      in the drag pointer-move handler
+    done: true
+  - text: Apply zoom compensation to resize deltas — divide resize clientX/clientY differences by zoom factor in the resize
+      pointer-move handler
+    done: true
+  - text: Compensate edge detection threshold (EDGE_ZONE) for zoom so resize grab zones feel consistent at all scales
+    done: true
+- phase: Testing
+  tasks:
+  - text: 'Write test: drag delta is divided by zoom factor when document.documentElement.style.zoom is set'
+    done: true
+  - text: 'Write test: resize delta is divided by zoom factor when CSS zoom is active'
+    done: true
+  - text: 'Write test: no behavior change when zoom is 1.0 or unset'
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run full frontend test suite and verify no regressions
+    done: true
 extra: {}
