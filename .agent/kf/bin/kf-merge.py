@@ -1,4 +1,4 @@
-#!/Users/benbaldivia/dev-2/kiloforge-wt/kfc-d780f5-worker-1/.agent/kf/.venv/bin/python
+#!/usr/bin/env python3
 """kf-merge — Unified merge protocol for Kiloforge agents.
 
 Merges the current branch into the primary branch using a lock-protected,
