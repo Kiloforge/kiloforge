@@ -3,95 +3,139 @@ title: Fix missing minimize button and show agent name in window header
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: |
-    Add the missing minimize button to agent terminals opened from ProjectPage
-    and SetupRequiredDialog, and ensure the window header displays the agent's
+  summary: 'Add the missing minimize button to agent terminals opened from ProjectPage
+
+    and SetupRequiredDialog, and ensure the window header displays the agent''s
+
     human-friendly name (e.g. "curiously brave luna") instead of falling back
+
     to the truncated ID.
-  context: |
-    Agent terminal windows opened via App.tsx (the floating window manager path)
-    already have a working minimize button and pass the agent's name. But
+
+    '
+  context: 'Agent terminal windows opened via App.tsx (the floating window manager path)
+
+    already have a working minimize button and pass the agent''s name. But
+
     terminals opened directly from ProjectPage (conflict resolver, terminal,
+
     admin) and SetupRequiredDialog omit the onMinimize prop entirely, so the
+
     button never renders. The user sees only a close (×) button with no way to
+
     minimize.
 
+
     For the name display: the backend generates random human-friendly names
+
     (e.g. "curiously brave luna") via namegen.go and returns them in the Agent
+
     REST response. The name is passed through wm.open() → WindowEntry →
+
     AgentTerminal prop. The fallback to agentId.slice(0,8) triggers when
+
     name is undefined. Need to verify the name flows correctly in all open
+
     paths.
-  codebase_analysis: |
-    AgentTerminal.tsx (lines 12-28): Props include optional onMinimize?: () => void
+
+    '
+  codebase_analysis: 'AgentTerminal.tsx (lines 12-28): Props include optional onMinimize?: () => void
+
     and optional name?: string. Line 217: displays name || agentId.slice(0, 8).
+
     Line 249-253: minimize button only renders when onMinimize is truthy.
 
+
     App.tsx (line 303-321): Passes onMinimize={() => wm.minimize(entry.agentId)}
+
     and name={entry.name} — CORRECT.
 
+
     ProjectPage.tsx (lines 402, 407, 433): Three AgentTerminal instances, NONE
+
     pass onMinimize. They do pass name={agent?.name} but the agent lookup may
-    fail if the agent list hasn't loaded yet.
+
+    fail if the agent list hasn''t loaded yet.
+
 
     SetupRequiredDialog.tsx (line 24): Renders <AgentTerminal agentId={agentId}
+
     onClose={onSetupComplete} /> — no onMinimize, no name, no role.
 
+
     useWindowManager.ts (lines 76-94): Has minimize(agentId) and restore(agentId)
+
     functions. MiniCardDock.tsx renders minimized windows at viewport bottom.
 
+
     For ProjectPage terminals: these are NOT managed by useWindowManager — they
+
     render inline. Minimize would need either: (a) integrate them with the window
+
     manager, or (b) add local minimize state. Option (b) is simpler and
+
     self-contained — use a local state toggle + render a MiniCard when minimized.
+
+    '
   acceptance_criteria:
-    - All AgentTerminal instances show a minimize button (−) in the header bar
-    - Clicking minimize hides the terminal and shows a MiniCard at viewport bottom
-    - Clicking the MiniCard restores the terminal
-    - Window header displays the agent's human-friendly name when available
-    - Falls back to truncated ID only when name is genuinely unavailable
-    - SetupRequiredDialog terminal shows agent name and role when available
-  out_of_scope: |
-    - Migrating ProjectPage terminals to useWindowManager (too large a refactor)
+  - All AgentTerminal instances show a minimize button (−) in the header bar
+  - Clicking minimize hides the terminal and shows a MiniCard at viewport bottom
+  - Clicking the MiniCard restores the terminal
+  - Window header displays the agent's human-friendly name when available
+  - Falls back to truncated ID only when name is genuinely unavailable
+  - SetupRequiredDialog terminal shows agent name and role when available
+  out_of_scope: '- Migrating ProjectPage terminals to useWindowManager (too large a refactor)
+
     - Changing the name generation algorithm
+
     - Adding minimize keyboard shortcut to ProjectPage terminals
-  technical_notes: |
-    For ProjectPage terminals: add local minimized state per terminal. When
+
+    '
+  technical_notes: 'For ProjectPage terminals: add local minimized state per terminal. When
+
     minimized, render a small MiniCard-style pill at the bottom of the page
+
     (reuse the existing MiniCard component or similar styling). The onMinimize
-    callback sets state, and the MiniCard's onClick restores it.
+
+    callback sets state, and the MiniCard''s onClick restores it.
+
 
     For SetupRequiredDialog: fetch agent metadata via the agents list or a
+
     direct API call so name and role are available.
 
+
     For the name issue: ensure agent?.name is resolved before opening the
-    terminal. If agents haven't loaded yet, use a fallback that will update
+
+    terminal. If agents haven''t loaded yet, use a fallback that will update
+
     once data arrives (e.g., pass a default name like the role).
+
+    '
 plan:
-  - phase: Minimize Button Fix
-    tasks:
-      - text: "Write test: verify minimize button renders on ProjectPage terminal instances and clicking it hides the terminal"
-        done: false
-      - text: Add local minimized state to ProjectPage for each terminal type (resolver, terminal, admin) with toggle callbacks
-        done: false
-      - text: Pass onMinimize callback to all three AgentTerminal instances in ProjectPage.tsx
-        done: false
-      - text: When minimized, render a MiniCard-style restore pill at the bottom of the ProjectPage
-        done: false
-      - text: Add onMinimize prop and local minimize state to SetupRequiredDialog's AgentTerminal
-        done: false
-  - phase: Agent Name Display
-    tasks:
-      - text: "Write test: verify agent name (not ID) is displayed in window header when name prop is provided"
-        done: false
-      - text: Ensure ProjectPage terminal instances resolve the agent name before rendering (handle async agent data loading)
-        done: false
-      - text: Pass name and role props to SetupRequiredDialog's AgentTerminal by fetching agent metadata
-        done: false
-  - phase: Verification
-    tasks:
-      - text: Run full frontend test suite and verify no regressions
-        done: false
+- phase: Minimize Button Fix
+  tasks:
+  - text: 'Write test: verify minimize button renders on ProjectPage terminal instances and clicking it hides the terminal'
+    done: true
+  - text: Add local minimized state to ProjectPage for each terminal type (resolver, terminal, admin) with toggle callbacks
+    done: true
+  - text: Pass onMinimize callback to all three AgentTerminal instances in ProjectPage.tsx
+    done: true
+  - text: When minimized, render a MiniCard-style restore pill at the bottom of the ProjectPage
+    done: true
+  - text: Add onMinimize prop and local minimize state to SetupRequiredDialog's AgentTerminal
+    done: true
+- phase: Agent Name Display
+  tasks:
+  - text: 'Write test: verify agent name (not ID) is displayed in window header when name prop is provided'
+    done: true
+  - text: Ensure ProjectPage terminal instances resolve the agent name before rendering (handle async agent data loading)
+    done: true
+  - text: Pass name and role props to SetupRequiredDialog's AgentTerminal by fetching agent metadata
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run full frontend test suite and verify no regressions
+    done: true
 extra: {}
