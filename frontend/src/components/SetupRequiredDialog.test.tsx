@@ -8,14 +8,16 @@ let lastTerminalProps: Record<string, unknown> = {};
 vi.mock("./AgentTerminal", () => ({
   AgentTerminal: (props: Record<string, unknown>) => {
     lastTerminalProps = props;
+    const name = props.name as string | undefined;
+    const role = props.role as string | undefined;
     return (
       <div data-testid="agent-terminal" data-agent-id={props.agentId as string}>
         <button onClick={props.onClose as () => void}>close-terminal</button>
-        {props.onMinimize && (
+        {typeof props.onMinimize === "function" && (
           <button onClick={props.onMinimize as () => void}>minimize-terminal</button>
         )}
-        {props.name && <span data-testid="terminal-name">{props.name as string}</span>}
-        {props.role && <span data-testid="terminal-role">{props.role as string}</span>}
+        {name && <span data-testid="terminal-name">{name}</span>}
+        {role && <span data-testid="terminal-role">{role}</span>}
       </div>
     );
   },
