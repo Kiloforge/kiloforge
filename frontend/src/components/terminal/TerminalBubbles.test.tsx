@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { MessageDispatch } from "./TerminalBubbles";
 import type { WSMessage } from "../../hooks/useAgentWebSocket";
 
@@ -78,6 +78,46 @@ describe("MessageDispatch", () => {
       <MessageDispatch msg={makeMsg({ type: "unknown" as WSMessage["type"] })} />
     );
     expect(container.innerHTML).toBe("");
+  });
+
+  it("renders AskUserQuestion tool_use as question bubble when onSend provided", () => {
+    const onSend = vi.fn();
+    render(
+      <MessageDispatch
+        msg={makeMsg({
+          type: "tool_use",
+          text: "AskUserQuestion",
+          toolName: "AskUserQuestion",
+          toolInput: {
+            question: "Pick one",
+            options: [{ label: "A", description: "Desc A" }],
+          },
+        })}
+        onSend={onSend}
+      />
+    );
+    expect(screen.getByText("Pick one")).toBeTruthy();
+    expect(screen.getByText("A")).toBeTruthy();
+    expect(screen.getByText("Desc A")).toBeTruthy();
+  });
+
+  it("falls back to ToolUseBubble for AskUserQuestion when onSend is not provided", () => {
+    render(
+      <MessageDispatch
+        msg={makeMsg({
+          type: "tool_use",
+          text: "AskUserQuestion",
+          toolName: "AskUserQuestion",
+          toolInput: {
+            question: "Pick one",
+            options: [{ label: "A", description: "Desc A" }],
+          },
+        })}
+      />
+    );
+    // Should render as generic tool_use bubble (shows tool name in toolName span)
+    const toolNames = screen.getAllByText("AskUserQuestion");
+    expect(toolNames.length).toBeGreaterThanOrEqual(1);
   });
 
   it("handles non-string text field gracefully", () => {

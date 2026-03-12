@@ -278,7 +278,7 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
             )}
             {messages.map((msg, i) => {
               if (msg.type === "turn_start") turnCounter++;
-              return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} /></MessageErrorBoundary>;
+              return <MessageErrorBoundary key={i}><MessageDispatch msg={msg} turnNumber={turnCounter} onSend={sendMessage} /></MessageErrorBoundary>;
             })}
             <div ref={messagesEndRef} />
           </div>

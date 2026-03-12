@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { WSMessage } from "../../hooks/useAgentWebSocket";
 import { MarkdownContent } from "./MarkdownContent";
+import { AskUserQuestionBubble } from "./AskUserQuestionBubble";
 import { formatToolSummary } from "./formatToolSummary";
 import { formatTokens, formatUSD } from "../../utils/format";
 import styles from "./TerminalBubbles.module.css";
@@ -211,13 +212,14 @@ function ErrorBubble({ msg }: { msg: WSMessage }) {
 interface MessageDispatchProps {
   msg: WSMessage;
   turnNumber?: number;
+  onSend?: (text: string) => void;
 }
 
 /**
  * Dispatches a WSMessage to the appropriate bubble component.
  * turnNumber is used for turn_start separators.
  */
-export function MessageDispatch({ msg, turnNumber }: MessageDispatchProps) {
+export function MessageDispatch({ msg, turnNumber, onSend }: MessageDispatchProps) {
   switch (msg.type) {
     case "input":
       return <InputBubble msg={msg} />;
@@ -225,6 +227,9 @@ export function MessageDispatch({ msg, turnNumber }: MessageDispatchProps) {
     case "output":
       return <TextBubble msg={msg} />;
     case "tool_use":
+      if (msg.toolName === "AskUserQuestion" && onSend) {
+        return <AskUserQuestionBubble msg={msg} onSend={onSend} />;
+      }
       return <ToolUseBubble msg={msg} />;
     case "tool_result":
       return <ToolResultBubble msg={msg} />;
