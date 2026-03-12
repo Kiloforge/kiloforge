@@ -110,15 +110,19 @@ func (gs *GitSync) PushToRemote(ctx context.Context, projectDir, localBranch, re
 }
 
 // PullFromRemote fetches from origin and fast-forward merges the specified branch.
-// Returns an error if the branches have diverged.
-func (gs *GitSync) PullFromRemote(ctx context.Context, projectDir, remoteBranch, sshKeyPath string) (*PullResult, error) {
+// The localBranch parameter specifies which local branch to compare against
+// (defaults to "main" if empty). Returns an error if the branches have diverged.
+func (gs *GitSync) PullFromRemote(ctx context.Context, projectDir, remoteBranch, sshKeyPath, localBranch string) (*PullResult, error) {
+	if localBranch == "" {
+		localBranch = "main"
+	}
 	// Fetch first.
 	if err := gs.FetchOrigin(ctx, projectDir, sshKeyPath); err != nil {
 		return nil, err
 	}
 
 	// Check for divergence before attempting merge.
-	ahead, behind, err := gs.revListCounts(ctx, projectDir, "main", "origin/"+remoteBranch)
+	ahead, behind, err := gs.revListCounts(ctx, projectDir, localBranch, "origin/"+remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("check divergence: %w", err)
 	}
@@ -239,14 +243,44 @@ func (gs *GitSync) CreateMirrorClone(ctx context.Context, sourceDir, mirrorDir s
 	return nil
 }
 
-// ForcePushToMirror force-pushes main from projectDir to mirrorDir.
-func (gs *GitSync) ForcePushToMirror(ctx context.Context, projectDir, mirrorDir string) error {
+// ForcePushToMirror force-pushes the given branch from projectDir to mirrorDir.
+func (gs *GitSync) ForcePushToMirror(ctx context.Context, projectDir, mirrorDir, branch string) error {
+	if branch == "" {
+		branch = "main"
+	}
 	url := "file://" + mirrorDir
-	cmd := gs.gitCmd(ctx, projectDir, "", "push", "--force", url, "main:main")
+	refspec := branch + ":" + branch
+	cmd := gs.gitCmd(ctx, projectDir, "", "push", "--force", url, refspec)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("force push to mirror: %s: %w", strings.TrimSpace(string(out)), err)
 	}
 	return nil
+}
+
+// DetectDefaultBranch detects the default branch of a cloned repository.
+// It checks symbolic-ref of origin/HEAD first, then falls back to the
+// current HEAD branch name.
+func (gs *GitSync) DetectDefaultBranch(ctx context.Context, repoDir string) string {
+	// Try symbolic-ref refs/remotes/origin/HEAD.
+	cmd := gs.gitCmd(ctx, repoDir, "", "symbolic-ref", "refs/remotes/origin/HEAD")
+	if out, err := cmd.Output(); err == nil {
+		ref := strings.TrimSpace(string(out))
+		// e.g., "refs/remotes/origin/master" -> "master"
+		if parts := strings.SplitN(ref, "refs/remotes/origin/", 2); len(parts) == 2 && parts[1] != "" {
+			return parts[1]
+		}
+	}
+
+	// Fallback: current HEAD branch name.
+	cmd = gs.gitCmd(ctx, repoDir, "", "rev-parse", "--abbrev-ref", "HEAD")
+	if out, err := cmd.Output(); err == nil {
+		branch := strings.TrimSpace(string(out))
+		if branch != "" && branch != "HEAD" {
+			return branch
+		}
+	}
+
+	return "main"
 }
 
 // gitCmd creates a git command for the given directory with optional SSH key env.

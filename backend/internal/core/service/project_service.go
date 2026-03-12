@@ -263,7 +263,7 @@ func (s *ProjectService) SyncMirror(ctx context.Context, slug string) error {
 	if p.MirrorDir == "" {
 		return fmt.Errorf("project %s has no mirror directory", slug)
 	}
-	return s.gitSync.ForcePushToMirror(ctx, p.ProjectDir, p.MirrorDir)
+	return s.gitSync.ForcePushToMirror(ctx, p.ProjectDir, p.MirrorDir, p.PrimaryBranch)
 }
 
 // isRemoteURL returns true if the argument looks like a git remote URL.

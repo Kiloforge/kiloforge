@@ -271,7 +271,7 @@ func TestPullFromRemote(t *testing.T) {
 	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	gs := New()
-	result, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "")
+	result, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "", "")
 	if err != nil {
 		t.Fatalf("PullFromRemote: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestPullFromRemote_Diverged(t *testing.T) {
 	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	gs := New()
-	_, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "")
+	_, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "", "")
 	if err == nil {
 		t.Error("expected error for diverged repo")
 	}
@@ -471,7 +471,7 @@ func TestPullFromRemote_Diverged_ErrSyncConflict(t *testing.T) {
 	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "main").Run()
 
 	gs := New()
-	_, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "")
+	_, err := gs.PullFromRemote(context.Background(), cloneDir, "main", "", "")
 	if err == nil {
 		t.Fatal("expected error for diverged branches")
 	}
@@ -541,7 +541,7 @@ func TestForcePushToMirror(t *testing.T) {
 	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "new commit").Run()
 
 	// Force push to mirror.
-	if err := gs.ForcePushToMirror(context.Background(), cloneDir, mirrorDir); err != nil {
+	if err := gs.ForcePushToMirror(context.Background(), cloneDir, mirrorDir, ""); err != nil {
 		t.Fatalf("ForcePushToMirror: %v", err)
 	}
 
@@ -558,7 +558,7 @@ func TestForcePushToMirror_MirrorNotExist(t *testing.T) {
 	_, cloneDir := initBareAndClone(t)
 
 	gs := New()
-	err := gs.ForcePushToMirror(context.Background(), cloneDir, "/nonexistent/mirror")
+	err := gs.ForcePushToMirror(context.Background(), cloneDir, "/nonexistent/mirror", "")
 	if err == nil {
 		t.Fatal("expected error when mirror does not exist")
 	}
@@ -575,7 +575,7 @@ func TestForcePushToMirror_EmptyRepo(t *testing.T) {
 	cleanGitCmd("git", "clone", "file://"+sourceDir, mirrorDir).Run()
 
 	gs := New()
-	err := gs.ForcePushToMirror(context.Background(), sourceDir, mirrorDir)
+	err := gs.ForcePushToMirror(context.Background(), sourceDir, mirrorDir, "")
 	// Should fail — there's no main branch to push.
 	if err == nil {
 		t.Fatal("expected error for empty repo force push")
@@ -613,7 +613,7 @@ func TestMirrorIntegration_CloneCommitSyncVerify(t *testing.T) {
 	cleanGitCmd("git", "-C", cloneDir, "commit", "-m", "add feature").Run()
 
 	// Step 4: Force push to mirror.
-	if err := gs.ForcePushToMirror(context.Background(), cloneDir, mirrorDir); err != nil {
+	if err := gs.ForcePushToMirror(context.Background(), cloneDir, mirrorDir, ""); err != nil {
 		t.Fatalf("ForcePushToMirror: %v", err)
 	}
 
@@ -642,6 +642,95 @@ func countNonGit(entries []os.DirEntry) int {
 		}
 	}
 	return n
+}
+
+func TestDetectDefaultBranch_Main(t *testing.T) {
+	t.Parallel()
+	_, cloneDir := initBareAndClone(t)
+
+	gs := New()
+	branch := gs.DetectDefaultBranch(context.Background(), cloneDir)
+	if branch != "main" {
+		t.Errorf("DetectDefaultBranch = %q, want %q", branch, "main")
+	}
+}
+
+func TestDetectDefaultBranch_Master(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	bareDir := filepath.Join(dir, "origin.git")
+	cloneDir := filepath.Join(dir, "clone")
+
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%v failed: %s: %v", args, out, err)
+		}
+	}
+
+	// Create bare repo with "master" as default branch.
+	run("git", "init", "--bare", "--initial-branch=master", bareDir)
+	tmpWork := filepath.Join(dir, "tmp-work")
+	run("git", "clone", bareDir, tmpWork)
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
+	f.WriteString("# test")
+	f.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "master").Run()
+
+	run("git", "clone", bareDir, cloneDir)
+
+	gs := New()
+	branch := gs.DetectDefaultBranch(context.Background(), cloneDir)
+	if branch != "master" {
+		t.Errorf("DetectDefaultBranch = %q, want %q", branch, "master")
+	}
+}
+
+func TestDetectDefaultBranch_Custom(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	bareDir := filepath.Join(dir, "origin.git")
+	cloneDir := filepath.Join(dir, "clone")
+
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = dir
+		cmd.Env = cleanGitEnv()
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%v failed: %s: %v", args, out, err)
+		}
+	}
+
+	// Create bare repo with "develop" as default branch.
+	run("git", "init", "--bare", "--initial-branch=develop", bareDir)
+	tmpWork := filepath.Join(dir, "tmp-work")
+	run("git", "clone", bareDir, tmpWork)
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.email", "test@test.com").Run()
+	cleanGitCmd("git", "-C", tmpWork, "config", "user.name", "Test").Run()
+	f, _ := os.Create(filepath.Join(tmpWork, "README.md"))
+	f.WriteString("# test")
+	f.Close()
+	cleanGitCmd("git", "-C", tmpWork, "add", ".").Run()
+	cleanGitCmd("git", "-C", tmpWork, "commit", "-m", "initial").Run()
+	cleanGitCmd("git", "-C", tmpWork, "push", "origin", "develop").Run()
+
+	run("git", "clone", bareDir, cloneDir)
+
+	gs := New()
+	branch := gs.DetectDefaultBranch(context.Background(), cloneDir)
+	if branch != "develop" {
+		t.Errorf("DetectDefaultBranch = %q, want %q", branch, "develop")
+	}
 }
 
 func TestFetchOrigin(t *testing.T) {

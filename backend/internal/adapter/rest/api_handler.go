@@ -1777,7 +1777,7 @@ func (h *APIHandler) PullProject(ctx context.Context, req gen.PullProjectRequest
 		remoteBranch = *req.Body.RemoteBranch
 	}
 
-	result, err := h.gitSync.PullFromRemote(ctx, p.ProjectDir, remoteBranch, p.SSHKeyPath)
+	result, err := h.gitSync.PullFromRemote(ctx, p.ProjectDir, remoteBranch, p.SSHKeyPath, p.PrimaryBranch)
 	if err != nil {
 		if gitadapter.IsErrSyncConflict(err) != nil {
 			return gen.PullProject409JSONResponse{Error: err.Error()}, nil
