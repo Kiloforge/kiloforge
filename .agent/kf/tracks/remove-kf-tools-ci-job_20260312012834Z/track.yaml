@@ -55,5 +55,5 @@ plan:
 - phase: Verification
   tasks:
   - text: Confirm YAML is valid and remaining jobs are unchanged
-    done: false
+    done: true
 extra: {}
