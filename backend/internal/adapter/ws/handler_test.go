@@ -99,6 +99,16 @@ func TestHandlerAgentWS_Connect(t *testing.T) {
 		t.Errorf("stdin got %q, want %q", string(buf[:n]), "hello agent\n")
 	}
 
+	// Should receive the input echo.
+	_, data, err = conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("read echo: %v", err)
+	}
+	json.Unmarshal(data, &msg)
+	if msg.Type != MsgInputEcho || msg.Text != "hello agent" {
+		t.Errorf("expected input_echo with text 'hello agent', got type=%s text=%q", msg.Type, msg.Text)
+	}
+
 	// Close the agent.
 	w.Close()
 	close(done)

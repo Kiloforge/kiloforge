@@ -87,7 +87,7 @@ func (h *Handler) handleAgentWS(w http.ResponseWriter, r *http.Request) {
 
 	// Start read loop for primary client (writes to agent stdin).
 	if isPrimary {
-		go h.readLoop(session, bridge)
+		go h.readLoop(session, bridge, agentID)
 	}
 
 	// Wait for agent exit or client disconnect / server shutdown.
@@ -142,7 +142,9 @@ func (h *Handler) handleNoBridge(w http.ResponseWriter, r *http.Request, agentID
 }
 
 // readLoop reads messages from the WebSocket client and writes to the agent's stdin.
-func (h *Handler) readLoop(session *Session, bridge *Bridge) {
+// After successfully forwarding input, it echoes the message to the ring buffer
+// and broadcasts to all clients so that user input survives reconnection.
+func (h *Handler) readLoop(session *Session, bridge *Bridge, agentID string) {
 	for {
 		_, data, err := session.conn.Read(session.ctx)
 		if err != nil {
@@ -168,7 +170,13 @@ func (h *Handler) readLoop(session *Session, bridge *Bridge) {
 			if err := bridge.WriteInput(text); err != nil {
 				_ = session.conn.Write(session.ctx, websocket.MessageText,
 					ErrorMsg(fmt.Sprintf("failed to send input to agent: %v", err)))
+				continue
 			}
+			// Echo user input to the ring buffer and broadcast to all clients.
+			// This ensures user messages appear in reconnection replay.
+			echo := InputEchoMsg(text)
+			bridge.Buffer.Write(echo)
+			h.sessions.BroadcastToAgent(agentID, echo)
 
 		default:
 			continue
