@@ -3,93 +3,138 @@ title: Add skills palette panel to show available skills and launch agents
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: |
-    Add a skills palette accessible from the Command Deck header that lists
+  summary: 'Add a skills palette accessible from the Command Deck header that lists
+
     available kiloforge skills with descriptions. Clicking a skill opens the
+
     AgentLauncher pre-filled with that role or spawns a new agent directly.
-  context: |
-    Users currently have no way to discover what skills are available without
+
+    '
+  context: 'Users currently have no way to discover what skills are available without
+
     opening the AgentLauncher "New Agent" dialog on a project page. The
+
     AgentLauncher shows roles (Interactive, Product Advisor, Reliability
+
     Advisor) but only within a project context — advisor roles are hidden
+
     on non-project pages. There is no global skills discovery surface.
 
+
     The backend GET /api/skills endpoint returns installed skill names but
+
     not descriptions or role mappings. The frontend has hardcoded role
+
     metadata in AgentLauncher.tsx (ROLES array with label, description,
+
     placeholder per role).
-  codebase_analysis: |
-    AgentLauncher.tsx (lines 5-33): Defines AgentRole type and ROLES array
+
+    '
+  codebase_analysis: 'AgentLauncher.tsx (lines 5-33): Defines AgentRole type and ROLES array
+
     with value, label, description, placeholder per role. Only "interactive",
+
     "advisor-product", "advisor-reliability" are listed. "architect" is
+
     notably absent from the launcher roles.
 
+
     App.tsx (lines 207-242): Header has left section (logo, connection,
+
     agents histogram, terminal count) and right section (nav links, settings).
+
     A skills palette trigger button would fit in the header nav area.
 
+
     useSkillsStatus.ts: Hook that fetches GET /api/skills, returns
+
     SkillsStatus with skills[].name and skills[].modified. No descriptions.
+
 
     SkillsBanner.tsx: Shows install/update banner — not a discovery surface.
 
+
     backend/internal/adapter/skills/checker.go (lines 76-129):
+
     RequiredSkillsForRole() maps roles to skill names.
+
     SkillCommandForRole() maps roles to slash commands.
+
     These mappings are not exposed via API.
 
+
     The skills list is small and static (6-7 skills). Hardcoding metadata
+
     on the frontend (extending the ROLES pattern) is pragmatic. A shared
+
     SKILL_REGISTRY constant can serve both AgentLauncher and the palette.
+
+    '
   acceptance_criteria:
-    - A "Skills" button or icon in the header nav opens a skills palette panel
-    - The palette lists all available skills with name, description, and status (installed/modified)
-    - Skills that require a project context are visually distinguished when no project is active
-    - Clicking a skill navigates to the relevant project page and opens the AgentLauncher with that role pre-selected, OR spawns directly if the user is already on a project page
-    - The palette shows skill installation status from the /api/skills endpoint
-    - The palette is keyboard-accessible (Esc to close)
-  out_of_scope: |
-    - Backend API changes (descriptions stay client-side for now)
+  - A "Skills" button or icon in the header nav opens a skills palette panel
+  - The palette lists all available skills with name, description, and status (installed/modified)
+  - Skills that require a project context are visually distinguished when no project is active
+  - Clicking a skill navigates to the relevant project page and opens the AgentLauncher with that role pre-selected, OR spawns
+    directly if the user is already on a project page
+  - The palette shows skill installation status from the /api/skills endpoint
+  - The palette is keyboard-accessible (Esc to close)
+  out_of_scope: '- Backend API changes (descriptions stay client-side for now)
+
     - Skill configuration or customization UI
+
     - Skill dependency management
+
     - Inline skill invocation from terminal (covered by slash-command track)
-  technical_notes: |
-    Create a shared SKILL_REGISTRY constant (array of skill metadata objects)
+
+    '
+  technical_notes: 'Create a shared SKILL_REGISTRY constant (array of skill metadata objects)
+
     that both AgentLauncher and the new SkillsPalette can consume. This
+
     replaces the current ROLES array pattern with a single source of truth.
 
+
     The palette should be a slide-out panel or popover triggered from the
+
     header. Use the existing useSkillsStatus hook to overlay installation
+
     status on top of the static registry metadata.
 
+
     For "spawn from palette" behavior: if the user is on a ProjectPage,
+
     dispatch the launch directly. If on the overview page, either navigate
+
     to a project first or show a project picker.
+
+    '
 plan:
-  - phase: Skill Registry
-    tasks:
-      - text: "Write test: verify SKILL_REGISTRY exports all known roles with label, description, slashCommand, and requiredSkill fields"
-        done: false
-      - text: "Create shared SKILL_REGISTRY constant in a new skills/registry.ts module, consolidating AgentLauncher ROLES and adding architect role"
-        done: false
-      - text: "Refactor AgentLauncher to consume SKILL_REGISTRY instead of its local ROLES array"
-        done: false
-  - phase: Skills Palette Component
-    tasks:
-      - text: "Write test: verify SkillsPalette renders skill cards with name, description, and install status"
-        done: false
-      - text: "Create SkillsPalette component that merges SKILL_REGISTRY metadata with useSkillsStatus data"
-        done: false
-      - text: "Style the palette as a slide-out panel with skill cards showing role indicator, name, description, and status badge"
-        done: false
-      - text: "Add click handler that triggers agent spawn or navigates to project page with role pre-selected"
-        done: false
-  - phase: Header Integration & Verification
-    tasks:
-      - text: "Add Skills trigger button to App.tsx header nav and wire open/close state"
-        done: false
-      - text: "Run full frontend test suite and verify no regressions"
-        done: false
+- phase: Skill Registry
+  tasks:
+  - text: 'Write test: verify SKILL_REGISTRY exports all known roles with label, description, slashCommand, and requiredSkill
+      fields'
+    done: true
+  - text: Create shared SKILL_REGISTRY constant in a new skills/registry.ts module, consolidating AgentLauncher ROLES and
+      adding architect role
+    done: true
+  - text: Refactor AgentLauncher to consume SKILL_REGISTRY instead of its local ROLES array
+    done: true
+- phase: Skills Palette Component
+  tasks:
+  - text: 'Write test: verify SkillsPalette renders skill cards with name, description, and install status'
+    done: true
+  - text: Create SkillsPalette component that merges SKILL_REGISTRY metadata with useSkillsStatus data
+    done: true
+  - text: Style the palette as a slide-out panel with skill cards showing role indicator, name, description, and status badge
+    done: true
+  - text: Add click handler that triggers agent spawn or navigates to project page with role pre-selected
+    done: true
+- phase: Header Integration & Verification
+  tasks:
+  - text: Add Skills trigger button to App.tsx header nav and wire open/close state
+    done: true
+  - text: Run full frontend test suite and verify no regressions
+    done: true
 extra: {}
