@@ -3,20 +3,40 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SetupRequiredDialog } from "./SetupRequiredDialog";
 
+let lastTerminalProps: Record<string, unknown> = {};
+
 vi.mock("./AgentTerminal", () => ({
-  AgentTerminal: ({ agentId, onClose }: { agentId: string; onClose: () => void }) => (
-    <div data-testid="agent-terminal" data-agent-id={agentId}>
-      <button onClick={onClose}>close-terminal</button>
+  AgentTerminal: (props: Record<string, unknown>) => {
+    lastTerminalProps = props;
+    return (
+      <div data-testid="agent-terminal" data-agent-id={props.agentId as string}>
+        <button onClick={props.onClose as () => void}>close-terminal</button>
+        {props.onMinimize && (
+          <button onClick={props.onMinimize as () => void}>minimize-terminal</button>
+        )}
+        {props.name && <span data-testid="terminal-name">{props.name as string}</span>}
+        {props.role && <span data-testid="terminal-role">{props.role as string}</span>}
+      </div>
+    );
+  },
+}));
+
+vi.mock("./MiniCard", () => ({
+  MiniCard: (props: Record<string, unknown>) => (
+    <div data-testid={`mini-card-${props.agentId}`}>
+      <button onClick={props.onRestore as () => void}>restore</button>
+      <button onClick={props.onClose as () => void}>close-minicard</button>
     </div>
   ),
 }));
 
 function renderDialog(overrides: Partial<Parameters<typeof SetupRequiredDialog>[0]> = {}) {
+  lastTerminalProps = {};
   const props = {
     projectSlug: "my-project",
-    agentId: null,
+    agentId: null as string | null,
     starting: false,
-    error: null,
+    error: null as string | null,
     onRunSetup: vi.fn(),
     onSetupComplete: vi.fn(),
     onCancel: vi.fn(),
@@ -74,5 +94,36 @@ describe("SetupRequiredDialog", () => {
     const { props } = renderDialog({ agentId: "agent-123" });
     await user.click(screen.getByText("close-terminal"));
     expect(props.onSetupComplete).toHaveBeenCalled();
+  });
+
+  it("provides onMinimize callback to AgentTerminal", () => {
+    renderDialog({ agentId: "agent-123" });
+    expect(lastTerminalProps.onMinimize).toBeDefined();
+  });
+
+  it("shows MiniCard when terminal is minimized", async () => {
+    const user = userEvent.setup();
+    renderDialog({ agentId: "agent-123" });
+    await user.click(screen.getByText("minimize-terminal"));
+    expect(screen.getByTestId("mini-card-agent-123")).toBeInTheDocument();
+  });
+
+  it("restores terminal when MiniCard restore is clicked", async () => {
+    const user = userEvent.setup();
+    renderDialog({ agentId: "agent-123" });
+    await user.click(screen.getByText("minimize-terminal"));
+    await user.click(screen.getByText("restore"));
+    expect(screen.getByTestId("agent-terminal")).toBeInTheDocument();
+    expect(screen.queryByTestId("mini-card-agent-123")).not.toBeInTheDocument();
+  });
+
+  it("passes agent name to AgentTerminal when provided", () => {
+    renderDialog({ agentId: "agent-123", agentName: "curiously brave luna" });
+    expect(screen.getByTestId("terminal-name")).toHaveTextContent("curiously brave luna");
+  });
+
+  it("passes agent role to AgentTerminal when provided", () => {
+    renderDialog({ agentId: "agent-123", agentRole: "setup" });
+    expect(screen.getByTestId("terminal-role")).toHaveTextContent("setup");
   });
 });

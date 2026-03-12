@@ -1,9 +1,13 @@
+import { useState, useCallback } from "react";
 import { AgentTerminal } from "./AgentTerminal";
+import { MiniCard } from "./MiniCard";
 import styles from "./ConsentDialog.module.css";
 
 interface Props {
   projectSlug: string;
   agentId: string | null;
+  agentName?: string;
+  agentRole?: string;
   starting: boolean;
   error: string | null;
   onRunSetup: () => void;
@@ -14,14 +18,45 @@ interface Props {
 export function SetupRequiredDialog({
   projectSlug,
   agentId,
+  agentName,
+  agentRole,
   starting,
   error,
   onRunSetup,
   onSetupComplete,
   onCancel,
 }: Props) {
+  const [minimized, setMinimized] = useState(false);
+
+  const handleMinimize = useCallback(() => setMinimized(true), []);
+  const handleRestore = useCallback(() => setMinimized(false), []);
+
   if (agentId) {
-    return <AgentTerminal agentId={agentId} onClose={onSetupComplete} />;
+    return (
+      <>
+        <AgentTerminal
+          agentId={agentId}
+          name={agentName}
+          role={agentRole}
+          minimized={minimized}
+          onMinimize={handleMinimize}
+          onClose={onSetupComplete}
+        />
+        {minimized && (
+          <MiniCard
+            agentId={agentId}
+            name={agentName}
+            role={agentRole}
+            unreadCount={0}
+            notificationType={null}
+            initialX={Math.max(8, (window.innerWidth - 200) / 2)}
+            initialY={window.innerHeight - 64}
+            onRestore={handleRestore}
+            onClose={onSetupComplete}
+          />
+        )}
+      </>
+    );
   }
 
   return (

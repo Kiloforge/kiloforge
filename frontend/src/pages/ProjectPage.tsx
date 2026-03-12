@@ -17,6 +17,7 @@ import { TrackList } from "../components/TrackList";
 import { KanbanBoard } from "../components/KanbanBoard";
 import { SyncPanel } from "../components/SyncPanel";
 import { AgentTerminal } from "../components/AgentTerminal";
+import { MiniCard } from "../components/MiniCard";
 import { AdminPanel } from "../components/AdminPanel";
 import { ProjectMetadataView } from "../components/ProjectMetadataView";
 import { ConsentDialog } from "../components/ConsentDialog";
@@ -104,6 +105,7 @@ export function ProjectPage() {
   }, [pull]);
 
   const [resolverAgentId, setResolverAgentId] = useState<string | null>(null);
+  const [minimizedTerminals, setMinimizedTerminals] = useState<Set<string>>(new Set());
   const [lastResolveReq, setLastResolveReq] = useState<ResolveConflictRequest | null>(null);
 
   const resolveConflictMutation = useMutation({
@@ -137,6 +139,7 @@ export function ProjectPage() {
 
   const handleResolverTerminalClose = useCallback(() => {
     setResolverAgentId(null);
+    setMinimizedTerminals((prev) => { const next = new Set(prev); next.delete("resolver"); return next; });
     clearSyncConflict();
     if (slug) {
       queryClient.invalidateQueries({ queryKey: queryKeys.syncStatus(slug) });
@@ -195,13 +198,23 @@ export function ProjectPage() {
 
   const handleTerminalClose = useCallback(() => {
     setTerminalAgentId(null);
+    setMinimizedTerminals((prev) => { const next = new Set(prev); next.delete("terminal"); return next; });
     queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
   }, [queryClient, slug]);
 
   const handleAdminTerminalClose = useCallback(() => {
     setAdminAgentId(null);
+    setMinimizedTerminals((prev) => { const next = new Set(prev); next.delete("admin"); return next; });
     queryClient.invalidateQueries({ queryKey: queryKeys.board(slug ?? "") });
   }, [queryClient, slug]);
+
+  const minimizeTerminal = useCallback((key: string) => {
+    setMinimizedTerminals((prev) => new Set(prev).add(key));
+  }, []);
+
+  const restoreTerminal = useCallback((key: string) => {
+    setMinimizedTerminals((prev) => { const next = new Set(prev); next.delete(key); return next; });
+  }, []);
 
   return (
     <>
@@ -399,12 +412,26 @@ export function ProjectPage() {
 
       {resolverAgentId && (() => {
         const agent = agents.find((a) => a.id === resolverAgentId);
-        return <AgentTerminal agentId={resolverAgentId} name={agent?.name ?? "Conflict Resolver"} role={agent?.role ?? "resolver"} onClose={handleResolverTerminalClose} />;
+        return (
+          <>
+            <AgentTerminal agentId={resolverAgentId} name={agent?.name ?? "Conflict Resolver"} role={agent?.role ?? "resolver"} minimized={minimizedTerminals.has("resolver")} onMinimize={() => minimizeTerminal("resolver")} onClose={handleResolverTerminalClose} />
+            {minimizedTerminals.has("resolver") && (
+              <MiniCard agentId={resolverAgentId} name={agent?.name ?? "Conflict Resolver"} role={agent?.role ?? "resolver"} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={() => restoreTerminal("resolver")} onClose={handleResolverTerminalClose} />
+            )}
+          </>
+        );
       })()}
 
       {terminalAgentId && (() => {
         const agent = agents.find((a) => a.id === terminalAgentId);
-        return <AgentTerminal agentId={terminalAgentId} name={agent?.name} role={agent?.role} onClose={handleTerminalClose} />;
+        return (
+          <>
+            <AgentTerminal agentId={terminalAgentId} name={agent?.name} role={agent?.role} minimized={minimizedTerminals.has("terminal")} onMinimize={() => minimizeTerminal("terminal")} onClose={handleTerminalClose} />
+            {minimizedTerminals.has("terminal") && (
+              <MiniCard agentId={terminalAgentId} name={agent?.name} role={agent?.role} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={() => restoreTerminal("terminal")} onClose={handleTerminalClose} />
+            )}
+          </>
+        );
       })()}
 
       <section className={appStyles.panel}>
@@ -430,7 +457,14 @@ export function ProjectPage() {
 
       {adminAgentId && (() => {
         const agent = agents.find((a) => a.id === adminAgentId);
-        return <AgentTerminal agentId={adminAgentId} name={agent?.name} role={agent?.role} onClose={handleAdminTerminalClose} />;
+        return (
+          <>
+            <AgentTerminal agentId={adminAgentId} name={agent?.name} role={agent?.role} minimized={minimizedTerminals.has("admin")} onMinimize={() => minimizeTerminal("admin")} onClose={handleAdminTerminalClose} />
+            {minimizedTerminals.has("admin") && (
+              <MiniCard agentId={adminAgentId} name={agent?.name} role={agent?.role} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={() => restoreTerminal("admin")} onClose={handleAdminTerminalClose} />
+            )}
+          </>
+        );
       })()}
 
       {showLauncher && (
@@ -450,17 +484,22 @@ export function ProjectPage() {
           onCancel={skillsPrompt.cancel}
         />
       )}
-      {setupPrompt.showDialog && (
-        <SetupRequiredDialog
-          projectSlug={setupPrompt.projectSlug}
-          agentId={setupPrompt.agentId}
-          starting={setupPrompt.starting}
-          error={setupPrompt.error}
-          onRunSetup={setupPrompt.startSetup}
-          onSetupComplete={handleSetupComplete}
-          onCancel={setupPrompt.cancel}
-        />
-      )}
+      {setupPrompt.showDialog && (() => {
+        const setupAgent = setupPrompt.agentId ? agents.find((a) => a.id === setupPrompt.agentId) : undefined;
+        return (
+          <SetupRequiredDialog
+            projectSlug={setupPrompt.projectSlug}
+            agentId={setupPrompt.agentId}
+            agentName={setupAgent?.name}
+            agentRole={setupAgent?.role}
+            starting={setupPrompt.starting}
+            error={setupPrompt.error}
+            onRunSetup={setupPrompt.startSetup}
+            onSetupComplete={handleSetupComplete}
+            onCancel={setupPrompt.cancel}
+          />
+        );
+      })()}
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>Tracks</h2>
