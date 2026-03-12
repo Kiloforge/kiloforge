@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, Track, Project, SyncStatus, SwarmStatus, SwarmSettings } from "../types/api";
+import type { Agent, Track, Project, AddProjectRequest, SyncStatus, SwarmStatus, SwarmSettings } from "../types/api";
 import { useProjects } from "../hooks/useProjects";
 import { queryKeys } from "../api/queryKeys";
 import { fetcher } from "../api/fetcher";
@@ -121,32 +121,149 @@ function ProjectRow({ project, tracks, onRemove }: ProjectRowProps) {
   );
 }
 
-export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
+function filterAgents(agents: Agent[], roleFilter: string | null, statusFilter: string | null): Agent[] {
+  return agents.filter((a) => {
+    if (roleFilter) {
+      if (roleFilter === "advisor") {
+        if (!a.role.startsWith("advisor-")) return false;
+      } else if (a.role !== roleFilter) {
+        return false;
+      }
+    }
+    if (statusFilter) {
+      if (statusFilter === "active") {
+        if (a.status !== "running" && a.status !== "waiting") return false;
+      } else if (a.status !== statusFilter) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+interface AgentSectionProps {
+  agents: Agent[];
+  agentsLoading: boolean;
+  agentRemainingCount: number;
+  agentHasNextPage: boolean;
+  agentFetchingNextPage: boolean;
+  onAgentLoadMore?: () => void;
+  onViewLog: (agentId: string) => void;
+  onAttach?: (agentId: string) => void;
+  onSpawnInteractive?: () => void;
+  spawningInteractive?: boolean;
+}
+
+function AgentSection({ agents, agentsLoading, agentRemainingCount, agentHasNextPage, agentFetchingNextPage, onAgentLoadMore, onViewLog, onAttach, onSpawnInteractive, spawningInteractive }: AgentSectionProps) {
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const filteredAgents = useMemo(() => filterAgents(agents, roleFilter, statusFilter), [agents, roleFilter, statusFilter]);
+
+  return (
+    <section className={appStyles.panel}>
+      <div className={styles.sectionHeader}>
+        <h2 className={appStyles.panelTitle}>
+          Agents
+          <HelpTooltip term="Agents" definition="AI workers that implement tracks. Each agent runs in its own worktree and can be a developer, advisor, or interactive session." />
+        </h2>
+        <div className={styles.sectionActions}>
+          <Link to="/agents" className={styles.viewAllLink}>View all</Link>
+          {onSpawnInteractive && (
+            <button className={styles.spawnBtn} onClick={onSpawnInteractive} disabled={spawningInteractive}>
+              {spawningInteractive ? "Starting..." : "New Agent"}
+            </button>
+          )}
+        </div>
+      </div>
+      <div className={styles.filterRow}>
+        <div className={styles.filterGroup}>
+          {["developer", "interactive", "advisor"].map((role) => (
+            <button key={role} className={`${styles.chip} ${roleFilter === role ? styles.chipActive : ""}`} onClick={() => setRoleFilter(roleFilter === role ? null : role)}>
+              {role}
+            </button>
+          ))}
+        </div>
+        <div className={styles.filterGroup}>
+          {[
+            { key: "active", label: "Active" },
+            { key: "completed", label: "Completed" },
+            { key: "failed", label: "Failed" },
+          ].map(({ key, label }) => (
+            <button key={key} className={`${styles.chip} ${statusFilter === key ? styles.chipActive : ""}`} onClick={() => setStatusFilter(statusFilter === key ? null : key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {agentsLoading ? (
+        <InlineSpinner label="Loading agents..." />
+      ) : (
+        <PaginatedList
+          remainingCount={agentRemainingCount}
+          hasNextPage={agentHasNextPage}
+          isFetchingNextPage={agentFetchingNextPage}
+          onLoadMore={onAgentLoadMore ?? noOp}
+        >
+          <AgentGrid agents={filteredAgents} onViewLog={onViewLog} onAttach={onAttach} />
+        </PaginatedList>
+      )}
+    </section>
+  );
+}
+
+function ProjectsSection({ projects, projectsLoading, tracks, adding, error, onAdd, onClearError, onRemove }: {
+  projects: Project[];
+  projectsLoading: boolean;
+  tracks: Track[];
+  adding: boolean;
+  error: string | null;
+  onAdd: (req: AddProjectRequest) => Promise<boolean>;
+  onClearError: () => void;
+  onRemove: (slug: string) => void;
+}) {
+  return (
+    <section className={appStyles.panel}>
+      <h2 className={appStyles.panelTitle}>
+        Projects
+        <HelpTooltip term="Projects" definition="Registered Git repositories that Kiloforge manages. Each project can have tracks generated and agents assigned." />
+      </h2>
+      <AddProjectForm adding={adding} error={error} onAdd={onAdd} onClearError={onClearError} />
+      {projectsLoading ? (
+        <InlineSpinner label="Loading projects..." />
+      ) : projects.length === 0 ? (
+        <div className={appStyles.empty}>
+          <p>No projects registered yet, Kiloforger.</p>
+          <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-dimmed)" }}>
+            Use the form above, or from the terminal:
+          </p>
+          <code style={{ display: "block", marginTop: 4, padding: "6px 10px", background: "var(--bg-code)", borderRadius: 6, fontSize: 12 }}>
+            kf add https://github.com/you/repo.git
+          </code>
+        </div>
+      ) : (
+        <div className={styles.projectList}>
+          <div className={styles.projectHeader}>
+            <span>Project</span>
+            <span>Remote</span>
+            <span className={styles.syncHeader}>Sync</span>
+            <span className={styles.trackCountsHeader}>done / active / pending</span>
+            <span className={styles.actionsHeader}></span>
+          </div>
+          {projects.map((p) => (
+            <ProjectRow key={p.slug} project={p} tracks={tracks} onRemove={onRemove} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+const noOp = () => {};
+
+export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, agentHasNextPage = false, agentFetchingNextPage = false, onAgentLoadMore, tracks, onViewLog, onAttach, onSpawnInteractive, spawningInteractive, swarm = null, swarmLoading = false, swarmStarting = false, swarmStopping = false, swarmUpdatingSettings = false, onSwarmStart = noOp, onSwarmStop = noOp, onSwarmUpdateSettings = noOp, trackRemainingCount = 0, trackHasNextPage = false, trackFetchingNextPage = false, onTrackLoadMore }: OverviewPageProps) {
   const { projects, loading: projectsLoading, adding, removing, error, addProject, removeProject, clearError } = useProjects();
   const { traces, remainingCount: traceRemainingCount, hasNextPage: traceHasNextPage, isFetchingNextPage: traceFetchingNextPage, fetchNextPage: traceFetchNextPage } = useTraces();
   const [removeSlug, setRemoveSlug] = useState<string | null>(null);
-  const [roleFilter, setRoleFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-
-  const filteredAgents = useMemo(() => {
-    return agents.filter((a) => {
-      if (roleFilter) {
-        if (roleFilter === "advisor") {
-          if (!a.role.startsWith("advisor-")) return false;
-        } else if (a.role !== roleFilter) {
-          return false;
-        }
-      }
-      if (statusFilter) {
-        if (statusFilter === "active") {
-          if (a.status !== "running" && a.status !== "waiting") return false;
-        } else if (a.status !== statusFilter) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [agents, roleFilter, statusFilter]);
 
   const handleRemoveConfirm = useCallback(
     async (slug: string, cleanup: boolean): Promise<boolean> => {
@@ -161,100 +278,29 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
     <>
       <GettingStartedChecklist projects={projects} agents={agents} tracks={tracks} />
 
-      <section className={appStyles.panel}>
-        <div className={styles.sectionHeader}>
-          <h2 className={appStyles.panelTitle}>
-            Agents
-            <HelpTooltip term="Agents" definition="AI workers that implement tracks. Each agent runs in its own worktree and can be a developer, advisor, or interactive session." />
-          </h2>
-          <div className={styles.sectionActions}>
-            <Link to="/agents" className={styles.viewAllLink}>View all</Link>
-            {onSpawnInteractive && (
-              <button
-                className={styles.spawnBtn}
-                onClick={onSpawnInteractive}
-                disabled={spawningInteractive}
-              >
-                {spawningInteractive ? "Starting..." : "New Agent"}
-              </button>
-            )}
-          </div>
-        </div>
-        <div className={styles.filterRow}>
-          <div className={styles.filterGroup}>
-            {["developer", "interactive", "advisor"].map((role) => (
-              <button
-                key={role}
-                className={`${styles.chip} ${roleFilter === role ? styles.chipActive : ""}`}
-                onClick={() => setRoleFilter(roleFilter === role ? null : role)}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-          <div className={styles.filterGroup}>
-            {[
-              { key: "active", label: "Active" },
-              { key: "completed", label: "Completed" },
-              { key: "failed", label: "Failed" },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                className={`${styles.chip} ${statusFilter === key ? styles.chipActive : ""}`}
-                onClick={() => setStatusFilter(statusFilter === key ? null : key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        {agentsLoading ? (
-          <InlineSpinner label="Loading agents..." />
-        ) : (
-          <PaginatedList
-            remainingCount={agentRemainingCount}
-            hasNextPage={agentHasNextPage}
-            isFetchingNextPage={agentFetchingNextPage}
-            onLoadMore={onAgentLoadMore ?? (() => {})}
-          >
-            <AgentGrid agents={filteredAgents} onViewLog={onViewLog} onAttach={onAttach} />
-          </PaginatedList>
-        )}
-      </section>
+      <AgentSection
+        agents={agents}
+        agentsLoading={agentsLoading}
+        agentRemainingCount={agentRemainingCount}
+        agentHasNextPage={agentHasNextPage}
+        agentFetchingNextPage={agentFetchingNextPage}
+        onAgentLoadMore={onAgentLoadMore}
+        onViewLog={onViewLog}
+        onAttach={onAttach}
+        onSpawnInteractive={onSpawnInteractive}
+        spawningInteractive={spawningInteractive}
+      />
 
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>
-          Projects
-          <HelpTooltip term="Projects" definition="Registered Git repositories that Kiloforge manages. Each project can have tracks generated and agents assigned." />
-        </h2>
-        <AddProjectForm adding={adding} error={error} onAdd={addProject} onClearError={clearError} />
-        {projectsLoading ? (
-          <InlineSpinner label="Loading projects..." />
-        ) : projects.length === 0 ? (
-          <div className={appStyles.empty}>
-            <p>No projects registered yet, Kiloforger.</p>
-            <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-dimmed)" }}>
-              Use the form above, or from the terminal:
-            </p>
-            <code style={{ display: "block", marginTop: 4, padding: "6px 10px", background: "var(--bg-code)", borderRadius: 6, fontSize: 12 }}>
-              kf add https://github.com/you/repo.git
-            </code>
-          </div>
-        ) : (
-          <div className={styles.projectList}>
-            <div className={styles.projectHeader}>
-              <span>Project</span>
-              <span>Remote</span>
-              <span className={styles.syncHeader}>Sync</span>
-              <span className={styles.trackCountsHeader}>done / active / pending</span>
-              <span className={styles.actionsHeader}></span>
-            </div>
-            {projects.map((p) => (
-              <ProjectRow key={p.slug} project={p} tracks={tracks} onRemove={setRemoveSlug} />
-            ))}
-          </div>
-        )}
-      </section>
+      <ProjectsSection
+        projects={projects}
+        projectsLoading={projectsLoading}
+        tracks={tracks}
+        adding={adding}
+        error={error}
+        onAdd={addProject}
+        onClearError={clearError}
+        onRemove={setRemoveSlug}
+      />
 
       <section className={appStyles.panel}>
         <h2 className={appStyles.panelTitle}>
@@ -262,14 +308,14 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
           <HelpTooltip term="Swarm" definition="A managed pool of AI agents that automatically pick up and implement tracks. Start the swarm to parallelize development work." />
         </h2>
         <SwarmPanel
-          swarm={swarm ?? null}
-          loading={swarmLoading ?? false}
-          starting={swarmStarting ?? false}
-          stopping={swarmStopping ?? false}
-          updatingSettings={swarmUpdatingSettings ?? false}
-          onStart={onSwarmStart ?? (() => {})}
-          onStop={onSwarmStop ?? (() => {})}
-          onUpdateSettings={onSwarmUpdateSettings ?? (() => {})}
+          swarm={swarm}
+          loading={swarmLoading}
+          starting={swarmStarting}
+          stopping={swarmStopping}
+          updatingSettings={swarmUpdatingSettings}
+          onStart={onSwarmStart}
+          onStop={onSwarmStop}
+          onUpdateSettings={onSwarmUpdateSettings}
         />
       </section>
 
@@ -282,7 +328,7 @@ export function OverviewPage({ agents, agentsLoading, agentRemainingCount = 0, a
           remainingCount={trackRemainingCount}
           hasNextPage={trackHasNextPage}
           isFetchingNextPage={trackFetchingNextPage}
-          onLoadMore={onTrackLoadMore ?? (() => {})}
+          onLoadMore={onTrackLoadMore ?? noOp}
         >
           <TrackList tracks={tracks} />
         </PaginatedList>

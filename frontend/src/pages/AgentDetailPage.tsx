@@ -26,41 +26,109 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   return <span className={`${styles.dot} ${cls}`} />;
 }
 
-export function AgentDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const diffRef = useRef<HTMLDivElement>(null);
+interface AgentActionBarProps {
+  agent: Agent;
+  stop: ReturnType<typeof useAgentActions>["stop"];
+  resume: ReturnType<typeof useAgentActions>["resume"];
+  replace: ReturnType<typeof useAgentActions>["replace"];
+  del: ReturnType<typeof useAgentActions>["del"];
+  onShowReplace: () => void;
+  onShowDelete: () => void;
+}
 
-  const { tracks } = useTracks();
-  const { stop, resume, replace, del } = useAgentActions();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
+function AgentActionBar({ agent, stop, resume, replace, del, onShowReplace, onShowDelete }: AgentActionBarProps) {
+  return (
+    <div className={styles.actionBar}>
+      {canStop(agent) && (
+        <button className={`${styles.actionBtn} ${styles.actionDanger}`} onClick={() => stop.mutate(agent.id)} disabled={stop.isPending}>
+          {stop.isPending ? "Stopping..." : "Stop"}
+        </button>
+      )}
+      {canResume(agent) && (
+        <button className={`${styles.actionBtn} ${styles.actionSuccess}`} onClick={() => resume.mutate(agent.id)} disabled={resume.isPending}>
+          {resume.isPending ? "Resuming..." : "Resume"}
+        </button>
+      )}
+      {canReplace(agent) && (
+        <button className={`${styles.actionBtn} ${styles.actionWarning}`} onClick={onShowReplace} disabled={replace.isPending}>
+          {replace.isPending ? "Replacing..." : "Replace"}
+        </button>
+      )}
+      {canDelete(agent) && (
+        <button className={`${styles.actionBtn} ${styles.actionDanger}`} onClick={onShowDelete} disabled={del.isPending}>
+          {del.isPending ? "Deleting..." : "Delete"}
+        </button>
+      )}
+    </div>
+  );
+}
 
-  const { data: agent, error: agentError } = useQuery({
-    queryKey: queryKeys.agent(id ?? ""),
-    queryFn: () => fetcher<Agent>(`/api/agents/${encodeURIComponent(id!)}`),
-    enabled: !!id,
-  });
-  const error = agentError?.message ?? null;
+function MetaItem({ label, show = true, children }: { label: string; show?: boolean; children: React.ReactNode }) {
+  if (!show) return null;
+  return (
+    <div className={styles.metaItem}>
+      <span className={styles.metaLabel}>{label}</span>
+      {children}
+    </div>
+  );
+}
 
-  // Log viewer state
+function TokenDisplay({ agent }: { agent: Agent }) {
+  const cacheRead = agent.cache_read_tokens ?? 0;
+  const cacheCreate = agent.cache_creation_tokens ?? 0;
+  const hasCache = cacheRead > 0 || cacheCreate > 0;
+  return (
+    <span className={styles.mono}>
+      {formatTokens(agent.input_tokens ?? 0)} in / {formatTokens(agent.output_tokens ?? 0)} out
+      {hasCache && (
+        <span className={styles.cacheInfo}>
+          {" "}({formatTokens(cacheRead)} cache
+          {cacheCreate > 0 && <>, {formatTokens(cacheCreate)} create</>})
+        </span>
+      )}
+    </span>
+  );
+}
+
+function AgentMetaGrid({ agent, projectSlug }: { agent: Agent; projectSlug: string | null }) {
+  const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
+  const shutdownLabel = agent.shutdown_reason === "idle_disconnect" ? "Suspended — no active connections" : agent.shutdown_reason;
+
+  return (
+    <div className={styles.metaGrid}>
+      <MetaItem label="Role"><span className={`${styles.roleBadge} ${styles[agent.role] ?? ""}`}>{agent.role}</span></MetaItem>
+      <MetaItem label="Status"><StatusBadge status={agent.status} /></MetaItem>
+      <MetaItem label="Model" show={!!agent.model}><span>{agent.model}</span></MetaItem>
+      <MetaItem label="Track" show={!!agent.ref}>
+        <span className={styles.refValue}>
+          {agent.ref}
+          {projectSlug && <>{" "}<Link to={`/projects/${projectSlug}`} className={styles.boardLink}>View on Board</Link></>}
+        </span>
+      </MetaItem>
+      <MetaItem label="Uptime" show={agent.uptime_seconds != null}><span>{formatUptime(agent.uptime_seconds ?? 0)}</span></MetaItem>
+      <MetaItem label="PID" show={agent.pid > 0}><span className={styles.mono}>{agent.pid}</span></MetaItem>
+      <MetaItem label="Worktree" show={!!agent.worktree_dir}><span className={styles.mono}>{agent.worktree_dir}</span></MetaItem>
+      <MetaItem label="Tokens" show={hasTokens}><TokenDisplay agent={agent} /></MetaItem>
+      <MetaItem label="Cost" show={agent.estimated_cost_usd != null}><span>{formatUSD(agent.estimated_cost_usd ?? 0)}</span></MetaItem>
+      <MetaItem label="Suspended At" show={!!agent.suspended_at}><span>{agent.suspended_at ? new Date(agent.suspended_at).toLocaleString() : ""}</span></MetaItem>
+      <MetaItem label="Shutdown Reason" show={!!agent.shutdown_reason}><span>{shutdownLabel}</span></MetaItem>
+      <MetaItem label="Resume Error" show={!!agent.resume_error}><span className={styles.errorText}>{agent.resume_error}</span></MetaItem>
+    </div>
+  );
+}
+
+interface LogSectionProps {
+  id: string;
+}
+
+function LogSection({ id }: LogSectionProps) {
   const [logLines, setLogLines] = useState<string[]>([]);
-  const [logLoading, setLogLoading] = useState(!!id);
+  const [logLoading, setLogLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Scroll to diff section if hash is #diff
   useEffect(() => {
-    if (location.hash === "#diff") {
-      diffRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [location.hash, agent]);
-
-  // Fetch log data (keep as raw fetch — streaming log is not cache-friendly)
-  useEffect(() => {
-    if (!id) return;
     let cancelled = false;
     setLogLoading(true);
     fetch(`/api/agents/${encodeURIComponent(id)}/log?lines=200`)
@@ -81,9 +149,8 @@ export function AgentDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  // Follow mode
   useEffect(() => {
-    if (!id || !following) {
+    if (!following) {
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
       return;
@@ -104,6 +171,103 @@ export function AgentDetailPage() {
     return () => { eventSourceRef.current?.close(); };
   }, []);
 
+  return (
+    <div className={styles.logSection}>
+      <div className={styles.logHeader}>
+        <h3>Log Output</h3>
+        <label className={styles.followToggle}>
+          <input type="checkbox" checked={following} onChange={(e) => setFollowing(e.target.checked)} />
+          Follow
+        </label>
+      </div>
+      <pre ref={logRef} className={styles.logViewer}>
+        {logLoading ? <InlineSpinner label="Loading log..." /> : logLines.join("\n") || "No log data available."}
+      </pre>
+    </div>
+  );
+}
+
+function AgentConfirmDialogs({ agent, replace, del, showReplace, showDelete, onHideReplace, onHideDelete }: {
+  agent: Agent;
+  replace: ReturnType<typeof useAgentActions>["replace"];
+  del: ReturnType<typeof useAgentActions>["del"];
+  showReplace: boolean;
+  showDelete: boolean;
+  onHideReplace: () => void;
+  onHideDelete: () => void;
+}) {
+  const navigate = useNavigate();
+  return (
+    <>
+      {showReplace && (
+        <ConfirmDialog
+          title="Replace Agent"
+          message="This agent's session could not be recovered. Replace with a new agent for the same work?"
+          confirmLabel="Replace"
+          confirming={replace.isPending}
+          onConfirm={() => replace.mutate(agent.id, {
+            onSuccess: (newAgent) => navigate(`/agents/${newAgent.id}`),
+          })}
+          onCancel={onHideReplace}
+        />
+      )}
+      {showDelete && (
+        <ConfirmDialog
+          title="Delete Agent"
+          message={`Are you sure you want to delete "${agent.name || agent.id}"?`}
+          confirmLabel="Delete"
+          confirming={del.isPending}
+          onConfirm={() => del.mutate(agent.id, { onSuccess: () => navigate("/") })}
+          onCancel={onHideDelete}
+        />
+      )}
+    </>
+  );
+}
+
+function BranchDiffSection({ agent, projectSlug, diffRef }: {
+  agent: Agent;
+  projectSlug: string;
+  diffRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div ref={diffRef} className={styles.diffSection} id="diff">
+      <h3 className={styles.sectionTitle}>Branch Diff</h3>
+      <DiffView
+        slug={projectSlug}
+        branch={agent.ref}
+        onDiscuss={agent.role === "interactive" ? () => {
+          const termEl = document.getElementById("terminal");
+          termEl?.scrollIntoView({ behavior: "smooth" });
+        } : undefined}
+      />
+    </div>
+  );
+}
+
+export function AgentDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const diffRef = useRef<HTMLDivElement>(null);
+
+  const { tracks } = useTracks();
+  const { stop, resume, replace, del } = useAgentActions();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
+
+  const { data: agent, error: agentError } = useQuery({
+    queryKey: queryKeys.agent(id ?? ""),
+    queryFn: () => fetcher<Agent>(`/api/agents/${encodeURIComponent(id!)}`),
+    enabled: !!id,
+  });
+  const error = agentError?.message ?? null;
+
+  useEffect(() => {
+    if (location.hash === "#diff") {
+      diffRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [location.hash, agent]);
+
   if (error) {
     return (
       <div className={styles.page}>
@@ -122,11 +286,7 @@ export function AgentDetailPage() {
     );
   }
 
-  const hasTokens = (agent.input_tokens ?? 0) > 0 || (agent.output_tokens ?? 0) > 0;
-  const cacheRead = agent.cache_read_tokens ?? 0;
-  const cacheCreate = agent.cache_creation_tokens ?? 0;
-  const matchedTrack = agent.ref ? tracks.find((t) => t.id === agent.ref) : null;
-  const projectSlug = matchedTrack?.project ?? null;
+  const projectSlug = tracks.find((t) => t.id === agent.ref)?.project ?? null;
 
   return (
     <div className={styles.page}>
@@ -137,67 +297,18 @@ export function AgentDetailPage() {
         </h2>
       </div>
 
-      <div className={styles.actionBar}>
-        {canStop(agent) && (
-          <button
-            className={`${styles.actionBtn} ${styles.actionDanger}`}
-            onClick={() => stop.mutate(agent.id)}
-            disabled={stop.isPending}
-          >
-            {stop.isPending ? "Stopping..." : "Stop"}
-          </button>
-        )}
-        {canResume(agent) && (
-          <button
-            className={`${styles.actionBtn} ${styles.actionSuccess}`}
-            onClick={() => resume.mutate(agent.id)}
-            disabled={resume.isPending}
-          >
-            {resume.isPending ? "Resuming..." : "Resume"}
-          </button>
-        )}
-        {canReplace(agent) && (
-          <button
-            className={`${styles.actionBtn} ${styles.actionWarning}`}
-            onClick={() => setShowReplaceConfirm(true)}
-            disabled={replace.isPending}
-          >
-            {replace.isPending ? "Replacing..." : "Replace"}
-          </button>
-        )}
-        {canDelete(agent) && (
-          <button
-            className={`${styles.actionBtn} ${styles.actionDanger}`}
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={del.isPending}
-          >
-            {del.isPending ? "Deleting..." : "Delete"}
-          </button>
-        )}
-      </div>
+      <AgentActionBar
+        agent={agent} stop={stop} resume={resume} replace={replace} del={del}
+        onShowReplace={() => setShowReplaceConfirm(true)}
+        onShowDelete={() => setShowDeleteConfirm(true)}
+      />
 
-      {showReplaceConfirm && (
-        <ConfirmDialog
-          title="Replace Agent"
-          message="This agent's session could not be recovered. Replace with a new agent for the same work?"
-          confirmLabel="Replace"
-          confirming={replace.isPending}
-          onConfirm={() => replace.mutate(agent.id, {
-            onSuccess: (newAgent) => navigate(`/agents/${newAgent.id}`),
-          })}
-          onCancel={() => setShowReplaceConfirm(false)}
-        />
-      )}
-      {showDeleteConfirm && (
-        <ConfirmDialog
-          title="Delete Agent"
-          message={`Are you sure you want to delete "${agent.name || agent.id}"?`}
-          confirmLabel="Delete"
-          confirming={del.isPending}
-          onConfirm={() => del.mutate(agent.id, { onSuccess: () => navigate("/") })}
-          onCancel={() => setShowDeleteConfirm(false)}
-        />
-      )}
+      <AgentConfirmDialogs
+        agent={agent} replace={replace} del={del}
+        showReplace={showReplaceConfirm} showDelete={showDeleteConfirm}
+        onHideReplace={() => setShowReplaceConfirm(false)}
+        onHideDelete={() => setShowDeleteConfirm(false)}
+      />
 
       {agent.status === "replaced" && (
         <div className={styles.replacedBanner}>
@@ -205,119 +316,13 @@ export function AgentDetailPage() {
         </div>
       )}
 
-      <div className={styles.metaGrid}>
-        <div className={styles.metaItem}>
-          <span className={styles.metaLabel}>Role</span>
-          <span className={`${styles.roleBadge} ${styles[agent.role] ?? ""}`}>{agent.role}</span>
-        </div>
-        <div className={styles.metaItem}>
-          <span className={styles.metaLabel}>Status</span>
-          <StatusBadge status={agent.status} />
-        </div>
-        {agent.model && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Model</span>
-            <span>{agent.model}</span>
-          </div>
-        )}
-        {agent.ref && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Track</span>
-            <span className={styles.refValue}>
-              {agent.ref}
-              {projectSlug && (
-                <>
-                  {" "}
-                  <Link to={`/projects/${projectSlug}`} className={styles.boardLink}>View on Board</Link>
-                </>
-              )}
-            </span>
-          </div>
-        )}
-        {agent.uptime_seconds != null && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Uptime</span>
-            <span>{formatUptime(agent.uptime_seconds)}</span>
-          </div>
-        )}
-        {agent.pid > 0 && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>PID</span>
-            <span className={styles.mono}>{agent.pid}</span>
-          </div>
-        )}
-        {agent.worktree_dir && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Worktree</span>
-            <span className={styles.mono}>{agent.worktree_dir}</span>
-          </div>
-        )}
-        {hasTokens && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Tokens</span>
-            <span className={styles.mono}>
-              {formatTokens(agent.input_tokens ?? 0)} in / {formatTokens(agent.output_tokens ?? 0)} out
-              {(cacheRead > 0 || cacheCreate > 0) && (
-                <span className={styles.cacheInfo}>
-                  {" "}({formatTokens(cacheRead)} cache
-                  {cacheCreate > 0 && <>, {formatTokens(cacheCreate)} create</>})
-                </span>
-              )}
-            </span>
-          </div>
-        )}
-        {agent.estimated_cost_usd != null && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Cost</span>
-            <span>{formatUSD(agent.estimated_cost_usd)}</span>
-          </div>
-        )}
-        {agent.suspended_at && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Suspended At</span>
-            <span>{new Date(agent.suspended_at).toLocaleString()}</span>
-          </div>
-        )}
-        {agent.shutdown_reason && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Shutdown Reason</span>
-            <span>{agent.shutdown_reason === "idle_disconnect" ? "Suspended — no active connections" : agent.shutdown_reason}</span>
-          </div>
-        )}
-        {agent.resume_error && (
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Resume Error</span>
-            <span className={styles.errorText}>{agent.resume_error}</span>
-          </div>
-        )}
-      </div>
+      <AgentMetaGrid agent={agent} projectSlug={projectSlug} />
 
       {agent.worktree_dir && projectSlug && (
-        <div ref={diffRef} className={styles.diffSection} id="diff">
-          <h3 className={styles.sectionTitle}>Branch Diff</h3>
-          <DiffView
-            slug={projectSlug}
-            branch={agent.ref}
-            onDiscuss={agent.role === "interactive" ? () => {
-              const termEl = document.getElementById("terminal");
-              termEl?.scrollIntoView({ behavior: "smooth" });
-            } : undefined}
-          />
-        </div>
+        <BranchDiffSection agent={agent} projectSlug={projectSlug} diffRef={diffRef} />
       )}
 
-      <div className={styles.logSection}>
-        <div className={styles.logHeader}>
-          <h3>Log Output</h3>
-          <label className={styles.followToggle}>
-            <input type="checkbox" checked={following} onChange={(e) => setFollowing(e.target.checked)} />
-            Follow
-          </label>
-        </div>
-        <pre ref={logRef} className={styles.logViewer}>
-          {logLoading ? <InlineSpinner label="Loading log..." /> : logLines.join("\n") || "No log data available."}
-        </pre>
-      </div>
+      {id && <LogSection id={id} />}
 
       {agent.role === "interactive" && id && <div id="terminal"><TerminalSection agentId={id} /></div>}
     </div>

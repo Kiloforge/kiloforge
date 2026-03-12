@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Agent, ResolveConflictRequest, SpawnInteractiveRequest } from "../types/api";
+import type { Agent, Project, ProjectMetadata, ResolveConflictRequest, SpawnInteractiveRequest } from "../types/api";
 import type { AgentRole } from "../components/AgentLauncher";
 import { useTracks } from "../hooks/useTracks";
 import { useProjects } from "../hooks/useProjects";
@@ -35,12 +35,344 @@ import { ProjectSettingsPanel } from "../components/ProjectSettingsPanel";
 import appStyles from "../App.module.css";
 import styles from "./ProjectPage.module.css";
 
+function getDisabledReason(skillsMissing: boolean, setupIncomplete: boolean): string | undefined {
+  if (skillsMissing) return "Install skills first";
+  if (setupIncomplete) return "Run kiloforge setup first";
+  return undefined;
+}
+
+interface TerminalOverlayProps {
+  agentId: string;
+  agents: Agent[];
+  terminalKey: string;
+  minimized: boolean;
+  onMinimize: () => void;
+  onRestore: () => void;
+  onClose: () => void;
+}
+
+function TerminalOverlay({ agentId, agents, terminalKey, minimized, onMinimize, onRestore, onClose }: TerminalOverlayProps) {
+  const agent = agents.find((a) => a.id === agentId);
+  return (
+    <>
+      <AgentTerminal agentId={agentId} name={agent?.name} role={agent?.role} minimized={minimized} onMinimize={onMinimize} onClose={onClose} />
+      {minimized && (
+        <MiniCard agentId={agentId} name={agent?.name ?? (terminalKey === "resolver" ? "Conflict Resolver" : undefined)} role={agent?.role ?? (terminalKey === "resolver" ? "resolver" : undefined)} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={onRestore} onClose={onClose} />
+      )}
+    </>
+  );
+}
+
+interface SetupBannersProps {
+  skillsMissing: boolean;
+  setupIncomplete: boolean;
+  slug: string | undefined;
+  skillsPrompt: ReturnType<typeof useSkillsPrompt>;
+  setupPrompt: ReturnType<typeof useSetupPrompt>;
+  queryClient: ReturnType<typeof useQueryClient>;
+}
+
+function SetupBanners({ skillsMissing, setupIncomplete, slug, skillsPrompt, setupPrompt, queryClient }: SetupBannersProps) {
+  return (
+    <>
+      {skillsMissing && (
+        <div className={styles.setupBanner}>
+          <span className={styles.setupBannerText}>
+            Required skills not installed — install skills before running setup or spawning agents.
+          </span>
+          <button
+            className={styles.setupBannerBtn}
+            onClick={() => skillsPrompt.requestInstall(() => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
+            })}
+            disabled={skillsPrompt.updating}
+          >
+            Install Skills
+          </button>
+        </div>
+      )}
+      {!skillsMissing && setupIncomplete && slug && (
+        <div className={styles.setupBanner}>
+          <span className={styles.setupBannerText}>
+            Kiloforge setup required — run setup to configure this project for track management.
+          </span>
+          <button
+            className={styles.setupBannerBtn}
+            onClick={() => setupPrompt.requestSetup(slug, () => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
+            })}
+            disabled={setupPrompt.starting}
+          >
+            Run Setup
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ProjectMetaSection({ project }: { project: Project }) {
+  return (
+    <section className={appStyles.panel}>
+      <h2 className={appStyles.panelTitle}>Project</h2>
+      <div className={styles.meta}>
+        <div className={styles.metaRow}>
+          <span className={styles.metaLabel}>Slug</span>
+          <span>{project.slug}</span>
+        </div>
+        <div className={styles.metaRow}>
+          <span className={styles.metaLabel}>Repo</span>
+          <span>{project.repo_name}</span>
+        </div>
+        {project.origin_remote && (
+          <div className={styles.metaRow}>
+            <span className={styles.metaLabel}>Remote</span>
+            <span className={styles.mono}>{project.origin_remote}</span>
+          </div>
+        )}
+        {project.mirror_dir && (
+          <div className={styles.metaRow}>
+            <span className={styles.metaLabel}>Mirror</span>
+            <span className={styles.mono}>{project.mirror_dir}</span>
+          </div>
+        )}
+        <div className={styles.metaRow}>
+          <span className={styles.metaLabel}>Status</span>
+          <span>{project.active ? "Active" : "Inactive"}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InfoTabContent({ metadata, metadataLoading, metadataError }: {
+  metadata: ProjectMetadata | undefined;
+  metadataLoading: boolean;
+  metadataError: Error | null;
+}) {
+  return (
+    <section className={appStyles.panel}>
+      {metadataLoading && (
+        <p className={styles.metadataLoading}>Loading project metadata...</p>
+      )}
+      {metadataError && (
+        <p className={metadataError instanceof FetchError && metadataError.status === 404 ? styles.notInitialized : styles.metadataError}>
+          {metadataError instanceof FetchError && metadataError.status === 404
+            ? "Kiloforge is not initialized for this project. Run setup to configure track management."
+            : "Failed to load project metadata."}
+        </p>
+      )}
+      {metadata && <ProjectMetadataView metadata={metadata} />}
+    </section>
+  );
+}
+
+function BoardTabPanels({ project, slug, syncStatus, syncLoading, pushing, pulling, syncError, syncConflict, onPush, onPull, onRefreshSync, onClearSyncError, onResolveConflict, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, board, boardLoading, onMoveCard, onSyncBoard, syncing, actionsDisabled, disabledReason, onDeleteTrack, dependencies, conflicts, onOpenLauncher, adminAgentId, onStartAdminOp, onSetupRequired, onSkillsRequired }: {
+  project: Project | undefined;
+  slug: string | undefined;
+  syncStatus: ReturnType<typeof useOriginSync>["syncStatus"];
+  syncLoading: boolean;
+  pushing: boolean;
+  pulling: boolean;
+  syncError: ReturnType<typeof useOriginSync>["error"];
+  syncConflict: ReturnType<typeof useOriginSync>["conflict"];
+  onPush: (remoteBranch: string) => void;
+  onPull: (remoteBranch?: string) => void;
+  onRefreshSync: () => void;
+  onClearSyncError: () => void;
+  onResolveConflict: () => void;
+  swarm: ReturnType<typeof useSwarm>["swarm"];
+  swarmLoading: boolean;
+  swarmStarting: boolean;
+  swarmStopping: boolean;
+  swarmUpdatingSettings: boolean;
+  onSwarmStart: () => void;
+  onSwarmStop: () => void;
+  onSwarmUpdateSettings: ReturnType<typeof useSwarm>["updateSettings"];
+  board: ReturnType<typeof useBoard>["board"];
+  boardLoading: boolean;
+  onMoveCard: ReturnType<typeof useBoard>["moveCard"];
+  onSyncBoard: () => void;
+  syncing: boolean;
+  actionsDisabled: boolean;
+  disabledReason: string | undefined;
+  onDeleteTrack: (trackId: string) => void;
+  dependencies: ReturnType<typeof useTrackRelations>["dependencies"];
+  conflicts: ReturnType<typeof useTrackRelations>["conflicts"];
+  onOpenLauncher: () => void;
+  adminAgentId: string | null;
+  onStartAdminOp: (agentId: string) => void;
+  onSetupRequired: () => void;
+  onSkillsRequired: () => void;
+}) {
+  return (
+    <>
+      {project?.origin_remote && (
+        <section className={appStyles.panel}>
+          <h2 className={appStyles.panelTitle}>Origin Sync</h2>
+          <SyncPanel
+            syncStatus={syncStatus}
+            loading={syncLoading}
+            pushing={pushing}
+            pulling={pulling}
+            error={syncError}
+            conflict={syncConflict}
+            onPush={onPush}
+            onPull={onPull}
+            onRefresh={onRefreshSync}
+            onClearError={onClearSyncError}
+            onResolveConflict={onResolveConflict}
+          />
+        </section>
+      )}
+
+      <section className={appStyles.panel}>
+        <h2 className={appStyles.panelTitle}>AI Agent Swarm</h2>
+        <SwarmPanel
+          swarm={swarm}
+          loading={swarmLoading}
+          starting={swarmStarting}
+          stopping={swarmStopping}
+          updatingSettings={swarmUpdatingSettings}
+          onStart={onSwarmStart}
+          onStop={onSwarmStop}
+          onUpdateSettings={onSwarmUpdateSettings}
+        />
+      </section>
+
+      <section className={appStyles.panel} data-tour="board-section">
+        <div className={styles.boardHeader}>
+          <h2 className={appStyles.panelTitle}>Board</h2>
+          <div className={styles.boardActions}>
+            <button className={styles.syncBtn} onClick={onSyncBoard} disabled={syncing || actionsDisabled} title={disabledReason}>
+              {syncing ? "Syncing..." : "Sync"}
+            </button>
+            <button className={styles.generateBtn} onClick={onOpenLauncher} disabled={actionsDisabled} title={disabledReason} data-tour="generate-tracks">
+              New Agent
+            </button>
+          </div>
+        </div>
+        {boardLoading ? (
+          <InlineSpinner label="Loading board..." />
+        ) : (
+          <KanbanBoard
+            board={board ?? { columns: ["backlog", "approved", "in_progress", "done"], cards: {} }}
+            projectSlug={slug}
+            onMoveCard={onMoveCard}
+            onDeleteTrack={onDeleteTrack}
+            dependencies={dependencies}
+            conflicts={conflicts}
+          />
+        )}
+      </section>
+
+      <section className={appStyles.panel}>
+        <h2 className={appStyles.panelTitle}>Admin Operations</h2>
+        <AdminPanel
+          projectSlug={slug}
+          running={adminAgentId !== null}
+          disabled={actionsDisabled}
+          disabledReason={disabledReason}
+          onStartOperation={onStartAdminOp}
+          onSetupRequired={onSetupRequired}
+          onSkillsRequired={onSkillsRequired}
+        />
+      </section>
+    </>
+  );
+}
+
+function TrackSearchSection({ tracks, tracksLoading, trackRemaining, trackHasNext, trackFetching, trackLoadMore, slug }: {
+  tracks: ReturnType<typeof useTracks>["tracks"];
+  tracksLoading: boolean;
+  trackRemaining: number;
+  trackHasNext: boolean;
+  trackFetching: boolean;
+  trackLoadMore: () => void;
+  slug: string | undefined;
+}) {
+  const [trackSearch, setTrackSearch] = useState("");
+  const filteredTracks = trackSearch
+    ? tracks.filter((t) => t.title.toLowerCase().includes(trackSearch.toLowerCase()) || t.id.toLowerCase().includes(trackSearch.toLowerCase()))
+    : tracks;
+
+  return (
+    <section className={appStyles.panel}>
+      <h2 className={appStyles.panelTitle}>Tracks</h2>
+      {tracksLoading ? (
+        <InlineSpinner label="Loading tracks..." />
+      ) : (
+        <>
+          <div className={styles.trackSearchWrap}>
+            <input type="text" className={styles.trackSearchInput} placeholder="Search tracks..." value={trackSearch} onChange={(e) => setTrackSearch(e.target.value)} />
+            {trackSearch && (
+              <button className={styles.trackSearchClear} onClick={() => setTrackSearch("")} aria-label="Clear search">&times;</button>
+            )}
+          </div>
+          <PaginatedList remainingCount={trackRemaining} hasNextPage={trackHasNext} isFetchingNextPage={trackFetching} onLoadMore={trackLoadMore}>
+            <TrackList tracks={filteredTracks} projectSlug={slug} />
+          </PaginatedList>
+        </>
+      )}
+    </section>
+  );
+}
+
+function ProjectDialogs({ showLauncher, onLaunch, onCloseLauncher, launchPending, slug, consent, skillsPrompt, setupPrompt, agents, onSetupComplete }: {
+  showLauncher: boolean;
+  onLaunch: (role: AgentRole, prompt: string) => void;
+  onCloseLauncher: () => void;
+  launchPending: boolean;
+  slug: string | undefined;
+  consent: ReturnType<typeof useConsent>;
+  skillsPrompt: ReturnType<typeof useSkillsPrompt>;
+  setupPrompt: ReturnType<typeof useSetupPrompt>;
+  agents: Agent[];
+  onSetupComplete: () => void;
+}) {
+  const setupAgent = setupPrompt.agentId ? agents.find((a) => a.id === setupPrompt.agentId) : undefined;
+  return (
+    <>
+      {showLauncher && (
+        <AgentLauncher
+          onLaunch={onLaunch}
+          onClose={onCloseLauncher}
+          launching={launchPending}
+          projectSlug={slug}
+        />
+      )}
+      {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
+      {skillsPrompt.showDialog && (
+        <SkillsInstallDialog
+          updating={skillsPrompt.updating}
+          error={skillsPrompt.error}
+          onInstall={skillsPrompt.install}
+          onCancel={skillsPrompt.cancel}
+        />
+      )}
+      {setupPrompt.showDialog && (
+        <SetupRequiredDialog
+          projectSlug={setupPrompt.projectSlug}
+          agentId={setupPrompt.agentId}
+          agentName={setupAgent?.name}
+          agentRole={setupAgent?.role}
+          starting={setupPrompt.starting}
+          error={setupPrompt.error}
+          onRunSetup={setupPrompt.startSetup}
+          onSetupComplete={onSetupComplete}
+          onCancel={setupPrompt.cancel}
+        />
+      )}
+    </>
+  );
+}
+
 export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
   const { tracks, loading: tracksLoading, remainingCount: trackRemaining, hasNextPage: trackHasNext, isFetchingNextPage: trackFetching, fetchNextPage: trackLoadMore } = useTracks(slug);
   const { projects } = useProjects();
   const { board, loading: boardLoading, moveCard, syncBoard, syncing } = useBoard(slug);
-  const boardTrackIds = useMemo(() => board ? Object.keys(board.cards) : [], [board]);
+  const boardTrackIds = useMemo(() => Object.keys(board?.cards ?? {}), [board]);
   const { dependencies, conflicts } = useTrackRelations(boardTrackIds, slug);
   const { syncStatus, loading: syncLoading, pushing, pulling, error: syncError, conflict: syncConflict, push, pull, refresh: refreshSync, clearError: clearSyncError, clearConflict: clearSyncConflict } = useOriginSync(slug);
   const { swarm, loading: swarmLoading, starting: swarmStarting, stopping: swarmStopping, updatingSettings: swarmUpdatingSettings, start: swarmStart, stop: swarmStop, updateSettings: swarmUpdateSettings } = useSwarm(slug);
@@ -74,14 +406,9 @@ export function ProjectPage() {
   const skillsMissing = preflight !== undefined && !preflight.skills_ok;
   const setupIncomplete = !skillsMissing && setupStatus !== undefined && !setupStatus.setup_complete;
   const actionsDisabled = skillsMissing || setupIncomplete;
-  const disabledReason = skillsMissing
-    ? "Install skills first"
-    : setupIncomplete
-    ? "Run kiloforge setup first"
-    : undefined;
+  const disabledReason = getDisabledReason(skillsMissing, setupIncomplete);
 
   const [pageTab, setPageTab] = useState<"board" | "info" | "settings">("board");
-  const [trackSearch, setTrackSearch] = useState("");
   const { settings: projectSettings, loading: settingsLoading, updating: settingsUpdating, updateSettings } = useProjectSettings(slug);
   const { data: metadata, isLoading: metadataLoading, error: metadataError } = useProjectMetadata(slug);
   const consent = useConsent();
@@ -224,37 +551,7 @@ export function ProjectPage() {
         <span>{slug}</span>
       </div>
 
-      {project && (
-        <section className={appStyles.panel}>
-          <h2 className={appStyles.panelTitle}>Project</h2>
-          <div className={styles.meta}>
-            <div className={styles.metaRow}>
-              <span className={styles.metaLabel}>Slug</span>
-              <span>{project.slug}</span>
-            </div>
-            <div className={styles.metaRow}>
-              <span className={styles.metaLabel}>Repo</span>
-              <span>{project.repo_name}</span>
-            </div>
-            {project.origin_remote && (
-              <div className={styles.metaRow}>
-                <span className={styles.metaLabel}>Remote</span>
-                <span className={styles.mono}>{project.origin_remote}</span>
-              </div>
-            )}
-            {project.mirror_dir && (
-              <div className={styles.metaRow}>
-                <span className={styles.metaLabel}>Mirror</span>
-                <span className={styles.mono}>{project.mirror_dir}</span>
-              </div>
-            )}
-            <div className={styles.metaRow}>
-              <span className={styles.metaLabel}>Status</span>
-              <span>{project.active ? "Active" : "Inactive"}</span>
-            </div>
-          </div>
-        </section>
-      )}
+      {project && <ProjectMetaSection project={project} />}
 
       {/* Page-level tabs */}
       <div className={styles.pageTabs}>
@@ -278,21 +575,7 @@ export function ProjectPage() {
         </button>
       </div>
 
-      {pageTab === "info" && (
-        <section className={appStyles.panel}>
-          {metadataLoading && (
-            <p className={styles.metadataLoading}>Loading project metadata...</p>
-          )}
-          {metadataError && (
-            <p className={metadataError instanceof FetchError && metadataError.status === 404 ? styles.notInitialized : styles.metadataError}>
-              {metadataError instanceof FetchError && metadataError.status === 404
-                ? "Kiloforge is not initialized for this project. Run setup to configure track management."
-                : "Failed to load project metadata."}
-            </p>
-          )}
-          {metadata && <ProjectMetadataView metadata={metadata} />}
-        </section>
-      )}
+      {pageTab === "info" && <InfoTabContent metadata={metadata} metadataLoading={metadataLoading} metadataError={metadataError} />}
 
       {pageTab === "settings" && (
         <section className={appStyles.panel}>
@@ -307,240 +590,94 @@ export function ProjectPage() {
       )}
 
       {pageTab === "board" && (<>
-      {skillsMissing && (
-        <div className={styles.setupBanner}>
-          <span className={styles.setupBannerText}>
-            Required skills not installed — install skills before running setup or spawning agents.
-          </span>
-          <button
-            className={styles.setupBannerBtn}
-            onClick={() => skillsPrompt.requestInstall(() => {
-              queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
-            })}
-            disabled={skillsPrompt.updating}
-          >
-            Install Skills
-          </button>
-        </div>
+      <SetupBanners
+        skillsMissing={skillsMissing}
+        setupIncomplete={setupIncomplete}
+        slug={slug}
+        skillsPrompt={skillsPrompt}
+        setupPrompt={setupPrompt}
+        queryClient={queryClient}
+      />
+
+      <BoardTabPanels
+        project={project}
+        slug={slug}
+        syncStatus={syncStatus}
+        syncLoading={syncLoading}
+        pushing={pushing}
+        pulling={pulling}
+        syncError={syncError}
+        syncConflict={syncConflict}
+        onPush={handlePush}
+        onPull={handlePull}
+        onRefreshSync={refreshSync}
+        onClearSyncError={clearSyncError}
+        onResolveConflict={handleResolveConflict}
+        swarm={swarm}
+        swarmLoading={swarmLoading}
+        swarmStarting={swarmStarting}
+        swarmStopping={swarmStopping}
+        swarmUpdatingSettings={swarmUpdatingSettings}
+        onSwarmStart={swarmStart}
+        onSwarmStop={swarmStop}
+        onSwarmUpdateSettings={swarmUpdateSettings}
+        board={board}
+        boardLoading={boardLoading}
+        onMoveCard={moveCard}
+        onSyncBoard={syncBoard}
+        syncing={syncing}
+        actionsDisabled={actionsDisabled}
+        disabledReason={disabledReason}
+        onDeleteTrack={handleDeleteTrack}
+        dependencies={dependencies}
+        conflicts={conflicts}
+        onOpenLauncher={() => setShowLauncher(true)}
+        adminAgentId={adminAgentId}
+        onStartAdminOp={setAdminAgentId}
+        onSetupRequired={() => {
+          if (slug) setupPrompt.requestSetup(slug, () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
+          });
+        }}
+        onSkillsRequired={() => {
+          skillsPrompt.requestInstall(() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
+          });
+        }}
+      />
+
+      {resolverAgentId && (
+        <TerminalOverlay agentId={resolverAgentId} agents={agents} terminalKey="resolver" minimized={minimizedTerminals.has("resolver")} onMinimize={() => minimizeTerminal("resolver")} onRestore={() => restoreTerminal("resolver")} onClose={handleResolverTerminalClose} />
       )}
-      {!skillsMissing && setupStatus && !setupStatus.setup_complete && slug && (
-        <div className={styles.setupBanner}>
-          <span className={styles.setupBannerText}>
-            Kiloforge setup required — run setup to configure this project for track management.
-          </span>
-          <button
-            className={styles.setupBannerBtn}
-            onClick={() => setupPrompt.requestSetup(slug, () => {
-              queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
-            })}
-            disabled={setupPrompt.starting}
-          >
-            Run Setup
-          </button>
-        </div>
+      {terminalAgentId && (
+        <TerminalOverlay agentId={terminalAgentId} agents={agents} terminalKey="terminal" minimized={minimizedTerminals.has("terminal")} onMinimize={() => minimizeTerminal("terminal")} onRestore={() => restoreTerminal("terminal")} onClose={handleTerminalClose} />
+      )}
+      {adminAgentId && (
+        <TerminalOverlay agentId={adminAgentId} agents={agents} terminalKey="admin" minimized={minimizedTerminals.has("admin")} onMinimize={() => minimizeTerminal("admin")} onRestore={() => restoreTerminal("admin")} onClose={handleAdminTerminalClose} />
       )}
 
-      {project?.origin_remote && (
-        <section className={appStyles.panel}>
-          <h2 className={appStyles.panelTitle}>Origin Sync</h2>
-          <SyncPanel
-            syncStatus={syncStatus}
-            loading={syncLoading}
-            pushing={pushing}
-            pulling={pulling}
-            error={syncError}
-            conflict={syncConflict}
-            onPush={handlePush}
-            onPull={handlePull}
-            onRefresh={refreshSync}
-            onClearError={clearSyncError}
-            onResolveConflict={handleResolveConflict}
-          />
-        </section>
-      )}
+      <ProjectDialogs
+        showLauncher={showLauncher}
+        onLaunch={handleLaunch}
+        onCloseLauncher={() => setShowLauncher(false)}
+        launchPending={spawnMutation.isPending}
+        slug={slug}
+        consent={consent}
+        skillsPrompt={skillsPrompt}
+        setupPrompt={setupPrompt}
+        agents={agents}
+        onSetupComplete={handleSetupComplete}
+      />
 
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>AI Agent Swarm</h2>
-        <SwarmPanel
-          swarm={swarm}
-          loading={swarmLoading}
-          starting={swarmStarting}
-          stopping={swarmStopping}
-          updatingSettings={swarmUpdatingSettings}
-          onStart={() => swarmStart()}
-          onStop={swarmStop}
-          onUpdateSettings={swarmUpdateSettings}
-        />
-      </section>
-
-      <section className={appStyles.panel} data-tour="board-section">
-        <div className={styles.boardHeader}>
-          <h2 className={appStyles.panelTitle}>Board</h2>
-          <div className={styles.boardActions}>
-            <button
-              className={styles.syncBtn}
-              onClick={syncBoard}
-              disabled={syncing || actionsDisabled}
-              title={disabledReason}
-            >
-              {syncing ? "Syncing..." : "Sync"}
-            </button>
-            <button
-              className={styles.generateBtn}
-              onClick={() => { if (!actionsDisabled) setShowLauncher(true); }}
-              disabled={actionsDisabled}
-              title={disabledReason}
-              data-tour="generate-tracks"
-            >
-              New Agent
-            </button>
-          </div>
-        </div>
-        {boardLoading ? (
-          <InlineSpinner label="Loading board..." />
-        ) : (
-          <KanbanBoard
-            board={board ?? { columns: ["backlog", "approved", "in_progress", "done"], cards: {} }}
-            projectSlug={slug}
-            onMoveCard={moveCard}
-            onDeleteTrack={handleDeleteTrack}
-            dependencies={dependencies}
-            conflicts={conflicts}
-          />
-        )}
-      </section>
-
-      {resolverAgentId && (() => {
-        const agent = agents.find((a) => a.id === resolverAgentId);
-        return (
-          <>
-            <AgentTerminal agentId={resolverAgentId} name={agent?.name ?? "Conflict Resolver"} role={agent?.role ?? "resolver"} minimized={minimizedTerminals.has("resolver")} onMinimize={() => minimizeTerminal("resolver")} onClose={handleResolverTerminalClose} />
-            {minimizedTerminals.has("resolver") && (
-              <MiniCard agentId={resolverAgentId} name={agent?.name ?? "Conflict Resolver"} role={agent?.role ?? "resolver"} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={() => restoreTerminal("resolver")} onClose={handleResolverTerminalClose} />
-            )}
-          </>
-        );
-      })()}
-
-      {terminalAgentId && (() => {
-        const agent = agents.find((a) => a.id === terminalAgentId);
-        return (
-          <>
-            <AgentTerminal agentId={terminalAgentId} name={agent?.name} role={agent?.role} minimized={minimizedTerminals.has("terminal")} onMinimize={() => minimizeTerminal("terminal")} onClose={handleTerminalClose} />
-            {minimizedTerminals.has("terminal") && (
-              <MiniCard agentId={terminalAgentId} name={agent?.name} role={agent?.role} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={() => restoreTerminal("terminal")} onClose={handleTerminalClose} />
-            )}
-          </>
-        );
-      })()}
-
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Admin Operations</h2>
-        <AdminPanel
-          projectSlug={slug}
-          running={adminAgentId !== null}
-          disabled={actionsDisabled}
-          disabledReason={disabledReason}
-          onStartOperation={setAdminAgentId}
-          onSetupRequired={() => {
-            if (slug) setupPrompt.requestSetup(slug, () => {
-              queryClient.invalidateQueries({ queryKey: queryKeys.setupStatus(slug) });
-            });
-          }}
-          onSkillsRequired={() => {
-            skillsPrompt.requestInstall(() => {
-              queryClient.invalidateQueries({ queryKey: queryKeys.preflight });
-            });
-          }}
-        />
-      </section>
-
-      {adminAgentId && (() => {
-        const agent = agents.find((a) => a.id === adminAgentId);
-        return (
-          <>
-            <AgentTerminal agentId={adminAgentId} name={agent?.name} role={agent?.role} minimized={minimizedTerminals.has("admin")} onMinimize={() => minimizeTerminal("admin")} onClose={handleAdminTerminalClose} />
-            {minimizedTerminals.has("admin") && (
-              <MiniCard agentId={adminAgentId} name={agent?.name} role={agent?.role} unreadCount={0} notificationType={null} initialX={Math.max(8, (window.innerWidth - 200) / 2)} initialY={window.innerHeight - 64} onRestore={() => restoreTerminal("admin")} onClose={handleAdminTerminalClose} />
-            )}
-          </>
-        );
-      })()}
-
-      {showLauncher && (
-        <AgentLauncher
-          onLaunch={handleLaunch}
-          onClose={() => setShowLauncher(false)}
-          launching={spawnMutation.isPending}
-          projectSlug={slug}
-        />
-      )}
-      {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
-      {skillsPrompt.showDialog && (
-        <SkillsInstallDialog
-          updating={skillsPrompt.updating}
-          error={skillsPrompt.error}
-          onInstall={skillsPrompt.install}
-          onCancel={skillsPrompt.cancel}
-        />
-      )}
-      {setupPrompt.showDialog && (() => {
-        const setupAgent = setupPrompt.agentId ? agents.find((a) => a.id === setupPrompt.agentId) : undefined;
-        return (
-          <SetupRequiredDialog
-            projectSlug={setupPrompt.projectSlug}
-            agentId={setupPrompt.agentId}
-            agentName={setupAgent?.name}
-            agentRole={setupAgent?.role}
-            starting={setupPrompt.starting}
-            error={setupPrompt.error}
-            onRunSetup={setupPrompt.startSetup}
-            onSetupComplete={handleSetupComplete}
-            onCancel={setupPrompt.cancel}
-          />
-        );
-      })()}
-
-      <section className={appStyles.panel}>
-        <h2 className={appStyles.panelTitle}>Tracks</h2>
-        {tracksLoading ? (
-          <InlineSpinner label="Loading tracks..." />
-        ) : (
-          <>
-            <div className={styles.trackSearchWrap}>
-              <input
-                type="text"
-                className={styles.trackSearchInput}
-                placeholder="Search tracks..."
-                value={trackSearch}
-                onChange={(e) => setTrackSearch(e.target.value)}
-              />
-              {trackSearch && (
-                <button
-                  className={styles.trackSearchClear}
-                  onClick={() => setTrackSearch("")}
-                  aria-label="Clear search"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-            <PaginatedList
-              remainingCount={trackRemaining}
-              hasNextPage={trackHasNext}
-              isFetchingNextPage={trackFetching}
-              onLoadMore={() => trackLoadMore()}
-            >
-              <TrackList
-                tracks={trackSearch
-                  ? tracks.filter((t) => t.title.toLowerCase().includes(trackSearch.toLowerCase()) || t.id.toLowerCase().includes(trackSearch.toLowerCase()))
-                  : tracks}
-                projectSlug={slug}
-              />
-            </PaginatedList>
-          </>
-        )}
-      </section>
+      <TrackSearchSection
+        tracks={tracks}
+        tracksLoading={tracksLoading}
+        trackRemaining={trackRemaining}
+        trackHasNext={trackHasNext}
+        trackFetching={trackFetching}
+        trackLoadMore={trackLoadMore}
+        slug={slug}
+      />
       </>)}
     </>
   );
