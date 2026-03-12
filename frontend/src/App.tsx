@@ -32,6 +32,7 @@ import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay } from "./components/tour/TourOverlay";
 import { SettingsMenu } from "./components/SettingsMenu";
+import { SkillsPalette } from "./components/SkillsPalette";
 import { LoadingFallback } from "./components/LoadingFallback";
 import styles from "./App.module.css";
 
@@ -59,6 +60,7 @@ export default function App() {
   const [showLauncher, setShowLauncher] = useState(false);
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showSkillsPalette, setShowSkillsPalette] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
@@ -198,6 +200,20 @@ export default function App() {
     setShowLauncher(false);
   }, []);
 
+  // Derive current project slug from URL for skills palette context.
+  const currentProjectSlug = useMemo(() => {
+    const match = location.pathname.match(/^\/projects\/([^/]+)/);
+    return match ? match[1] : undefined;
+  }, [location.pathname]);
+
+  const handleSkillSelect = useCallback((role: string) => {
+    setShowSkillsPalette(false);
+    // Open the launcher with the selected role
+    const req: SpawnInteractiveRequest = { role };
+    setLastSpawnReq(req);
+    spawnMutation.mutate(req);
+  }, [spawnMutation]);
+
   return (
     <TourProvider>
       <ToastContainer />
@@ -233,6 +249,7 @@ export default function App() {
         <nav className={`${styles.nav} ${mobileNavOpen ? styles.navOpen : ""}`}>
           <Link to="/agents" className={styles.link} onClick={() => setMobileNavOpen(false)}>Agents</Link>
           <Link to="/reliability" className={styles.link} onClick={() => setMobileNavOpen(false)}>Reliability</Link>
+          <button className={styles.link} onClick={() => setShowSkillsPalette((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer" }}>Skills</button>
           {status?.gitea_url && (
             <a href="/gitea/" target="_blank" rel="noopener noreferrer" className={styles.link}>
               Gitea
@@ -319,6 +336,13 @@ export default function App() {
           waitingForCapacity={waitingForCapacity}
           waitingCapacity={waitingCapacity}
           onCancelWaiting={handleCancelWaiting}
+        />
+      )}
+      {showSkillsPalette && (
+        <SkillsPalette
+          onClose={() => setShowSkillsPalette(false)}
+          onSelectSkill={handleSkillSelect}
+          hasProject={!!currentProjectSlug}
         />
       )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
