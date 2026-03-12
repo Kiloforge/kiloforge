@@ -17,17 +17,20 @@ import (
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add <remote-url>",
-	Short: "Clone a remote repo and register it as a project",
-	Long: `Clones a git remote URL into a managed directory and registers it
+	Use:   "add <remote-url-or-local-path>",
+	Short: "Clone a repo and register it as a project",
+	Long: `Clones a git remote URL or local repo into a managed directory and registers it
 as a kiloforge project.
 
-The repo name is derived from the remote URL (e.g., git@github.com:user/repo.git → repo).
+The repo name is derived from the URL or directory name.
 Use --name to override the derived name.
 
 Examples:
   kf add git@github.com:user/my-project.git
   kf add https://github.com/user/my-project.git
+  kf add /path/to/local/repo
+  kf add ./relative/path
+  kf add ~/my-projects/repo
   kf add git@github.com:user/my-project.git --name custom-name`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAdd,
@@ -49,39 +52,8 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	remoteURL := args[0]
+	arg := args[0]
 
-	// Validate it looks like a remote URL.
-	if !isRemoteURL(remoteURL) {
-		return fmt.Errorf("not a remote URL: %s\n\nUsage: kf add <remote-url>\nExample: kf add git@github.com:user/repo.git", remoteURL)
-	}
-
-	// Derive repo name from URL.
-	repoName, err := repoNameFromURL(remoteURL)
-	if err != nil {
-		return fmt.Errorf("parse remote URL: %w", err)
-	}
-	// Slug defaults to repo name; --name overrides the slug only.
-	slug := repoName
-	if flagAddName != "" {
-		slug = flagAddName
-	}
-
-	// Resolve SSH key path.
-	var sshKeyPath string
-	if flagAddSSHKey != "" {
-		// Explicit --ssh-key flag: use as-is.
-		sshKeyPath, err = expandPath(flagAddSSHKey)
-		if err != nil {
-			return fmt.Errorf("resolve SSH key path: %w", err)
-		}
-		if _, err := os.Stat(sshKeyPath); err != nil {
-			return fmt.Errorf("SSH key not found: %s", sshKeyPath)
-		}
-	} else if isSSHRemote(remoteURL) {
-		// SSH remote without --ssh-key: discover and prompt.
-		sshKeyPath = discoverAndSelectSSHKey()
-	}
 	// Load global config.
 	cfg, err := config.Resolve()
 	if err != nil {
@@ -102,12 +74,6 @@ func runAdd(cmd *cobra.Command, args []string) error {
 			OrchestratorPort: cfg.OrchestratorPort,
 		},
 	)
-
-	if p, err := rt.Projects.GetProject(slug); err == nil {
-		fmt.Printf("Project %q is already registered.\n", slug)
-		fmt.Printf("  Path:   %s\n", p.ProjectDir)
-		return nil
-	}
 
 	// Resolve --output path.
 	var outputDir string
@@ -135,6 +101,43 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Determine if this is a remote URL or local path.
+	if isRemoteURL(arg) {
+		return addFromRemote(ctx, arg, projectSvc, rt, outputDir)
+	}
+	return addFromLocal(ctx, arg, projectSvc, rt, outputDir)
+}
+
+func addFromRemote(ctx context.Context, remoteURL string, projectSvc *service.ProjectService, rt *CLIRuntime, outputDir string) error {
+	repoName, err := repoNameFromURL(remoteURL)
+	if err != nil {
+		return fmt.Errorf("parse remote URL: %w", err)
+	}
+	slug := repoName
+	if flagAddName != "" {
+		slug = flagAddName
+	}
+
+	// Resolve SSH key path.
+	var sshKeyPath string
+	if flagAddSSHKey != "" {
+		sshKeyPath, err = expandPath(flagAddSSHKey)
+		if err != nil {
+			return fmt.Errorf("resolve SSH key path: %w", err)
+		}
+		if _, err := os.Stat(sshKeyPath); err != nil {
+			return fmt.Errorf("SSH key not found: %s", sshKeyPath)
+		}
+	} else if isSSHRemote(remoteURL) {
+		sshKeyPath = discoverAndSelectSSHKey()
+	}
+
+	if p, err := rt.Projects.GetProject(slug); err == nil {
+		fmt.Printf("Project %q is already registered.\n", slug)
+		fmt.Printf("  Path:   %s\n", p.ProjectDir)
+		return nil
+	}
+
 	fmt.Printf("==> Adding project %q from %s...\n", slug, remoteURL)
 	result, err := projectSvc.AddProject(ctx, remoteURL, flagAddName, domain.AddProjectOpts{
 		SSHKeyPath: sshKeyPath,
@@ -144,6 +147,43 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("add project: %w", err)
 	}
 
+	return printAddResult(result)
+}
+
+func addFromLocal(ctx context.Context, localPath string, projectSvc *service.ProjectService, rt *CLIRuntime, outputDir string) error {
+	// Expand ~ and resolve to absolute path.
+	resolved, err := expandPath(localPath)
+	if err != nil {
+		return fmt.Errorf("resolve path: %w", err)
+	}
+	resolved, err = filepath.Abs(resolved)
+	if err != nil {
+		return fmt.Errorf("resolve path: %w", err)
+	}
+
+	slug := filepath.Base(resolved)
+	if flagAddName != "" {
+		slug = flagAddName
+	}
+
+	if p, err := rt.Projects.GetProject(slug); err == nil {
+		fmt.Printf("Project %q is already registered.\n", slug)
+		fmt.Printf("  Path:   %s\n", p.ProjectDir)
+		return nil
+	}
+
+	fmt.Printf("==> Adding project %q from %s...\n", slug, resolved)
+	result, err := projectSvc.AddLocalProject(ctx, resolved, flagAddName, domain.AddProjectOpts{
+		OutputDir: outputDir,
+	})
+	if err != nil {
+		return fmt.Errorf("add project: %w", err)
+	}
+
+	return printAddResult(result)
+}
+
+func printAddResult(result *domain.AddProjectResult) error {
 	if result.EmptyRepo {
 		fmt.Println("==> Repository has no commits — push commits to get started.")
 	}
@@ -153,7 +193,12 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Project '%s' registered!\n", p.Slug)
 	fmt.Printf("  Path:   %s\n", p.ProjectDir)
 	fmt.Printf("  Mirror: %s\n", p.MirrorDir)
-	fmt.Printf("  Origin: %s\n", p.OriginRemote)
+	if p.OriginRemote != "" {
+		fmt.Printf("  Origin: %s\n", p.OriginRemote)
+	}
+	if p.PrimaryBranch != "" {
+		fmt.Printf("  Branch: %s\n", p.PrimaryBranch)
+	}
 	fmt.Println()
 
 	// Install embedded skills locally into the project.

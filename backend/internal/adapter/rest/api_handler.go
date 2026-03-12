@@ -54,6 +54,7 @@ type ProjectLister interface {
 // ProjectManager handles project add/remove operations.
 type ProjectManager interface {
 	AddProject(ctx context.Context, remoteURL, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
+	AddLocalProject(ctx context.Context, localPath, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
 	CreateProject(ctx context.Context, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error)
 	RemoveProject(ctx context.Context, slug string, cleanup bool) error
 	SyncMirror(ctx context.Context, slug string) error
@@ -913,6 +914,11 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 		remoteURL = *req.Body.RemoteUrl
 	}
 
+	localPath := ""
+	if req.Body.LocalPath != nil {
+		localPath = *req.Body.LocalPath
+	}
+
 	name := ""
 	if req.Body.Name != nil {
 		name = *req.Body.Name
@@ -926,7 +932,11 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 		outputDir = *req.Body.OutputDir
 	}
 
-	if remoteURL == "" {
+	if localPath != "" {
+		// Clone from local path.
+		opt := domain.AddProjectOpts{OutputDir: outputDir}
+		result, err = h.projectMgr.AddLocalProject(ctx, localPath, name, opt)
+	} else if remoteURL == "" {
 		// Create from scratch — name is required.
 		if name == "" {
 			return gen.AddProject400JSONResponse{Error: "name is required when remote_url is not provided"}, nil
@@ -962,7 +972,9 @@ func (h *APIHandler) AddProject(ctx context.Context, req gen.AddProjectRequestOb
 	}
 	if h.analytics != nil {
 		source := "clone"
-		if remoteURL == "" {
+		if localPath != "" {
+			source = "local"
+		} else if remoteURL == "" {
 			source = "create"
 		}
 		h.analytics.Track(ctx, "project_added", map[string]any{"source": source})

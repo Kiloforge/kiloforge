@@ -2317,6 +2317,9 @@ components:
         remote_url:
           type: string
           description: Git remote URL (SSH or HTTPS). If omitted, a fresh local repo is created (name becomes required).
+        local_path:
+          type: string
+          description: Absolute path to a local git repository. Alternative to remote_url.
         name:
           type: string
           description: Project slug. Required when remote_url is omitted; defaults to repo name from URL otherwise.

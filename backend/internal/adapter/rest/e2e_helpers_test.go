@@ -518,6 +518,11 @@ func (m *e2eProjectManager) RemoveProject(_ context.Context, slug string, _ bool
 	return nil
 }
 
+func (m *e2eProjectManager) AddLocalProject(_ context.Context, localPath, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
+	// Reuse AddProject logic for e2e tests — local path is treated as remote URL.
+	return m.AddProject(context.Background(), localPath, name, opts...)
+}
+
 func (m *e2eProjectManager) SyncMirror(_ context.Context, _ string) error {
 	return nil
 }

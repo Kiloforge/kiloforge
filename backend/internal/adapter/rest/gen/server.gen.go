@@ -161,6 +161,9 @@ const (
 
 // AddProjectRequest defines model for AddProjectRequest.
 type AddProjectRequest struct {
+	// LocalPath Absolute path to a local git repository. Alternative to remote_url.
+	LocalPath *string `json:"local_path,omitempty"`
+
 	// Name Project slug. Required when remote_url is omitted; defaults to repo name from URL otherwise.
 	Name *string `json:"name,omitempty"`
 
