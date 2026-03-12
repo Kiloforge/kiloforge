@@ -3,86 +3,108 @@ title: Fix Go build failures and add machine-readable verification commands
 type: chore
 status: pending
 created: '2026-03-13'
-updated: '2026-03-13'
+updated: '2026-03-12'
 spec:
-  summary: >
-    Fix the Go test setup failures caused by uninitialized submodule, add a
-    'make verify' target, and add machine-readable verification commands to
-    workflow.yaml so agents cannot skip quality gates.
-  context: |
-    Multiple Go test packages fail with "setup failed" because the
-    `backend/internal/adapter/skills/embedded/` git submodule isn't initialized
-    in worktrees. The Makefile's `test` target depends on `ensure-dist` but NOT
+  summary: 'Fix the Go test setup failures caused by uninitialized submodule, add a ''make verify'' target, and add machine-readable
+    verification commands to workflow.yaml so agents cannot skip quality gates.
+
+    '
+  context: 'Multiple Go test packages fail with "setup failed" because the
+
+    `backend/internal/adapter/skills/embedded/` git submodule isn''t initialized
+
+    in worktrees. The Makefile''s `test` target depends on `ensure-dist` but NOT
+
     on `ensure-submodules`, so `make test` fails without first running
+
     `make build-backend`.
 
+
     Additionally, `.agent/kf/workflow.yaml` only has policy metadata (TDD
+
     strictness, commit strategy) but no machine-readable verification commands.
+
     The workflow.md documents `make test && make build && make lint` but agents
+
     have been using ad-hoc package-specific commands instead of the full suite.
 
+
     The user wants: "nothing should be merged unless all builds, checks, and
+
     tests are passing."
-  codebase_analysis: |
-    Makefile:
+
+    '
+  codebase_analysis: 'Makefile:
+
     - `ensure-submodules` target exists (line 38-39): `git submodule update --init --recursive`
+
     - `test` target depends on `ensure-dist` but NOT `ensure-submodules`
+
     - `build-backend` depends on both `ensure-dist` and `ensure-submodules`
+
     - No `verify` target exists
 
+
     workflow.yaml:
+
     - Has `verification.checkpoints: track_completion` and a description
+
     - No `commands` or `verify_cmd` field
 
+
     workflow.md:
+
     - Documents verification commands: `make test`, `make build`, `make lint`
+
     - Documents autoformat step before verification
 
+
     kf-developer skill:
+
     - Step 11b uses `VERIFY_CMD="<commands from workflow.yaml>"` as template
+
     - Agents manually construct this string — no enforcement
+
+    '
   acceptance_criteria:
-    - "`make test` succeeds in a fresh worktree without running `make build` first"
-    - "`make verify` target exists and runs test + build + lint in sequence"
-    - "`.agent/kf/workflow.yaml` contains a `verification.commands` field with the exact commands"
-    - "Agents can read verification commands from workflow.yaml programmatically"
-    - "CLAUDE.md includes guidance that all verification must pass before merge"
-  out_of_scope: |
-    Modifying the kf-developer or kf-merge-protocol skill files (those are
+  - '`make test` succeeds in a fresh worktree without running `make build` first'
+  - '`make verify` target exists and runs test + build + lint in sequence'
+  - '`.agent/kf/workflow.yaml` contains a `verification.commands` field with the exact commands'
+  - Agents can read verification commands from workflow.yaml programmatically
+  - CLAUDE.md includes guidance that all verification must pass before merge
+  out_of_scope: 'Modifying the kf-developer or kf-merge-protocol skill files (those are
+
     external skills, not in this repo). The workflow.yaml change gives agents
+
     the data they need; skill updates happen separately via /kf-update.
-  technical_notes: |
-    1. Makefile: Add `ensure-submodules` as dependency of `test` target.
-       Add new `verify` target: `verify: test build lint` (runs all three).
 
-    2. workflow.yaml: Add `verification.commands` field:
-       ```yaml
-       verification:
-         commands: "make verify"
-         pre_commands: "cd backend && gofmt -w . && goimports -w -local github.com/benbaldivia/crelay ."
-       ```
-
-    3. CLAUDE.md: Add a section stating that all merges require `make verify`
-       to pass. Reference the verification commands.
+    '
+  technical_notes: "1. Makefile: Add `ensure-submodules` as dependency of `test` target.\n   Add new `verify` target: `verify:\
+    \ test build lint` (runs all three).\n\n2. workflow.yaml: Add `verification.commands` field:\n   ```yaml\n   verification:\n\
+    \     commands: \"make verify\"\n     pre_commands: \"cd backend && gofmt -w . && goimports -w -local github.com/benbaldivia/crelay\
+    \ .\"\n   ```\n\n3. CLAUDE.md: Add a section stating that all merges require `make verify`\n   to pass. Reference the\
+    \ verification commands.\n"
 plan:
-  - phase: Fix Makefile
-    tasks:
-      - text: "Add `ensure-submodules` as a dependency of the `test` target in the Makefile (alongside existing `ensure-dist`)."
-        done: false
-      - text: "Add a `verify` phony target that runs `test`, `build`, and `lint` in sequence. Add it to the .PHONY list."
-        done: false
-      - text: "Verify `make test` passes in the current worktree (submodule should auto-init)."
-        done: false
-  - phase: Update workflow config
-    tasks:
-      - text: "Add `verification.commands` and `verification.pre_commands` fields to `.agent/kf/workflow.yaml` with the exact shell commands agents should run."
-        done: false
-      - text: "Update CLAUDE.md to add a 'Verification / Quality Gate' section stating that `make verify` must pass before any merge to main."
-        done: false
-  - phase: Verification
-    tasks:
-      - text: "Run `make test` to verify submodule fix works."
-        done: false
-      - text: "Run `make verify` to confirm the new target works end-to-end."
-        done: false
+- phase: Fix Makefile
+  tasks:
+  - text: Add `ensure-submodules` as a dependency of the `test` target in the Makefile (alongside existing `ensure-dist`).
+    done: true
+  - text: Add a `verify` phony target that runs `test`, `build`, and `lint` in sequence. Add it to the .PHONY list.
+    done: true
+  - text: Verify `make test` passes in the current worktree (submodule should auto-init).
+    done: true
+- phase: Update workflow config
+  tasks:
+  - text: Add `verification.commands` and `verification.pre_commands` fields to `.agent/kf/workflow.yaml` with the exact shell
+      commands agents should run.
+    done: true
+  - text: Update CLAUDE.md to add a 'Verification / Quality Gate' section stating that `make verify` must pass before any
+      merge to main.
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run `make test` to verify submodule fix works.
+    done: true
+  - text: Run `make verify` to confirm the new target works end-to-end.
+    done: true
 extra: {}
