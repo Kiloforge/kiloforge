@@ -164,7 +164,8 @@ export function TourProvider({ children }: TourProviderProps) {
 
   const handleComplete = useCallback(() => {
     tour.completeTour();
-  }, [tour]);
+    navigate("/");
+  }, [tour, navigate]);
 
   const handleRestart = useCallback(() => {
     tour.restartTour();

@@ -208,7 +208,7 @@ export const DEMO_STATES: Record<string, DemoState> = {
     inject: projectInjections,
   },
   finish: {
-    route: `/projects/${DEMO_PROJECT_SLUG}`,
-    inject: projectInjections,
+    route: "/",
+    inject: overviewInjections,
   },
 };
