@@ -270,7 +270,7 @@ describe("useAgentWebSocket", () => {
     expect(result.current.messages).toHaveLength(0);
   });
 
-  it("sends messages via sendMessage", () => {
+  it("sends messages via sendMessage without adding to local state", () => {
     const { result } = renderHook(() => useAgentWebSocket("agent-1"));
     const ws = MockWebSocket.latest!;
     act(() => ws.simulateOpen());
@@ -278,9 +278,58 @@ describe("useAgentWebSocket", () => {
     act(() => result.current.sendMessage("hello"));
 
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: "input", text: "hello" }));
+    // sendMessage no longer adds to local state — the server echo is the source of truth.
+    expect(result.current.messages).toHaveLength(0);
+  });
+
+  it("handles input_echo server message as input type", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "input_echo", text: "hello" });
+    });
+
     expect(result.current.messages).toHaveLength(1);
     expect(result.current.messages[0].type).toBe("input");
     expect(result.current.messages[0].text).toBe("hello");
+  });
+
+  it("input_echo messages survive reconnection via replay", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    // Simulate a conversation: user input echo + agent response.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "input_echo", text: "hello" });
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "Hi there!" });
+    });
+    expect(result.current.messages).toHaveLength(2);
+
+    // Set non-terminal status so reconnect takes the direct path.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "status", status: "running" });
+    });
+
+    // Disconnect and reconnect.
+    act(() => MockWebSocket.latest!.simulateClose(1006));
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    // Messages cleared on reconnect.
+    expect(result.current.messages).toHaveLength(0);
+
+    // Server replays ring buffer including input_echo.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "input_echo", text: "hello" });
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "Hi there!" });
+    });
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[0].type).toBe("input");
+    expect(result.current.messages[0].text).toBe("hello");
+    expect(result.current.messages[1].type).toBe("text");
+    expect(result.current.messages[1].text).toBe("Hi there!");
   });
 
   it("does not send when WebSocket is not open", () => {

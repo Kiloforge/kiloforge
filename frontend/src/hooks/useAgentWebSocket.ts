@@ -196,6 +196,9 @@ export function useAgentWebSocket(agentId: string | null) {
               ]);
             }
             break;
+          case "input_echo":
+            setMessages((prev) => [...prev, { type: "input", text: safeText, timestamp: now }]);
+            break;
           case "error":
             setMessages((prev) => [...prev, { type: "error", text: msg.message ?? "Unknown error", timestamp: now }]);
             break;
@@ -291,7 +294,6 @@ export function useAgentWebSocket(agentId: string | null) {
     (text: string) => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
       wsRef.current.send(JSON.stringify({ type: "input", text }));
-      setMessages((prev) => [...prev, { type: "input", text, timestamp: new Date() }]);
     },
     [],
   );
