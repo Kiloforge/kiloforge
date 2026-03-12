@@ -72,10 +72,12 @@ vi.mock("../hooks/useAgentActions", () => ({
   canDelete: (a: Agent) => a.status !== "running" && a.status !== "waiting",
 }));
 
+const mockReconnect = vi.fn();
 vi.mock("../hooks/useAgentWebSocket", () => ({
   useAgentWebSocket: () => ({
     messages: [],
     sendMessage: vi.fn(),
+    reconnect: mockReconnect,
     status: "disconnected" as const,
     agentStatus: null,
   }),
@@ -228,4 +230,5 @@ describe("AgentDetailPage", () => {
       expect(screen.getByText(/replaced by a new agent/)).toBeInTheDocument();
     });
   });
+
 });

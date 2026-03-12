@@ -322,16 +322,31 @@ export function AgentDetailPage() {
 
       {id && <LogSection id={id} />}
 
-      {agent.role === "interactive" && id && <div id="terminal"><TerminalSection agentId={id} /></div>}
+      {agent.role === "interactive" && id && <div id="terminal"><TerminalSection agentId={id} serverStatus={agent.status} /></div>}
     </div>
   );
 }
 
-function TerminalSection({ agentId }: { agentId: string }) {
-  const { messages, sendMessage, status, agentStatus } = useAgentWebSocket(agentId);
+const TERMINAL_AGENT_STATUSES = new Set([
+  "completed", "failed", "stopped", "force-killed", "resume-failed", "replaced", "suspended",
+]);
+
+function TerminalSection({ agentId, serverStatus }: { agentId: string; serverStatus: string }) {
+  const { messages, sendMessage, reconnect, status, agentStatus } = useAgentWebSocket(agentId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const prevServerStatusRef = useRef(serverStatus);
+
+  // When the server-side status transitions from terminal → non-terminal
+  // (e.g., after resume), trigger WS reconnect.
+  useEffect(() => {
+    const prev = prevServerStatusRef.current;
+    prevServerStatusRef.current = serverStatus;
+    if (TERMINAL_AGENT_STATUSES.has(prev) && !TERMINAL_AGENT_STATUSES.has(serverStatus)) {
+      reconnect();
+    }
+  }, [serverStatus, reconnect]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
