@@ -116,8 +116,8 @@ jobs:
       - name: Build backend
         run: cd backend && go build ./cmd/kf
 
-      - name: Run Go tests
-        run: cd backend && go test ./...
+      - name: Run Go tests with race detection
+        run: cd backend && go test -race ./...
 
   deps:
     runs-on: ubuntu-latest
