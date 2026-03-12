@@ -1,78 +1,103 @@
 id: local-repo-add-fe_20260312073312Z
-title: "Add local repo mode to project registration form (frontend)"
+title: Add local repo mode to project registration form (frontend)
 type: feature
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: >
-    Add a "Local repo" mode tab to the AddProjectForm component, allowing users
-    to enter a local filesystem path to register an existing repo as a project.
-    Integrates with the new local_path API field from the backend track.
-  context: |
-    The AddProjectForm currently supports two modes: "Clone from remote" and
+  summary: 'Add a "Local repo" mode tab to the AddProjectForm component, allowing users to enter a local filesystem path to
+    register an existing repo as a project. Integrates with the new local_path API field from the backend track.
+
+    '
+  context: 'The AddProjectForm currently supports two modes: "Clone from remote" and
+
     "Create new". With backend support for local repos being added in
+
     local-repo-add-be_20260312073311Z, the frontend needs a third mode that
+
     sends a local_path field instead of remote_url.
-  codebase_analysis: |
-    Key files:
+
+    '
+  codebase_analysis: 'Key files:
+
     - "frontend/src/components/AddProjectForm.tsx — mode toggle (clone/create), form fields"
+
     - "frontend/src/types/api.ts:124 — AddProjectRequest type (needs local_path field)"
+
     - frontend/src/hooks/useProjects.ts — addProject mutation sends POST /api/projects
 
+
     The form already has a mode toggle pattern (clone/create) that can be extended
+
     with a third "local" option. The local mode needs:
+
     - A path input field (similar to remote URL but for filesystem paths)
+
     - An optional name field (same as clone mode)
+
     - An optional output directory field (same as both modes)
-    - No SSH key field (local clones don't need SSH)
+
+    - No SSH key field (local clones don''t need SSH)
+
 
     Validation: the frontend can do basic checks (non-empty, starts with / or ~/ or ./),
+
     but the backend will do the real validation (path exists, is a git repo).
+
+    '
   acceptance_criteria:
-    - "AddProjectForm shows three mode tabs: \"Clone from remote\", \"Local repo\", \"Create new\""
-    - Local repo mode shows a path input field with appropriate placeholder
-    - Local repo mode shows optional name and output directory fields
-    - Local repo mode does NOT show SSH key selector
-    - "Submitting sends { local_path: \"/path/to/repo\" } in the request body"
-    - Basic client-side validation rejects empty paths
-    - AddProjectRequest TypeScript type includes optional local_path field
-    - Existing clone and create modes continue to work unchanged
-    - Component tests cover the new mode
-  out_of_scope: |
-    - File/directory picker dialog (would require Electron or similar — just use text input)
+  - 'AddProjectForm shows three mode tabs: "Clone from remote", "Local repo", "Create new"'
+  - Local repo mode shows a path input field with appropriate placeholder
+  - Local repo mode shows optional name and output directory fields
+  - Local repo mode does NOT show SSH key selector
+  - 'Submitting sends { local_path: "/path/to/repo" } in the request body'
+  - Basic client-side validation rejects empty paths
+  - AddProjectRequest TypeScript type includes optional local_path field
+  - Existing clone and create modes continue to work unchanged
+  - Component tests cover the new mode
+  out_of_scope: '- File/directory picker dialog (would require Electron or similar — just use text input)
+
     - Displaying detected branch name after registration (future enhancement)
-  technical_notes: |
-    1. Extend FormMode type: "clone" | "local" | "create"
+
+    '
+  technical_notes: '1. Extend FormMode type: "clone" | "local" | "create"
+
     2. Add local_path to AddProjectRequest type
+
     3. Add third mode tab button in the toggle
+
     4. When mode is "local", show path input instead of remote URL
+
     5. On submit in local mode, send { local_path: path.trim(), name?, output_dir? }
+
     6. Validation: path must be non-empty; optionally check starts with /, ~/, or ./
+
     7. Update existing tests, add new tests for local mode
+
+    '
 plan:
-  - phase: "Type and form updates"
-    tasks:
-      - text: "Add local_path?: string to AddProjectRequest in types/api.ts"
-        done: false
-      - text: "Extend FormMode type to include 'local' in AddProjectForm.tsx"
-        done: false
-      - text: "Add third mode tab button 'Local repo' to the mode toggle"
-        done: false
-      - text: "Add path input field for local mode with placeholder '/path/to/repo'"
-        done: false
-      - text: "Update handleSubmit to send local_path field when mode is 'local'"
-        done: false
-      - text: "Add basic validation — reject empty path in local mode"
-        done: false
-  - phase: "Polish"
-    tasks:
-      - text: "Ensure SSH key selector is hidden in local mode"
-        done: false
-      - text: "Update submit button text to 'Add Local Repo' in local mode"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Update/add component tests for the new local mode"
-        done: false
+- phase: Type and form updates
+  tasks:
+  - text: 'Add local_path?: string to AddProjectRequest in types/api.ts'
+    done: true
+  - text: Extend FormMode type to include 'local' in AddProjectForm.tsx
+    done: true
+  - text: Add third mode tab button 'Local repo' to the mode toggle
+    done: true
+  - text: Add path input field for local mode with placeholder '/path/to/repo'
+    done: true
+  - text: Update handleSubmit to send local_path field when mode is 'local'
+    done: true
+  - text: Add basic validation — reject empty path in local mode
+    done: true
+- phase: Polish
+  tasks:
+  - text: Ensure SSH key selector is hidden in local mode
+    done: true
+  - text: Update submit button text to 'Add Local Repo' in local mode
+    done: true
+- phase: Verification
+  tasks:
+  - text: Update/add component tests for the new local mode
+    done: true
 extra: {}
