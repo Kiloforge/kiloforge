@@ -1,0 +1,64 @@
+id: default-scale-max-fe_20260312094200Z
+title: Set default UI scale to maximum (150%) with localStorage persistence
+type: bug
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Change the default UI scale from 100% to 150% (the maximum) so new users
+    see the largest view by default. The scale already persists to localStorage
+    — no persistence work needed.
+  context: |
+    The useUIScale hook (frontend/src/hooks/useUIScale.ts) defaults to 100%
+    scale. The user wants the default to be 150% (the largest setting). The
+    hook already persists the chosen scale to localStorage under the key
+    "kf-ui-scale", so users who have previously set a custom scale will keep
+    their preference. Only new users (no localStorage entry) are affected.
+  codebase_analysis: |
+    useUIScale.ts line 6: DEFAULT_SCALE = 100
+    This constant is used in readStoredScale() as the fallback when
+    localStorage has no entry (line 11) or the value is invalid (line 13).
+
+    applyZoom() line 25: compares scale === DEFAULT_SCALE to decide whether
+    to clear the zoom style or set it. After changing DEFAULT_SCALE to 150,
+    the zoom style must be set to "1.5" by default — the === check should be
+    updated to always apply zoom (or compare against 100 literally).
+
+    useUIScale.test.ts: Tests reference DEFAULT_SCALE=100 behavior:
+    - Line 19: "defaults to 100 when no stored value"
+    - Line 35-38: "does not set zoom when scale is 100 (default)"
+    These tests must be updated for the new default.
+  acceptance_criteria:
+    - Default UI scale is 150% for new users (no localStorage entry)
+    - Users with an existing localStorage scale preference keep their value
+    - The zoom CSS property is correctly applied at 150% on first load
+    - The "no zoom style" optimization still works when scale is 100 (not just when equal to DEFAULT_SCALE)
+  out_of_scope: |
+    - Adding new persistence mechanisms (localStorage already works)
+    - Changing the scale range (75-150 stays the same)
+    - UI changes to the SettingsMenu scale slider
+  technical_notes: |
+    Change DEFAULT_SCALE from 100 to 150 in useUIScale.ts.
+
+    The applyZoom function compares scale === DEFAULT_SCALE to skip zoom at
+    "neutral" scale. After the change, the neutral zoom (no CSS transform)
+    is still at 100, not at DEFAULT_SCALE. So change the comparison from
+    scale === DEFAULT_SCALE to scale === 100 (literal) to keep the
+    optimization correct.
+
+    Update tests to expect 150 as the default and verify zoom is applied.
+plan:
+  - phase: Implementation
+    tasks:
+      - text: Update DEFAULT_SCALE from 100 to 150 in useUIScale.ts
+        done: false
+      - text: Change applyZoom comparison from scale === DEFAULT_SCALE to scale === 100 so neutral zoom optimization still works at 100%
+        done: false
+      - text: Update useUIScale.test.ts — change default expectation to 150, update zoom tests for new default behavior
+        done: false
+  - phase: Verification
+    tasks:
+      - text: Run full frontend test suite and verify no regressions
+        done: false
+extra: {}
