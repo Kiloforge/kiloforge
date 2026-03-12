@@ -103,15 +103,126 @@ func (s *ProjectService) AddProject(ctx context.Context, remoteURL, name string,
 		return nil, fmt.Errorf("create mirror: %w", err)
 	}
 
+	// Detect default branch.
+	primaryBranch := s.gitSync.DetectDefaultBranch(ctx, cloneDir)
+
 	// Register in store.
 	p := domain.Project{
-		Slug:         slug,
-		RepoName:     repoName,
-		ProjectDir:   cloneDir,
-		MirrorDir:    mirrorDir,
-		OriginRemote: remoteURL,
-		RegisteredAt: time.Now().Truncate(time.Second),
-		Active:       true,
+		Slug:          slug,
+		RepoName:      repoName,
+		ProjectDir:    cloneDir,
+		MirrorDir:     mirrorDir,
+		OriginRemote:  remoteURL,
+		SSHKeyPath:    opt.SSHKeyPath,
+		PrimaryBranch: primaryBranch,
+		RegisteredAt:  time.Now().Truncate(time.Second),
+		Active:        true,
+	}
+	if err := s.store.Add(p); err != nil {
+		os.RemoveAll(cloneDir)
+		os.RemoveAll(mirrorDir)
+		return nil, fmt.Errorf("register project: %w", err)
+	}
+	if err := s.store.Save(); err != nil {
+		os.RemoveAll(cloneDir)
+		os.RemoveAll(mirrorDir)
+		return nil, fmt.Errorf("save registry: %w", err)
+	}
+
+	result := &domain.AddProjectResult{Project: p}
+	if empty {
+		result.EmptyRepo = true
+	}
+	return result, nil
+}
+
+// AddLocalProject registers a project from a local filesystem path.
+// It clones the local repo into the managed directory, detects the default
+// branch, and registers the project.
+func (s *ProjectService) AddLocalProject(ctx context.Context, localPath, name string, opts ...domain.AddProjectOpts) (*domain.AddProjectResult, error) {
+	var opt domain.AddProjectOpts
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	// Validate the path exists and is a git repo.
+	absPath, err := filepath.Abs(localPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve path: %w", err)
+	}
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("path not found: %s", absPath)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("path is not a directory: %s", absPath)
+	}
+	// Check it's a git repo.
+	if _, err := os.Stat(filepath.Join(absPath, ".git")); err != nil {
+		return nil, fmt.Errorf("path is not a git repository: %s", absPath)
+	}
+
+	// Derive slug from directory name.
+	repoName := filepath.Base(absPath)
+	slug := repoName
+	if name != "" {
+		slug = name
+	}
+
+	if _, err := s.store.Get(slug); err == nil {
+		return nil, fmt.Errorf("project %s: %w", slug, domain.ErrProjectExists)
+	}
+
+	// Clean up orphaned clone directory.
+	cloneDir := filepath.Join(s.config.DataDir, "repos", slug)
+	if _, err := os.Stat(cloneDir); err == nil {
+		if _, err := s.store.Get(slug); err != nil {
+			os.RemoveAll(cloneDir)
+		}
+	}
+
+	// Clone local repo into managed directory.
+	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
+		cmd := exec.CommandContext(ctx, "git", "clone", absPath, cloneDir)
+		cmd.Env = cleanGitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return nil, fmt.Errorf("clone: %s: %w", string(out), err)
+		}
+	}
+
+	// Detect default branch.
+	primaryBranch := s.gitSync.DetectDefaultBranch(ctx, cloneDir)
+
+	// Check if repo has commits.
+	empty := !hasCommits(ctx, cloneDir)
+
+	// Create project data directory.
+	logsDir := filepath.Join(s.config.DataDir, "projects", slug, "logs")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		os.RemoveAll(cloneDir)
+		return nil, fmt.Errorf("create project dir: %w", err)
+	}
+
+	// Create mirror clone.
+	mirrorDir := filepath.Join(s.config.DataDir, "output", slug)
+	if opt.OutputDir != "" {
+		mirrorDir = opt.OutputDir
+	}
+	if err := s.gitSync.CreateMirrorClone(ctx, cloneDir, mirrorDir); err != nil {
+		os.RemoveAll(cloneDir)
+		return nil, fmt.Errorf("create mirror: %w", err)
+	}
+
+	// Register in store.
+	p := domain.Project{
+		Slug:          slug,
+		RepoName:      repoName,
+		ProjectDir:    cloneDir,
+		MirrorDir:     mirrorDir,
+		OriginRemote:  absPath,
+		PrimaryBranch: primaryBranch,
+		RegisteredAt:  time.Now().Truncate(time.Second),
+		Active:        true,
 	}
 	if err := s.store.Add(p); err != nil {
 		os.RemoveAll(cloneDir)

@@ -515,6 +515,133 @@ func TestProjectService_RemoveProject_DeletesInternalMirror(t *testing.T) {
 	}
 }
 
+// initLocalRepo creates a git repo at the given path with one commit.
+func initLocalRepo(t *testing.T, repoDir string) {
+	t.Helper()
+	if err := os.MkdirAll(repoDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmds := [][]string{
+		{"git", "init", repoDir},
+		{"git", "-C", repoDir, "config", "user.email", "test@test.com"},
+		{"git", "-C", repoDir, "config", "user.name", "Test"},
+	}
+	for _, args := range cmds {
+		cmd := exec.CommandContext(context.Background(), args[0], args[1:]...)
+		cmd.Env = cleanGitEnvForTest()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%v failed: %s: %v", args, out, err)
+		}
+	}
+	f, _ := os.Create(filepath.Join(repoDir, "README.md"))
+	f.WriteString("# test")
+	f.Close()
+	writeAndCommit(t, repoDir, "initial.txt", "initial")
+}
+
+func TestProjectService_AddLocalProject_Success(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	localRepo := filepath.Join(t.TempDir(), "my-local-repo")
+	initLocalRepo(t, localRepo)
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	result, err := svc.AddLocalProject(context.Background(), localRepo, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Project.Slug != "my-local-repo" {
+		t.Errorf("slug = %q, want %q", result.Project.Slug, "my-local-repo")
+	}
+	if result.Project.OriginRemote != localRepo {
+		t.Errorf("origin = %q, want %q", result.Project.OriginRemote, localRepo)
+	}
+	if result.Project.PrimaryBranch == "" {
+		t.Error("PrimaryBranch should be detected")
+	}
+	if !result.Project.Active {
+		t.Error("expected project to be active")
+	}
+
+	// Verify stored.
+	if _, err := store.Get("my-local-repo"); err != nil {
+		t.Fatalf("project not in store: %v", err)
+	}
+}
+
+func TestProjectService_AddLocalProject_NonExistentPath(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: t.TempDir()})
+
+	_, err := svc.AddLocalProject(context.Background(), "/nonexistent/path/repo", "")
+	if err == nil {
+		t.Fatal("expected error for non-existent path")
+	}
+}
+
+func TestProjectService_AddLocalProject_NotGitRepo(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	notARepo := t.TempDir() // exists but not a git repo
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: t.TempDir()})
+
+	_, err := svc.AddLocalProject(context.Background(), notARepo, "")
+	if err == nil {
+		t.Fatal("expected error for non-git directory")
+	}
+	if !strings.Contains(err.Error(), "not a git repository") {
+		t.Errorf("error should mention 'not a git repository', got: %v", err)
+	}
+}
+
+func TestProjectService_AddLocalProject_CustomName(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	dataDir := t.TempDir()
+	localRepo := filepath.Join(t.TempDir(), "original-name")
+	initLocalRepo(t, localRepo)
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: dataDir})
+
+	result, err := svc.AddLocalProject(context.Background(), localRepo, "custom-slug")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Project.Slug != "custom-slug" {
+		t.Errorf("slug = %q, want %q", result.Project.Slug, "custom-slug")
+	}
+}
+
+func TestProjectService_AddLocalProject_Duplicate(t *testing.T) {
+	t.Parallel()
+
+	store := newMockProjectStore()
+	store.projects["my-repo"] = domain.Project{Slug: "my-repo"}
+
+	localRepo := filepath.Join(t.TempDir(), "my-repo")
+	initLocalRepo(t, localRepo)
+
+	svc := NewProjectService(store, ProjectServiceConfig{DataDir: t.TempDir()})
+
+	_, err := svc.AddLocalProject(context.Background(), localRepo, "")
+	if err == nil {
+		t.Fatal("expected error for duplicate slug")
+	}
+	if !errors.Is(err, domain.ErrProjectExists) {
+		t.Errorf("expected ErrProjectExists, got: %v", err)
+	}
+}
+
 func TestIsRemoteURL(t *testing.T) {
 	t.Parallel()
 
