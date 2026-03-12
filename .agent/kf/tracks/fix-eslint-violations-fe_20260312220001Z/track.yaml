@@ -1,80 +1,69 @@
 id: fix-eslint-violations-fe_20260312220001Z
-title: "Fix ESLint error and reduce warnings in frontend"
+title: Fix ESLint error and reduce warnings in frontend
 type: chore
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: |
-    Fix 1 ESLint error (variable reassignment in test file) and address 37 ESLint
+  summary: 'Fix 1 ESLint error (variable reassignment in test file) and address 37 ESLint
+
     warnings across complexity, setState-in-effect, and fast-refresh categories.
-  context: |
-    Running `eslint src/` reports 38 problems: 1 error and 37 warnings. The error
+
+    '
+  context: 'Running `eslint src/` reports 38 problems: 1 error and 37 warnings. The error
+
     blocks strict CI gates. The warnings indicate code quality issues that should
+
     be addressed to keep the codebase healthy.
-  codebase_analysis: |
-    Error (1):
-      - src/components/tour/TourProvider.test.tsx:29 — Cannot reassign variable
-        `capturedPathname` declared outside the component/hook. The LocationSpy
-        component reassigns a module-level `let` variable. Fix: use a ref or
-        a mutable container object instead.
 
-    Warnings by category:
-      1. Complexity (3 warnings):
-         - src/pages/AgentDetailPage.tsx:29 — complexity 52 (max 15)
-         - src/pages/OverviewPage.tsx:124 — complexity 23 (max 15)
-         - src/pages/ProjectPage.tsx:38 — complexity 46 (max 15)
-         Fix: extract sub-components or helper functions to reduce branching.
-
-      2. setState-in-effect (2 warnings):
-         - src/hooks/useMediaQuery.ts:14 — setMatches(mq.matches) in effect body
-         - src/pages/AgentDetailPage.tsx:64 — setLogLoading(false) in effect body
-         Fix: use lazy initializer for useState, or restructure effect logic.
-
-      3. fast-refresh/only-export-components (1 warning):
-         - src/main.tsx:47 — file has exports but also non-component code
-         Fix: move the component to a separate file.
-
-      4. Remaining warnings (31): various instances of the above patterns plus
-         minor issues. Full list available via `eslint src/`.
+    '
+  codebase_analysis: "Error (1):\n  - src/components/tour/TourProvider.test.tsx:29 — Cannot reassign variable\n    `capturedPathname`\
+    \ declared outside the component/hook. The LocationSpy\n    component reassigns a module-level `let` variable. Fix: use\
+    \ a ref or\n    a mutable container object instead.\n\nWarnings by category:\n  1. Complexity (3 warnings):\n     - src/pages/AgentDetailPage.tsx:29\
+    \ — complexity 52 (max 15)\n     - src/pages/OverviewPage.tsx:124 — complexity 23 (max 15)\n     - src/pages/ProjectPage.tsx:38\
+    \ — complexity 46 (max 15)\n     Fix: extract sub-components or helper functions to reduce branching.\n\n  2. setState-in-effect\
+    \ (2 warnings):\n     - src/hooks/useMediaQuery.ts:14 — setMatches(mq.matches) in effect body\n     - src/pages/AgentDetailPage.tsx:64\
+    \ — setLogLoading(false) in effect body\n     Fix: use lazy initializer for useState, or restructure effect logic.\n\n\
+    \  3. fast-refresh/only-export-components (1 warning):\n     - src/main.tsx:47 — file has exports but also non-component\
+    \ code\n     Fix: move the component to a separate file.\n\n  4. Remaining warnings (31): various instances of the above\
+    \ patterns plus\n     minor issues. Full list available via `eslint src/`.\n"
   acceptance_criteria:
-    - "`npx eslint src/` reports zero errors"
-    - "Complexity warnings in AgentDetailPage, OverviewPage, and ProjectPage are resolved or suppressed with justification"
-    - "setState-in-effect warnings in useMediaQuery and AgentDetailPage are resolved"
-    - "All existing tests continue to pass"
-  out_of_scope: |
-    - TypeScript build errors (separate track: fix-ts-build-errors-fe_20260312220000Z)
+  - '`npx eslint src/` reports zero errors'
+  - Complexity warnings in AgentDetailPage, OverviewPage, and ProjectPage are resolved or suppressed with justification
+  - setState-in-effect warnings in useMediaQuery and AgentDetailPage are resolved
+  - All existing tests continue to pass
+  out_of_scope: '- TypeScript build errors (separate track: fix-ts-build-errors-fe_20260312220000Z)
+
     - Adding new ESLint rules or changing ESLint config
+
     - Functional changes to component behavior
-  technical_notes: |
-    Approach:
-    1. Fix the error first (TourProvider.test.tsx variable reassignment)
-    2. Address complexity warnings by extracting sub-components (e.g., AgentDetailPage
-       can split log viewer, status panel, and action bar into separate components)
-    3. Fix setState-in-effect by using lazy initializers or restructuring
-    4. For warnings that cannot be cleanly fixed, add targeted eslint-disable with
-       a comment explaining why
+
+    '
+  technical_notes: "Approach:\n1. Fix the error first (TourProvider.test.tsx variable reassignment)\n2. Address complexity\
+    \ warnings by extracting sub-components (e.g., AgentDetailPage\n   can split log viewer, status panel, and action bar\
+    \ into separate components)\n3. Fix setState-in-effect by using lazy initializers or restructuring\n4. For warnings that\
+    \ cannot be cleanly fixed, add targeted eslint-disable with\n   a comment explaining why\n"
 plan:
-  - phase: "Fix ESLint error"
-    tasks:
-      - text: "Fix TourProvider.test.tsx — replace module-level let reassignment with a ref or mutable container"
-        done: false
-      - text: "Verify `npx eslint src/` reports zero errors"
-        done: false
-  - phase: "Reduce complexity warnings"
-    tasks:
-      - text: "Refactor AgentDetailPage.tsx — extract sub-components to reduce complexity from 52 to ≤15"
-        done: false
-      - text: "Refactor ProjectPage.tsx — extract sub-components to reduce complexity from 46 to ≤15"
-        done: false
-      - text: "Refactor OverviewPage.tsx — extract sub-components to reduce complexity from 23 to ≤15"
-        done: false
-  - phase: "Fix remaining warnings"
-    tasks:
-      - text: "Fix setState-in-effect in useMediaQuery.ts — use lazy initializer for initial match state"
-        done: false
-      - text: "Fix setState-in-effect in AgentDetailPage.tsx — restructure early-return effect logic"
-        done: false
-      - text: "Run full test suite and confirm all tests pass"
-        done: false
+- phase: Fix ESLint error
+  tasks:
+  - text: Fix TourProvider.test.tsx — replace module-level let reassignment with a ref or mutable container
+    done: true
+  - text: Verify `npx eslint src/` reports zero errors
+    done: true
+- phase: Reduce complexity warnings
+  tasks:
+  - text: Refactor AgentDetailPage.tsx — extract sub-components to reduce complexity from 52 to ≤15
+    done: true
+  - text: Refactor ProjectPage.tsx — extract sub-components to reduce complexity from 46 to ≤15
+    done: true
+  - text: Refactor OverviewPage.tsx — extract sub-components to reduce complexity from 23 to ≤15
+    done: true
+- phase: Fix remaining warnings
+  tasks:
+  - text: Fix setState-in-effect in useMediaQuery.ts — use lazy initializer for initial match state
+    done: true
+  - text: Fix setState-in-effect in AgentDetailPage.tsx — restructure early-return effect logic
+    done: true
+  - text: Run full test suite and confirm all tests pass
+    done: true
 extra: {}
