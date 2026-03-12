@@ -55,11 +55,15 @@ fix-consent-zindex-fe_20260311230000Z: []
 
 fix-disabled-btn-styles-fe_20260312020000Z: []
 
+fix-eslint-violations-fe_20260312220001Z: []
+
 fix-merge-protocol-be_20260311160000Z: []
 
 fix-remove-project_20260312073310Z: []
 
 fix-tour-scroll-fe_20260311230100Z: []
+
+fix-ts-build-errors-fe_20260312220000Z: []
 
 gitea-removal-be_20260311070000Z: []
 
@@ -93,4 +97,3 @@ track-detail-register-traces-fe_20260312231002Z:
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
-
