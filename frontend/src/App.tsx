@@ -22,7 +22,6 @@ import { AgentTerminal } from "./components/AgentTerminal";
 import { MiniCardDock } from "./components/MiniCardDock";
 import { useWindowManager } from "./hooks/useWindowManager";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { usePlatform } from "./hooks/usePlatform";
 import { ShortcutHelp } from "./components/ShortcutHelp";
 import { SkillsBanner } from "./components/SkillsBanner";
 import { ModelWarningBanner } from "./components/ModelWarningBanner";
@@ -33,7 +32,6 @@ import { ToastContainer } from "./components/toast/ToastContainer";
 import { TourProvider } from "./components/tour/TourProvider";
 import { TourOverlay } from "./components/tour/TourOverlay";
 import { SettingsMenu } from "./components/SettingsMenu";
-import { FullScreenCommand } from "./components/fullscreen/FullScreenCommand";
 import { LoadingFallback } from "./components/LoadingFallback";
 import styles from "./App.module.css";
 
@@ -61,9 +59,7 @@ export default function App() {
   const [showLauncher, setShowLauncher] = useState(false);
   const [waitingForCapacity, setWaitingForCapacity] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showFullScreen, setShowFullScreen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { mod, shift } = usePlatform();
   const consent = useConsent();
   const skillsPrompt = useSkillsPrompt();
   const queryClient = useQueryClient();
@@ -79,7 +75,6 @@ export default function App() {
       snapLeft: () => wm.snapFocused("left"),
       snapRight: () => wm.snapFocused("right"),
       showHelp: () => setShowShortcuts((v) => !v),
-      toggleFullScreen: () => setShowFullScreen((v) => !v),
     }),
     [wm],
   );
@@ -236,15 +231,6 @@ export default function App() {
           <span className={`${styles.hamburgerBar} ${mobileNavOpen ? styles.hamburgerOpen : ""}`} />
         </button>
         <nav className={`${styles.nav} ${mobileNavOpen ? styles.navOpen : ""}`}>
-          <button
-            className={styles.link}
-            onClick={() => { setShowFullScreen(true); setMobileNavOpen(false); }}
-            title={`Full-screen command mode (${mod}${shift}F)`}
-            data-tour="fullscreen-toggle"
-            style={{ background: "none", border: "none", cursor: "pointer" }}
-          >
-            &#9638; Command
-          </button>
           <Link to="/agents" className={styles.link} onClick={() => setMobileNavOpen(false)}>Agents</Link>
           <Link to="/reliability" className={styles.link} onClick={() => setMobileNavOpen(false)}>Reliability</Link>
           {status?.gitea_url && (
@@ -333,12 +319,6 @@ export default function App() {
           waitingForCapacity={waitingForCapacity}
           waitingCapacity={waitingCapacity}
           onCancelWaiting={handleCancelWaiting}
-        />
-      )}
-      {showFullScreen && (
-        <FullScreenCommand
-          agents={agents}
-          onExit={() => setShowFullScreen(false)}
         />
       )}
       {consent.showDialog && <ConsentDialog onAccept={consent.accept} onDeny={consent.deny} />}
