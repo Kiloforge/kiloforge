@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 const STORAGE_KEY = "kf-ui-scale";
 const MIN_SCALE = 75;
 const MAX_SCALE = 150;
-const DEFAULT_SCALE = 100;
+const DEFAULT_SCALE = 150;
 
 function readStoredScale(): number {
   try {
@@ -22,7 +22,7 @@ function clamp(value: number): number {
 }
 
 function applyZoom(scale: number) {
-  if (scale === DEFAULT_SCALE) {
+  if (scale === 100) {
     document.documentElement.style.zoom = "";
   } else {
     document.documentElement.style.zoom = String(scale / 100);

@@ -15,9 +15,9 @@ describe("useUIScale", () => {
     vi.restoreAllMocks();
   });
 
-  it("defaults to 100 when no stored value", () => {
+  it("defaults to 150 when no stored value", () => {
     const { result } = renderHook(() => useUIScale());
-    expect(result.current.scale).toBe(100);
+    expect(result.current.scale).toBe(150);
   });
 
   it("reads persisted scale from localStorage", () => {
@@ -32,7 +32,13 @@ describe("useUIScale", () => {
     expect(document.documentElement.style.zoom).toBe("1.4");
   });
 
-  it("does not set zoom when scale is 100 (default)", () => {
+  it("applies zoom when default scale is 150", () => {
+    renderHook(() => useUIScale());
+    expect(document.documentElement.style.zoom).toBe("1.5");
+  });
+
+  it("does not set zoom when scale is explicitly set to 100", () => {
+    localStorage.setItem(STORAGE_KEY, "100");
     renderHook(() => useUIScale());
     expect(document.documentElement.style.zoom).toBe("");
   });
