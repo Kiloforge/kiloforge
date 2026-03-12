@@ -25,18 +25,18 @@ spec:
       signalProcess() uses raw syscall.Signal. None of these work on Windows.
     - backend/internal/adapter/cli/daemon.go — stopDaemon uses SIGTERM (104)
       and SIGKILL (118) directly.
-    - backend/internal/adapter/persistence/sqlite/agent_store.go:148 — uses
+    - "backend/internal/adapter/persistence/sqlite/agent_store.go:148 — uses"
       SIGINT which IS available on Windows (os.Interrupt maps to it).
-    - backend/internal/adapter/cli/serve.go:66 — signal.NotifyContext with
+    - "backend/internal/adapter/cli/serve.go:66 — signal.NotifyContext with"
       SIGTERM+SIGINT — these work on Windows via Go's os/signal abstraction.
     
     GoReleaser (.goreleaser.yaml):
-    - goos: [darwin, linux] — missing windows
-    - archives format: tar.gz for all — Windows conventionally uses .zip
+    - "goos: [darwin, linux] — missing windows"
+    - "archives format: tar.gz for all — Windows conventionally uses .zip"
     
     CI (.github/workflows/ci.yml):
-    - kf-tools matrix: [ubuntu-latest, macos-latest] — no windows-latest
-    - test/lint/deps jobs: ubuntu-only. Need at minimum a build check on Windows.
+    - "kf-tools matrix: [ubuntu-latest, macos-latest] — no windows-latest"
+    - "test/lint/deps jobs: ubuntu-only. Need at minimum a build check on Windows."
     
     Prereq hints (prereq/check.go):
     - gitHint() has "darwin" case and default (Linux). No "windows" case —
@@ -51,21 +51,21 @@ spec:
   out_of_scope: |
     - Windows-specific end-to-end testing or smoke tests
     - Windows installer (MSI/NSIS) or Scoop/Chocolatey manifests
-    - Docker-related Windows support (Docker Desktop, WSL)
+    - "Docker-related Windows support (Docker Desktop, WSL)"
     - Modifying the release workflow (release.yml) — GoReleaser picks up
       the new goos automatically
   technical_notes: |
     Approach for signal handling:
-    - Extract ProcessAlive, signalProcess, killProcess from shutdown.go into
+    - "Extract ProcessAlive, signalProcess, killProcess from shutdown.go into"
       process_unix.go (//go:build !windows) and process_windows.go
       (//go:build windows).
-    - Unix implementation: keep current syscall.Signal(0), SIGINT, SIGKILL.
-    - Windows implementation: ProcessAlive uses os.FindProcess + a brief
+    - "Unix implementation: keep current syscall.Signal(0), SIGINT, SIGKILL."
+    - "Windows implementation: ProcessAlive uses os.FindProcess + a brief"
       check (Windows FindProcess always succeeds, so use
       golang.org/x/sys/windows or tasklist/OpenProcess). signalProcess with
       SIGINT can use os.Process.Signal(os.Interrupt). killProcess uses
       os.Process.Kill() (calls TerminateProcess on Windows).
-    - daemon.go stop logic: extract into platform-specific helpers or reuse
+    - "daemon.go stop logic: extract into platform-specific helpers or reuse"
       the shared process helpers from shutdown.go.
     
     For CI, add a lightweight "build-windows" job that only does:
@@ -78,9 +78,9 @@ spec:
 plan:
   - phase: Platform-specific signal handling
     tasks:
-      - text: Extract ProcessAlive, signalProcess, killProcess from shutdown.go into process_unix.go (//go:build !windows) with current Unix implementation
+      - text: "Extract ProcessAlive, signalProcess, killProcess from shutdown.go into process_unix.go (//go:build !windows) with current Unix implementation"
         done: true
-      - text: Create process_windows.go (//go:build windows) with Windows-compatible implementations: ProcessAlive via FindProcess+Signal, killProcess via Process.Kill(), signalProcess via Process.Signal(os.Interrupt) for SIGINT
+      - text: "Create process_windows.go (//go:build windows) with Windows-compatible implementations: ProcessAlive via FindProcess+Signal, killProcess via Process.Kill(), signalProcess via Process.Signal(os.Interrupt) for SIGINT"
         done: true
       - text: Extract daemon.go stop/kill logic into platform helpers or reuse the shared process functions from the agent package
         done: true

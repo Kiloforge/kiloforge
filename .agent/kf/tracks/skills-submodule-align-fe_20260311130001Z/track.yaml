@@ -23,7 +23,7 @@ spec:
     - tour/tourSteps.ts: text mentions "developers, reviewers"
     - useAgentActions.test.ts: test for suspended reviewer agent
   acceptance_criteria:
-    - "reviewer" removed from OverviewPage role filter array
+    - '"reviewer" removed from OverviewPage role filter array'
     - Help tooltip text updated (no longer mentions reviewer)
     - reviewer CSS class mapping removed from MiniCard.tsx
     - .roleReviewer CSS rule removed from MiniCard.module.css

@@ -35,9 +35,9 @@ spec:
     the new skills repo by default, unifying the source.
   acceptance_criteria:
     - A .gitmodules file exists pointing backend/internal/adapter/skills/embedded/ to the kiloforge-skills repo
-    - "make build" succeeds after fresh clone with submodule init
+    - "make build succeeds after fresh clone with submodule init"
     - CI workflow checks out submodules before build/test
-    - "go:embed embedded/*" continues to work unchanged
+    - "go:embed embedded/* continues to work unchanged"
     - Default SkillsRepo config points to the new skills repo for kf skills update
     - All 21 existing skills are present in the submodule repo
     - README documents the submodule workflow for contributors
@@ -73,13 +73,13 @@ plan:
         done: true
       - text: Add git submodule at backend/internal/adapter/skills/embedded/ pointing to skills repo
         done: true
-      - text: Verify go:embed directive still picks up all skill files after submodule checkout
+      - text: "Verify go:embed directive still picks up all skill files after submodule checkout"
         done: true
   - phase: Build & CI Updates
     tasks:
-      - text: Add 'git submodule update --init' to Makefile before build-backend target
+      - text: "Add 'git submodule update --init' to Makefile before build-backend target"
         done: true
-      - text: Update CI workflow to checkout with submodules (actions/checkout submodules: recursive)
+      - text: "Update CI workflow to checkout with submodules (actions/checkout submodules: recursive)"
         done: true
       - text: Set default SkillsRepo config to the new kiloforge-skills repo
         done: true

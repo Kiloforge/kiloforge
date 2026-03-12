@@ -20,24 +20,24 @@ spec:
     clutter in the header.
   codebase_analysis: |
     Current implementation in CommandPane.tsx:
-    - Lines 95-96: `canSend` and `canInterrupt` state derived from connection/turn state
-    - Lines 132-136: Separate "Stop" button in header, visible when `canInterrupt`
-    - Lines 199-201: Send button toggles label between "Send" and "Queue"
-    - Lines 70-77: `handleSend` sends message, increments queueDepth if turn active
-    - Lines 85-88: Esc key triggers `sendInterrupt()` (stays unchanged)
-    - Lines 65-68: queueDepth resets when turn ends
+    - "Lines 95-96: `canSend` and `canInterrupt` state derived from connection/turn state"
+    - "Lines 132-136: Separate \"Stop\" button in header, visible when `canInterrupt`"
+    - "Lines 199-201: Send button toggles label between \"Send\" and \"Queue\""
+    - "Lines 70-77: `handleSend` sends message, increments queueDepth if turn active"
+    - "Lines 85-88: Esc key triggers `sendInterrupt()` (stays unchanged)"
+    - "Lines 65-68: queueDepth resets when turn ends"
     
     WebSocket hook (useAgentWebSocket.ts):
-    - Lines 289-292: `sendInterrupt()` sends `{"type": "interrupt"}` via WebSocket
-    - Lines 115-134: Turn state tracking via turn_start/turn_end messages
+    - "Lines 289-292: `sendInterrupt()` sends `{\"type\": \"interrupt\"}` via WebSocket"
+    - "Lines 115-134: Turn state tracking via turn_start/turn_end messages"
     
     Backend interrupt chain (unchanged by this track):
-    - ws/handler.go readLoop receives interrupt message, calls bridge.Interrupt()
+    - "ws/handler.go readLoop receives interrupt message, calls bridge.Interrupt()"
     - Bridge calls InterruptHandler → SDKSession.Interrupt() → cancels query context
     
     CSS in FullScreenCommand.module.css:
-    - Lines 244-268: .sendBtn styles (accent background)
-    - Lines 270-285: .interruptBtn styles (red border, transparent bg)
+    - "Lines 244-268: .sendBtn styles (accent background)"
+    - "Lines 270-285: .interruptBtn styles (red border, transparent bg)"
   acceptance_criteria:
     - Send button shows "Send" when no turn is active
     - Send button shows "Pause" when a turn is active
@@ -50,15 +50,15 @@ spec:
     - Pause button has distinct visual styling (warning/red accent) to differentiate from Send
     - E2E test covers send/pause button state transitions
   out_of_scope: |
-    - Backend interrupt mechanism changes (works fine, just UI reorganization)
+    - "Backend interrupt mechanism changes (works fine, just UI reorganization)"
     - Changes to the queue system or queue badge
-    - Changes to keyboard shortcuts (Esc, Enter, Shift+Enter)
-    - Changes to other components that have interrupt functionality (AgentTerminal, AgentDetailPage)
+    - "Changes to keyboard shortcuts (Esc, Enter, Shift+Enter)"
+    - "Changes to other components that have interrupt functionality (AgentTerminal, AgentDetailPage)"
     - Changes to the WebSocket hook or message protocol
   technical_notes: |
     The send button click handler needs conditional logic:
-    - If turnActive: call sendInterrupt() instead of handleSend()
-    - If !turnActive: call handleSend() as before
+    - "If turnActive: call sendInterrupt() instead of handleSend()"
+    - "If !turnActive: call handleSend() as before"
     
     The button should be enabled when either canSend (for sending) or canInterrupt
     (for pausing). When turnActive, the button text changes to "Pause" and applies
@@ -74,20 +74,20 @@ plan:
     tasks:
       - text: Remove the separate Stop button from the header bar (lines 132-136 in CommandPane.tsx)
         done: true
-      - text: Update send button click handler: if turnActive call sendInterrupt(), else call handleSend()
+      - text: "Update send button click handler: if turnActive call sendInterrupt(), else call handleSend()"
         done: true
       - text: Change button label from 'Send'/'Queue' to 'Send'/'Pause'
         done: true
-      - text: Fix disabled logic: button enabled for pause even without text input (!canSend || (!turnActive && !input.trim()))
+      - text: "Fix disabled logic: button enabled for pause even without text input (!canSend || (!turnActive && !input.trim()))"
         done: true
   - phase: Styling
     tasks:
       - text: Add .sendBtnPause CSS class with red/warning accent (adapt from .interruptBtn styles)
         done: true
-      - text: Apply conditional className on send button: sendBtnPause when turnActive, sendBtn otherwise
+      - text: "Apply conditional className on send button: sendBtnPause when turnActive, sendBtn otherwise"
         done: true
   - phase: Verification
     tasks:
-      - text: Add E2E test: verify button shows 'Send' initially, transitions to 'Pause' during turn, back to 'Send' after turn ends or pause
+      - text: "Add E2E test: verify button shows 'Send' initially, transitions to 'Pause' during turn, back to 'Send' after turn ends or pause"
         done: true
 extra: {}

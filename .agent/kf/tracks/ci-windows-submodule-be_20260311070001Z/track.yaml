@@ -26,14 +26,14 @@ spec:
     
     File: .github/workflows/ci.yml, line ~117 (build-windows checkout)
     Current:
-      - uses: actions/checkout@v4
+      - "uses: actions/checkout@v4"
     Needs:
-      - uses: actions/checkout@v4
+      - "uses: actions/checkout@v4"
         with:
           submodules: recursive
   acceptance_criteria:
-    - build-windows CI job checkout includes submodules: recursive
-    - Windows build succeeds in CI (go:embed finds embedded/kf-* files)
+    - "build-windows CI job checkout includes submodules: recursive"
+    - "Windows build succeeds in CI (go:embed finds embedded/kf-* files)"
   out_of_scope: |
     - Modifying the kf-tools job (it doesn't need submodules)
     - Changing the submodule itself
@@ -42,8 +42,8 @@ spec:
 plan:
   - phase: Fix CI config
     tasks:
-      - text: Add submodules: recursive to build-windows checkout in ci.yml
+      - text: "Add submodules: recursive to build-windows checkout in ci.yml"
         done: true
-      - text: Verify lint and test jobs still have submodules: recursive
+      - text: "Verify lint and test jobs still have submodules: recursive"
         done: true
 extra: {}

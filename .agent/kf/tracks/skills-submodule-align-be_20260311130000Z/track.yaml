@@ -37,8 +37,8 @@ spec:
     - ReviewerOpts and SpawnReviewer removed from port/agent_spawner.go
     - SpawnReviewer removed from agent/spawner.go and rest/server.go
     - Reviewer spawning logic removed from api_handler.go
-    - "reviewer" removed from OpenAPI and AsyncAPI role enums
-    - "reviewer" removed from skills/checker.go (RequiredSkillsForRole, AllRequiredSkills)
+    - '"reviewer" removed from OpenAPI and AsyncAPI role enums'
+    - '"reviewer" removed from skills/checker.go (RequiredSkillsForRole, AllRequiredSkills)'
     - All test files updated (no references to reviewer role or kf-reviewer skill)
     - Generated API code regenerated (make gen-api)
     - Documentation updated (reviewer mentions removed)

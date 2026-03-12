@@ -16,8 +16,8 @@ spec:
     sends a local_path field instead of remote_url.
   codebase_analysis: |
     Key files:
-    - frontend/src/components/AddProjectForm.tsx — mode toggle (clone/create), form fields
-    - frontend/src/types/api.ts:124 — AddProjectRequest type (needs local_path field)
+    - "frontend/src/components/AddProjectForm.tsx — mode toggle (clone/create), form fields"
+    - "frontend/src/types/api.ts:124 — AddProjectRequest type (needs local_path field)"
     - frontend/src/hooks/useProjects.ts — addProject mutation sends POST /api/projects
 
     The form already has a mode toggle pattern (clone/create) that can be extended
@@ -30,11 +30,11 @@ spec:
     Validation: the frontend can do basic checks (non-empty, starts with / or ~/ or ./),
     but the backend will do the real validation (path exists, is a git repo).
   acceptance_criteria:
-    - AddProjectForm shows three mode tabs: "Clone from remote", "Local repo", "Create new"
+    - "AddProjectForm shows three mode tabs: \"Clone from remote\", \"Local repo\", \"Create new\""
     - Local repo mode shows a path input field with appropriate placeholder
     - Local repo mode shows optional name and output directory fields
     - Local repo mode does NOT show SSH key selector
-    - Submitting sends { local_path: "/path/to/repo" } in the request body
+    - "Submitting sends { local_path: \"/path/to/repo\" } in the request body"
     - Basic client-side validation rejects empty paths
     - AddProjectRequest TypeScript type includes optional local_path field
     - Existing clone and create modes continue to work unchanged

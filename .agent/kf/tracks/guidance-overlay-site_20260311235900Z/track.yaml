@@ -84,9 +84,9 @@ spec:
     - A "Become a Kiloforger" section appears between the install section and the skills catalog CTA
     - Three pill-toggle mode selectors are displayed — "Single-Threaded", "Multi-Threaded", "Multi-Processor"
     - Selecting a mode swaps the displayed content inline (no overlay/modal)
-    - "Single-Threaded" mode shows a visual flow diagram (Setup → Architect → Status (optional, dashed/dimmed) → Develop) with a visual shortcut path from Architect directly to Develop, followed by philosophical guidance content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus
+    - "Single-Threaded mode shows a visual flow diagram (Setup → Architect → Status (optional, dashed/dimmed) → Develop) with a visual shortcut path from Architect directly to Develop, followed by philosophical guidance content covering confidence building, bottleneck avoidance, implementation drift acceptance, and decision-layer focus"
     - The flow makes clear that Status is optional — users can take the architect's track output and go straight to /kf-developer
-    - "Multi-Threaded" and "Multi-Processor" modes show placeholder content
+    - "Multi-Threaded and Multi-Processor modes show placeholder content"
     - Content transitions are animated (fade or slide via framer-motion)
     - Mode selector follows existing pill-toggle styling pattern
     - Responsive on mobile and desktop
@@ -132,23 +132,23 @@ spec:
 plan:
   - phase: Mode selector and section structure
     tasks:
-      - text: Add 'Become a Kiloforger' section after the install block with gradient heading, brief intro text, and three-option pill-toggle mode selector (Single-Threaded, Multi-Threaded, Multi-Processor)
+      - text: "Add 'Become a Kiloforger' section after the install block with gradient heading, brief intro text, and three-option pill-toggle mode selector (Single-Threaded, Multi-Threaded, Multi-Processor)"
         done: true
       - text: Add mode state management and AnimatePresence content area that swaps content based on selected mode with fade/slide transitions
         done: true
-      - text: Replace the existing vertical workflow step cards with a horizontal flow diagram for single-threaded mode: Setup → Architect → Status (optional, dashed/dimmed) → Develop. Add a visual bypass path (curved arrow or direct connector) from Architect to Develop showing users can skip Status. Each node shows the command name. On mobile, stack vertically but preserve the bypass indicator.
+      - text: "Replace the existing vertical workflow step cards with a horizontal flow diagram for single-threaded mode: Setup → Architect → Status (optional, dashed/dimmed) → Develop. Add a visual bypass path (curved arrow or direct connector) from Architect to Develop showing users can skip Status. Each node shows the command name. On mobile, stack vertically but preserve the bypass indicator."
         done: true
   - phase: Single-threaded guidance content
     tasks:
-      - text: Write 'Building Confidence' section — acclimate to the process, understand that architect specs produce reliable implementations, learn to trust agent output through experience
+      - text: "Write 'Building Confidence' section — acclimate to the process, understand that architect specs produce reliable implementations, learn to trust agent output through experience"
         done: true
-      - text: Write 'Don't Become the Bottleneck' section — cost of remediation vs cost of micromanagement, implementation drift happens on all teams (policy changes, architectural shifts, mistakes = 'legacy' code), mistakes are sufficiently low that future remediation < present bottlenecking
+      - text: "Write 'Don't Become the Bottleneck' section — cost of remediation vs cost of micromanagement, implementation drift happens on all teams (policy changes, architectural shifts, mistakes = 'legacy' code), mistakes are sufficiently low that future remediation < present bottlenecking"
         done: true
-      - text: Write 'Work at the Decision Layer' section — at this instantiation rate, shipping every commit to trunk is counterproductive, your time is too valuable for the large end of the funnel, focus on meaningful changes that deliver customer value, Kiloforge is designed to let you set agent work aside and focus on high-level decisions
+      - text: "Write 'Work at the Decision Layer' section — at this instantiation rate, shipping every commit to trunk is counterproductive, your time is too valuable for the large end of the funnel, focus on meaningful changes that deliver customer value, Kiloforge is designed to let you set agent work aside and focus on high-level decisions"
         done: true
-      - text: Write 'When Things Drift' section — make structural changes to reduce interdependency, plan tracks with the architect to address misalignment, add project guidelines to specifications, run large-scale audits that produce actionable items for new tracks
+      - text: "Write 'When Things Drift' section — make structural changes to reduce interdependency, plan tracks with the architect to address misalignment, add project guidelines to specifications, run large-scale audits that produce actionable items for new tracks"
         done: true
-      - text: Add placeholder content for Multi-Threaded and Multi-Processor modes with styled 'Coming soon' messaging
+      - text: "Add placeholder content for Multi-Threaded and Multi-Processor modes with styled 'Coming soon' messaging"
         done: true
   - phase: Polish
     tasks:
