@@ -9,7 +9,7 @@ const (
 	MsgStatus = "status" // server → client: agent status change
 	MsgError  = "error"  // server → client: error message
 
-	MsgInterrupt  = "interrupt"   // client → server: interrupt current turn
+	MsgInterrupt = "interrupt"  // client → server: interrupt current turn
 	MsgInputEcho = "input_echo" // server → client: echo of user input (buffered for replay)
 
 	// Enriched message types for SDK-based agents.
