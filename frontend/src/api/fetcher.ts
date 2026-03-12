@@ -32,6 +32,9 @@ export async function fetcher<T>(
       const body = await res.json().catch(() => ({ error: `Error ${res.status}` }));
       throw new FetchError(res.status, body);
     }
+    if (res.status === 204) {
+      return undefined as T;
+    }
     return res.json() as Promise<T>;
   } finally {
     clearTimeout(timeoutId);

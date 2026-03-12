@@ -50,6 +50,17 @@ describe("fetcher", () => {
     }
   });
 
+  it("returns undefined for 204 No Content responses", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: () => Promise.reject(new Error("no body")),
+    } as unknown as Response);
+
+    const result = await fetcher<void>("/api/projects/test", { method: "DELETE" });
+    expect(result).toBeUndefined();
+  });
+
   it("handles non-JSON error body gracefully", async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: false,

@@ -49,11 +49,16 @@ describe("RemoveProjectDialog", () => {
     expect(props.onConfirm).toHaveBeenCalledWith("test-project", true);
   });
 
+  it("shows checkbox with local clone text", () => {
+    renderDialog();
+    expect(screen.getByText("Also delete local clone")).toBeInTheDocument();
+  });
+
   it("shows warning when cleanup checked", async () => {
     const user = userEvent.setup();
     renderDialog();
     await user.click(screen.getByRole("checkbox"));
-    expect(screen.getByText(/permanently delete/)).toBeInTheDocument();
+    expect(screen.getByText(/permanently delete the local clone directory/)).toBeInTheDocument();
   });
 
   it("disables buttons when removing", () => {

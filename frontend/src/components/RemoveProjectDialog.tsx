@@ -30,11 +30,11 @@ export function RemoveProjectDialog({ slug, removing, onConfirm, onCancel }: Rem
             onChange={(e) => setCleanup(e.target.checked)}
             disabled={removing}
           />
-          <span>Also delete Gitea repo and local clone</span>
+          <span>Also delete local clone</span>
         </label>
         {cleanup && (
           <p className={styles.warning}>
-            This will permanently delete the Gitea repository and the local clone directory.
+            This will permanently delete the local clone directory.
           </p>
         )}
         <div className={styles.actions}>
