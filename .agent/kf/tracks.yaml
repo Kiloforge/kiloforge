@@ -265,6 +265,7 @@ refactor-error-standardization_20260310041003Z: {"title":"Standardize Domain Sen
 refactor-port-interfaces_20260310041002Z: {"title":"Move Service-Local Interfaces to Port Layer","status":"archived","type":"refactor","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 relay-daemon_20260308200000Z: {"title":"Relay Server Daemon Mode","status":"archived","type":"feature","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 relay-event-handling_20260307124000Z: {"title":"Relay Event Handling for Issues and PRs with Multi-Project Routing","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
+release-alpha2_20260312220000Z: {"title":"Release prep \u2014 changelog, version bump, tag v0.1.0-alpha.2","status":"pending","type":"chore","created":"2026-03-12","updated":"2026-03-12"}
 release-cleanup_20260311000740Z: {"title":"Release cleanup — fix refs, remove Homebrew, prepare v0.1.0-alpha.1","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
 release-process_20260309153000Z: {"title":"Release Process with GoReleaser, GitHub Actions, and Homebrew","status":"archived","type":"chore","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 reliability-advisor-skill_20260310001315Z: {"title":"Reliability advisor skill — automated testing, linting, and static analysis guidance agent","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
