@@ -1,0 +1,81 @@
+id: fix-remove-project_20260312073310Z
+title: "Fix remove project: strip Gitea references and fix 204 parse error"
+type: bug
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: >
+    Remove stale Gitea references from OpenAPI spec, generated server code, frontend
+    dialog, and test comments left behind by the gitea-removal track. Fix fetcher.ts
+    crash when parsing the 204 No Content response from the DELETE /api/projects/{slug}
+    endpoint.
+  context: |
+    The gitea-removal-be track (completed 2026-03-11) stripped the Gitea adapter,
+    webhook handlers, and lifecycle commands but missed several cosmetic references:
+    the OpenAPI cleanup parameter description, the generated server comment, the
+    frontend RemoveProjectDialog checkbox/warning text, a test helper comment, and
+    a dashboard server comment. Additionally, the frontend fetcher always calls
+    res.json() on successful responses, which throws a JSON parse error on 204
+    No Content — making project removal appear to fail even though the backend
+    succeeds.
+  codebase_analysis: |
+    Affected files:
+    - backend/api/openapi.yaml:425 — cleanup param: "delete Gitea repo and filesystem data"
+    - backend/internal/adapter/rest/gen/server.gen.go:1099 — generated comment mirrors spec
+    - frontend/src/components/RemoveProjectDialog.tsx:33,37 — checkbox and warning text
+    - frontend/src/api/fetcher.ts:35 — res.json() on 204 No Content throws parse error
+    - backend/internal/adapter/rest/e2e_helpers_test.go:443 — comment mentions Gitea
+    - backend/internal/adapter/dashboard/server.go:126 — comment about /gitea/ sub-path
+
+    The fetcher bug is the root cause of "remove ends up in an error": the backend
+    returns 204 (success, no body), but fetcher.ts unconditionally calls res.json()
+    which fails on empty body. The mutation's onError handler then shows the parse
+    error to the user.
+  acceptance_criteria:
+    - OpenAPI cleanup parameter description no longer mentions Gitea
+    - Generated server code reflects updated OpenAPI description
+    - RemoveProjectDialog checkbox says "Also delete local clone" (no Gitea mention)
+    - RemoveProjectDialog warning says "permanently delete the local clone directory" (no Gitea mention)
+    - fetcher.ts handles 204 No Content without throwing a parse error
+    - Removing a project via the UI succeeds without error when backend returns 204
+    - All existing remove-project tests pass (unit, API handler, e2e)
+    - Remaining Gitea comments in test helpers and dashboard server are cleaned up
+  out_of_scope: |
+    - Changing the remove project backend logic (it already works correctly)
+    - Adding new remove functionality
+    - Removing Gitea references outside the remove-project flow (already handled by prior tracks)
+  technical_notes: |
+    1. Update OpenAPI spec description, then regenerate server stubs via `make generate`
+    2. Fix fetcher.ts to return undefined/null for 204 responses instead of parsing JSON
+    3. Update RemoveProjectDialog text to remove Gitea references
+    4. Clean up stale Gitea comments in test helper and dashboard server
+    5. Run existing test suites — no new tests needed beyond verifying the fetcher fix
+plan:
+  - phase: "Backend: OpenAPI and generated code"
+    tasks:
+      - text: "Update openapi.yaml cleanup param description to 'If true, also delete the local clone and filesystem data'"
+        done: false
+      - text: "Regenerate server stubs via make generate"
+        done: false
+      - text: "Remove Gitea comment from e2e_helpers_test.go:443"
+        done: false
+      - text: "Remove /gitea/ comment from dashboard/server.go:126"
+        done: false
+  - phase: "Frontend: fetcher and dialog fixes"
+    tasks:
+      - text: "Fix fetcher.ts to handle 204 No Content — return early without calling res.json() when status is 204"
+        done: false
+      - text: "Update RemoveProjectDialog checkbox text to 'Also delete local clone'"
+        done: false
+      - text: "Update RemoveProjectDialog warning text to 'permanently delete the local clone directory'"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test to verify all backend tests pass"
+        done: false
+      - text: "Run frontend tests (vitest) to verify fetcher and dialog tests pass"
+        done: false
+      - text: "Verify no remaining Gitea references in remove-project code path via grep"
+        done: false
+extra: {}

@@ -1,0 +1,115 @@
+id: local-repo-add-be_20260312073311Z
+title: "Add local repo support to project registration (backend)"
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: >
+    Allow kf add to accept a local filesystem path (in addition to remote URLs),
+    clone the repo into the managed directory, detect the source repo's default
+    branch, and store it in the Project model. Update git sync operations to use
+    the stored primary branch instead of hardcoding "main".
+  context: |
+    Currently kf add only accepts remote URLs (SSH or HTTPS). Users who have a
+    local repo on disk must push it to a remote first, which is unnecessary
+    friction. The user wants to point kiloforge at a local repo path, have it
+    cloned into the managed data directory, and have the project registered.
+
+    Additionally, the system hardcodes "main" as the primary branch in several
+    git sync operations (PullFromRemote, ForcePushToMirror). When targeting a
+    local repo, the source repo may use a different default branch (master,
+    develop, etc.). The Project model needs a PrimaryBranch field, and git
+    operations need to use it.
+  codebase_analysis: |
+    Key files:
+    - backend/internal/adapter/cli/add.go — CLI command, validates isRemoteURL()
+    - backend/internal/core/service/project_service.go — AddProject() requires remote URL
+    - backend/internal/core/domain/project.go — Project struct, no PrimaryBranch field
+    - backend/internal/adapter/git/sync.go — hardcodes "main" in PullFromRemote:121
+      and ForcePushToMirror:245
+    - backend/api/openapi.yaml — AddProjectRequest schema, no local_path field
+
+    The CLI add.go:55 explicitly rejects non-remote-URL args. The service
+    AddProject() also validates isRemoteURL(). Both need a separate code path
+    for local paths.
+
+    git clone works with local paths natively (git clone /path/to/repo target),
+    so the clone mechanism is the same — just skip SSH key handling.
+
+    Branch detection: `git symbolic-ref refs/remotes/origin/HEAD` after clone
+    gives the default branch. Alternatively, inspect the cloned repo's HEAD
+    directly. If kiloforge's expected branch doesn't exist, fall back to the
+    source repo's default branch.
+  acceptance_criteria:
+    - "kf add /path/to/local/repo" clones the repo into the managed directory and registers it
+    - "kf add ./relative/path" works (resolved to absolute path)
+    - "kf add ~/path" works (tilde expansion)
+    - The Project model stores the detected primary branch name
+    - If the local repo's default branch is not "main", it is correctly detected and stored
+    - PullFromRemote uses the project's stored primary branch instead of hardcoded "main"
+    - ForcePushToMirror uses the project's stored primary branch instead of hardcoded "main"
+    - POST /api/projects accepts a local_path field as an alternative to remote_url
+    - Existing remote URL and create-from-scratch flows continue to work unchanged
+    - All existing project tests pass, plus new tests for local path handling
+  out_of_scope: |
+    - Frontend UI changes (separate track: local-repo-add-fe)
+    - Watching the local repo for changes / auto-sync
+    - Supporting bare repositories as source
+  technical_notes: |
+    Implementation approach:
+    1. Add PrimaryBranch field to domain.Project
+    2. Add branch detection helper to git adapter: detect default branch from a cloned repo
+    3. Add AddLocalProject() to ProjectService (or extend AddProject with path detection)
+    4. Update CLI kf add to detect local path vs remote URL and route accordingly
+    5. Update OpenAPI AddProjectRequest with optional local_path field
+    6. Regenerate server stubs
+    7. Update REST handler to route local_path to the new service method
+    8. Update PullFromRemote and ForcePushToMirror to accept/use primary branch
+    9. Backfill PrimaryBranch="main" for existing projects (migration or default)
+    10. Ensure mirror clone uses the correct branch
+
+    Branch detection strategy:
+    - After cloning from local path, run: git -C <clone> symbolic-ref refs/remotes/origin/HEAD
+    - Parse output to extract branch name (e.g., "refs/remotes/origin/master" -> "master")
+    - If that fails, check if "main" branch exists; if not, use current HEAD branch
+    - Store detected branch as Project.PrimaryBranch
+    - For remote URL clones, apply same detection (defaulting to "main" for backward compat)
+plan:
+  - phase: "Domain model and git adapter"
+    tasks:
+      - text: "Add PrimaryBranch string field to domain.Project struct"
+        done: false
+      - text: "Add DetectDefaultBranch(ctx, repoDir) method to git adapter — reads symbolic-ref or falls back to HEAD branch name"
+        done: false
+      - text: "Update PullFromRemote to accept primaryBranch parameter instead of hardcoding 'main'"
+        done: false
+      - text: "Update ForcePushToMirror to accept primaryBranch parameter instead of hardcoding 'main:main'"
+        done: false
+      - text: "Write unit tests for DetectDefaultBranch with main, master, and custom branch repos"
+        done: false
+  - phase: "Service layer"
+    tasks:
+      - text: "Add AddLocalProject(ctx, localPath, name string, opts) method to ProjectService — validates path is a git repo, clones via git clone, detects branch"
+        done: false
+      - text: "Update existing AddProject to also detect and store PrimaryBranch (default 'main' for backward compat)"
+        done: false
+      - text: "Update SyncMirror to pass project's PrimaryBranch to ForcePushToMirror"
+        done: false
+      - text: "Write unit tests for AddLocalProject — valid repo, non-repo path, non-existent path"
+        done: false
+  - phase: "CLI and API"
+    tasks:
+      - text: "Update kf add CLI to detect local path (not a remote URL, path exists on disk) and route to AddLocalProject"
+        done: false
+      - text: "Add local_path field to AddProjectRequest in openapi.yaml and regenerate stubs"
+        done: false
+      - text: "Update REST AddProject handler to route local_path to AddLocalProject service method"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run full test suite (make test) — ensure existing remote-URL and create flows are unbroken"
+        done: false
+      - text: "Manual verification: kf add /tmp/test-repo with a repo using 'master' as default branch"
+        done: false
+extra: {}
