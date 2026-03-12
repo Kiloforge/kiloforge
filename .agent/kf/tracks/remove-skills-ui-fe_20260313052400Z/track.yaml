@@ -1,94 +1,105 @@
 id: remove-skills-ui-fe_20260313052400Z
-title: "Remove skills panel, banner, and install dialog from Command Deck"
+title: Remove skills panel, banner, and install dialog from Command Deck
 type: chore
 status: pending
 created: 2026-03-13
-updated: 2026-03-13
+updated: '2026-03-12'
 spec:
-  summary: "Strip all frontend skills UI (SkillsPalette, SkillsBanner, SkillsInstallDialog, SlashCommandAutocomplete, useSkillsStatus, useSkillsPrompt, SKILL_REGISTRY) and their integrations in App.tsx, ProjectPage, AgentTerminal, and AgentLauncher. Skills/slash commands are handled natively by Claude Code in the terminal — the custom UI layer is redundant."
-  context: |
-    The Command Deck has a custom skills UI layer that duplicates what Claude Code
-    already provides natively in the terminal. This includes:
-    - A SkillsPalette sidebar showing installed/available skills
-    - A SkillsBanner prompting installation/updates
-    - A SkillsInstallDialog modal triggered by 412 responses
-    - A SlashCommandAutocomplete dropdown in the chat input
-    - A "Skills" button in the navigation header
-    Users should see slash commands natively in their Claude session, not through
-    custom UI widgets in the Command Deck.
-  codebase_analysis: |
-    Files to delete (12 files):
-    - frontend/src/components/SkillsPalette.tsx, .module.css, .test.tsx
-    - frontend/src/components/SkillsBanner.tsx, .module.css, .test.tsx
-    - frontend/src/components/SkillsInstallDialog.tsx, .test.tsx
-    - frontend/src/components/SlashCommandAutocomplete.tsx, .module.css, .test.tsx
-    - frontend/src/hooks/useSkillsStatus.ts
-    - frontend/src/hooks/useSkillsPrompt.ts
-    - frontend/src/skills/registry.ts, registry.test.ts
+  summary: Strip all frontend skills UI (SkillsPalette, SkillsBanner, SkillsInstallDialog, SlashCommandAutocomplete, useSkillsStatus,
+    useSkillsPrompt, SKILL_REGISTRY) and their integrations in App.tsx, ProjectPage, AgentTerminal, and AgentLauncher. Skills/slash
+    commands are handled natively by Claude Code in the terminal — the custom UI layer is redundant.
+  context: 'The Command Deck has a custom skills UI layer that duplicates what Claude Code
 
-    Files to modify:
-    - frontend/src/App.tsx — imports, state (showSkillsPalette, skillsPrompt),
-      handleSkillSelect, SkillsBanner JSX, Skills nav button, SkillsPalette JSX,
-      SkillsInstallDialog JSX, 412 error handling in spawnMutation
-    - frontend/src/pages/ProjectPage.tsx — skillsMissing logic, SetupBanners skills
-      section, SkillsInstallDialog, useSkillsPrompt, 412 handling, onSkillsRequired
-    - frontend/src/components/AgentTerminal.tsx — SKILL_REGISTRY import, autocomplete
-      state (acIndex, acDismissed, acVisible, acFiltered), SlashCommandAutocomplete JSX,
-      keyboard handling for autocomplete
-    - frontend/src/components/AgentLauncher.tsx — SKILL_REGISTRY import, role filtering
-      (decouple from skills registry, keep role selection)
-    - frontend/src/api/queryKeys.ts — remove "skills" key
-    - frontend/src/types/api.ts — remove SkillDetail, SkillsStatus types
+    already provides natively in the terminal. This includes:
+
+    - A SkillsPalette sidebar showing installed/available skills
+
+    - A SkillsBanner prompting installation/updates
+
+    - A SkillsInstallDialog modal triggered by 412 responses
+
+    - A SlashCommandAutocomplete dropdown in the chat input
+
+    - A "Skills" button in the navigation header
+
+    Users should see slash commands natively in their Claude session, not through
+
+    custom UI widgets in the Command Deck.
+
+    '
+  codebase_analysis: "Files to delete (12 files):\n- frontend/src/components/SkillsPalette.tsx, .module.css, .test.tsx\n-\
+    \ frontend/src/components/SkillsBanner.tsx, .module.css, .test.tsx\n- frontend/src/components/SkillsInstallDialog.tsx,\
+    \ .test.tsx\n- frontend/src/components/SlashCommandAutocomplete.tsx, .module.css, .test.tsx\n- frontend/src/hooks/useSkillsStatus.ts\n\
+    - frontend/src/hooks/useSkillsPrompt.ts\n- frontend/src/skills/registry.ts, registry.test.ts\n\nFiles to modify:\n- frontend/src/App.tsx\
+    \ — imports, state (showSkillsPalette, skillsPrompt),\n  handleSkillSelect, SkillsBanner JSX, Skills nav button, SkillsPalette\
+    \ JSX,\n  SkillsInstallDialog JSX, 412 error handling in spawnMutation\n- frontend/src/pages/ProjectPage.tsx — skillsMissing\
+    \ logic, SetupBanners skills\n  section, SkillsInstallDialog, useSkillsPrompt, 412 handling, onSkillsRequired\n- frontend/src/components/AgentTerminal.tsx\
+    \ — SKILL_REGISTRY import, autocomplete\n  state (acIndex, acDismissed, acVisible, acFiltered), SlashCommandAutocomplete\
+    \ JSX,\n  keyboard handling for autocomplete\n- frontend/src/components/AgentLauncher.tsx — SKILL_REGISTRY import, role\
+    \ filtering\n  (decouple from skills registry, keep role selection)\n- frontend/src/api/queryKeys.ts — remove \"skills\"\
+    \ key\n- frontend/src/types/api.ts — remove SkillDetail, SkillsStatus types\n"
   acceptance_criteria:
-    - "SkillsPalette, SkillsBanner, SkillsInstallDialog, and SlashCommandAutocomplete components are fully removed"
-    - "No 'Skills' button in the navigation header"
-    - "No skills-related hooks (useSkillsStatus, useSkillsPrompt) remain"
-    - "No SKILL_REGISTRY or skills/registry module remains"
-    - "AgentTerminal chat input works without autocomplete (slash commands handled by Claude natively)"
-    - "AgentLauncher role selection still works (decoupled from SKILL_REGISTRY)"
-    - "ProjectPage spawn/setup flows work without skillsMissing checks or 412 skills handling"
-    - "npm run build succeeds with no errors"
-    - "Existing tests pass (no regressions from removed test files)"
-  out_of_scope: |
-    - Backend skills API endpoints (GET /api/skills, POST /api/skills/update) — left for separate cleanup
+  - SkillsPalette, SkillsBanner, SkillsInstallDialog, and SlashCommandAutocomplete components are fully removed
+  - No 'Skills' button in the navigation header
+  - No skills-related hooks (useSkillsStatus, useSkillsPrompt) remain
+  - No SKILL_REGISTRY or skills/registry module remains
+  - AgentTerminal chat input works without autocomplete (slash commands handled by Claude natively)
+  - AgentLauncher role selection still works (decoupled from SKILL_REGISTRY)
+  - ProjectPage spawn/setup flows work without skillsMissing checks or 412 skills handling
+  - npm run build succeeds with no errors
+  - Existing tests pass (no regressions from removed test files)
+  out_of_scope: '- Backend skills API endpoints (GET /api/skills, POST /api/skills/update) — left for separate cleanup
+
     - OpenAPI schema changes for skills endpoints
+
     - Any changes to how Claude Code handles slash commands in the terminal
-  technical_notes: |
-    Pure frontend deletion/cleanup. No new code — only removing dead code paths.
+
+    '
+  technical_notes: 'Pure frontend deletion/cleanup. No new code — only removing dead code paths.
+
     AgentLauncher needs its role list decoupled from SKILL_REGISTRY — either inline
+
     the role definitions or accept them as props. The AgentRole type re-export from
+
     AgentLauncher should be preserved (it comes from api.ts SpawnInteractiveRequest).
+
+    '
 plan:
-  - phase: "Delete standalone skills components & hooks"
-    tasks:
-      - text: "Delete SkillsPalette.tsx, SkillsPalette.module.css, SkillsPalette.test.tsx"
-        done: false
-      - text: "Delete SkillsBanner.tsx, SkillsBanner.module.css, SkillsBanner.test.tsx"
-        done: false
-      - text: "Delete SkillsInstallDialog.tsx, SkillsInstallDialog.test.tsx"
-        done: false
-      - text: "Delete SlashCommandAutocomplete.tsx, SlashCommandAutocomplete.module.css, SlashCommandAutocomplete.test.tsx"
-        done: false
-      - text: "Delete useSkillsStatus.ts and useSkillsPrompt.ts hooks"
-        done: false
-      - text: "Delete skills/registry.ts and skills/registry.test.ts"
-        done: false
-  - phase: "Clean integrations in App.tsx"
-    tasks:
-      - text: "Remove all skills imports, state (showSkillsPalette, skillsPrompt), handleSkillSelect, and JSX for SkillsPalette, SkillsBanner, SkillsInstallDialog, and the Skills nav button"
-        done: false
-      - text: "Remove 412 error handling in spawnMutation that triggers skillsPrompt"
-        done: false
-  - phase: "Clean integrations in pages and components"
-    tasks:
-      - text: "ProjectPage: Remove skillsMissing logic, SetupBanners skills section, SkillsInstallDialog render, useSkillsPrompt usage, 412 handling, and onSkillsRequired callbacks"
-        done: false
-      - text: "AgentTerminal: Remove SKILL_REGISTRY import, all autocomplete state/logic/JSX (acIndex, acDismissed, acVisible, acFiltered, SlashCommandAutocomplete)"
-        done: false
-      - text: "AgentLauncher: Remove SKILL_REGISTRY dependency — inline role definitions or simplify role selection to not depend on skills module"
-        done: false
-  - phase: "Cleanup & verification"
-    tasks:
-      - text: "Remove 'skills' query key from queryKeys.ts, remove SkillDetail/SkillsStatus types from api.ts. Run npm run build and verify tests pass."
-        done: false
+- phase: Delete standalone skills components & hooks
+  tasks:
+  - text: Delete SkillsPalette.tsx, SkillsPalette.module.css, SkillsPalette.test.tsx
+    done: true
+  - text: Delete SkillsBanner.tsx, SkillsBanner.module.css, SkillsBanner.test.tsx
+    done: true
+  - text: Delete SkillsInstallDialog.tsx, SkillsInstallDialog.test.tsx
+    done: true
+  - text: Delete SlashCommandAutocomplete.tsx, SlashCommandAutocomplete.module.css, SlashCommandAutocomplete.test.tsx
+    done: true
+  - text: Delete useSkillsStatus.ts and useSkillsPrompt.ts hooks
+    done: true
+  - text: Delete skills/registry.ts and skills/registry.test.ts
+    done: true
+- phase: Clean integrations in App.tsx
+  tasks:
+  - text: Remove all skills imports, state (showSkillsPalette, skillsPrompt), handleSkillSelect, and JSX for SkillsPalette,
+      SkillsBanner, SkillsInstallDialog, and the Skills nav button
+    done: true
+  - text: Remove 412 error handling in spawnMutation that triggers skillsPrompt
+    done: true
+- phase: Clean integrations in pages and components
+  tasks:
+  - text: 'ProjectPage: Remove skillsMissing logic, SetupBanners skills section, SkillsInstallDialog render, useSkillsPrompt
+      usage, 412 handling, and onSkillsRequired callbacks'
+    done: true
+  - text: 'AgentTerminal: Remove SKILL_REGISTRY import, all autocomplete state/logic/JSX (acIndex, acDismissed, acVisible,
+      acFiltered, SlashCommandAutocomplete)'
+    done: true
+  - text: 'AgentLauncher: Remove SKILL_REGISTRY dependency — inline role definitions or simplify role selection to not depend
+      on skills module'
+    done: true
+- phase: Cleanup & verification
+  tasks:
+  - text: Remove 'skills' query key from queryKeys.ts, remove SkillDetail/SkillsStatus types from api.ts. Run npm run build
+      and verify tests pass.
+    done: true
 extra: {}
