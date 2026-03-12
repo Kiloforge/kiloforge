@@ -3,7 +3,7 @@ import type { AddProjectRequest } from "../types/api";
 import { useSSHKeys } from "../hooks/useProjects";
 import styles from "./AddProjectForm.module.css";
 
-type FormMode = "clone" | "create";
+type FormMode = "clone" | "local" | "create";
 
 interface AddProjectFormProps {
   adding: boolean;
@@ -19,10 +19,12 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<FormMode>("clone");
   const [remoteUrl, setRemoteUrl] = useState("");
+  const [localPath, setLocalPath] = useState("");
   const [name, setName] = useState("");
   const [outputDir, setOutputDir] = useState("");
   const [sshKey, setSSHKey] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [pathError, setPathError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const { keys: sshKeys, loading: keysLoading, fetchKeys } = useSSHKeys();
 
@@ -53,6 +55,14 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
       setUrlError(null);
       return true;
     }
+    if (mode === "local") {
+      if (!localPath.trim()) {
+        setPathError("Local path is required");
+        return false;
+      }
+      setPathError(null);
+      return true;
+    }
     // create mode
     if (!name.trim()) {
       setNameError("Project name is required");
@@ -60,7 +70,7 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
     }
     setNameError(null);
     return true;
-  }, [mode, remoteUrl, name]);
+  }, [mode, remoteUrl, localPath, name]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -72,6 +82,9 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
         req = { remote_url: remoteUrl.trim() };
         if (name.trim()) req.name = name.trim();
         if (isSSH && sshKey) req.ssh_key = sshKey;
+      } else if (mode === "local") {
+        req = { local_path: localPath.trim() };
+        if (name.trim()) req.name = name.trim();
       } else {
         req = { name: name.trim() };
       }
@@ -80,6 +93,7 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
       const ok = await onAdd(req);
       if (ok) {
         setRemoteUrl("");
+        setLocalPath("");
         setName("");
         setOutputDir("");
         setSSHKey("");
@@ -87,12 +101,13 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
         setMode("clone");
       }
     },
-    [mode, remoteUrl, name, outputDir, sshKey, isSSH, onAdd, validate],
+    [mode, remoteUrl, localPath, name, outputDir, sshKey, isSSH, onAdd, validate],
   );
 
   const handleModeChange = useCallback((newMode: FormMode) => {
     setMode(newMode);
     setUrlError(null);
+    setPathError(null);
     setNameError(null);
   }, []);
 
@@ -114,6 +129,14 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
           disabled={adding}
         >
           Clone from remote
+        </button>
+        <button
+          type="button"
+          className={`${styles.modeBtn} ${mode === "local" ? styles.modeBtnActive : ""}`}
+          onClick={() => handleModeChange("local")}
+          disabled={adding}
+        >
+          Local repo
         </button>
         <button
           type="button"
@@ -142,9 +165,25 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
             {urlError && <span className={styles.fieldError}>{urlError}</span>}
           </div>
         )}
+        {mode === "local" && (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="local-path">Local path</label>
+            <input
+              id="local-path"
+              className={`${styles.input}${pathError ? ` ${styles.inputError}` : ""}`}
+              type="text"
+              placeholder="/path/to/repo"
+              value={localPath}
+              onChange={(e) => { setLocalPath(e.target.value); setPathError(null); onClearError(); }}
+              autoFocus
+              disabled={adding}
+            />
+            {pathError && <span className={styles.fieldError}>{pathError}</span>}
+          </div>
+        )}
         <div className={styles.field}>
           <label className={styles.label} htmlFor="project-name">
-            Name {mode === "clone" && <span className={styles.optional}>(optional)</span>}
+            Name {mode !== "create" && <span className={styles.optional}>(optional)</span>}
           </label>
           <input
             id="project-name"
@@ -195,12 +234,12 @@ export function AddProjectForm({ adding, error, onAdd, onClearError }: AddProjec
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.actions}>
         <button type="submit" className={styles.submitBtn} disabled={adding}>
-          {adding ? "Adding..." : mode === "clone" ? "Clone Project" : "Create Project"}
+          {adding ? "Adding..." : mode === "clone" ? "Clone Project" : mode === "local" ? "Add Local Repo" : "Create Project"}
         </button>
         <button
           type="button"
           className={styles.cancelBtn}
-          onClick={() => { setExpanded(false); setUrlError(null); setNameError(null); onClearError(); }}
+          onClick={() => { setExpanded(false); setUrlError(null); setPathError(null); setNameError(null); onClearError(); }}
           disabled={adding}
         >
           Cancel

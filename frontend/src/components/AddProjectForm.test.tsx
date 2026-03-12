@@ -193,4 +193,94 @@ describe("AddProjectForm", () => {
       expect(screen.getByLabelText("Remote URL")).toBeInTheDocument();
     });
   });
+
+  describe("Local repo mode", () => {
+    it("shows Local repo tab in mode toggle", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      expect(screen.getByText("Local repo")).toBeInTheDocument();
+    });
+
+    it("shows path input when Local repo is selected", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      expect(screen.getByLabelText("Local path")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("/path/to/repo")).toBeInTheDocument();
+    });
+
+    it("hides Remote URL field in local mode", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      expect(screen.queryByLabelText("Remote URL")).not.toBeInTheDocument();
+    });
+
+    it("does not show SSH key selector in local mode", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      expect(screen.queryByLabelText("SSH Key")).not.toBeInTheDocument();
+    });
+
+    it("shows submit button as 'Add Local Repo'", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      expect(screen.getByText("Add Local Repo")).toBeInTheDocument();
+    });
+
+    it("validates empty path on submit", async () => {
+      const user = userEvent.setup();
+      const onAdd = vi.fn().mockResolvedValue(true);
+      renderForm({ onAdd });
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      await user.click(screen.getByText("Add Local Repo"));
+      expect(screen.getByText("Local path is required")).toBeInTheDocument();
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it("submits with local_path field", async () => {
+      const user = userEvent.setup();
+      const onAdd = vi.fn().mockResolvedValue(true);
+      renderForm({ onAdd });
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      await user.type(screen.getByLabelText("Local path"), "/home/user/my-repo");
+      await user.click(screen.getByText("Add Local Repo"));
+      expect(onAdd).toHaveBeenCalledWith({ local_path: "/home/user/my-repo" });
+    });
+
+    it("includes optional name and output_dir when provided", async () => {
+      const user = userEvent.setup();
+      const onAdd = vi.fn().mockResolvedValue(true);
+      renderForm({ onAdd });
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      await user.type(screen.getByLabelText("Local path"), "/repos/proj");
+      await user.type(screen.getByLabelText(/Name/), "my-proj");
+      await user.type(screen.getByLabelText(/Output directory/), "/out");
+      await user.click(screen.getByText("Add Local Repo"));
+      expect(onAdd).toHaveBeenCalledWith({
+        local_path: "/repos/proj",
+        name: "my-proj",
+        output_dir: "/out",
+      });
+    });
+
+    it("shows name as optional in local mode", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByText("+ Add Project"));
+      await user.click(screen.getByText("Local repo"));
+      const nameLabel = screen.getByLabelText(/Name/).closest("div")!.querySelector("label")!;
+      expect(nameLabel.textContent).toContain("optional");
+    });
+  });
 });

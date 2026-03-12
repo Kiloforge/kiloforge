@@ -123,6 +123,7 @@ export interface Project {
 
 export interface AddProjectRequest {
   remote_url?: string;
+  local_path?: string;
   name?: string;
   ssh_key?: string;
   output_dir?: string;
