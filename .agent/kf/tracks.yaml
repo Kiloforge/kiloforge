@@ -216,7 +216,7 @@ model-selection_20260309110000Z: {"title":"Configurable Model Selection with Opu
 model-warning-banner_20260310072515Z: {"title":"One-time model compatibility warning banner on first dashboard load","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 monorepo-restructure_20260308180001Z: {"title":"Restructure as Monorepo with Backend/Frontend Split","status":"archived","type":"refactor","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 multi-agent-skills-docs_20260311200000Z: {"title":"Document multi-agent skill installation in project docs","status":"completed","type":"chore","created":"2026-03-11","updated":"2026-03-11"}
-multi-agent-skills-site_20260311200001Z: {"title":"Add agent tool selector to kiloforge.dev skills page","status":"pending","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
+multi-agent-skills-site_20260311200001Z: {"title":"Add agent tool selector to kiloforge.dev skills page","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-12"}
 multi-window-agents_20260310062704Z: {"title":"Multi-window agent terminals — simultaneous agent interactions","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
 navbar-design-polish_20260310033000Z: {"title":"Navigation Bar Design Polish and Agent Status Popover","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 notification-center-be_20260313060000Z: {"title":"Notification center — backend persistence, service, relay hook, REST API","status":"completed","type":"feature","created":"2026-03-10","updated":"2026-03-10"}
