@@ -1,0 +1,104 @@
+id: dir-browser-picker-fe_20260312191501Z
+title: Add directory picker component with tree navigation for output dir
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Replace the output_dir plain text input in AddProjectForm with an
+    interactive directory tree picker that fetches listings from
+    GET /api/fs/list. Users navigate folders, expand subdirectories,
+    and select a target — or type a path manually as fallback.
+  context: |
+    The AddProjectForm (frontend/src/components/AddProjectForm.tsx) has an
+    output_dir text input where users type a filesystem path for the
+    project mirror clone. This is error-prone — users must know exact paths.
+    With the new GET /api/fs/list backend endpoint, the frontend can present
+    a navigable directory tree that loads one level at a time on expand.
+  codebase_analysis: |
+    AddProjectForm.tsx (lines 162-175): output_dir field is a plain <input>
+    with placeholder "default: internal mirror". The field is optional — when
+    empty, the backend uses ~/.kiloforge/output/{slug}/.
+
+    Existing component patterns:
+    - AddProjectForm.module.css: form field styling with .field, .label, .input classes
+    - useSSHKeys hook: pattern for lazy-loading backend data on demand (fetch on trigger)
+    - TanStack Query: used throughout for API data fetching
+
+    API types: frontend/src/types/api.ts (generated or hand-maintained)
+    State management: local useState + TanStack Query for server state
+    CSS: CSS Modules throughout (*.module.css)
+
+    The form already has a pattern for optional fields with enhanced UX
+    (SSH key auto-discovery when SSH URL is detected). The directory picker
+    follows the same pattern: show enhanced UI when the user interacts with
+    the output_dir field.
+  acceptance_criteria:
+    - A "Browse" button appears next to the output_dir input field
+    - Clicking Browse opens a directory picker popover/panel below the input
+    - The picker shows the current directory's subdirectories as a list
+    - Each directory entry is clickable to navigate into it
+    - A breadcrumb trail shows the current path and allows upward navigation
+    - Selecting a directory populates the output_dir input and closes the picker
+    - The picker starts at the user's home directory (default API behavior)
+    - Loading states are shown while fetching directory listings
+    - Error states are handled gracefully (permission denied, path not found)
+    - The text input still works for manual path entry (picker is optional)
+    - Hidden directories (dot-prefixed) are visually dimmed but navigable
+    - The picker is keyboard-accessible (arrow keys, enter, escape)
+  out_of_scope: |
+    - File selection (directories only)
+    - Drag-and-drop from OS file manager
+    - Path autocomplete/typeahead in the text input
+    - Creating new directories from the picker
+    - Remembering recently used directories
+  technical_notes: |
+    Component structure:
+    1. DirectoryPicker.tsx — main picker component with breadcrumb + dir list
+    2. DirectoryPicker.module.css — styling for the picker panel
+    3. useDirectoryListing hook — wraps GET /api/fs/list with TanStack Query
+    4. Integration in AddProjectForm — add Browse button, manage picker state
+
+    The picker should be a positioned panel (similar to a dropdown) that
+    appears below the output_dir input when Browse is clicked. It loads
+    one directory level at a time via the API. Navigation updates the
+    current path and re-fetches.
+
+    Breadcrumb: show path segments as clickable links. Clicking a segment
+    navigates to that ancestor directory.
+
+    State: local useState for currentPath + isOpen. TanStack useQuery for
+    the directory listing keyed by currentPath.
+plan:
+  - phase: API Hook & Types
+    tasks:
+      - text: "Add DirEntry type to frontend API types (name, path, is_dir, hidden)"
+        done: false
+      - text: "Write test: useDirectoryListing hook fetches entries for a path and returns data"
+        done: false
+      - text: "Create useDirectoryListing hook — wraps GET /api/fs/list with useQuery, keyed by path"
+        done: false
+  - phase: Directory Picker Component
+    tasks:
+      - text: "Write test: DirectoryPicker renders directory entries and breadcrumb for current path"
+        done: false
+      - text: "Write test: clicking a directory entry navigates into it (updates path, re-fetches)"
+        done: false
+      - text: "Write test: clicking a breadcrumb segment navigates to that ancestor"
+        done: false
+      - text: "Write test: selecting a directory calls onSelect with the chosen path"
+        done: false
+      - text: "Create DirectoryPicker component — breadcrumb trail, directory list, loading/error states, onSelect callback"
+        done: false
+      - text: "Add DirectoryPicker.module.css — panel positioning, entry styling, breadcrumb layout, hidden dir dimming"
+        done: false
+  - phase: Form Integration & Verification
+    tasks:
+      - text: "Write test: AddProjectForm shows Browse button and opens picker on click"
+        done: false
+      - text: "Integrate DirectoryPicker into AddProjectForm — add Browse button next to output_dir, manage picker open state, populate input on select"
+        done: false
+      - text: "Run full frontend test suite and verify no regressions"
+        done: false
+extra: {}

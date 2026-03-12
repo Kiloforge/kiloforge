@@ -1,0 +1,84 @@
+id: dir-browser-api-be_20260312191500Z
+title: Add directory listing API endpoint for filesystem browsing
+type: feature
+status: pending
+created: 2026-03-12
+updated: 2026-03-12
+spec:
+  summary: |
+    Add GET /api/fs/list endpoint that returns directory entries for a given
+    parent path, enabling the frontend to present a navigable directory tree
+    for selecting project output directories.
+  context: |
+    When adding a project via AddProjectForm, the user can specify an
+    output_dir for the mirror clone. Currently this is a plain text input
+    with no filesystem awareness — the user must know and type the full
+    path. A directory listing API lets the frontend build an interactive
+    picker. The backend already has a pattern for host filesystem access
+    (GET /api/ssh-keys scans ~/.ssh/), so this follows the same approach.
+  codebase_analysis: |
+    OpenAPI spec: backend/api/openapi.yaml (3,239 lines, oapi-codegen driven)
+    API handler: backend/internal/adapter/rest/api_handler.go (implements StrictServerInterface)
+    Code generation: `make gen-api` runs oapi-codegen with cfg.yaml and cfg-client.yaml
+    SSH key pattern: backend/internal/adapter/auth/sshkey.go uses os.ReadDir to scan ~/.ssh/
+    Router: HTTP 1.22 mux, routes auto-wired from generated HandlerFromMux
+
+    Existing filesystem reads in codebase:
+    - auth/sshkey.go: os.ReadDir for SSH key discovery
+    - cli/logs.go: os.ReadDir for log file listing
+    - pkg/kf/project.go: os.ReadDir for style guide dirs
+
+    Schema-first rule (product-guidelines.md): "No new HTTP endpoint may be
+    added without first updating the OpenAPI schema."
+  acceptance_criteria:
+    - GET /api/fs/list?path=/some/dir returns JSON array of directory entries
+    - Each entry contains name (string), path (string), and is_dir (boolean)
+    - Only directories are returned (not files) since this is for folder selection
+    - When path is omitted, defaults to user home directory
+    - Symlinks to directories are included (resolved)
+    - Hidden directories (dot-prefixed) are included but flagged
+    - Returns 400 for non-existent or non-directory paths
+    - Returns 403 for paths outside allowed roots (home dir and filesystem root)
+    - Entries are sorted alphabetically (directories only)
+    - OpenAPI spec is updated and code is regenerated via make gen-api
+  out_of_scope: |
+    - File content reading or writing
+    - Recursive directory tree listing (client fetches one level at a time)
+    - File upload/download
+    - Path bookmarks or favorites
+    - Windows path support (macOS/Linux only for now)
+  technical_notes: |
+    1. Add DirEntry schema and GET /api/fs/list to openapi.yaml
+    2. Run make gen-api to regenerate server stubs
+    3. Implement ListDirectories handler in api_handler.go
+    4. Use os.ReadDir + filepath for safe path resolution
+    5. Restrict browsing to home directory tree and root-level dirs
+       for safety (no /etc/shadow type leaks — dirs only anyway)
+    6. Follow existing handler patterns: parse query params, call logic,
+       return typed response
+plan:
+  - phase: API Schema
+    tasks:
+      - text: "Add DirEntry schema (name, path, is_dir, hidden) and GET /api/fs/list endpoint with path query param to openapi.yaml"
+        done: false
+      - text: "Run make gen-api to regenerate server stubs and verify compilation"
+        done: false
+  - phase: Implementation
+    tasks:
+      - text: "Write test: ListDirectories returns entries for a valid directory path"
+        done: false
+      - text: "Write test: ListDirectories defaults to home directory when path is omitted"
+        done: false
+      - text: "Write test: ListDirectories returns 400 for non-existent path"
+        done: false
+      - text: "Write test: ListDirectories returns only directories (no files)"
+        done: false
+      - text: "Implement ListDirectories handler — read directory, filter to dirs only, resolve symlinks, sort alphabetically, return DirEntry array"
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Run make test and verify all backend tests pass"
+        done: false
+      - text: "Run make build and verify clean compilation"
+        done: false
+extra: {}
