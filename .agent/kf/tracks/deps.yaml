@@ -80,8 +80,6 @@ onboarding-ux-fe_20260310073721Z: []
 
 quota-gauges-be_20260310092417Z: []
 
-remove-command-mode-fe_20260312095110Z: []
-
 replace-tracing-be_20260310144200Z: []
 
 responsive-kanban-fe_20260311220002Z:
@@ -96,3 +94,4 @@ ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
 
+zoom-drag-compensation-fe_20260312095153Z: []
