@@ -31,6 +31,8 @@ import subprocess
 import sys
 from collections import defaultdict
 
+import yaml
+
 
 def run(cmd, **kwargs):
     """Run a shell command, return stdout. Returns empty string on failure."""
@@ -55,8 +57,19 @@ def run_or_die(cmd, msg):
 def get_primary_branch():
     """Resolve primary branch via kf-primary-branch."""
     kf_bin = os.path.dirname(os.path.abspath(__file__))
-    pb = run(f"{kf_bin}/kf-primary-branch")
+    pb = run(f"{kf_bin}/kf-primary-branch.py")
     return pb if pb else "main"
+
+
+def get_config(ref):
+    """Read config.yaml from the primary branch."""
+    output = run(f"git show {ref}:.agent/kf/config.yaml 2>/dev/null")
+    if not output:
+        return {}
+    try:
+        return yaml.safe_load(output) or {}
+    except yaml.YAMLError:
+        return {}
 
 
 def get_worktree_state():
@@ -106,15 +119,17 @@ def get_worktree_state():
 
 
 def parse_track_status(ref):
-    """Parse kf-track status output to get track lists."""
-    kf_bin = os.path.dirname(os.path.abspath(__file__))
-    output = run(f"{kf_bin}/kf-track list --all --json --ref {ref}")
+    """Parse tracks.yaml via git show and yaml.safe_load."""
+    output = run(f"git show {ref}:.agent/kf/tracks.yaml 2>/dev/null")
     if not output:
         return {}, [], [], [], []
 
     try:
-        tracks = json.loads(output)
-    except json.JSONDecodeError:
+        data = yaml.safe_load(output)
+    except yaml.YAMLError:
+        return {}, [], [], [], []
+
+    if not isinstance(data, dict):
         return {}, [], [], [], []
 
     all_tracks = {}
@@ -123,7 +138,10 @@ def parse_track_status(ref):
     claimed = []
     completed = []
 
-    for track_id, info in tracks.items():
+    for track_id, info in data.items():
+        if not isinstance(info, dict):
+            continue
+        info["id"] = track_id
         all_tracks[track_id] = info
         status = info.get("status", "")
         if status == "completed":
@@ -138,36 +156,74 @@ def parse_track_status(ref):
 
 
 def parse_deps(ref):
-    """Parse dependency graph."""
-    kf_bin = os.path.dirname(os.path.abspath(__file__))
-    output = run(f"{kf_bin}/kf-track deps show --json --ref {ref} 2>/dev/null")
+    """Parse deps.yaml via git show and yaml.safe_load."""
+    output = run(f"git show {ref}:.agent/kf/tracks/deps.yaml 2>/dev/null")
     if not output:
         return {}
+
     try:
-        return json.loads(output)
-    except json.JSONDecodeError:
+        data = yaml.safe_load(output)
+    except yaml.YAMLError:
         return {}
+
+    if not isinstance(data, dict):
+        return {}
+
+    # Ensure all values are lists
+    return {k: (v if isinstance(v, list) else []) for k, v in data.items()}
 
 
 def parse_conflicts(ref):
-    """Parse conflict pairs."""
-    kf_bin = os.path.dirname(os.path.abspath(__file__))
-    output = run(f"{kf_bin}/kf-track conflicts list --all --json --ref {ref} 2>/dev/null")
+    """Parse conflicts.yaml via git show and yaml.safe_load."""
+    output = run(f"git show {ref}:.agent/kf/tracks/conflicts.yaml 2>/dev/null")
     if not output:
         return {}
+
     try:
-        return json.loads(output)
-    except json.JSONDecodeError:
+        data = yaml.safe_load(output)
+    except yaml.YAMLError:
         return {}
 
+    if not isinstance(data, dict):
+        return {}
 
-def classify_pending(all_tracks, deps, completed_set):
-    """Classify pending tracks as available or blocked based on deps."""
+    return data
+
+
+def parse_active_claims():
+    """Get the set of track IDs that are currently claimed by any worktree."""
+    kf_bin = os.path.dirname(os.path.abspath(__file__))
+    output = run(f"{kf_bin}/kf-claim.py list --json")
+    if not output:
+        return set()
+    try:
+        claims = json.loads(output)
+        return {c.get("track_id") for c in claims if c.get("track_id")}
+    except (json.JSONDecodeError, TypeError):
+        return set()
+
+
+def classify_pending(all_tracks, deps, completed_set, claimed_tracks=None,
+                     require_approval=True):
+    """Classify pending tracks as available or blocked based on deps, claims, and approval."""
+    if claimed_tracks is None:
+        claimed_tracks = set()
+
     available = []
     blocked = []
+    unapproved = []
 
     for track_id, info in all_tracks.items():
         if info.get("status") != "pending":
+            continue
+
+        # Skip tracks that are actively claimed (even if tracks.yaml still says pending)
+        if track_id in claimed_tracks:
+            continue
+
+        # Skip unapproved tracks when approval is required
+        if require_approval and not info.get("approved", False):
+            unapproved.append({"id": track_id, **info})
             continue
 
         track_deps = deps.get(track_id, [])
@@ -178,7 +234,7 @@ def classify_pending(all_tracks, deps, completed_set):
         else:
             available.append({"id": track_id, **info})
 
-    return available, blocked
+    return available, blocked, unapproved
 
 
 def compute_priority(track, all_tracks, deps, conflicts, claimed_ids, active_types):
@@ -267,12 +323,22 @@ def main():
     claimed_set = set(claimed)
     completed_set = set(completed)
 
+    # Read active claims (tracks being worked on, even if tracks.yaml hasn't been updated yet)
+    active_claims = parse_active_claims()
+    claimed_set |= active_claims
+
+    # Read config for approval requirement
+    config = get_config(ref)
+    require_approval = config.get("require_approval", True)
+
     # Read deps and conflicts
     deps = parse_deps(ref)
     conflicts = parse_conflicts(ref)
 
-    # Classify pending tracks
-    available, blocked = classify_pending(all_tracks, deps, completed_set)
+    # Classify pending tracks (exclude actively claimed and unapproved tracks)
+    available, blocked, unapproved = classify_pending(
+        all_tracks, deps, completed_set, active_claims, require_approval
+    )
 
     # Get active worker types
     active_types = set()
@@ -339,7 +405,7 @@ def main():
                 "branch": f"kf/{track_type}/{tid}",
                 "priority_score": priority[0],
                 "unblocks": unblock_count,
-                "command": f'claude --worktree {worker["folder"]} -p "/kf-developer {tid}"',
+                "command": f'kf-conductor.py spawn {worker["folder"]} {tid}',
             })
 
     unassigned = [w for w in idle if w["folder"] not in {a["worker"] for a in assignments}]
@@ -358,6 +424,7 @@ def main():
                 "blocked": len(blocked),
                 "claimed": len(claimed),
                 "completed": len(completed),
+                "unapproved": len(unapproved),
             },
             "active_workers": [
                 {"folder": w["folder"], "branch": w["branch"]}
@@ -383,7 +450,8 @@ def main():
     print("=" * 80)
     print()
     print(f"Workers: {len(idle)} idle, {len(active)} active, {len(idle) + len(active) + len(unknown)} total")
-    print(f"Tracks:  {len(available)} available, {len(blocked)} blocked, {len(claimed)} in-progress")
+    unapproved_str = f", {len(unapproved)} awaiting approval" if unapproved else ""
+    print(f"Tracks:  {len(available)} available, {len(blocked)} blocked, {len(claimed)} in-progress{unapproved_str}")
     print()
 
     if active:
@@ -431,6 +499,16 @@ def main():
         for b in blocked:
             waiting = ", ".join(b["unmet_deps"])
             print(f"  {b['id']} — waiting on: {waiting}")
+        print()
+
+    if unapproved:
+        print("--- AWAITING APPROVAL " + "-" * 57)
+        print()
+        for u in unapproved:
+            print(f"  {u['id']} — {u.get('title', '')}")
+        print()
+        print(f"  Approve via: kf-track approve <track-id>")
+        print(f"  Or use the TUI: kf-conductor approve")
         print()
 
     if not idle:

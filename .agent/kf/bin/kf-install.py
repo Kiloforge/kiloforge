@@ -173,7 +173,7 @@ def ensure_gitignore(project_dir: Path):
     gitignore = project_dir / ".agent" / "kf" / ".gitignore"
     gitignore.parent.mkdir(parents=True, exist_ok=True)
 
-    entries_needed = [".venv"]
+    entries_needed = [".venv", "__pycache__/", "*.pyc"]
     existing = set()
     if gitignore.exists():
         existing = set(gitignore.read_text().splitlines())
@@ -207,7 +207,7 @@ def scaffold_metadata(project_dir: Path, primary_branch: str) -> list[str]:
 
     # config.yaml
     if write_if_missing(kf_dir / "config.yaml",
-        f'project_name: ""\nprimary_branch: "{primary_branch}"\n'):
+        f'project_name: ""\nprimary_branch: "{primary_branch}"\nrequire_approval: true\n'):
         created.append("config.yaml")
 
     # product.yaml
@@ -342,26 +342,6 @@ def copy_skills(skills_dir: Path, skills_target: Path) -> tuple[list[str], list[
     return updated, added
 
 
-def rewrite_shebangs(project_dir: Path, venv_dir: Path):
-    """Rewrite Python script shebangs to use the project-local venv."""
-    bin_dir = project_dir / ".agent" / "kf" / "bin"
-    python_path = str(venv_dir / "bin" / "python")
-    if not Path(python_path).exists():
-        python_path = str(venv_dir / "Scripts" / "python")  # Windows
-
-    count = 0
-    for f in sorted(bin_dir.glob("*.py")):
-        text = f.read_text()
-        lines = text.split("\n", 1)
-        if lines and "python" in lines[0]:
-            new_shebang = f"#!{python_path}"
-            if lines[0] != new_shebang:
-                new_text = new_shebang + "\n" + (lines[1] if len(lines) > 1 else "")
-                f.write_text(new_text)
-                count += 1
-
-    print(f"Rewrote shebangs in {count} script(s)")
-
 
 def clean_legacy(project_dir: Path) -> list[str]:
     """Remove old non-.py scripts that have been superseded."""
@@ -435,7 +415,6 @@ def main():
     skip_venv = args.skip_venv or args.update
     if not skip_venv:
         venv_dir = ensure_venv(project_dir)
-        ensure_gitignore(project_dir)
         print()
     else:
         venv_dir = project_dir / ".agent" / "kf" / ".venv"
@@ -443,6 +422,9 @@ def main():
             print("Update mode — skipping venv setup")
         else:
             print("Skipping venv setup (--skip-venv)")
+
+    # Always ensure .gitignore is up to date (even in update mode)
+    ensure_gitignore(project_dir)
 
     # Step 2: Scaffold metadata (skip in update mode)
     if not args.update:
@@ -473,30 +455,14 @@ def main():
         print("  (all skills already up to date)")
     print()
 
-    # Step 5: Rewrite shebangs
-    if venv_dir.is_dir():
-        rewrite_shebangs(project_dir, venv_dir)
-    else:
-        print("WARNING: Venv not found — shebangs not updated", file=sys.stderr)
-    print()
-
-    # Step 6: Clean legacy
-    removed = clean_legacy(project_dir)
-    if removed:
-        print(f"Cleaned {len(removed)} legacy script(s):")
-        for name in removed:
-            print(f"  removed {name} (superseded by {name}.py)")
-    else:
-        print("No legacy scripts to clean")
-
-    print()
-    print("=" * 60)
-    print(f"  {mode} complete")
-    if not args.update:
-        print()
-        print("  Next: run /kf-setup to configure project metadata")
-    print("=" * 60)
-
-
-if __name__ == "__main__":
-    main()
+    # Step 5: Restore portable shebangs (clean up any absolute venv paths from old installs)
+    bin_dir = project_dir / ".agent" / "kf" / "bin"
+    for f in sorted(bin_dir.glob("*.py")):
+        text = f.read_text()
+        lines = text.split("\n", 1)
+        if lines and lines[0].startswith("#!") and "python" in lines[0]:
+            if lines[0] != "#!/usr/bin/env python3":
+                new_text = "#!/usr/bin/env python3\n" + (lines[1] if len(lines) > 1 else "")
+                f.write_text(new_text)
+        # Strip old injected venv activation preamble if present
+        marker_start = "

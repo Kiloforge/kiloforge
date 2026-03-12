@@ -85,7 +85,7 @@ def normalize_json(raw_json):
     except (json.JSONDecodeError, TypeError):
         return raw_json
 
-    canonical_keys = ["title", "status", "type", "created", "updated"]
+    canonical_keys = ["title", "status", "type", "approved", "created", "updated"]
     optional_ordered = ["archived_at", "archive_reason"]
     result = {}
     for k in canonical_keys:
@@ -605,7 +605,7 @@ def cmd_add(args):
         return 1
 
     created = today_iso()
-    data = {"title": title, "status": status, "type": track_type, "created": created, "updated": created}
+    data = {"title": title, "status": status, "type": track_type, "approved": False, "created": created, "updated": created}
     track_json = normalize_json(json.dumps(data))
 
     # Append to tracks file
@@ -2433,6 +2433,36 @@ EXAMPLES:
     return 0
 
 
+def cmd_approve(args):
+    """Approve one or more tracks for dispatch."""
+    track_ids = [a for a in args if not a.startswith("-")]
+    if not track_ids:
+        print("Usage: kf-track approve <track-id> [track-id ...]", file=sys.stderr)
+        return 1
+    for tid in track_ids:
+        if not track_exists(tid):
+            print(f"ERROR: Track not found: {tid}", file=sys.stderr)
+            return 1
+        set_field(tid, "approved", True)
+        print(f"Approved: {tid}")
+    return 0
+
+
+def cmd_disapprove(args):
+    """Disapprove (revoke approval) for one or more tracks."""
+    track_ids = [a for a in args if not a.startswith("-")]
+    if not track_ids:
+        print("Usage: kf-track disapprove <track-id> [track-id ...]", file=sys.stderr)
+        return 1
+    for tid in track_ids:
+        if not track_exists(tid):
+            print(f"ERROR: Track not found: {tid}", file=sys.stderr)
+            return 1
+        set_field(tid, "approved", False)
+        print(f"Disapproved: {tid}")
+    return 0
+
+
 # --- Main dispatch ---
 def main():
     args = sys.argv[1:]
@@ -2445,6 +2475,8 @@ def main():
         "set": lambda: cmd_set(rest),
         "get": lambda: cmd_get(rest),
         "list": lambda: cmd_list(rest),
+        "approve": lambda: cmd_approve(rest),
+        "disapprove": lambda: cmd_disapprove(rest),
         "archive": lambda: cmd_archive(rest),
         "compact": lambda: cmd_compact(rest),
         "deps": lambda: cmd_deps(rest),

@@ -32,7 +32,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
@@ -54,6 +53,9 @@ STATE_STOPPED = "stopped"
 
 # Default poll interval for the manager loop
 POLL_INTERVAL = 5  # seconds
+
+# Max panes per tmux window (workers are packed into panes)
+MAX_PANES_PER_WINDOW = 6
 
 
 # ---------------------------------------------------------------------------
@@ -122,19 +124,76 @@ def tmux_pane_pid(window_name: str) -> int | None:
         return None
 
 
+def tmux_pane_count(window_name: str) -> int:
+    """Count the number of panes in a tmux window."""
+    result = subprocess.run(
+        ["tmux", "list-panes", "-t", window_name, "-F", "#{pane_index}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return 0
+    return len(result.stdout.strip().splitlines())
+
+
+def tmux_pane_pid_at(window_name: str, pane_index: int) -> int | None:
+    """Get the PID of a specific pane in a window."""
+    target = f"{window_name}.{pane_index}"
+    result = subprocess.run(
+        ["tmux", "display-message", "-t", target, "-p", "#{pane_pid}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        return int(result.stdout.strip())
+    except ValueError:
+        return None
+
+
+def find_worker_window_with_space() -> str | None:
+    """Find an existing 'workers-N' window with room for another pane."""
+    result = subprocess.run(
+        ["tmux", "list-windows", "-F", "#{window_name} #{window_panes}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return None
+    for line in result.stdout.strip().splitlines():
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        name, count = parts[0], int(parts[1])
+        if name.startswith("workers-") and count < MAX_PANES_PER_WINDOW:
+            return name
+    return None
+
+
+def next_worker_window_name() -> str:
+    """Generate the next 'workers-N' window name."""
+    result = subprocess.run(
+        ["tmux", "list-windows", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    existing = set()
+    if result.returncode == 0:
+        for line in result.stdout.strip().splitlines():
+            if line.startswith("workers-"):
+                try:
+                    existing.add(int(line.split("-", 1)[1]))
+                except (ValueError, IndexError):
+                    pass
+    n = 1
+    while n in existing:
+        n += 1
+    return f"workers-{n}"
+
+
 def pid_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
         return True
     except (OSError, ProcessLookupError):
         return False
-
-
-def find_timeout_cmd() -> str:
-    for cmd in ["timeout", "gtimeout"]:
-        if shutil.which(cmd):
-            return cmd
-    return ""
 
 
 def worktree_path_for(worker: str) -> str | None:
@@ -280,15 +339,18 @@ def refresh_worker(worker: str) -> dict | None:
     if not data or data.get("state") != "running":
         return data
 
-    if not tmux_window_exists(data.get("tmux_window", worker)):
-        if data["state"] == "running":
-            data["state"] = "completed"
-            data["finished"] = now_iso()
-            write_worker_status(worker, data)
+    win = data.get("tmux_window", worker)
+
+    # Check if window still exists
+    if not tmux_window_exists(win):
+        data["state"] = "completed"
+        data["finished"] = now_iso()
+        write_worker_status(worker, data)
         return data
 
-    pane = data.get("pane_pid")
-    if pane and not pid_alive(pane):
+    # Check pane PID liveness
+    pane_pid = data.get("pane_pid")
+    if pane_pid and not pid_alive(pane_pid):
         data["state"] = "completed"
         data["finished"] = now_iso()
         write_worker_status(worker, data)
@@ -323,7 +385,12 @@ def all_worker_statuses() -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def spawn_worker(worker: str, track_id: str, timeout_min: int) -> int:
-    """Spawn a single worker. Returns 0 on success, 1 on failure."""
+    """Spawn a single worker in a tmux pane. Returns 0 on success, 1 on failure.
+
+    Workers are packed into shared tmux windows (up to MAX_PANES_PER_WINDOW
+    panes each). A new window is created only when all existing windows are
+    full.
+    """
     wt_path = worktree_path_for(worker)
     if not wt_path:
         print(f"  ERROR: Worktree '{worker}' not found.", file=sys.stderr)
@@ -332,9 +399,14 @@ def spawn_worker(worker: str, track_id: str, timeout_min: int) -> int:
     # Check if worker already running
     existing = read_worker_status(worker)
     if existing and existing.get("state") == "running":
-        if tmux_window_exists(worker):
-            print(f"  ERROR: Worker '{worker}' already running.", file=sys.stderr)
-            return 1
+        win = existing.get("tmux_window", "")
+        pane_idx = existing.get("pane_index")
+        if win and pane_idx is not None:
+            target = f"{win}.{pane_idx}"
+            pid = tmux_pane_pid_at(win, pane_idx)
+            if pid and pid_alive(pid):
+                print(f"  ERROR: Worker '{worker}' already running.", file=sys.stderr)
+                return 1
 
     # Check if track already claimed
     claim_check = subprocess.run(
@@ -345,40 +417,74 @@ def spawn_worker(worker: str, track_id: str, timeout_min: int) -> int:
         print(f"  ERROR: Track '{track_id}' already claimed.", file=sys.stderr)
         return 1
 
-    # Build command
-    prompt = f"/kf-developer {track_id}"
-    timeout_cmd = find_timeout_cmd()
-    timeout_sec = timeout_min * 60 if timeout_min else 0
-
-    claude_cmd = f'claude -p "{prompt}" --dangerously-skip-permissions'
-    if timeout_sec and timeout_cmd:
-        inner_cmd = f'{timeout_cmd} --kill-after=10 {timeout_sec} {claude_cmd}'
-    else:
-        inner_cmd = claude_cmd
-
+    # Build wrapper command
+    initial_prompt = f"/kf-developer {track_id} --auto-exit=10"
     sf = str(worker_status_file(worker))
     wrapper = (
         f'cd {wt_path} && '
-        f'{inner_cmd}; '
+        f'claude --dangerously-skip-permissions; '
         f'EC=$?; '
         f'python3 -c "'
         f"import json,sys,datetime;"
         f"f='{sf}';"
         f"d=json.load(open(f));"
         f"d['exit_code']=int(sys.argv[1]);"
-        f"d['state']='completed' if int(sys.argv[1])==0 else ('timeout' if int(sys.argv[1])==124 else 'failed');"
+        f"d['state']='completed' if int(sys.argv[1])==0 else 'failed';"
         f"d['finished']=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ');"
         f"open(f,'w').write(json.dumps(d,indent=2)+'\\n')"
         f'" $EC'
     )
 
+    # Find or create a tmux window with available pane slots
+    window_name = find_worker_window_with_space()
+    is_new_window = window_name is None
+
+    if is_new_window:
+        window_name = next_worker_window_name()
+        result = subprocess.run(
+            ["tmux", "new-window", "-n", window_name, wrapper],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print(f"  ERROR: tmux new-window failed: {result.stderr}",
+                  file=sys.stderr)
+            return 1
+        pane_index = 0
+    else:
+        result = subprocess.run(
+            ["tmux", "split-window", "-t", window_name, wrapper],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print(f"  ERROR: tmux split-window failed: {result.stderr}",
+                  file=sys.stderr)
+            return 1
+        # New pane is the last one
+        pane_index = tmux_pane_count(window_name) - 1
+
+        # Rebalance the layout
+        subprocess.run(
+            ["tmux", "select-layout", "-t", window_name, "tiled"],
+            capture_output=True, text=True,
+        )
+
+    # Ensure pane closes when the wrapper shell exits (even if remain-on-exit is on globally)
+    pane_target = f"{window_name}.{pane_index}"
+    subprocess.run(
+        ["tmux", "set-option", "-p", "-t", pane_target, "remain-on-exit", "off"],
+        capture_output=True, text=True,
+    )
+
+    # Get PID of the new pane
+    pane_pid = tmux_pane_pid_at(window_name, pane_index)
+
     status_data = {
         "worker": worker,
         "track_id": track_id,
         "tmux_session": tmux_session(),
-        "tmux_window": worker,
-        "pane_pid": None,
-        "timeout_seconds": timeout_sec,
+        "tmux_window": window_name,
+        "pane_index": pane_index,
+        "pane_pid": pane_pid,
         "started": now_iso(),
         "finished": None,
         "exit_code": None,
@@ -386,29 +492,43 @@ def spawn_worker(worker: str, track_id: str, timeout_min: int) -> int:
     }
     write_worker_status(worker, status_data)
 
-    result = subprocess.run(
-        ["tmux", "new-window", "-n", worker, wrapper],
+    # Wait for claude to initialize, then send the prompt
+    pane_target = f"{window_name}.{pane_index}"
+    time.sleep(2)
+    subprocess.run(
+        ["tmux", "send-keys", "-t", pane_target, initial_prompt, "Enter"],
         capture_output=True, text=True,
     )
-    if result.returncode != 0:
-        print(f"  ERROR: tmux window failed: {result.stderr}", file=sys.stderr)
-        worker_status_file(worker).unlink(missing_ok=True)
-        return 1
-
-    pane = tmux_pane_pid(worker)
-    if pane:
-        status_data["pane_pid"] = pane
-        write_worker_status(worker, status_data)
 
     return 0
 
 
-def run_dispatch(max_w: int, timeout_min: int) -> int:
-    """Run one dispatch cycle. Returns number of workers spawned."""
+class DispatchResult:
+    """Result of a dispatch cycle."""
+    def __init__(self, spawned: int = 0, available: int = 0, blocked: int = 0,
+                 completed: int = 0, idle_workers: int = 0, error: bool = False):
+        self.spawned = spawned
+        self.available = available
+        self.blocked = blocked
+        self.completed = completed
+        self.idle_workers = idle_workers
+        self.error = error
+
+    @property
+    def has_pending_work(self) -> bool:
+        return self.available > 0 or self.blocked > 0
+
+    @property
+    def all_done(self) -> bool:
+        return self.available == 0 and self.blocked == 0 and not self.error
+
+
+def run_dispatch(max_w: int, timeout_min: int) -> DispatchResult:
+    """Run one dispatch cycle. Returns DispatchResult with details."""
     running = count_running_workers()
     available_slots = max_w - running
     if available_slots <= 0:
-        return 0
+        return DispatchResult(idle_workers=0)
 
     dispatch_cmd = [
         os.path.join(BIN_DIR, "kf-dispatch.py"),
@@ -416,14 +536,21 @@ def run_dispatch(max_w: int, timeout_min: int) -> int:
     ]
     result = subprocess.run(dispatch_cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        return 0
+        return DispatchResult(error=True)
 
     try:
         plan = json.loads(result.stdout)
     except json.JSONDecodeError:
-        return 0
+        return DispatchResult(error=True)
 
-    spawned = 0
+    tracks = plan.get("tracks", {})
+    dr = DispatchResult(
+        available=tracks.get("available", 0),
+        blocked=tracks.get("blocked", 0),
+        completed=tracks.get("completed", 0),
+        idle_workers=plan.get("workers", {}).get("idle", 0),
+    )
+
     for a in plan.get("assignments", []):
         if count_running_workers() >= max_w:
             break
@@ -431,14 +558,33 @@ def run_dispatch(max_w: int, timeout_min: int) -> int:
         if rc == 0:
             timeout_str = f" (timeout: {timeout_min}m)" if timeout_min else ""
             print(f"  Spawned: {a['worker']} → {a['track_id']}{timeout_str}")
-            spawned += 1
+            dr.spawned += 1
         time.sleep(0.5)
 
-    return spawned
+    return dr
+
+
+def _track_completed_on_primary(track_id: str) -> bool:
+    """Check if a track is marked completed on the primary branch."""
+    result = subprocess.run(
+        ["git", "show", f"HEAD:.agent/kf/tracks.yaml"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.split("\n"):
+        if line.startswith(f"{track_id}:") and '"completed"' in line:
+            return True
+    return False
 
 
 def auto_cleanup_completed():
-    """Silently clean up completed workers so they can be re-used."""
+    """Silently clean up completed workers so they can be re-used.
+
+    For successfully completed workers, only release the claim if the track
+    is marked completed on the primary branch. This prevents re-dispatch of
+    tracks whose merge hasn't propagated yet.
+    """
     for sf in sorted(conductor_dir().glob("*.json")):
         if sf.name.startswith("_"):
             continue
@@ -448,6 +594,15 @@ def auto_cleanup_completed():
             continue
         if data.get("state") not in ("completed", "failed", "timeout", "killed"):
             continue
+
+        track_id = data.get("track_id", "")
+
+        # For completed workers, verify track status on primary branch before
+        # releasing claim. If the track isn't marked completed yet (merge not
+        # propagated), keep the claim to prevent re-dispatch.
+        if data.get("state") == "completed" and track_id:
+            if not _track_completed_on_primary(track_id):
+                continue  # Keep claim, skip cleanup — will retry next cycle
 
         # Release claim
         subprocess.run(
@@ -477,9 +632,57 @@ def auto_cleanup_completed():
 # Commands
 # ---------------------------------------------------------------------------
 
+def ensure_primary_worktree():
+    """Cd to the primary branch worktree so scripts can find .agent/kf/.
+
+    If we're in a bare repo root, a worker worktree, or anywhere that
+    doesn't have .agent/kf/, find the primary branch worktree and cd there.
+    Returns the path we switched to, or None if already in the right place.
+    """
+    # Already have .agent/kf/? We're fine.
+    if Path(".agent/kf").is_dir():
+        return None
+
+    # Try to find a worktree that has .agent/kf/
+    for wt in git.worktree_list():
+        candidate = Path(wt["path"]) / ".agent" / "kf"
+        if candidate.is_dir():
+            target = wt["path"]
+            os.chdir(target)
+            print(f"  Changed to worktree: {target}")
+            return target
+
+    # No worktree has .agent/kf/ — kf-setup hasn't been run yet.
+    # Stay where we are; dispatch will fail gracefully.
+    return None
+
+
+def _launch_approval_tui():
+    """Launch the approval TUI in its own tmux window (if not already open)."""
+    tui_script = os.path.join(BIN_DIR, "kf-approve-tui.py")
+    if not Path(tui_script).exists():
+        return
+
+    window_name = "kf-approve"
+    result = subprocess.run(
+        ["tmux", "list-windows", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    if window_name in result.stdout.split("\n"):
+        return  # Already open
+
+    subprocess.run(
+        ["tmux", "new-window", "-n", window_name, "-d",
+         f"{sys.executable} {tui_script}"],
+        capture_output=True, text=True,
+    )
+    print(f"  Approval TUI opened in tmux window: {window_name}")
+
+
 def cmd_start(args):
     """Start the manager loop — runs in the foreground."""
     check_tmux()
+    ensure_primary_worktree()
 
     # Check if already running
     if manager_is_alive():
@@ -503,6 +706,9 @@ def cmd_start(args):
     print(f"Use 'kf-conductor.py suspend/resume/stop' from another window to control.")
     print()
 
+    # Auto-launch the approval TUI in its own tmux window
+    _launch_approval_tui()
+
     try:
         _manager_loop(max_w, timeout_min)
     except KeyboardInterrupt:
@@ -520,6 +726,7 @@ def cmd_start(args):
 def _manager_loop(max_w: int, timeout_min: int):
     """The main manager loop. Polls for work and dispatches."""
     cycle = 0
+    last_status = ""  # avoid repeating identical status lines
     while True:
         # Read current manager state (may have been changed by suspend/resume/stop)
         mgr = read_manager()
@@ -545,12 +752,37 @@ def _manager_loop(max_w: int, timeout_min: int):
             auto_cleanup_completed()
 
             # Dispatch new work
-            spawned = run_dispatch(max_w, timeout_min)
+            dr = run_dispatch(max_w, timeout_min)
+            running = count_running_workers()
 
-            # Log periodically
-            if spawned > 0 or cycle % 12 == 0:
-                running = count_running_workers()
-                print(f"  [{now_iso()}] running: {running}/{max_w}")
+            # Build status line
+            if dr.spawned > 0:
+                status = (f"  [{now_iso()}] running: {running}/{max_w}"
+                          f" | spawned: {dr.spawned}")
+                print(status)
+                last_status = ""
+            elif cycle % 12 == 0:  # Log every ~60s
+                if dr.error:
+                    status = f"  [{now_iso()}] running: {running}/{max_w} | dispatch error"
+                elif running > 0 and dr.available == 0 and dr.blocked == 0:
+                    status = (f"  [{now_iso()}] running: {running}/{max_w}"
+                              f" | no queued tracks, waiting for workers to finish")
+                elif dr.available == 0 and dr.blocked > 0:
+                    status = (f"  [{now_iso()}] running: {running}/{max_w}"
+                              f" | waiting: {dr.blocked} blocked track(s)")
+                elif dr.available == 0 and dr.blocked == 0 and running == 0:
+                    status = (f"  [{now_iso()}] idle"
+                              f" | no tracks available, waiting for new work...")
+                elif dr.available > 0 and dr.idle_workers == 0:
+                    status = (f"  [{now_iso()}] running: {running}/{max_w}"
+                              f" | {dr.available} track(s) queued, all workers busy")
+                else:
+                    status = f"  [{now_iso()}] running: {running}/{max_w}"
+
+                # Only print if status changed
+                if status != last_status:
+                    print(status)
+                    last_status = status
 
         else:
             break  # Unknown state
@@ -596,6 +828,7 @@ def cmd_spawn(args):
 def cmd_dispatch(args):
     """One-shot dispatch (not the manager loop)."""
     check_tmux()
+    ensure_primary_worktree()
 
     max_w = args.max_workers if args.max_workers else get_max_workers()
     running = count_running_workers()
@@ -606,9 +839,18 @@ def cmd_dispatch(args):
         return 0
 
     print(f"Dispatching (max: {max_w}, running: {running}, slots: {available})...")
-    spawned = run_dispatch(max_w, args.timeout)
-    print(f"Dispatched {spawned} worker(s)")
-    return 0 if spawned > 0 else 0
+    dr = run_dispatch(max_w, args.timeout)
+    if dr.spawned > 0:
+        print(f"Dispatched {dr.spawned} worker(s)")
+    elif dr.available == 0 and dr.blocked == 0:
+        print("No tracks available to dispatch.")
+    elif dr.available == 0 and dr.blocked > 0:
+        print(f"No tracks ready — {dr.blocked} blocked by dependencies.")
+    elif dr.error:
+        print("Dispatch failed — check kf-dispatch output.")
+    else:
+        print("No workers dispatched.")
+    return 0
 
 
 def cmd_status(args):
@@ -648,9 +890,9 @@ def cmd_status(args):
         print("No workers.")
         return 0
 
-    fmt = "%-18s %-40s %-14s %s"
-    print(fmt % ("WORKER", "TRACK", "STATE", "ELAPSED"))
-    print(fmt % ("------", "-----", "-----", "-------"))
+    fmt = "%-18s %-40s %-14s %-12s %s"
+    print(fmt % ("WORKER", "TRACK", "STATE", "PANE", "ELAPSED"))
+    print(fmt % ("------", "-----", "-----", "----", "-------"))
 
     for w in workers:
         state = w.get("state", "?")
@@ -677,7 +919,11 @@ def cmd_status(args):
             "killed": "⊘ killed",
         }.get(state, state)
 
-        print(fmt % (w.get("worker", "?"), w.get("track_id", "?"), state_display, elapsed))
+        win = w.get("tmux_window", "?")
+        pane_idx = w.get("pane_index", "?")
+        pane_loc = f"{win}.{pane_idx}" if pane_idx != "?" else win
+
+        print(fmt % (w.get("worker", "?"), w.get("track_id", "?"), state_display, pane_loc, elapsed))
 
     running = sum(1 for w in workers if w.get("state") == "running")
     done = sum(1 for w in workers if w.get("state") != "running")
@@ -697,8 +943,15 @@ def cmd_kill(args):
         print(f"Worker '{args.worker}' is not running (state: {data.get('state')})")
         return 0
 
-    if tmux_window_exists(args.worker):
-        subprocess.run(["tmux", "kill-window", "-t", args.worker], capture_output=True)
+    # Kill the specific pane (not the whole window)
+    win = data.get("tmux_window", args.worker)
+    pane_idx = data.get("pane_index")
+    if win and pane_idx is not None:
+        target = f"{win}.{pane_idx}"
+        subprocess.run(["tmux", "kill-pane", "-t", target], capture_output=True)
+    elif tmux_window_exists(win):
+        # Fallback for legacy status without pane_index
+        subprocess.run(["tmux", "kill-window", "-t", win], capture_output=True)
 
     data["state"] = "killed"
     data["finished"] = now_iso()
@@ -731,8 +984,16 @@ def cmd_cleanup(args):
         if args.failed and state not in ("failed", "timeout"):
             continue
 
-        if state == "running" and tmux_window_exists(worker):
-            subprocess.run(["tmux", "kill-window", "-t", worker], capture_output=True)
+        if state == "running":
+            win = data.get("tmux_window", worker)
+            pane_idx = data.get("pane_index")
+            if win and pane_idx is not None:
+                subprocess.run(
+                    ["tmux", "kill-pane", "-t", f"{win}.{pane_idx}"],
+                    capture_output=True)
+            elif tmux_window_exists(win):
+                subprocess.run(
+                    ["tmux", "kill-window", "-t", win], capture_output=True)
 
         subprocess.run(
             [os.path.join(BIN_DIR, "kf-claim.py"), "release", "--worktree", worker],
@@ -752,6 +1013,40 @@ def cmd_cleanup(args):
         print(f"\nCleaned {cleaned} worker(s)")
     else:
         print("Nothing to clean")
+    return 0
+
+
+def cmd_approve(args):
+    """Open the track approval TUI in its own tmux window."""
+    tui_script = os.path.join(BIN_DIR, "kf-approve-tui.py")
+    if not Path(tui_script).exists():
+        print(f"ERROR: TUI script not found: {tui_script}", file=sys.stderr)
+        return 1
+
+    session = tmux_session()
+    if not session:
+        # Not in tmux — run directly in current terminal
+        return subprocess.run([sys.executable, tui_script]).returncode
+
+    window_name = "kf-approve"
+
+    # Check if window already exists
+    result = subprocess.run(
+        ["tmux", "list-windows", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    if window_name in result.stdout.split("\n"):
+        # Select existing window
+        subprocess.run(["tmux", "select-window", "-t", window_name])
+        print(f"Switched to existing {window_name} window")
+        return 0
+
+    # Create new window with the TUI
+    subprocess.run(
+        ["tmux", "new-window", "-n", window_name, f"{sys.executable} {tui_script}"],
+        capture_output=True, text=True,
+    )
+    print(f"Opened approval TUI in tmux window: {window_name}")
     return 0
 
 
@@ -1282,6 +1577,9 @@ def main():
     p_setup.add_argument("--new-instance", action="store_true",
                          help="Force a new instance ID (ignore existing)")
 
+    # approve (TUI)
+    sub.add_parser("approve", help="Open track approval TUI in a tmux window")
+
     sub.add_parser("help", help="Show help")
 
     args = parser.parse_args()
@@ -1301,6 +1599,7 @@ def main():
         "dispatch": cmd_dispatch,
         "kill": cmd_kill,
         "cleanup": cmd_cleanup,
+        "approve": cmd_approve,
     }
     return handlers[args.command](args)
 

@@ -7,13 +7,17 @@
 # USAGE:
 #   eval "$(.agent/kf/bin/kf-preflight.py)"
 #
-# On success: prints PRIMARY_BRANCH=<branch> for eval
+# On success: prints shell commands for eval:
+#   - source .agent/kf/.venv/bin/activate  (activates venv for session)
+#   - PRIMARY_BRANCH=<branch>
+#
 # On failure: prints error message to stderr and exits with code 1
 #
 # CHECKS:
-#   1. Resolves primary branch
-#   2. Verifies required metadata files exist on primary branch
-#   3. Verifies CLI tools are installed locally
+#   1. Ensures project venv exists with dependencies
+#   2. Resolves primary branch
+#   3. Verifies required metadata files exist on primary branch
+#   4. Verifies CLI tools are installed locally
 
 import os
 import subprocess
@@ -64,31 +68,6 @@ def ensure_venv():
         [venv_pip, "install", "-q", "pyyaml"],
         capture_output=True,
     )
-
-    # Rewrite shebangs in bin scripts to use this venv
-    venv_python = os.path.join(VENV_DIR, "bin", "python")
-    if not os.path.exists(venv_python):
-        venv_python = os.path.join(VENV_DIR, "Scripts", "python")
-    for f in os.listdir(KF_BIN):
-        if not f.endswith(".py"):
-            continue
-        fpath = os.path.join(KF_BIN, f)
-        with open(fpath, "r") as fh:
-            first_line = fh.readline()
-            rest = fh.read()
-        if "python" in first_line:
-            with open(fpath, "w") as fh:
-                fh.write(f"#!{venv_python}\n{rest}")
-
-    # Ensure .gitignore covers .venv
-    gitignore = os.path.join(KF_DIR, ".gitignore")
-    existing = set()
-    if os.path.exists(gitignore):
-        with open(gitignore) as f:
-            existing = set(f.read().splitlines())
-    if ".venv" not in existing:
-        with open(gitignore, "a") as f:
-            f.write(".venv\n")
 
 
 REQUIRED_FILES = [
@@ -168,6 +147,15 @@ def main() -> None:
     primary_branch = resolve_primary_branch()
     check_metadata_files(primary_branch)
     check_cli_tools()
+
+    # Output shell commands for eval — activates venv and sets PRIMARY_BRANCH.
+    # The venv activation puts .venv/bin/python on PATH so all kf-* scripts
+    # (which use #!/usr/bin/env python3) pick up the correct interpreter.
+    venv_activate = os.path.join(KF_DIR, ".venv", "bin", "activate")
+    if not os.path.exists(venv_activate):
+        venv_activate = os.path.join(KF_DIR, ".venv", "Scripts", "activate")
+    if os.path.exists(venv_activate):
+        print(f"source {venv_activate}")
     print(f"PRIMARY_BRANCH={primary_branch}")
 
 
