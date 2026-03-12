@@ -1,5 +1,9 @@
+import type { SpawnInteractiveRequest } from "../types/api";
+
+export type AgentRole = NonNullable<SpawnInteractiveRequest["role"]>;
+
 export interface SkillEntry {
-  role: string;
+  role: AgentRole;
   label: string;
   description: string;
   slashCommand: string;

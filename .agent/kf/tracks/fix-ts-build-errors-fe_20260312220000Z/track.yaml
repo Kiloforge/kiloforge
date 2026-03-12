@@ -1,55 +1,59 @@
 id: fix-ts-build-errors-fe_20260312220000Z
-title: "Fix TypeScript build errors — AgentRole type mismatch"
+title: Fix TypeScript build errors — AgentRole type mismatch
 type: bug
 status: pending
 created: 2026-03-12
-updated: 2026-03-12
+updated: '2026-03-12'
 spec:
-  summary: |
-    Align AgentRole type with SpawnInteractiveRequest.role union to fix 3 TS2322
+  summary: 'Align AgentRole type with SpawnInteractiveRequest.role union to fix 3 TS2322
+
     errors that break `tsc -b` and `npm run build`.
-  context: |
-    The frontend build (`npm run build`) runs `tsc -b` which uses project references
-    (tsconfig.app.json with strict mode). Currently the build fails with 3 TS2322 errors:
-      - src/App.tsx(181,44): Type 'string' is not assignable to type '"interactive" | "architect" | "advisor-product" | "advisor-reliability" | undefined'
-      - src/App.tsx(212,44): same
-      - src/pages/ProjectPage.tsx(174,44): same
-    Note: `tsc --noEmit` (without -b) passes because tsconfig.json has `"files": []`,
-    so it checks nothing — only `tsc -b` exercises the app code.
-  codebase_analysis: |
-    Root cause: `AgentRole` is defined as `type AgentRole = string` in
-    `src/components/AgentLauncher.tsx:6`. This broad type flows into:
-      - App.tsx handleLaunch(role: AgentRole, ...) → builds SpawnInteractiveRequest { role }
-      - App.tsx handleSkillSelect(role: string) → builds SpawnInteractiveRequest { role }
-      - ProjectPage.tsx handleLaunch(role: AgentRole, ...) → builds SpawnInteractiveRequest { role, project }
-    But SpawnInteractiveRequest.role in src/types/api.ts:304 is typed as the union
-    `"interactive" | "architect" | "advisor-product" | "advisor-reliability" | undefined`.
-    The fix is to derive AgentRole from SpawnInteractiveRequest so the types stay in sync.
+
+    '
+  context: "The frontend build (`npm run build`) runs `tsc -b` which uses project references\n(tsconfig.app.json with strict\
+    \ mode). Currently the build fails with 3 TS2322 errors:\n  - src/App.tsx(181,44): Type 'string' is not assignable to\
+    \ type '\"interactive\" | \"architect\" | \"advisor-product\" | \"advisor-reliability\" | undefined'\n  - src/App.tsx(212,44):\
+    \ same\n  - src/pages/ProjectPage.tsx(174,44): same\nNote: `tsc --noEmit` (without -b) passes because tsconfig.json has\
+    \ `\"files\": []`,\nso it checks nothing — only `tsc -b` exercises the app code.\n"
+  codebase_analysis: "Root cause: `AgentRole` is defined as `type AgentRole = string` in\n`src/components/AgentLauncher.tsx:6`.\
+    \ This broad type flows into:\n  - App.tsx handleLaunch(role: AgentRole, ...) → builds SpawnInteractiveRequest { role\
+    \ }\n  - App.tsx handleSkillSelect(role: string) → builds SpawnInteractiveRequest { role }\n  - ProjectPage.tsx handleLaunch(role:\
+    \ AgentRole, ...) → builds SpawnInteractiveRequest { role, project }\nBut SpawnInteractiveRequest.role in src/types/api.ts:304\
+    \ is typed as the union\n`\"interactive\" | \"architect\" | \"advisor-product\" | \"advisor-reliability\" | undefined`.\n\
+    The fix is to derive AgentRole from SpawnInteractiveRequest so the types stay in sync.\n"
   acceptance_criteria:
-    - "`npm run build` (which runs `tsc -b && vite build`) succeeds with zero errors"
-    - "AgentRole type is derived from or identical to SpawnInteractiveRequest['role'] so they cannot drift"
-    - "All existing tests continue to pass"
-  out_of_scope: |
-    - ESLint warnings (separate track)
+  - '`npm run build` (which runs `tsc -b && vite build`) succeeds with zero errors'
+  - AgentRole type is derived from or identical to SpawnInteractiveRequest['role'] so they cannot drift
+  - All existing tests continue to pass
+  out_of_scope: '- ESLint warnings (separate track)
+
     - Refactoring AgentLauncher component beyond the type fix
+
     - Adding new agent roles
-  technical_notes: |
-    Preferred fix: In AgentLauncher.tsx, change `export type AgentRole = string` to
-    `export type AgentRole = NonNullable<SpawnInteractiveRequest['role']>` (importing
+
+    '
+  technical_notes: 'Preferred fix: In AgentLauncher.tsx, change `export type AgentRole = string` to
+
+    `export type AgentRole = NonNullable<SpawnInteractiveRequest[''role'']>` (importing
+
     SpawnInteractiveRequest from types/api). This keeps the types in sync automatically.
+
     Also fix handleSkillSelect in App.tsx which takes `role: string` — should be
+
     `role: AgentRole`.
+
+    '
 plan:
-  - phase: "Fix types"
-    tasks:
-      - text: "Change AgentRole in AgentLauncher.tsx to derive from SpawnInteractiveRequest['role'] union"
-        done: false
-      - text: "Update handleSkillSelect in App.tsx to use AgentRole instead of string"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Run `npm run build` and confirm zero TS errors"
-        done: false
-      - text: "Run `npx vitest run` and confirm all tests pass"
-        done: false
+- phase: Fix types
+  tasks:
+  - text: Change AgentRole in AgentLauncher.tsx to derive from SpawnInteractiveRequest['role'] union
+    done: true
+  - text: Update handleSkillSelect in App.tsx to use AgentRole instead of string
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run `npm run build` and confirm zero TS errors
+    done: false
+  - text: Run `npx vitest run` and confirm all tests pass
+    done: false
 extra: {}

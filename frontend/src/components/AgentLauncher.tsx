@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
 import type { SwarmCapacity } from "../types/api";
 import { SKILL_REGISTRY } from "../skills/registry";
+import type { AgentRole } from "../skills/registry";
 import styles from "./AgentLauncher.module.css";
 
-export type AgentRole = string;
+export type { AgentRole };
 
 interface AgentLauncherProps {
   onLaunch: (role: AgentRole, prompt: string) => void;

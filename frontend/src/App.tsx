@@ -206,7 +206,7 @@ export default function App() {
     return match ? match[1] : undefined;
   }, [location.pathname]);
 
-  const handleSkillSelect = useCallback((role: string) => {
+  const handleSkillSelect = useCallback((role: AgentRole) => {
     setShowSkillsPalette(false);
     // Open the launcher with the selected role
     const req: SpawnInteractiveRequest = { role };

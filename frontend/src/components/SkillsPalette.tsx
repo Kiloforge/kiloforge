@@ -1,11 +1,12 @@
 import { useEffect, useCallback } from "react";
 import { SKILL_REGISTRY } from "../skills/registry";
+import type { AgentRole } from "../skills/registry";
 import { useSkillsStatus } from "../hooks/useSkillsStatus";
 import styles from "./SkillsPalette.module.css";
 
 interface SkillsPaletteProps {
   onClose: () => void;
-  onSelectSkill: (role: string) => void;
+  onSelectSkill: (role: AgentRole) => void;
   hasProject?: boolean;
 }
 
