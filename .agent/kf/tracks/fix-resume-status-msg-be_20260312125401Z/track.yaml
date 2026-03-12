@@ -1,0 +1,59 @@
+id: fix-resume-status-msg-be_20260312125401Z
+title: Fix hardcoded 'completed' status on bridge.Done in WS handler
+type: bug
+status: pending
+created: '2026-03-12'
+updated: '2026-03-12'
+spec:
+  summary: >
+    handler.go sends StatusMsg("completed") on bridge.Done regardless of actual agent status.
+    Should look up real status (stopped, force-killed, etc.) before sending to WS clients.
+  context: |
+    When an agent's bridge.Done channel closes (agent process exits), the WS handler in
+    handler.go:98 sends a hardcoded StatusMsg("completed", intPtr(0)) to all connected
+    WS clients. This is incorrect when the agent was stopped, force-killed, suspended, etc.
+    The frontend relies on this status message to determine agent state, and receiving
+    "completed" when the agent was actually "stopped" causes confusion in the UI state machine.
+  codebase_analysis: |
+    File: backend/internal/adapter/ws/handler.go, line 98
+    Current code:
+      case <-bridge.Done:
+        _ = conn.Write(session.ctx, websocket.MessageText, StatusMsg("completed", intPtr(0)))
+
+    The Handler already has access to `h.agents` (AgentFinder interface) which is used
+    on lines 81-85 to look up agent status for the initial status message. The same
+    lookup can be used when bridge.Done fires to send the real status.
+
+    The `StatusMsg` helper already supports arbitrary status strings and optional exit codes.
+    The `intPtr(0)` should only be sent for actual "completed" status (normal exit).
+  acceptance_criteria:
+    - When an agent is stopped, WS clients receive status "stopped" (not "completed")
+    - When an agent completes normally, WS clients receive status "completed" with exit code 0
+    - When an agent is force-killed, WS clients receive status "force-killed"
+    - Existing tests continue to pass
+    - New test verifies correct status is sent on bridge.Done for each terminal state
+  out_of_scope: |
+    Frontend changes to handle the status messages differently.
+    WS reconnection logic after resume (separate track).
+  technical_notes: |
+    Fix is straightforward: when bridge.Done fires in handleAgentWS, look up the agent's
+    actual status via h.agents.FindAgent(agentID) and use that in StatusMsg. Fall back to
+    "completed" with exit code 0 if the lookup fails (backwards compat).
+
+    The exit_code field should be nil for non-completed statuses and intPtr(0) for "completed".
+plan:
+  - phase: Fix
+    tasks:
+      - text: "In handler.go handleAgentWS, replace hardcoded StatusMsg(\"completed\", intPtr(0)) in the bridge.Done case with a lookup of actual agent status via h.agents.FindAgent(agentID). Use the real status string; only include exit_code=0 for \"completed\" status."
+        done: false
+  - phase: Test
+    tasks:
+      - text: "Add/update handler test to verify that when bridge.Done fires for a stopped agent, the WS client receives status \"stopped\" (not \"completed\"). Use real Bridge with closed Done channel and a mock AgentFinder returning the desired status."
+        done: false
+      - text: "Verify all existing handler tests pass."
+        done: false
+  - phase: Verification
+    tasks:
+      - text: "Run make test and make lint to verify no regressions."
+        done: false
+extra: {}
