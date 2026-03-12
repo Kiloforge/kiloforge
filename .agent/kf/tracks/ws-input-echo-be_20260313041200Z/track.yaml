@@ -1,80 +1,80 @@
 id: ws-input-echo-be_20260313041200Z
-title: "Echo user input to WebSocket ring buffer"
+title: Echo user input to WebSocket ring buffer
 type: bug
 status: pending
 created: 2026-03-13
-updated: 2026-03-13
+updated: '2026-03-12'
 spec:
-  summary: |
-    Backend readLoop silently forwards user input to agent stdin without writing
+  summary: 'Backend readLoop silently forwards user input to agent stdin without writing
+
     an echo message to the ring buffer or broadcasting to other WebSocket clients.
+
     User messages are never replayed on reconnect, so they vanish from the terminal.
-  context: |
-    The interactive agent terminal uses WebSocket to bridge user input to a Claude
+
+    '
+  context: 'The interactive agent terminal uses WebSocket to bridge user input to a Claude
+
     Code agent process. When a user sends a message, the backend routes it to agent
+
     stdin (or SDK InputHandler) but never echoes it back. The ring buffer (500 entries)
+
     stores all agent output for reconnection replay, but user input is absent.
 
+
     User-reported symptoms:
+
     - After closing and reopening the terminal, user messages are missing from the log
+
     - Only agent responses ([text], [result], [system], [resume]) appear
-    - The user's "hello" message that triggered the agent response is nowhere in the history
-  codebase_analysis: |
-    Key files:
-    - backend/internal/adapter/ws/handler.go:144-177 — readLoop() receives MsgInput,
-      calls bridge.WriteInput(text), but never broadcasts or buffers an echo
-    - backend/internal/adapter/ws/session.go:283-335 — StartOutputRelay and
-      StartStructuredRelay both write to bridge.Buffer AND broadcast; input should
-      follow the same pattern
-    - backend/internal/adapter/ws/message.go — defines message types; no input echo
-      type exists yet. Need to add MsgInputEcho or reuse "input" type for echo
-    - backend/internal/adapter/ws/session.go:197-228 — Bridge struct with RingBuffer
 
-    The ring buffer replay happens in handler.go:72-77 on reconnect. Since user
-    input is never written to the buffer, it's absent from replay.
+    - The user''s "hello" message that triggered the agent response is nowhere in the history
+
+    '
+  codebase_analysis: "Key files:\n- backend/internal/adapter/ws/handler.go:144-177 — readLoop() receives MsgInput,\n  calls\
+    \ bridge.WriteInput(text), but never broadcasts or buffers an echo\n- backend/internal/adapter/ws/session.go:283-335 —\
+    \ StartOutputRelay and\n  StartStructuredRelay both write to bridge.Buffer AND broadcast; input should\n  follow the same\
+    \ pattern\n- backend/internal/adapter/ws/message.go — defines message types; no input echo\n  type exists yet. Need to\
+    \ add MsgInputEcho or reuse \"input\" type for echo\n- backend/internal/adapter/ws/session.go:197-228 — Bridge struct\
+    \ with RingBuffer\n\nThe ring buffer replay happens in handler.go:72-77 on reconnect. Since user\ninput is never written\
+    \ to the buffer, it's absent from replay.\n"
   acceptance_criteria:
-    - When a user sends input, an echo message (type "input_echo") is written to the ring buffer
-    - The echo message is broadcast to all connected WebSocket clients for the agent
-    - On reconnect, the ring buffer replay includes user input echo messages in correct chronological order
-    - Existing e2e tests continue to pass
-    - New test verifies input echo appears in ring buffer after sending input
-    - New test verifies input echo is replayed on reconnect
-  out_of_scope: |
-    - Frontend changes to handle the new message type (separate FE track)
+  - When a user sends input, an echo message (type "input_echo") is written to the ring buffer
+  - The echo message is broadcast to all connected WebSocket clients for the agent
+  - On reconnect, the ring buffer replay includes user input echo messages in correct chronological order
+  - Existing e2e tests continue to pass
+  - New test verifies input echo appears in ring buffer after sending input
+  - New test verifies input echo is replayed on reconnect
+  out_of_scope: '- Frontend changes to handle the new message type (separate FE track)
+
     - Changes to the non-interactive agent log endpoint
+
     - Changes to the structured relay (SDK agents route input differently)
-  technical_notes: |
-    Approach:
-    1. Add MsgInputEcho constant and InputEchoMsg() helper in message.go
-    2. In readLoop(), after successful WriteInput(), create an input_echo message,
-       write it to bridge.Buffer, and broadcast via sessions.BroadcastToAgent()
-    3. The echo message should include: type="input_echo", text=<user input>
-    4. Use "input_echo" (not "input") to avoid confusion with client→server input messages
 
-    The readLoop currently only has access to (session, bridge). To broadcast, it
-    needs access to the SessionManager. Options:
-    a) Pass SessionManager to readLoop (preferred — clean, testable)
-    b) Add a broadcast channel to Bridge
-
-    For SDK-based agents (InputHandler path), the same echo logic applies — after
-    WriteInput succeeds, echo to buffer+broadcast regardless of input mode.
+    '
+  technical_notes: "Approach:\n1. Add MsgInputEcho constant and InputEchoMsg() helper in message.go\n2. In readLoop(), after\
+    \ successful WriteInput(), create an input_echo message,\n   write it to bridge.Buffer, and broadcast via sessions.BroadcastToAgent()\n\
+    3. The echo message should include: type=\"input_echo\", text=<user input>\n4. Use \"input_echo\" (not \"input\") to avoid\
+    \ confusion with client→server input messages\n\nThe readLoop currently only has access to (session, bridge). To broadcast,\
+    \ it\nneeds access to the SessionManager. Options:\na) Pass SessionManager to readLoop (preferred — clean, testable)\n\
+    b) Add a broadcast channel to Bridge\n\nFor SDK-based agents (InputHandler path), the same echo logic applies — after\n\
+    WriteInput succeeds, echo to buffer+broadcast regardless of input mode.\n"
 plan:
-  - phase: "Add input echo message type"
-    tasks:
-      - text: "Add MsgInputEcho constant and InputEchoMsg() helper to message.go"
-        done: false
-      - text: "Add unit test for InputEchoMsg serialization"
-        done: false
-  - phase: "Echo input in readLoop"
-    tasks:
-      - text: "Pass SessionManager (or broadcast func) to readLoop so it can broadcast"
-        done: false
-      - text: "After successful WriteInput in readLoop, write input_echo to bridge.Buffer and broadcast to agent"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Add e2e test: send input, verify input_echo appears in ring buffer replay on reconnect"
-        done: false
-      - text: "Run full test suite (make test) and verify no regressions"
-        done: false
+- phase: Add input echo message type
+  tasks:
+  - text: Add MsgInputEcho constant and InputEchoMsg() helper to message.go
+    done: true
+  - text: Add unit test for InputEchoMsg serialization
+    done: true
+- phase: Echo input in readLoop
+  tasks:
+  - text: Pass SessionManager (or broadcast func) to readLoop so it can broadcast
+    done: true
+  - text: After successful WriteInput in readLoop, write input_echo to bridge.Buffer and broadcast to agent
+    done: true
+- phase: Verification
+  tasks:
+  - text: 'Add e2e test: send input, verify input_echo appears in ring buffer replay on reconnect'
+    done: true
+  - text: Run full test suite (make test) and verify no regressions
+    done: true
 extra: {}
