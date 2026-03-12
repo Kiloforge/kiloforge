@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTourContextSafe } from "./tour/TourProvider";
 import { useConfig } from "../hooks/useConfig";
+import { useUIScale } from "../hooks/useUIScale";
 import styles from "./SettingsMenu.module.css";
 
 export function SettingsMenu() {
@@ -8,6 +9,7 @@ export function SettingsMenu() {
   const ref = useRef<HTMLDivElement>(null);
   const tourCtx = useTourContextSafe();
   const { config, updateConfig } = useConfig();
+  const { scale, setScale } = useUIScale();
 
   useEffect(() => {
     if (!open) return;
@@ -69,6 +71,28 @@ export function SettingsMenu() {
               <span className={styles.toggleThumb} />
             </button>
           </label>
+          <div className={styles.separator} />
+          <div className={styles.scaleItem}>
+            <div className={styles.scaleHeader}>
+              <span className={styles.toggleTitle}>Display scale</span>
+              <span className={styles.scaleValue}>{scale}%</span>
+            </div>
+            <input
+              type="range"
+              role="slider"
+              min={75}
+              max={150}
+              step={5}
+              value={scale}
+              onChange={(e) => setScale(Number(e.target.value))}
+              className={styles.scaleSlider}
+            />
+            <div className={styles.scaleLabels}>
+              <span>Compact</span>
+              <span>Default</span>
+              <span>Large</span>
+            </div>
+          </div>
           <div className={styles.separator} />
           <button className={styles.item} onClick={handleTakeTour}>
             Take Tour

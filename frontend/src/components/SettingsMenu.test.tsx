@@ -5,6 +5,7 @@ import { SettingsMenu } from "./SettingsMenu";
 
 const mockRestartTour = vi.fn();
 const mockUpdateConfig = vi.fn().mockResolvedValue(true);
+const mockSetScale = vi.fn();
 
 vi.mock("./tour/TourProvider", () => ({
   useTourContextSafe: () => ({ restartTour: mockRestartTour }),
@@ -17,6 +18,10 @@ vi.mock("../hooks/useConfig", () => ({
     updating: false,
     updateConfig: mockUpdateConfig,
   }),
+}));
+
+vi.mock("../hooks/useUIScale", () => ({
+  useUIScale: () => ({ scale: 100, setScale: mockSetScale }),
 }));
 
 function renderWithQuery(ui: React.ReactElement) {
@@ -94,5 +99,26 @@ describe("SettingsMenu", () => {
     fireEvent.click(screen.getByText("Take Tour"));
     expect(mockRestartTour).toHaveBeenCalledOnce();
     expect(screen.queryByText("Take Tour")).not.toBeInTheDocument();
+  });
+
+  it("shows Display Scale slider in dropdown", () => {
+    renderWithQuery(<SettingsMenu />);
+    fireEvent.click(screen.getByTitle("Settings"));
+    expect(screen.getByText("Display scale")).toBeInTheDocument();
+    expect(screen.getByRole("slider")).toBeInTheDocument();
+  });
+
+  it("shows current scale percentage", () => {
+    renderWithQuery(<SettingsMenu />);
+    fireEvent.click(screen.getByTitle("Settings"));
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("calls setScale when slider changes", () => {
+    renderWithQuery(<SettingsMenu />);
+    fireEvent.click(screen.getByTitle("Settings"));
+    const slider = screen.getByRole("slider");
+    fireEvent.change(slider, { target: { value: "120" } });
+    expect(mockSetScale).toHaveBeenCalledWith(120);
   });
 });
