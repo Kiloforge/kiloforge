@@ -23,10 +23,10 @@ vi.mock("../../hooks/useTour", () => ({
 }));
 
 // Capture the current location inside the router
-let capturedPathname = "";
+const captured = { pathname: "" };
 function LocationSpy() {
   const loc = useLocation();
-  capturedPathname = loc.pathname;
+  captured.pathname = loc.pathname;
   return null;
 }
 
@@ -55,18 +55,18 @@ function renderWithProviders(initialPath: string) {
 describe("TourProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    capturedPathname = "";
+    captured.pathname = "";
   });
 
   it("navigates to '/' when completeTour is called", async () => {
     const user = userEvent.setup();
     renderWithProviders("/projects/example-project");
 
-    expect(capturedPathname).toBe("/");  // finish step route navigates to /
+    expect(captured.pathname).toBe("/");  // finish step route navigates to /
 
     await user.click(screen.getByText("Finish"));
 
     expect(mockCompleteTour).toHaveBeenCalled();
-    expect(capturedPathname).toBe("/");
+    expect(captured.pathname).toBe("/");
   });
 });
