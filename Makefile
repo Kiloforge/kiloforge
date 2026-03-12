@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint lint-full gen-api verify-codegen verify-deps release-local ensure-submodules
+.PHONY: build build-frontend build-backend dev test test-coverage test-integration test-e2e test-smoke test-all clean lint lint-full gen-api verify verify-codegen verify-deps release-local ensure-submodules
 
 BIN_DIR := .build
 BINARY := $(BIN_DIR)/kf
@@ -53,7 +53,7 @@ dev: ensure-dist
 	cd frontend && npm run dev & \
 	wait
 
-test: ensure-dist
+test: ensure-dist ensure-submodules
 	$(GO_CMD) test $$BUILDVCS -race ./...
 	cd frontend && npm test -- --run
 
@@ -85,6 +85,8 @@ test-coverage: ensure-dist
 clean:
 	rm -rf $(BIN_DIR)
 	rm -rf $(DIST_DIR)
+
+verify: test build lint
 
 lint:
 	@echo "=== go vet ==="
