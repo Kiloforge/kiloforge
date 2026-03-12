@@ -40,6 +40,10 @@ advisor-project-create-be_20260311230000Z: []
 
 advisor-skills-be_20260310115559Z: []
 
+agent-window-chrome-fe_20260312093900Z: []
+
+ask-user-question-fe_20260312093901Z: []
+
 board-clamp-forward-moves-fe_20260312220001Z:
   - board-clamp-forward-moves-be_20260312220000Z
 
@@ -93,4 +97,3 @@ track-detail-register-traces-fe_20260312231002Z:
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
-
