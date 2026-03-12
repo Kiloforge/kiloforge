@@ -12,3 +12,4 @@
 # TOOL: Use `kf-track conflicts` to manage entries. Do not edit by hand.
 #
 
+agent-window-chrome-fe_20260312093900Z/remove-command-mode-fe_20260312095110Z: {"risk":"medium","note":"Both touch App.tsx \u2014 different sections (command mode header button vs ProjectPage terminals)","added":"2026-03-12"}
