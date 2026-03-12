@@ -62,8 +62,6 @@ gitea-removal-be_20260311070000Z: []
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
-harden-windows-ci_20260312012835Z: []
-
 hide-advisor-hub-fe_20260312000100Z: []
 
 multi-agent-skills-site_20260311200001Z:
