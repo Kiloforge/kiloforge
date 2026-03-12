@@ -20,7 +20,8 @@ export function TourOverlay() {
       return;
     }
 
-    const findTarget = () => {
+    let rafId = 0;
+    const updateRect = () => {
       const el = document.querySelector(step.target);
       if (el) {
         setTargetRect(el.getBoundingClientRect());
@@ -29,15 +30,39 @@ export function TourOverlay() {
       }
     };
 
-    findTarget();
-    const interval = setInterval(findTarget, 500);
-    window.addEventListener("resize", findTarget);
-    window.addEventListener("scroll", findTarget, true);
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updateRect);
+    };
+
+    updateRect();
+    const interval = setInterval(scheduleUpdate, 100);
+    window.addEventListener("resize", scheduleUpdate);
+
+    // Listen on window (capture) plus all scrollable ancestors of the target
+    window.addEventListener("scroll", scheduleUpdate, true);
+    const scrollParents: Element[] = [];
+    const el = document.querySelector(step.target);
+    if (el) {
+      let parent = el.parentElement;
+      while (parent && parent !== document.documentElement) {
+        const { overflow, overflowY, overflowX } = getComputedStyle(parent);
+        if (/auto|scroll/.test(overflow + overflowY + overflowX)) {
+          scrollParents.push(parent);
+          parent.addEventListener("scroll", scheduleUpdate);
+        }
+        parent = parent.parentElement;
+      }
+    }
 
     return () => {
+      cancelAnimationFrame(rafId);
       clearInterval(interval);
-      window.removeEventListener("resize", findTarget);
-      window.removeEventListener("scroll", findTarget, true);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      for (const sp of scrollParents) {
+        sp.removeEventListener("scroll", scheduleUpdate);
+      }
     };
   }, [isActive, step, isWelcome, isFinish, currentStep]);
 
