@@ -24,6 +24,11 @@ interface UseFloatingWindowOptions {
 
 const EDGE_ZONE = 8;
 
+/** Read the current CSS zoom applied to the document root. */
+export function getZoom(): number {
+  return parseFloat(document.documentElement.style.zoom || "1") || 1;
+}
+
 let globalZIndex = 100;
 
 function clampPosition(
@@ -66,10 +71,11 @@ export function detectEdge(
   clientY: number,
   rect: DOMRect,
 ): ResizeEdge {
-  const left = clientX - rect.left < EDGE_ZONE;
-  const right = rect.right - clientX < EDGE_ZONE;
-  const top = clientY - rect.top < EDGE_ZONE;
-  const bottom = rect.bottom - clientY < EDGE_ZONE;
+  const zone = EDGE_ZONE * getZoom();
+  const left = clientX - rect.left < zone;
+  const right = rect.right - clientX < zone;
+  const top = clientY - rect.top < zone;
+  const bottom = rect.bottom - clientY < zone;
 
   if (top && left) return "nw";
   if (top && right) return "ne";
@@ -154,8 +160,9 @@ export function useFloatingWindow(options: UseFloatingWindowOptions = {}) {
   const onDragMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isDragging) return;
-      const dx = e.clientX - dragStart.current.mouseX;
-      const dy = e.clientY - dragStart.current.mouseY;
+      const zoom = getZoom();
+      const dx = (e.clientX - dragStart.current.mouseX) / zoom;
+      const dy = (e.clientY - dragStart.current.mouseY) / zoom;
       const newX = dragStart.current.winX + dx;
       const newY = dragStart.current.winY + dy;
       const clamped = clampPosition(newX, newY, state.width, state.height);
@@ -194,8 +201,9 @@ export function useFloatingWindow(options: UseFloatingWindowOptions = {}) {
     (e: React.PointerEvent) => {
       if (!isResizing) return;
       const { mouseX, mouseY, winX, winY, winW, winH, edge } = resizeStart.current;
-      const dx = e.clientX - mouseX;
-      const dy = e.clientY - mouseY;
+      const zoom = getZoom();
+      const dx = (e.clientX - mouseX) / zoom;
+      const dy = (e.clientY - mouseY) / zoom;
 
       let newX = winX;
       let newY = winY;
