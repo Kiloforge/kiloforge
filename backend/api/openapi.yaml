@@ -422,7 +422,7 @@ paths:
           schema:
             type: boolean
             default: false
-          description: If true, also delete Gitea repo and filesystem data
+          description: If true, also delete the local clone and filesystem data
       responses:
         "204":
           description: Project removed

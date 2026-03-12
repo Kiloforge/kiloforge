@@ -440,7 +440,7 @@ func findMockAgentSource(t *testing.T) string {
 }
 
 // e2eProjectManager is an in-memory ProjectManager for E2E tests.
-// It stores projects in the SQLite project store without needing a real Gitea instance.
+// It stores projects in the SQLite project store without needing an external service.
 type e2eProjectManager struct {
 	mu    sync.Mutex
 	store *sqlite.ProjectStore

@@ -122,8 +122,8 @@ func (s *Server) RegisterNonAPIRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /events", s.handleSSE)
 	mux.HandleFunc("GET /tracks/{trackId}", s.handleTrackDetail)
 	mux.HandleFunc("GET /pr/{slug}/{prNumber}", s.handlePRDetail)
-	// SPA catch-all: method-agnostic so it doesn't conflict with method-agnostic
-	// sub-path patterns like /gitea/. More specific patterns take priority.
+	// SPA catch-all: method-agnostic so it doesn't conflict with more specific
+	// method-scoped patterns above. More specific patterns take priority.
 	mux.Handle("/", spaFileServer(http.FS(staticFS)))
 }
 

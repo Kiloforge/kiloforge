@@ -1096,7 +1096,7 @@ type ListNotificationsParams struct {
 
 // RemoveProjectParams defines parameters for RemoveProject.
 type RemoveProjectParams struct {
-	// Cleanup If true, also delete Gitea repo and filesystem data
+	// Cleanup If true, also delete the local clone and filesystem data
 	Cleanup *bool `form:"cleanup,omitempty" json:"cleanup,omitempty"`
 }
 
