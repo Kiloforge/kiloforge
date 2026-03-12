@@ -1,0 +1,131 @@
+id: e2e-project-lifecycle_20260312120000Z
+title: 'E2E tests for project lifecycle: add local, mirror remote, remove, sync'
+type: chore
+status: pending
+created: '2026-03-12'
+updated: '2026-03-12'
+spec:
+  summary: >
+    Add comprehensive E2E tests covering the full project lifecycle through the
+    REST API: register a project from a local path, mirror a remote repo, remove
+    a project (with and without cleanup), and verify git sync operations
+    (push/pull) after making changes to the managed clone.
+  context: |
+    The existing e2e_project_test.go covers basic add/remove via the mock
+    e2eProjectManager, which stores projects in SQLite but doesn't perform real
+    git operations. The sync_handler_test.go tests use real git repos but are
+    unit-level (httptest.NewRecorder, not a live server).
+
+    We need true end-to-end tests that:
+    1. Boot a real E2E server (startE2EServer pattern)
+    2. Create real git repos on disk for local and remote scenarios
+    3. Exercise the full HTTP round-trip for add, remove, and sync
+    4. Verify git state after sync operations (commits, branches)
+
+    The local-repo-add-be track adds local_path support to the API and
+    ProjectManager interface. This E2E track depends on it being merged first.
+  codebase_analysis: |
+    Key existing files:
+    - backend/internal/adapter/rest/e2e_helpers_test.go — startE2EServer(), e2eProjectManager, seedTestData()
+    - backend/internal/adapter/rest/e2e_project_test.go — existing E2E tests (add HTTPS/SSH, remove, duplicate)
+    - backend/internal/adapter/rest/sync_handler_test.go — unit-level sync tests with real git repos (initTestRepo pattern)
+    - backend/internal/adapter/rest/api_handler.go:903 — AddProject handler routes remote_url vs create-from-scratch
+    - backend/internal/adapter/rest/api_handler.go:1843 — SyncProjectMirror handler
+    - backend/internal/adapter/rest/api_handler.go:1726-1802 — PushProject, PullProject handlers
+    - backend/api/openapi.yaml:2314 — AddProjectRequest schema (remote_url, name, ssh_key, output_dir)
+
+    E2E server setup:
+    - Uses real SQLite DB, real HTTP server on random port
+    - e2eProjectManager is an in-memory stub that stores in SQLite without Gitea
+    - SyncMirror is a no-op in the current e2eProjectManager
+    - Git sync endpoints (push/pull/sync-status) require GitSync adapter wired in
+
+    After local-repo-add-be:
+    - AddProjectRequest gains local_path field
+    - ProjectManager gains AddLocalProject method (or AddProject accepts local paths)
+    - e2eProjectManager needs updating to handle local_path
+
+    The sync_handler_test.go has a reusable initTestRepo() helper and cleanGitCmd()
+    that creates bare+clone pairs — these patterns should be adopted for the E2E tests.
+  acceptance_criteria:
+    - "E2E test: add project from local path — creates a local git repo, POSTs with local_path, verifies 201 and project appears in list"
+    - "E2E test: add project from remote URL (mirror) — creates a bare repo as 'remote', POSTs with remote_url, verifies 201 and project is registered"
+    - "E2E test: remove project — adds then DELETEs, verifies 204 and project gone from list"
+    - "E2E test: remove project with cleanup=true — verifies cleanup flag is passed through"
+    - "E2E test: sync after local changes — adds a project, makes a commit in the managed clone, pushes via POST /api/projects/{slug}/push, verifies the push lands on the remote"
+    - "E2E test: pull upstream changes — adds a project, pushes a commit to the bare origin, pulls via POST /api/projects/{slug}/pull, verifies the clone is updated"
+    - "E2E test: sync-status reports ahead/behind correctly after local and upstream changes"
+    - "All tests run under `go test -tags=e2e` (//go:build e2e)"
+    - "All tests use the existing startE2EServer pattern and build tag"
+  out_of_scope: |
+    - Frontend E2E tests (browser automation)
+    - Testing SSH key authentication (requires real SSH setup)
+    - Testing conflict resolution flows (already covered in sync_handler_test.go)
+    - Performance or load testing
+  technical_notes: |
+    Implementation approach:
+    1. Update e2eProjectManager to support local_path (after local-repo-add-be lands)
+       - AddProject/AddLocalProject should actually clone real repos for these tests
+       - Alternative: create a startE2EServerWithGitSync() variant that wires real git operations
+    2. Create a new file: e2e_project_lifecycle_test.go (keeps existing e2e_project_test.go intact)
+    3. Reuse initTestRepo() pattern from sync_handler_test.go to create test git repos
+    4. Reuse cleanGitCmd() pattern to avoid worktree env leaking into subprocesses
+    5. Wire GitSync (gitadapter.New()) into E2E server for sync tests
+
+    Test structure:
+    - TestE2E_AddLocalProject — init a real git repo in t.TempDir(), POST with local_path
+    - TestE2E_AddRemoteMirror — create bare repo, POST with remote_url pointing to bare
+    - TestE2E_RemoveProject_Lifecycle — add then remove, verify gone
+    - TestE2E_RemoveProject_WithCleanup_Lifecycle — add then remove with cleanup=true
+    - TestE2E_SyncPush — add project, commit in clone, POST push, verify on remote
+    - TestE2E_SyncPull — add project, push to origin from another clone, POST pull, verify
+    - TestE2E_SyncStatus — add project, create ahead/behind state, GET sync-status
+
+    The key challenge is wiring up the E2E server to support real git operations.
+    The current e2eProjectManager is a simple in-memory store — for sync tests, we
+    need the ProjectLister to return projects with real ProjectDir paths, and GitSync
+    to be wired in. The startE2EServerWithGitSync() approach is cleanest:
+    - Inject gitadapter.New() as GitSync
+    - Use a real-git-aware project manager (or extend e2eProjectManager to clone)
+plan:
+  - phase: "E2E server setup for git-aware tests"
+    tasks:
+      - text: "Create startE2EServerWithGitSync() helper that wires gitadapter.New() as GitSync in APIHandlerOpts"
+        done: false
+      - text: "Extend e2eProjectManager to support local path cloning (AddLocalProject or updated AddProject) — actually run git clone for real repos"
+        done: false
+      - text: "Add initE2ETestRepo() helper (adapted from sync_handler_test.go initTestRepo) that creates a bare+clone pair suitable for E2E tests"
+        done: false
+  - phase: "Add project E2E tests"
+    tasks:
+      - text: "Write TestE2E_AddLocalProject — create local git repo, POST {local_path: path}, verify 201/slug/listed"
+        done: false
+      - text: "Write TestE2E_AddRemoteMirror — create bare repo as remote, POST {remote_url: bare_path}, verify 201/slug/listed"
+        done: false
+      - text: "Write TestE2E_AddLocalProject_InvalidPath — POST with non-existent path, verify 400"
+        done: false
+      - text: "Write TestE2E_AddLocalProject_NotGitRepo — POST with path to non-git dir, verify 400"
+        done: false
+  - phase: "Remove project E2E tests"
+    tasks:
+      - text: "Write TestE2E_RemoveProject_Lifecycle — add via remote_url then DELETE, verify 204 and gone from list"
+        done: false
+      - text: "Write TestE2E_RemoveProject_WithCleanup_Lifecycle — add then DELETE with cleanup=true, verify 204"
+        done: false
+  - phase: "Sync E2E tests"
+    tasks:
+      - text: "Write TestE2E_SyncPush — add project, commit in clone, POST push to kf/branch, verify commit on remote"
+        done: false
+      - text: "Write TestE2E_SyncPull — add project, push upstream commit via second clone, POST pull, verify clone updated"
+        done: false
+      - text: "Write TestE2E_SyncStatus_Ahead — add project, local commit, GET sync-status, verify ahead"
+        done: false
+      - text: "Write TestE2E_SyncStatus_Behind — add project, upstream commit, GET sync-status, verify behind"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run make test-e2e — all new and existing E2E tests pass"
+        done: false
+      - text: "Run make test — ensure no regressions in non-e2e tests"
+        done: false
+extra: {}
