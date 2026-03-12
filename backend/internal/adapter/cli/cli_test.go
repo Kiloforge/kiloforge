@@ -12,7 +12,7 @@ func TestAllCommandsRegistered(t *testing.T) {
 
 	expected := []string{
 		"init", "up", "down", "status", "add", "create", "projects",
-		"destroy", "pool", "implement", "agents", "logs",
+		"remove", "destroy", "pool", "implement", "agents", "logs",
 		"stop", "attach", "escalated", "cost", "dashboard",
 		"sync", "push", "serve",
 	}
