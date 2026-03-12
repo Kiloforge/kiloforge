@@ -62,6 +62,8 @@ gitea-removal-be_20260311070000Z: []
 github-repo-migration_20260311080001Z:
   - ci-green_20260311080000Z
 
+harden-windows-ci_20260312012835Z: []
+
 hide-advisor-hub-fe_20260312000100Z: []
 
 multi-agent-skills-site_20260311200001Z:
@@ -73,6 +75,8 @@ notification-center-fe_20260313060001Z:
 onboarding-ux-fe_20260310073721Z: []
 
 quota-gauges-be_20260310092417Z: []
+
+remove-kf-tools-ci-job_20260312012834Z: []
 
 replace-tracing-be_20260310144200Z: []
 
@@ -87,4 +91,3 @@ track-detail-register-traces-fe_20260312231002Z:
 ui-polish-states-fe_20260311150000Z: []
 
 ui-polish-transitions-fe_20260311150001Z: []
-

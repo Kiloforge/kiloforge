@@ -166,6 +166,7 @@ goose-migrations_20260309184000Z: {"title":"Migrate to Goose for Database Schema
 guidance-overlay-site_20260311235900Z: {"title":"Become a Kiloforger — inline mode selector with single-threaded content","status":"completed","type":"feature","created":"2026-03-11","updated":"2026-03-11"}
 guided-tour-be_20260309203000Z: {"title":"Guided Tour State API and Demo Seed Data (Backend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 guided-tour-fe_20260309203001Z: {"title":"Guided Tour Overlay with Simulated Onboarding Flow (Frontend)","status":"archived","type":"feature","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
+harden-windows-ci_20260312012835Z: {"title":"Harden Windows CI build to match Linux parity","status":"pending","type":"chore","created":"2026-03-12","updated":"2026-03-12"}
 header-title-link_20260310070000Z: {"title":"Make header logo and title link to dashboard","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
 hide-advisor-hub-fe_20260312000100Z: {"title":"Hide AdvisorHub section from dashboard","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 immersive-views_20260310110000Z: {"title":"Add fullscreen immersive mode for terminal and diff views","status":"archived","type":"feature","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-10"}
@@ -272,6 +273,7 @@ reliability-metrics-fe_20260310093039Z: {"title":"Agent reliability metrics — 
 remove-dashboard-metrics-fe_20260312000000Z: {"title":"Remove MetricsPanel and GettingStartedChecklist from dashboard","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 remove-inreview-column-be_20260310153823Z: {"title":"Remove in_review kanban column from backend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
 remove-inreview-column-fe_20260310153824Z: {"title":"Remove in_review kanban column from frontend","status":"completed","type":"refactor","created":"2026-03-10","updated":"2026-03-10"}
+remove-kf-tools-ci-job_20260312012834Z: {"title":"Remove dead kf-tools CI job","status":"pending","type":"chore","created":"2026-03-12","updated":"2026-03-12"}
 remove-password-persistence_20260308210000Z: {"title":"Remove Password from Config Persistence","status":"archived","type":"chore","created":"2026-03-08","updated":"2026-03-10","archived_at":"2026-03-10"}
 remove-tour-skip-link-fe_20260312070000Z: {"title":"Remove redundant Skip step link from tour move-card step","status":"completed","type":"bug","created":"2026-03-11","updated":"2026-03-11"}
 rename-relay-orchestrator_20260309075537Z: {"title":"Rename Relay Server to Orchestrator","status":"archived","type":"refactor","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
