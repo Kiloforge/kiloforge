@@ -6,7 +6,6 @@ export const queryKeys = {
   config: ["config"] as const,
   projects: ["projects"] as const,
   quota: ["quota"] as const,
-  skills: ["skills"] as const,
   traces: ["traces"] as const,
   tracesPaginated: ["traces", "paginated"] as const,
   trace: (id: string) => ["traces", id] as const,

@@ -7,7 +7,6 @@ describe("queryKeys", () => {
     expect(queryKeys.config).toEqual(["config"]);
     expect(queryKeys.projects).toEqual(["projects"]);
     expect(queryKeys.quota).toEqual(["quota"]);
-    expect(queryKeys.skills).toEqual(["skills"]);
     expect(queryKeys.traces).toEqual(["traces"]);
     expect(queryKeys.status).toEqual(["status"]);
     expect(queryKeys.sshKeys).toEqual(["sshKeys"]);

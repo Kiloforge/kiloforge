@@ -156,19 +156,6 @@ export interface LogResponse {
   total: number;
 }
 
-export interface SkillDetail {
-  name: string;
-  modified: boolean;
-  changed_files?: string[];
-}
-
-export interface SkillsStatus {
-  installed_version: string;
-  available_version?: string;
-  update_available: boolean;
-  repo?: string;
-  skills: SkillDetail[];
-}
 
 export interface TraceSummary {
   trace_id: string;

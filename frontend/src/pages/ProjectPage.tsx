@@ -146,7 +146,7 @@ function InfoTabContent({ metadata, metadataLoading, metadataError }: {
   );
 }
 
-function BoardTabPanels({ project, slug, syncStatus, syncLoading, pushing, pulling, syncError, syncConflict, onPush, onPull, onRefreshSync, onClearSyncError, onResolveConflict, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, board, boardLoading, onMoveCard, onSyncBoard, syncing, actionsDisabled, disabledReason, onDeleteTrack, dependencies, conflicts, onOpenLauncher, adminAgentId, onStartAdminOp, onSetupRequired, onSkillsRequired }: {
+function BoardTabPanels({ project, slug, syncStatus, syncLoading, pushing, pulling, syncError, syncConflict, onPush, onPull, onRefreshSync, onClearSyncError, onResolveConflict, swarm, swarmLoading, swarmStarting, swarmStopping, swarmUpdatingSettings, onSwarmStart, onSwarmStop, onSwarmUpdateSettings, board, boardLoading, onMoveCard, onSyncBoard, syncing, actionsDisabled, disabledReason, onDeleteTrack, dependencies, conflicts, onOpenLauncher, adminAgentId, onStartAdminOp, onSetupRequired }: {
   project: Project | undefined;
   slug: string | undefined;
   syncStatus: ReturnType<typeof useOriginSync>["syncStatus"];
