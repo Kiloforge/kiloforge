@@ -6,14 +6,15 @@ empty metadata scaffolding. Existing metadata files are never overwritten.
 
 USAGE:
     kf-install [OPTIONS]
-    kf-install --update    # Update CLI tools only (skip scaffolding)
+    kf-install --update    # Update skills + CLI tools only (skip scaffolding)
 
 OPTIONS:
-    --project-dir DIR   Target project root (default: cwd)
-    --skills-dir DIR    Path to kiloforge-skills repo (default: auto-detect)
-    --update            Update mode: only copy scripts and lib (skip venv/metadata)
-    --skip-venv         Skip venv creation/update
-    --primary-branch B  Primary branch name for config.yaml (default: main)
+    --project-dir DIR    Target project root (default: cwd)
+    --skills-dir DIR     Path to kiloforge-skills repo (default: auto-detect)
+    --skills-target DIR  Where to install skill definitions (default: ~/.claude/skills)
+    --update             Update mode: replace skills + scripts (skip venv/metadata)
+    --skip-venv          Skip venv creation/update
+    --primary-branch B   Primary branch name for config.yaml (default: main)
 
 Run from anywhere — it auto-detects the skills repo from its own location.
 """
@@ -72,6 +73,56 @@ def detect_skills_dir(script_path: Path) -> Path:
     # This script lives at kf-bin/scripts/kf-install.py
     # Skills repo root is two levels up
     return script_path.parent.parent.parent
+
+
+def resolve_project_dir(raw_path: str) -> Path:
+    """Resolve the project directory, handling worktrees and bare repos."""
+    path = Path(raw_path).resolve()
+
+    # Try git rev-parse --show-toplevel from the given path
+    result = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 0:
+        return Path(result.stdout.strip())
+
+    # Check if this is a bare repo
+    result = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "--is-bare-repository"],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 0 and result.stdout.strip() == "true":
+        wt_result = subprocess.run(
+            ["git", "-C", str(path), "worktree", "list", "--porcelain"],
+            capture_output=True, text=True,
+        )
+        worktrees = []
+        if wt_result.returncode == 0:
+            for line in wt_result.stdout.splitlines():
+                if line.startswith("worktree ") and line[len("worktree "):] != str(path):
+                    worktrees.append(line[len("worktree "):])
+
+        print("ERROR: Cannot install into a bare repository.", file=sys.stderr)
+        if worktrees:
+            print("Use --project-dir to target a worktree:", file=sys.stderr)
+            for wt in worktrees:
+                print(f"  --project-dir {wt}", file=sys.stderr)
+        else:
+            print("Create a worktree first, then target it with --project-dir.", file=sys.stderr)
+        sys.exit(1)
+
+    # Not a git repo at all — use the path as-is (new project, pre-git-init)
+    return path
+
+
+def validate_skills_dir(skills_dir: Path):
+    """Validate that the skills dir is an actual kiloforge-skills repo."""
+    if not (skills_dir / "kf-bin" / "scripts").is_dir():
+        print(f"ERROR: {skills_dir} is not a kiloforge-skills repo.", file=sys.stderr)
+        print("Expected to find kf-bin/scripts/ inside it.", file=sys.stderr)
+        print("Use --skills-dir to specify the correct path.", file=sys.stderr)
+        sys.exit(1)
 
 
 def ensure_venv(project_dir: Path) -> Path:
@@ -222,7 +273,7 @@ def scaffold_metadata(project_dir: Path, primary_branch: str) -> list[str]:
 
 
 def copy_scripts(skills_dir: Path, project_dir: Path) -> list[str]:
-    """Copy scripts and lib from skills repo to project."""
+    """Copy CLI scripts and lib from skills repo to project .agent/kf/bin/."""
     src = skills_dir / "kf-bin" / "scripts"
     dst = project_dir / ".agent" / "kf" / "bin"
 
@@ -251,6 +302,44 @@ def copy_scripts(skills_dir: Path, project_dir: Path) -> list[str]:
         copied.append(f"lib/ ({len(lib_files)} files)")
 
     return copied
+
+
+def copy_skills(skills_dir: Path, skills_target: Path) -> tuple[list[str], list[str]]:
+    """Copy skill SKILL.md files from skills repo to user's skills folder.
+
+    Returns (updated, added) lists of skill names.
+    """
+    updated = []
+    added = []
+
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.exists():
+            continue
+
+        skill_name = skill_dir.name
+        dst_dir = skills_target / skill_name
+
+        is_new = not dst_dir.exists()
+        dst_dir.mkdir(parents=True, exist_ok=True)
+
+        changed = False
+        for src_file in skill_dir.iterdir():
+            if src_file.is_file():
+                dst = dst_dir / src_file.name
+                if dst.exists() and dst.read_bytes() == src_file.read_bytes():
+                    continue
+                shutil.copy2(src_file, dst)
+                changed = True
+
+        if is_new:
+            added.append(skill_name)
+        elif changed:
+            updated.append(skill_name)
+
+    return updated, added
 
 
 def rewrite_shebangs(project_dir: Path, venv_dir: Path):
@@ -304,8 +393,12 @@ def main():
         help="Path to kiloforge-skills repo (default: auto-detect)",
     )
     parser.add_argument(
+        "--skills-target", default=None,
+        help="Where to install skill definitions (default: ~/.claude/skills)",
+    )
+    parser.add_argument(
         "--update", action="store_true",
-        help="Update mode: only copy scripts and lib (skip venv/metadata)",
+        help="Update mode: replace skills + scripts (skip venv/metadata)",
     )
     parser.add_argument(
         "--skip-venv", action="store_true",
@@ -317,20 +410,24 @@ def main():
     )
     args = parser.parse_args()
 
-    project_dir = Path(args.project_dir).resolve()
+    project_dir = resolve_project_dir(args.project_dir)
     if args.skills_dir:
         skills_dir = Path(args.skills_dir).resolve()
     else:
         skills_dir = detect_skills_dir(Path(__file__).resolve())
 
+    validate_skills_dir(skills_dir)
+
+    skills_target = Path(args.skills_target) if args.skills_target else Path.home() / ".claude" / "skills"
     mode = "Update" if args.update else "Install"
 
     print("=" * 60)
     print(f"  Kiloforge — {mode}")
     print("=" * 60)
-    print(f"  Skills repo:  {skills_dir}")
-    print(f"  Project:      {project_dir}")
-    print(f"  Target:       {project_dir / '.agent' / 'kf'}")
+    print(f"  Skills repo:   {skills_dir}")
+    print(f"  Project:       {project_dir}")
+    print(f"  CLI target:    {project_dir / '.agent' / 'kf' / 'bin'}")
+    print(f"  Skills target: {skills_target}")
     print("=" * 60)
     print()
 
@@ -358,21 +455,32 @@ def main():
             print("  (all metadata files already exist)")
         print()
 
-    # Step 3: Copy scripts
-    print("Copying scripts...")
+    # Step 3: Copy CLI scripts to project
+    print("Copying CLI scripts to .agent/kf/bin/...")
     copied = copy_scripts(skills_dir, project_dir)
     for name in copied:
         print(f"  {name}")
     print()
 
-    # Step 4: Rewrite shebangs
+    # Step 4: Copy skill definitions to user's skills folder
+    print(f"Updating skill definitions in {skills_target}...")
+    sk_updated, sk_added = copy_skills(skills_dir, skills_target)
+    if sk_added:
+        print(f"  Added {len(sk_added)} new skill(s): {', '.join(sk_added)}")
+    if sk_updated:
+        print(f"  Updated {len(sk_updated)} skill(s): {', '.join(sk_updated)}")
+    if not sk_added and not sk_updated:
+        print("  (all skills already up to date)")
+    print()
+
+    # Step 5: Rewrite shebangs
     if venv_dir.is_dir():
         rewrite_shebangs(project_dir, venv_dir)
     else:
         print("WARNING: Venv not found — shebangs not updated", file=sys.stderr)
     print()
 
-    # Step 5: Clean legacy
+    # Step 6: Clean legacy
     removed = clean_legacy(project_dir)
     if removed:
         print(f"Cleaned {len(removed)} legacy script(s):")

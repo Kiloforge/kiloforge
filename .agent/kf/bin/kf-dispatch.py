@@ -89,8 +89,9 @@ def get_worktree_state():
         folder = os.path.basename(wt["path"])
         branch = wt.get("branch", "")
 
-        # Only consider worker-* or developer-* worktrees
-        if not (folder.startswith("worker-") or folder.startswith("developer-")):
+        # Only consider kfc-*-worker-*, worker-*, or developer-* worktrees
+        if not (folder.startswith("kfc-") or folder.startswith("worker-")
+                or folder.startswith("developer-")):
             continue
 
         if branch.startswith("kf/"):
@@ -434,7 +435,7 @@ def main():
 
     if not idle:
         print("All workers are active. No dispatch needed.")
-        print(f"To add capacity: git worktree add developer-N {ref}")
+        print(f"To add capacity: kf-conductor.py setup --workers N")
         print()
 
     print("=" * 80)

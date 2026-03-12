@@ -11,6 +11,7 @@ from typing import Optional
 CONFIG_SCHEMA = {
     "primary_branch": {"type": "string", "default": "main"},
     "enforce_dep_ordering": {"type": "bool", "default": "true"},
+    "max_workers": {"type": "int", "default": "4"},
 }
 
 HEADER = """\
@@ -24,6 +25,10 @@ HEADER = """\
 #     When true, the work queue scheduler skips tracks with unmet dependencies
 #     and continues to the next eligible track (drain-loop). When false, tracks
 #     are popped in order regardless of dependency status.
+#
+#   max_workers: int (default: 4)
+#     Maximum number of concurrent worker agents the conductor will run.
+#     Limits parallel API usage and system resource consumption.
 #
 # Structured project settings used by kf tooling and agent skills.
 # TOOL: Managed by `kf-track config` and agent skills. Hand-editable.
@@ -70,6 +75,11 @@ class Config:
         schema = CONFIG_SCHEMA[key]
         if schema["type"] == "bool" and value not in ("true", "false"):
             raise ValueError(f"{key} must be a boolean (true|false), got: {value}")
+        if schema["type"] == "int":
+            try:
+                int(value)
+            except ValueError:
+                raise ValueError(f"{key} must be an integer, got: {value}")
         self._data[key] = value
 
     def ensure(self):

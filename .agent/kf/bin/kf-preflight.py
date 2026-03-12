@@ -20,6 +20,76 @@ import subprocess
 import sys
 
 KF_BIN = os.path.dirname(os.path.abspath(__file__))
+KF_DIR = os.path.dirname(KF_BIN)  # .agent/kf
+VENV_DIR = os.path.join(KF_DIR, ".venv")
+
+
+def ensure_venv():
+    """Create project-local venv and install PyYAML if missing.
+
+    This is the safety net — if the venv doesn't exist or PyYAML is missing,
+    fix it here so no script ever falls back to system pip.
+    """
+    venv_python = os.path.join(VENV_DIR, "bin", "python")
+    if not os.path.exists(venv_python):
+        venv_python = os.path.join(VENV_DIR, "Scripts", "python")  # Windows
+
+    # Check if venv exists and has PyYAML
+    if os.path.exists(venv_python):
+        result = subprocess.run(
+            [venv_python, "-c", "import yaml"],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return  # All good
+
+    # Create venv if missing
+    if not os.path.isdir(VENV_DIR):
+        print("Creating project-local venv at .agent/kf/.venv...", file=sys.stderr)
+        result = subprocess.run(
+            [sys.executable, "-m", "venv", VENV_DIR],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print(f"ERROR: Failed to create venv: {result.stderr}", file=sys.stderr)
+            print("Install Python 3 venv support and retry.", file=sys.stderr)
+            sys.exit(1)
+
+    # Install PyYAML into venv
+    venv_pip = os.path.join(VENV_DIR, "bin", "pip")
+    if not os.path.exists(venv_pip):
+        venv_pip = os.path.join(VENV_DIR, "Scripts", "pip")
+    print("Installing PyYAML into .agent/kf/.venv...", file=sys.stderr)
+    subprocess.run(
+        [venv_pip, "install", "-q", "pyyaml"],
+        capture_output=True,
+    )
+
+    # Rewrite shebangs in bin scripts to use this venv
+    venv_python = os.path.join(VENV_DIR, "bin", "python")
+    if not os.path.exists(venv_python):
+        venv_python = os.path.join(VENV_DIR, "Scripts", "python")
+    for f in os.listdir(KF_BIN):
+        if not f.endswith(".py"):
+            continue
+        fpath = os.path.join(KF_BIN, f)
+        with open(fpath, "r") as fh:
+            first_line = fh.readline()
+            rest = fh.read()
+        if "python" in first_line:
+            with open(fpath, "w") as fh:
+                fh.write(f"#!{venv_python}\n{rest}")
+
+    # Ensure .gitignore covers .venv
+    gitignore = os.path.join(KF_DIR, ".gitignore")
+    existing = set()
+    if os.path.exists(gitignore):
+        with open(gitignore) as f:
+            existing = set(f.read().splitlines())
+    if ".venv" not in existing:
+        with open(gitignore, "a") as f:
+            f.write(".venv\n")
+
 
 REQUIRED_FILES = [
     ".agent/kf/config.yaml",
@@ -94,6 +164,7 @@ def check_cli_tools() -> None:
 
 
 def main() -> None:
+    ensure_venv()
     primary_branch = resolve_primary_branch()
     check_metadata_files(primary_branch)
     check_cli_tools()
