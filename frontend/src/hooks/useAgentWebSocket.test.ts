@@ -108,6 +108,56 @@ describe("useAgentWebSocket", () => {
     expect(result.current.messages[0].text).toContain("Agent exited");
   });
 
+  it("clears messages on reconnect so replay does not cause duplicates", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    act(() => MockWebSocket.latest!.simulateOpen());
+
+    // Receive some messages on the first connection.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "msg-1" });
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "msg-2" });
+    });
+    expect(result.current.messages).toHaveLength(2);
+
+    // Give it a non-terminal status so it reconnects directly (no REST call).
+    // Note: non-terminal status messages don't add to the messages array.
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "status", status: "running" });
+    });
+    expect(result.current.messages).toHaveLength(2);
+
+    // Simulate disconnect and reconnect.
+    act(() => MockWebSocket.latest!.simulateClose(1006));
+    act(() => { vi.advanceTimersByTime(1000); });
+
+    // After reconnect, the new WS opens — messages should be cleared.
+    act(() => MockWebSocket.latest!.simulateOpen());
+    expect(result.current.messages).toHaveLength(0);
+
+    // Replay messages arrive (same content as before).
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "msg-1" });
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "msg-2" });
+    });
+
+    // Should have exactly 2 messages, not 2 + 2 = 4.
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[0].text).toBe("msg-1");
+    expect(result.current.messages[1].text).toBe("msg-2");
+  });
+
+  it("does not clear messages on initial connect", () => {
+    const { result } = renderHook(() => useAgentWebSocket("agent-1"));
+    // First connection — messages should start empty, not be cleared from a prior state.
+    act(() => MockWebSocket.latest!.simulateOpen());
+    expect(result.current.messages).toHaveLength(0);
+
+    act(() => {
+      MockWebSocket.latest!.simulateMessage({ type: "text", text: "first" });
+    });
+    expect(result.current.messages).toHaveLength(1);
+  });
+
   it("reconnects with exponential backoff on non-clean close", async () => {
     // Give the first connection a status message so reconnect takes the
     // direct path (no fetch), which makes timing deterministic.

@@ -74,6 +74,8 @@ export function useAgentWebSocket(agentId: string | null) {
     agentStatusRef.current = agentStatus;
   }, [agentStatus]);
 
+  const hasConnectedRef = useRef(false);
+
   const connect = useCallback(() => {
     if (!agentId) return;
 
@@ -85,6 +87,13 @@ export function useAgentWebSocket(agentId: string | null) {
     let didOpen = false;
     ws.onopen = () => {
       didOpen = true;
+      // On reconnection, clear stale messages before replay arrives.
+      // The backend ring buffer replays the full recent history, so a
+      // full replace avoids duplicates.
+      if (hasConnectedRef.current) {
+        setMessages([]);
+      }
+      hasConnectedRef.current = true;
       setStatus("connected");
       retryDelayRef.current = 1000;
     };
@@ -267,6 +276,7 @@ export function useAgentWebSocket(agentId: string | null) {
     setAgentStatus(null);
     setTurnActive(false);
     retryCountRef.current = 0;
+    hasConnectedRef.current = false;
     connect();
 
     return () => {
