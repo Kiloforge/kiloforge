@@ -1,0 +1,85 @@
+id: minimized-window-dock-fe_20260313012401Z
+title: Redesign minimized window dock as persistent bottom taskbar
+type: feature
+status: pending
+created: '2026-03-13'
+updated: '2026-03-13'
+spec:
+  summary: >
+    Replace individually-floating MiniCards with a fixed bottom taskbar that
+    shows minimized terminals as tab-like items for easy discovery and restore.
+  context: |
+    When a user minimizes a floating AgentTerminal window, it currently becomes
+    a small 200×56px draggable card that snaps to screen edges. These cards are
+    easy to miss — they blend into the UI and there's no persistent visual
+    anchor showing minimized windows exist.
+
+    The user expects behavior similar to a desktop OS taskbar: a fixed bar at
+    the bottom (or side) of the viewport that persistently shows all minimized
+    windows as compact tabs. Clicking a tab restores the window.
+  codebase_analysis: |
+    Key files:
+    - frontend/src/components/MiniCard.tsx — Individual floating card (200×56px, position:fixed, edge-snapping, draggable)
+    - frontend/src/components/MiniCard.module.css — Card styling with role indicators, badges, z-index:91
+    - frontend/src/components/MiniCardDock.tsx — Container that calculates positions for MiniCards along bottom edge
+    - frontend/src/hooks/useWindowManager.ts — WindowEntry with minimized state, getMinimizedWindows()
+    - frontend/src/App.tsx (lines 302-306) — Renders MiniCardDock with minimized windows
+
+    Current approach: MiniCardDock calculates centered horizontal positions and
+    renders individual MiniCard components that are each independently positioned
+    with position:fixed. Each card is separately draggable and snaps to edges.
+    There is no persistent container/bar element — the "dock" is just a
+    positioning calculator.
+
+    The redesign replaces both MiniCard and MiniCardDock with a single persistent
+    bottom bar component that renders tab-like items inline.
+  acceptance_criteria:
+    - A persistent dock bar is visible at the bottom of the viewport whenever any terminal is minimized
+    - Each minimized terminal appears as a compact tab in the dock showing agent name and role color indicator
+    - Clicking a tab restores the terminal window
+    - Close button (×) on each tab closes the terminal entirely
+    - Notification badges (waiting, done, unread count) display on tabs
+    - Dock disappears when no terminals are minimized
+    - Dock does not overlap or interfere with floating terminal windows
+  out_of_scope: |
+    - Draggable dock positioning (dock is fixed to bottom)
+    - Dock on side of screen (bottom only for now)
+    - Reordering tabs within the dock
+    - Persisting dock state to localStorage
+  technical_notes: |
+    Approach:
+    1. Create a new WindowDock component as a fixed-bottom bar (position:fixed, bottom:0, left:0, width:100%)
+    2. Render minimized entries as inline flex items (tabs) within the bar
+    3. Each tab shows: role color indicator, agent name, notification badge, close button
+    4. Click on tab body → restore; click × → close
+    5. Replace MiniCardDock usage in App.tsx with the new WindowDock component
+    6. Keep MiniCard.tsx for potential future use but stop rendering it from the dock
+    7. Style with backdrop-filter blur, subtle border-top, and z-index above page content but below floating windows
+plan:
+  - phase: "Build dock component"
+    tasks:
+      - text: "Create WindowDock.tsx component: fixed bottom bar with flex layout, renders tab items from WindowEntry[] prop"
+        done: false
+      - text: "Create WindowDock.module.css: fixed positioning, backdrop blur, border-top, flex row with gap, tab item styles with role indicator/name/badge/close button"
+        done: false
+      - text: "Add notification badge rendering to dock tabs (waiting pulse, done check, unread count) — reuse badge logic from MiniCard"
+        done: false
+      - text: "Wire onRestore and onClose callbacks per tab"
+        done: false
+  - phase: "Integration"
+    tasks:
+      - text: "Replace MiniCardDock with WindowDock in App.tsx, passing the same props (minimized windows, onRestore, onClose)"
+        done: false
+      - text: "Adjust z-index layering: dock should be above page content (z-index ~90) but below floating AgentTerminal windows"
+        done: false
+  - phase: "Tests and verification"
+    tasks:
+      - text: "Write test: WindowDock renders tabs for each minimized window with correct names"
+        done: false
+      - text: "Write test: clicking a tab calls onRestore with the correct agentId"
+        done: false
+      - text: "Run npx vitest run to verify all tests pass"
+        done: false
+      - text: "Run npx tsc --noEmit to verify no TypeScript errors"
+        done: false
+extra: {}
