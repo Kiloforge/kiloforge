@@ -59,6 +59,8 @@ fix-merge-protocol-be_20260311160000Z: []
 
 fix-remove-project_20260312073310Z: []
 
+fix-terminal-resume-reconnect-fe_20260313012400Z: []
+
 fix-tour-scroll-fe_20260311230100Z: []
 
 gitea-removal-be_20260311070000Z: []
@@ -72,6 +74,8 @@ local-repo-add-be_20260312073311Z: []
 
 local-repo-add-fe_20260312073312Z:
   - local-repo-add-be_20260312073311Z
+
+minimized-window-dock-fe_20260313012401Z: []
 
 notification-center-fe_20260313060001Z:
   - notification-center-be_20260313060000Z
