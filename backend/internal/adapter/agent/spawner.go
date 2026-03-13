@@ -503,10 +503,17 @@ func (s *Spawner) SpawnInteractive(ctx context.Context, opts SpawnInteractiveOpt
 
 	// Wire session ID callback to persist the real Claude SDK session ID.
 	session.SetSessionIDCallback(func(realID string) {
-		if agent, ferr := s.store.FindAgent(agentID); ferr == nil {
-			agent.SessionID = realID
-			_ = s.store.AddAgent(*agent) // upsert
-			_ = s.store.Save()
+		agent, ferr := s.store.FindAgent(agentID)
+		if ferr != nil {
+			fmt.Fprintf(os.Stderr, "warning: session ID callback: find agent %s: %v\n", agentID, ferr)
+			return
+		}
+		agent.SessionID = realID
+		if uerr := s.store.AddAgent(*agent); uerr != nil {
+			fmt.Fprintf(os.Stderr, "warning: session ID callback: update agent %s: %v\n", agentID, uerr)
+		}
+		if serr := s.store.Save(); serr != nil {
+			fmt.Fprintf(os.Stderr, "warning: session ID callback: save store: %v\n", serr)
 		}
 	})
 
@@ -596,6 +603,11 @@ func (s *Spawner) StopAgent(id string) error {
 	// Cancel relay goroutine and close SDK session.
 	ia.CancelRelay()
 	ia.sdkSession.Close()
+
+	// Brief wait to let the CLI process finish persisting session state to disk.
+	// The SDK's client.Close() sends a shutdown signal, but the CLI may need a
+	// moment to write its session file before the process fully exits.
+	time.Sleep(2 * time.Second)
 
 	// Update store.
 	now := time.Now()
@@ -749,10 +761,17 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 
 	// Wire session ID callback to update the store if the session ID changes on resume.
 	session.SetSessionIDCallback(func(realID string) {
-		if a, ferr := s.store.FindAgent(id); ferr == nil {
-			a.SessionID = realID
-			_ = s.store.AddAgent(*a) // upsert
-			_ = s.store.Save()
+		a, ferr := s.store.FindAgent(id)
+		if ferr != nil {
+			fmt.Fprintf(os.Stderr, "warning: session ID callback: find agent %s: %v\n", id, ferr)
+			return
+		}
+		a.SessionID = realID
+		if uerr := s.store.AddAgent(*a); uerr != nil {
+			fmt.Fprintf(os.Stderr, "warning: session ID callback: update agent %s: %v\n", id, uerr)
+		}
+		if serr := s.store.Save(); serr != nil {
+			fmt.Fprintf(os.Stderr, "warning: session ID callback: save store: %v\n", serr)
 		}
 	})
 
