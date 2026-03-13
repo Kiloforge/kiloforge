@@ -616,9 +616,9 @@ func TestResumeAgent_SessionNotFoundReturns409(t *testing.T) {
 		Status: "stopped",
 	}
 	h := NewAPIHandler(APIHandlerOpts{
-		Agents:   &stubAgentLister{agents: []domain.AgentInfo{interactiveAgent}},
-		Quota:    &stubQuotaReader{},
-		LockMgr:  lock.New(""),
+		Agents:     &stubAgentLister{agents: []domain.AgentInfo{interactiveAgent}},
+		Quota:      &stubQuotaReader{},
+		LockMgr:    lock.New(""),
 		SSEClients: func() int { return 0 },
 		InterSpawner: &stubInteractiveSpawner{
 			resumeErr: fmt.Errorf("session not found: No conversation found with session ID: abc-123"),

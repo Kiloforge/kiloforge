@@ -18,9 +18,9 @@ type mockSDKClient struct {
 	queryErr    error
 	closeCalled bool
 
-	mu       sync.Mutex
-	opLog    []string // records operation order for sequencing tests
-	onClose  func()   // optional hook called during Close()
+	mu      sync.Mutex
+	opLog   []string // records operation order for sequencing tests
+	onClose func()   // optional hook called during Close()
 }
 
 func (m *mockSDKClient) Query(_ context.Context, _ string) error {

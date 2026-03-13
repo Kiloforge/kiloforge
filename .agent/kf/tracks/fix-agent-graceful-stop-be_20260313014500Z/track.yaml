@@ -5,97 +5,79 @@ status: pending
 created: '2026-03-13'
 updated: '2026-03-13'
 spec:
-  summary: >
-    Ensure StopAgent gives Claude time to persist session state before killing
-    the process, improve resume error detection for "session not found", and
-    make the session ID callback error-visible.
-  context: |
-    When a user stops an interactive agent and later tries to resume it, Claude
-    reports "No conversation found with session ID: <id>" — even though the
-    session ID is the real one returned by the SDK in a [result] message.
+  summary: 'Ensure StopAgent gives Claude time to persist session state before killing the process, improve resume error detection
+    for "session not found", and make the session ID callback error-visible.
 
-    Root cause: StopAgent cancels the relay context and calls sdkSession.Close()
-    which cancels the session context. The Claude CLI process may not have enough
-    time to persist its session state to disk before it's killed. Once the local
-    session file is lost, resume will always fail.
-
-    Additionally:
-    - The session ID callback silently swallows errors (uses `_ = store.AddAgent()`)
-    - Resume errors are coarse — "session not found" isn't distinguished from
-      other connect failures
-    - There's no agent-level status update when resume fails due to missing session
-  codebase_analysis: |
-    Key files:
-    - backend/internal/adapter/agent/spawner.go
-      - StopAgent() lines 581-616: cancels relay, closes session, updates status
-      - ResumeAgent() lines 707-817: creates new SDK session with stored sessionID
-      - Session ID callback lines 505-511: silently ignores errors
-    - backend/internal/adapter/agent/sdk_client.go
-      - Close() lines 376-387: cancels context, calls client.Close() with detached ctx
-      - NewSDKSessionWithResume() lines 95-131: creates session with WithResume()
-      - relayResponse() handles ResultMessage with session ID callback
-    - backend/internal/adapter/rest/api_handler.go
-      - ResumeAgent handler lines 650-702: wraps errors as HTTP 409
-
-    The SDK's Close() calls s.client.Close(context.Background()) with a detached
-    context, which should allow graceful shutdown. But the relay context is already
-    cancelled, and the session context is cancelled via s.cancel() BEFORE
-    client.Close() is called — so the CLI process may receive cancellation signals
-    before Close() can negotiate a clean shutdown.
-
-    The fix should:
-    1. In Close(), call client.Close() BEFORE cancelling the session context, giving
-       the SDK a chance to send a clean shutdown signal to the CLI process
-    2. Add a brief timeout wait after Close() to let the CLI process persist state
-    3. Make the session ID callback log errors instead of silently ignoring them
-    4. In ResumeAgent, detect "session not found" / "No conversation found" errors
-       and set agent status to "resume-failed" with a clear resume_error message
+    '
+  context: "When a user stops an interactive agent and later tries to resume it, Claude\nreports \"No conversation found with\
+    \ session ID: <id>\" — even though the\nsession ID is the real one returned by the SDK in a [result] message.\n\nRoot\
+    \ cause: StopAgent cancels the relay context and calls sdkSession.Close()\nwhich cancels the session context. The Claude\
+    \ CLI process may not have enough\ntime to persist its session state to disk before it's killed. Once the local\nsession\
+    \ file is lost, resume will always fail.\n\nAdditionally:\n- The session ID callback silently swallows errors (uses `_\
+    \ = store.AddAgent()`)\n- Resume errors are coarse — \"session not found\" isn't distinguished from\n  other connect failures\n\
+    - There's no agent-level status update when resume fails due to missing session\n"
+  codebase_analysis: "Key files:\n- backend/internal/adapter/agent/spawner.go\n  - StopAgent() lines 581-616: cancels relay,\
+    \ closes session, updates status\n  - ResumeAgent() lines 707-817: creates new SDK session with stored sessionID\n  -\
+    \ Session ID callback lines 505-511: silently ignores errors\n- backend/internal/adapter/agent/sdk_client.go\n  - Close()\
+    \ lines 376-387: cancels context, calls client.Close() with detached ctx\n  - NewSDKSessionWithResume() lines 95-131:\
+    \ creates session with WithResume()\n  - relayResponse() handles ResultMessage with session ID callback\n- backend/internal/adapter/rest/api_handler.go\n\
+    \  - ResumeAgent handler lines 650-702: wraps errors as HTTP 409\n\nThe SDK's Close() calls s.client.Close(context.Background())\
+    \ with a detached\ncontext, which should allow graceful shutdown. But the relay context is already\ncancelled, and the\
+    \ session context is cancelled via s.cancel() BEFORE\nclient.Close() is called — so the CLI process may receive cancellation\
+    \ signals\nbefore Close() can negotiate a clean shutdown.\n\nThe fix should:\n1. In Close(), call client.Close() BEFORE\
+    \ cancelling the session context, giving\n   the SDK a chance to send a clean shutdown signal to the CLI process\n2. Add\
+    \ a brief timeout wait after Close() to let the CLI process persist state\n3. Make the session ID callback log errors\
+    \ instead of silently ignoring them\n4. In ResumeAgent, detect \"session not found\" / \"No conversation found\" errors\n\
+    \   and set agent status to \"resume-failed\" with a clear resume_error message\n"
   acceptance_criteria:
-    - After stopping an interactive agent, its Claude session is preserved on disk
-    - Resume with the stored session ID succeeds (Claude finds the conversation)
-    - If resume fails due to missing session, agent status is set to "resume-failed"
-      with a clear resume_error explaining the session was not found
-    - Session ID callback errors are logged (not silently ignored)
-    - Existing stop/resume tests continue to pass
-  out_of_scope: |
-    - Frontend changes (separate track for showing session_id in UI)
+  - After stopping an interactive agent, its Claude session is preserved on disk
+  - Resume with the stored session ID succeeds (Claude finds the conversation)
+  - If resume fails due to missing session, agent status is set to "resume-failed" with a clear resume_error explaining the
+    session was not found
+  - Session ID callback errors are logged (not silently ignored)
+  - Existing stop/resume tests continue to pass
+  out_of_scope: '- Frontend changes (separate track for showing session_id in UI)
+
     - Developer (one-shot) agent resume — focus on interactive agents
+
     - Session expiry/cleanup by Claude itself (external to kiloforge)
-  technical_notes: |
-    Approach:
-    1. Fix Close() ordering: call client.Close() before s.cancel() so the SDK can
-       send a graceful shutdown to the CLI before the context is cancelled
-    2. Add a short wait (e.g., 2s) in StopAgent after session.Close() to let the
-       CLI process finish writing state
-    3. Add error logging to the session ID callback
-    4. In ResumeAgent, string-match "No conversation found" or "session not found"
-       in the Connect() error and set agent.ResumeError + status="resume-failed"
-    5. Add/update tests for graceful shutdown and resume error classification
+
+    '
+  technical_notes: "Approach:\n1. Fix Close() ordering: call client.Close() before s.cancel() so the SDK can\n   send a graceful\
+    \ shutdown to the CLI before the context is cancelled\n2. Add a short wait (e.g., 2s) in StopAgent after session.Close()\
+    \ to let the\n   CLI process finish writing state\n3. Add error logging to the session ID callback\n4. In ResumeAgent,\
+    \ string-match \"No conversation found\" or \"session not found\"\n   in the Connect() error and set agent.ResumeError\
+    \ + status=\"resume-failed\"\n5. Add/update tests for graceful shutdown and resume error classification\n"
 plan:
-  - phase: "Fix graceful shutdown"
-    tasks:
-      - text: "In sdk_client.go Close(), reorder: call s.client.Close() BEFORE s.cancel() so the SDK can negotiate clean shutdown with the CLI process before context cancellation"
-        done: false
-      - text: "In spawner.go StopAgent(), add a brief wait (2s timeout) after ia.sdkSession.Close() to let the CLI process finish persisting session state"
-        done: false
-      - text: "In spawner.go session ID callback (lines 505-511), replace silent error ignoring with logger.Printf for both FindAgent and AddAgent errors"
-        done: false
-      - text: "Write test: verify Close() calls client.Close() before context cancellation"
-        done: false
-  - phase: "Improve resume error handling"
-    tasks:
-      - text: "In spawner.go ResumeAgent(), after session.Connect() fails, check if error message contains 'No conversation found' or 'session not found' — if so, set agent.ResumeError and update status to 'resume-failed'"
-        done: false
-      - text: "In api_handler.go ResumeAgent, return appropriate HTTP status (409 with clear message) when resume fails due to missing session"
-        done: false
-      - text: "Write test: verify resume with missing session sets resume-failed status and resume_error"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Run make test to verify all backend tests pass"
-        done: false
-      - text: "Run make build to verify compilation"
-        done: false
-      - text: "Run make lint to verify no linting errors"
-        done: false
+- phase: Fix graceful shutdown
+  tasks:
+  - text: 'In sdk_client.go Close(), reorder: call s.client.Close() BEFORE s.cancel() so the SDK can negotiate clean shutdown
+      with the CLI process before context cancellation'
+    done: true
+  - text: In spawner.go StopAgent(), add a brief wait (2s timeout) after ia.sdkSession.Close() to let the CLI process finish
+      persisting session state
+    done: true
+  - text: In spawner.go session ID callback (lines 505-511), replace silent error ignoring with logger.Printf for both FindAgent
+      and AddAgent errors
+    done: true
+  - text: 'Write test: verify Close() calls client.Close() before context cancellation'
+    done: true
+- phase: Improve resume error handling
+  tasks:
+  - text: In spawner.go ResumeAgent(), after session.Connect() fails, check if error message contains 'No conversation found'
+      or 'session not found' — if so, set agent.ResumeError and update status to 'resume-failed'
+    done: true
+  - text: In api_handler.go ResumeAgent, return appropriate HTTP status (409 with clear message) when resume fails due to
+      missing session
+    done: true
+  - text: 'Write test: verify resume with missing session sets resume-failed status and resume_error'
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run make test to verify all backend tests pass
+    done: false
+  - text: Run make build to verify compilation
+    done: false
+  - text: Run make lint to verify no linting errors
+    done: false
 extra: {}
