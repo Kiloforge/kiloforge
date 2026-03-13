@@ -17,6 +17,10 @@ type mockSDKClient struct {
 	queryCalled bool
 	queryErr    error
 	closeCalled bool
+
+	mu       sync.Mutex
+	opLog    []string // records operation order for sequencing tests
+	onClose  func()   // optional hook called during Close()
 }
 
 func (m *mockSDKClient) Query(_ context.Context, _ string) error {
@@ -34,6 +38,12 @@ func (m *mockSDKClient) IsConnected() bool {
 
 func (m *mockSDKClient) Close(_ context.Context) error {
 	m.closeCalled = true
+	m.mu.Lock()
+	m.opLog = append(m.opLog, "client.Close")
+	m.mu.Unlock()
+	if m.onClose != nil {
+		m.onClose()
+	}
 	return nil
 }
 
@@ -408,6 +418,38 @@ func TestQueryOneShot_ReturnsSessionID(t *testing.T) {
 	// (string, string, error), this test won't compile.
 	fn := QueryOneShot
 	_ = fn
+}
+
+func TestSDKSession_Close_ClientCloseBeforeContextCancel(t *testing.T) {
+	// Verify that Close() calls client.Close() BEFORE cancelling the session
+	// context. This ordering is critical: it allows the SDK to send a clean
+	// shutdown signal to the CLI process before context cancellation kills it.
+	mock := &mockSDKClient{
+		connected:  true,
+		responseCh: make(chan types.Message),
+	}
+	s := newTestSDKSessionWithMock(mock)
+
+	// Track context cancellation time relative to client.Close.
+	var contextCancelledDuringClose bool
+	mock.onClose = func() {
+		// During client.Close(), the session context should NOT be cancelled yet.
+		if s.ctx.Err() != nil {
+			contextCancelledDuringClose = true
+		}
+	}
+
+	s.Close()
+
+	if contextCancelledDuringClose {
+		t.Error("context was cancelled before client.Close() — client.Close() must be called first")
+	}
+	if !mock.closeCalled {
+		t.Error("client.Close() should have been called")
+	}
+	if s.ctx.Err() == nil {
+		t.Error("context should be cancelled after Close() completes")
+	}
 }
 
 func TestSDKSession_Query_Disconnected(t *testing.T) {

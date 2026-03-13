@@ -373,12 +373,17 @@ func normalizeToolResultContent(content interface{}) string {
 
 // Close terminates the SDK session. It is safe to call multiple times
 // concurrently — only the first call performs cleanup.
+//
+// IMPORTANT: client.Close() is called BEFORE context cancellation so the SDK
+// can negotiate a clean shutdown with the CLI process. If the context is
+// cancelled first, the CLI process may be killed before it can persist
+// session state to disk, breaking resume.
 func (s *SDKSession) Close() {
 	s.closeOnce.Do(func() {
-		s.cancel()
 		if s.client != nil {
 			_ = s.client.Close(context.Background())
 		}
+		s.cancel()
 		close(s.output)
 		close(s.done)
 		if s.logFile != nil {
