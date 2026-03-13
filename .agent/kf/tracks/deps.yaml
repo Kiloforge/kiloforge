@@ -51,6 +51,8 @@ cmd-mode-help-fe_20260310121738Z: []
 
 docker-gitea-dead-code-be_20260311195000Z: []
 
+fix-agent-graceful-stop-be_20260313014500Z: []
+
 fix-consent-zindex-fe_20260311230000Z: []
 
 fix-disabled-btn-styles-fe_20260312020000Z: []
@@ -88,6 +90,9 @@ responsive-kanban-fe_20260311220002Z:
   - responsive-nav-fe_20260311220000Z
 
 server-host-port-config_20260312230100Z: []
+
+show-session-id-fe_20260313014501Z:
+  - fix-agent-graceful-stop-be_20260313014500Z
 
 track-detail-register-traces-fe_20260312231002Z:
   - track-detail-register-traces-be_20260312231001Z
