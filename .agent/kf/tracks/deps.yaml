@@ -59,8 +59,6 @@ fix-merge-protocol-be_20260311160000Z: []
 
 fix-remove-project_20260312073310Z: []
 
-fix-terminal-resume-reconnect-fe_20260313012400Z: []
-
 fix-tour-scroll-fe_20260311230100Z: []
 
 gitea-removal-be_20260311070000Z: []

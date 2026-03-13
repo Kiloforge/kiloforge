@@ -5,81 +5,106 @@ status: pending
 created: '2026-03-13'
 updated: '2026-03-13'
 spec:
-  summary: >
-    Pass server-side agent status to floating AgentTerminal so it detects
-    terminal→running transitions and calls reconnect(), fixing the bug where
-    resumed agents never reconnect in floating terminal windows.
-  context: |
-    When an interactive agent is stopped, the WebSocket hook receives a terminal
+  summary: 'Pass server-side agent status to floating AgentTerminal so it detects terminal→running transitions and calls reconnect(),
+    fixing the bug where resumed agents never reconnect in floating terminal windows.
+
+    '
+  context: 'When an interactive agent is stopped, the WebSocket hook receives a terminal
+
     status message and stops auto-reconnecting. When the user later clicks
+
     "Resume", the backend creates a new SDK bridge and registers it with the
+
     SessionManager. However, the floating AgentTerminal (rendered in App.tsx)
+
     has no mechanism to detect the server-side status change and trigger
+
     reconnect().
 
-    The AgentDetailPage's TerminalSection already has this fix — it receives
+
+    The AgentDetailPage''s TerminalSection already has this fix — it receives
+
     a `serverStatus` prop and watches for terminal→non-terminal transitions
+
     via a useEffect that calls reconnect(). But the floating AgentTerminal
+
     component does not receive any server-side status prop.
 
+
     The SSE `agent_update` events already update the React Query cache for
+
     agents, so the status data IS available in the parent (App.tsx) — it just
-    isn't passed through to AgentTerminal.
-  codebase_analysis: |
-    Key files:
+
+    isn''t passed through to AgentTerminal.
+
+    '
+  codebase_analysis: 'Key files:
+
     - frontend/src/components/AgentTerminal.tsx — Props interface has no serverStatus; relies solely on WS agentStatus
+
     - frontend/src/hooks/useAgentWebSocket.ts — Has reconnect() method; stops auto-reconnect on terminal status
+
     - frontend/src/App.tsx (lines 282-300) — Renders AgentTerminal from wm.getWindows() entries; no status prop passed
+
     - frontend/src/hooks/useWindowManager.ts — WindowEntry has no status field
+
     - frontend/src/hooks/useAgents.ts — SSE agent_update handler updates React Query cache with live agent status
-    - frontend/src/pages/AgentDetailPage.tsx (lines 330-349) — TerminalSection has working pattern: watches serverStatus transitions → calls reconnect()
+
+    - frontend/src/pages/AgentDetailPage.tsx (lines 330-349) — TerminalSection has working pattern: watches serverStatus transitions
+    → calls reconnect()
+
 
     The fix pattern already exists in TerminalSection. The task is to:
-    1. Add serverStatus to AgentTerminal props
-    2. Add the same terminal→non-terminal transition detection useEffect
-    3. In App.tsx, look up the agent's current status from the agents query data and pass it as a prop
-  acceptance_criteria:
-    - After stopping an interactive agent and clicking Resume, the floating AgentTerminal reconnects automatically within 2 seconds
-    - Messages from the resumed session appear in the terminal without requiring page refresh or window close/reopen
-    - Existing AgentDetailPage TerminalSection resume flow continues to work
-    - All existing AgentTerminal and useAgentWebSocket tests pass
-  out_of_scope: |
-    - Backend changes (resume endpoint and bridge lifecycle work correctly)
-    - Developer (non-interactive) agent resume flow
-    - AgentDetailPage TerminalSection (already fixed)
-  technical_notes: |
-    Approach:
-    1. Add optional `serverStatus` prop to AgentTerminal Props interface
-    2. In AgentTerminal, add the same useEffect pattern from TerminalSection:
-       watch serverStatus transitions from terminal→non-terminal and call reconnect()
-    3. In App.tsx, resolve the agent's current status from the useAgents() query
-       data (which is kept live via SSE) and pass it to each AgentTerminal instance
-    4. WindowEntry may need a status field, or App.tsx can look up status directly
-       from the agents array when rendering
 
-    The TERMINAL_STATUSES set is already defined in AgentTerminal.tsx (line 10).
-    The reconnect() function is already returned by useAgentWebSocket.
+    1. Add serverStatus to AgentTerminal props
+
+    2. Add the same terminal→non-terminal transition detection useEffect
+
+    3. In App.tsx, look up the agent''s current status from the agents query data and pass it as a prop
+
+    '
+  acceptance_criteria:
+  - After stopping an interactive agent and clicking Resume, the floating AgentTerminal reconnects automatically within 2
+    seconds
+  - Messages from the resumed session appear in the terminal without requiring page refresh or window close/reopen
+  - Existing AgentDetailPage TerminalSection resume flow continues to work
+  - All existing AgentTerminal and useAgentWebSocket tests pass
+  out_of_scope: '- Backend changes (resume endpoint and bridge lifecycle work correctly)
+
+    - Developer (non-interactive) agent resume flow
+
+    - AgentDetailPage TerminalSection (already fixed)
+
+    '
+  technical_notes: "Approach:\n1. Add optional `serverStatus` prop to AgentTerminal Props interface\n2. In AgentTerminal,\
+    \ add the same useEffect pattern from TerminalSection:\n   watch serverStatus transitions from terminal→non-terminal and\
+    \ call reconnect()\n3. In App.tsx, resolve the agent's current status from the useAgents() query\n   data (which is kept\
+    \ live via SSE) and pass it to each AgentTerminal instance\n4. WindowEntry may need a status field, or App.tsx can look\
+    \ up status directly\n   from the agents array when rendering\n\nThe TERMINAL_STATUSES set is already defined in AgentTerminal.tsx\
+    \ (line 10).\nThe reconnect() function is already returned by useAgentWebSocket.\n"
 plan:
-  - phase: "Hook up server status"
-    tasks:
-      - text: "Add optional `serverStatus?: string` prop to AgentTerminal Props interface"
-        done: false
-      - text: "Add useEffect in AgentTerminal that watches serverStatus transitions from terminal→non-terminal and calls reconnect() (same pattern as AgentDetailPage TerminalSection lines 343-349)"
-        done: false
-      - text: "In App.tsx, resolve the current agent status from useAgents() query data and pass as serverStatus prop to each AgentTerminal instance"
-        done: false
-  - phase: "Tests"
-    tasks:
-      - text: "Write test: AgentTerminal calls reconnect when serverStatus transitions from 'stopped' to 'running'"
-        done: false
-      - text: "Write test: AgentTerminal does NOT call reconnect when serverStatus stays 'running'"
-        done: false
-      - text: "Write test: App.tsx renders AgentTerminal with serverStatus prop from agent data"
-        done: false
-  - phase: "Verification"
-    tasks:
-      - text: "Run npx vitest run to verify all frontend tests pass"
-        done: false
-      - text: "Run npx tsc --noEmit to verify no TypeScript errors"
-        done: false
+- phase: Hook up server status
+  tasks:
+  - text: 'Add optional `serverStatus?: string` prop to AgentTerminal Props interface'
+    done: true
+  - text: Add useEffect in AgentTerminal that watches serverStatus transitions from terminal→non-terminal and calls reconnect()
+      (same pattern as AgentDetailPage TerminalSection lines 343-349)
+    done: true
+  - text: In App.tsx, resolve the current agent status from useAgents() query data and pass as serverStatus prop to each AgentTerminal
+      instance
+    done: true
+- phase: Tests
+  tasks:
+  - text: 'Write test: AgentTerminal calls reconnect when serverStatus transitions from ''stopped'' to ''running'''
+    done: true
+  - text: 'Write test: AgentTerminal does NOT call reconnect when serverStatus stays ''running'''
+    done: true
+  - text: 'Write test: App.tsx renders AgentTerminal with serverStatus prop from agent data'
+    done: true
+- phase: Verification
+  tasks:
+  - text: Run npx vitest run to verify all frontend tests pass
+    done: true
+  - text: Run npx tsc --noEmit to verify no TypeScript errors
+    done: true
 extra: {}
