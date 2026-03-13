@@ -1,0 +1,63 @@
+id: show-session-id-fe_20260313014501Z
+title: Show session ID in agent detail page with copy button
+type: feature
+status: pending
+created: '2026-03-13'
+updated: '2026-03-13'
+spec:
+  summary: >
+    Add session_id to AgentDetailPage MetaItem grid with a CopyButton so users
+    can easily identify and copy the session for manual resume or debugging.
+  context: |
+    The Agent type already includes session_id (types/api.ts line 13) and the
+    backend API returns it, but no main UI component displays it. When debugging
+    resume issues, users need to dig through log files to find the session ID.
+
+    A CopyButton pattern already exists in AgentRegister.tsx (lines 70-85) that
+    can be reused.
+  codebase_analysis: |
+    Key files:
+    - frontend/src/pages/AgentDetailPage.tsx — AgentMetaGrid component (lines 93-118)
+      renders MetaItem entries for Role, Status, Model, Track, Uptime, PID, Worktree,
+      Tokens, Cost, Suspended At, Shutdown Reason, Resume Error. No session_id.
+    - frontend/src/types/api.ts — Agent interface includes session_id: string (line 13)
+    - frontend/src/components/AgentRegister.tsx — CopyButton component (lines 70-85)
+      with navigator.clipboard.writeText() and temporary "Copied!" feedback
+    - frontend/src/components/AgentRegister.module.css — .copyBtn styles (lines 76-90)
+
+    The fix adds a MetaItem for session_id after the PID entry, with a CopyButton
+    extracted as a shared component or inlined.
+  acceptance_criteria:
+    - Session ID is visible in AgentDetailPage metadata grid when present
+    - Copy button copies the session ID to clipboard with "Copied!" feedback
+    - Session ID is displayed in monospace font, consistent with PID and worktree
+    - Existing AgentDetailPage tests continue to pass
+  out_of_scope: |
+    - Showing session_id in AgentCard or AgentHistoryPage (can be added later)
+    - Backend changes
+  technical_notes: |
+    Approach:
+    1. Add a MetaItem for session_id in AgentMetaGrid, displayed with mono styling
+    2. Add an inline copy button next to the session ID (reuse CopyButton pattern)
+    3. Show only when agent.session_id is truthy
+    4. Add test verifying session_id renders in AgentDetailPage
+plan:
+  - phase: "Add session ID display"
+    tasks:
+      - text: "In AgentDetailPage.tsx AgentMetaGrid, add a MetaItem for 'Session ID' after PID, shown when agent.session_id is truthy, with monospace styling and an inline copy button"
+        done: false
+      - text: "Add CSS for the copy button in AgentDetailPage.module.css (reuse pattern from AgentRegister.module.css .copyBtn)"
+        done: false
+  - phase: "Tests"
+    tasks:
+      - text: "Update mockAgent in AgentDetailPage.test.tsx to include session_id field"
+        done: false
+      - text: "Add test: verify session_id renders in the metadata grid"
+        done: false
+  - phase: "Verification"
+    tasks:
+      - text: "Run npx vitest run to verify all frontend tests pass"
+        done: false
+      - text: "Run npx tsc --noEmit to verify no TypeScript errors"
+        done: false
+extra: {}
