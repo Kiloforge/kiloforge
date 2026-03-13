@@ -14,6 +14,7 @@ import (
 	"kiloforge/internal/adapter/persistence/sqlite"
 	"kiloforge/internal/adapter/rest/gen"
 	"kiloforge/internal/adapter/tracing"
+	wsAdapter "kiloforge/internal/adapter/ws"
 	"kiloforge/internal/core/domain"
 	"kiloforge/internal/core/port"
 	"kiloforge/internal/core/service"
@@ -601,6 +602,40 @@ func TestResumeAgent_NotFoundReturns404(t *testing.T) {
 	}
 	if _, ok := resp.(gen.ResumeAgent404JSONResponse); !ok {
 		t.Fatalf("expected 404 for not found agent, got %T", resp)
+	}
+}
+
+func TestResumeAgent_SessionNotFoundReturns409(t *testing.T) {
+	t.Parallel()
+	// When the spawner returns a "session not found" error (Claude can't find
+	// the session file), the handler should return 409 (conflict) not 404,
+	// since the agent exists but its session is lost.
+	interactiveAgent := domain.AgentInfo{
+		ID:     "agent-123",
+		Role:   "interactive",
+		Status: "stopped",
+	}
+	h := NewAPIHandler(APIHandlerOpts{
+		Agents:   &stubAgentLister{agents: []domain.AgentInfo{interactiveAgent}},
+		Quota:    &stubQuotaReader{},
+		LockMgr:  lock.New(""),
+		SSEClients: func() int { return 0 },
+		InterSpawner: &stubInteractiveSpawner{
+			resumeErr: fmt.Errorf("session not found: No conversation found with session ID: abc-123"),
+		},
+		WSSessions: wsAdapter.NewSessionManager(),
+	})
+
+	resp, err := h.ResumeAgent(context.Background(), gen.ResumeAgentRequestObject{Id: "agent-123"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, ok := resp.(gen.ResumeAgent409JSONResponse)
+	if !ok {
+		t.Fatalf("expected 409 for session not found, got %T", resp)
+	}
+	if r.Error == "" {
+		t.Error("expected error message in 409 response")
 	}
 }
 

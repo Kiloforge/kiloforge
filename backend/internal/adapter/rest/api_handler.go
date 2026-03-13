@@ -682,6 +682,9 @@ func (h *APIHandler) ResumeAgent(ctx context.Context, req gen.ResumeAgentRequest
 			if strings.Contains(err.Error(), "already running") {
 				return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
 			}
+			if strings.Contains(err.Error(), "session not found") {
+				return gen.ResumeAgent409JSONResponse{Error: err.Error()}, nil
+			}
 			if strings.Contains(err.Error(), "not found") {
 				return gen.ResumeAgent404JSONResponse{Error: err.Error()}, nil
 			}

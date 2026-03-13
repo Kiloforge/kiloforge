@@ -601,13 +601,12 @@ func (s *Spawner) StopAgent(id string) error {
 	s.publishCapacityChanged()
 
 	// Cancel relay goroutine and close SDK session.
+	// Close() calls client.Close() before context cancellation, giving the SDK
+	// time to negotiate a clean shutdown with the CLI process (which persists
+	// session state to disk). No additional wait is needed — client.Close() is
+	// synchronous and returns after the shutdown handshake completes.
 	ia.CancelRelay()
 	ia.sdkSession.Close()
-
-	// Brief wait to let the CLI process finish persisting session state to disk.
-	// The SDK's client.Close() sends a shutdown signal, but the CLI may need a
-	// moment to write its session file before the process fully exits.
-	time.Sleep(2 * time.Second)
 
 	// Update store.
 	now := time.Now()
@@ -789,6 +788,18 @@ func (s *Spawner) ResumeAgent(ctx context.Context, id string) (*InteractiveAgent
 		session.logLine(fmt.Sprintf("[resume] connect failed — %v", err))
 		lf.Close()
 		session.Close()
+
+		// Detect session-not-found errors and set resume-failed status with
+		// a clear error message so the UI can display the reason.
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "No conversation found") || strings.Contains(errMsg, "session not found") {
+			agent.ResumeError = fmt.Sprintf("session not found: %s (session may have been lost during stop)", agent.SessionID)
+			agent.Status = "resume-failed"
+			_ = s.store.AddAgent(*agent) // upsert
+			_ = s.store.Save()
+			return nil, fmt.Errorf("session not found: %w", err)
+		}
+
 		return nil, fmt.Errorf("SDK connect: %w", err)
 	}
 	session.logLine("[resume] connected to CLI")
