@@ -254,4 +254,55 @@ describe("AgentTerminal", () => {
     setup({ status: "connected", agentStatus: "stopped" });
     const textarea = screen.getByPlaceholderText("Agent has exited");
     expect(textarea).toBeDisabled();
-  });});
+  });
+
+  it("calls reconnect when serverStatus transitions from terminal to non-terminal", () => {
+    const reconnect = vi.fn();
+    mockUseAgentWebSocket.mockReturnValue({
+      messages: [], sendMessage: vi.fn(), sendInterrupt: vi.fn(),
+      clearMessages: vi.fn(), reconnect, status: "disconnected",
+      agentStatus: "stopped", turnActive: false,
+    });
+    const { rerender } = render(
+      <AgentTerminal agentId="a1" onClose={vi.fn()} serverStatus="stopped" />,
+    );
+    expect(reconnect).not.toHaveBeenCalled();
+
+    rerender(
+      <AgentTerminal agentId="a1" onClose={vi.fn()} serverStatus="running" />,
+    );
+    expect(reconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT call reconnect when serverStatus stays running", () => {
+    const reconnect = vi.fn();
+    mockUseAgentWebSocket.mockReturnValue({
+      messages: [], sendMessage: vi.fn(), sendInterrupt: vi.fn(),
+      clearMessages: vi.fn(), reconnect, status: "connected",
+      agentStatus: "running", turnActive: false,
+    });
+    const { rerender } = render(
+      <AgentTerminal agentId="a1" onClose={vi.fn()} serverStatus="running" />,
+    );
+    rerender(
+      <AgentTerminal agentId="a1" onClose={vi.fn()} serverStatus="running" />,
+    );
+    expect(reconnect).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call reconnect when serverStatus is initially undefined", () => {
+    const reconnect = vi.fn();
+    mockUseAgentWebSocket.mockReturnValue({
+      messages: [], sendMessage: vi.fn(), sendInterrupt: vi.fn(),
+      clearMessages: vi.fn(), reconnect, status: "connected",
+      agentStatus: null, turnActive: false,
+    });
+    const { rerender } = render(
+      <AgentTerminal agentId="a1" onClose={vi.fn()} />,
+    );
+    rerender(
+      <AgentTerminal agentId="a1" onClose={vi.fn()} serverStatus="running" />,
+    );
+    expect(reconnect).not.toHaveBeenCalled();
+  });
+});
