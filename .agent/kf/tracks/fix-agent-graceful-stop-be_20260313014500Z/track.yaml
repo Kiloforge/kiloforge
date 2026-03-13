@@ -75,9 +75,9 @@ plan:
 - phase: Verification
   tasks:
   - text: Run make test to verify all backend tests pass
-    done: false
+    done: true
   - text: Run make build to verify compilation
-    done: false
+    done: true
   - text: Run make lint to verify no linting errors
-    done: false
+    done: true
 extra: {}

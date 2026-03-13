@@ -107,7 +107,7 @@ error-toast-notifications_20260309223001Z: {"title":"Error Toast Notifications i
 expand-agent-namegen-be_20260310150455Z: {"title":"Expand agent name generator with large word lists and hyphen separator","status":"archived","type":"chore","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-12"}
 fix-add-empty-repo-cleanup_20260309213000Z: {"title":"Fix kf add for Empty Repos and Add Rollback on Failure","status":"archived","type":"bug","created":"2026-03-09","updated":"2026-03-10","archived_at":"2026-03-10"}
 fix-add-remote-url_20260307130000Z: {"title":"Fix 'kf add' to Accept Remote URLs","status":"archived","type":"feature","created":"","updated":"","archived_at":"","archive_reason":"Completed"}
-fix-agent-graceful-stop-be_20260313014500Z: {"title":"Fix agent stop to preserve Claude session for resume","status":"pending","type":"bug","approved":false,"created":"2026-03-13","updated":"2026-03-13"}
+fix-agent-graceful-stop-be_20260313014500Z: {"title":"Fix agent stop to preserve Claude session for resume","status":"completed","type":"bug","approved":false,"created":"2026-03-13","updated":"2026-03-13"}
 fix-agent-name-in-api-be_20260312200000Z: {"title":"Fix agent name missing from REST API response","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-12"}
 fix-agent-resume-be_20260312020000Z: {"title":"Fix interactive agent resume \u2014 input accepted but no output returned","status":"archived","type":"bug","created":"2026-03-10","updated":"2026-03-10","archived_at":"2026-03-12"}
 fix-agent-resume-reconnect-fe_20260312125402Z: {"title":"Add WS reconnect mechanism for agent resume flow","status":"completed","type":"bug","approved":true,"created":"2026-03-12","updated":"2026-03-12"}
