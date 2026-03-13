@@ -23,6 +23,7 @@ interface Props {
   onMinimize?: () => void;
   onActivity?: () => void;
   onNotification?: (type: "waiting" | "done" | "unread" | null) => void;
+  serverStatus?: string;
   registerControls?: (agentId: string, controls: { setRect: (x: number, y: number, w: number, h: number) => void; getRect: () => { x: number; y: number; width: number; height: number; zIndex: number }; bringToFront: () => void }) => void;
   unregisterControls?: (agentId: string) => void;
 }
@@ -50,8 +51,8 @@ function ConnectionDot({ status }: { status: WSConnectionState }) {
   );
 }
 
-export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, onNotification, registerControls, unregisterControls }: Props) {
-  const { messages, sendMessage, sendInterrupt, status, agentStatus, turnActive } = useAgentWebSocket(agentId);
+export function AgentTerminal({ agentId, name, role, slug, branch, initialX, initialY, minimized, onClose, onFocus, onMinimize, onActivity, onNotification, serverStatus, registerControls, unregisterControls }: Props) {
+  const { messages, sendMessage, sendInterrupt, reconnect, status, agentStatus, turnActive } = useAgentWebSocket(agentId);
   const [queueDepth, setQueueDepth] = useState(0);
   const [input, setInput] = useState("");
   const [viewMode, setViewMode] = useState<"chat" | "diff">("chat");
@@ -75,6 +76,17 @@ export function AgentTerminal({ agentId, name, role, slug, branch, initialX, ini
       if (unregisterControls) unregisterControls(agentId);
     };
   }, [agentId, fw.setRect, fw.getRect, fw.bringToFront, registerControls, unregisterControls]);
+
+  // When server-side status transitions from terminal → non-terminal
+  // (e.g., after resume), trigger WS reconnect.
+  const prevServerStatusRef = useRef(serverStatus);
+  useEffect(() => {
+    const prev = prevServerStatusRef.current;
+    prevServerStatusRef.current = serverStatus;
+    if (prev && serverStatus && TERMINAL_STATUSES.has(prev) && !TERMINAL_STATUSES.has(serverStatus)) {
+      reconnect();
+    }
+  }, [serverStatus, reconnect]);
 
   const prevMsgCountRef = useRef(0);
 

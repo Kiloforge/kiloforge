@@ -279,25 +279,29 @@ export default function App() {
       </main>
 
       {logAgentId && <LogViewer agentId={logAgentId} onClose={handleCloseLog} />}
-      {wm.getWindows().map((entry) => (
-        <AgentTerminal
-          key={entry.agentId}
-          agentId={entry.agentId}
-          name={entry.name}
-          role={entry.role}
-          slug={entry.slug}
-          branch={entry.branch}
-          initialX={entry.initialX}
-          initialY={entry.initialY}
-          minimized={entry.minimized}
-          onClose={() => wm.close(entry.agentId)}
-          onMinimize={() => wm.minimize(entry.agentId)}
-          onActivity={() => wm.incrementUnread(entry.agentId)}
-          onNotification={(type) => wm.setNotificationType(entry.agentId, type)}
-          registerControls={wm.registerControls}
-          unregisterControls={wm.unregisterControls}
-        />
-      ))}
+      {wm.getWindows().map((entry) => {
+        const agentData = agents.find((a) => a.id === entry.agentId);
+        return (
+          <AgentTerminal
+            key={entry.agentId}
+            agentId={entry.agentId}
+            name={entry.name}
+            role={entry.role}
+            slug={entry.slug}
+            branch={entry.branch}
+            initialX={entry.initialX}
+            initialY={entry.initialY}
+            minimized={entry.minimized}
+            onClose={() => wm.close(entry.agentId)}
+            onMinimize={() => wm.minimize(entry.agentId)}
+            onActivity={() => wm.incrementUnread(entry.agentId)}
+            onNotification={(type) => wm.setNotificationType(entry.agentId, type)}
+            serverStatus={agentData?.status}
+            registerControls={wm.registerControls}
+            unregisterControls={wm.unregisterControls}
+          />
+        );
+      })}
       {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
       <MiniCardDock
         windows={wm.getMinimizedWindows()}
