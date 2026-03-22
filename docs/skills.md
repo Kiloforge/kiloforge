@@ -31,90 +31,54 @@ Kiloforge skills use the `SKILL.md` format supported by multiple AI coding agent
 
 ### Global Installation
 
-Install skills globally so they are available across all projects on your machine.
+Install skills globally so they are available across all projects on your machine. The install scripts handle skills, `~/.kf/bin/` CLI tools, and `~/.kf/.venv/` Python venv setup automatically.
 
-**Unix (macOS / Linux):**
+**macOS / Linux:**
 
 ```bash
-# Claude Code (also works for OpenCode and Amp via fallback)
-SKILLS_DIR=~/.claude/skills \
-  && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
-  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
-  && rm -rf /tmp/kf-skills
-
-# Codex
-SKILLS_DIR=~/.agents/skills \
-  && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
-  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
-  && rm -rf /tmp/kf-skills
-
-# Antigravity
-SKILLS_DIR=~/.gemini/antigravity/skills \
-  && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
-  && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
-  && rm -rf /tmp/kf-skills
+curl -fsSL https://raw.githubusercontent.com/Kiloforge/kiloforge-skills/main/install.sh | sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-# Claude Code (also works for OpenCode and Amp via fallback)
-$d = "$HOME\.claude\skills"
-Remove-Item "$d\kf-*" -Recurse -Force -ErrorAction SilentlyContinue
-git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git $env:TEMP\kf-skills
-Copy-Item "$env:TEMP\kf-skills\kf-*" "$d\" -Recurse
-Remove-Item "$env:TEMP\kf-skills" -Recurse -Force
-
-# Codex
-$d = "$HOME\.agents\skills"
-Remove-Item "$d\kf-*" -Recurse -Force -ErrorAction SilentlyContinue
-git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git $env:TEMP\kf-skills
-Copy-Item "$env:TEMP\kf-skills\kf-*" "$d\" -Recurse
-Remove-Item "$env:TEMP\kf-skills" -Recurse -Force
-
-# Antigravity
-$d = "$HOME\.gemini\antigravity\skills"
-Remove-Item "$d\kf-*" -Recurse -Force -ErrorAction SilentlyContinue
-git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git $env:TEMP\kf-skills
-Copy-Item "$env:TEMP\kf-skills\kf-*" "$d\" -Recurse
-Remove-Item "$env:TEMP\kf-skills" -Recurse -Force
+irm https://raw.githubusercontent.com/Kiloforge/kiloforge-skills/main/install.ps1 | iex
 ```
 
-The `rm -rf "$SKILLS_DIR"/kf-*` cleanup step removes stale skill directories before copying, ensuring renamed or deleted skills don't linger.
+The install scripts detect all supported agent tools on your machine and install skills to each tool's global directory. They also set up `~/.kf/bin/` CLI tools and `~/.kf/.venv/` Python venv.
+
+**Updating:** Run `/kf-update` inside Claude Code, or re-run the install script above.
 
 ### Project-Scoped Installation
 
-Install skills within a repository so all team members share the same skill versions. Project-scoped skills take precedence over global skills when both exist.
+Install skills within a repository so all team members share the same skill versions. Project-scoped skills take precedence over global skills when both exist. For project-scoped installs, use a git clone approach with the correct skills directory for your agent tool:
 
 ```bash
 # Claude Code
 SKILLS_DIR=.claude/skills \
   && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && git clone --depth 1 https://github.com/Kiloforge/kiloforge-skills.git /tmp/kf-skills \
   && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
   && rm -rf /tmp/kf-skills
 
 # OpenCode
 SKILLS_DIR=.opencode/skills \
   && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && git clone --depth 1 https://github.com/Kiloforge/kiloforge-skills.git /tmp/kf-skills \
   && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
   && rm -rf /tmp/kf-skills
 
 # Amp / Codex (shared path)
 SKILLS_DIR=.agents/skills \
   && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && git clone --depth 1 https://github.com/Kiloforge/kiloforge-skills.git /tmp/kf-skills \
   && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
   && rm -rf /tmp/kf-skills
 
 # Antigravity
 SKILLS_DIR=.agent/skills \
   && rm -rf "$SKILLS_DIR"/kf-* \
-  && git clone --depth 1 https://github.com/benbaldavis/kiloforge-skills.git /tmp/kf-skills \
+  && git clone --depth 1 https://github.com/Kiloforge/kiloforge-skills.git /tmp/kf-skills \
   && cp -r /tmp/kf-skills/kf-* "$SKILLS_DIR/" \
   && rm -rf /tmp/kf-skills
 ```
@@ -196,18 +160,15 @@ The status command displays project progress and includes dispatch recommendatio
 |-------|---------|
 | `kf-architect` | Research codebase, design tracks with specs and plans |
 | `kf-developer` | Claim and implement a track in a worktree |
-| `kf-implement` | Execute tasks from a track plan (single-branch workflow) |
 | `kf-status` | Display project status and dispatch recommendations |
+| `kf-bin` | Reference hub for `~/.kf/bin/` CLI tools |
 
 ### Management
 
 | Skill | Purpose |
 |-------|---------|
-| `kf-manage` | Track lifecycle: archive, restore, delete, rename, cleanup |
-| `kf-bulk-archive` | Archive all completed tracks at once |
-| `kf-compact-archive` | Remove archived track directories while preserving git history |
+| `kf-manage` | Track lifecycle: archive, compact, restore, delete, rename, cleanup |
 | `kf-revert` | Git-aware undo by logical work unit (track, phase, or task) |
-| `kf-new-track` | Create a single new track with spec and plan |
 | `kf-conflict-resolver` | Resolve git merge conflicts during push/pull sync |
 
 ### Review & Advisory
@@ -225,7 +186,6 @@ Advisory skills are interactive — they produce reports and recommendations for
 |-------|---------|
 | `kf-setup` | Initialize project with Kiloforge artifacts (product, tech stack, workflow, styles) |
 | `kf-getting-started` | Interactive bootstrapper for new projects |
-| `kf-interactive` | General-purpose interactive agent session |
 
 ### Infrastructure
 
@@ -234,8 +194,6 @@ Advisory skills are interactive — they produce reports and recommendations for
 | `kf-validate` | Check Kiloforge artifacts for completeness and consistency |
 | `kf-repair` | Diagnose and fix track registry, dependency graph, and data integrity issues |
 | `kf-report` | Generate timeline, velocity, SLOC, and cost estimate reports |
-| `kf-data-guardian` | Corruption detection heuristics (internal, not user-invocable) |
-| `kf-status` | Display project status, active tracks, and next actions |
 
 ## Skill Validation
 

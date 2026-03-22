@@ -88,10 +88,10 @@ claude -p "/kf-setup"
 ```
 
 This initializes the project with:
-- `product.md` — product definition and design principles
-- `tech-stack.md` — technology choices and conventions
+- `product.yaml` — product definition and design principles
+- `tech-stack.yaml` — technology choices and conventions
 - `workflow.md` — TDD policy, commit strategy, verification commands
-- `tracks.yaml` — track registry
+- per-track `meta.yaml` — track registry
 - Code style guides
 
 ## Create Tracks with the Architect
